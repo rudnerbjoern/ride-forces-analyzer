@@ -14,6 +14,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 
 ## Repository and Git
 
+- MUST use [github-delivery](.agents/skills/github-delivery/SKILL.md) for Git/GitHub delivery; reuse its helpers and authoritative commit policy. NEVER generate replacement operation scripts. Skill use NEVER grants mutation authorization.
 - MUST preserve user changes. Staged files = owner-reviewed. NEVER modify, unstage, replace or repurpose them without explicit authorization.
 - MUST obtain explicit owner authorization for staging, committing, pushing, PR creation and merging, covering the operation and scope.
 - MUST work on an authorized dedicated feature branch. Create new branches from `main`; continue related work on its existing branch. Preserve user changes during switches.
@@ -51,6 +52,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 - MUST read instructions/task docs once per working context. Re-read ONLY changed content, unresolved relevant sections or lost context.
 - MUST batch independent reads/searches. Parallelize independent checks ONLY without shared mutable files, environments or GUI resources; dependencies MUST remain sequential.
 - MUST test changed behavior/public contracts and add bug regression tests. Run focused checks first; repeat ONLY checks affected by edits/failures.
+- MUST keep skill/tool regression suites separate from application test discovery. Run them ONLY when their implementation, tests or relevant dependencies change; ordinary application changes and delivery operations NEVER require them.
 - MUST run required suites once for final content and retain actual runner evidence. NEVER rerun solely because commit/push authorization arrived or a commit was created.
 - MUST reuse successful evidence ONLY when relevant contents (including staged files), dependencies, lock files, tools, configuration and environment are demonstrably unchanged. Changed inputs: rerun affected checks. Missing evidence/uncertain equivalence: run required suites.
 - MUST record exact commands, results, limitations, platform and tested revision/file scope in `docs/validation/` as required by the applicable plan. Stage-specific report structure belongs in that plan. Temporary logs: `.tmp/`. NEVER add a cache framework solely for evidence reuse.

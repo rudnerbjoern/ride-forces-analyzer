@@ -9,6 +9,7 @@ jobs:
     outputs:
       code: ${{ steps.changes.outputs.code }}
       documentation: ${{ steps.changes.outputs.documentation }}
+      skills: ${{ steps.changes.outputs.skills }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -52,6 +53,33 @@ jobs:
         run: npm run spellcheck
       - run: uv run pytest
 
+  skills:
+    needs: dependency-check
+    if: ${{ needs.dependency-check.outputs.skills == 'true' }}
+    runs-on: windows-latest
+    env:
+      NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: '0.13.0'
+          python-version: '3.14.6'
+      - run: uv sync --locked --all-extras --group dev
+      - run: uv run ruff check .agents/skills/github-delivery
+      - run: uv run ruff format --check .agents/skills/github-delivery
+      - run: uv run mypy .agents/skills/github-delivery/scripts/git_delivery.py .agents/skills/github-delivery/tests/test_github_delivery.py
+      - run: uv run pytest .agents/skills/github-delivery/tests
+      - if: ${{ needs.dependency-check.outputs.code != 'true' && needs.dependency-check.outputs.documentation != 'true' }}
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+      - if: ${{ needs.dependency-check.outputs.code != 'true' && needs.dependency-check.outputs.documentation != 'true' }}
+        run: npm ci --no-audit --no-fund
+      - if: ${{ needs.dependency-check.outputs.code != 'true' && needs.dependency-check.outputs.documentation != 'true' }}
+        run: npm run spellcheck
+
   documentation:
     needs: dependency-check
     if: ${{ needs.dependency-check.outputs.documentation == 'true' }}
@@ -68,7 +96,7 @@ jobs:
       - run: npm run test:docs
 
   check:
-    needs: [dependency-check, code, documentation]
+    needs: [dependency-check, code, documentation, skills]
     if: ${{ always() }}
     runs-on: windows-latest
     steps:
@@ -77,13 +105,15 @@ jobs:
           DEPENDENCY_RESULT: ${{ needs.dependency-check.result }}
           CODE_REQUIRED: ${{ needs.dependency-check.outputs.code }}
           DOCUMENTATION_REQUIRED: ${{ needs.dependency-check.outputs.documentation }}
+          SKILLS_REQUIRED: ${{ needs.dependency-check.outputs.skills }}
           CODE_RESULT: ${{ needs.code.result }}
           DOCUMENTATION_RESULT: ${{ needs.documentation.result }}
+          SKILLS_RESULT: ${{ needs.skills.result }}
         run: |
           if ($env:DEPENDENCY_RESULT -ne 'success') {
             throw 'Change detection failed; test selection is not verified.'
           }
-          foreach ($suite in @('CODE', 'DOCUMENTATION')) {
+          foreach ($suite in @('CODE', 'DOCUMENTATION', 'SKILLS')) {
             $required = [Environment]::GetEnvironmentVariable("${suite}_REQUIRED")
             $result = [Environment]::GetEnvironmentVariable("${suite}_RESULT")
             if ($required -ne 'true' -and $required -ne 'false') {

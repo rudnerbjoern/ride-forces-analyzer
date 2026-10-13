@@ -10,12 +10,26 @@ const codeInputs = new Set([
   ".github/dependabot.yml",
 ]);
 
+const skillInputs = new Set([
+  "pyproject.toml", "uv.lock", ".python-version", ".gitignore", ".gitattributes", ".editorconfig",
+  ".github/commit-message-instructions.md",
+]);
+
 export function classifyChanges(filenames) {
   let code = false;
   let documentation = false;
+  let skills = false;
   for (const filename of filenames) {
+    if (skillInputs.has(filename) || filename.startsWith(".github/workflows/")
+      || filename.startsWith(".github/scripts/") || filename.startsWith("tests/ci/")) {
+      skills = true;
+    }
     if (filename.toLowerCase().endsWith(".md")) {
       documentation = true;
+      continue;
+    }
+    if (filename.startsWith(".agents/skills/")) {
+      skills = true;
       continue;
     }
     if (filename.startsWith("src/") || filename.startsWith("tests/")
@@ -25,7 +39,7 @@ export function classifyChanges(filenames) {
       code = true;
     }
   }
-  return { code, documentation };
+  return { code, documentation, skills };
 }
 
 export function changedPaths(base, head, cwd = process.cwd()) {
@@ -56,11 +70,11 @@ export function writeOutputs(selection, output) {
     throw new Error("GITHUB_OUTPUT is required");
   }
   appendFileSync(output,
-    `code=${selection.code}\ndocumentation=${selection.documentation}\n`, "utf8");
+    `code=${selection.code}\ndocumentation=${selection.documentation}\nskills=${selection.skills}\n`, "utf8");
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const selection = classifyChanges(changedPaths(process.env.PR_BASE_SHA, process.env.PR_HEAD_SHA));
   writeOutputs(selection, process.env.GITHUB_OUTPUT);
-  console.log(`Code checks: ${selection.code}; documentation checks: ${selection.documentation}`);
+  console.log(`Code checks: ${selection.code}; documentation checks: ${selection.documentation}; skill checks: ${selection.skills}`);
 }
