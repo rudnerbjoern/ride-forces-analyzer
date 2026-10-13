@@ -16,8 +16,8 @@ strings, floats and booleans. Defaults are also validated, and unknown
 application-setting keys are rejected.
 
 This model applies only to bootstrap window settings. It is not a recording
-schema. Importing `.forces` files, preserving unknown recording fields and
-calibrating data remain planned for M2/M3. Original recording bytes remain
+schema. M2 Stage 1 now supplies immutable canonical/source representations;
+file importing and calibration remain planned for later stages. Original recording bytes remain
 read-only.
 
 The `frozen=True` class argument lets type checkers recognize immutability.
@@ -69,9 +69,9 @@ Problems view was manually inspected.
 
 ## Tests
 
-- `tests/test_project.py` verifies the project version, exact four-recording inventory
+- `tests/test_project.py` verifies the project version, exact five-recording inventory
   and each original file's byte length and SHA-256 independently. The authorized
-  [recording catalog](RECORDINGS.md) covers Manta, Kraken, Taron and Voltron Nevera.
+  [recording catalog](RECORDINGS.md) covers Manta, Kraken, Taron, Voltron Nevera and Iron Gwazi.
 - `tests/test_settings.py` exercises defaults, custom settings, JSON round trips,
   invalid dimensions and types, both valid dimension boundaries, invalid titles,
   unknown keys and immutability.
@@ -84,6 +84,11 @@ Problems view was manually inspected.
   stored under `.tmp/` and explicitly included in their test configuration.
   The tests require a positive analyzed-file count and inspect diagnostic rules,
   rather than relying solely on process exit status.
+- `tests/test_source_models.py`, `tests/test_recording_models.py` and
+  `tests/test_import_results.py` verify [canonical model](CANONICAL_MODELS.md)
+  ownership, immutability, source type retention, absence, diagnostics and results.
+- `tests/types/recording.test.mjs` adds public model constructor, immutable mapping,
+  frozen-field and literal outcome-tag contracts to `npm run test:types`.
 - `tests/dependencies/security.test.mjs` checks the actual Node dependency consumers:
   two TOML configuration parsers, inherited KaTeX trust rejection and three
   micromark math-rendering contracts. See the [security follow-up](../validation/DEPENDABOT.md)

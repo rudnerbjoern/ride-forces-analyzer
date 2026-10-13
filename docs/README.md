@@ -26,6 +26,8 @@ This directory contains project documentation, not generated artifacts or tempor
   VS Code Test Explorer configuration.
 - [Python code quality](development/CODE_QUALITY.md): Pydantic, Ruff, Pylance,
   mypy, Pyright and regression-test scope.
+- [Canonical models](development/CANONICAL_MODELS.md): immutable Stage 1 models,
+  source ownership and diagnostic/result contracts.
 - [Real recordings](development/RECORDINGS.md): authorized fixture catalog and integrity checks.
 - [Documentation tests](development/DOCUMENTATION_TESTS.md): markdownlint, CSpell
   and offline local-link checks.
@@ -40,6 +42,8 @@ This directory contains project documentation, not generated artifacts or tempor
 - [Dependency audit](validation/DEPENDENCIES.md): dated release checks and pinned tooling.
 - [M2 Stage 0 inspection](validation/M2_STAGE0.md): recursive five-fixture evidence,
   integrity, validation and next-stage boundaries.
+- [M2 Stage 1 models](validation/M2_STAGE1.md): synthetic acceptance evidence,
+  requirement coverage and pending decoder work.
 - [Node security follow-up](validation/DEPENDABOT.md): tested overrides, regression
   coverage and the open braces advisory.
 

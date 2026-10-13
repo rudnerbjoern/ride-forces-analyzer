@@ -1,6 +1,6 @@
 # DEV-REQ-002 — M2 implementation plan
 
-**Status:** Planned / no importer implemented. All content is in English.
+**Status:** Stage 0 evidence and Stage 1 models implemented; no file importer. All content is in English.
 **Normative requirements:** [DEV-REQ-002](../../requirements/DEV-REQ-002-forces-importer.md).
 **Source observations:** [Format analysis](../../requirements/FORMAT-ANALYSIS.md).
 **Execution prompts:** [PROMPTS.md](PROMPTS.md).
@@ -30,7 +30,8 @@ Iron Gwazi extends the corpus with the owner-confirmed Apple Watch availability
 profile. Gravity/GPS absence and device-aware capability contracts are explicit;
 owner defaults for absent ridingPosition (Seated) and sampleRate (50 Hz) retain
 source absence and expose default provenance;
-resource guards and canonical models remain unimplemented. Stop after Stage 0.
+resource guards and canonical models were left unimplemented in Stage 0.
+The separate Stage 1 instruction authorized only the representations below.
 
 ## Stage 1 — Canonical model and diagnostics
 
@@ -50,6 +51,11 @@ resource guards and canonical models remain unimplemented. Stop after Stage 0.
   ownership; mypy/Pyright contract tests as applicable.
 - **Exit:** imported models usable by a synthetic in-memory test without I/O.
 - **Trace:** FR-002–006, 023, 027; AC-03, 08.
+
+Stage 1 implementation and synthetic acceptance evidence are documented in the
+[model guide](../../development/CANONICAL_MODELS.md) and
+[Stage 1 report](../../validation/M2_STAGE1.md). These representations do not
+perform decoding, file I/O or version dispatch. Stop after the requested stage.
 
 ## Stage 2 — Strict JSON decoder and version dispatch
 

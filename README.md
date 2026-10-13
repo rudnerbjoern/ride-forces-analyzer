@@ -4,7 +4,9 @@ Planned offline Windows application for importing Ride Forces (`.forces`) record
 analyzing G-force traces and producing animated charts and transparent video overlays.
 
 **Current scope:** M1 provides an executable minimal Qt window, validated startup settings,
-separate subsystem packages, tests and development tooling. Import, analysis, storage,
+separate subsystem packages, tests and development tooling. M2 Stage 1 adds
+immutable canonical models and structured diagnostics for synthetic construction;
+see the [model guide](docs/development/CANONICAL_MODELS.md). Import, analysis, storage,
 playback and rendering are **planned**, not implemented. **M1 acceptance is verified**
 on Windows and in pull-request CI, and
 [PR #1](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/1) is merged.

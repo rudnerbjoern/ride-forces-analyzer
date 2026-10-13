@@ -3,7 +3,9 @@
 Status: Proposed implementation contract, Stage 0 review, 2026-10-13.
 Requirements: [DEV-REQ-002](../requirements/DEV-REQ-002-forces-importer.md),
 primarily FR-001, FR-004, FR-007, FR-024 and FR-030; also FR-003, FR-008,
-FR-013, FR-018–027. No production importer or canonical model is implemented.
+FR-013, FR-018–027. The original Stage 0 decision was documentation-only.
+Stage 1 now implements [canonical models and result types](../development/CANONICAL_MODELS.md);
+file decoding and the remaining importer policies are still planned.
 
 ## Evidence and context
 
@@ -191,5 +193,30 @@ without fabricating missing gravity/GPS. FR-001/FR-004/FR-007/FR-024/FR-030 now
 have explicit proposed contracts. Snapshot and integrity tests establish the
 source evidence and AC-02 for this inspection, not full M2 import acceptance.
 Source-app epochs, axes, end-index convention and GPS sentinels remain open.
-Stage 1 may implement models only after a separate owner instruction; no later
-stage is started by this ADR. Publication and merge remain separately authorized.
+The owner separately instructed Stage 1 model implementation; its
+[verification report](../validation/M2_STAGE1.md) records the resulting scope.
+No decoder or later stage is authorized by that instruction. Publication and
+merge remain separately authorized.
+
+## Stage 1 implementation choices — 2026-10-13
+
+Use standard-library frozen dataclasses with slots for compact typed values;
+copy sequences to tuples and recursively copy source mappings before exposing
+readonly views. Frozen alone is insufficient for nested input ownership. Pydantic
+remains the bootstrap validator; no new library is required. Context7 and the
+[dataclass](https://docs.python.org/3.14/library/dataclasses.html)/
+[mapping proxy](https://docs.python.org/3.14/library/types.html#types.MappingProxyType)
+documentation informed these choices.
+
+SourceNumber stores original token plus exact Decimal value. SourceEnvelope
+owns bytes and computes provenance, optionally retaining a preconstructed frozen
+root. Stage 1 cannot prove that supplied tree and bytes correspond without a
+decoder; Stage 2 must create them from the same retained input. Source copying is
+for normal Python inputs, not a replacement for document resource guards.
+
+ImportResult is the ImportSuccess/ImportFailure union with immutable Literal
+success fields. Use `success is True` or class checks for type narrowing. Model
+constructors enforce consistent canonical values and outcomes; parser-specific
+error/warning generation, device-profile interpretation and version dispatch
+remain subsequent-stage responsibilities. This records implemented model choices,
+not completion of the full proposed import contract.

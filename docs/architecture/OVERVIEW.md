@@ -12,7 +12,9 @@ Ride Forces iPhone app -> original .forces file (read-only)
 
 Boundaries: `domain` holds representations; `importers` handles external formats; `analysis`
 contains calibration/math; `storage` local library; `playback` timeline; `rendering` frame model and
-encoding; `ui` Qt widgets. This is scaffolding, not implemented product functionality.
+encoding; `ui` Qt widgets. M1 established these boundaries; M2 Stage 1 implements
+representations only.
+Import, analysis, storage, playback and rendering services remain planned.
 
 Application processing requires no network connectivity. Initial development installation
 may require downloads. Preserve original bytes, coordinates, unknown fields and schema metadata.
@@ -29,8 +31,9 @@ be independent.
 
 ## Implemented M1 foundation
 
-Only the executable entry point and bootstrap settings have behavior in M1; the subsystem
-packages are placeholders. No importer, analysis, persistence, playback or renderer exists yet.
+The executable entry point and bootstrap settings remain the implemented M1 behavior.
+M2 Stage 1 adds domain and diagnostic/result representations below; there is still
+no file-import service, analysis, persistence, playback or renderer.
 
 The supported runtime is Python 3.14 (minimum 3.14.6); `.python-version` and CI select 3.14.6.
 `uv.lock` records runtime, development and optional dependencies. Install with
@@ -47,6 +50,20 @@ owner-supplied Apple Watch fixture. It adds no production importer or domain mod
 [ADR 0002](../decisions/0002-forces-source-contract.md) proposes immutable source
 ownership, version dispatch, device-aware capabilities, resource limits and GPS
 error handling. Apple Watch gravity/GPS absence is explicit and never synthesized.
+
+## M2 Stage 1 representations
+
+`domain` owns immutable source envelopes and canonical recording data. Original
+bytes and exact JSON number tokens remain separate from finite typed accessors.
+Motion/GPS/attribute collections are copied into tuples; source dictionaries are
+recursively copied into privately owned readonly mappings. Optional values and
+owner-default provenance stay explicit. No Qt or scientific transformation is used.
+
+`importers` owns structured diagnostics and immutable success/failure results.
+Ordering is deterministic, and the Literal success tag supports typed control flow.
+No path adapter, file decoder or schema-version dispatch is implemented here.
+See [canonical models](../development/CANONICAL_MODELS.md) and
+[Stage 1 evidence](../validation/M2_STAGE1.md).
 
 ## Bootstrap settings validation
 

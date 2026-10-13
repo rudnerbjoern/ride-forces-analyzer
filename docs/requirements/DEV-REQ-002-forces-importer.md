@@ -1,6 +1,6 @@
 # DEV-REQ-002 — Ride Forces file importer
 
-**Milestone:** M2 | **Status:** Proposed specification, production implementation not started
+**Milestone:** M2 | **Status:** Stage 1 models implemented; file importing planned
 **Target:** Windows, Python 3.14.6 | **Source format:** Ride Forces `.forces`
 **Scope authority:** [Roadmap](../ROADMAP.md), [architecture](../architecture/OVERVIEW.md), [recordings](../development/RECORDINGS.md), [AGENTS.md](../../AGENTS.md).
 
@@ -233,5 +233,6 @@ Record unresolved GPS, force and time semantics for M3 without inventing answers
 
 See [implementation plan](../implementation/DEV-REQ-002/PLAN.md),
 [sequential Codex prompts](../implementation/DEV-REQ-002/PROMPTS.md) and
-[observed format analysis](FORMAT-ANALYSIS.md). M2 is documentation-only
-until an explicit separate implementation instruction is given.
+[observed format analysis](FORMAT-ANALYSIS.md). M2 has immutable Stage 1 models
+and diagnostic/result types. File decoding and
+import services remain planned; each subsequent stage needs a separate instruction.
