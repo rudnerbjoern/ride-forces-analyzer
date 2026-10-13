@@ -18,8 +18,11 @@ from ride_forces_analyzer.domain import (
     ValueOrigin,
     Vector3,
 )
+from ride_forces_analyzer.domain._validation import has_type
 
+from ._diagnostic_budget import DiagnosticBudget, DiagnosticBudgetExceeded
 from .diagnostics import ImportDiagnostic, Severity, json_pointer, ordered_diagnostics
+from .limits import DEFAULT_LIMITS, ImportLimits
 from .result import ImportFailure
 
 _DECIMAL_STRING = re.compile(r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?\Z")
@@ -71,7 +74,7 @@ def _number(value: SourceValue) -> float | None:
 
 
 def _diagnose(
-    diagnostics: list[ImportDiagnostic],
+    diagnostics: DiagnosticBudget,
     code: str,
     path: _Path,
     message: str,
@@ -85,7 +88,7 @@ def _diagnose(
 def _vector(
     value: SourceValue,
     path: _Path,
-    diagnostics: list[ImportDiagnostic],
+    diagnostics: DiagnosticBudget,
     *,
     severity: Severity = Severity.ERROR,
     sample_index: int | None = None,
@@ -130,7 +133,7 @@ def _vector(
 def _sequence(
     root: Mapping[str, SourceValue],
     key: str,
-    diagnostics: list[ImportDiagnostic],
+    diagnostics: DiagnosticBudget,
 ) -> tuple[Vector3, ...] | None:
     if key not in root:
         _diagnose(diagnostics, "MISSING_REQUIRED_FIELD", (key,), "Required sequence is absent")
@@ -155,7 +158,7 @@ def _sequence(
 
 def _rate(
     root: Mapping[str, SourceValue],
-    diagnostics: list[ImportDiagnostic],
+    diagnostics: DiagnosticBudget,
 ) -> SampleRate | None:
     if "sampleRate" not in root:
         return SampleRate()
@@ -175,7 +178,7 @@ def _index(
     root: Mapping[str, SourceValue],
     key: str,
     length: int | None,
-    diagnostics: list[ImportDiagnostic],
+    diagnostics: DiagnosticBudget,
     *,
     required: bool = False,
 ) -> int | None:
@@ -195,9 +198,8 @@ def _index(
     return int(value.value) if length is not None else None
 
 
-def parse_motion(source: SourceEnvelope) -> MotionParseResult:
+def validate_motion(source: SourceEnvelope, diagnostics: DiagnosticBudget) -> MotionParseResult:
     """Validate a caller-supplied 2.2.0 source tree; no I/O, dispatch, GPS or time math."""
-    diagnostics: list[ImportDiagnostic] = []
     root = source.root
     if root is None:
         return ImportFailure(
@@ -262,10 +264,10 @@ def parse_motion(source: SourceEnvelope) -> MotionParseResult:
             if source_key in root
             else None
         )
-    if any(item.severity is Severity.ERROR for item in diagnostics):
+    if any(item.severity is Severity.ERROR for item in diagnostics.records):
         version = root.get("schemaVersion")
         return ImportFailure(
-            diagnostics,
+            diagnostics.records,
             source=source,
             schema_version=version if isinstance(version, str) and version else None,
         )
@@ -280,5 +282,20 @@ def parse_motion(source: SourceEnvelope) -> MotionParseResult:
         MotionSequence(acceleration, gravity, sample_rate=sample_rate),
         RecordingIndices(start, end, gravity_index, incline_index),
         RecordingVectors(**vectors),
-        ordered_diagnostics(diagnostics),
+        ordered_diagnostics(diagnostics.records),
     )
+
+
+def parse_motion(
+    source: SourceEnvelope,
+    *,
+    limits: ImportLimits = DEFAULT_LIMITS,
+) -> MotionParseResult:
+    """Validate motion independently, with a bounded diagnostic list and no I/O."""
+    if not has_type(limits, ImportLimits):
+        raise ValueError("limits must be an ImportLimits instance")
+    diagnostics = DiagnosticBudget(limits.max_diagnostics)
+    try:
+        return validate_motion(source, diagnostics)
+    except DiagnosticBudgetExceeded:
+        return diagnostics.failure(source)

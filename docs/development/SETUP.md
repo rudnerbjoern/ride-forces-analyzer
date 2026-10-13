@@ -38,7 +38,8 @@ uv run python -m ride_forces_analyzer
 ```
 
 This command opens the minimal native Qt window and blocks until it closes.
-A Windows desktop session is required. Import and analysis are not implemented.
+A Windows desktop session is required. The [callable importer](IMPORT_SERVICE.md)
+is implemented; GUI importing and analysis remain planned.
 
 ## Run project checks
 

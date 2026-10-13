@@ -4,7 +4,7 @@ Stage 2 implements bounded read-only inputs, strict JSON and schema dispatch.
 It does not construct a Recording, call the motion parser, apply metadata/rate
 defaults, interpret GPS/time or perform analysis. See
 [ADR 0002](../decisions/0002-forces-source-contract.md) and
-[Stage 2 evidence](../validation/M2_STAGE2.md).
+[M2 validation](../validation/M2.md).
 
 ## Public API
 
@@ -24,7 +24,8 @@ def inspect_source(path: Path) -> int | None:
 `decode_forces(path: Path, *, limits=DEFAULT_LIMITS)` reads local regular files
 only. `decode_forces_bytes(data: bytes, *, limits=DEFAULT_LIMITS)` performs no
 file access. Both return DecodeSuccess | ImportFailure. These stage-specific
-names distinguish decoded sources from the planned complete import_forces API.
+names distinguish decoded sources from the separately implemented
+[complete import_forces API](IMPORT_SERVICE.md).
 
 DecodeSuccess exposes success=True, schema_version="2.2.0", retained SourceEnvelope,
 original byte_count, source_sha256 and an empty diagnostic tuple. It exposes no
@@ -92,7 +93,7 @@ are decoded individually only after their lexical budget passes. Complete decodi
 then uses strict constant/duplicate hooks as defense in depth.
 Exactly at a supported budget passes; excess emits RESOURCE_LIMIT_EXCEEDED with
 the limit name and escaped JSON Pointer. Output diagnostic count is inherently
-bounded here; the future combined pipeline must enforce its aggregate budget.
+bounded here; the Stage 5 combined pipeline now enforces its aggregate budget.
 Shape/byte budgets do not promise exact peak RAM or throughput. A runtime recursion
 failure is also a structured resource error rather than an uncaught exception.
 

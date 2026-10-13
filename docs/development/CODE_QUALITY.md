@@ -17,7 +17,8 @@ application-setting keys are rejected.
 
 This model applies only to bootstrap window settings. It is not a recording
 schema. M2 Stage 1 now supplies immutable canonical/source representations;
-complete importing and calibration remain planned for later stages. Original recording bytes remain
+[Stage 5](IMPORT_SERVICE.md) adds complete importing; calibration remains planned.
+Original recording bytes remain
 read-only.
 
 The `frozen=True` class argument lets type checkers recognize immutability.
@@ -101,6 +102,15 @@ Problems view was manually inspected.
   input/resource budgets, exact source retention and bounded read-only I/O.
   The Pyright suite also narrows the decoder-specific result; see
   [strict decoding](STRICT_DECODING.md).
+- `tests/test_optional_parser.py` verifies Stage 4 metadata defaults, arbitrary
+  ordered attributes and every real GPS fix, plus optional defects and local
+  diagnostic budgets. Pyright also narrows the optional-specific subset result;
+  see [optional parsing](OPTIONAL_PARSING.md).
+- `tests/test_import_service.py` verifies full Path/bytes imports, all original
+  data, determinism/concurrency, aggregate diagnostic limits, safe recovery and
+  fresh-process Qt/network/write guards. `tests/benchmark_importer.py` records
+  Windows timings and traced Python allocation peaks without performance assertions;
+  see [the public service](IMPORT_SERVICE.md).
 - `tests/dependencies/security.test.mjs` checks the actual Node dependency consumers:
   two TOML configuration parsers, inherited KaTeX trust rejection and three
   micromark math-rendering contracts. See the [security follow-up](../validation/DEPENDABOT.md)

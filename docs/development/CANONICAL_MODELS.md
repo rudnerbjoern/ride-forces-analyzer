@@ -4,7 +4,7 @@ Stage 1 implements manually constructible immutable representations and result
 types. It does not decode a file, validate source schema versions, create import
 diagnostics from raw fields, calculate forces, infer time or integrate Qt.
 [ADR 0002](../decisions/0002-forces-source-contract.md) defines the larger contract;
-[Stage 1 evidence](../validation/M2_STAGE1.md) records actual verification.
+[M2 validation](../validation/M2.md) records actual verification.
 
 ## Public boundaries
 
@@ -86,8 +86,9 @@ GpsSequence preserves every original indexed slot as GpsEntry, including
 `fix=None` for an unavailable fix. GPS count is independent of acceleration count.
 Recording distinguishes ABSENT, PRESENT (including an empty sequence), and INVALID
 (no usable container). Negative speed/course/accuracy and finite suspicious
-coordinates remain represented. GPS warning generation and GPS metadata parsing
-remain Stage 4 responsibilities. Device-based gravity availability
+coordinates remain represented. [Stage 4 optional parsing](OPTIONAL_PARSING.md)
+now generates GPS/metadata warnings and accessors independently of full import.
+Device-based gravity availability
 is now handled by the [Stage 3 motion parser](MOTION_PARSING.md); Stage 1
 constructors still perform no profile inference.
 
@@ -123,7 +124,8 @@ Both result constructors copy and order diagnostic lists. Standard representatio
 omit source bytes/tree, GPS coordinates, sequences and recording metadata to avoid
 accidental trace dumps. Caller-supplied diagnostic messages still require safe,
 field-oriented text; no automatic sensitive-content classifier is implemented.
-These outcomes describe synthetic model construction now, not completed file imports.
+These constructors still perform no parsing; the separately authorized
+[Stage 5 service](IMPORT_SERVICE.md) now returns these outcomes for full file/bytes imports.
 
 ## Validation
 
@@ -147,5 +149,7 @@ checked through Context7 against the official
 [dataclasses](https://docs.python.org/3.14/library/dataclasses.html) and
 [mapping proxy](https://docs.python.org/3.14/library/types.html#types.MappingProxyType)
 documentation. Stage 2 now enforces [decoder resource limits](STRICT_DECODING.md).
-Windows timing/RAM benchmarks, complete real-file
-import acceptance and hosted CI for these changes remain unverified or planned.
+Native Windows checks and measurements are recorded in
+[M2 validation](../validation/M2.md).
+Total process/native peak-RAM and hosted CI for the uncommitted changes remain unverified;
+full M2 acceptance remains Stage 6 work.

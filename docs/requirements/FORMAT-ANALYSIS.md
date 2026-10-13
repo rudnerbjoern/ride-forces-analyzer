@@ -175,7 +175,9 @@ not recomputed. Device and riding position do not prove calibration correctness.
 
 The owner instructed on 2026-10-13 that absent ridingPosition uses effective
 `"Seated"` and absent sampleRate uses effective 50 Hz. Taron and Voltron Nevera
-therefore receive these defaults in the proposed domain view. Raw source fields
+therefore receive these defaults in the typed domain view: Stage 3 implements
+sample rate and [Stage 4](../development/OPTIONAL_PARSING.md) implements riding position.
+Raw source fields
 stay absent; provenance distinguishes default from source. Invalid present
 values do not trigger an absence default. This is an explicit importer policy,
 not a rewritten fixture or verified manufacturer rule.

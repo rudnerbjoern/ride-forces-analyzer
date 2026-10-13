@@ -13,7 +13,7 @@ This directory contains project documentation, not generated artifacts or tempor
 - [ADR 0002](decisions/0002-forces-source-contract.md): proposed M2 API, source ownership,
   device capabilities, resource limits and optional GPS policy.
 
-## M2 importer specification (planned)
+## M2 importer specification (acceptance open)
 
 - [DEV-REQ-002](requirements/DEV-REQ-002-forces-importer.md): complete importer requirements and acceptance criteria.
 - [Observed .forces variants](requirements/FORMAT-ANALYSIS.md): five-fixture schema comparison and unverified semantics.
@@ -40,6 +40,10 @@ This directory contains project documentation, not generated artifacts or tempor
   and boundaries before complete importer integration.
 - [Strict decoding](development/STRICT_DECODING.md): Stage 2 source API, resource
   budgets, schema dispatch and deterministic errors.
+- [Optional parsing](development/OPTIONAL_PARSING.md): Stage 4 metadata, ordered
+  attributes, independent GPS slots and nonfatal defect policies.
+- [Import service](development/IMPORT_SERVICE.md): Stage 5 public Path/bytes API,
+  full recordings, aggregate diagnostics, version policy and performance method.
 - [Real recordings](development/RECORDINGS.md): authorized fixture catalog and integrity checks.
 - [Documentation tests](development/DOCUMENTATION_TESTS.md): markdownlint, CSpell
   and offline local-link checks.
@@ -48,18 +52,12 @@ This directory contains project documentation, not generated artifacts or tempor
 
 ## Verification evidence
 
+- [M2 acceptance review](validation/M2.md): consolidated AC-01–AC-10 outcomes,
+  native Windows checks, fixture integrity, traceability and open publication/CI gate.
 - [M1 validation](validation/M1.md): current verified results, historical evidence
   boundaries and acceptance evidence.
 - [M1 delivery plan](validation/M1_DELIVERY.md): branch, commit groups and PR verification order.
 - [Dependency audit](validation/DEPENDENCIES.md): dated release checks and pinned tooling.
-- [M2 Stage 0 inspection](validation/M2_STAGE0.md): recursive five-fixture evidence,
-  integrity, validation and next-stage boundaries.
-- [M2 Stage 1 models](validation/M2_STAGE1.md): synthetic acceptance evidence,
-  requirement coverage and original stage boundaries.
-- [M2 Stage 3 motion](validation/M2_STAGE3.md): five-recording validation, malformed
-  input tests and incomplete full-import acceptance.
-- [M2 Stage 2 decoding](validation/M2_STAGE2.md): strict decoder evidence and
-  remaining complete-import/optional-data acceptance.
 - [Node security follow-up](validation/DEPENDABOT.md): tested overrides, regression
   coverage and the open braces advisory.
 

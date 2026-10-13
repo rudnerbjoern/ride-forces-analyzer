@@ -1,4 +1,4 @@
-"""Discriminated results for later import services; no decoding or I/O."""
+"""Discriminated full-import results; their construction performs no decoding or I/O."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field

@@ -1,4 +1,4 @@
-"""Immutable source and canonical recording models; importer decoding is planned."""
+"""Immutable source and canonical recording models, independent of importer/UI logic."""
 
 from .models import (
     Attribute,
