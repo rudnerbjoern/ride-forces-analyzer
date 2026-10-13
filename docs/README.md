@@ -18,6 +18,14 @@ This directory contains project documentation, not generated artifacts or tempor
 - [M2 implementation plan](implementation/DEV-REQ-002/PLAN.md): staged scope, traceability and test gates.
 - [Sequential Codex prompts](implementation/DEV-REQ-002/PROMPTS.md): one implementation task per invocation.
 
+## M3 scientific analysis specification (planned)
+
+- [DEV-REQ-003](requirements/DEV-REQ-003-scientific-analysis.md): scientific
+  calculations, required libraries, safeguards and acceptance criteria.
+- [M3 implementation plan](implementation/DEV-REQ-003/PLAN.md): staged
+  dependency, motion, filtering, GPS and validation tasks.
+- [M3 Codex prompts](implementation/DEV-REQ-003/PROMPTS.md): one prompt per stage.
+
 ## Development
 
 - [Windows setup and validation](development/SETUP.md): installation, all checks and
