@@ -1,5 +1,7 @@
 # DEV-REQ-003 — Scientific Motion and GPS Analysis Engine
 
+<!-- cspell:words AHRS stationarity Butterworth Goldens orthonormality acausal Missingness sosfiltfilt basemaps -->
+
 **Milestone:** M3
 **Status:** Proposed, documentation only
 **Platform:** Windows / Python 3.14.6
