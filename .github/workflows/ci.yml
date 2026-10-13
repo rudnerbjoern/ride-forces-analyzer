@@ -1,16 +1,39 @@
 name: CI
 on:
-  push:
   pull_request:
 jobs:
   check:
     runs-on: windows-latest
+    env:
+      NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
-          python-version: '3.13'
-      - run: uv sync --group dev
+          version: '0.13.0'
+          python-version: '3.14.6'
+      - run: uv sync --locked --all-extras --group dev
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+      - run: npm ci --no-audit --no-fund
       - run: uv run ruff check .
+      - run: uv run ruff format --check src tests
       - run: uv run mypy src
+      - run: npm run typecheck
+      - run: npm run test:types
       - run: uv run pytest
+
+  documentation:
+    runs-on: windows-latest
+    env:
+      NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+      - run: npm ci --no-audit --no-fund
+      - run: npm run test:docs
