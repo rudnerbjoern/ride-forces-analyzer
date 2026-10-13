@@ -7,8 +7,8 @@ This directory contains project documentation, not generated artifacts or tempor
 ## Scope and design
 
 - [Roadmap](ROADMAP.md): sequential milestones and exit criteria; M1 and M2 acceptance is verified.
-- [Architecture](architecture/OVERVIEW.md): implemented foundation, planned subsystem
-  boundaries and unverified scientific contracts.
+- [arc42 architecture index](architecture/README.md): twelve maintained chapters
+  covering implemented boundaries, planned capabilities and scientific uncertainty.
 - [ADR 0001](decisions/0001-platform.md): offline Windows platform and Python decision.
 - [ADR 0002](decisions/0002-forces-source-contract.md): accepted M2 API, source ownership,
   device capabilities, resource limits and optional GPS policy.

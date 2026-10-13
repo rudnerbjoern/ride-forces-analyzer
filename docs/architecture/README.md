@@ -1,0 +1,39 @@
+# Architecture — arc42
+
+The twelve arc42 chapters below are the maintained architecture of Ride Forces
+Analyzer. Update the relevant chapters when architecture changes; do not create
+a parallel overview. Diagrams use Mermaid. Implemented behavior, planned work and
+unverified scientific assumptions are explicitly distinguished.
+
+## Contents
+
+| Chapter | View                                                       | Contents                                                    |
+| ------- | ---------------------------------------------------------- | ----------------------------------------------------------- |
+| 01      | [Introduction and goals](01_introduction_and_goals.md)     | Scope, quality goals and stakeholders                       |
+| 02      | [Architecture constraints](02_architecture_constraints.md) | Platform, offline processing and data protection            |
+| 03      | [Context and scope](03_context_and_scope.md)               | External systems, users and interfaces                      |
+| 04      | [Solution strategy](04_solution_strategy.md)               | Layering and the implemented/planned processing pipeline    |
+| 05      | [Building block view](05_building_block_view.md)           | Packages, responsibilities and public interfaces            |
+| 06      | [Runtime view](06_runtime_view.md)                         | Qt startup, successful imports and failure paths            |
+| 07      | [Deployment view](07_deployment_view.md)                   | Local Windows execution, development and release boundaries |
+| 08      | [Cross-cutting concepts](08_concepts.md)                   | Source ownership, diagnostics, capabilities and validation  |
+| 09      | [Architecture decisions](09_architecture_decisions.md)     | Accepted ADRs and outstanding decisions                     |
+| 10      | [Quality requirements](10_quality_requirements.md)         | Testable quality scenarios and evidence                     |
+| 11      | [Risks and technical debt](11_technical_risks.md)          | Scientific uncertainty and integration limits               |
+| 12      | [Glossary](12_glossary.md)                                 | Domain and architecture vocabulary                          |
+
+## Scope and evidence
+
+M1 supplies the minimal Qt bootstrap and development foundation; M2 supplies the
+read-only, Qt-independent importer. M3 analysis and M4–M8 product capabilities
+remain planned. Completion authority is the [roadmap](../ROADMAP.md), supported by
+[M1](../validation/M1.md) and [M2](../validation/M2.md) validation evidence.
+
+Requirements and implementation steps stay in their existing directories;
+development guides describe detailed API usage and reproducible checks. Chapter 09
+links the existing decision records in `docs/decisions/` rather than copying their
+history. Those records are decision evidence, not an alternative architecture view.
+
+This structure follows the [arc42 template sections](https://docs.arc42.org/home/)
+and [arc42 method](https://arc42.org/method/). Keep documentation proportional to
+implemented behavior; an empty future subsystem does not need invented internals.

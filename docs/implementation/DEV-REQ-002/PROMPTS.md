@@ -9,7 +9,7 @@ staging/committing/pushing; obtain explicit authorization as required by AGENTS.
 
 ## Shared instructions (apply to every prompt)
 
-> Read AGENTS.md, docs/ROADMAP.md, docs/architecture/OVERVIEW.md,
+> Read AGENTS.md, docs/ROADMAP.md, docs/architecture/README.md,
 > docs/requirements/DEV-REQ-002-forces-importer.md,
 > docs/requirements/FORMAT-ANALYSIS.md, and
 > docs/implementation/DEV-REQ-002/PLAN.md first.
@@ -26,7 +26,7 @@ staging/committing/pushing; obtain explicit authorization as required by AGENTS.
 Copy the following prompt into Codex:
 
 ```text
-Read AGENTS.md, docs/ROADMAP.md, docs/architecture/OVERVIEW.md,
+Read AGENTS.md, docs/ROADMAP.md, docs/architecture/README.md,
 docs/requirements/DEV-REQ-002-forces-importer.md,
 docs/requirements/FORMAT-ANALYSIS.md, and
 docs/implementation/DEV-REQ-002/PLAN.md first.
@@ -53,7 +53,7 @@ Do not start another stage.
 Copy the following prompt into Codex:
 
 ```text
-Read AGENTS.md, docs/ROADMAP.md, docs/architecture/OVERVIEW.md,
+Read AGENTS.md, docs/ROADMAP.md, docs/architecture/README.md,
 docs/requirements/DEV-REQ-002-forces-importer.md,
 docs/requirements/FORMAT-ANALYSIS.md, and
 docs/implementation/DEV-REQ-002/PLAN.md first.
@@ -80,7 +80,7 @@ Do not start another stage.
 Copy the following prompt into Codex:
 
 ```text
-Read AGENTS.md, docs/ROADMAP.md, docs/architecture/OVERVIEW.md,
+Read AGENTS.md, docs/ROADMAP.md, docs/architecture/README.md,
 docs/requirements/DEV-REQ-002-forces-importer.md,
 docs/requirements/FORMAT-ANALYSIS.md, and
 docs/implementation/DEV-REQ-002/PLAN.md first.
@@ -107,7 +107,7 @@ Do not start another stage.
 Copy the following prompt into Codex:
 
 ```text
-Read AGENTS.md, docs/ROADMAP.md, docs/architecture/OVERVIEW.md,
+Read AGENTS.md, docs/ROADMAP.md, docs/architecture/README.md,
 docs/requirements/DEV-REQ-002-forces-importer.md,
 docs/requirements/FORMAT-ANALYSIS.md, and
 docs/implementation/DEV-REQ-002/PLAN.md first.
@@ -134,7 +134,7 @@ Do not start another stage.
 Copy the following prompt into Codex:
 
 ```text
-Read AGENTS.md, docs/ROADMAP.md, docs/architecture/OVERVIEW.md,
+Read AGENTS.md, docs/ROADMAP.md, docs/architecture/README.md,
 docs/requirements/DEV-REQ-002-forces-importer.md,
 docs/requirements/FORMAT-ANALYSIS.md, and
 docs/implementation/DEV-REQ-002/PLAN.md first.
@@ -161,7 +161,7 @@ Do not start another stage.
 Copy the following prompt into Codex:
 
 ```text
-Read AGENTS.md, docs/ROADMAP.md, docs/architecture/OVERVIEW.md,
+Read AGENTS.md, docs/ROADMAP.md, docs/architecture/README.md,
 docs/requirements/DEV-REQ-002-forces-importer.md,
 docs/requirements/FORMAT-ANALYSIS.md, and
 docs/implementation/DEV-REQ-002/PLAN.md first.
@@ -188,7 +188,7 @@ Do not start another stage.
 Copy the following prompt into Codex:
 
 ```text
-Read AGENTS.md, docs/ROADMAP.md, docs/architecture/OVERVIEW.md,
+Read AGENTS.md, docs/ROADMAP.md, docs/architecture/README.md,
 docs/requirements/DEV-REQ-002-forces-importer.md,
 docs/requirements/FORMAT-ANALYSIS.md, and
 docs/implementation/DEV-REQ-002/PLAN.md first.
