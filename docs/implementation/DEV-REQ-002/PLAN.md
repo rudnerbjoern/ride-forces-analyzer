@@ -121,7 +121,7 @@ related work; each new independent change begins on a separate branch from `main
   open a **draft** pull request into `main`, and verify actual GitHub Windows
   check and documentation job outcomes.
 - Do **not** merge without separate owner authorization.
-- **Exit:** all AC-01–AC-10 supported by evidence and no unreviewed scope creep.
+- **Exit:** all AC-01–AC-10 supported by evidence and no scope changes without review.
 
 ## Working acceptance matrix
 
