@@ -5,6 +5,8 @@
 **observations**, not a manufacturer-authored file-format specification.
 Observation date: 2026-10-13. No scientific axis or time semantics are inferred.
 
+<!-- cspell:words Phantasialand -->
+
 ## 1. Baseline comparison
 
 | Field / observation  | Kraken           | Manta  | Taron         | Voltron Nevera |
