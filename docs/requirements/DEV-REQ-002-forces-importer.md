@@ -188,7 +188,7 @@ are not established; do not label them Unix timestamps without proof.
 | AC-03 | Tests demonstrate JSON source round-trip, unknown-field preservation, original numeric-string representations and no file write.                               |
 | AC-04 | Missing optional park, riding-position and weather fields do not fail import; multiple attributes remain ordered.                                              |
 | AC-05 | Invalid required fields, malformed UTF-8/JSON, duplicate JSON keys, unsupported version and resource-limit violations produce deterministic structured errors. |
-| AC-06 | Numeric string parsing, non-finite value rejection, sample lengths, index bounds and no assumed marker ordering are tested.                                           |
+| AC-06 | Numeric string parsing, non-finite value rejection, sample lengths, index bounds and no assumed marker ordering are tested.                                    |
 | AC-07 | Negative GPS sentinels remain intact with warnings; GPS fields are not fabricated, aligned to motion samples or assumed to have verified units.                |
 | AC-08 | Public typed API is Qt-independent and documented; repeat imports are deterministic.                                                                           |
 | AC-09 | Focused importer tests and the required Ruff, mypy, Pyright, pytest, documentation and lock checks pass on native Windows.                                     |
