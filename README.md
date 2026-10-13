@@ -52,3 +52,9 @@ the complete files with all embedded data, including GPS, in this project for
 tests and development. Each file remains read-only and has its own byte-length
 and SHA-256 regression check. See the [recording catalog](docs/development/RECORDINGS.md)
 for filenames, digests and test scope. Other recordings require separate authorization.
+
+The owner additionally supplied the Apple Watch Iron Gwazi recording for the
+current M2 Stage 0 inspection. The five-file recursive inventory distinguishes
+its missing gravity/GPS from the iPhone profile; see
+[format observations](docs/requirements/FORMAT-ANALYSIS.md) and
+[Stage 0 evidence](docs/validation/M2_STAGE0.md). No importer is implemented.

@@ -26,7 +26,7 @@ All M2–M8 functionality below is **planned**. Starting M2 requires a new owner
 
 Parse `.forces` JSON defensively; preserve unknown metadata and bytes; convert numeric strings;
 validate sample rate, sequence lengths, indices and GPS sentinels. **Exit:** lossless ingest of
-all four [authorized fixtures](development/RECORDINGS.md) with regression tests.
+all five [current fixtures](development/RECORDINGS.md) with regression tests.
 
 ## M3 — G-force analysis
 
@@ -36,7 +36,7 @@ computations with deviation report.
 
 ## M4 — Explorer GUI
 
-Ride library, 3-axis charts, scrubber, zoom, segment selection, statistics. **Exit:** all four complete
+Ride library, 3-axis charts, scrubber, zoom, segment selection, statistics. **Exit:** all five complete
 fixtures can be browsed without blocking UI.
 
 ## M5 — Playback

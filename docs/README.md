@@ -10,6 +10,8 @@ This directory contains project documentation, not generated artifacts or tempor
 - [Architecture](architecture/OVERVIEW.md): implemented foundation, planned subsystem
   boundaries and unverified scientific contracts.
 - [ADR 0001](decisions/0001-platform.md): offline Windows platform and Python decision.
+- [ADR 0002](decisions/0002-forces-source-contract.md): proposed M2 API, source ownership,
+  device capabilities, resource limits and optional GPS policy.
 
 ## M2 importer specification (planned)
 
@@ -36,6 +38,8 @@ This directory contains project documentation, not generated artifacts or tempor
   boundaries and acceptance evidence.
 - [M1 delivery plan](validation/M1_DELIVERY.md): branch, commit groups and PR verification order.
 - [Dependency audit](validation/DEPENDENCIES.md): dated release checks and pinned tooling.
+- [M2 Stage 0 inspection](validation/M2_STAGE0.md): recursive five-fixture evidence,
+  integrity, validation and next-stage boundaries.
 - [Node security follow-up](validation/DEPENDABOT.md): tested overrides, regression
   coverage and the open braces advisory.
 

@@ -1,6 +1,6 @@
 # DEV-REQ-002 — Ride Forces file importer
 
-**Milestone:** M2 | **Status:** Proposed specification, implementation not started
+**Milestone:** M2 | **Status:** Proposed specification, production implementation not started
 **Target:** Windows, Python 3.14.6 | **Source format:** Ride Forces `.forces`
 **Scope authority:** [Roadmap](../ROADMAP.md), [architecture](../architecture/OVERVIEW.md), [recordings](../development/RECORDINGS.md), [AGENTS.md](../../AGENTS.md).
 
@@ -9,8 +9,12 @@
 Implement an offline, read-only, version-aware importer converting exported Ride Forces JSON
 recordings into a typed, immutable canonical representation suitable for subsequent analysis,
 storage, visualization and video export. All original information must remain recoverable
-without writing to or normalizing the source file. Supported initial corpus: Manta, Kraken,
-Taron and Voltron Nevera in `tests/fixtures/real/`; each is owner-authorized and SHA-256-pinned.
+without writing to or normalizing the source file.
+Current corpus: Manta, Kraken, Taron, Voltron Nevera and the subsequently
+owner-supplied Iron Gwazi in `tests/fixtures/real/`; every original is read-only
+and SHA-256-pinned. The original quartet has explicit publication authorization;
+the additional Apple Watch fixture was supplied for this inspection and later
+explicitly authorized for its branch commit and push.
 
 **Out of scope:** Force projection and calibration math (M3), GUI explorer (M4),
 playback (M5), external CSV/JSON/video export (M6), synchronized POV video (M7),
@@ -23,15 +27,19 @@ from importer **policy** and **unverified** scientific interpretation throughout
 ## 2. Evidence-based schema inventory
 
 Complete baseline observations are recorded in
-[FORMAT-ANALYSIS.md](FORMAT-ANALYSIS.md). All four samples use
-`schemaVersion = "2.2.0"`, `device = "iPhone"`, `advancedRecording = true`.
-Every sample has `accelerationSequence`, `gravitySequence`, `locationSequence`,
-direction/calibration vectors, sample rate, indexing metadata, attributes and extrema.
-Some fields appear only in certain files: `location`, `ridingPosition`, and all
-five weather fields. Vector components in the acceleration sequence are decimal
-**strings**, not JSON numbers. GPS timestamps are JSON numbers. JSON object member
-order varies and has no semantic meaning. Source `date` and GPS `timestamp` epoch
-are not established; do not label them Unix timestamps without proof.
+[FORMAT-ANALYSIS.md](FORMAT-ANALYSIS.md) and the complete recursive snapshot.
+All five use `schemaVersion = "2.2.0"`. The original quartet has `device = "iPhone"`,
+`advancedRecording = true`, paired acceleration/gravity and independent GPS.
+Iron Gwazi has `device = "Apple Watch"`, `advancedRecording = false`, and no gravity,
+GPS or top-level coordinates. The owner confirmed that device marks availability.
+All have acceleration, direction/calibration vectors and indices; sample rate
+is absent in Taron/Voltron Nevera and explicitly 50 in the other three. All have
+attributes and extrema. Park, riding position and weather presence varies.
+All motion/vector components are finite decimal strings; GPS members are JSON
+numbers. Every element was examined. Object member order has no semantic meaning;
+source date/GPS timestamp epoch is unverified. These observations do not constitute
+universal mandatory fields. [ADR 0002](../decisions/0002-forces-source-contract.md)
+records the Stage 0 implementation contract and proposed device-aware policies.
 
 ## 3. Canonical importer contract
 
@@ -45,14 +53,15 @@ are not established; do not label them Unix timestamps without proof.
   `SourceEnvelope`, `ImportDiagnostic`, and `ImportResult`. Names may be adjusted
   by an ADR, but each concept and contract must be represented.
 - **FR-003:** `ImportResult` exposes success/failure, diagnostics, schema version,
-  original byte count, source SHA-256 and a fully typed recording on success. Never
+  original byte count, source SHA-256 and a fully typed recording on success.
+  Failure provenance may be unavailable as explicitly defined by ADR 0002. Never
   return partially valid measured arrays disguised as complete success.
 - **FR-004:** Keep raw source bytes or a byte-for-byte stable immutable reference
   to the local original plus its hash. Preserve the entire source tree including unknown
   fields, original number/string distinctions and optional properties. A normalized
   domain view is **additional**, not a substitute for the source envelope.
   Demonstrate exact byte round-trip where an in-memory envelope is used.
-- **FR-005:** No mutation of the input path; do not alter file timestamps, names or
+- **FR-005:** No mutation of the input path; do not intentionally alter timestamps, names or
   bytes, and never write imported content back to `.forces` files.
 - **FR-006:** Preserve source indices, calibration vectors, source extrema,
   `smoothingFactor`, `attributes`, GPS accuracy fields, `ridingPosition`,
@@ -66,16 +75,23 @@ are not established; do not label them Unix timestamps without proof.
   result rather than silently applying version 2.2.0 semantics. An opt-in inspection
   mode may expose safe metadata, but must not report successful supported import.
 - **FR-008:** The minimum required fields for a *supported full recording* are
-  `schemaVersion`, `accelerationSequence`, `gravitySequence`, `sampleRate`,
-  `startIndex`, `endIndex`, and every `x/y/z` component in each motion sample.
+  `schemaVersion`, `accelerationSequence`, `startIndex`, `endIndex`,
+  and every acceleration `x/y/z` component. Gravity is an optional capability:
+  Apple Watch absence is normal; absent iPhone gravity emits an explicit warning.
+  Unknown device profiles warn without inventing capabilities. Present gravity
+  must validate fully and pair with acceleration. An absent sample rate uses
+  the explicit owner-default policy in FR-012.
   Other fields are retained and classified based on their role; direction/calibration
   vectors, source metadata, UUID, GPS and markers can be missing without destroying
   a raw-motion-only recording, with explicit diagnostics. Do not claim such incomplete
   recordings are eligible for M3 rider-axis analysis.
 - **FR-009:** Model `location`, `ridingPosition`, `temperature`,
   `weatherConditions`, `windDirection`, `windSpeed`, `windGust` and optional
-  `attributes` as optional. Never synthesize a missing location from GPS or infer
-  riding position from a ride's name.
+  `attributes` as optional. For absent ridingPosition, expose an effective
+  `"Seated"` value with explicit default provenance, as instructed by the owner.
+  Keep source absence intact; present invalid values warn rather than silently
+  default. Never synthesize a missing location from GPS or infer riding position
+  from a ride's name.
 - **FR-010:** Unknown top-level and nested fields must survive intact and be available
   to future versions. Do not reject otherwise valid supported recordings for extensions.
   Optionally issue an informational `UNKNOWN_FIELD_PRESERVED` diagnostic.
@@ -87,12 +103,16 @@ are not established; do not label them Unix timestamps without proof.
   nonnumeric tokens, NaN/Infinity, excess malformed members and non-finite results
   with path-specific diagnostics. Do not silently coerce invalid values to zero.
   Retain the source spelling in the source envelope.
-- **FR-012:** Validate `sampleRate` as a positive, finite numeric value and keep its
-  exact source value. Do not hard-code 50 Hz; all four baseline fixtures happen to use 50.
+- **FR-012:** Validate a present `sampleRate` as a positive, finite numeric value
+  and keep its exact source value. If absent, expose effective rate 50 Hz with
+  explicit default provenance, per owner instruction; preserve source absence.
+  Never default a present invalid value or override a valid non-50 rate. Three
+  fixtures explicitly store 50; Taron/Voltron Nevera omit this property.
   Recording sample time may be derived as an **explicit provisional** `i / sampleRate`
   coordinate only if no per-sample time exists; label this as inferred, not measured.
 - **FR-013:** Validate motion sequences as arrays and ensure nonempty acceleration
-  samples. Detect sequence length mismatch, missing vectors or defective components.
+  samples. Gravity may be absent as defined by FR-008/ADR 0002. If present, detect
+  sequence length mismatch, missing vectors or defective components.
   Decide/document whether a mismatch is fatal for fully paired recordings; baseline
   implementation must treat it as a fatal structural error, not truncate or pad data.
 - **FR-014:** Validate `startIndex` and `endIndex` as integer, non-boolean,
@@ -156,7 +176,7 @@ are not established; do not label them Unix timestamps without proof.
 - **FR-028:** Integrate importer through the existing `importers` and `domain`
   boundaries and supply a minimal non-GUI callable integration surface. Do not
   put validation into Qt widgets or implement M4 GUI behavior.
-- **FR-029:** Support repeated deterministic import of all four real fixtures
+- **FR-029:** Support repeated deterministic import of all five real fixtures
   under the locked Windows development environment. Document representative
   memory/time measurements without enforcing invented performance guarantees.
 - **FR-030:** Provide unambiguous API documentation, version policy,
@@ -183,7 +203,7 @@ are not established; do not label them Unix timestamps without proof.
 
 | ID    | Acceptance test                                                                                                                                                |
 | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AC-01 | All four actual recordings import successfully under schema 2.2.0 with their full motion/GPS arrays and metadata; note warnings without data loss.             |
+| AC-01 | All five import under schema 2.2.0 with complete available motion/GPS/metadata; Apple Watch absence stays explicit, without fabricated values.                 |
 | AC-02 | Original byte lengths and SHA-256 remain identical across before/after import, including all original GPS data.                                                |
 | AC-03 | Tests demonstrate JSON source round-trip, unknown-field preservation, original numeric-string representations and no file write.                               |
 | AC-04 | Missing optional park, riding-position and weather fields do not fail import; multiple attributes remain ordered.                                              |
@@ -199,15 +219,15 @@ Record unresolved GPS, force and time semantics for M3 without inventing answers
 
 ## 6. Open questions and design decisions
 
-| ID    | Issue                                                           | Policy until verified                                                            |
-| ----- | --------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| OQ-01 | Numeric `date` / GPS `timestamp` epoch                          | Preserve as numbers, no Unix conversion.                                         |
-| OQ-02 | Inclusive/exclusive `endIndex` semantics                        | Preserve and validate bounds only.                                               |
-| OQ-03 | Calibration/direction meaning and units                         | Preserve; no M2 force projections.                                               |
-| OQ-04 | Meaning of negative GPS speed/course/accuracy                   | Preserve and flag, no unit claims.                                               |
-| OQ-05 | Unpublished future schema variants                              | Reject as unsupported for full import; retain source inspection separately.      |
-| OQ-06 | Resource size limits, invalid optional GPS fix handling         | Document detailed defaults and tests in implementation ADR before parser coding. |
-| OQ-07 | Future per-sample timestamps or altered sample-rate conventions | Detect extension fields, never silently assume alignment.                        |
+| ID    | Issue                                                           | Policy until verified                                                                         |
+| ----- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| OQ-01 | Numeric `date` / GPS `timestamp` epoch                          | Preserve as numbers, no Unix conversion.                                                      |
+| OQ-02 | Inclusive/exclusive `endIndex` semantics                        | Preserve and validate bounds only.                                                            |
+| OQ-03 | Calibration/direction meaning and units                         | Preserve; no M2 force projections.                                                            |
+| OQ-04 | Meaning of negative GPS speed/course/accuracy                   | Preserve and flag, no unit claims.                                                            |
+| OQ-05 | Unpublished future schema variants                              | Reject as unsupported for full import; retain source inspection separately.                   |
+| OQ-06 | Resource size limits, invalid optional GPS fix handling         | Proposed defaults and fix-level GPS policy are in ADR 0002; enforcement tests remain planned. |
+| OQ-07 | Future per-sample timestamps or altered sample-rate conventions | Detect extension fields, never silently assume alignment.                                     |
 
 ## 7. Implementation references
 

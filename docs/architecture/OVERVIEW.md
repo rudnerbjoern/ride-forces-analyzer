@@ -42,6 +42,12 @@ SHA-256 regression check without parsing or rewriting it. The exact inventory is
 verified; see the [recording catalog](../development/RECORDINGS.md). Future import
 and analysis tests must use the complete authorized set.
 
+M2 Stage 0 adds test-only recursive schema observations, including the fifth,
+owner-supplied Apple Watch fixture. It adds no production importer or domain model.
+[ADR 0002](../decisions/0002-forces-source-contract.md) proposes immutable source
+ownership, version dispatch, device-aware capabilities, resource limits and GPS
+error handling. Apple Watch gravity/GPS absence is explicit and never synthesized.
+
 ## Bootstrap settings validation
 
 `config.AppSettings` is an immutable, strictly validated Pydantic model for the

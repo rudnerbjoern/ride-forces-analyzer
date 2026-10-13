@@ -7,8 +7,9 @@
 - Distinguish verified facts, assumptions and recommendations. Mark unimplemented features
   as planned and unverifiable acceptance criteria as open.
 - Implement one milestone at a time. Do not mark a milestone complete until every acceptance
-  criterion is verified. This delivery covers M1; do not implement M2 without a new
-  owner instruction.
+  criterion is verified. M1 is accepted; M2 work requires an explicit owner
+  instruction. For DEV-REQ-002, complete only the requested stage and stop after
+  its evidence report; an approved stage does not authorize the next one.
 - Read [README.md](README.md), the [roadmap](docs/ROADMAP.md) and
   [architecture](docs/architecture/OVERVIEW.md) before changing the project. Use the
   [documentation index](docs/README.md) to find development guides and validation evidence.
@@ -69,6 +70,11 @@
   original sizes and SHA-256 digests. Keep all four read-only and covered by integrity tests.
 - This authorization applies to those four recordings. Do not automatically add or
   publish additional recordings without their own authorization.
+- The owner additionally supplied Iron Gwazi for M2 Stage 0 and explicitly
+  authorized committing and pushing this complete fifth fixture with that inspection
+  on 2026-10-13. The owner confirmed Apple Watch as a data-availability profile. Keep that fifth fixture
+  read-only and SHA-256-pinned too. Do not infer GPS or gravity where fields are absent;
+  use [ADR 0002](docs/decisions/0002-forces-source-contract.md) for proposed contracts.
 - Domain coordinates, axis polarity, time base, filtering and GPS sentinel semantics
   require explicit documentation, fixtures and cross-checks against the original Ride
   Forces app. Never silently assume their meaning.

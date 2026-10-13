@@ -1,0 +1,3549 @@
+{
+  "fixtures": {
+    "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces": {
+      "byte_count": 346781,
+      "max_container_depth": 3,
+      "max_number_token_length": 19,
+      "node_count": 34900,
+      "paths": {
+        "$": {
+          "members": {
+            "accelerationSequence": 1,
+            "advancedRecording": 1,
+            "attributes": 1,
+            "date": 1,
+            "device": 1,
+            "endIndex": 1,
+            "gravityIndex": 1,
+            "inclineIndex": 1,
+            "lateralDirectionVector": 1,
+            "location": 1,
+            "longitudinalDirectionVector": 1,
+            "maxForce": 1,
+            "minForce": 1,
+            "name": 1,
+            "ridingPosition": 1,
+            "sampleRate": 1,
+            "schemaVersion": 1,
+            "smoothingFactor": 1,
+            "startIndex": 1,
+            "timezone": 1,
+            "uuid": 1,
+            "verticalDirectionVector": 1,
+            "xCalibrationVector": 1,
+            "yCalibrationVector": 1,
+            "zCalibrationVector": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"accelerationSequence\"]": {
+          "array_lengths": {
+            "8712": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"accelerationSequence\"][*]": {
+          "members": {
+            "x": 8712,
+            "y": 8712,
+            "z": 8712
+          },
+          "types": {
+            "object": 8712
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"x\"]": {
+          "finite_decimal_strings": 8712,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 8712
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"y\"]": {
+          "finite_decimal_strings": 8712,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 8712
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"z\"]": {
+          "finite_decimal_strings": 8712,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 8712
+          }
+        },
+        "$[\"advancedRecording\"]": {
+          "types": {
+            "boolean": 1
+          }
+        },
+        "$[\"attributes\"]": {
+          "array_lengths": {
+            "2": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"attributes\"][*]": {
+          "members": {
+            "id": 2,
+            "label": 2,
+            "value": 2
+          },
+          "types": {
+            "object": 2
+          }
+        },
+        "$[\"attributes\"][*][\"id\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 36,
+          "string_length_min": 36,
+          "types": {
+            "string": 2
+          }
+        },
+        "$[\"attributes\"][*][\"label\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 4,
+          "string_length_min": 3,
+          "types": {
+            "string": 2
+          }
+        },
+        "$[\"attributes\"][*][\"value\"]": {
+          "finite_decimal_strings": 2,
+          "string_length_max": 1,
+          "string_length_min": 1,
+          "types": {
+            "string": 2
+          }
+        },
+        "$[\"date\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"device\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 11,
+          "string_length_min": 11,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"endIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"gravityIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"inclineIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"location\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 19,
+          "string_length_min": 19,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"maxForce\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"minForce\"]": {
+          "negative_numbers": 1,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"name\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 10,
+          "string_length_min": 10,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"ridingPosition\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"sampleRate\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"schemaVersion\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"smoothingFactor\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"startIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"timezone\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 16,
+          "string_length_min": 16,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"uuid\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 36,
+          "string_length_min": 36,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"xCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        }
+      },
+      "sha256": "cfea878d208ca082c41562084c9d5b3635c4ac1de6e6c583cee17e53d0becbcb"
+    },
+    "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces": {
+      "byte_count": 837779,
+      "max_container_depth": 3,
+      "max_number_token_length": 20,
+      "node_count": 82643,
+      "paths": {
+        "$": {
+          "members": {
+            "accelerationSequence": 1,
+            "advancedRecording": 1,
+            "attributes": 1,
+            "date": 1,
+            "device": 1,
+            "endIndex": 1,
+            "gravityIndex": 1,
+            "gravitySequence": 1,
+            "inclineIndex": 1,
+            "lateralDirectionVector": 1,
+            "latitude": 1,
+            "location": 1,
+            "locationSequence": 1,
+            "longitude": 1,
+            "longitudinalDirectionVector": 1,
+            "maxForce": 1,
+            "minForce": 1,
+            "name": 1,
+            "ridingPosition": 1,
+            "sampleRate": 1,
+            "schemaVersion": 1,
+            "smoothingFactor": 1,
+            "startIndex": 1,
+            "temperature": 1,
+            "timezone": 1,
+            "uuid": 1,
+            "verticalDirectionVector": 1,
+            "weatherConditions": 1,
+            "windDirection": 1,
+            "windGust": 1,
+            "windSpeed": 1,
+            "xCalibrationVector": 1,
+            "yCalibrationVector": 1,
+            "zCalibrationVector": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"accelerationSequence\"]": {
+          "array_lengths": {
+            "10084": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"accelerationSequence\"][*]": {
+          "members": {
+            "x": 10084,
+            "y": 10084,
+            "z": 10084
+          },
+          "types": {
+            "object": 10084
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"x\"]": {
+          "finite_decimal_strings": 10084,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 10084
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"y\"]": {
+          "finite_decimal_strings": 10084,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 10084
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"z\"]": {
+          "finite_decimal_strings": 10084,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 10084
+          }
+        },
+        "$[\"advancedRecording\"]": {
+          "types": {
+            "boolean": 1
+          }
+        },
+        "$[\"attributes\"]": {
+          "array_lengths": {
+            "1": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"attributes\"][*]": {
+          "members": {
+            "id": 1,
+            "label": 1,
+            "value": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"attributes\"][*][\"id\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 36,
+          "string_length_min": 36,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"attributes\"][*][\"label\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 3,
+          "string_length_min": 3,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"attributes\"][*][\"value\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 1,
+          "string_length_min": 1,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"date\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"device\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"endIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"gravityIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"gravitySequence\"]": {
+          "array_lengths": {
+            "10084": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"gravitySequence\"][*]": {
+          "members": {
+            "x": 10084,
+            "y": 10084,
+            "z": 10084
+          },
+          "types": {
+            "object": 10084
+          }
+        },
+        "$[\"gravitySequence\"][*][\"x\"]": {
+          "finite_decimal_strings": 10084,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 10084
+          }
+        },
+        "$[\"gravitySequence\"][*][\"y\"]": {
+          "finite_decimal_strings": 10084,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 10084
+          }
+        },
+        "$[\"gravitySequence\"][*][\"z\"]": {
+          "finite_decimal_strings": 10084,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 10084
+          }
+        },
+        "$[\"inclineIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"latitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"location\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 16,
+          "string_length_min": 16,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"locationSequence\"]": {
+          "array_lengths": {
+            "174": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"locationSequence\"][*]": {
+          "members": {
+            "altitude": 174,
+            "course": 174,
+            "courseAccuracy": 174,
+            "horizontalAccuracy": 174,
+            "latitude": 174,
+            "longitude": 174,
+            "speed": 174,
+            "speedAccuracy": 174,
+            "timestamp": 174,
+            "verticalAccuracy": 174
+          },
+          "types": {
+            "object": 174
+          }
+        },
+        "$[\"locationSequence\"][*][\"altitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 174
+          },
+          "types": {
+            "number": 174
+          }
+        },
+        "$[\"locationSequence\"][*][\"course\"]": {
+          "negative_numbers": 33,
+          "number_encodings": {
+            "decimal_or_exponent": 141,
+            "integer": 33
+          },
+          "types": {
+            "number": 174
+          }
+        },
+        "$[\"locationSequence\"][*][\"courseAccuracy\"]": {
+          "negative_numbers": 35,
+          "number_encodings": {
+            "decimal_or_exponent": 120,
+            "integer": 54
+          },
+          "types": {
+            "number": 174
+          }
+        },
+        "$[\"locationSequence\"][*][\"horizontalAccuracy\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 174
+          },
+          "types": {
+            "number": 174
+          }
+        },
+        "$[\"locationSequence\"][*][\"latitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 174
+          },
+          "types": {
+            "number": 174
+          }
+        },
+        "$[\"locationSequence\"][*][\"longitude\"]": {
+          "negative_numbers": 174,
+          "number_encodings": {
+            "decimal_or_exponent": 174
+          },
+          "types": {
+            "number": 174
+          }
+        },
+        "$[\"locationSequence\"][*][\"speed\"]": {
+          "negative_numbers": 11,
+          "number_encodings": {
+            "decimal_or_exponent": 160,
+            "integer": 14
+          },
+          "types": {
+            "number": 174
+          }
+        },
+        "$[\"locationSequence\"][*][\"speedAccuracy\"]": {
+          "negative_numbers": 13,
+          "number_encodings": {
+            "decimal_or_exponent": 160,
+            "integer": 14
+          },
+          "types": {
+            "number": 174
+          }
+        },
+        "$[\"locationSequence\"][*][\"timestamp\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 174
+          },
+          "types": {
+            "number": 174
+          }
+        },
+        "$[\"locationSequence\"][*][\"verticalAccuracy\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 89,
+            "integer": 85
+          },
+          "types": {
+            "number": 174
+          }
+        },
+        "$[\"longitude\"]": {
+          "negative_numbers": 1,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"maxForce\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"minForce\"]": {
+          "negative_numbers": 1,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"name\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"ridingPosition\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"sampleRate\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"schemaVersion\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"smoothingFactor\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"startIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"temperature\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"timezone\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 16,
+          "string_length_min": 16,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"uuid\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 36,
+          "string_length_min": 36,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"weatherConditions\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"windDirection\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"windGust\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"windSpeed\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"xCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        }
+      },
+      "sha256": "f418e8323beeba1ab81da93705b18b0baee3622c2b702ef34b72cd550d45984d"
+    },
+    "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces": {
+      "byte_count": 801293,
+      "max_container_depth": 3,
+      "max_number_token_length": 21,
+      "node_count": 79294,
+      "paths": {
+        "$": {
+          "members": {
+            "accelerationSequence": 1,
+            "advancedRecording": 1,
+            "attributes": 1,
+            "date": 1,
+            "device": 1,
+            "endIndex": 1,
+            "gravityIndex": 1,
+            "gravitySequence": 1,
+            "inclineIndex": 1,
+            "lateralDirectionVector": 1,
+            "latitude": 1,
+            "locationSequence": 1,
+            "longitude": 1,
+            "longitudinalDirectionVector": 1,
+            "maxForce": 1,
+            "minForce": 1,
+            "name": 1,
+            "ridingPosition": 1,
+            "sampleRate": 1,
+            "schemaVersion": 1,
+            "smoothingFactor": 1,
+            "startIndex": 1,
+            "timezone": 1,
+            "uuid": 1,
+            "verticalDirectionVector": 1,
+            "xCalibrationVector": 1,
+            "yCalibrationVector": 1,
+            "zCalibrationVector": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"accelerationSequence\"]": {
+          "array_lengths": {
+            "9640": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"accelerationSequence\"][*]": {
+          "members": {
+            "x": 9640,
+            "y": 9640,
+            "z": 9640
+          },
+          "types": {
+            "object": 9640
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"x\"]": {
+          "finite_decimal_strings": 9640,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 9640
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"y\"]": {
+          "finite_decimal_strings": 9640,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 9640
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"z\"]": {
+          "finite_decimal_strings": 9640,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 9640
+          }
+        },
+        "$[\"advancedRecording\"]": {
+          "types": {
+            "boolean": 1
+          }
+        },
+        "$[\"attributes\"]": {
+          "array_lengths": {
+            "1": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"attributes\"][*]": {
+          "members": {
+            "id": 1,
+            "label": 1,
+            "value": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"attributes\"][*][\"id\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 36,
+          "string_length_min": 36,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"attributes\"][*][\"label\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 3,
+          "string_length_min": 3,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"attributes\"][*][\"value\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 1,
+          "string_length_min": 1,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"date\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"device\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"endIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"gravityIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"gravitySequence\"]": {
+          "array_lengths": {
+            "9640": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"gravitySequence\"][*]": {
+          "members": {
+            "x": 9640,
+            "y": 9640,
+            "z": 9640
+          },
+          "types": {
+            "object": 9640
+          }
+        },
+        "$[\"gravitySequence\"][*][\"x\"]": {
+          "finite_decimal_strings": 9640,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 9640
+          }
+        },
+        "$[\"gravitySequence\"][*][\"y\"]": {
+          "finite_decimal_strings": 9640,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 9640
+          }
+        },
+        "$[\"gravitySequence\"][*][\"z\"]": {
+          "finite_decimal_strings": 9640,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 9640
+          }
+        },
+        "$[\"inclineIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"latitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"locationSequence\"]": {
+          "array_lengths": {
+            "193": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"locationSequence\"][*]": {
+          "members": {
+            "altitude": 193,
+            "course": 193,
+            "courseAccuracy": 193,
+            "horizontalAccuracy": 193,
+            "latitude": 193,
+            "longitude": 193,
+            "speed": 193,
+            "speedAccuracy": 193,
+            "timestamp": 193,
+            "verticalAccuracy": 193
+          },
+          "types": {
+            "object": 193
+          }
+        },
+        "$[\"locationSequence\"][*][\"altitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 193
+          },
+          "types": {
+            "number": 193
+          }
+        },
+        "$[\"locationSequence\"][*][\"course\"]": {
+          "negative_numbers": 36,
+          "number_encodings": {
+            "decimal_or_exponent": 157,
+            "integer": 36
+          },
+          "types": {
+            "number": 193
+          }
+        },
+        "$[\"locationSequence\"][*][\"courseAccuracy\"]": {
+          "negative_numbers": 36,
+          "number_encodings": {
+            "decimal_or_exponent": 98,
+            "integer": 95
+          },
+          "types": {
+            "number": 193
+          }
+        },
+        "$[\"locationSequence\"][*][\"horizontalAccuracy\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 193
+          },
+          "types": {
+            "number": 193
+          }
+        },
+        "$[\"locationSequence\"][*][\"latitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 193
+          },
+          "types": {
+            "number": 193
+          }
+        },
+        "$[\"locationSequence\"][*][\"longitude\"]": {
+          "negative_numbers": 193,
+          "number_encodings": {
+            "decimal_or_exponent": 193
+          },
+          "types": {
+            "number": 193
+          }
+        },
+        "$[\"locationSequence\"][*][\"speed\"]": {
+          "negative_numbers": 36,
+          "number_encodings": {
+            "decimal_or_exponent": 115,
+            "integer": 78
+          },
+          "types": {
+            "number": 193
+          }
+        },
+        "$[\"locationSequence\"][*][\"speedAccuracy\"]": {
+          "negative_numbers": 36,
+          "number_encodings": {
+            "decimal_or_exponent": 157,
+            "integer": 36
+          },
+          "types": {
+            "number": 193
+          }
+        },
+        "$[\"locationSequence\"][*][\"timestamp\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 193
+          },
+          "types": {
+            "number": 193
+          }
+        },
+        "$[\"locationSequence\"][*][\"verticalAccuracy\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 164,
+            "integer": 29
+          },
+          "types": {
+            "number": 193
+          }
+        },
+        "$[\"longitude\"]": {
+          "negative_numbers": 1,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"maxForce\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"minForce\"]": {
+          "negative_numbers": 1,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"name\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"ridingPosition\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"sampleRate\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"schemaVersion\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"smoothingFactor\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"startIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"timezone\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 16,
+          "string_length_min": 16,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"uuid\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 36,
+          "string_length_min": 36,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"xCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        }
+      },
+      "sha256": "30cf81c360cb28f45ee97234779689bdcdd7ec3aa8fa148645a4b015771be6c6"
+    },
+    "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces": {
+      "byte_count": 782329,
+      "max_container_depth": 3,
+      "max_number_token_length": 22,
+      "node_count": 74773,
+      "paths": {
+        "$": {
+          "members": {
+            "accelerationSequence": 1,
+            "advancedRecording": 1,
+            "attributes": 1,
+            "date": 1,
+            "device": 1,
+            "endIndex": 1,
+            "gravityIndex": 1,
+            "gravitySequence": 1,
+            "inclineIndex": 1,
+            "lateralDirectionVector": 1,
+            "latitude": 1,
+            "location": 1,
+            "locationSequence": 1,
+            "longitude": 1,
+            "longitudinalDirectionVector": 1,
+            "maxForce": 1,
+            "minForce": 1,
+            "name": 1,
+            "schemaVersion": 1,
+            "smoothingFactor": 1,
+            "startIndex": 1,
+            "temperature": 1,
+            "timezone": 1,
+            "uuid": 1,
+            "verticalDirectionVector": 1,
+            "weatherConditions": 1,
+            "windDirection": 1,
+            "windGust": 1,
+            "windSpeed": 1,
+            "xCalibrationVector": 1,
+            "yCalibrationVector": 1,
+            "zCalibrationVector": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"accelerationSequence\"]": {
+          "array_lengths": {
+            "9089": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"accelerationSequence\"][*]": {
+          "members": {
+            "x": 9089,
+            "y": 9089,
+            "z": 9089
+          },
+          "types": {
+            "object": 9089
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"x\"]": {
+          "finite_decimal_strings": 9089,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 9089
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"y\"]": {
+          "finite_decimal_strings": 9089,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 9089
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"z\"]": {
+          "finite_decimal_strings": 9089,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 9089
+          }
+        },
+        "$[\"advancedRecording\"]": {
+          "types": {
+            "boolean": 1
+          }
+        },
+        "$[\"attributes\"]": {
+          "array_lengths": {
+            "2": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"attributes\"][*]": {
+          "members": {
+            "id": 2,
+            "label": 2,
+            "value": 2
+          },
+          "types": {
+            "object": 2
+          }
+        },
+        "$[\"attributes\"][*][\"id\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 36,
+          "string_length_min": 36,
+          "types": {
+            "string": 2
+          }
+        },
+        "$[\"attributes\"][*][\"label\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 4,
+          "string_length_min": 3,
+          "types": {
+            "string": 2
+          }
+        },
+        "$[\"attributes\"][*][\"value\"]": {
+          "finite_decimal_strings": 2,
+          "string_length_max": 1,
+          "string_length_min": 1,
+          "types": {
+            "string": 2
+          }
+        },
+        "$[\"date\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"device\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"endIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"gravityIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"gravitySequence\"]": {
+          "array_lengths": {
+            "9089": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"gravitySequence\"][*]": {
+          "members": {
+            "x": 9089,
+            "y": 9089,
+            "z": 9089
+          },
+          "types": {
+            "object": 9089
+          }
+        },
+        "$[\"gravitySequence\"][*][\"x\"]": {
+          "finite_decimal_strings": 9089,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 9089
+          }
+        },
+        "$[\"gravitySequence\"][*][\"y\"]": {
+          "finite_decimal_strings": 9089,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 9089
+          }
+        },
+        "$[\"gravitySequence\"][*][\"z\"]": {
+          "finite_decimal_strings": 9089,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 9089
+          }
+        },
+        "$[\"inclineIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"latitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"location\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 13,
+          "string_length_min": 13,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"locationSequence\"]": {
+          "array_lengths": {
+            "182": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"locationSequence\"][*]": {
+          "members": {
+            "altitude": 182,
+            "course": 182,
+            "courseAccuracy": 182,
+            "horizontalAccuracy": 182,
+            "latitude": 182,
+            "longitude": 182,
+            "speed": 182,
+            "speedAccuracy": 182,
+            "timestamp": 182,
+            "verticalAccuracy": 182
+          },
+          "types": {
+            "object": 182
+          }
+        },
+        "$[\"locationSequence\"][*][\"altitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 182
+          },
+          "types": {
+            "number": 182
+          }
+        },
+        "$[\"locationSequence\"][*][\"course\"]": {
+          "negative_numbers": 46,
+          "number_encodings": {
+            "decimal_or_exponent": 129,
+            "integer": 53
+          },
+          "types": {
+            "number": 182
+          }
+        },
+        "$[\"locationSequence\"][*][\"courseAccuracy\"]": {
+          "negative_numbers": 46,
+          "number_encodings": {
+            "decimal_or_exponent": 71,
+            "integer": 111
+          },
+          "types": {
+            "number": 182
+          }
+        },
+        "$[\"locationSequence\"][*][\"horizontalAccuracy\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 182
+          },
+          "types": {
+            "number": 182
+          }
+        },
+        "$[\"locationSequence\"][*][\"latitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 182
+          },
+          "types": {
+            "number": 182
+          }
+        },
+        "$[\"locationSequence\"][*][\"longitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 182
+          },
+          "types": {
+            "number": 182
+          }
+        },
+        "$[\"locationSequence\"][*][\"speed\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 146,
+            "integer": 36
+          },
+          "types": {
+            "number": 182
+          }
+        },
+        "$[\"locationSequence\"][*][\"speedAccuracy\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 182
+          },
+          "types": {
+            "number": 182
+          }
+        },
+        "$[\"locationSequence\"][*][\"timestamp\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 182
+          },
+          "types": {
+            "number": 182
+          }
+        },
+        "$[\"locationSequence\"][*][\"verticalAccuracy\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 169,
+            "integer": 13
+          },
+          "types": {
+            "number": 182
+          }
+        },
+        "$[\"longitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"maxForce\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"minForce\"]": {
+          "negative_numbers": 1,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"name\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"schemaVersion\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"smoothingFactor\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"startIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"temperature\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"timezone\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 13,
+          "string_length_min": 13,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"uuid\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 36,
+          "string_length_min": 36,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"weatherConditions\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"windDirection\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"windGust\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"windSpeed\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"xCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        }
+      },
+      "sha256": "cfa03821140aaa76c52e1bb69905db96a775a5d6772741b5d3a90f48a4254564"
+    },
+    "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces": {
+      "byte_count": 862820,
+      "max_container_depth": 3,
+      "max_number_token_length": 19,
+      "node_count": 85726,
+      "paths": {
+        "$": {
+          "members": {
+            "accelerationSequence": 1,
+            "advancedRecording": 1,
+            "attributes": 1,
+            "date": 1,
+            "device": 1,
+            "endIndex": 1,
+            "gravityIndex": 1,
+            "gravitySequence": 1,
+            "inclineIndex": 1,
+            "lateralDirectionVector": 1,
+            "latitude": 1,
+            "location": 1,
+            "locationSequence": 1,
+            "longitude": 1,
+            "longitudinalDirectionVector": 1,
+            "maxForce": 1,
+            "minForce": 1,
+            "name": 1,
+            "schemaVersion": 1,
+            "smoothingFactor": 1,
+            "startIndex": 1,
+            "temperature": 1,
+            "timezone": 1,
+            "uuid": 1,
+            "verticalDirectionVector": 1,
+            "weatherConditions": 1,
+            "windDirection": 1,
+            "windGust": 1,
+            "windSpeed": 1,
+            "xCalibrationVector": 1,
+            "yCalibrationVector": 1,
+            "zCalibrationVector": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"accelerationSequence\"]": {
+          "array_lengths": {
+            "10504": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"accelerationSequence\"][*]": {
+          "members": {
+            "x": 10504,
+            "y": 10504,
+            "z": 10504
+          },
+          "types": {
+            "object": 10504
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"x\"]": {
+          "finite_decimal_strings": 10504,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 10504
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"y\"]": {
+          "finite_decimal_strings": 10504,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 10504
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"z\"]": {
+          "finite_decimal_strings": 10504,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 10504
+          }
+        },
+        "$[\"advancedRecording\"]": {
+          "types": {
+            "boolean": 1
+          }
+        },
+        "$[\"attributes\"]": {
+          "array_lengths": {
+            "1": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"attributes\"][*]": {
+          "members": {
+            "id": 1,
+            "label": 1,
+            "value": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"attributes\"][*][\"id\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 36,
+          "string_length_min": 36,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"attributes\"][*][\"label\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 3,
+          "string_length_min": 3,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"attributes\"][*][\"value\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 1,
+          "string_length_min": 1,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"date\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"device\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"endIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"gravityIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"gravitySequence\"]": {
+          "array_lengths": {
+            "10504": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"gravitySequence\"][*]": {
+          "members": {
+            "x": 10504,
+            "y": 10504,
+            "z": 10504
+          },
+          "types": {
+            "object": 10504
+          }
+        },
+        "$[\"gravitySequence\"][*][\"x\"]": {
+          "finite_decimal_strings": 10504,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 10504
+          }
+        },
+        "$[\"gravitySequence\"][*][\"y\"]": {
+          "finite_decimal_strings": 10504,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 10504
+          }
+        },
+        "$[\"gravitySequence\"][*][\"z\"]": {
+          "finite_decimal_strings": 10504,
+          "string_length_max": 6,
+          "string_length_min": 5,
+          "types": {
+            "string": 10504
+          }
+        },
+        "$[\"inclineIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"lateralDirectionVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"latitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"location\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 11,
+          "string_length_min": 11,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"locationSequence\"]": {
+          "array_lengths": {
+            "149": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"locationSequence\"][*]": {
+          "members": {
+            "altitude": 149,
+            "course": 149,
+            "courseAccuracy": 149,
+            "horizontalAccuracy": 149,
+            "latitude": 149,
+            "longitude": 149,
+            "speed": 149,
+            "speedAccuracy": 149,
+            "timestamp": 149,
+            "verticalAccuracy": 149
+          },
+          "types": {
+            "object": 149
+          }
+        },
+        "$[\"locationSequence\"][*][\"altitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 149
+          },
+          "types": {
+            "number": 149
+          }
+        },
+        "$[\"locationSequence\"][*][\"course\"]": {
+          "negative_numbers": 46,
+          "number_encodings": {
+            "decimal_or_exponent": 103,
+            "integer": 46
+          },
+          "types": {
+            "number": 149
+          }
+        },
+        "$[\"locationSequence\"][*][\"courseAccuracy\"]": {
+          "negative_numbers": 52,
+          "number_encodings": {
+            "decimal_or_exponent": 74,
+            "integer": 75
+          },
+          "types": {
+            "number": 149
+          }
+        },
+        "$[\"locationSequence\"][*][\"horizontalAccuracy\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 149
+          },
+          "types": {
+            "number": 149
+          }
+        },
+        "$[\"locationSequence\"][*][\"latitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 149
+          },
+          "types": {
+            "number": 149
+          }
+        },
+        "$[\"locationSequence\"][*][\"longitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 149
+          },
+          "types": {
+            "number": 149
+          }
+        },
+        "$[\"locationSequence\"][*][\"speed\"]": {
+          "negative_numbers": 18,
+          "number_encodings": {
+            "decimal_or_exponent": 122,
+            "integer": 27
+          },
+          "types": {
+            "number": 149
+          }
+        },
+        "$[\"locationSequence\"][*][\"speedAccuracy\"]": {
+          "negative_numbers": 18,
+          "number_encodings": {
+            "decimal_or_exponent": 131,
+            "integer": 18
+          },
+          "types": {
+            "number": 149
+          }
+        },
+        "$[\"locationSequence\"][*][\"timestamp\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 149
+          },
+          "types": {
+            "number": 149
+          }
+        },
+        "$[\"locationSequence\"][*][\"verticalAccuracy\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 39,
+            "integer": 110
+          },
+          "types": {
+            "number": 149
+          }
+        },
+        "$[\"longitude\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"longitudinalDirectionVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"maxForce\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"minForce\"]": {
+          "negative_numbers": 1,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"name\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 14,
+          "string_length_min": 14,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"schemaVersion\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"smoothingFactor\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"startIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"temperature\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"timezone\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 13,
+          "string_length_min": 13,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"uuid\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 36,
+          "string_length_min": 36,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"verticalDirectionVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"weatherConditions\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 12,
+          "string_length_min": 12,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"windDirection\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"windGust\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"windSpeed\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"xCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        }
+      },
+      "sha256": "f48157cadbfeb374eeadf48112b0bbfc1e8b47c580cb303342cf65977054ad04"
+    }
+  },
+  "snapshot_version": 1,
+  "top_level_presence": {
+    "accelerationSequence": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "advancedRecording": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "attributes": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "date": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "device": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "endIndex": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "gravityIndex": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "gravitySequence": {
+      "absent_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces"
+      ],
+      "present_in": [
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "inclineIndex": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "lateralDirectionVector": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "latitude": {
+      "absent_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces"
+      ],
+      "present_in": [
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "location": {
+      "absent_in": [
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
+      ],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "locationSequence": {
+      "absent_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces"
+      ],
+      "present_in": [
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "longitude": {
+      "absent_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces"
+      ],
+      "present_in": [
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "longitudinalDirectionVector": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "maxForce": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "minForce": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "name": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "ridingPosition": {
+      "absent_in": [
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
+      ]
+    },
+    "sampleRate": {
+      "absent_in": [
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
+      ]
+    },
+    "schemaVersion": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "smoothingFactor": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "startIndex": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "temperature": {
+      "absent_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
+      ],
+      "present_in": [
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "timezone": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "uuid": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "verticalDirectionVector": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "weatherConditions": {
+      "absent_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
+      ],
+      "present_in": [
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "windDirection": {
+      "absent_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
+      ],
+      "present_in": [
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "windGust": {
+      "absent_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
+      ],
+      "present_in": [
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "windSpeed": {
+      "absent_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
+      ],
+      "present_in": [
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "xCalibrationVector": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "yCalibrationVector": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    },
+    "zCalibrationVector": {
+      "absent_in": [],
+      "present_in": [
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
+        "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
+        "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+      ]
+    }
+  }
+}

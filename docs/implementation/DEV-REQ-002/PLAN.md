@@ -19,16 +19,26 @@ related work; each new independent change begins on a separate branch from `main
   representation, error/warning severity, bounds on untrusted input and policies
   where DEV-REQ-002 offers alternatives.
 - Supply field matrix and nested-type inventory as automated evidence; compare
-  against the four documented fixtures. Keep explicit observed/inferred markers.
+  against the five documented fixtures. Keep explicit observed/inferred markers.
 - **Tests:** fixture digests, no writes, predictable schema-inventory snapshots.
 - **Exit:** no ambiguous parser decisions; no production importer yet.
 - **Trace:** FR-001, 004, 007, 024, 030; AC-02.
+
+Stage 0 evidence is recorded in [the inspection report](../../validation/M2_STAGE0.md),
+[ADR 0002](../../decisions/0002-forces-source-contract.md) and the recursive snapshot.
+Iron Gwazi extends the corpus with the owner-confirmed Apple Watch availability
+profile. Gravity/GPS absence and device-aware capability contracts are explicit;
+owner defaults for absent ridingPosition (Seated) and sampleRate (50 Hz) retain
+source absence and expose default provenance;
+resource guards and canonical models remain unimplemented. Stop after Stage 0.
 
 ## Stage 1 — Canonical model and diagnostics
 
 - Implement immutable typed objects for scalar/vector readings, source metadata,
   GPS readings, optional attributes and sample collections (prefer compact,
   read-only sequences appropriate for 10K+ samples).
+- Represent effective riding position and sample rate with source/default
+  provenance as specified by ADR 0002; do not insert defaults into source data.
 - Define structured diagnostic severity, code, source JSON path, optional index
   and deterministic ordering; model source provenance including byte length
   and SHA-256. Choose clear success/failure typing and expose missing optional
@@ -63,14 +73,16 @@ related work; each new independent change begins on a separate branch from `main
 - Validate positive finite sample rate, nonempty acceleration, equal paired
   lengths, all components, and finite values. Preserve vector objects without
   scientific interpretation.
+- Validate absent Apple Watch gravity as an unavailable capability; supplied
+  gravity must pair with acceleration. Do not synthesize missing gravity or GPS.
 - Validate start/end bounds and optional marker bounds independently. Do not
   require gravity/incline to follow start.
 - Add explicit `inferred sample relative time` utility only if approved by ADR;
   clearly separate from source timestamp metadata.
-- **Tests:** all four actual recordings, malformed x/y/z, unequal sequences,
+- **Tests:** all five actual recordings, malformed x/y/z, unequal sequences,
   NaN/Infinity, rate zero, index out-of-range, Taron marker ordering,
   shuffled JSON member order, no source mutations.
-- **Exit:** all four vector sequences survive full import; M3 math absent.
+- **Exit:** all five available motion sequences survive full import; M3 math absent.
 - **Trace:** FR-011–016; AC-01, 02, 06.
 
 ## Stage 4 — Optional GPS, metadata and attributes
@@ -83,10 +95,10 @@ related work; each new independent change begins on a separate branch from `main
 - Define documented partial-optional-GPS behavior: which malformed fixes become
   unavailable with warnings and when core import still succeeds. Do not silently
   remove the original fix from the source envelope.
-- **Tests:** complete baseline quartet including missing fields, `-1` GPS
+- **Tests:** complete five-file baseline including missing fields, `-1` GPS
   examples and Taron's two attributes; partial malformed optional fixtures;
   GPS arrays of different lengths and sparse data.
-- **Exit:** all four complete originals return usable typed motion recordings
+- **Exit:** all five complete originals return usable typed motion recordings
   without invented GPS values, location, temperature or riding position.
 - **Trace:** FR-009, 010, 017–022, 025; AC-01, 04, 07.
 
@@ -110,7 +122,7 @@ related work; each new independent change begins on a separate branch from `main
 - Run **all** required local Windows checks in AGENTS.md / development SETUP:
   `uv lock --check`, Ruff lint/format, strict mypy, `npm run typecheck`,
   `npm run test:types`, pytest and `npm run test:docs`.
-- Validate all four real fixture hashes and recorded decoded counts.
+- Validate all five real fixture hashes and recorded decoded counts.
 - Create `docs/validation/M2.md` with date, environment, actual commands,
   outputs, requirements-to-test traceability, unsupported assumptions,
   performance evidence and exact acceptance status AC-01–AC-10.
