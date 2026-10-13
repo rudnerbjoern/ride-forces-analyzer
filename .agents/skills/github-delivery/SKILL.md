@@ -1,6 +1,6 @@
 ---
 name: github-delivery
-description: Deliver reviewed Ride Forces Analyzer changes through Git commits, pushes and draft PRs; inspect PR checks, perform explicitly authorized merges and synchronize local main.
+description: Deliver reviewed Ride Forces Analyzer changes through Git commits, pushes and draft PRs; update PR metadata, inspect PR checks, perform explicitly authorized merges and synchronize local main.
 ---
 
 # GitHub delivery
@@ -31,6 +31,10 @@ Creating/using this skill grants no mutation permission.
 - Create a draft targeting `main`; reuse an existing matching PR without creating
   a duplicate or changing its draft status. Stop on ambiguous API errors; inspect
   remote state before any retry. Report mutations that succeeded before a later failure.
+- Update an existing PR's title/body with `update-pr` and explicit authorization.
+  Use request JSON and a UTF-8 body file in `.tmp/`; never pass metadata through
+  shell-quoted `gh pr edit` arguments or ad hoc operation scripts. The helper writes
+  only title/body, verifies repository/base/head and preserves draft/open status.
 - Merge only after explicit authorization, matching repository/base/head and green
   checks for that revision. Require the final `CI` / `check` job to succeed; other
   checks must pass or be legitimately skipped. A pending/failed/unknown result
@@ -64,6 +68,7 @@ From the repository root in Windows PowerShell:
 ```powershell
 uv run --locked python .agents/skills/github-delivery/scripts/git_delivery.py inspect
 uv run --locked python .agents/skills/github-delivery/scripts/git_delivery.py commit --request .tmp/delivery.json --authorized
+uv run --locked python .agents/skills/github-delivery/scripts/git_delivery.py update-pr --request .tmp/pr-update.json --authorized
 ```
 
 Every mutation requires `--authorized`, supplied only after the owner's actual
@@ -79,14 +84,20 @@ Use a JSON object in `--request`; paths below must resolve inside that checkout'
 | `commit`           | `branch`, `head`, `scope_file`, `fingerprint`, `message_file`.             |
 | `push`             | `branch`, `head`, `remote_url`; uses only origin and an explicit ref.      |
 | `draft-pr`         | Push fields plus `repository`, `title`, `body_file`.                       |
-| `pr-info`          | `repository`, `remote_url`, `pr` (positive number).                        |
+| `pr-info`          | `repository`, `remote_url`, `pr`; returns title/body and state.            |
 | `pr-checks`        | PR-info fields plus `branch`, `head`; reports green/pending/blocked.       |
+| `update-pr`        | PR-check fields plus `title`, `body_file`; requires authorization.         |
 | `merge-pr`         | PR-check fields; optional `method`: `merge` (default), `squash`, `rebase`. |
 | `sync-main`        | PR-check fields plus verified `merge_sha`; owner-authorized sync.          |
 
 After commit, use the returned new head for subsequent requests. On cancellation,
 transport errors, changed refs or partial failures, stop and report actual state;
-never retry a mutation blindly. Live remote mutation is not part of skill tests.
+never retry a mutation blindly. `update-pr` skips identical metadata. Its
+[REST endpoint](https://docs.github.com/en/rest/pulls/pulls#update-a-pull-request)
+has no atomic head-SHA condition: pre/post reads detect changes but cannot prevent
+races during PATCH. A failed verification may follow a successful write; inspect
+remote state without automatically retrying or restoring old metadata.
+Live remote mutation is not part of skill tests.
 
 ## Skill regression checks
 

@@ -99,7 +99,10 @@ def message_file(root: Path, message: str) -> str:
     return ".tmp/message.txt"
 
 
-@pytest.mark.parametrize("action", ["stage", "commit", "push", "draft-pr", "merge-pr", "sync-main"])
+@pytest.mark.parametrize(
+    "action",
+    ["stage", "commit", "push", "draft-pr", "update-pr", "merge-pr", "sync-main"],
+)
 def test_mutations_require_operation_authorization(
     checkout: tuple[Path, Helper, dict[str, object]],
     action: str,
@@ -267,6 +270,8 @@ def github_transport(
     calls: list[list[str]] = []
     state: dict[str, object] = {
         "number": 9,
+        "title": "Review delivery",
+        "body": "PR body\n",
         "html_url": "https://github.com/owner/ride/pull/9",
         "state": "open",
         "draft": False,
@@ -288,6 +293,10 @@ def github_transport(
             return [{"name": "check", "workflow": "CI", "state": "SUCCESS", "bucket": bucket}]
         if "--input" in args:
             payload = json.loads(Path(args[args.index("--input") + 1]).read_text(encoding="utf-8"))
+            if args[args.index("--method") + 1] == "PATCH":
+                assert set(payload) == {"title", "body"}
+                state.update(payload)
+                return state
             if args[1].endswith("/merge"):
                 assert payload["sha"] == request["head"]
                 state.update(merged=True, state="closed", merge_commit_sha="a" * 40)
@@ -519,3 +528,225 @@ def test_push_uses_reviewed_sha_when_head_moves_at_transport_boundary(
     assert (
         original("ls-remote", "origin", "refs/heads/feature/delivery").split()[0] == request["head"]
     )
+
+
+@pytest.mark.parametrize("draft", [False, True])
+def test_update_pr_uses_json_and_preserves_status_and_exact_text(
+    checkout: tuple[Path, Helper, dict[str, object]],
+    monkeypatch: pytest.MonkeyPatch,
+    draft: bool,
+) -> None:
+    root, helper, request = checkout
+    calls = github_transport(root, helper, request, monkeypatch)
+    original = helper.gh
+    title = 'Review "quoted" delivery; $(echo $HOME) & %PATH% – café'
+    body = 'First line\r\n\r\nUnicode: café. Literal: `echo $HOME`, "quotes" and \\paths.\n'
+    filename = root / ".tmp/PR body with spaces.md"
+    filename.write_bytes(body.encode("utf-8"))
+    request.update(
+        title=title,
+        body_file=".tmp/PR body with spaces.md",
+        draft=not draft,
+        state="closed",
+        base="develop",
+    )
+    payloads: list[dict[str, object]] = []
+
+    def gh(*args: str, accepted: tuple[int, ...] = (0,)) -> object:
+        if "--input" in args:
+            payload_file = Path(args[args.index("--input") + 1])
+            assert payload_file.is_relative_to(root / ".tmp")
+            assert args[:4] == ("api", "repos/owner/ride/pulls/9", "--method", "PATCH")
+            payloads.append(json.loads(payload_file.read_text(encoding="utf-8")))
+        value = original(*args, accepted=accepted)
+        state = cast(dict[str, object], value)
+        state["draft"] = draft
+        return state
+
+    monkeypatch.setattr(helper, "gh", gh)
+    result = helper.perform("update-pr", request, authorized=True)
+    assert payloads == [{"title": title, "body": body}]
+    assert result == {
+        "number": 9,
+        "url": "https://github.com/owner/ride/pull/9",
+        "head": request["head"],
+        "draft": draft,
+        "updated": True,
+    }
+    assert len(calls) == 3
+    assert all(title not in call and "--title" not in call for call in calls)
+    assert helper.git("rev-parse", "HEAD").strip() == request["head"]
+    assert helper.staged_paths() == []
+
+
+@pytest.mark.parametrize("empty_body", [False, True])
+def test_update_pr_identical_metadata_does_not_write(
+    checkout: tuple[Path, Helper, dict[str, object]],
+    monkeypatch: pytest.MonkeyPatch,
+    empty_body: bool,
+) -> None:
+    root, helper, request = checkout
+    calls = github_transport(root, helper, request, monkeypatch)
+    (root / ".tmp/message.txt").write_bytes(b"PR body\n")
+    if empty_body:
+        message_file(root, "")
+        original = helper.gh
+
+        def gh(*args: str, accepted: tuple[int, ...] = (0,)) -> object:
+            value = cast(dict[str, object], original(*args, accepted=accepted))
+            value["body"] = None
+            return value
+
+        monkeypatch.setattr(helper, "gh", gh)
+    assert helper.perform("update-pr", request, authorized=True)["updated"] is False
+    assert len(calls) == 2 and all("--input" not in call for call in calls)
+
+
+def change_metadata(state: dict[str, object], fault: str) -> None:
+    if fault == "closed":
+        state["state"] = "closed"
+    elif fault == "merged":
+        state["merged"] = True
+    elif fault == "missing-draft":
+        state.pop("draft")
+    elif fault == "head":
+        cast(dict[str, object], state["head"])["sha"] = "f" * 40
+    elif fault == "branch":
+        cast(dict[str, object], state["head"])["ref"] = "another-branch"
+    elif fault == "base":
+        cast(dict[str, object], state["base"])["ref"] = "develop"
+    elif fault == "repository":
+        head = cast(dict[str, object], state["head"])
+        cast(dict[str, object], head["repo"])["full_name"] = "another/repository"
+    elif fault == "draft":
+        state["draft"] = True
+    else:
+        assert fault in {"title", "body"}
+        state[fault] = "Unexpected remote text"
+
+
+@pytest.mark.parametrize(
+    "fault",
+    ["closed", "merged", "missing-draft", "head", "branch", "base", "repository"],
+)
+def test_update_pr_rejects_wrong_or_closed_pr_before_writing(
+    checkout: tuple[Path, Helper, dict[str, object]],
+    monkeypatch: pytest.MonkeyPatch,
+    fault: str,
+) -> None:
+    root, helper, request = checkout
+    calls = github_transport(root, helper, request, monkeypatch)
+    original = helper.gh
+
+    def gh(*args: str, accepted: tuple[int, ...] = (0,)) -> object:
+        value = cast(dict[str, object], original(*args, accepted=accepted))
+        change_metadata(value, fault)
+        return value
+
+    monkeypatch.setattr(helper, "gh", gh)
+    request["title"] = "Updated title"
+    with pytest.raises(skill.DeliveryError):
+        helper.perform("update-pr", request, authorized=True)
+    assert all("--input" not in call for call in calls)
+
+
+@pytest.mark.parametrize("fault", ["origin", "main", "local-head"])
+def test_update_pr_rejects_changed_local_context_without_github_calls(
+    checkout: tuple[Path, Helper, dict[str, object]],
+    monkeypatch: pytest.MonkeyPatch,
+    fault: str,
+) -> None:
+    root, helper, request = checkout
+    calls = github_transport(root, helper, request, monkeypatch)
+    if fault == "origin":
+        request["remote_url"] = "https://github.com/another/repository.git"
+    elif fault == "main":
+        helper.git("switch", "main")
+        request["branch"] = "main"
+    else:
+        request["head"] = "f" * 40
+    with pytest.raises(skill.DeliveryError):
+        helper.perform("update-pr", request, authorized=True)
+    assert calls == []
+
+
+@pytest.mark.parametrize("fault", ["title", "body", "draft", "head", "base", "closed", "merged"])
+def test_update_pr_reports_changed_remote_state_after_write_without_retry(
+    checkout: tuple[Path, Helper, dict[str, object]],
+    monkeypatch: pytest.MonkeyPatch,
+    fault: str,
+) -> None:
+    root, helper, request = checkout
+    calls = github_transport(root, helper, request, monkeypatch)
+    original = helper.gh
+    reads = 0
+
+    def gh(*args: str, accepted: tuple[int, ...] = (0,)) -> object:
+        nonlocal reads
+        value = cast(dict[str, object], original(*args, accepted=accepted))
+        if "--input" not in args:
+            reads += 1
+            if reads == 2:
+                change_metadata(value, fault)
+        return value
+
+    monkeypatch.setattr(helper, "gh", gh)
+    request["title"] = "Updated title"
+    with pytest.raises(skill.DeliveryError, match="may have occurred"):
+        helper.perform("update-pr", request, authorized=True)
+    assert sum("--input" in call for call in calls) == 1
+    assert len(calls) == 3
+
+
+@pytest.mark.parametrize(
+    "fault",
+    ["blank-title", "multiline-title", "outside-body", "invalid-utf8"],
+)
+def test_update_pr_rejects_invalid_input_before_github_calls(
+    checkout: tuple[Path, Helper, dict[str, object]],
+    monkeypatch: pytest.MonkeyPatch,
+    fault: str,
+) -> None:
+    root, helper, request = checkout
+    calls = github_transport(root, helper, request, monkeypatch)
+    if fault == "blank-title":
+        request["title"] = "   "
+    elif fault == "multiline-title":
+        request["title"] = "First\nSecond"
+    elif fault == "outside-body":
+        request["body_file"] = "seed.py"
+    else:
+        (root / ".tmp/message.txt").write_bytes(b"\xff")
+    with pytest.raises((skill.DeliveryError, UnicodeDecodeError)):
+        helper.perform("update-pr", request, authorized=True)
+    assert calls == []
+
+
+def test_update_pr_cli_requires_authorization(
+    checkout: tuple[Path, Helper, dict[str, object]],
+) -> None:
+    root, helper, request = checkout
+    filename = root / operation_file(root, "update-pr.json", request)
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), "update-pr", "--root", str(root), "--request", str(filename)],
+        capture_output=True,
+        encoding="utf-8",
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 1
+    assert "Explicit owner authorization" in result.stderr
+    assert helper.staged_paths() == []
+    assert helper.git("rev-parse", "HEAD").strip() == request["head"]
+
+
+def test_update_pr_inspection_exposes_title_and_body_without_writing(
+    checkout: tuple[Path, Helper, dict[str, object]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, helper, request = checkout
+    calls = github_transport(root, helper, request, monkeypatch)
+    value = helper.perform("pr-info", request)
+    assert value["title"] == request["title"]
+    assert value["body"] == "PR body\n"
+    assert len(calls) == 1 and "--input" not in calls[0]

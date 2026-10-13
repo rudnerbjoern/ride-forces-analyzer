@@ -31,7 +31,7 @@ They configure Codex behavior; they do not authorize editing memory files manual
 
 The repository-local [github-delivery skill](../../.agents/skills/github-delivery/SKILL.md)
 defines the authorized delivery workflow and supplies a shared Windows Git/gh
-helper for exact staging, commit validation, push, draft PRs, checks, merge and
+helper for exact staging, commit validation, push, draft PRs, metadata updates, checks, merge and
 safe synchronization. Commit titles/text follow the authoritative
 [commit policy](../../.github/commit-message-instructions.md); mechanical checks
 do not prove English wording, semantic scope, valid references or evidence truth.
@@ -44,6 +44,15 @@ pytest `tests/` path and VS Code application discovery. Run
 `uv run pytest .agents/skills/github-delivery/tests` only when the skill implementation,
 tests, commit policy or relevant environment inputs change. See the skill for its
 separate lint/format/type commands and [CI selection](CI.md) for routing.
+
+Use `update-pr` to update the title and UTF-8 body of an existing open PR through
+the helper's JSON transport. It requires explicit authorization, matching local
+branch/head and repository/base/remote-head verification. Only title/body are
+written; draft and open status must remain unchanged. Identical metadata causes
+no write. `pr-info` also returns title/body, so inspection needs no separate CLI.
+The metadata endpoint has no atomic head-SHA guard: post-write verification detects
+races and reports potentially completed writes without retry or rollback.
+See the [GitHub API contract](https://docs.github.com/en/rest/pulls/pulls#update-a-pull-request).
 
 Before suite separation, native Windows verification on 2026-10-13: focused helper validation passed
 50 cases, then the complete `uv run pytest` suite passed 888 cases, including
@@ -82,6 +91,26 @@ Regular `uv run ruff check .` and `uv run ruff format --check src tests` passed
 (37 formatted files). `npm run test:docs` passed 34 link cases; Markdownlint checked
 34 files and CSpell checked 90 files with zero issues. The new hosted `skills` job
 has not run on GitHub yet; only local routing, gate and workflow syntax are verified.
+
+Metadata-extension validation on native Windows, Python 3.14.6, on 2026-10-13:
+
+```powershell
+uv run pytest .agents/skills/github-delivery/tests -k update_pr
+uv run pytest .agents/skills/github-delivery/tests/test_github_delivery.py::test_update_pr_identical_metadata_does_not_write .agents/skills/github-delivery/tests/test_github_delivery.py::test_mutations_require_operation_authorization[update-pr] .agents/skills/github-delivery/tests/test_github_delivery.py::test_draft_creation_is_verified_and_existing_pr_is_reused
+```
+
+The first command selected 27 new cases: 26 passed; one idempotence fixture
+incorrectly compared Windows-generated CRLF bytes to simulated LF metadata.
+After writing that fixture with explicit LF bytes, the second command passed all
+five selected cases in 7.97 seconds. Across these focused runs, all 28 new cases
+(including authorization) and both existing draft-creation/reuse cases passed.
+They cover exact Unicode/quotes/newline transport, invalid inputs, unchanged metadata,
+repository/branch/revision guards, closed PRs and changed post-write metadata/status.
+The documented skill Ruff lint/format commands passed (three formatted files),
+and its mypy command passed both Python files. Skill Creator's structural validator
+accepted the skill. Application code, fixtures, locks and CI selection are unchanged;
+their existing evidence is reused. GitHub transport was simulated, with no live
+metadata write. The full 81-case skill suite was not repeated.
 
 ## Configuration validation boundary
 

@@ -259,7 +259,7 @@ class Delivery:
         authorized: bool = False,
     ) -> dict[str, object]:
         if (
-            action in {"stage", "commit", "push", "draft-pr", "merge-pr", "sync-main"}
+            action in {"stage", "commit", "push", "draft-pr", "update-pr", "merge-pr", "sync-main"}
             and not authorized
         ):
             raise DeliveryError("Explicit owner authorization is required for this mutation.")
@@ -350,6 +350,8 @@ class Delivery:
                 key: value.get(key)
                 for key in (
                     "number",
+                    "title",
+                    "body",
                     "html_url",
                     "state",
                     "draft",
@@ -401,6 +403,54 @@ class Delivery:
                 "url": checked["html_url"],
                 "draft": checked["draft"],
                 "existing": bool(existing),
+            }
+        if action == "update-pr":
+            self.branch_guard(request)
+            repository = self.repository(request)
+            title = text_field(request, "title")
+            if not title.strip() or any(ord(character) < 32 for character in title):
+                raise DeliveryError("PR title must be nonempty and contain no control characters.")
+            body = (
+                self.temporary_file(text_field(request, "body_file")).read_bytes().decode("utf-8")
+            )
+            before = self.pr(request)
+            draft = before.get("draft")
+            if before.get("state") != "open" or before.get("merged") is not False:
+                raise DeliveryError("PR is not open for metadata updates.")
+            if not isinstance(draft, bool):
+                raise DeliveryError("PR draft status is unavailable.")
+            previous_body = "" if before.get("body") is None else before["body"]
+            updated = before.get("title") != title or previous_body != body
+            if updated:
+                self.branch_guard(request)
+                self.api_write(
+                    f"repos/{repository}/pulls/{request['pr']}",
+                    "PATCH",
+                    {"title": title, "body": body},
+                )
+            try:
+                checked = self.pr(request)
+                checked_body = "" if checked.get("body") is None else checked["body"]
+                if (
+                    checked.get("title") != title
+                    or checked_body != body
+                    or checked.get("draft") is not draft
+                    or checked.get("state") != "open"
+                    or checked.get("merged") is not False
+                ):
+                    raise DeliveryError("PR metadata or status changed during verification.")
+            except DeliveryError as error:
+                if updated:
+                    raise DeliveryError(
+                        f"PR metadata update may have occurred; verification failed: {error}",
+                    ) from error
+                raise
+            return {
+                "number": checked["number"],
+                "url": checked["html_url"],
+                "head": request["head"],
+                "draft": draft,
+                "updated": updated,
             }
         if action == "merge-pr":
             repository = self.repository(request)
@@ -468,6 +518,7 @@ def main() -> int:
             "commit",
             "push",
             "draft-pr",
+            "update-pr",
             "pr-info",
             "pr-checks",
             "merge-pr",
