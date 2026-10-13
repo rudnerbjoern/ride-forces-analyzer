@@ -12,7 +12,10 @@ Ride Forces iPhone app -> original .forces file (read-only)
 
 Boundaries: `domain` holds representations; `importers` handles external formats; `analysis`
 contains calibration/math; `storage` local library; `playback` timeline; `rendering` frame model and
-encoding; `ui` Qt widgets. This is scaffolding, not implemented product functionality.
+encoding; `ui` Qt widgets. M1 established these boundaries; M2 Stage 1 implements
+representations and Stage 3 adds pure motion validation over those source envelopes.
+Stage 2 adds strict source decoding. Complete import, analysis, storage, playback
+and rendering services remain planned.
 
 Application processing requires no network connectivity. Initial development installation
 may require downloads. Preserve original bytes, coordinates, unknown fields and schema metadata.
@@ -29,8 +32,9 @@ be independent.
 
 ## Implemented M1 foundation
 
-Only the executable entry point and bootstrap settings have behavior in M1; the subsystem
-packages are placeholders. No importer, analysis, persistence, playback or renderer exists yet.
+The executable entry point and bootstrap settings remain the implemented M1 behavior.
+M2 Stage 1 adds domain and diagnostic/result representations below; there is still
+no file-import service, analysis, persistence, playback or renderer.
 
 The supported runtime is Python 3.14 (minimum 3.14.6); `.python-version` and CI select 3.14.6.
 `uv.lock` records runtime, development and optional dependencies. Install with
@@ -41,6 +45,49 @@ Each of the four owner-authorized recordings is guarded by its own byte-length a
 SHA-256 regression check without parsing or rewriting it. The exact inventory is
 verified; see the [recording catalog](../development/RECORDINGS.md). Future import
 and analysis tests must use the complete authorized set.
+
+M2 Stage 0 adds test-only recursive schema observations, including the fifth,
+owner-supplied Apple Watch fixture. It adds no production importer or domain model.
+[ADR 0002](../decisions/0002-forces-source-contract.md) proposes immutable source
+ownership, version dispatch, device-aware capabilities, resource limits and GPS
+error handling. Apple Watch gravity/GPS absence is explicit and never synthesized.
+
+## M2 Stage 1 representations
+
+`domain` owns immutable source envelopes and canonical recording data. Original
+bytes and exact JSON number tokens remain separate from finite typed accessors.
+Motion/GPS/attribute collections are copied into tuples; source dictionaries are
+recursively copied into privately owned readonly mappings. Optional values and
+owner-default provenance stay explicit. No Qt or scientific transformation is used.
+
+`importers` owns structured diagnostics and immutable success/failure results.
+Ordering is deterministic, and the Literal success tag supports typed control flow.
+No path adapter, file decoder or schema-version dispatch is implemented here.
+See [canonical models](../development/CANONICAL_MODELS.md) and
+[Stage 1 evidence](../validation/M2_STAGE1.md).
+
+## M2 Stage 3 motion validation
+
+`importers.motion.parse_motion` consumes a retained SourceEnvelope and produces
+a typed motion-only result with diagnostics. It validates numeric conversion,
+available paired sequences, optional structural vectors and independent index
+bounds without changing source values or deriving forces/time. GPS and metadata
+remain in the envelope without interpretation. No complete Recording is claimed.
+Stage 2 now supplies source decoding, version dispatch and resource guards below;
+the motion parser remains independently callable and is not automatically integrated.
+See [motion contracts](../development/MOTION_PARSING.md) and
+[Stage 3 evidence](../validation/M2_STAGE3.md).
+
+## M2 Stage 2 strict source decoder
+
+`importers.decoder` separates bounded local binary input from pure bytes decoding.
+Iterative lexical preflight enforces resources before full tree allocation;
+strict JSON hooks retain exact number tokens and reject duplicates/non-JSON constants.
+Only a supported 2.2.0 root with required core shapes yields DecodeSuccess.
+The result owns original bytes/provenance and the immutable tree; it is not a Recording.
+Optional metadata/GPS interpretation and complete importer integration remain planned.
+See [decoder contracts](../development/STRICT_DECODING.md) and
+[Stage 2 evidence](../validation/M2_STAGE2.md).
 
 ## Bootstrap settings validation
 

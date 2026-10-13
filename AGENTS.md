@@ -1,84 +1,57 @@
-# Instructions for Codex
+# Agent instructions
+
+Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 
 ## Communication and scope
 
-- Communicate with the user in German unless another language is requested. Write source
-  code, identifiers, technical documentation and commit messages in English.
-- Distinguish verified facts, assumptions and recommendations. Mark unimplemented features
-  as planned and unverifiable acceptance criteria as open.
-- Implement one milestone at a time. Do not mark a milestone complete until every acceptance
-  criterion is verified. This delivery covers M1; do not implement M2 without a new
-  owner instruction.
-- Read [README.md](README.md), the [roadmap](docs/ROADMAP.md) and
-  [architecture](docs/architecture/OVERVIEW.md) before changing the project. Use the
-  [documentation index](docs/README.md) to find development guides and validation evidence.
+- MUST communicate in German unless requested otherwise. Code, identifiers, docs and commits: English.
+- MUST distinguish verified facts, assumptions and recommendations. Unimplemented = planned; unverified = open.
+- MUST execute only the authorized milestone/stage. DEV-REQ-002: report evidence, then STOP. No next stage without a new instruction.
+- NEVER declare a milestone/stage complete before ALL its acceptance criteria are verified. M1 is accepted; M2 remains incomplete.
+- MUST read [README](README.md), [roadmap](docs/ROADMAP.md), [architecture](docs/architecture/OVERVIEW.md) and task requirements before edits. Use [docs index](docs/README.md) for references.
+- MUST keep changes scoped and consistent. NEVER refactor unrelated code. MUST align code, tests, configuration and docs.
 
 ## Repository and Git
 
-- Preserve all existing user changes, including unrelated staged and unstaged changes.
-- Treat staged files as reviewed by the user. Never modify, unstage, replace or include them
-  in another operation unless explicitly requested.
-- Stage files only within the scope explicitly authorized for committing. Before a commit,
-  inspect only the staged diff and commit only the exact staged scope approved by the user.
-- Never commit on local `main` and never push to remote `main`, including force pushes,
-  deletion or pushing another source branch to `main`. Never bypass this rule with
-  `--all`, `--mirror` or a different push destination.
-- Always create a dedicated branch from `main` for each change before committing.
-  Continue related work on that branch; preserve existing working-tree and staged changes
-  when creating or switching branches. Do not commit with a detached HEAD.
-- Before every authorized commit or push, verify the active branch and, for a push,
-  the explicit destination ref. Both must be the intended working branch, never `main`.
-- Transfer changes to `main` exclusively through a pull request targeting `main`.
-  Do not integrate changes into local `main` with a direct merge, rebase or reset.
-  Creating a branch or preparing a pull request does not authorize staging, committing,
-  pushing or merging; respect the owner's current authorization for each action.
-- Before generating or proposing a commit message, read and follow
-  [.github/commit-message-instructions.md](.github/commit-message-instructions.md).
-  Base messages exclusively on the approved staged changes; the message rules do not
-  authorize staging or committing.
-- Keep edits narrowly scoped, reviewable and consistent with existing conventions. Avoid
-  opportunistic refactoring. Keep code, tests, configuration and documentation aligned.
-- Use the repository-root `.tmp/` directory for all temporary files. Only `.gitkeep` may be
-  tracked there; other contents must remain ignored.
-- Respect `.gitattributes` and `.editorconfig`: LF text, CRLF Windows command scripts and
-  no byte normalization or formatting of `.forces` recordings.
+- MUST preserve user changes. Staged files = owner-reviewed. NEVER modify, unstage, replace or repurpose them without explicit authorization.
+- MUST obtain explicit owner authorization for staging, committing, pushing, PR creation and merging, covering the operation and scope.
+- MUST work on an authorized dedicated feature branch. Create new branches from `main`; continue related work on its existing branch. Preserve user changes during switches.
+- NEVER commit on `main` or detached HEAD. NEVER push to remote `main`, delete it or bypass this restriction via force, `--all`, `--mirror` or alternative destination refs.
+- MUST integrate into `main` exclusively through an authorized PR targeting `main`. NEVER merge, rebase or reset local `main` to integrate changes.
+- MUST verify the active branch immediately before EACH commit/push. Before push: verify explicit destination ref; after push: verify remote commit.
+- MUST stage exact authorized paths only. Before commit: inspect ONLY the staged diff; commit ONLY approved staged scope.
+- MUST follow [commit rules](.github/commit-message-instructions.md) before generating messages. Messages MUST describe approved staged changes only; no staged changes = no proposed message.
+- Branch creation, PR preparation and stage approval NEVER authorize other Git operations.
+- MUST use `.tmp/` for ALL temporary files. Track only `.tmp/.gitkeep`; ignore all other contents.
+- MUST obey `.gitattributes` and `.editorconfig`: LF text, CRLF Windows command scripts; NEVER normalize `.forces`.
 
 ## Platform and architecture
 
-- Target Windows, Python 3.14.6, uv, PySide6, Pydantic, typed Python, Ruff, Pylance,
-  mypy and pytest. `.python-version` pins Python; `pyproject.toml` allows later 3.14 patches.
-- Use locked dependencies for reproducible validation. Explain the purpose of new
-  dependencies and check project requirements before adding them.
-- Keep domain/import/analysis/storage/playback/rendering logic out of UI widgets.
-- Keep validation outside widgets. The M1 `AppSettings` model covers bootstrap settings,
-  not recording schemas.
-- Separate render frame generation from encoding; independent alpha-overlay and
-  opaque-video outputs are planned for M6.
-- All application processing must work offline. Avoid mandatory cloud services.
-  Development dependency installation and optional Context7 documentation lookup may
-  require network access; installed local quality checks must work offline.
+- MUST use Windows, Python 3.14.6, uv, PySide6, Pydantic, typed Python, Ruff, Pylance, mypy and pytest. Respect `.python-version` and the allowed 3.14 patches in `pyproject.toml`.
+- MUST use locked dependencies. Before adding dependencies: check requirements and explain purpose.
+- NEVER put domain/import/analysis/storage/playback/rendering logic or validation in Qt widgets. `AppSettings` validates bootstrap settings only.
+- MUST keep render frame generation separate from encoding. Independent alpha-overlay and opaque-video outputs remain planned for M6.
+- MUST support offline application processing and installed quality checks. NEVER require cloud services. Dependency installation and optional Context7 lookup may use network.
 
 ## Recordings and scientific contracts
 
-- Use `.forces` recordings as **read-only** input; never rewrite them in place.
-- Preserve unknown JSON fields and original file bytes. Do not assume a stable source schema.
-- The owner expressly authorizes using and publishing the complete Manta, Kraken,
-  Taron and VoltronNevera recordings in `tests/fixtures/real/` for project tests and
-  development, including all embedded GPS positions and metadata. The
-  [recording catalog](docs/development/RECORDINGS.md) lists their exact filenames,
-  original sizes and SHA-256 digests. Keep all four read-only and covered by integrity tests.
-- This authorization applies to those four recordings. Do not automatically add or
-  publish additional recordings without their own authorization.
-- Domain coordinates, axis polarity, time base, filtering and GPS sentinel semantics
-  require explicit documentation, fixtures and cross-checks against the original Ride
-  Forces app. Never silently assume their meaning.
+- MUST treat EVERY original `.forces` file as read-only. NEVER rewrite, format, normalize, redact or remove its data.
+- MUST preserve original bytes and unknown JSON fields. NEVER assume a stable schema.
+- Authorized complete fixtures: Manta, Kraken, Taron, VoltronNevera and Iron Gwazi in `tests/fixtures/real/`, including ALL GPS and metadata. MUST retain byte-length/SHA-256 tests; see [catalog](docs/development/RECORDINGS.md).
+- Iron Gwazi publication was authorized for Stage 0 on 2026-10-13. New recordings require separate authorization; fixture-data permission NEVER replaces Git-operation authorization.
+- MUST use [ADR 0002](docs/decisions/0002-forces-source-contract.md). Apple Watch is an owner-confirmed data-availability profile. NEVER fabricate absent GPS/gravity.
+- MUST document and cross-check coordinates, axis polarity, time base, filtering and GPS sentinels against original-app evidence and fixtures. NEVER silently infer scientific semantics.
 
 ## Validation and evidence
 
-- Add or update tests for changed behavior and public contracts; provide regression tests
-  for bug fixes. Run the smallest relevant validation first, then required project suites.
-- Follow the [Windows development guide](docs/development/SETUP.md). Before an authorized
-  commit, all of these checks must pass from the repository root:
+- MUST read instructions/task docs once per working context. Re-read ONLY changed content, unresolved relevant sections or lost context.
+- MUST batch independent reads/searches. Parallelize independent checks ONLY without shared mutable files, environments or GUI resources; dependencies MUST remain sequential.
+- MUST test changed behavior/public contracts and add bug regression tests. Run focused checks first; repeat ONLY checks affected by edits/failures.
+- MUST run required suites once for final content and retain actual runner evidence. NEVER rerun solely because commit/push authorization arrived or a commit was created.
+- MUST reuse successful evidence ONLY when relevant contents (including staged files), dependencies, lock files, tools, configuration and environment are demonstrably unchanged. Changed inputs: rerun affected checks. Missing evidence/uncertain equivalence: run required suites.
+- MUST record exact commands, results, limitations, platform and tested revision/file scope in the applicable `docs/validation/` report. M1 evidence belongs in [M1 validation](docs/validation/M1.md); later-stage evidence MUST use its own report. Temporary logs: `.tmp/`. NEVER add a cache framework solely for evidence reuse.
+- MUST batch Git status/scope checks where practical; retain required commit/push boundary checks. Repeat fixture hashes ONLY for relevant changes, integrity uncertainty or explicit acceptance requirements.
+- Before commit, ALL commands below MUST have valid passing evidence for the committed content. Execute from repository root using the [Windows setup](docs/development/SETUP.md); valid evidence MAY be reused under the rule above:
 
   ```powershell
   uv lock --check
@@ -92,9 +65,5 @@
   npm run test:docs
   ```
 
-- Pylance and Pyright share strict `[tool.pyright]` configuration. Ruff targets `py314`,
-  uses a 100-character line limit and the owner's `F`/`COM812` rule selection.
-- Do not claim Windows GUI operation or Windows CI success without actually testing
-  those environments. A successful exit code without runner output is insufficient.
-- Record results and material limitations in [M1 validation](docs/validation/M1.md).
-  Local checks and static workflow validation do not prove GitHub-hosted CI success.
+- MUST retain strict shared `[tool.pyright]`. Ruff: `py314`, 100 columns, `F`/`COM812`. NEVER weaken checks to obtain a pass.
+- MUST require actual runner output; exit code alone is insufficient. NEVER present local/static checks as hosted CI evidence or substitute non-Windows results for Windows/GUI verification.

@@ -6,8 +6,12 @@ import pytest
 from ride_forces_analyzer import __version__
 
 REAL_FIXTURE_DIRECTORY = Path(__file__).parent / "fixtures" / "real"
-# Owner-authorized recordings; expected sizes and digests pin the original bytes.
+# Owner-supplied recordings; expected sizes and digests pin the original bytes.
 REAL_FIXTURES: dict[str, tuple[int, str]] = {
+    "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces": (
+        346781,
+        "cfea878d208ca082c41562084c9d5b3635c4ac1de6e6c583cee17e53d0becbcb",
+    ),
     "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces": (
         837779,
         "f418e8323beeba1ab81da93705b18b0baee3622c2b702ef34b72cd550d45984d",

@@ -10,7 +10,7 @@
     "test:docs:links": "node --test tests/docs/documentation.test.mjs",
     "test:docs": "npm run lint:docs && npm run spellcheck && npm run test:docs:links",
     "typecheck": "pyright",
-    "test:types": "node --test tests/types/pydantic.test.mjs",
+    "test:types": "node --test tests/types/pydantic.test.mjs tests/types/recording.test.mjs",
     "spellcheck": "cspell lint --config .cspell.json --no-progress",
     "test:dependencies": "node --test tests/dependencies/security.test.mjs"
   },

@@ -8,7 +8,12 @@ embedded data such as authentic GPS positions and metadata. Manta was authorized
 with the original M1 fixture; Kraken, Taron and Voltron Nevera were added and
 expressly authorized on 2026-10-13.
 
-This authorization covers the listed files. Additional recordings require their
+This publication authorization covers the original quartet. The owner additionally
+supplied Iron Gwazi on 2026-10-13 for the current Stage 0 inspection and confirmed
+its Apple Watch availability profile. The owner subsequently explicitly authorized
+committing and pushing the complete fifth fixture with the Stage 0 work on
+2026-10-13. PR creation and merge require separate authorization.
+Additional recordings require their
 own authorization before inclusion or publication. Keep every `.forces` file
 read-only and preserve its original bytes, unknown fields and metadata. Neither
 Git nor editor tooling may normalize or reformat these recordings.
@@ -18,6 +23,13 @@ Git nor editor tooling may normalize or reformat these recordings.
 The sizes and SHA-256 digests below were computed by reading the original bytes.
 They are pinned in `tests/test_project.py`; intentionally replacing a recording
 requires reviewing its authorization, tests and this catalog together.
+
+### Iron Gwazi
+
+- File: [IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces](../../tests/fixtures/real/IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces)
+- Size: 346781 bytes.
+- SHA-256: `cfea878d208ca082c41562084c9d5b3635c4ac1de6e6c583cee17e53d0becbcb`.
+- Device: Apple Watch; acceleration is present, gravity/GPS are absent.
 
 ### Kraken
 
@@ -45,15 +57,16 @@ requires reviewing its authorization, tests and this catalog together.
 
 ## Current test coverage
 
-`tests/test_project.py` verifies the exact four-file inventory and checks each
+`tests/test_project.py` verifies the exact five-file inventory and checks each
 recording independently for its pinned byte length and SHA-256. Parametrized test
-IDs identify Kraken, Manta, Taron and VoltronNevera in pytest and VS Code discovery.
+IDs identify IronGwazi, Kraken, Manta, Taron and VoltronNevera in pytest discovery.
 The tests read bytes only; they do not parse or rewrite recordings.
 
 Run the focused checks from the repository root:
 
 ```powershell
 uv run pytest tests/test_project.py
+uv run pytest tests/test_fixture_inventory.py tests/test_project.py
 ```
 
 GUI, bootstrap-settings, lint and static typing tests do not consume recording
@@ -63,8 +76,14 @@ and formatting checks so their original contents are not treated as source code.
 
 ## Planned importer and analysis coverage
 
-M2 must validate lossless ingestion of all four recordings while preserving
+Stage 0 now visits every JSON value in all five recordings and pins the
+[recursive snapshot](../../tests/fixtures/schema-inventory.json). Its tests preserve
+bytes and modification times; they do not establish importer success. See the
+[format analysis](../requirements/FORMAT-ANALYSIS.md) and
+[ADR 0002](../decisions/0002-forces-source-contract.md).
+
+M2 must validate lossless ingestion of all five recordings while preserving
 unknown fields and original bytes. M3 must cross-check coordinates, timing,
 calibration, filtering and GPS sentinels against the original Ride Forces app.
 The byte-integrity checks do not establish those scientific or schema contracts.
-M2/M3 functionality and tests remain planned; none is implemented by this update.
+Production M2/M3 functionality remains planned; Stage 0 inventory tests are implemented.

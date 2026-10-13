@@ -14,7 +14,7 @@ staging/committing/pushing; obtain explicit authorization as required by AGENTS.
 > docs/requirements/FORMAT-ANALYSIS.md, and
 > docs/implementation/DEV-REQ-002/PLAN.md first.
 > Follow the current Windows Python 3.14.6/uv toolchain.
-> Respect the four original read-only recordings and all their GPS data.
+> Respect the five current read-only recordings and all their GPS data.
 > Use English in all code, documentation and commit messages.
 > Work only on an authorized feature branch, never directly on main.
 > Do not stage, commit, push or merge without explicit owner authorization.
@@ -31,14 +31,14 @@ docs/requirements/DEV-REQ-002-forces-importer.md,
 docs/requirements/FORMAT-ANALYSIS.md, and
 docs/implementation/DEV-REQ-002/PLAN.md first.
 Follow the current Windows Python 3.14.6/uv toolchain.
-Respect the four original read-only recordings and all their GPS data.
+Respect the five current read-only recordings and all their GPS data.
 Use English in all code, documentation and commit messages.
 Work only on an authorized feature branch, never directly on main.
 Do not stage, commit, push or merge without explicit owner authorization.
 Run focused tests, then applicable project quality checks.
 Report actual evidence and unverified items; stop after this stage.
 
-Task: Inspect all four .forces fixtures recursively, including every JSON field/type, optionality, nesting and sequence length. Reconcile findings with FORMAT-ANALYSIS.md. Produce a reproducible inventory test/snapshot and document decisions on API contracts, source byte retention, resource limits and optional GPS error handling in a new ADR. Do not implement the importer yet. Link decisions to FR-001, FR-004, FR-007, FR-024 and FR-030. Confirm fixture integrity.
+Task: Inspect all five .forces fixtures recursively, including every JSON field/type, optionality, nesting and sequence length. Reconcile findings with FORMAT-ANALYSIS.md. Produce a reproducible inventory test/snapshot and document decisions on API contracts, source byte retention, resource limits and optional GPS error handling in a new ADR. Do not implement the importer yet. Link decisions to FR-001, FR-004, FR-007, FR-024 and FR-030. Confirm fixture integrity.
 
 Produce at the end:
 - Files changed and requirement IDs covered.
@@ -58,7 +58,7 @@ docs/requirements/DEV-REQ-002-forces-importer.md,
 docs/requirements/FORMAT-ANALYSIS.md, and
 docs/implementation/DEV-REQ-002/PLAN.md first.
 Follow the current Windows Python 3.14.6/uv toolchain.
-Respect the four original read-only recordings and all their GPS data.
+Respect the five current read-only recordings and all their GPS data.
 Use English in all code, documentation and commit messages.
 Work only on an authorized feature branch, never directly on main.
 Do not stage, commit, push or merge without explicit owner authorization.
@@ -85,7 +85,7 @@ docs/requirements/DEV-REQ-002-forces-importer.md,
 docs/requirements/FORMAT-ANALYSIS.md, and
 docs/implementation/DEV-REQ-002/PLAN.md first.
 Follow the current Windows Python 3.14.6/uv toolchain.
-Respect the four original read-only recordings and all their GPS data.
+Respect the five current read-only recordings and all their GPS data.
 Use English in all code, documentation and commit messages.
 Work only on an authorized feature branch, never directly on main.
 Do not stage, commit, push or merge without explicit owner authorization.
@@ -112,14 +112,14 @@ docs/requirements/DEV-REQ-002-forces-importer.md,
 docs/requirements/FORMAT-ANALYSIS.md, and
 docs/implementation/DEV-REQ-002/PLAN.md first.
 Follow the current Windows Python 3.14.6/uv toolchain.
-Respect the four original read-only recordings and all their GPS data.
+Respect the five current read-only recordings and all their GPS data.
 Use English in all code, documentation and commit messages.
 Work only on an authorized feature branch, never directly on main.
 Do not stage, commit, push or merge without explicit owner authorization.
 Run focused tests, then applicable project quality checks.
 Report actual evidence and unverified items; stop after this stage.
 
-Task: Implement motion acceleration/gravity parsing, finite numeric-string conversion, valid sample-rate handling, sequence-length and component validation, structural vector preservation and independently bounded indices. Preserve original strings. Explicitly include Taron gravityIndex before startIndex. Do not calculate rider G forces or assert GPS/time semantics. Build parametric tests across all four recordings and synthetic malformed cases. Meet FR-011–016.
+Task: Implement motion acceleration/gravity parsing, finite numeric-string conversion, valid sample-rate handling, sequence-length and component validation, structural vector preservation and independently bounded indices. Preserve original strings. Explicitly include Taron gravityIndex before startIndex. Do not calculate rider G forces or assert GPS/time semantics. Build parametric tests across all five recordings and synthetic malformed cases. Include owner-default rate 50 only for absence, with explicit provenance, and the Apple Watch absence policy in ADR 0002; never fabricate gravity. Meet FR-011–016.
 
 Produce at the end:
 - Files changed and requirement IDs covered.
@@ -139,14 +139,14 @@ docs/requirements/DEV-REQ-002-forces-importer.md,
 docs/requirements/FORMAT-ANALYSIS.md, and
 docs/implementation/DEV-REQ-002/PLAN.md first.
 Follow the current Windows Python 3.14.6/uv toolchain.
-Respect the four original read-only recordings and all their GPS data.
+Respect the five current read-only recordings and all their GPS data.
 Use English in all code, documentation and commit messages.
 Work only on an authorized feature branch, never directly on main.
 Do not stage, commit, push or merge without explicit owner authorization.
 Run focused tests, then applicable project quality checks.
 Report actual evidence and unverified items; stop after this stage.
 
-Task: Implement optional metadata, ordered arbitrary attributes and independent GPS fix parsing. Preserve any negative GPS speed, course and accuracy raw value; surface warnings without assuming units or sentinel meaning. Test missing Manta location/weather, missing Taron/Voltron ridingPosition, Taron Row and Seat, differing GPS lengths and defective optional GPS fixes. Meet FR-009–010, FR-017–022 and FR-025.
+Task: Implement optional metadata, ordered arbitrary attributes and independent GPS fix parsing. Use owner-default ridingPosition Seated only for absence, with explicit provenance and unchanged source data. Preserve any negative GPS speed, course and accuracy raw value; surface warnings without assuming units or sentinel meaning. Test missing Manta location/weather, missing Taron/Voltron ridingPosition, Taron Row and Seat, differing GPS lengths, absent Iron Gwazi GPS/gravity, and defective optional GPS fixes. Meet FR-009–010, FR-017–022 and FR-025.
 
 Produce at the end:
 - Files changed and requirement IDs covered.
@@ -166,14 +166,14 @@ docs/requirements/DEV-REQ-002-forces-importer.md,
 docs/requirements/FORMAT-ANALYSIS.md, and
 docs/implementation/DEV-REQ-002/PLAN.md first.
 Follow the current Windows Python 3.14.6/uv toolchain.
-Respect the four original read-only recordings and all their GPS data.
+Respect the five current read-only recordings and all their GPS data.
 Use English in all code, documentation and commit messages.
 Work only on an authorized feature branch, never directly on main.
 Do not stage, commit, push or merge without explicit owner authorization.
 Run focused tests, then applicable project quality checks.
 Report actual evidence and unverified items; stop after this stage.
 
-Task: Expose the public, Qt-independent import service returning full typed recording, original provenance and ordered diagnostics. Prove byte-for-byte preservation and deterministic repeated parsing for all four authorized fixtures. Test unknown fields, resource limits, error recovery, no network and no writes. Record actual performance measurements on Windows. Do not implement library, GUI, analysis or export. Meet FR-028–030 and relevant ACs.
+Task: Expose the public, Qt-independent import service returning full typed recording, original provenance and ordered diagnostics. Prove byte-for-byte preservation and deterministic repeated parsing for all five owner-supplied fixtures. Test unknown fields, resource limits, error recovery, no network and no writes. Record actual performance measurements on Windows. Do not implement library, GUI, analysis or export. Meet FR-028–030 and relevant ACs.
 
 Produce at the end:
 - Files changed and requirement IDs covered.
@@ -193,7 +193,7 @@ docs/requirements/DEV-REQ-002-forces-importer.md,
 docs/requirements/FORMAT-ANALYSIS.md, and
 docs/implementation/DEV-REQ-002/PLAN.md first.
 Follow the current Windows Python 3.14.6/uv toolchain.
-Respect the four original read-only recordings and all their GPS data.
+Respect the five current read-only recordings and all their GPS data.
 Use English in all code, documentation and commit messages.
 Work only on an authorized feature branch, never directly on main.
 Do not stage, commit, push or merge without explicit owner authorization.
