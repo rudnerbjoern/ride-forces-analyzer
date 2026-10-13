@@ -114,7 +114,7 @@ Decoder errors stop before motion; core errors stop before optional validation.
 There is no shared mutable recording state, network, writing, Qt dependency or
 scientific transformation. The callable service is not connected to the GUI/library.
 See [public API](../development/IMPORT_SERVICE.md) and
-[M2 validation](../validation/M2.md). M2 acceptance remains open.
+[M2 validation](../validation/M2.md). M2 acceptance is verified; M3 remains planned.
 
 ## Bootstrap settings validation
 

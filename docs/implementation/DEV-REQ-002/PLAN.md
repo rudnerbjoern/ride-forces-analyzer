@@ -1,6 +1,6 @@
 # DEV-REQ-002 — M2 implementation plan
 
-**Status:** Stages 0–5 implemented locally; Stage 6/M2 acceptance remains open. All content is in English.
+**Status:** Stages 0–6 complete; M2 acceptance verified on 2026-10-13. All content is in English.
 **Normative requirements:** [DEV-REQ-002](../../requirements/DEV-REQ-002-forces-importer.md).
 **Source observations:** [Format analysis](../../requirements/FORMAT-ANALYSIS.md).
 **Execution prompts:** [PROMPTS.md](PROMPTS.md).

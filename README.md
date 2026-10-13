@@ -13,7 +13,8 @@ read-only paths or bytes. Stage 4 adds [optional metadata, attributes and GPS pa
 with explicit absence and owner-default provenance. Stage 5 exposes the
 [public read-only import service](docs/development/IMPORT_SERVICE.md), returning
 complete typed recordings for their available data. Analysis, storage, playback,
-GUI importing and rendering remain **planned**. M2 acceptance remains open.
+GUI importing and rendering remain **planned**. M2 acceptance is verified;
+see the [final validation](docs/validation/M2.md).
 **M1 acceptance is verified**
 on Windows and in pull-request CI, and
 [PR #1](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/1) is merged.
@@ -52,7 +53,7 @@ Start with the [documentation index](docs/README.md). Key references:
 - [Roadmap](docs/ROADMAP.md): milestone scope and acceptance criteria.
 - [Architecture](docs/architecture/OVERVIEW.md): current foundation and planned boundaries.
 - [M1 validation](docs/validation/M1.md): verified results and validation limits.
-- [M2 acceptance review](docs/validation/M2.md): local importer evidence and the open PR/CI criterion.
+- [M2 validation](docs/validation/M2.md): final importer acceptance and Windows/PR CI evidence.
 
 ## Recording test data
 

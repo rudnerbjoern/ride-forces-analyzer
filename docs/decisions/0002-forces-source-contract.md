@@ -1,12 +1,12 @@
 # ADR 0002 — Ride Forces source ownership and import boundaries
 
-Status: Proposed implementation contract, Stage 0 review, 2026-10-13.
+Status: Accepted and implemented for M2, 2026-10-13.
 Requirements: [DEV-REQ-002](../requirements/DEV-REQ-002-forces-importer.md),
 primarily FR-001, FR-004, FR-007, FR-024 and FR-030; also FR-003, FR-008,
 FR-013, FR-018–027. The original Stage 0 decision was documentation-only.
 Stage 1 now implements [canonical models and result types](../development/CANONICAL_MODELS.md);
 Stage 5 now implements [complete read-only integration](../development/IMPORT_SERVICE.md)
-locally; M2 acceptance is still open.
+with verified M2 acceptance; see [M2 validation](../validation/M2.md).
 Stage 3 now implements [motion validation](../development/MOTION_PARSING.md)
 over a supplied source envelope. Stage 2 now implements
 [strict source decoding](../development/STRICT_DECODING.md); its scope is documented below.
@@ -326,7 +326,7 @@ record and stop without a successful subset. Default 1,000 and immutable per-cal
 limit configuration are unchanged. Shape/byte guards belong to prior decoding;
 manual source trees are not proven bounded documents. The complete-pipeline budget
 is now enforced by Stage 5. See [optional contracts](../development/OPTIONAL_PARSING.md)
-and [M2 validation](../validation/M2.md) for evidence and open acceptance.
+and [M2 validation](../validation/M2.md) for verified acceptance evidence.
 
 ## Stage 5 integration decisions — FR-028–030
 
@@ -359,5 +359,4 @@ Python allocation peaks, not total/native process RAM; disclose warm filesystem
 cache and tracing overhead. Do not create throughput guarantees, a performance
 threshold test or a new dependency. The development utility never rewrites a
 fixture. See [public contracts](../development/IMPORT_SERVICE.md) and
-[M2 validation](../validation/M2.md). Stage 6 acceptance/publication remains
-separately authorized work.
+[M2 validation](../validation/M2.md) for final Stage 6 acceptance and hosted CI evidence.

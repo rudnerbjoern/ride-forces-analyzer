@@ -6,14 +6,14 @@ This directory contains project documentation, not generated artifacts or tempor
 
 ## Scope and design
 
-- [Roadmap](ROADMAP.md): sequential milestones and exit criteria; M1 acceptance is verified.
+- [Roadmap](ROADMAP.md): sequential milestones and exit criteria; M1 and M2 acceptance is verified.
 - [Architecture](architecture/OVERVIEW.md): implemented foundation, planned subsystem
   boundaries and unverified scientific contracts.
 - [ADR 0001](decisions/0001-platform.md): offline Windows platform and Python decision.
-- [ADR 0002](decisions/0002-forces-source-contract.md): proposed M2 API, source ownership,
+- [ADR 0002](decisions/0002-forces-source-contract.md): accepted M2 API, source ownership,
   device capabilities, resource limits and optional GPS policy.
 
-## M2 importer specification (acceptance open)
+## M2 importer specification (accepted)
 
 - [DEV-REQ-002](requirements/DEV-REQ-002-forces-importer.md): complete importer requirements and acceptance criteria.
 - [Observed .forces variants](requirements/FORMAT-ANALYSIS.md): five-fixture schema comparison and unverified semantics.
@@ -52,8 +52,8 @@ This directory contains project documentation, not generated artifacts or tempor
 
 ## Verification evidence
 
-- [M2 acceptance review](validation/M2.md): consolidated AC-01–AC-10 outcomes,
-  native Windows checks, fixture integrity, traceability and open publication/CI gate.
+- [M2 validation](validation/M2.md): final AC-01–AC-10 outcomes,
+  native Windows checks, fixture integrity, traceability and successful PR CI.
 - [M1 validation](validation/M1.md): current verified results, historical evidence
   boundaries and acceptance evidence.
 - [M1 delivery plan](validation/M1_DELIVERY.md): branch, commit groups and PR verification order.

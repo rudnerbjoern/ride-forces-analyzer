@@ -27,10 +27,11 @@ Each additional implementation stage requires a new owner instruction.
 
 The read-only Path/bytes service imports schema 2.2.0 into immutable recordings,
 preserving original bytes, metadata, ordered attributes and independent GPS data.
-**Status:** Local AC-01–09 verified; AC-10 (dedicated PR and hosted CI) remains open.
+**Status:** Complete on 2026-10-13; AC-01–AC-10 verified, including both Windows
+CI jobs in [PR #7](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/7).
 See [M2 validation](validation/M2.md) and the [public API](development/IMPORT_SERVICE.md).
 **Exit:** All five [fixtures](development/RECORDINGS.md) import losslessly and every
-acceptance criterion passes. M2 is not complete until hosted CI is verified.
+acceptance criterion passes. No M3 implementation is authorized by M2 completion.
 
 ## M3 — G-force analysis
 

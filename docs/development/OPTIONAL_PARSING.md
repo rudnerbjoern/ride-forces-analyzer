@@ -126,4 +126,4 @@ See [M2 validation](../validation/M2.md) for actual results.
 
 This subset performs no full import, M3 scientific interpretation or Qt integration.
 The separately authorized Stage 5 now supplies full-recording integration; M2
-acceptance remains open; results are consolidated in the M2 validation report.
+acceptance is verified; results are consolidated in the M2 validation report.

@@ -7,7 +7,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 - MUST communicate in German unless requested otherwise. Code, identifiers, docs and commits: English.
 - MUST distinguish verified facts, assumptions and recommendations. Unimplemented = planned; unverified = open.
 - MUST execute only the authorized milestone/stage. DEV-REQ-002: report evidence, then STOP. No next stage without a new instruction.
-- NEVER declare a milestone/stage complete before ALL its acceptance criteria are verified. M1 is accepted; M2 remains incomplete.
+- NEVER declare a milestone/stage complete before ALL its acceptance criteria are verified. M1 and M2 are accepted; M3–M8 remain planned.
 - MUST read [README](README.md), [roadmap](docs/ROADMAP.md), [architecture](docs/architecture/OVERVIEW.md) and task requirements before edits. Use [docs index](docs/README.md) for references.
 - MUST keep changes scoped and consistent. NEVER refactor unrelated code. MUST align code, tests, configuration and docs.
 
