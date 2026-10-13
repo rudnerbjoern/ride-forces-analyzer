@@ -6,7 +6,10 @@ analyzing G-force traces and producing animated charts and transparent video ove
 **Current scope:** M1 provides an executable minimal Qt window, validated startup settings,
 separate subsystem packages, tests and development tooling. M2 Stage 1 adds
 immutable canonical models and structured diagnostics for synthetic construction;
-see the [model guide](docs/development/CANONICAL_MODELS.md). Import, analysis, storage,
+see the [model guide](docs/development/CANONICAL_MODELS.md). Stage 3 adds
+[motion validation](docs/development/MOTION_PARSING.md) over supplied source trees.
+Stage 2 adds [strict source decoding](docs/development/STRICT_DECODING.md) from
+read-only paths or bytes. Complete importing, analysis, storage,
 playback and rendering are **planned**, not implemented. **M1 acceptance is verified**
 on Windows and in pull-request CI, and
 [PR #1](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/1) is merged.
@@ -59,4 +62,4 @@ The owner additionally supplied the Apple Watch Iron Gwazi recording for the
 current M2 Stage 0 inspection. The five-file recursive inventory distinguishes
 its missing gravity/GPS from the iPhone profile; see
 [format observations](docs/requirements/FORMAT-ANALYSIS.md) and
-[Stage 0 evidence](docs/validation/M2_STAGE0.md). No importer is implemented.
+[Stage 0 evidence](docs/validation/M2_STAGE0.md). No complete file importer is implemented.

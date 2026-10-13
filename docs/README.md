@@ -16,7 +16,7 @@ This directory contains project documentation, not generated artifacts or tempor
 ## M2 importer specification (planned)
 
 - [DEV-REQ-002](requirements/DEV-REQ-002-forces-importer.md): complete importer requirements and acceptance criteria.
-- [Observed .forces variants](requirements/FORMAT-ANALYSIS.md): four-fixture schema comparison and unverified semantics.
+- [Observed .forces variants](requirements/FORMAT-ANALYSIS.md): five-fixture schema comparison and unverified semantics.
 - [M2 implementation plan](implementation/DEV-REQ-002/PLAN.md): staged scope, traceability and test gates.
 - [Sequential Codex prompts](implementation/DEV-REQ-002/PROMPTS.md): one implementation task per invocation.
 
@@ -28,6 +28,10 @@ This directory contains project documentation, not generated artifacts or tempor
   mypy, Pyright and regression-test scope.
 - [Canonical models](development/CANONICAL_MODELS.md): immutable Stage 1 models,
   source ownership and diagnostic/result contracts.
+- [Motion parsing](development/MOTION_PARSING.md): Stage 3 subset API, field policies
+  and boundaries before complete importer integration.
+- [Strict decoding](development/STRICT_DECODING.md): Stage 2 source API, resource
+  budgets, schema dispatch and deterministic errors.
 - [Real recordings](development/RECORDINGS.md): authorized fixture catalog and integrity checks.
 - [Documentation tests](development/DOCUMENTATION_TESTS.md): markdownlint, CSpell
   and offline local-link checks.
@@ -43,7 +47,11 @@ This directory contains project documentation, not generated artifacts or tempor
 - [M2 Stage 0 inspection](validation/M2_STAGE0.md): recursive five-fixture evidence,
   integrity, validation and next-stage boundaries.
 - [M2 Stage 1 models](validation/M2_STAGE1.md): synthetic acceptance evidence,
-  requirement coverage and pending decoder work.
+  requirement coverage and original stage boundaries.
+- [M2 Stage 3 motion](validation/M2_STAGE3.md): five-recording validation, malformed
+  input tests and incomplete full-import acceptance.
+- [M2 Stage 2 decoding](validation/M2_STAGE2.md): strict decoder evidence and
+  remaining complete-import/optional-data acceptance.
 - [Node security follow-up](validation/DEPENDABOT.md): tested overrides, regression
   coverage and the open braces advisory.
 

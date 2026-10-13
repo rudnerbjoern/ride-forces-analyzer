@@ -17,7 +17,7 @@ application-setting keys are rejected.
 
 This model applies only to bootstrap window settings. It is not a recording
 schema. M2 Stage 1 now supplies immutable canonical/source representations;
-file importing and calibration remain planned for later stages. Original recording bytes remain
+complete importing and calibration remain planned for later stages. Original recording bytes remain
 read-only.
 
 The `frozen=True` class argument lets type checkers recognize immutability.
@@ -42,6 +42,11 @@ precedence over user-level Python formatter choices without modifying those
 user settings.
 
 ## Command-line checks
+
+Follow the execution and evidence rules in [AGENTS.md](../../AGENTS.md#validation-and-evidence):
+use focused checks while editing, then run all required suites once for the final content.
+Reuse successful results for a later authorized commit or push only while the checked
+inputs and environment remain unchanged and actual runner evidence is available.
 
 Complete the [Windows development setup](SETUP.md), then run:
 
@@ -89,6 +94,13 @@ Problems view was manually inspected.
   ownership, immutability, source type retention, absence, diagnostics and results.
 - `tests/types/recording.test.mjs` adds public model constructor, immutable mapping,
   frozen-field and literal outcome-tag contracts to `npm run test:types`.
+- `tests/test_motion_parser.py` covers all five complete motion sequences and
+  synthetic FR-011–016 defects; the type-contract suite also verifies narrowing
+  of the motion-specific subset result. See [motion parsing](MOTION_PARSING.md).
+- `tests/test_decoder.py` verifies Stage 2 grammar/encoding/dispatch failures,
+  input/resource budgets, exact source retention and bounded read-only I/O.
+  The Pyright suite also narrows the decoder-specific result; see
+  [strict decoding](STRICT_DECODING.md).
 - `tests/dependencies/security.test.mjs` checks the actual Node dependency consumers:
   two TOML configuration parsers, inherited KaTeX trust rejection and three
   micromark math-rendering contracts. See the [security follow-up](../validation/DEPENDABOT.md)

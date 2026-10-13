@@ -13,8 +13,9 @@ Ride Forces iPhone app -> original .forces file (read-only)
 Boundaries: `domain` holds representations; `importers` handles external formats; `analysis`
 contains calibration/math; `storage` local library; `playback` timeline; `rendering` frame model and
 encoding; `ui` Qt widgets. M1 established these boundaries; M2 Stage 1 implements
-representations only.
-Import, analysis, storage, playback and rendering services remain planned.
+representations and Stage 3 adds pure motion validation over those source envelopes.
+Stage 2 adds strict source decoding. Complete import, analysis, storage, playback
+and rendering services remain planned.
 
 Application processing requires no network connectivity. Initial development installation
 may require downloads. Preserve original bytes, coordinates, unknown fields and schema metadata.
@@ -64,6 +65,29 @@ Ordering is deterministic, and the Literal success tag supports typed control fl
 No path adapter, file decoder or schema-version dispatch is implemented here.
 See [canonical models](../development/CANONICAL_MODELS.md) and
 [Stage 1 evidence](../validation/M2_STAGE1.md).
+
+## M2 Stage 3 motion validation
+
+`importers.motion.parse_motion` consumes a retained SourceEnvelope and produces
+a typed motion-only result with diagnostics. It validates numeric conversion,
+available paired sequences, optional structural vectors and independent index
+bounds without changing source values or deriving forces/time. GPS and metadata
+remain in the envelope without interpretation. No complete Recording is claimed.
+Stage 2 now supplies source decoding, version dispatch and resource guards below;
+the motion parser remains independently callable and is not automatically integrated.
+See [motion contracts](../development/MOTION_PARSING.md) and
+[Stage 3 evidence](../validation/M2_STAGE3.md).
+
+## M2 Stage 2 strict source decoder
+
+`importers.decoder` separates bounded local binary input from pure bytes decoding.
+Iterative lexical preflight enforces resources before full tree allocation;
+strict JSON hooks retain exact number tokens and reject duplicates/non-JSON constants.
+Only a supported 2.2.0 root with required core shapes yields DecodeSuccess.
+The result owns original bytes/provenance and the immutable tree; it is not a Recording.
+Optional metadata/GPS interpretation and complete importer integration remain planned.
+See [decoder contracts](../development/STRICT_DECODING.md) and
+[Stage 2 evidence](../validation/M2_STAGE2.md).
 
 ## Bootstrap settings validation
 

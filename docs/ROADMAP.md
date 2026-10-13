@@ -21,6 +21,9 @@ revision; reviewed design documentation committed. Delivery uses a branch and dr
 targeting `main`; merge remains a separate owner decision.
 
 M2 Stage 1 canonical models and diagnostics are implemented for synthetic inputs.
+Stage 3 motion validation operates on source envelopes; Stage 2 now provides
+strict source decoding and resource guards. See [Stage 2 evidence](validation/M2_STAGE2.md)
+and [Stage 3 evidence](validation/M2_STAGE3.md).
 File importing and the M3–M8 product features below remain **planned**. Each
 additional implementation stage requires a new owner instruction.
 
@@ -29,7 +32,10 @@ additional implementation stage requires a new owner instruction.
 Parse `.forces` JSON defensively; preserve unknown metadata and bytes; convert numeric strings;
 validate sample rate, sequence lengths, indices and GPS sentinels. **Exit:** lossless ingest of
 all five [current fixtures](development/RECORDINGS.md) with regression tests.
-[Stage 1](validation/M2_STAGE1.md) implements immutable representations only;
+[Stage 1](validation/M2_STAGE1.md) implements immutable representations;
+[Stage 3](validation/M2_STAGE3.md) validates available motion, vectors and indices.
+The [strict decoder](validation/M2_STAGE2.md) is implemented; optional-data parsing
+and full importer integration remain planned;
 M2 acceptance is not complete.
 
 ## M3 — G-force analysis

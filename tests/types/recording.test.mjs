@@ -35,6 +35,31 @@ const cases = [
     rule: null,
   },
   {
+    name: "decoder source result narrows separately from canonical motion",
+    imports: "from ride_forces_analyzer.domain import SourceEnvelope",
+    source: "from typing import assert_type\n"
+      + "from ride_forces_analyzer.importers import decode_forces_bytes\n"
+      + "result = decode_forces_bytes(b'{}')\n"
+      + "if result.success is True:\n"
+      + "    assert_type(result.source, SourceEnvelope)\n"
+      + "    assert_type(result.byte_count, int)\n"
+      + "else:\n"
+      + "    assert_type(result.recording, None)\n",
+    rule: null,
+  },
+  {
+    name: "motion subset result narrows independently of a full recording import",
+    imports: "from ride_forces_analyzer.domain import MotionSequence, SourceEnvelope",
+    source: "from typing import assert_type\n"
+      + "from ride_forces_analyzer.importers import parse_motion\n"
+      + "result = parse_motion(SourceEnvelope(b'{}', {}))\n"
+      + "if result.success is True:\n"
+      + "    assert_type(result.motion, MotionSequence)\n"
+      + "else:\n"
+      + "    assert_type(result.recording, None)\n",
+    rule: null,
+  },
+  {
     name: "canonical vector constructor rejects a string component statically",
     imports: "from ride_forces_analyzer.domain import Vector3",
     source: "vector = Vector3('0', 0, 1)\n",

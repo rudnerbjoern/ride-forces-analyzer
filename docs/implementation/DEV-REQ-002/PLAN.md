@@ -1,6 +1,6 @@
 # DEV-REQ-002 — M2 implementation plan
 
-**Status:** Stage 0 evidence and Stage 1 models implemented; no file importer. All content is in English.
+**Status:** Stages 0–2 and Stage 3 motion subset implemented; full import remains open. All content is in English.
 **Normative requirements:** [DEV-REQ-002](../../requirements/DEV-REQ-002-forces-importer.md).
 **Source observations:** [Format analysis](../../requirements/FORMAT-ANALYSIS.md).
 **Execution prompts:** [PROMPTS.md](PROMPTS.md).
@@ -72,6 +72,12 @@ perform decoding, file I/O or version dispatch. Stop after the requested stage.
 - **Exit:** malformed inputs never appear as successful imports.
 - **Trace:** FR-001, 003–010, 024, 026; AC-02, 03, 05.
 
+Stage 2 was separately authorized after the motion subset. The
+[strict decoder guide](../../development/STRICT_DECODING.md) and
+[Stage 2 evidence](../../validation/M2_STAGE2.md) record the implemented Path/bytes
+boundaries, dispatch and preflight limits. No complete importer or new motion
+conversion was added. Stop after each separately requested stage.
+
 ## Stage 3 — Motion, calibration and index validation
 
 - Parse x/y/z strings or finite numbers into typed, finite numeric accessors;
@@ -90,6 +96,12 @@ perform decoding, file I/O or version dispatch. Stop after the requested stage.
   shuffled JSON member order, no source mutations.
 - **Exit:** all five available motion sequences survive full import; M3 math absent.
 - **Trace:** FR-011–016; AC-01, 02, 06.
+
+The owner directly authorized the Stage 3 motion scope before Stage 2.
+[Motion contracts](../../development/MOTION_PARSING.md) and
+[Stage 3 evidence](../../validation/M2_STAGE3.md) record the tested subset.
+The Stage 3 full-import exit remains open pending optional-data/integration work; this
+original instruction did not authorize Stage 2, Stage 4 or any subsequent work.
 
 ## Stage 4 — Optional GPS, metadata and attributes
 

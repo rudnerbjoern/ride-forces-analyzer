@@ -5,7 +5,10 @@ Requirements: [DEV-REQ-002](../requirements/DEV-REQ-002-forces-importer.md),
 primarily FR-001, FR-004, FR-007, FR-024 and FR-030; also FR-003, FR-008,
 FR-013, FR-018–027. The original Stage 0 decision was documentation-only.
 Stage 1 now implements [canonical models and result types](../development/CANONICAL_MODELS.md);
-file decoding and the remaining importer policies are still planned.
+complete importer integration and remaining optional-data policies are still planned.
+Stage 3 now implements [motion validation](../development/MOTION_PARSING.md)
+over a supplied source envelope. Stage 2 now implements
+[strict source decoding](../development/STRICT_DECODING.md); its scope is documented below.
 
 ## Evidence and context
 
@@ -220,3 +223,65 @@ constructors enforce consistent canonical values and outcomes; parser-specific
 error/warning generation, device-profile interpretation and version dispatch
 remain subsequent-stage responsibilities. This records implemented model choices,
 not completion of the full proposed import contract.
+
+## Stage 3 motion policy — FR-011–016
+
+The separately authorized scope implements pure parse_motion(SourceEnvelope),
+returning MotionParseSuccess | ImportFailure. Success represents only validated
+motion/indices/vectors; it is not ImportSuccess or a complete Recording. Decoder
+dispatch, bounded untrusted input and optional GPS integration remain planned.
+
+Convert finite ASCII decimal strings and exact SourceNumber JSON numbers to
+finite float accessors, retaining original strings/tokens/bytes. Decimal strings
+allow sign, leading zeros, fractions and exponents, but no whitespace, underscores,
+hexadecimal, boolean or null. Normal float rounding and underflow do not rewrite
+the source. Unknown nested vector extensions remain preserved under FR-010;
+only x/y/z are interpreted. Defective motion components are fatal; defective
+optional structural vectors warn and become unavailable without normalization.
+
+Only absent sampleRate uses the owner default 50 with DEFAULT provenance.
+Present valid values retain SOURCE provenance, including non-50 values; invalid
+present values never default. No relative time utility is authorized in this stage.
+
+Apple Watch gravity absence remains normal and explicit. Missing iPhone gravity
+warns; unknown/missing devices warn without inventing capabilities. Supplied
+gravity must always be valid and pair exactly, regardless of device or
+advancedRecording. Never synthesize, drop, pad or truncate measured arrays.
+
+Indices are mathematically integral JSON numbers, not strings/booleans; finite
+fraction/exponent spellings with integral values are accepted and retained.
+Bound every supplied marker independently against acceleration, require only
+start <= end, and perform no slicing. Taron's 1513 gravity marker before its 2284
+start is explicitly valid. Iron Gwazi retains its gravity marker without gravity.
+GPS/time/axis/end-index semantics remain unverified. See
+[Stage 3 evidence](../validation/M2_STAGE3.md) for tests and remaining exit criteria.
+
+## Stage 2 implementation decisions — FR-001, FR-003–010, FR-024, FR-026
+
+The separately authorized Stage 2 implements decode_forces(Path) and
+decode_forces_bytes(bytes), returning DecodeSuccess | ImportFailure. Keep the
+proposed import_forces API for later complete Recording integration: decoded
+JSON success must never masquerade as measured-data/import success.
+
+Preflight checks all lexical/shape budgets iteratively before full tree allocation,
+including extensions. It also detects duplicate decoded keys and invalid grammar;
+standard-library constant/number/object-pair hooks provide a second strict boundary.
+SourceNumber retains exact finite Decimal numbers, including values outside float
+range; later motion accessors still check float finiteness. Required field and
+component/index JSON shapes are checked without motion conversion or defaults.
+Optional metadata/GPS and unknown fields remain losslessly available.
+
+Defaults are the table above. All limit values must be positive non-boolean
+integers below sys.maxsize. max_depth is configurable from 1 through 128, a
+conservative ceiling for the recursive decoder/source ownership implementation;
+do not mutate Python's recursion or integer-conversion settings. Stage 2 returns
+one deterministic fatal error, so every supported diagnostic budget is honored.
+The last-slot aggregate policy remains required for later pipeline integration.
+
+Use unbuffered binary local reads, regular-file checks before and after opening,
+short-read joining, individual chunks <=65,536 bytes and total reads <=max_bytes+1.
+Reject Windows UNC/device paths before I/O. Do not retain oversized/partial input
+or invent hashes/counts. Retain bounded original bytes on decoding errors; retain
+the valid tree on schema errors. Permission/race tests use controlled mocks;
+OS access times, mapped-drive locality and hostile filesystem behavior remain outside
+verified evidence. See [Stage 2 report](../validation/M2_STAGE2.md).

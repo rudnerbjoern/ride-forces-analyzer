@@ -47,8 +47,9 @@ This scalar representation is not a JSON document decoder. Stage 2 must capture
 tokens before native float conversion and enforce all document/resource policies.
 
 The model intentionally does not verify that supplied bytes and supplied tree
-correspond: doing so would require the forbidden decoder in this stage. The future
-decoder must construct both from the same retained input. SourceEnvelope/Recording
+correspond: doing so would require the forbidden decoder in Stage 1. The Stage 2
+decoder now constructs both from the same retained input; see
+[strict decoding](STRICT_DECODING.md). SourceEnvelope/Recording
 equality is supported; objects containing mappings are not promised to be hashable
 or serializable with `dataclasses.asdict`. Ordinary mutation is blocked; Python's
 reflective `object.__setattr__` is not a security boundary.
@@ -85,8 +86,10 @@ GpsSequence preserves every original indexed slot as GpsEntry, including
 `fix=None` for an unavailable fix. GPS count is independent of acceleration count.
 Recording distinguishes ABSENT, PRESENT (including an empty sequence), and INVALID
 (no usable container). Negative speed/course/accuracy and finite suspicious
-coordinates remain represented. Generating GPS warnings and identifying device
-profiles from source fields remain Stage 4 responsibilities.
+coordinates remain represented. GPS warning generation and GPS metadata parsing
+remain Stage 4 responsibilities. Device-based gravity availability
+is now handled by the [Stage 3 motion parser](MOTION_PARSING.md); Stage 1
+constructors still perform no profile inference.
 
 ## Diagnostics and results
 
@@ -143,5 +146,6 @@ dynamic view unless its backing dictionary is privately owned. These choices wer
 checked through Context7 against the official
 [dataclasses](https://docs.python.org/3.14/library/dataclasses.html) and
 [mapping proxy](https://docs.python.org/3.14/library/types.html#types.MappingProxyType)
-documentation. Windows timing/RAM benchmarks, decoder resource limits, real-file
+documentation. Stage 2 now enforces [decoder resource limits](STRICT_DECODING.md).
+Windows timing/RAM benchmarks, complete real-file
 import acceptance and hosted CI for these changes remain unverified or planned.
