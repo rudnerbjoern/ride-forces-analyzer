@@ -23,6 +23,7 @@ jobs:
       - run: uv run mypy src
       - run: npm run typecheck
       - run: npm run test:types
+      - run: npm run test:dependencies
       - run: uv run pytest
 
   documentation:

@@ -51,6 +51,7 @@ uv run ruff format --check src tests
 uv run mypy src
 npm run typecheck
 npm run test:types
+npm run test:dependencies
 uv run pytest
 ```
 
@@ -83,9 +84,14 @@ Problems view was manually inspected.
   stored under `.tmp/` and explicitly included in their test configuration.
   The tests require a positive analyzed-file count and inspect diagnostic rules,
   rather than relying solely on process exit status.
+- `tests/dependencies/security.test.mjs` checks the actual Node dependency consumers:
+  two TOML configuration parsers, inherited KaTeX trust rejection and three
+  micromark math-rendering contracts. See the [security follow-up](../validation/DEPENDABOT.md)
+  for override rationale and the remaining advisory. These are development-tool tests,
+  not application rendering features.
 
 The PR-only Windows quality job runs Ruff, formatter checks, mypy, Pyright, the
-type contracts and pytest. Documentation linting remains a separate job.
+type contracts, dependency regressions and pytest. Documentation linting remains a separate job.
 
 ## References
 

@@ -87,6 +87,7 @@
   uv run mypy src
   npm run typecheck
   npm run test:types
+  npm run test:dependencies
   uv run pytest
   npm run test:docs
   ```
