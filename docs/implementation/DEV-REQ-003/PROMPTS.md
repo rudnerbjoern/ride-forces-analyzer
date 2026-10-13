@@ -1,5 +1,7 @@
 # Sequential Codex prompts — DEV-REQ-003
 
+<!-- cspell:words AHRS stationarity Butterworth Goldens orthonormality acausal Missingness sosfiltfilt basemaps -->
+
 **Status:** Future implementation guidance, not execution authorization.
 
 Use one prompt per Codex interaction after reviewing the previous stage. The
