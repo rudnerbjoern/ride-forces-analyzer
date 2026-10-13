@@ -51,7 +51,8 @@ Start with the [documentation index](docs/README.md). Key references:
 
 - [AGENTS.md](AGENTS.md): repository instructions for coding agents.
 - [Roadmap](docs/ROADMAP.md): milestone scope and acceptance criteria.
-- [Architecture](docs/architecture/OVERVIEW.md): current foundation and planned boundaries.
+- [arc42 architecture](docs/architecture/README.md): twelve chapters with Mermaid diagrams,
+  current foundation, planned boundaries and unresolved scientific contracts.
 - [M1 validation](docs/validation/M1.md): verified results and validation limits.
 - [M2 validation](docs/validation/M2.md): final importer acceptance and Windows/PR CI evidence.
 

@@ -9,7 +9,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 - MUST execute only the authorized scope, report evidence, then STOP. No next stage without a new instruction.
 - NEVER declare work complete before ALL applicable acceptance criteria are verified.
 - MUST keep this file limited to durable project-wide rules. Milestone status belongs in the roadmap; stage steps, deliverables and specific gates belong in the applicable implementation plan. NEVER update this file solely for implementation progress.
-- MUST read [README](README.md), [roadmap](docs/ROADMAP.md), [architecture](docs/architecture/OVERVIEW.md), applicable requirements and implementation plan before edits. Use [docs index](docs/README.md) for references.
+- MUST read [README](README.md), [roadmap](docs/ROADMAP.md), [architecture](docs/architecture/README.md), applicable requirements and implementation plan before edits. Use [docs index](docs/README.md) for references.
 - MUST keep changes scoped and consistent. NEVER refactor unrelated code. MUST align code, tests, configuration and docs.
 
 ## Repository and Git
@@ -31,6 +31,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 
 - MUST use native Windows, uv, PySide6, Pydantic, typed Python, Ruff, Pylance, mypy and pytest. Runtime/tool versions and compatibility constraints come from repository configuration and the [Windows setup](docs/development/SETUP.md); NEVER duplicate version pins here.
 - MUST use locked dependencies. Before adding dependencies: check requirements and explain purpose.
+- MUST maintain architecture exclusively in the twelve arc42 chapters under `docs/architecture/`; navigate via their README index and read task-relevant chapters. MUST use Mermaid for suitable diagrams. NEVER introduce a parallel architecture overview; link existing ADRs from chapter 09.
 - NEVER put domain/import/analysis/storage/playback/rendering logic or validation in Qt widgets. MUST follow documented subsystem boundaries.
 - MUST keep render frame generation separate from encoding and preserve independent transparent-overlay and opaque-video outputs.
 - MUST support offline application processing and installed quality checks. NEVER require cloud services. Dependency installation and optional Context7 lookup may use network.

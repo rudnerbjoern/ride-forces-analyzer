@@ -7,6 +7,13 @@
 **Platform:** Windows / Python 3.14.6
 **Precondition:** Verified M2 canonical importer contracts
 **Owner decision:** No scientific computation is authorized by this document alone.
+**Architecture authority:** [arc42 index](../architecture/README.md); maintain only
+its twelve chapters. [Source concepts](../architecture/08_concepts.md),
+[decisions](../architecture/09_architecture_decisions.md),
+[quality scenarios](../architecture/10_quality_requirements.md) and
+[scientific risks](../architecture/11_technical_risks.md) define the existing boundaries.
+**Recording scope:** All five [authorized fixtures](../development/RECORDINGS.md),
+including the acceleration-only Apple Watch Iron Gwazi profile.
 
 ## 1. Purpose and scope
 
@@ -46,8 +53,8 @@ changes to M2 source files.
 - **LIB-005 Pandas:** Optional adapter for tabular analysis and later consumers;
   avoid requiring it in every core numerical operation. Already in `analysis`.
 - **LIB-006 AHRS:** Evaluation only, not a mandatory dependency. No complete
-  gyroscope or magnetometer raw sequences were identified in the four baseline
-  exports; prohibit claims of reliable full IMU sensor fusion from these files.
+  gyroscope or magnetometer raw sequences were identified in the current
+  five-fixture inventory; prohibit claims of reliable full IMU sensor fusion from these files.
 - **LIB-007 pyproj:** Optional extension only if a concrete coordinate reference
   system conversion need is approved. Do not duplicate GeographicLib's geodesic
   function for the initial feature set.
@@ -72,7 +79,9 @@ Official documentation URLs are provided in section 11.
 - **SCI-003 Frames:** Define independent DEVICE, WORLD/GRAVITY and RIDER frames,
   their axis basis, right/left handedness, positive direction and unit.
   A frame transformation is permitted only when its interpretation is documented
-  and approved in an ADR with reference tests.
+  and approved in an ADR with reference tests, linked from
+  [arc42 decisions](../architecture/09_architecture_decisions.md). Maintain the
+  accepted frame/unit/capability policy in [cross-cutting concepts](../architecture/08_concepts.md).
 - **SCI-004 Force terminology:** Distinguish accelerometer *specific force*
   (proper acceleration) from gravity vector and gravity-compensated kinematic
   acceleration. Avoid conflating accelerometer-derived rider loading with
@@ -211,9 +220,10 @@ Official documentation URLs are provided in section 11.
 - **VAL-005:** Verify GeographicLib against documented geodesic examples,
   identical points, known WGS84 baselines, missing fixes and invalid coordinate
   cases. Prohibit comparing horizontal distance to a 3D rail track directly.
-- **VAL-006:** Parameterize structural integration tests for all four actual
+- **VAL-006:** Parameterize structural integration tests for all five actual
   fixtures without modifying their bytes; test absent ride position, variable
-  metadata and GPS availability separately.
+  metadata and GPS availability separately. Iron Gwazi must exercise missing
+  gravity/GPS capabilities without fabricated vectors, fixes or derived channels.
 - **VAL-007:** Compare `minForce` and `maxForce` from originals with the
   source Ride Forces app's displayed metrics after confirming the app's
   chosen axis, smoothing, recording segment and sign conventions. If no
@@ -224,7 +234,9 @@ Official documentation URLs are provided in section 11.
   for unknown source algorithms.
 - **VAL-009:** All required Windows quality checks from `AGENTS.md`
   pass locally, including dependency tests. Verify every acceptance criterion
-  and finalize `docs/validation/M3.md` and completion status before publication.
+  and finalize `docs/validation/M3.md`, affected arc42 chapters/diagrams and
+  completion status before publication. Verify ARC-001–004 locally; documentation
+  checks do not establish scientific acceptance.
   Selected pull-request CI suites and the final `check` gate must pass before
   merge; record hosted outcomes in PR metadata without a completion-only commit.
   Investigate failures and correct acceptance evidence invalidated by defects.
@@ -234,7 +246,8 @@ Official documentation URLs are provided in section 11.
 ## 8. Acceptance criteria
 
 - **AC-01:** Documented, reviewed scientific ADR for source units, gravity,
-  frames, sign, time and unknowns; no unsupported default rider-frame output.
+  frames, sign, time and unknowns, linked from arc42 chapter 09 with consistent
+  chapters 08/11; no unsupported default rider-frame output.
 - **AC-02:** Version-pinned NumPy, SciPy, Pint and GeographicLib dependency
   decisions with locally verified Windows/Python compatibility, license and
   integration evidence.
@@ -247,7 +260,9 @@ Official documentation URLs are provided in section 11.
 - **AC-06:** Unit normalization validated with Pint; unverified source units
   remain unassigned.
 - **AC-07:** GPS geodesics, speed estimates and quality filtering validated
-  with synthetic cases and all four fixtures without inventing GPS precision.
+  with synthetic cases and the four GPS-bearing iPhone fixtures. All five
+  recordings participate in capability tests, including explicit unavailable
+  GPS/gravity-derived products for Iron Gwazi; no invented GPS precision or samples.
 - **AC-08:** App comparison report includes source `minForce`/`maxForce`,
   same-segment analysis and explicit unresolved assumptions; claims of
   equivalence require evidence beyond recorded extrema alone.
@@ -255,15 +270,21 @@ Official documentation URLs are provided in section 11.
   no Qt coupling, no feature creep into M4–M7.
 - **AC-10:** Focused scientific tests and complete native-Windows checks pass
   locally; the final M3 validation report records each criterion, exact commands,
-  results, traceability and limits before publication.
+  results, traceability (including ARC-001–004) and limits before publication.
+  Relevant arc42 chapters and Mermaid diagrams match the verified implementation;
+  planned features and unresolved scientific assumptions remain explicitly labeled.
 
 ## 9. Evidence gates and unresolved questions
 
-Document evidence separately for all four recordings as defined in
-[the M2 format analysis](FORMAT-ANALYSIS.md). The available files establish
-sample arrays, GPS entries, direction vectors, sample rate and source
-extrema, but **not** definitive axis semantics, sensor unit meanings,
-time epoch or upstream smoothing formula.
+Document evidence separately for all five recordings as defined in
+[the M2 format analysis](FORMAT-ANALYSIS.md). Available fields differ by device:
+the four iPhone exports contain gravity/GPS, while Iron Gwazi has neither.
+Retained direction vectors or marker indices do not establish a missing sensor
+capability. Effective sample rate/riding position can be owner defaults and must
+remain distinct from source values. The files establish available arrays,
+metadata and source extrema, but **not** definitive axis semantics, sensor unit
+meanings, time epoch or upstream smoothing formula. Keep unresolved assumptions in
+[arc42 risks](../architecture/11_technical_risks.md).
 
 A scientific implementation must not proceed to a definitive rider-force
 calculation without resolving those issues from documented source-app
@@ -288,8 +309,30 @@ Questions for an ADR or a reference-data collection protocol:
 Follow [PLAN.md](../implementation/DEV-REQ-003/PLAN.md) and
 [PROMPTS.md](../implementation/DEV-REQ-003/PROMPTS.md) in order.
 Do not implement M3 until M2 contract readiness is confirmed and a separate
-implementation instruction is given. Do not alter this accepted requirement
-silently; any substantive changes require a reviewed requirement revision.
+implementation instruction is given. Do not silently change these scientific
+contracts; substantive changes require a reviewed requirement revision.
+
+### Architecture documentation requirements
+
+- **ARC-001 Structure:** The twelve chapters linked from the
+  [arc42 index](../architecture/README.md) are the maintained architecture.
+  Read/update task-relevant chapters; never create a parallel overview. Requirements,
+  stage instructions, API guides and dated acceptance evidence retain their existing roles.
+- **ARC-002 Consistency:** Keep strategy, dependencies, analysis building blocks,
+  runtime interactions, deployment implications, units/frames/capabilities, quality
+  scenarios, decisions and risks aligned with the implemented stage. Proposed M3
+  APIs/libraries remain planned until implemented and verified; an architecture
+  update alone does not authorize dependencies or scientific computation.
+- **ARC-003 Diagrams and decisions:** Use Mermaid where a diagram clarifies a
+  view; distinguish planned from implemented interactions. Check changed diagram
+  syntax locally and report visual-rendering limits. Preserve ADR rationale in
+  `docs/decisions/` and link new/revised scientific ADRs from chapter 09; do not
+  duplicate decision history across requirements and architecture chapters.
+- **ARC-004 Acceptance:** Finalize relevant chapters, glossary, scientific
+  limitations and requirement traceability before local M3 sign-off/publication.
+  Run applicable documentation/diagram checks after final edits. The initial
+  authorized delivery already includes these updates; green CI does not trigger
+  a completion-only architecture or validation commit.
 
 ## 11. Primary documentation
 

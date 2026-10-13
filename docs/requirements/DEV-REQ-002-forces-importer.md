@@ -2,7 +2,7 @@
 
 **Milestone:** M2 | **Status:** Complete; AC-01–AC-10 verified on 2026-10-13
 **Target:** Windows, Python 3.14.6 | **Source format:** Ride Forces `.forces`
-**Scope authority:** [Roadmap](../ROADMAP.md), [architecture](../architecture/OVERVIEW.md), [recordings](../development/RECORDINGS.md), [AGENTS.md](../../AGENTS.md).
+**Scope authority:** [Roadmap](../ROADMAP.md), [architecture](../architecture/README.md), [recordings](../development/RECORDINGS.md), [AGENTS.md](../../AGENTS.md).
 
 ## 1. Purpose and boundaries
 

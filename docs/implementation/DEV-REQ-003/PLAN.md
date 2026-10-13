@@ -6,10 +6,35 @@
 **Requirements:** [DEV-REQ-003](../../requirements/DEV-REQ-003-scientific-analysis.md).
 **Steps for Codex:** [PROMPTS.md](PROMPTS.md).
 **Input prerequisite:** Verified M2 canonical importer with provenance and diagnostics.
+**Architecture:** [arc42 index](../../architecture/README.md); the twelve chapters
+are the sole maintained architecture views. Apply ARC-001–004 from the requirements.
+**Fixtures:** All five [authorized recordings](../../development/RECORDINGS.md).
 
 Each stage is a separate review gate. Perform no stage automatically after another.
 Development follows [AGENTS.md](../../../AGENTS.md), including branch, staging,
 approval, commit and pull-request rules.
+
+## Architecture maintenance across stages
+
+Read the index and stage-relevant chapters once per working context. Update only
+affected architecture views; retain unchanged evidence and clearly mark proposals,
+implemented behavior and scientific unknowns. Use Mermaid for applicable diagrams
+and check changed definitions locally. Link ADRs from chapter 09; never revive
+the removed overview or copy stage instructions into architecture/AGENTS.md.
+
+| Stage | Primary arc42 views to read/update when affected                                                                                                                                                                                                            |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | [08 Concepts](../../architecture/08_concepts.md), [09 Decisions](../../architecture/09_architecture_decisions.md), [11 Risks](../../architecture/11_technical_risks.md)                                                                                     |
+| 1     | [02 Constraints](../../architecture/02_architecture_constraints.md), [04 Strategy](../../architecture/04_solution_strategy.md), [05 Blocks](../../architecture/05_building_block_view.md), [07 Deployment](../../architecture/07_deployment_view.md), 08/09 |
+| 2     | 05, [06 Runtime](../../architecture/06_runtime_view.md), 08, [10 Quality](../../architecture/10_quality_requirements.md)                                                                                                                                    |
+| 3     | 05/06/08/09/10/11                                                                                                                                                                                                                                           |
+| 4     | 05/06/08/10/11                                                                                                                                                                                                                                              |
+| 5     | 05/06/08/10/11                                                                                                                                                                                                                                              |
+| 6     | 08/09/10/11                                                                                                                                                                                                                                                 |
+| 7     | Review all twelve chapters and [12 Glossary](../../architecture/12_glossary.md); update every view affected by the verified implementation                                                                                                                  |
+
+Changes to goals or external scope also update chapters 01/03. This table maps
+existing stage work to documentation; it does not authorize an implementation stage.
 
 ## Stage 0 — Scientific feasibility and decisions
 
@@ -22,6 +47,8 @@ device-only results allowed without calibrated rider-frame proof;
 definitive rider-axis output forbidden without independent evidence.
 Specify reference-data collection against the source app without claiming its
 private algorithms. Review with owner before any rider-force interpretation.
+Link the proposed scientific ADR from chapter 09 and record the decision/evidence
+state in chapters 08/11; do not label unknowns verified during documentation work.
 
 **Trace:** SCI-001–010, VAL-007, AC-01 and AC-08.
 **Exit:** Written decision matrix with unresolved items and safe defaults.
@@ -35,6 +62,8 @@ Document rationale for not yet adopting AHRS or pyproj. Define immutable
 and `AnalysisResult`; use NumPy arrays with documented read-only ownership.
 Avoid Qt or M2 import duplication. Use a separate authorized change for
 dependency installation/lock updates when implementation begins.
+Update planned library/API boundaries and deployment implications in the relevant
+arc42 chapters; dependency installation and scientific design retain separate gates.
 
 **Trace:** LIB-001–008, SCI-001–003, RES-001–005, AC-02–03.
 **Exit:** Fully typed, testable API shape with approved dependency policy.
@@ -86,7 +115,9 @@ Handle invalid coordinates, negative apparent sentinels and non-monotonic or
 unverified timestamps explicitly. Do not equate horizontal path length to rail
 length, infer full speed without time validation, interpolate across gaps or
 automatically merge GPS and acceleration time bases. Test identical locations,
-known geodesic examples, missing fixes and the four original recordings.
+known geodesic examples, missing fixes and all five originals. Validate actual
+GPS segments on the four iPhone profiles and unavailable GPS/gravity-derived
+products on Iron Gwazi; never fabricate missing sensor data.
 
 **Trace:** GPS-001–010, VAL-005–006, AC-07.
 **Exit:** Unit-labeled GPS estimates with coverage and exclusions.
@@ -98,7 +129,8 @@ rider axis, orientation, smoothing and reference screenshots/values from the
 actual Ride Forces application, if supplied. Report numerical differences
 only when comparing like-with-like; otherwise document UNKNOWN.
 Avoid reverse-engineering claims based only on coincidence of extrema.
-Regression test all four immutable fixtures and synthetic baseline datasets.
+Regression test all five immutable fixtures and synthetic baseline datasets,
+with explicit device capabilities and absent-data results.
 
 **Trace:** VAL-006–008, AC-04–09.
 **Exit:** Repeatable discrepancy report and labeled limitations.
@@ -112,13 +144,14 @@ measurements with actual environment. Run all AGENTS.md commands:
 `npm run test:types`, `npm run test:dependencies`, pytest and
 `npm run test:docs`. Create `docs/validation/M3.md` with each AC's evidence
 and unresolved items. Complete acceptance locally and finalize the report and
-verified roadmap status; recheck documentation after final edits. Every acceptance
+verified roadmap status, including all affected arc42 views and Mermaid diagrams;
+verify ARC-001–004 and recheck documentation/diagram syntax after final edits. Every acceptance
 criterion must have local evidence, including owner acceptance of any permitted
 scientific capability exclusion. Missing evidence leaves M3 open.
 
 Required order for final M3 delivery:
 
-1. Finish local Windows acceptance, final documentation and affected checks.
+1. Finish local Windows acceptance, final arc42/validation documentation and affected checks.
    Stop with the final local result ready for owner review.
 2. Only after explicit authorization: stage, commit, push and create the draft PR
    to `main`. The initial delivery must already contain the final acceptance report
@@ -128,7 +161,7 @@ Required order for final M3 delivery:
    must pass before a separately
    authorized merge; correct acceptance evidence invalidated by defects.
 
-**Trace:** All LIB/SCI/SIG/GPS/RES/VAL, AC-01–10.
+**Trace:** All LIB/SCI/SIG/GPS/RES/VAL/ARC, AC-01–10.
 **Local exit:** All AC-01–AC-10 verified and final documentation checked before
 staging, committing, pushing or creating the final draft PR; otherwise M3 remains open.
 
