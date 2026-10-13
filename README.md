@@ -5,8 +5,9 @@ analyzing G-force traces and producing animated charts and transparent video ove
 
 **Current scope:** M1 provides an executable minimal Qt window, validated startup settings,
 separate subsystem packages, tests and development tooling. Import, analysis, storage,
-playback and rendering are **planned**, not implemented. M1 remains **open** until the
-updated pull-request CI passes and the reviewed documentation is committed.
+playback and rendering are **planned**, not implemented. **M1 acceptance is verified**
+on Windows and in pull-request CI; delivery is available in
+[draft PR #1](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/1) for owner review.
 
 ## Requirements
 
@@ -41,7 +42,7 @@ Start with the [documentation index](docs/README.md). Key references:
 - [AGENTS.md](AGENTS.md): repository instructions for coding agents.
 - [Roadmap](docs/ROADMAP.md): milestone scope and acceptance criteria.
 - [Architecture](docs/architecture/OVERVIEW.md): current foundation and planned boundaries.
-- [M1 validation](docs/validation/M1.md): verified results and explicitly open criteria.
+- [M1 validation](docs/validation/M1.md): verified results and validation limits.
 
 ## Recording test data
 

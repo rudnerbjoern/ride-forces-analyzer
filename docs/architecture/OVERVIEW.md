@@ -42,11 +42,12 @@ Fixture integrity is guarded by a SHA-256 regression test without parsing or rew
 ## Bootstrap settings validation
 
 `config.AppSettings` is an immutable, strictly validated Pydantic model for the
-initial window title and dimensions (1–16,777,215 pixels, the Qt widget-size limit). The application entry point consumes it
+initial window title and dimensions (1–16,777,215 pixels, the Qt widget-size limit).
+The application entry point consumes it
 before starting Qt. Runtime validation lives outside widgets; no recording schema,
 importer or analysis behavior is implemented by this model. Unknown settings are
 rejected, while preservation of unknown recording fields remains a distinct M2
 contract. Pylance and Pyright share strict type-checking settings in `pyproject.toml`.
 
 See [development setup](../development/SETUP.md) for commands and
-[M1 validation](../validation/M1.md) for verified evidence and open acceptance criteria.
+[M1 validation](../validation/M1.md) for verified acceptance evidence and validation limits.

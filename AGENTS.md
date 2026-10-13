@@ -7,7 +7,8 @@
 - Distinguish verified facts, assumptions and recommendations. Mark unimplemented features
   as planned and unverifiable acceptance criteria as open.
 - Implement one milestone at a time. Do not mark a milestone complete until every acceptance
-  criterion is verified. M1 is the current scope; do not implement M2 yet.
+  criterion is verified. This delivery covers M1; do not implement M2 without a new
+  owner instruction.
 - Read [README.md](README.md), the [roadmap](docs/ROADMAP.md) and
   [architecture](docs/architecture/OVERVIEW.md) before changing the project. Use the
   [documentation index](docs/README.md) to find development guides and validation evidence.
@@ -18,8 +19,7 @@
 - Treat staged files as reviewed by the user. Never modify, unstage, replace or include them
   in another operation unless explicitly requested.
 - Stage files only within the scope explicitly authorized for committing. Before a commit,
-  inspect only the staged diff and
-  commit only the exact staged scope approved by the user.
+  inspect only the staged diff and commit only the exact staged scope approved by the user.
 - Never commit on local `main` and never push to remote `main`, including force pushes,
   deletion or pushing another source branch to `main`. Never bypass this rule with
   `--all`, `--mirror` or a different push destination.

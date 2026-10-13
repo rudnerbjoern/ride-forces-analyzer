@@ -63,7 +63,7 @@ construction separately, run `uv build`; outputs go to ignored `dist/`.
 CI runs only on `pull_request` events. Its `check` job performs locked Python and
 Node installation and all Python quality checks; `documentation` installs Node
 tools and runs the documentation suite. Both jobs use `windows-latest`.
-See [M1 validation](../validation/M1.md) for actual results and open CI acceptance.
+See [M1 validation](../validation/M1.md) for actual results and acceptance evidence.
 
 ## Branch and pull-request workflow
 

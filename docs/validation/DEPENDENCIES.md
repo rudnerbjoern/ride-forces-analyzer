@@ -80,4 +80,4 @@ Context7 references: [uv lock and sync](https://docs.astral.sh/uv/concepts/proje
 
 The requested Context7 launcher in `.codex/config.toml` is unpinned and is
 separate from these locked project dependencies; see [Codex settings](../development/CODEX.md).
-Actual validation results and open CI criteria are recorded in [M1 validation](M1.md).
+Actual validation results and acceptance evidence are recorded in [M1 validation](M1.md).

@@ -8,16 +8,18 @@
 - [x] Verify GitHub Actions checks after repository creation (initial Python 3.13 commit).
 - [x] Verify local Ruff lint/format, mypy, Pyright, type contracts, pytest and documentation checks.
 - [x] Verify original Manta fixture bytes against the initial Git blob and regression digest.
-- [ ] Verify both GitHub Actions jobs for the updated Python 3.14.6 configuration and tests.
-- [ ] Commit the reviewed design documentation on the authorized M1 branch.
+- [x] Verify both GitHub Actions jobs for the updated Python 3.14.6 configuration and tests.
+- [x] Commit the reviewed design documentation on the authorized M1 branch.
 
-**Status:** Not complete; see [validation evidence and open criteria](validation/M1.md).
+**Status:** Complete on 2026-10-13; see [verified acceptance evidence](validation/M1.md).
+Delivery is in [draft PR #1](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/1);
+merging remains a separate owner decision.
 **Exit criteria:** Windows install and native GUI startup; all checks in the
 [development guide](development/SETUP.md) pass; both PR CI jobs pass on the updated
 revision; reviewed design documentation committed. Delivery uses a branch and draft PR
 targeting `main`; merge remains a separate owner decision.
 
-All M2–M8 functionality below is **planned**. Do not start M2 while M1 remains open.
+All M2–M8 functionality below is **planned**. Starting M2 requires a new owner instruction.
 
 ## M2 — Ride Forces importer
 

@@ -6,7 +6,7 @@ This directory contains project documentation, not generated artifacts or tempor
 
 ## Scope and design
 
-- [Roadmap](ROADMAP.md): sequential milestones and exit criteria; M1 is still open.
+- [Roadmap](ROADMAP.md): sequential milestones and exit criteria; M1 acceptance is verified.
 - [Architecture](architecture/OVERVIEW.md): implemented foundation, planned subsystem
   boundaries and unverified scientific contracts.
 - [ADR 0001](decisions/0001-platform.md): offline Windows platform and Python decision.
@@ -25,7 +25,7 @@ This directory contains project documentation, not generated artifacts or tempor
 ## Verification evidence
 
 - [M1 validation](validation/M1.md): current verified results, historical evidence
-  boundaries and outstanding acceptance criteria.
+  boundaries and acceptance evidence.
 - [M1 delivery plan](validation/M1_DELIVERY.md): branch, commit groups and PR verification order.
 - [Dependency audit](validation/DEPENDENCIES.md): dated release checks and pinned tooling.
 

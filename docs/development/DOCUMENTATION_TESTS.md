@@ -80,5 +80,6 @@ The PR-only workflow has a separate `documentation` job on `windows-latest`.
 It selects Node.js from `.node-version`, installs dependencies with `npm ci`
 and runs `npm run test:docs`. A lint, spelling or local-link failure fails the job.
 
-The revised GitHub Actions job still requires a successful run on a pull request
-before it can be reported as verified on GitHub.
+A workflow revision requires a successful pull-request run before it can be
+reported as verified on GitHub. The M1 jobs passed; see
+[M1 validation](../validation/M1.md) for the inspected run and revision.

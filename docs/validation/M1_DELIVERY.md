@@ -49,3 +49,23 @@ M1 is complete only when every [roadmap](../ROADMAP.md) acceptance criterion is
 verified. Unverified criteria stay open in [M1 validation](M1.md), even if local
 checks passed. Draft status and PR merge are review/delivery states, not evidence
 of a successful CI run.
+
+## Execution result
+
+The existing default branch was renamed to `main`; its commit remains
+`85a3eaa5c5726b1f304ba6f807763ee695a96d5e`. The working branch was created from
+that unchanged base, and the four planned commits were pushed only to
+`refs/heads/milestone/m1-foundation`:
+
+- `567f63c :sparkles: feat(foundation): validate the Windows Python 3.14 bootstrap`
+- `697df98 :wrench: chore(tooling): align editor and offline quality checks`
+- `38b6db1 :gear: ci(ci): validate M1 only on Windows pull requests`
+- `7721edb :memo: docs(foundation): document M1 validation and delivery workflow`
+
+[Draft PR #1](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/1) targets
+`main`. Its [first updated CI run](https://github.com/rudnerbjoern/ride-forces-analyzer/actions/runs/38390505156)
+passed both Windows jobs, with real runner output inspected. The accompanying
+final documentation commit records that evidence and the completed M1 acceptance;
+its revision must also pass the PR workflow before delivery is reported final.
+Temporary contents and environments remain excluded, and the Manta bytes are unchanged.
+The PR stays a draft; no merge or M2 work is included.
