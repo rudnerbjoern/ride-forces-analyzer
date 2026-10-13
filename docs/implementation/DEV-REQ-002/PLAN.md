@@ -125,15 +125,15 @@ related work; each new independent change begins on a separate branch from `main
 
 ## Working acceptance matrix
 
-| Stage | Key requirements | Key acceptance criteria |
-| --- | --- | --- |
-| 0 | FR-001, FR-004, FR-007, FR-024, FR-030 | AC-02 |
-| 1 | FR-002–006, FR-023, FR-027 | AC-03, AC-08 |
-| 2 | FR-001, FR-003–010, FR-024, FR-026 | AC-02, AC-03, AC-05 |
-| 3 | FR-011–016 | AC-01, AC-02, AC-06 |
-| 4 | FR-009–010, FR-017–022, FR-025 | AC-01, AC-04, AC-07 |
-| 5 | FR-001, FR-003, FR-028–030 | AC-01, AC-02, AC-08 |
-| 6 | All FR/NFR, documented exceptions | AC-01–AC-10 |
+| Stage | Key requirements                       | Key acceptance criteria |
+| ----- | -------------------------------------- | ----------------------- |
+| 0     | FR-001, FR-004, FR-007, FR-024, FR-030 | AC-02                   |
+| 1     | FR-002–006, FR-023, FR-027             | AC-03, AC-08            |
+| 2     | FR-001, FR-003–010, FR-024, FR-026     | AC-02, AC-03, AC-05     |
+| 3     | FR-011–016                             | AC-01, AC-02, AC-06     |
+| 4     | FR-009–010, FR-017–022, FR-025         | AC-01, AC-04, AC-07     |
+| 5     | FR-001, FR-003, FR-028–030             | AC-01, AC-02, AC-08     |
+| 6     | All FR/NFR, documented exceptions      | AC-01–AC-10             |
 
 ## Operational guardrails
 
