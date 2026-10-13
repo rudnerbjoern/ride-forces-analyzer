@@ -8,9 +8,18 @@ dist/
 build/
 *.egg-info/
 .idea/
-.vscode/
+/.vscode/*
+!/.vscode/settings.json
+!/.vscode/extensions.json
 *.mp4
 *.mov
 *.png
 *.sqlite3
 !tests/fixtures/**/*.png
+
+# Keep the temporary directory, but ignore its contents.
+/.tmp/*
+!/.tmp/.gitkeep
+
+# Documentation development dependencies.
+node_modules/

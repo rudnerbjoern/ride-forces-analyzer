@@ -1,0 +1,17 @@
+{
+  "globs": [
+    "*.md",
+    "docs/**/*.md",
+    ".github/**/*.md"
+  ],
+  "gitignore": true,
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD036": false,
+    "MD060": {
+      "style": "aligned",
+      "aligned_delimiter": true
+    }
+  }
+}

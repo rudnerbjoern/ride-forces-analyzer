@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "DavidAnson.vscode-markdownlint",
+    "charliermarsh.ruff",
+    "ms-python.vscode-pylance",
+    "streetsidesoftware.code-spell-checker"
+  ]
+}

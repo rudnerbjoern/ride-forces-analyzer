@@ -1,0 +1,70 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en",
+  "useGitignore": true,
+  "files": [
+    "**/*.{md,py,mjs,json,jsonc,toml,yml,yaml}",
+    ".github/workflows/*.{yml,yaml}",
+    ".github/**/*.md",
+    ".vscode/*.json",
+    ".codex/*.toml",
+    ".cspell.json",
+    ".markdownlint-cli2.jsonc"
+  ],
+  "ignorePaths": [
+    "**/.git/**",
+    "**/.tmp/**",
+    "**/.venv/**",
+    "**/node_modules/**",
+    "**/__pycache__/**",
+    "**/.pytest_cache/**",
+    "**/.mypy_cache/**",
+    "**/.ruff_cache/**",
+    "**/build/**",
+    "**/dist/**",
+    "**/*.egg-info/**",
+    "**/*.forces",
+    "**/package-lock.json",
+    "**/uv.lock"
+  ],
+  "words": [
+    "Anson",
+    "charliermarsh",
+    "cspell",
+    "DaVinci",
+    "ENOENT",
+    "hatchling",
+    "librt",
+    "mypy",
+    "outputjson",
+    "Pydantic",
+    "Pylance",
+    "pyqtgraph",
+    "pyright",
+    "pyrightconfig",
+    "PySide",
+    "pytest",
+    "RGBA",
+    "shiboken",
+    "testpaths",
+    "webengine"
+  ],
+  "languageSettings": [
+    {
+      "languageId": [
+        "python",
+        "javascript",
+        "json",
+        "jsonc",
+        "toml",
+        "yaml",
+        "markdown"
+      ],
+      "caseSensitive": false
+    }
+  ],
+  "dictionaries": [
+    "python"
+  ]
+}
