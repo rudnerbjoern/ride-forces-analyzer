@@ -1,0 +1,22 @@
+{
+  "name": "ride-forces-analyzer-docs",
+  "private": true,
+  "description": "Offline documentation and Python type checks for Ride Forces Analyzer",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "lint:docs": "markdownlint-cli2",
+    "test:docs:links": "node --test tests/docs/documentation.test.mjs",
+    "test:docs": "npm run lint:docs && npm run spellcheck && npm run test:docs:links",
+    "typecheck": "pyright",
+    "test:types": "node --test tests/types/pydantic.test.mjs",
+    "spellcheck": "cspell lint --config .cspell.json --no-progress"
+  },
+  "devDependencies": {
+    "markdown-it": "15.0.2",
+    "markdownlint-cli2": "0.23.3",
+    "pyright": "1.1.414",
+    "cspell": "10.3.6"
+  }
+}

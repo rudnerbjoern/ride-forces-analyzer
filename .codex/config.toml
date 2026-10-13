@@ -1,0 +1,19 @@
+# Project defaults copied from the existing Codex user configuration.
+# Workflow instructions are maintained in AGENTS.md.
+model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
+personality = "pragmatic"
+web_search = "cached"
+
+# Public documentation server; requires Node.js/npm in the Codex host environment.
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]
+
+[features]
+memories = true
+
+[memories]
+disable_on_external_context = true
+generate_memories = true
+use_memories = true
