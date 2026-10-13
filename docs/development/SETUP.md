@@ -51,18 +51,19 @@ uv run ruff format --check src tests
 uv run mypy src
 npm run typecheck
 npm run test:types
+npm run test:dependencies
 uv run pytest
 npm run test:docs
 ```
 
 These commands cover Python linting, formatting, two type checkers, static typing
-contracts, runtime and native GUI tests, Markdown formatting, spelling and local
-links. Run focused checks first when changing one boundary. To verify package
+contracts, Node dependency regressions, runtime and native GUI tests, Markdown
+formatting, spelling and local links. Run focused checks first when changing one boundary. To verify package
 construction separately, run `uv build`; outputs go to ignored `dist/`.
 
 CI runs only on `pull_request` events. Its `check` job performs locked Python and
-Node installation and all Python quality checks; `documentation` installs Node
-tools and runs the documentation suite. Both jobs use `windows-latest`.
+Node installation, Python quality checks and Node dependency regressions;
+`documentation` installs Node tools and runs the documentation suite. Both jobs use `windows-latest`.
 See [M1 validation](../validation/M1.md) for actual results and acceptance evidence.
 
 ## Branch and pull-request workflow

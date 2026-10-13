@@ -36,6 +36,8 @@ This directory contains project documentation, not generated artifacts or tempor
   boundaries and acceptance evidence.
 - [M1 delivery plan](validation/M1_DELIVERY.md): branch, commit groups and PR verification order.
 - [Dependency audit](validation/DEPENDENCIES.md): dated release checks and pinned tooling.
+- [Node security follow-up](validation/DEPENDABOT.md): tested overrides, regression
+  coverage and the open braces advisory.
 
 Keep development instructions in `docs/development/`, architecture in
 `docs/architecture/`, decision records in `docs/decisions/` and dated verification
