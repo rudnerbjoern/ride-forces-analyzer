@@ -37,7 +37,10 @@ The supported runtime is Python 3.14 (minimum 3.14.6); `.python-version` and CI 
 `uv sync --locked --all-extras --group dev` to reproduce the validation environment.
 The GUI smoke test runs the real module entry point in an isolated process, checks
 the native Windows Qt window and exits through the normal Qt event loop.
-Fixture integrity is guarded by a SHA-256 regression test without parsing or rewriting it.
+Each of the four owner-authorized recordings is guarded by its own byte-length and
+SHA-256 regression check without parsing or rewriting it. The exact inventory is
+verified; see the [recording catalog](../development/RECORDINGS.md). Future import
+and analysis tests must use the complete authorized set.
 
 ## Bootstrap settings validation
 

@@ -37,6 +37,7 @@
     "hatchling",
     "librt",
     "mypy",
+    "Nevera",
     "outputjson",
     "Pydantic",
     "Pylance",
@@ -47,7 +48,9 @@
     "pytest",
     "RGBA",
     "shiboken",
+    "Taron",
     "testpaths",
+    "Voltron",
     "webengine"
   ],
   "languageSettings": [

@@ -6,8 +6,8 @@ analyzing G-force traces and producing animated charts and transparent video ove
 **Current scope:** M1 provides an executable minimal Qt window, validated startup settings,
 separate subsystem packages, tests and development tooling. Import, analysis, storage,
 playback and rendering are **planned**, not implemented. **M1 acceptance is verified**
-on Windows and in pull-request CI; delivery is available in
-[draft PR #1](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/1) for owner review.
+on Windows and in pull-request CI, and
+[PR #1](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/1) is merged.
 
 ## Requirements
 
@@ -46,7 +46,9 @@ Start with the [documentation index](docs/README.md). Key references:
 
 ## Recording test data
 
-`tests/fixtures/real/Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces` is included
-unaltered with authentic GPS data by express permission of its owner. All recordings
-are read-only inputs. A regression test compares this fixture with its original SHA-256.
-Do not add or publish other personal/location recordings without authorization.
+Four genuine recordings are included in `tests/fixtures/real/`: Manta, Kraken,
+Taron and Voltron Nevera. Their owner expressly authorizes using and publishing
+the complete files with all embedded data, including GPS, in this project for
+tests and development. Each file remains read-only and has its own byte-length
+and SHA-256 regression check. See the [recording catalog](docs/development/RECORDINGS.md)
+for filenames, digests and test scope. Other recordings require separate authorization.

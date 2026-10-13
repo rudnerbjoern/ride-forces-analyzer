@@ -12,8 +12,9 @@
 - [x] Commit the reviewed design documentation on the authorized M1 branch.
 
 **Status:** Complete on 2026-10-13; see [verified acceptance evidence](validation/M1.md).
-Delivery is in [draft PR #1](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/1);
-merging remains a separate owner decision.
+[PR #1](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/1) was merged with
+owner authorization. The later [four-recording expansion](development/RECORDINGS.md)
+has separate verification notes in the M1 report.
 **Exit criteria:** Windows install and native GUI startup; all checks in the
 [development guide](development/SETUP.md) pass; both PR CI jobs pass on the updated
 revision; reviewed design documentation committed. Delivery uses a branch and draft PR
@@ -25,7 +26,7 @@ All M2–M8 functionality below is **planned**. Starting M2 requires a new owner
 
 Parse `.forces` JSON defensively; preserve unknown metadata and bytes; convert numeric strings;
 validate sample rate, sequence lengths, indices and GPS sentinels. **Exit:** lossless ingest of
-Manta fixture with regression tests.
+all four [authorized fixtures](development/RECORDINGS.md) with regression tests.
 
 ## M3 — G-force analysis
 
@@ -35,8 +36,8 @@ computations with deviation report.
 
 ## M4 — Explorer GUI
 
-Ride library, 3-axis charts, scrubber, zoom, segment selection, statistics. **Exit:** complete
-fixture can be browsed without blocking UI.
+Ride library, 3-axis charts, scrubber, zoom, segment selection, statistics. **Exit:** all four complete
+fixtures can be browsed without blocking UI.
 
 ## M5 — Playback
 

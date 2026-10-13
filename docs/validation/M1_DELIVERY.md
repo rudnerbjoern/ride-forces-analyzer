@@ -1,5 +1,8 @@
 # M1 delivery plan — 2026-10-13
 
+This preserves the original M1 delivery plan and its execution history. The later
+four-recording expansion is documented separately in the recording catalog.
+
 ## Reviewed scope
 
 Deliver the Windows Python 3.14.6 foundation, validated startup settings,
@@ -68,4 +71,8 @@ passed both Windows jobs, with real runner output inspected. The accompanying
 final documentation commit records that evidence and the completed M1 acceptance;
 its revision must also pass the PR workflow before delivery is reported final.
 Temporary contents and environments remain excluded, and the Manta bytes are unchanged.
-The PR stays a draft; no merge or M2 work is included.
+The PR was initially delivered as a draft. After the final Windows CI run passed,
+the owner separately authorized its merge; GitHub integrated it as commit
+`f9a5a4ce4087e886f35fff5468e82a0f6f3da47c`. No direct push to `main` or M2 work occurred.
+The later Kraken, Taron and Voltron Nevera fixture additions are a separate change;
+see the [recording catalog](../development/RECORDINGS.md) and M1 report extension.
