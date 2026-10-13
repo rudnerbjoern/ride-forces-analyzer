@@ -181,33 +181,33 @@ are not established; do not label them Unix timestamps without proof.
 
 ## 5. Test catalog and acceptance criteria
 
-| ID | Acceptance test |
-| --- | --- |
-| AC-01 | All four actual recordings import successfully under schema 2.2.0 with their full motion/GPS arrays and metadata; note warnings without data loss. |
-| AC-02 | Original byte lengths and SHA-256 remain identical across before/after import, including all original GPS data. |
-| AC-03 | Tests demonstrate JSON source round-trip, unknown-field preservation, original numeric-string representations and no file write. |
-| AC-04 | Missing optional park, riding-position and weather fields do not fail import; multiple attributes remain ordered. |
+| ID    | Acceptance test                                                                                                                                                |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AC-01 | All four actual recordings import successfully under schema 2.2.0 with their full motion/GPS arrays and metadata; note warnings without data loss.             |
+| AC-02 | Original byte lengths and SHA-256 remain identical across before/after import, including all original GPS data.                                                |
+| AC-03 | Tests demonstrate JSON source round-trip, unknown-field preservation, original numeric-string representations and no file write.                               |
+| AC-04 | Missing optional park, riding-position and weather fields do not fail import; multiple attributes remain ordered.                                              |
 | AC-05 | Invalid required fields, malformed UTF-8/JSON, duplicate JSON keys, unsupported version and resource-limit violations produce deterministic structured errors. |
-| AC-06 | Numeric string parsing, nonfinite rejection, sample lengths, index bounds and no assumed marker ordering are tested. |
-| AC-07 | Negative GPS sentinels remain intact with warnings; GPS fields are not fabricated, aligned to motion samples or assumed to have verified units. |
-| AC-08 | Public typed API is Qt-independent and documented; repeat imports are deterministic. |
-| AC-09 | Focused importer tests and the required Ruff, mypy, Pyright, pytest, documentation and lock checks pass on native Windows. |
-| AC-10 | A dedicated PR verifies both GitHub CI jobs, and a dated M2 validation report records evidence and remaining limitations. |
+| AC-06 | Numeric string parsing, nonfinite rejection, sample lengths, index bounds and no assumed marker ordering are tested.                                           |
+| AC-07 | Negative GPS sentinels remain intact with warnings; GPS fields are not fabricated, aligned to motion samples or assumed to have verified units.                |
+| AC-08 | Public typed API is Qt-independent and documented; repeat imports are deterministic.                                                                           |
+| AC-09 | Focused importer tests and the required Ruff, mypy, Pyright, pytest, documentation and lock checks pass on native Windows.                                     |
+| AC-10 | A dedicated PR verifies both GitHub CI jobs, and a dated M2 validation report records evidence and remaining limitations.                                      |
 
 **Do not mark M2 complete** until all criteria have demonstrable evidence.
 Record unresolved GPS, force and time semantics for M3 without inventing answers.
 
 ## 6. Open questions and design decisions
 
-| ID | Issue | Policy until verified |
-| --- | --- | --- |
-| OQ-01 | Numeric `date` / GPS `timestamp` epoch | Preserve as numbers, no Unix conversion. |
-| OQ-02 | Inclusive/exclusive `endIndex` semantics | Preserve and validate bounds only. |
-| OQ-03 | Calibration/direction meaning and units | Preserve; no M2 force projections. |
-| OQ-04 | Meaning of negative GPS speed/course/accuracy | Preserve and flag, no unit claims. |
-| OQ-05 | Unpublished future schema variants | Reject as unsupported for full import; retain source inspection separately. |
-| OQ-06 | Resource size limits, invalid optional GPS fix handling | Document detailed defaults and tests in implementation ADR before parser coding. |
-| OQ-07 | Future per-sample timestamps or altered sample-rate conventions | Detect extension fields, never silently assume alignment. |
+| ID    | Issue                                                           | Policy until verified                                                            |
+| ----- | --------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| OQ-01 | Numeric `date` / GPS `timestamp` epoch                          | Preserve as numbers, no Unix conversion.                                         |
+| OQ-02 | Inclusive/exclusive `endIndex` semantics                        | Preserve and validate bounds only.                                               |
+| OQ-03 | Calibration/direction meaning and units                         | Preserve; no M2 force projections.                                               |
+| OQ-04 | Meaning of negative GPS speed/course/accuracy                   | Preserve and flag, no unit claims.                                               |
+| OQ-05 | Unpublished future schema variants                              | Reject as unsupported for full import; retain source inspection separately.      |
+| OQ-06 | Resource size limits, invalid optional GPS fix handling         | Document detailed defaults and tests in implementation ADR before parser coding. |
+| OQ-07 | Future per-sample timestamps or altered sample-rate conventions | Detect extension fields, never silently assume alignment.                        |
 
 ## 7. Implementation references
 
