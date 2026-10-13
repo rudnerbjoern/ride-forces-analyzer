@@ -9,8 +9,13 @@ immutable canonical models and structured diagnostics for synthetic construction
 see the [model guide](docs/development/CANONICAL_MODELS.md). Stage 3 adds
 [motion validation](docs/development/MOTION_PARSING.md) over supplied source trees.
 Stage 2 adds [strict source decoding](docs/development/STRICT_DECODING.md) from
-read-only paths or bytes. Complete importing, analysis, storage,
-playback and rendering are **planned**, not implemented. **M1 acceptance is verified**
+read-only paths or bytes. Stage 4 adds [optional metadata, attributes and GPS parsing](docs/development/OPTIONAL_PARSING.md),
+with explicit absence and owner-default provenance. Stage 5 exposes the
+[public read-only import service](docs/development/IMPORT_SERVICE.md), returning
+complete typed recordings for their available data. Analysis, storage, playback,
+GUI importing and rendering remain **planned**. M2 acceptance is verified;
+see the [final validation](docs/validation/M2.md).
+**M1 acceptance is verified**
 on Windows and in pull-request CI, and
 [PR #1](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/1) is merged.
 
@@ -48,6 +53,7 @@ Start with the [documentation index](docs/README.md). Key references:
 - [Roadmap](docs/ROADMAP.md): milestone scope and acceptance criteria.
 - [Architecture](docs/architecture/OVERVIEW.md): current foundation and planned boundaries.
 - [M1 validation](docs/validation/M1.md): verified results and validation limits.
+- [M2 validation](docs/validation/M2.md): final importer acceptance and Windows/PR CI evidence.
 
 ## Recording test data
 
@@ -61,5 +67,6 @@ for filenames, digests and test scope. Other recordings require separate authori
 The owner additionally supplied the Apple Watch Iron Gwazi recording for the
 current M2 Stage 0 inspection. The five-file recursive inventory distinguishes
 its missing gravity/GPS from the iPhone profile; see
-[format observations](docs/requirements/FORMAT-ANALYSIS.md) and
-[Stage 0 evidence](docs/validation/M2_STAGE0.md). No complete file importer is implemented.
+[format observations](docs/requirements/FORMAT-ANALYSIS.md).
+The callable service imports all five read-only originals; see
+[M2 validation](docs/validation/M2.md).

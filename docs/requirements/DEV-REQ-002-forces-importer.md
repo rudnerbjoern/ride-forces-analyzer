@@ -1,6 +1,6 @@
 # DEV-REQ-002 — Ride Forces file importer
 
-**Milestone:** M2 | **Status:** Models, strict decoder and motion subset implemented; complete importing planned
+**Milestone:** M2 | **Status:** Complete; AC-01–AC-10 verified on 2026-10-13
 **Target:** Windows, Python 3.14.6 | **Source format:** Ride Forces `.forces`
 **Scope authority:** [Roadmap](../ROADMAP.md), [architecture](../architecture/OVERVIEW.md), [recordings](../development/RECORDINGS.md), [AGENTS.md](../../AGENTS.md).
 
@@ -219,15 +219,15 @@ Record unresolved GPS, force and time semantics for M3 without inventing answers
 
 ## 6. Open questions and design decisions
 
-| ID    | Issue                                                           | Policy until verified                                                                                                  |
-| ----- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| OQ-01 | Numeric `date` / GPS `timestamp` epoch                          | Preserve as numbers, no Unix conversion.                                                                               |
-| OQ-02 | Inclusive/exclusive `endIndex` semantics                        | Preserve and validate bounds only.                                                                                     |
-| OQ-03 | Calibration/direction meaning and units                         | Preserve; no M2 force projections.                                                                                     |
-| OQ-04 | Meaning of negative GPS speed/course/accuracy                   | Preserve and flag, no unit claims.                                                                                     |
-| OQ-05 | Unpublished future schema variants                              | Reject as unsupported for full import; retain source inspection separately.                                            |
-| OQ-06 | Resource size limits, invalid optional GPS fix handling         | Stage 2 enforces decoder budgets; aggregate diagnostic limits and optional GPS handling remain planned under ADR 0002. |
-| OQ-07 | Future per-sample timestamps or altered sample-rate conventions | Detect extension fields, never silently assume alignment.                                                              |
+| ID    | Issue                                                           | Policy until verified                                                                                                                   |
+| ----- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| OQ-01 | Numeric `date` / GPS `timestamp` epoch                          | Preserve as numbers, no Unix conversion.                                                                                                |
+| OQ-02 | Inclusive/exclusive `endIndex` semantics                        | Preserve and validate bounds only.                                                                                                      |
+| OQ-03 | Calibration/direction meaning and units                         | Preserve; no M2 force projections.                                                                                                      |
+| OQ-04 | Meaning of negative GPS speed/course/accuracy                   | Preserve and flag, no unit claims.                                                                                                      |
+| OQ-05 | Unpublished future schema variants                              | Reject as unsupported for full import; retain source inspection separately.                                                             |
+| OQ-06 | Resource size limits, invalid optional GPS fix handling         | Decoder budgets, optional GPS slots and aggregate validation diagnostic limits are implemented; no peak-RAM/throughput guarantee.       |
+| OQ-07 | Future per-sample timestamps or altered sample-rate conventions | Detect extension fields, never silently assume alignment.                                                                               |
 
 ## 7. Implementation references
 
@@ -236,6 +236,8 @@ See [implementation plan](../implementation/DEV-REQ-002/PLAN.md),
 [observed format analysis](FORMAT-ANALYSIS.md). M2 has immutable Stage 1 models
 and diagnostic/result types, plus the separately authorized
 [Stage 3 motion subset](../development/MOTION_PARSING.md) and
-[Stage 2 strict decoder](../development/STRICT_DECODING.md). Complete importer
-integration and optional-data parsing remain planned; each subsequent stage needs
+[Stage 2 strict decoder](../development/STRICT_DECODING.md) and
+[Stage 4 optional parser](../development/OPTIONAL_PARSING.md). The
+[Stage 5 public service](../development/IMPORT_SERVICE.md) now integrates these
+into complete typed recordings. M2 acceptance is verified; each subsequent stage needs
 a separate instruction.

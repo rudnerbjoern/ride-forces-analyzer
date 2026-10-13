@@ -14,7 +14,8 @@ Boundaries: `domain` holds representations; `importers` handles external formats
 contains calibration/math; `storage` local library; `playback` timeline; `rendering` frame model and
 encoding; `ui` Qt widgets. M1 established these boundaries; M2 Stage 1 implements
 representations and Stage 3 adds pure motion validation over those source envelopes.
-Stage 2 adds strict source decoding. Complete import, analysis, storage, playback
+Stage 2 adds strict source decoding; Stage 4 adds optional metadata/attributes/GPS.
+Stage 5 provides the full typed import service. Analysis, storage, playback
 and rendering services remain planned.
 
 Application processing requires no network connectivity. Initial development installation
@@ -33,8 +34,8 @@ be independent.
 ## Implemented M1 foundation
 
 The executable entry point and bootstrap settings remain the implemented M1 behavior.
-M2 Stage 1 adds domain and diagnostic/result representations below; there is still
-no file-import service, analysis, persistence, playback or renderer.
+M2 adds domain/source representations, validated subsets and the read-only import
+service below. Analysis, persistence, playback and rendering remain planned.
 
 The supported runtime is Python 3.14 (minimum 3.14.6); `.python-version` and CI select 3.14.6.
 `uv.lock` records runtime, development and optional dependencies. Install with
@@ -64,7 +65,7 @@ owner-default provenance stay explicit. No Qt or scientific transformation is us
 Ordering is deterministic, and the Literal success tag supports typed control flow.
 No path adapter, file decoder or schema-version dispatch is implemented here.
 See [canonical models](../development/CANONICAL_MODELS.md) and
-[Stage 1 evidence](../validation/M2_STAGE1.md).
+[M2 validation](../validation/M2.md).
 
 ## M2 Stage 3 motion validation
 
@@ -74,9 +75,9 @@ available paired sequences, optional structural vectors and independent index
 bounds without changing source values or deriving forces/time. GPS and metadata
 remain in the envelope without interpretation. No complete Recording is claimed.
 Stage 2 now supplies source decoding, version dispatch and resource guards below;
-the motion parser remains independently callable and is not automatically integrated.
+the motion parser remains independently callable and is composed by Stage 5 below.
 See [motion contracts](../development/MOTION_PARSING.md) and
-[Stage 3 evidence](../validation/M2_STAGE3.md).
+[M2 validation](../validation/M2.md).
 
 ## M2 Stage 2 strict source decoder
 
@@ -85,9 +86,35 @@ Iterative lexical preflight enforces resources before full tree allocation;
 strict JSON hooks retain exact number tokens and reject duplicates/non-JSON constants.
 Only a supported 2.2.0 root with required core shapes yields DecodeSuccess.
 The result owns original bytes/provenance and the immutable tree; it is not a Recording.
-Optional metadata/GPS interpretation and complete importer integration remain planned.
+Optional metadata/GPS accessors and complete importer composition are implemented below.
 See [decoder contracts](../development/STRICT_DECODING.md) and
-[Stage 2 evidence](../validation/M2_STAGE2.md).
+[M2 validation](../validation/M2.md).
+
+## M2 Stage 4 optional data
+
+`importers.optional.parse_optional_data` consumes a decoded SourceEnvelope and
+returns metadata, ordered arbitrary attributes and independently indexed GPS slots.
+Unknown content/exact tokens stay in the envelope. Absent riding position uses
+the owner default with explicit provenance; invalid presence never defaults.
+Defective optional members warn and become unavailable; defective GPS fixes retain
+their source slot. Negative/suspicious GPS values survive with contextual warnings,
+without units/epoch conversion or motion alignment. Local diagnostic-budget overflow
+is fatal. Stage 5 shares this collector with motion to enforce an aggregate budget
+before constructing a full Recording. See [optional contracts](../development/OPTIONAL_PARSING.md) and
+[M2 validation](../validation/M2.md).
+
+## M2 Stage 5 public import service
+
+`importers.service.import_forces(Path)` and `import_forces_bytes(bytes)` compose
+strict decoding, motion and optional validation into ImportSuccess/ImportFailure.
+Success owns a complete immutable Recording for available capabilities, original
+source/provenance and ordered diagnostics. One per-call diagnostic collector is
+shared across validation workers; overflow stops generation and fails the import.
+Decoder errors stop before motion; core errors stop before optional validation.
+There is no shared mutable recording state, network, writing, Qt dependency or
+scientific transformation. The callable service is not connected to the GUI/library.
+See [public API](../development/IMPORT_SERVICE.md) and
+[M2 validation](../validation/M2.md). M2 acceptance is verified; M3 remains planned.
 
 ## Bootstrap settings validation
 

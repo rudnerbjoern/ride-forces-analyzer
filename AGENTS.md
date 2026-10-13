@@ -7,7 +7,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 - MUST communicate in German unless requested otherwise. Code, identifiers, docs and commits: English.
 - MUST distinguish verified facts, assumptions and recommendations. Unimplemented = planned; unverified = open.
 - MUST execute only the authorized milestone/stage. DEV-REQ-002: report evidence, then STOP. No next stage without a new instruction.
-- NEVER declare a milestone/stage complete before ALL its acceptance criteria are verified. M1 is accepted; M2 remains incomplete.
+- NEVER declare a milestone/stage complete before ALL its acceptance criteria are verified. M1 and M2 are accepted; M3–M8 remain planned.
 - MUST read [README](README.md), [roadmap](docs/ROADMAP.md), [architecture](docs/architecture/OVERVIEW.md) and task requirements before edits. Use [docs index](docs/README.md) for references.
 - MUST keep changes scoped and consistent. NEVER refactor unrelated code. MUST align code, tests, configuration and docs.
 
@@ -49,7 +49,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 - MUST test changed behavior/public contracts and add bug regression tests. Run focused checks first; repeat ONLY checks affected by edits/failures.
 - MUST run required suites once for final content and retain actual runner evidence. NEVER rerun solely because commit/push authorization arrived or a commit was created.
 - MUST reuse successful evidence ONLY when relevant contents (including staged files), dependencies, lock files, tools, configuration and environment are demonstrably unchanged. Changed inputs: rerun affected checks. Missing evidence/uncertain equivalence: run required suites.
-- MUST record exact commands, results, limitations, platform and tested revision/file scope in the applicable `docs/validation/` report. M1 evidence belongs in [M1 validation](docs/validation/M1.md); later-stage evidence MUST use its own report. Temporary logs: `.tmp/`. NEVER add a cache framework solely for evidence reuse.
+- MUST record exact commands, results, limitations, platform and tested revision/file scope in the applicable `docs/validation/` report. M1 evidence belongs in [M1 validation](docs/validation/M1.md); M2 evidence MUST be consolidated in [M2 validation](docs/validation/M2.md); NEVER create separate M2 stage reports. Temporary logs: `.tmp/`. NEVER add a cache framework solely for evidence reuse.
 - MUST batch Git status/scope checks where practical; retain required commit/push boundary checks. Repeat fixture hashes ONLY for relevant changes, integrity uncertainty or explicit acceptance requirements.
 - Before commit, ALL commands below MUST have valid passing evidence for the committed content. Execute from repository root using the [Windows setup](docs/development/SETUP.md); valid evidence MAY be reused under the rule above:
 

@@ -1,14 +1,17 @@
 # ADR 0002 — Ride Forces source ownership and import boundaries
 
-Status: Proposed implementation contract, Stage 0 review, 2026-10-13.
+Status: Accepted and implemented for M2, 2026-10-13.
 Requirements: [DEV-REQ-002](../requirements/DEV-REQ-002-forces-importer.md),
 primarily FR-001, FR-004, FR-007, FR-024 and FR-030; also FR-003, FR-008,
 FR-013, FR-018–027. The original Stage 0 decision was documentation-only.
 Stage 1 now implements [canonical models and result types](../development/CANONICAL_MODELS.md);
-complete importer integration and remaining optional-data policies are still planned.
+Stage 5 now implements [complete read-only integration](../development/IMPORT_SERVICE.md)
+with verified M2 acceptance; see [M2 validation](../validation/M2.md).
 Stage 3 now implements [motion validation](../development/MOTION_PARSING.md)
 over a supplied source envelope. Stage 2 now implements
 [strict source decoding](../development/STRICT_DECODING.md); its scope is documented below.
+Stage 4 now implements [optional-data parsing](../development/OPTIONAL_PARSING.md)
+as an independent subset, including the GPS error policies below.
 
 ## Evidence and context
 
@@ -29,7 +32,7 @@ The previous unconditional gravity requirement would reject a genuine recording.
 
 ## Public API and capabilities — FR-001, FR-030
 
-Implement these contracts in later stages, within the existing `importers` and
+Stage 5 implements these contracts within the existing `importers` and
 `domain` packages, independently of Qt:
 
 ```python
@@ -196,10 +199,9 @@ without fabricating missing gravity/GPS. FR-001/FR-004/FR-007/FR-024/FR-030 now
 have explicit proposed contracts. Snapshot and integrity tests establish the
 source evidence and AC-02 for this inspection, not full M2 import acceptance.
 Source-app epochs, axes, end-index convention and GPS sentinels remain open.
-The owner separately instructed Stage 1 model implementation; its
-[verification report](../validation/M2_STAGE1.md) records the resulting scope.
-No decoder or later stage is authorized by that instruction. Publication and
-merge remain separately authorized.
+Implementation and acceptance evidence are consolidated in
+[M2 validation](../validation/M2.md). Each implementation stage and Git
+publication still require separate owner authorization.
 
 ## Stage 1 implementation choices — 2026-10-13
 
@@ -228,8 +230,8 @@ not completion of the full proposed import contract.
 
 The separately authorized scope implements pure parse_motion(SourceEnvelope),
 returning MotionParseSuccess | ImportFailure. Success represents only validated
-motion/indices/vectors; it is not ImportSuccess or a complete Recording. Decoder
-dispatch, bounded untrusted input and optional GPS integration remain planned.
+motion/indices/vectors; it is not ImportSuccess or a complete Recording. Stage 2
+supplies decoder dispatch/budgets, Stage 4 optional GPS and Stage 5 full composition.
 
 Convert finite ASCII decimal strings and exact SourceNumber JSON numbers to
 finite float accessors, retaining original strings/tokens/bytes. Decimal strings
@@ -254,13 +256,13 @@ Bound every supplied marker independently against acceleration, require only
 start <= end, and perform no slicing. Taron's 1513 gravity marker before its 2284
 start is explicitly valid. Iron Gwazi retains its gravity marker without gravity.
 GPS/time/axis/end-index semantics remain unverified. See
-[Stage 3 evidence](../validation/M2_STAGE3.md) for tests and remaining exit criteria.
+[M2 validation](../validation/M2.md) for tests and remaining exit criteria.
 
 ## Stage 2 implementation decisions — FR-001, FR-003–010, FR-024, FR-026
 
 The separately authorized Stage 2 implements decode_forces(Path) and
 decode_forces_bytes(bytes), returning DecodeSuccess | ImportFailure. Keep the
-proposed import_forces API for later complete Recording integration: decoded
+import_forces API for complete Recording integration: decoded
 JSON success must never masquerade as measured-data/import success.
 
 Preflight checks all lexical/shape budgets iteratively before full tree allocation,
@@ -276,7 +278,7 @@ integers below sys.maxsize. max_depth is configurable from 1 through 128, a
 conservative ceiling for the recursive decoder/source ownership implementation;
 do not mutate Python's recursion or integer-conversion settings. Stage 2 returns
 one deterministic fatal error, so every supported diagnostic budget is honored.
-The last-slot aggregate policy remains required for later pipeline integration.
+Stage 5 now enforces the last-slot aggregate policy during validation.
 
 Use unbuffered binary local reads, regular-file checks before and after opening,
 short-read joining, individual chunks <=65,536 bytes and total reads <=max_bytes+1.
@@ -284,4 +286,77 @@ Reject Windows UNC/device paths before I/O. Do not retain oversized/partial inpu
 or invent hashes/counts. Retain bounded original bytes on decoding errors; retain
 the valid tree on schema errors. Permission/race tests use controlled mocks;
 OS access times, mapped-drive locality and hostile filesystem behavior remain outside
-verified evidence. See [Stage 2 report](../validation/M2_STAGE2.md).
+verified evidence. See [M2 validation](../validation/M2.md).
+
+## Stage 4 implementation decisions — FR-009–010, FR-017–022, FR-025
+
+The separately authorized Stage 4 implements parse_optional_data(SourceEnvelope),
+returning OptionalParseSuccess | ImportFailure. It uses existing canonical models
+and preserves the same source envelope. Success covers only optional accessors;
+it neither validates core motion nor constructs a complete Recording. Stage 5
+now supplies integration and aggregate diagnostic-budget enforcement.
+
+Absent ridingPosition alone uses Seated with DEFAULT provenance. Valid source
+strings containing non-whitespace characters are not trimmed or restricted to a known posture vocabulary;
+defective presence warns and becomes unavailable. Optional metadata types follow
+the observed JSON representation: strings, booleans and finite-number accessors.
+Date/extrema/smoothing expose exact SourceNumber tokens without float/epoch/force
+interpretation. Unknown properties and missing/null distinctions survive.
+
+Attributes accept arbitrary source-valued payloads, string IDs/labels and source
+order, without a fixed count or label vocabulary. Invalid entries warn at their
+original index and are unavailable in the typed tuple; valid sibling order and
+the complete original array remain. Absent/invalid containers yield None, while
+valid empty arrays yield an empty tuple. Source presence distinguishes absence
+from defective presence; typed attribute offsets are not original source indices.
+
+GPS follows the fix/member/container policy above. PRESENT means an array exists,
+including empty or all-unavailable arrays; slots are never removed. Missing iPhone
+GPS emits GPS_UNAVAILABLE info; Apple Watch absence needs no warning. Supplied
+GPS is validated on either device. Conventional ±90/±180 coordinate bounds are
+nonfatal heuristics only, without verified source-unit claims. Non-increasing
+timestamps warn relative to the previous usable fix with a valid timestamp,
+across missing/invalid gaps. Comparisons use exact Decimals; no sorting or elapsed
+time is inferred. Negative warnings use exact source signs, including float
+underflow. Finite positive accuracy/course values have no invented rejection bounds.
+
+The optional subset enforces its local max_diagnostics budget: accept exactly at
+the limit; on the next diagnostic replace the last slot with a fatal resource
+record and stop without a successful subset. Default 1,000 and immutable per-call
+limit configuration are unchanged. Shape/byte guards belong to prior decoding;
+manual source trees are not proven bounded documents. The complete-pipeline budget
+is now enforced by Stage 5. See [optional contracts](../development/OPTIONAL_PARSING.md)
+and [M2 validation](../validation/M2.md) for verified acceptance evidence.
+
+## Stage 5 integration decisions — FR-028–030
+
+Expose import_forces(Path) and import_forces_bytes(bytes) through the importer
+facade with the original ImportResult union. Compose strict decoding first,
+motion validation second, optional validation last; stop at decoder/core failure.
+Successful calls construct the existing complete Recording and retain the same
+original source envelope, provenance, available data and ordered diagnostics.
+There is no Qt/network/write integration, analysis, library or export behavior.
+
+Use a shared per-call DiagnosticBudget for motion and optional validation workers.
+The standalone parser facades each allocate their own budget; their default
+behavior is preserved. Check during emission, including core errors, warnings
+and info; accept exactly at the limit if no next diagnostic is emitted. On overflow,
+replace the last slot with a fatal resource record at the triggering pointer and
+stop without a Recording. Preserve the existing severity/pointer/code ordering;
+an earlier core error can sort before the resource error. Decoder failures already
+fit every positive budget with a single fail-fast diagnostic. No mutable recording
+or collector is shared across calls, including concurrent bytes imports.
+
+Absent/invalid attribute containers become an empty Recording.attributes tuple
+because that is the existing model contract. Source presence and diagnostics keep
+absence, defective presence and valid empty arrays distinguishable. Every GPS slot
+and GPS status remain explicit. Complete refers to available source capabilities,
+never validated M3 calibration, axes, units, epochs or GPS sentinel semantics.
+
+Measure Windows Path and preloaded bytes APIs separately: one warmup, five timed
+calls with GC outside timings, then one separate tracemalloc import. Report actual
+Python allocation peaks, not total/native process RAM; disclose warm filesystem
+cache and tracing overhead. Do not create throughput guarantees, a performance
+threshold test or a new dependency. The development utility never rewrites a
+fixture. See [public contracts](../development/IMPORT_SERVICE.md) and
+[M2 validation](../validation/M2.md) for final Stage 6 acceptance and hosted CI evidence.

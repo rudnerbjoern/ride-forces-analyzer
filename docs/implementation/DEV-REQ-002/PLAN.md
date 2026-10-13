@@ -1,6 +1,6 @@
 # DEV-REQ-002 — M2 implementation plan
 
-**Status:** Stages 0–2 and Stage 3 motion subset implemented; full import remains open. All content is in English.
+**Status:** Stages 0–6 complete; M2 acceptance verified on 2026-10-13. All content is in English.
 **Normative requirements:** [DEV-REQ-002](../../requirements/DEV-REQ-002-forces-importer.md).
 **Source observations:** [Format analysis](../../requirements/FORMAT-ANALYSIS.md).
 **Execution prompts:** [PROMPTS.md](PROMPTS.md).
@@ -24,7 +24,7 @@ related work; each new independent change begins on a separate branch from `main
 - **Exit:** no ambiguous parser decisions; no production importer yet.
 - **Trace:** FR-001, 004, 007, 024, 030; AC-02.
 
-Stage 0 evidence is recorded in [the inspection report](../../validation/M2_STAGE0.md),
+Stage 0 evidence is recorded in [M2 validation](../../validation/M2.md),
 [ADR 0002](../../decisions/0002-forces-source-contract.md) and the recursive snapshot.
 Iron Gwazi extends the corpus with the owner-confirmed Apple Watch availability
 profile. Gravity/GPS absence and device-aware capability contracts are explicit;
@@ -54,7 +54,7 @@ The separate Stage 1 instruction authorized only the representations below.
 
 Stage 1 implementation and synthetic acceptance evidence are documented in the
 [model guide](../../development/CANONICAL_MODELS.md) and
-[Stage 1 report](../../validation/M2_STAGE1.md). These representations do not
+[M2 validation](../../validation/M2.md). These representations do not
 perform decoding, file I/O or version dispatch. Stop after the requested stage.
 
 ## Stage 2 — Strict JSON decoder and version dispatch
@@ -74,7 +74,7 @@ perform decoding, file I/O or version dispatch. Stop after the requested stage.
 
 Stage 2 was separately authorized after the motion subset. The
 [strict decoder guide](../../development/STRICT_DECODING.md) and
-[Stage 2 evidence](../../validation/M2_STAGE2.md) record the implemented Path/bytes
+[M2 validation](../../validation/M2.md) record the implemented Path/bytes
 boundaries, dispatch and preflight limits. No complete importer or new motion
 conversion was added. Stop after each separately requested stage.
 
@@ -99,9 +99,10 @@ conversion was added. Stop after each separately requested stage.
 
 The owner directly authorized the Stage 3 motion scope before Stage 2.
 [Motion contracts](../../development/MOTION_PARSING.md) and
-[Stage 3 evidence](../../validation/M2_STAGE3.md) record the tested subset.
-The Stage 3 full-import exit remains open pending optional-data/integration work; this
-original instruction did not authorize Stage 2, Stage 4 or any subsequent work.
+[M2 validation](../../validation/M2.md) record the tested subset.
+The original Stage 3 instruction did not authorize Stage 2, Stage 4 or later work.
+Its full-import exit now has evidence from separately authorized Stage 5 below;
+results are consolidated in the M2 validation report.
 
 ## Stage 4 — Optional GPS, metadata and attributes
 
@@ -117,8 +118,17 @@ original instruction did not authorize Stage 2, Stage 4 or any subsequent work.
   examples and Taron's two attributes; partial malformed optional fixtures;
   GPS arrays of different lengths and sparse data.
 - **Exit:** all five complete originals return usable typed motion recordings
-  without invented GPS values, location, temperature or riding position.
+  without invented GPS values, location or temperature; only absent riding
+  position receives the explicit owner default with provenance.
 - **Trace:** FR-009, 010, 017–022, 025; AC-01, 04, 07.
+
+The separately authorized Stage 4 implements optional-data parsing over the decoded
+source envelope. [Optional contracts](../../development/OPTIONAL_PARSING.md) and
+[M2 validation](../../validation/M2.md) cover metadata/defaults, arbitrary
+ordered attributes, independent GPS slots and local diagnostic limits. Its typed
+subset is not a complete Recording; the full-recording exit now has separately
+authorized Stage 5 evidence below. The original Stage 4 instruction did not
+authorize further stages or Git publication.
 
 ## Stage 5 — Public integration and resilience
 
@@ -134,6 +144,12 @@ original instruction did not authorize Stage 2, Stage 4 or any subsequent work.
   limits, future unknown key, fixture hashes and import with no network.
 - **Exit:** an M4 caller can use the importer without UI dependencies.
 - **Trace:** FR-001, 003, 028–030; AC-01, 02, 08.
+
+The separately authorized Stage 5 implements the [public service](../../development/IMPORT_SERVICE.md),
+aggregate validation diagnostics and developer-only Windows measurements. The
+[M2 validation](../../validation/M2.md) records full-import evidence and
+limitations. Earlier stage full-import exits now have integration evidence;
+final M2 acceptance and publication remain Stage 6 work, not authorized here.
 
 ## Stage 6 — M2 acceptance and review preparation
 

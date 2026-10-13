@@ -1,10 +1,16 @@
 # Motion parsing — DEV-REQ-002 Stage 3
 
+Stage 5 adds a shared diagnostic guard and composes this subset through the
+[public import service](IMPORT_SERVICE.md). The independently callable
+`parse_motion(source, *, limits=DEFAULT_LIMITS)` still returns a motion-only result.
+Its `limits.max_diagnostics` cap is checked during generation; source shape/byte
+budgets require prior decoding.
+
 Scope: FR-011–016 over an existing immutable source tree. This is a pure motion
 validation boundary, not a complete file importer. Stage 2 decoding, dispatch and
-resource guards are now implemented separately; GPS/metadata parsing and integration remain
-planned. See [ADR 0002](../decisions/0002-forces-source-contract.md) and
-[Stage 3 evidence](../validation/M2_STAGE3.md).
+resource guards are implemented separately; Stage 4 parses optional GPS/metadata
+and Stage 5 supplies full integration. See [ADR 0002](../decisions/0002-forces-source-contract.md) and
+[M2 validation](../validation/M2.md).
 
 ## API and caller obligations
 
@@ -23,8 +29,8 @@ def inspect_motion(source: SourceEnvelope) -> int | None:
 Supply a SourceEnvelope whose root represents supported schema 2.2.0. Source
 numbers must be SourceNumber values; source strings remain strings and arrays
 are immutable tuples. The [strict decoder](STRICT_DECODING.md) establishes bytes/tree
-correspondence, version support and document limits. Automatic integration with
-this parser remains planned. There is no
+correspondence, version support and document limits. The full service composes
+this parser after successful decoding. This subset performs no
 file I/O, version dispatch, decoding, network, Qt or scientific transformation here.
 
 MotionParseResult is MotionParseSuccess | ImportFailure. Success carries the

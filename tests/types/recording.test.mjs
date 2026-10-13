@@ -60,6 +60,34 @@ const cases = [
     rule: null,
   },
   {
+    name: "optional subset exposes metadata and independent GPS without claiming a recording",
+    imports: "from ride_forces_analyzer.domain import GpsSequence, RecordingMetadata, SourceEnvelope",
+    source: "from typing import assert_type\n"
+      + "from ride_forces_analyzer.importers import parse_optional_data\n"
+      + "result = parse_optional_data(SourceEnvelope(b'{}', {}))\n"
+      + "if result.success is True:\n"
+      + "    assert_type(result.metadata, RecordingMetadata)\n"
+      + "    assert_type(result.gps, GpsSequence | None)\n"
+      + "else:\n"
+      + "    assert_type(result.recording, None)\n",
+    rule: null,
+  },
+  {
+    name: "public import service narrows full recordings and original provenance",
+    imports: "from pathlib import Path\nfrom ride_forces_analyzer.domain import Recording",
+    source: "from typing import assert_type\n"
+      + "from ride_forces_analyzer.importers import import_forces, import_forces_bytes\n"
+      + "for result in (import_forces(Path('recording.forces')), import_forces_bytes(b'{}')):\n"
+      + "    if result.success is True:\n"
+      + "        assert_type(result.recording, Recording)\n"
+      + "        assert_type(result.byte_count, int)\n"
+      + "        assert_type(result.source_sha256, str)\n"
+      + "    else:\n"
+      + "        assert_type(result.recording, None)\n"
+      + "        assert_type(result.byte_count, int | None)\n",
+    rule: null,
+  },
+  {
     name: "canonical vector constructor rejects a string component statically",
     imports: "from ride_forces_analyzer.domain import Vector3",
     source: "vector = Vector3('0', 0, 1)\n",
