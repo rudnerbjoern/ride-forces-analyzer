@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.py[cod]
+dist/
+build/
+*.egg-info/
+.idea/
+.vscode/
+*.mp4
+*.mov
+*.png
+*.sqlite3
+!tests/fixtures/**/*.png

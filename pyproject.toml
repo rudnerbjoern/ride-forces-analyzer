@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ride-forces-analyzer"
+version = "0.1.0"
+description = "Offline Windows desktop application for Ride Forces measurement analysis and video visualization"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = ["PySide6>=6.8,<7"]
+
+[project.optional-dependencies]
+analysis = ["numpy>=2.1", "pandas>=2.2", "pyqtgraph>=0.13"]
+render = ["Pillow>=11"]
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.8", "mypy>=1.13", "pytest-qt>=4.4"]
+
+[project.scripts]
+ride-forces-analyzer = "ride_forces_analyzer.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ride_forces_analyzer"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.13"
+files = ["src"]
+check_untyped_defs = true
+warn_unused_ignores = true
