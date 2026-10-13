@@ -1,0 +1,66 @@
+version: 2
+updates:
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '08:00'
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: ':package: build(deps) '
+    groups:
+      python-minor-patch:
+        applies-to: version-updates
+        patterns: ['*']
+        update-types: [minor, patch]
+      python-security:
+        applies-to: security-updates
+        patterns: ['*']
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '08:15'
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: ':package: build(deps) '
+    groups:
+      npm-minor-patch:
+        applies-to: version-updates
+        patterns: ['*']
+        update-types: [minor, patch]
+      npm-security:
+        applies-to: security-updates
+        patterns: ['*']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '08:30'
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ':gear: ci(ci) '
+    groups:
+      actions-minor-patch:
+        applies-to: version-updates
+        patterns: ['*']
+        update-types: [minor, patch]
+      actions-security:
+        applies-to: security-updates
+        patterns: ['*']

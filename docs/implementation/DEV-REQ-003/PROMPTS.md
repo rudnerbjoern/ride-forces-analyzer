@@ -6,6 +6,9 @@
 
 Use one prompt per Codex interaction after reviewing the previous stage. The
 shared constraints are repeated intentionally to make each prompt standalone.
+For final M3 delivery, Prompt 7 must finish acceptance and documentation locally
+before any staging, commit, push or draft-PR creation. CI subsequently validates
+the published result; it does not finalize local acceptance.
 
 ## Prompt 0: 0 — Scientific feasibility
 
@@ -125,7 +128,7 @@ Return:
 Read AGENTS.md, docs/ROADMAP.md, docs/requirements/DEV-REQ-003-scientific-analysis.md and docs/implementation/DEV-REQ-003/PLAN.md. Confirm verified M2 APIs before coding. All source code, documentation and commit messages must be in English. Respect the existing branch and explicit owner approval gates. Never touch original .forces bytes or silently assume axes, gravity semantics, GPS units or timestamps. Run focused and required checks, report actual evidence, and stop after this single stage.
 
 Specific assignment:
-Run exact Windows validation commands including npm run test:dependencies and actual GitHub PR CI. Record measured results, numeric tolerances, limits and requirement traceability in docs/validation/M3.md. Do not mark M3 complete based on documentation or math tests alone; await owner approval for commit/push/merge.
+Run exact local Windows validation commands including npm run test:dependencies. Record measured results, numeric tolerances, limits and requirement traceability in docs/validation/M3.md. Verify all AC-01–AC-10 locally, including owner acceptance of any permitted scientific capability exclusion. Finalize the acceptance report and verified roadmap status, then recheck documentation BEFORE staging, committing, pushing or creating the final draft PR. Missing evidence leaves M3 open; documentation or math tests alone are insufficient. Stop with the final local result ready for owner review. Publication requires separate explicit authorization and must already include the final report and status. Subsequent GitHub PR CI is secondary validation and must pass before a separately authorized merge; record hosted outcomes in PR metadata without a completion-only commit. Investigate failures and correct invalidated local acceptance evidence.
 
 Return:
 - Changed files and covered DEV-REQ-003 requirement IDs.
@@ -136,6 +139,9 @@ Return:
 ```
 
 ## Review criteria
+
+The final M3 draft PR must contain the locally verified acceptance report and
+milestone status at creation. Never make either conditional on a future green CI run.
 
 Do not proceed if requirements, reference evidence, type contracts, unit
 semantics or tests remain unresolved without an explicit documented exception.

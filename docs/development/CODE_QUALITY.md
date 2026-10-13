@@ -118,7 +118,9 @@ Problems view was manually inspected.
   not application rendering features.
 
 The PR-only Windows quality job runs Ruff, formatter checks, mypy, Pyright, the
-type contracts, dependency regressions and pytest. Documentation linting remains a separate job.
+type contracts, dependency regressions and pytest when code/test inputs change.
+Documentation linting remains a separate job selected by Markdown changes;
+see [CI selection](CI.md) for routing, failure handling and the required merge gate.
 
 ## References
 

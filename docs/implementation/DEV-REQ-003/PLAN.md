@@ -111,12 +111,26 @@ measurements with actual environment. Run all AGENTS.md commands:
 `uv lock --check`, Ruff lint and format, mypy, `npm run typecheck`,
 `npm run test:types`, `npm run test:dependencies`, pytest and
 `npm run test:docs`. Create `docs/validation/M3.md` with each AC's evidence
-and unresolved items. Update roadmap only with verified results. Prepare a
-draft PR to main only with owner authorization; review actual Windows CI,
-never merge without separate owner approval.
+and unresolved items. Complete acceptance locally and finalize the report and
+verified roadmap status; recheck documentation after final edits. Every acceptance
+criterion must have local evidence, including owner acceptance of any permitted
+scientific capability exclusion. Missing evidence leaves M3 open.
+
+Required order for final M3 delivery:
+
+1. Finish local Windows acceptance, final documentation and affected checks.
+   Stop with the final local result ready for owner review.
+2. Only after explicit authorization: stage, commit, push and create the draft PR
+   to `main`. The initial delivery must already contain the final acceptance report
+   and verified milestone status; never defer either until after draft-PR creation.
+3. Use Windows CI as secondary validation. Record actual outcomes in PR metadata
+   without a completion-only commit. Selected suites and the final `check` gate
+   must pass before a separately
+   authorized merge; correct acceptance evidence invalidated by defects.
 
 **Trace:** All LIB/SCI/SIG/GPS/RES/VAL, AC-01–10.
-**Exit:** Complete acceptance evidence or M3 remains open.
+**Local exit:** All AC-01–AC-10 verified and final documentation checked before
+staging, committing, pushing or creating the final draft PR; otherwise M3 remains open.
 
 ## Cross-stage test strategy
 

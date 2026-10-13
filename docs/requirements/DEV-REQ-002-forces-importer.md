@@ -212,10 +212,13 @@ records the Stage 0 implementation contract and proposed device-aware policies.
 | AC-07 | Negative GPS sentinels remain intact with warnings; GPS fields are not fabricated, aligned to motion samples or assumed to have verified units.                |
 | AC-08 | Public typed API is Qt-independent and documented; repeat imports are deterministic.                                                                           |
 | AC-09 | Focused importer tests and the required Ruff, mypy, Pyright, pytest, documentation and lock checks pass on native Windows.                                     |
-| AC-10 | A dedicated PR verifies both GitHub CI jobs, and a dated M2 validation report records evidence and remaining limitations.                                      |
+| AC-10 | A final dated M2 validation report records all locally verified criteria, exact Windows checks, requirement traceability and remaining limitations.            |
 
 **Do not mark M2 complete** until all criteria have demonstrable evidence.
 Record unresolved GPS, force and time semantics for M3 without inventing answers.
+Finalize acceptance documentation before publication. Selected PR CI suites and
+the final `check` gate provide secondary validation and must pass before merge;
+they are not local acceptance criteria.
 
 ## 6. Open questions and design decisions
 

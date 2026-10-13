@@ -6,6 +6,7 @@
   "files": [
     "**/*.{md,py,mjs,json,jsonc,toml,yml,yaml}",
     ".github/workflows/*.{yml,yaml}",
+    ".github/scripts/*.mjs",
     ".github/**/*.md",
     ".vscode/*.json",
     ".codex/*.toml",

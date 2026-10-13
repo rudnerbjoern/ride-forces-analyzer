@@ -200,7 +200,7 @@ Do not stage, commit, push or merge without explicit owner authorization.
 Run focused tests, then applicable project quality checks.
 Report actual evidence and unverified items; stop after this stage.
 
-Task: Perform the complete native-Windows checks in AGENTS.md and docs/development/SETUP.md. Create docs/validation/M2.md with exact recorded outcomes for AC-01–AC-10, fixtures, known limits, test-to-requirement traceability and performance observations. Update docs/ROADMAP.md only if verified completion supports it. Review changes with the owner before any staging/commit/push. Following explicit authorization, prepare a draft PR to main; do not merge. If checks fail, leave M2 open and report defects.
+Task: Perform the complete native-Windows checks in AGENTS.md and docs/development/SETUP.md. Create docs/validation/M2.md with exact recorded outcomes for AC-01–AC-10, fixtures, known limits, test-to-requirement traceability and performance observations. Complete acceptance entirely locally; finalize the report and verified completion status in docs/ROADMAP.md before the first delivery commit, then recheck documentation. Review changes with the owner before any staging/commit/push. Following explicit authorization, prepare a draft PR to main; do not merge. PR CI is secondary validation: record outcomes in PR metadata and require selected suites and the final check gate to pass before merge, without a completion-only follow-up commit. If local checks fail or evidence is missing, leave affected criteria open. Investigate CI failures and correct invalidated acceptance evidence.
 
 Produce at the end:
 - Files changed and requirement IDs covered.

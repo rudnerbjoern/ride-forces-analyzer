@@ -47,6 +47,8 @@ This directory contains project documentation, not generated artifacts or tempor
 - [Real recordings](development/RECORDINGS.md): authorized fixture catalog and integrity checks.
 - [Documentation tests](development/DOCUMENTATION_TESTS.md): markdownlint, CSpell
   and offline local-link checks.
+- [CI selection](development/CI.md): dependency check, conditional suites and required merge gate.
+- [Dependabot policy](development/DEPENDABOT.md): scheduled uv/npm/Actions PRs and security-update settings.
 - [Codex project settings](development/CODEX.md): project-local defaults, Context7
   and memory configuration.
 
