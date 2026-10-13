@@ -21,7 +21,7 @@ for (const filename of ["src/ride_forces_analyzer/importers/service.py", "tests/
   "tests/types/recording.test.mjs", "tests/docs/documentation.test.mjs",
   "tests/fixtures/schema-inventory.json", "tests/fixtures/real/recording.forces",
   "pyproject.toml", "uv.lock", ".python-version", ".node-version", "package.json",
-  "package-lock.json", ".github/workflows/ci.yml", ".github/dependabot.yml", ".github/scripts/ci-changes.mjs",
+  "package-lock.json", ".github/workflows/ci.yml", ".github/dependabot.yml", ".github/labeler.yml", ".github/scripts/ci-changes.mjs",
   ".gitignore", ".gitattributes", ".editorconfig", ".vscode/settings.json", "tools/check.ps1",
   "tests/ci/changes.test.mjs"]) {
   test(`Changed code/test input selects code checks: ${filename}`, () => {
