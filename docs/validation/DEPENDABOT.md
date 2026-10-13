@@ -97,6 +97,24 @@ Node 26.11.1 / npm 11.20.0 and Python 3.14.6:
 - A fresh root `npm audit --json` confirmed only the braces advisory, with five
   affected packages and exit code 1. smol-toml and KaTeX are absent from the findings.
 
-GitHub-hosted verification is pending publication of this branch. The default-branch
-Dependabot alerts remain separate from the local patched lock until integration.
-No alert has been dismissed, and this branch does not claim a clean security audit.
+## GitHub-hosted verification
+
+[Draft PR #4](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/4) targets
+`main` from `fix/node-dependabot`. The
+[successful Windows CI run](https://github.com/rudnerbjoern/ride-forces-analyzer/actions/runs/38398967539)
+verified revision `62b10dfd27d725ddac656bbeb645d59e530602e1` against main basis
+`dfaeeb4c302c3606c8975fcf63501765b0b3d951`. Both jobs and all required installation
+and validation steps succeeded. Inspected logs confirm 39 pytest cases on win32 /
+Python 3.14.6, three typing contracts, six dependency regressions, 21 document-link
+cases and CSpell checking 46 files with zero issues.
+
+During publication, PR #3 independently added four M2 specification documents to
+main. The hosted PR merge includes them, accounting for the higher documentation
+counts than the 17 documents / 42 spell-checked files in the local branch snapshot.
+This dependency PR preserves those additions and changes no M2 specification or
+implementation. Subsequent evidence-only commits are checked by the same workflow;
+the final head check state is available on PR #4.
+
+The PR remains a draft and has not been merged. Default-branch Dependabot alerts
+remain separate from the patched PR lock until integration. No alert has been
+dismissed, and this branch does not claim a clean security audit.
