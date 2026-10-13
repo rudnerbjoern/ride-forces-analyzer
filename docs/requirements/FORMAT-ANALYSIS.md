@@ -7,23 +7,23 @@ Observation date: 2026-10-13. No scientific axis or time semantics are inferred.
 
 ## 1. Baseline comparison
 
-| Field / observation | Kraken | Manta | Taron | Voltron Nevera |
-| --- | --- | --- | --- | --- |
-| `schemaVersion` | 2.2.0 | 2.2.0 | 2.2.0 | 2.2.0 |
-| `sampleRate` | 50 | 50 | 50 | 50 |
-| Acceleration samples | 10084 | 9640 | 9089 | 10504 |
-| Gravity samples | 10084 | 9640 | 9089 | 10504 |
-| GPS fixes | 174 | 193 | 182 | 149 |
-| `startIndex` | 913 | 1214 | 2284 | 1571 |
-| `endIndex` | 9138 | 9639 | 6639 | 10374 |
-| `gravityIndex` | 1028 | 2013 | 1513 | 6894 |
-| `inclineIndex` | 2928 | 3370 | 2852 | 7368 |
-| `location` | SeaWorld Orlando | absent | Phantasialand | Europa-Park |
-| `ridingPosition` | Seated | Flying | absent | absent |
-| `attributes` count | 1 | 1 | 2 | 1 |
-| Weather fields | all five | none | all five | all five |
-| `advancedRecording` | true | true | true | true |
-| `device` | iPhone | iPhone | iPhone | iPhone |
+| Field / observation  | Kraken           | Manta  | Taron         | Voltron Nevera |
+| -------------------- | ---------------- | ------ | ------------- | -------------- |
+| `schemaVersion`      | 2.2.0            | 2.2.0  | 2.2.0         | 2.2.0          |
+| `sampleRate`         | 50               | 50     | 50            | 50             |
+| Acceleration samples | 10084            | 9640   | 9089          | 10504          |
+| Gravity samples      | 10084            | 9640   | 9089          | 10504          |
+| GPS fixes            | 174              | 193    | 182           | 149            |
+| `startIndex`         | 913              | 1214   | 2284          | 1571           |
+| `endIndex`           | 9138             | 9639   | 6639          | 10374          |
+| `gravityIndex`       | 1028             | 2013   | 1513          | 6894           |
+| `inclineIndex`       | 2928             | 3370   | 2852          | 7368           |
+| `location`           | SeaWorld Orlando | absent | Phantasialand | Europa-Park    |
+| `ridingPosition`     | Seated           | Flying | absent        | absent         |
+| `attributes` count   | 1                | 1      | 2             | 1              |
+| Weather fields       | all five         | none   | all five      | all five       |
+| `advancedRecording`  | true             | true   | true          | true           |
+| `device`             | iPhone           | iPhone | iPhone        | iPhone         |
 
 ### Complete observed top-level field union (34 fields)
 
@@ -38,6 +38,7 @@ Observation date: 2026-10-13. No scientific axis or time semantics are inferred.
 `zCalibrationVector`.
 
 Observed top-level **presence variations**:
+
 - `location` is absent only for Manta.
 - `ridingPosition` occurs only for Kraken and Manta.
 - `temperature`, `weatherConditions`, `windDirection`, `windGust`,
@@ -82,6 +83,7 @@ than replacing with numeric zero or declaring genuine negative motion.
 ### `attributes`
 
 Each entry has `id`, `label`, `value`.
+
 - Kraken: `Row=1`.
 - Manta: `Row=1`.
 - Taron: `Row=2`, `Seat=1` (two entries, in that order).
