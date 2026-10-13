@@ -71,7 +71,7 @@ These illustrate the format, not verified changes or milestone completion:
 
 ```text
 :sparkles: feat(config): validate bootstrap window settings
-:test_tube: test(recordings): verify original Manta fixture bytes
+:test_tube: test(recordings): verify authorized recording bytes
 :gear: ci(ci): run Windows checks only for pull requests
 :memo: docs(foundation): document open M1 acceptance criteria
 ```

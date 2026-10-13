@@ -17,6 +17,7 @@ This directory contains project documentation, not generated artifacts or tempor
   VS Code Test Explorer configuration.
 - [Python code quality](development/CODE_QUALITY.md): Pydantic, Ruff, Pylance,
   mypy, Pyright and regression-test scope.
+- [Real recordings](development/RECORDINGS.md): authorized fixture catalog and integrity checks.
 - [Documentation tests](development/DOCUMENTATION_TESTS.md): markdownlint, CSpell
   and offline local-link checks.
 - [Codex project settings](development/CODEX.md): project-local defaults, Context7

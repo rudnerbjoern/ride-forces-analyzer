@@ -68,6 +68,9 @@ Problems view was manually inspected.
 
 ## Tests
 
+- `tests/test_project.py` verifies the project version, exact four-recording inventory
+  and each original file's byte length and SHA-256 independently. The authorized
+  [recording catalog](RECORDINGS.md) covers Manta, Kraken, Taron and Voltron Nevera.
 - `tests/test_settings.py` exercises defaults, custom settings, JSON round trips,
   invalid dimensions and types, both valid dimension boundaries, invalid titles,
   unknown keys and immutability.

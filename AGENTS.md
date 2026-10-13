@@ -62,9 +62,13 @@
 
 - Use `.forces` recordings as **read-only** input; never rewrite them in place.
 - Preserve unknown JSON fields and original file bytes. Do not assume a stable source schema.
-- The real fixture `tests/fixtures/real/Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces`
-  contains authentic GPS positions expressly authorized by the owner. Do not publish
-  additional location recordings automatically.
+- The owner expressly authorizes using and publishing the complete Manta, Kraken,
+  Taron and VoltronNevera recordings in `tests/fixtures/real/` for project tests and
+  development, including all embedded GPS positions and metadata. The
+  [recording catalog](docs/development/RECORDINGS.md) lists their exact filenames,
+  original sizes and SHA-256 digests. Keep all four read-only and covered by integrity tests.
+- This authorization applies to those four recordings. Do not automatically add or
+  publish additional recordings without their own authorization.
 - Domain coordinates, axis polarity, time base, filtering and GPS sentinel semantics
   require explicit documentation, fixtures and cross-checks against the original Ride
   Forces app. Never silently assume their meaning.

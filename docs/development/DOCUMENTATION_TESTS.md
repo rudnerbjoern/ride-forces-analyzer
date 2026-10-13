@@ -72,7 +72,9 @@ exist and stay within the repository. Links inside code examples are ignored.
 
 External URLs are skipped; this suite does not fetch web pages or check remote
 availability. Heading fragments and query strings are excluded from target
-resolution and are not validated. `.forces` recordings are never modified.
+resolution and are not validated. The [recording catalog](RECORDINGS.md) links
+all four original fixtures; link tests check their existence but do not read their
+contents. `.forces` recordings are never modified.
 
 ## Continuous integration
 
