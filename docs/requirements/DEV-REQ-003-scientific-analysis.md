@@ -223,8 +223,11 @@ Official documentation URLs are provided in section 11.
   from empirical app-comparison tolerances. No arbitrary acceptable deviation
   for unknown source algorithms.
 - **VAL-009:** All required Windows quality checks from `AGENTS.md`
-  pass, including dependency tests, and both pull-request CI jobs pass before
-  marking milestone complete. Evidence recorded in `docs/validation/M3.md`.
+  pass locally, including dependency tests. Verify every acceptance criterion
+  and finalize `docs/validation/M3.md` and completion status before publication.
+  Selected pull-request CI suites and the final `check` gate must pass before
+  merge; record hosted outcomes in PR metadata without a completion-only commit.
+  Investigate failures and correct acceptance evidence invalidated by defects.
 - **VAL-010:** Benchmark representative batch/array execution with explicit
   environment, recordings, timing and memory. No unsupported real-time claim.
 
@@ -233,7 +236,8 @@ Official documentation URLs are provided in section 11.
 - **AC-01:** Documented, reviewed scientific ADR for source units, gravity,
   frames, sign, time and unknowns; no unsupported default rider-frame output.
 - **AC-02:** Version-pinned NumPy, SciPy, Pint and GeographicLib dependency
-  decisions with Windows/Python compatibility, license and CI evidence.
+  decisions with locally verified Windows/Python compatibility, license and
+  integration evidence.
 - **AC-03:** Deterministic immutable raw and calculated channel API with full
   provenance and capability flags.
 - **AC-04:** Analytic norms, projections and rotations verified by synthetic
@@ -249,8 +253,9 @@ Official documentation URLs are provided in section 11.
   equivalence require evidence beyond recorded extrema alone.
 - **AC-09:** No source recording mutation, no mandatory network calls,
   no Qt coupling, no feature creep into M4–M7.
-- **AC-10:** Focused scientific tests, complete native-Windows checks and
-  both actual GitHub PR CI jobs pass; M3 validation report records results.
+- **AC-10:** Focused scientific tests and complete native-Windows checks pass
+  locally; the final M3 validation report records each criterion, exact commands,
+  results, traceability and limits before publication.
 
 ## 9. Evidence gates and unresolved questions
 

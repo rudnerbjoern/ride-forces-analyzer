@@ -26,6 +26,7 @@ const documents = [
   ...await markdownFiles(root, false),
   ...await markdownFiles(path.join(root, "docs"), true),
   ...await markdownFiles(path.join(root, ".github"), true),
+  ...await markdownFiles(path.join(root, ".agents/skills"), true),
 ];
 
 assert.ok(documents.length > 0, "No documentation files found");

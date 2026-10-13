@@ -5,6 +5,10 @@
 **Source observations:** [Format analysis](../../requirements/FORMAT-ANALYSIS.md).
 **Execution prompts:** [PROMPTS.md](PROMPTS.md).
 
+**Validation output:** Consolidate all M2 evidence in
+[M2 validation](../../validation/M2.md). Never create separate M2 stage reports;
+temporary stage logs belong in `.tmp/`.
+
 This plan is a **sequence**, not permission to implement every stage in one run.
 Implement each stage separately and obtain approval before committing/pushing
 as required by [AGENTS.md](../../../AGENTS.md). Reuse the existing branch for
@@ -155,17 +159,21 @@ final M2 acceptance and publication remain Stage 6 work, not authorized here.
 
 - Run **all** required local Windows checks in AGENTS.md / development SETUP:
   `uv lock --check`, Ruff lint/format, strict mypy, `npm run typecheck`,
-  `npm run test:types`, pytest and `npm run test:docs`.
+  `npm run test:types`, `npm run test:dependencies`, pytest and `npm run test:docs`.
 - Validate all five real fixture hashes and recorded decoded counts.
 - Create `docs/validation/M2.md` with date, environment, actual commands,
   outputs, requirements-to-test traceability, unsupported assumptions,
   performance evidence and exact acceptance status AC-01–AC-10.
-- Update README, roadmap and documentation navigation **only when behavior
-  changes justify it**. Do not mark M2 done prematurely.
+- Verify all acceptance criteria locally, then finalize the report, README,
+  roadmap and documentation navigation before the first publication commit.
+  Rerun documentation checks after final edits; unverified criteria stay open.
 - After owner approval for staging/committing/pushing, use an approved branch,
   inspect the staged diff, follow the prescribed commit-header syntax,
-  open a **draft** pull request into `main`, and verify actual GitHub Windows
-  check and documentation job outcomes.
+  open a **draft** pull request into `main`. CI is secondary validation; record
+  actual Windows check/documentation outcomes in PR metadata, without a new
+  completion-only commit. Selected suites and the final `check` gate must pass
+  before merge. Investigate failures
+  and correct acceptance evidence if a defect invalidates it.
 - Do **not** merge without separate owner authorization.
 - **Exit:** all AC-01–AC-10 supported by evidence and no scope changes without review.
 

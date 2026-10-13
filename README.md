@@ -43,7 +43,7 @@ currently displays a placeholder for the planned M2 import feature.
 
 For Node installation, the complete validation commands and VS Code Test Explorer setup,
 follow the [Windows development guide](docs/development/SETUP.md). CI runs only on
-pull requests and has separate Python quality and documentation jobs.
+pull requests and has separate application, skill and documentation jobs.
 
 ## Documentation
 

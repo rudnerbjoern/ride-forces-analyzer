@@ -78,7 +78,9 @@ contents. `.forces` recordings are never modified.
 
 ## Continuous integration
 
-The PR-only workflow has a separate `documentation` job on `windows-latest`.
+The PR-only workflow has a separate `documentation` job on `windows-latest`,
+selected only when the complete PR diff includes added, changed, deleted or
+renamed `.md` files. See [CI selection](CI.md) for dependency and merge-gate rules.
 It selects Node.js from `.node-version`, installs dependencies with `npm ci`
 and runs `npm run test:docs`. A lint, spelling or local-link failure fails the job.
 

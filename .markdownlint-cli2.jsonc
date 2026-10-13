@@ -2,7 +2,8 @@
   "globs": [
     "*.md",
     "docs/**/*.md",
-    ".github/**/*.md"
+    ".github/**/*.md",
+    ".agents/skills/**/*.md"
   ],
   "gitignore": true,
   "config": {

@@ -6,6 +6,8 @@
   "files": [
     "**/*.{md,py,mjs,json,jsonc,toml,yml,yaml}",
     ".github/workflows/*.{yml,yaml}",
+    ".github/scripts/*.mjs",
+    ".agents/skills/**/*.{md,py,ps1}",
     ".github/**/*.md",
     ".vscode/*.json",
     ".codex/*.toml",
@@ -37,12 +39,14 @@
     "Gwazi",
     "hatchling",
     "KaTeX",
+    "LASTEXITCODE",
     "librt",
     "micromark",
     "micromatch",
     "mypy",
     "Nevera",
     "outputjson",
+    "pathspecs",
     "Pydantic",
     "Pylance",
     "pyqtgraph",
@@ -62,6 +66,7 @@
     {
       "languageId": [
         "python",
+        "powershell",
         "javascript",
         "json",
         "jsonc",

@@ -15,10 +15,10 @@
 [PR #1](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/1) was merged with
 owner authorization. The later [four-recording expansion](development/RECORDINGS.md)
 has separate verification notes in the M1 report.
-**Exit criteria:** Windows install and native GUI startup; all checks in the
-[development guide](development/SETUP.md) pass; both PR CI jobs pass on the updated
-revision; reviewed design documentation committed. Delivery uses a branch and draft PR
-targeting `main`; merge remains a separate owner decision.
+**Exit criteria:** Windows install and native GUI startup; all local checks in the
+[development guide](development/SETUP.md) pass; final acceptance documentation verified.
+Delivery uses an authorized branch and draft PR targeting `main`; selected CI suites
+and the final `check` gate must pass before an independently authorized merge.
 
 The callable M2 importer is implemented; GUI importing and M3–M8 remain planned.
 Each additional implementation stage requires a new owner instruction.
@@ -27,8 +27,8 @@ Each additional implementation stage requires a new owner instruction.
 
 The read-only Path/bytes service imports schema 2.2.0 into immutable recordings,
 preserving original bytes, metadata, ordered attributes and independent GPS data.
-**Status:** Complete on 2026-10-13; AC-01–AC-10 verified, including both Windows
-CI jobs in [PR #7](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/7).
+**Status:** Complete on 2026-10-13; local acceptance evidence is verified. Both Windows
+CI jobs additionally passed in [PR #7](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/7).
 See [M2 validation](validation/M2.md) and the [public API](development/IMPORT_SERVICE.md).
 **Exit:** All five [fixtures](development/RECORDINGS.md) import losslessly and every
 acceptance criterion passes. No M3 implementation is authorized by M2 completion.
@@ -65,3 +65,6 @@ Standalone packaging, diagnostics, install/uninstall, regression suite and docum
 app installed on a clean Windows VM and verified.
 
 Complete milestones sequentially. Record decisions in `docs/decisions/`.
+Complete acceptance and final documentation locally before publication. PR CI
+provides secondary validation before merge; its success requires no completion-only
+documentation commit. A detected defect invalidating acceptance must be resolved.

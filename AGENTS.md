@@ -6,13 +6,15 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 
 - MUST communicate in German unless requested otherwise. Code, identifiers, docs and commits: English.
 - MUST distinguish verified facts, assumptions and recommendations. Unimplemented = planned; unverified = open.
-- MUST execute only the authorized milestone/stage. DEV-REQ-002: report evidence, then STOP. No next stage without a new instruction.
-- NEVER declare a milestone/stage complete before ALL its acceptance criteria are verified. M1 and M2 are accepted; M3–M8 remain planned.
-- MUST read [README](README.md), [roadmap](docs/ROADMAP.md), [architecture](docs/architecture/OVERVIEW.md) and task requirements before edits. Use [docs index](docs/README.md) for references.
+- MUST execute only the authorized scope, report evidence, then STOP. No next stage without a new instruction.
+- NEVER declare work complete before ALL applicable acceptance criteria are verified.
+- MUST keep this file limited to durable project-wide rules. Milestone status belongs in the roadmap; stage steps, deliverables and specific gates belong in the applicable implementation plan. NEVER update this file solely for implementation progress.
+- MUST read [README](README.md), [roadmap](docs/ROADMAP.md), [architecture](docs/architecture/OVERVIEW.md), applicable requirements and implementation plan before edits. Use [docs index](docs/README.md) for references.
 - MUST keep changes scoped and consistent. NEVER refactor unrelated code. MUST align code, tests, configuration and docs.
 
 ## Repository and Git
 
+- MUST use [github-delivery](.agents/skills/github-delivery/SKILL.md) for Git/GitHub delivery; reuse its helpers and authoritative commit policy. NEVER generate replacement operation scripts. Skill use NEVER grants mutation authorization.
 - MUST preserve user changes. Staged files = owner-reviewed. NEVER modify, unstage, replace or repurpose them without explicit authorization.
 - MUST obtain explicit owner authorization for staging, committing, pushing, PR creation and merging, covering the operation and scope.
 - MUST work on an authorized dedicated feature branch. Create new branches from `main`; continue related work on its existing branch. Preserve user changes during switches.
@@ -27,43 +29,34 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 
 ## Platform and architecture
 
-- MUST use Windows, Python 3.14.6, uv, PySide6, Pydantic, typed Python, Ruff, Pylance, mypy and pytest. Respect `.python-version` and the allowed 3.14 patches in `pyproject.toml`.
+- MUST use native Windows, uv, PySide6, Pydantic, typed Python, Ruff, Pylance, mypy and pytest. Runtime/tool versions and compatibility constraints come from repository configuration and the [Windows setup](docs/development/SETUP.md); NEVER duplicate version pins here.
 - MUST use locked dependencies. Before adding dependencies: check requirements and explain purpose.
-- NEVER put domain/import/analysis/storage/playback/rendering logic or validation in Qt widgets. `AppSettings` validates bootstrap settings only.
-- MUST keep render frame generation separate from encoding. Independent alpha-overlay and opaque-video outputs remain planned for M6.
+- NEVER put domain/import/analysis/storage/playback/rendering logic or validation in Qt widgets. MUST follow documented subsystem boundaries.
+- MUST keep render frame generation separate from encoding and preserve independent transparent-overlay and opaque-video outputs.
 - MUST support offline application processing and installed quality checks. NEVER require cloud services. Dependency installation and optional Context7 lookup may use network.
 
 ## Recordings and scientific contracts
 
 - MUST treat EVERY original `.forces` file as read-only. NEVER rewrite, format, normalize, redact or remove its data.
 - MUST preserve original bytes and unknown JSON fields. NEVER assume a stable schema.
-- Authorized complete fixtures: Manta, Kraken, Taron, VoltronNevera and Iron Gwazi in `tests/fixtures/real/`, including ALL GPS and metadata. MUST retain byte-length/SHA-256 tests; see [catalog](docs/development/RECORDINGS.md).
-- Iron Gwazi publication was authorized for Stage 0 on 2026-10-13. New recordings require separate authorization; fixture-data permission NEVER replaces Git-operation authorization.
-- MUST use [ADR 0002](docs/decisions/0002-forces-source-contract.md). Apple Watch is an owner-confirmed data-availability profile. NEVER fabricate absent GPS/gravity.
+- MUST preserve ALL data in authorized fixtures, including GPS and metadata, and retain byte-length/SHA-256 tests. Fixture inventory and authorization history belong in the [catalog](docs/development/RECORDINGS.md).
+- New recordings require separate authorization; fixture-data permission NEVER replaces Git-operation authorization.
+- MUST follow applicable documented source contracts and ADRs. NEVER fabricate absent sensor/GPS data.
 - MUST document and cross-check coordinates, axis polarity, time base, filtering and GPS sentinels against original-app evidence and fixtures. NEVER silently infer scientific semantics.
 
 ## Validation and evidence
 
+- MUST complete milestone acceptance entirely on native Windows locally: verify ALL criteria, finalize the validation report and completion status, then run checks affected by final documentation BEFORE staging/commit/push.
+- MUST treat PR CI as secondary validation and a merge gate, NEVER as a prerequisite for local milestone acceptance. Local completion NEVER authorizes Git operations or another stage.
+- MUST include final acceptance documentation in the initial delivery. NEVER add a completion-only commit solely because CI became green; record hosted outcomes in PR metadata. CI failures MUST block merge and be investigated; acceptance evidence invalidated by a defect MUST be corrected.
 - MUST read instructions/task docs once per working context. Re-read ONLY changed content, unresolved relevant sections or lost context.
 - MUST batch independent reads/searches. Parallelize independent checks ONLY without shared mutable files, environments or GUI resources; dependencies MUST remain sequential.
 - MUST test changed behavior/public contracts and add bug regression tests. Run focused checks first; repeat ONLY checks affected by edits/failures.
+- MUST keep skill/tool regression suites separate from application test discovery. Run them ONLY when their implementation, tests or relevant dependencies change; ordinary application changes and delivery operations NEVER require them.
 - MUST run required suites once for final content and retain actual runner evidence. NEVER rerun solely because commit/push authorization arrived or a commit was created.
 - MUST reuse successful evidence ONLY when relevant contents (including staged files), dependencies, lock files, tools, configuration and environment are demonstrably unchanged. Changed inputs: rerun affected checks. Missing evidence/uncertain equivalence: run required suites.
-- MUST record exact commands, results, limitations, platform and tested revision/file scope in the applicable `docs/validation/` report. M1 evidence belongs in [M1 validation](docs/validation/M1.md); M2 evidence MUST be consolidated in [M2 validation](docs/validation/M2.md); NEVER create separate M2 stage reports. Temporary logs: `.tmp/`. NEVER add a cache framework solely for evidence reuse.
+- MUST record exact commands, results, limitations, platform and tested revision/file scope in `docs/validation/` as required by the applicable plan. Stage-specific report structure belongs in that plan. Temporary logs: `.tmp/`. NEVER add a cache framework solely for evidence reuse.
 - MUST batch Git status/scope checks where practical; retain required commit/push boundary checks. Repeat fixture hashes ONLY for relevant changes, integrity uncertainty or explicit acceptance requirements.
-- Before commit, ALL commands below MUST have valid passing evidence for the committed content. Execute from repository root using the [Windows setup](docs/development/SETUP.md); valid evidence MAY be reused under the rule above:
-
-  ```powershell
-  uv lock --check
-  uv run ruff check .
-  uv run ruff format --check src tests
-  uv run mypy src
-  npm run typecheck
-  npm run test:types
-  npm run test:dependencies
-  uv run pytest
-  npm run test:docs
-  ```
-
-- MUST retain strict shared `[tool.pyright]`. Ruff: `py314`, 100 columns, `F`/`COM812`. NEVER weaken checks to obtain a pass.
+- Before commit, ALL required checks in the [Windows setup](docs/development/SETUP.md) MUST have valid passing evidence for the committed content. Execute from repository root; evidence MAY be reused only under the rule above.
+- MUST retain configured lint, format and strict type-checking rules. NEVER weaken checks to obtain a pass.
 - MUST require actual runner output; exit code alone is insufficient. NEVER present local/static checks as hosted CI evidence or substitute non-Windows results for Windows/GUI verification.
