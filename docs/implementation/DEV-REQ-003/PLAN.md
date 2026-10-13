@@ -1,5 +1,7 @@
 # DEV-REQ-003 — Implementation plan
 
+<!-- cspell:words AHRS stationarity Butterworth Goldens orthonormality acausal Missingness sosfiltfilt basemaps -->
+
 **Status:** Planning only. No scientific analysis implementation authorized.
 **Requirements:** [DEV-REQ-003](../../requirements/DEV-REQ-003-scientific-analysis.md).
 **Steps for Codex:** [PROMPTS.md](PROMPTS.md).
