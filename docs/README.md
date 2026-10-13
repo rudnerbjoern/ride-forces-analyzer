@@ -11,6 +11,13 @@ This directory contains project documentation, not generated artifacts or tempor
   boundaries and unverified scientific contracts.
 - [ADR 0001](decisions/0001-platform.md): offline Windows platform and Python decision.
 
+## M2 importer specification (planned)
+
+- [DEV-REQ-002](requirements/DEV-REQ-002-forces-importer.md): complete importer requirements and acceptance criteria.
+- [Observed .forces variants](requirements/FORMAT-ANALYSIS.md): four-fixture schema comparison and unverified semantics.
+- [M2 implementation plan](implementation/DEV-REQ-002/PLAN.md): staged scope, traceability and test gates.
+- [Sequential Codex prompts](implementation/DEV-REQ-002/PROMPTS.md): one implementation task per invocation.
+
 ## Development
 
 - [Windows setup and validation](development/SETUP.md): installation, all checks and
