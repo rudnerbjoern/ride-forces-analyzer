@@ -8,6 +8,7 @@ const codeInputs = new Set([
   "package.json", "package-lock.json", ".gitignore", ".gitattributes", ".editorconfig",
   ".vscode/settings.json",
   ".github/dependabot.yml",
+  ".github/labeler.yml",
 ]);
 
 const skillInputs = new Set([

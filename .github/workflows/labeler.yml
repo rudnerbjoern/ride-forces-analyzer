@@ -1,0 +1,17 @@
+name: PR labels
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  label:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      # Read trusted base-branch configuration through the API; never check out PR code.
+      - uses: actions/labeler@v7.0.0
+        with:
+          sync-labels: false
