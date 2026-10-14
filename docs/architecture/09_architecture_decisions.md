@@ -13,6 +13,26 @@ The ADR files preserve rationale, requirement references and historical evidence
 This chapter is the arc42 entry point to those records; do not create a second
 architecture overview or duplicate their full contracts here.
 
+## Proposed scientific decision
+
+[ADR 0003 — Scientific semantics and capability gates](../decisions/0003-scientific-semantics-and-capability-gates.md)
+is the M3 Stage 0 proposal, with verified M2/fixture observations and a per-channel
+qualification matrix. It distinguishes specific force, gravity and kinematic
+acceleration, proposes explicit frame conventions and limits unknown units,
+yaw, extrema, epochs and negative GPS values. Owner review is pending; the Stage 0
+proposal does not qualify real recording semantics. Stage 2 separately implements
+device-only norms and Pint conversion with explicit source-specific contracts.
+Its reference-collection protocol
+precedes definitive rider interpretation. AC-01/AC-08 remain open.
+
+[ADR 0004 — Analysis contracts and scientific library policy](../decisions/0004-analysis-contracts-and-library-policy.md)
+records Stage 1 executable model boundaries and the isolated native-Windows
+license/compatibility audit and subsequent Stage 2 device/unit boundaries. NumPy
+and Pint are locked; SciPy/GeographicLib adoption remains pending, AHRS/pyproj
+remain research only. The decision is proposed
+for owner review; actual model implementation does not accept scientific mappings
+or imply numerical M3 completion.
+
 ## Decisions requiring evidence
 
 Source units, proper versus gravity-compensated acceleration, coordinate frames,

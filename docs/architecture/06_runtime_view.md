@@ -79,6 +79,41 @@ bytes/policy produce equivalent output. See [API contracts](../development/IMPOR
 
 ## Future scenarios
 
-Library import through widgets, scientific analysis, interactive playback, frame
+Library import through widgets, calibrated scientific analysis, interactive playback, frame
 rendering, encoding and POV synchronization remain planned. This view introduces
 no invented runtime interactions for those services.
+
+## Implemented device-only analysis
+
+```mermaid
+sequenceDiagram
+    participant Caller
+    participant Device as analysis.device
+    participant Pint as Private Pint registry
+    participant NumPy
+    Caller->>Device: Full M2 success, explicit UTC time, per-sequence contracts
+    loop Acceleration and gravity independently
+        Device->>Device: Check source hash, sequence, unit and quantity references
+        alt Absent sequence or absent contract
+            Device->>Device: UNAVAILABLE channels with ordered warnings, no samples
+        else Qualified DEVICE components
+            Device->>Pint: Convert one supported component-unit factor to SI
+            Pint-->>Device: Explicit SI scale
+            Device->>NumPy: Convert owned array, then stable Euclidean norm
+            NumPy-->>Device: Owned vectors and magnitude, or finite-range defect
+            Device->>Device: Retain usable vectors and report invalid products independently
+        end
+    end
+    Device-->>Caller: Immutable AnalysisResult retaining complete M2 source
+```
+
+Caller contract/type/hash defects raise TypeError/ValueError. Expected finite-range
+calculation defects produce INVALID products with structured errors. Source
+absence and unknown units produce UNAVAILABLE products with different warning
+codes. A declaration cannot create absent gravity. The caller supplies calculation
+time; sample indices remain indices, with no generated timeline or epoch.
+There is no addition/subtraction of the two source channels, no normalization
+into rider G, and no calibration, filtering or GPS processing. The registry reads
+installed definitions at module initialization; subsequent calculations perform
+no file or network access. Caller evidence references are explicit attestations,
+not an empirical verification service.

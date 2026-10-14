@@ -83,11 +83,12 @@ sign and transform direction. A scientific ADR/reference gate precedes verified
 rider outputs; synthetically correct rotations do not prove source calibration.
 
 Analysis products must retain source hash, algorithm/configuration, quantity,
-frame, time basis and raw/filtered provenance. Planned channel states are VERIFIED,
-PROVISIONAL, UNAVAILABLE and INVALID. Profiles include a deterministic
-raw_device_only baseline and separately approved rider_calibrated, gps_exploratory
-and gps_strict policies. Unknown units/missing capabilities are not replaced with
-zero, standard gravity or synthetic sensor data.
+frame, time basis and raw/filtered provenance. Stage 1 represents channel states
+VERIFIED, PROVISIONAL, UNAVAILABLE and INVALID, with a deterministic raw_device_only
+default. Additional rider_calibrated, gps_exploratory and gps_strict profile labels
+require explicit policy references; their scientific workers remain planned.
+Unknown units/missing capabilities are not replaced with zero, standard gravity
+or synthetic sensor data.
 
 A future index/rate timeline is labeled INFERRED_UNIFORM and retains source/default
 rate provenance; source date/GPS epochs and offsets remain unverified. Keep raw
@@ -95,4 +96,76 @@ samples alongside configurable offline filtering, with edge/short-segment and
 filter-induced peak changes explicit. Future accepted WGS84 segments yield a
 horizontal path estimate, not 3D track length; derived speed requires a verified
 time basis. Preserve rejected fixes and negative reported values in M2 evidence.
-All these contracts are planned, not implemented M2 interpretation.
+These scientific operations remain planned, not implemented M2 interpretation.
+
+### Proposed scientific capability gate
+
+[ADR 0003](../decisions/0003-scientific-semantics-and-capability-gates.md) records
+Stage 0 observations and the proposed policy; owner review and scientific
+qualification remain open. Raw DEVICE x/y/z retains UNKNOWN units/directions.
+The proposed mathematical RIDER convention is right-handed, X forward, Y left,
+Z rider-up, with passive column-vector conversion; it is not a mapping of source
+vectors. WORLD/GRAVITY heading cannot be determined from gravity alone. Flying
+and Watch mounting require independent pose-specific evidence.
+
+```mermaid
+flowchart TD
+    M2["Implemented M2 full import with owned original source"] --> Raw["Planned raw_device_only view: source scalars, unknown units and axes"]
+    M2 --> Gate{"Required inputs and semantics qualified by independent evidence, tests and reviewed policy?"}
+    Gate -->|No| Limited["Planned channel exclusion: UNAVAILABLE or INVALID with reason"]
+    Gate -->|Yes| Qualified["Future derived channel: VERIFIED only within qualified unit, frame and time scope"]
+    Limited -.-> OptIn["Only explicit exploratory assumptions: separate PROVISIONAL profile"]
+```
+
+This is a proposed policy view, not an implemented analysis runtime. Gates apply
+per channel: structural pairing never proves gravity compensation, finite GPS
+never proves WGS84/time semantics, and numerical frame validity never proves
+rider calibration. All five originals permit raw inspection; none currently
+qualifies for definitive rider loading or source-app extrema equivalence.
+Iron Gwazi's absent GPS/gravity remains unavailable. Owner defaults and source
+extrema retain their M2 provenance. Unknown acceptance restricts capability;
+it never silently converts an assumption into a verified measurement.
+
+### Implemented Stage 1 model boundary
+
+[Analysis contracts](../development/ANALYSIS_MODELS.md) now implement immutable
+profiles/results/channels, quantities/frames/time labels, source provenance and
+ordered diagnostics. Results retain full M2 ImportSuccess and use per-sequence
+index bounds. SampleValues owns float64 bytes and explicit row validity; each
+NumPy accessor is a fresh read-only view. Missing/invalid data remain distinct
+from finite zero and cannot be fabricated for absent Watch gravity/GPS.
+
+Physical values reject UNKNOWN or incompatible units; VERIFIED physical values
+reject ASSUMED unit evidence. Rider/world references and explicit provisional
+profile permission are required structurally. Caller reference strings do not
+establish empirical truth or grant owner approval. VERIFIED raw source handling
+and VALID result structure do not certify rider loading. Frame mapping, source
+units/epochs, yaw and app equivalence remain open under ADR 0003.
+
+[ADR 0004](../decisions/0004-analysis-contracts-and-library-policy.md) separates
+these implemented contracts from future numerical workers and pending project
+dependency adoption. No processing, conversion, projection or GPS alignment is
+performed by model construction.
+
+### Implemented Stage 2 unit and device gates
+
+`analysis.device` is opt-in and independent of model construction. MotionUnitContract
+binds SHA-256, ACCELERATION or GRAVITY, a supported common component unit, explicit
+SPECIFIC_FORCE/GRAVITY/KINEMATIC_ACCELERATION meaning and separate unit/quantity
+references. Neither field name determines meaning. A missing declaration leaves
+vectors and magnitude UNAVAILABLE; absent source gravity stays absent even with
+a declaration. Real fixtures have no qualified declarations.
+
+Pint converts SI, centimeters/s², feet/s² or explicitly declared standard_gravity
+to m/s². Bare `g`, dimensionless and unrelated units are rejected before calculation.
+Standard gravity is a conversion constant, not a measured gravity vector or
+rider load. NumPy computes the stable Euclidean norm of DEVICE components only;
+there is no source-channel combination. Unit/quantity references, original unit,
+library versions, source indices and source/algorithm provenance remain retained.
+Unknown physical axis mapping, yaw, source epochs and GPS units are unchanged.
+
+Missing rows preserve NaN plus a false validity flag; zero remains valid zero.
+SI values/norms outside float64 range become INVALID products with errors. Floating
+point conversion can round/underflow within float64; exact source precision remains
+in M2 original bytes. Norm overflow does not discard usable vector components.
+No scientific source-app equivalence is established by the synthetic tests.

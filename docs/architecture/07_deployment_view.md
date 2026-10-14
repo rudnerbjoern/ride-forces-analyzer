@@ -44,6 +44,17 @@ validation environment. Optional analysis/render dependencies are not proof
 that future product features are implemented. Node is not an application runtime
 requirement. Temporary artifacts and tool caches stay under `.tmp/`.
 
+The Stage 1 contract package requires the existing NumPy `analysis` extra and can
+construct results without Qt, SciPy, Pint or GeographicLib. The separate Stage 2
+`analysis.device` module requires Pint 0.26.1 in the `analysis` extra, now root-locked
+with flexcache, flexparser and platformdirs. Its private registry uses bundled unit
+definitions and no disk cache; no cloud, Qt or per-sample registry is required.
+The earlier Stage 1 candidate-library audit used a separate exact-version uv project/lock/venv under `.tmp/`, with native
+CPython 3.14.6 AMD64 wheels and no source build. That isolated audit left root
+dependencies/locks unchanged; the subsequent Stage 2 Pint adoption updates them.
+This is local development evidence, not clean-VM, ARM64, free-threaded or released
+installer validation; see [ADR 0004](../decisions/0004-analysis-contracts-and-library-policy.md).
+
 ## Infrastructure level 2: validation and release boundary
 
 PR CI uses separate selected application, documentation and skill jobs on

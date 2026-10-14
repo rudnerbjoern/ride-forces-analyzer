@@ -12,6 +12,10 @@ This directory contains project documentation, not generated artifacts or tempor
 - [ADR 0001](decisions/0001-platform.md): offline Windows platform and Python decision.
 - [ADR 0002](decisions/0002-forces-source-contract.md): accepted M2 API, source ownership,
   device capabilities, resource limits and optional GPS policy.
+- [ADR 0003](decisions/0003-scientific-semantics-and-capability-gates.md): proposed M3
+  scientific nomenclature, evidence limits and safe per-channel capability gates.
+- [ADR 0004](decisions/0004-analysis-contracts-and-library-policy.md): implemented
+  Stage 1 models, Stage 2 device conversion, isolated Windows audit and deferred libraries.
 
 ## M2 importer specification (accepted)
 
@@ -34,8 +38,10 @@ This directory contains project documentation, not generated artifacts or tempor
   VS Code Test Explorer configuration.
 - [Python code quality](development/CODE_QUALITY.md): Pydantic, Ruff, Pylance,
   mypy, Pyright and regression-test scope.
-- [Canonical models](development/CANONICAL_MODELS.md): immutable Stage 1 models,
+- [Canonical models](development/CANONICAL_MODELS.md): immutable M2 Stage 1 models,
   source ownership and diagnostic/result contracts.
+- [Analysis contracts](development/ANALYSIS_MODELS.md): immutable M3 profiles/results,
+  provenance and capability restrictions; Stage 2 DEVICE norms and explicit Pint conversion.
 - [Motion parsing](development/MOTION_PARSING.md): Stage 3 subset API, field policies
   and boundaries before complete importer integration.
 - [Strict decoding](development/STRICT_DECODING.md): Stage 2 source API, resource

@@ -17,7 +17,12 @@ flowchart TB
     Motion --> Domain
     Optional --> Domain
     Results --> Domain
-    Analysis["analysis: planned"] -.-> Domain
+    Analysis["analysis.models: implemented contracts"] --> Domain
+    Analysis --> Results
+    Analysis --> NumPy["NumPy immutable byte-backed array views"]
+    Device["analysis.device: explicit vectors / norms"] --> Analysis
+    Device --> NumPy
+    Device --> Pint["Pint: validated unit conversion"]
     Storage["storage: planned"] -.-> Domain
     Playback["playback: planned"] -.-> Domain
     Rendering["rendering: planned"] -.-> Domain
@@ -33,7 +38,7 @@ implemented services. Qt startup does not call the import service.
 | Bootstrap / settings | main validates AppSettings before creating the Qt window                                        | Implemented: [entry point](../../src/ride_forces_analyzer/__main__.py), [settings](../../src/ride_forces_analyzer/config.py) |
 | domain               | Recording, SourceEnvelope, SourceNumber, vectors, motion, metadata, attributes and GPS concepts | Implemented immutable representations: [domain](../../src/ride_forces_analyzer/domain/)                                      |
 | importers            | Strict decoding, motion/optional validation, ordered diagnostics and public import composition  | Implemented: [importers](../../src/ride_forces_analyzer/importers/)                                                          |
-| analysis             | Calibration, scientific quantities and filtering                                                | Planned: [M3 requirements](../requirements/DEV-REQ-003-scientific-analysis.md)                                               |
+| analysis             | Immutable contracts and device units/norms; calibration/filtering remain planned                | Implemented Stage 1 models: [analysis](../../src/ride_forces_analyzer/analysis/); scientific engine planned                  |
 | storage              | Local ride library and persistence                                                              | Reserved package; services planned for later milestones                                                                      |
 | playback             | Playback timeline and interpolation consumption                                                 | Reserved package; services planned                                                                                           |
 | rendering            | Frame generation and separate encoding                                                          | Reserved package; services planned                                                                                           |
@@ -83,15 +88,20 @@ No deeper decomposition is needed for this implemented boundary. Future library,
 analysis, widgets and render services must be documented when designed, not
 invented to fill the template.
 
-## Planned M3 analysis boundary
+## M3 analysis boundary
 
-[DEV-REQ-003](../requirements/DEV-REQ-003-scientific-analysis.md) proposes an
-immutable AnalysisProfile/AnalysisResult contract under `analysis`, consuming
-validated M2 recordings without re-decoding or mutating them. Intended internal
-responsibilities are device-vector/unit handling, frame/calibration validation,
+[DEV-REQ-003](../requirements/DEV-REQ-003-scientific-analysis.md) now has executable
+immutable AnalysisProfile/AnalysisResult contracts under `analysis`, retaining
+full M2 ImportSuccess without re-decoding or mutating it. The
+[model guide](../development/ANALYSIS_MODELS.md) describes profiles, provenance,
+diagnostics, units/frames, independently bounded indices and owned array data.
+The opt-in `analysis.device.analyze_device_vectors` boundary accepts full M2
+ImportSuccess and source-bound MotionUnitContract declarations; it returns vectors,
+magnitudes, provenance and diagnostics. It does not run automatically after import. Intended later
+responsibilities are frame/calibration validation,
 filtering/statistics, GPS quality/geodesics and source-app comparison.
-These are design responsibilities, not implemented modules or approved public
-function signatures. The stage-1 API design must define actual boundaries.
+These remain design responsibilities, not implemented scientific workers or
+approved calculation function signatures.
 
 Library calls stay behind the analysis API. Domain quantities, capabilities and
 provenance must remain meaningful without exposing upstream APIs to consumers.

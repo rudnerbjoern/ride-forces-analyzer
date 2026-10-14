@@ -1,1 +1,45 @@
-"""Analysis subsystem (implementation planned in roadmap)."""
+"""Immutable analysis contracts; opt-in device primitives live in analysis.device."""
+
+from .models import (
+    AnalysisChannel,
+    AnalysisDiagnostic,
+    AnalysisProfile,
+    AnalysisProvenance,
+    AnalysisResult,
+    CapabilityState,
+    EvidenceState,
+    FrameLabel,
+    ParameterValue,
+    ProcessingKind,
+    ProfileName,
+    QuantityKind,
+    ResultValidity,
+    SampleValues,
+    SourceSequence,
+    TimeBasis,
+    TimeBasisKind,
+    UnitAssignment,
+    UnitLabel,
+)
+
+__all__ = [
+    "AnalysisChannel",
+    "AnalysisDiagnostic",
+    "AnalysisProfile",
+    "AnalysisProvenance",
+    "AnalysisResult",
+    "CapabilityState",
+    "EvidenceState",
+    "FrameLabel",
+    "ParameterValue",
+    "ProcessingKind",
+    "ProfileName",
+    "QuantityKind",
+    "ResultValidity",
+    "SampleValues",
+    "SourceSequence",
+    "TimeBasis",
+    "TimeBasisKind",
+    "UnitAssignment",
+    "UnitLabel",
+]

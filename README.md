@@ -12,9 +12,14 @@ Stage 2 adds [strict source decoding](docs/development/STRICT_DECODING.md) from
 read-only paths or bytes. Stage 4 adds [optional metadata, attributes and GPS parsing](docs/development/OPTIONAL_PARSING.md),
 with explicit absence and owner-default provenance. Stage 5 exposes the
 [public read-only import service](docs/development/IMPORT_SERVICE.md), returning
-complete typed recordings for their available data. Analysis, storage, playback,
+complete typed recordings for their available data. Calibrated analysis, storage, playback,
 GUI importing and rendering remain **planned**. M2 acceptance is verified;
 see the [final validation](docs/validation/M2.md).
+M3 Stage 1 adds [immutable analysis contracts](docs/development/ANALYSIS_MODELS.md)
+and an isolated scientific-library audit. Source units/calibration remain unverified;
+Stage 2 adds explicitly qualified DEVICE vectors/norms and Pint conversion in
+`analysis.device`. Real-recording units remain unqualified; rider/world calculations,
+filtering and GPS analysis remain planned.
 **M1 acceptance is verified**
 on Windows and in pull-request CI, and
 [PR #1](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/1) is merged.

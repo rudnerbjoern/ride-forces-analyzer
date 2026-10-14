@@ -11,16 +11,17 @@ M1/M2 acceptance is verified; M3 scientific criteria remain planned.
 
 ## Quality scenarios
 
-| Scenario                                                        | Required response                                                                                | Verification                                           |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| Import any of the five authorized originals                     | Preserve all bytes/GPS/unknown content and available typed data; never write the input           | Integrity, inventory and service tests; M2 AC-01–04    |
-| Import the same bytes/policy repeatedly or concurrently         | Equivalent immutable results and ordered diagnostics with independent per-call state             | Service/model/result tests; AC-08–09, NFR-002          |
-| Supply malformed, duplicate-key, unsupported or oversized input | Structured deterministic failure within configured resource budgets                              | Decoder and diagnostic-budget tests; AC-05–06, NFR-003 |
-| Supply missing/defective optional GPS or weather                | Retain source; warn and expose absence/invalid slots without fabricating samples                 | Optional-data tests; AC-04/07                          |
-| Process an installed application recording offline              | No network, writes or Qt import in the public importer                                           | Fresh-process offline/write/Qt guards; AC-08–09        |
-| Start the native Windows Qt module                              | Validate settings before construction; show and close the real minimal window normally           | Settings and native GUI tests; M1 acceptance           |
-| Request rider-axis interpretation without verified semantics    | Future analysis must declare unverified/unavailable capability instead of scientific certainty   | Planned M3 evidence gates, not implemented M2 analysis |
-| Render an opaque video and an alpha overlay                     | Future frame generation and encoding remain independent; transparency works in the target editor | Planned M6/DaVinci Resolve acceptance                  |
+| Scenario                                                              | Required response                                                                                           | Verification                                                                                              |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Import any of the five authorized originals                           | Preserve all bytes/GPS/unknown content and available typed data; never write the input                      | Integrity, inventory and service tests; M2 AC-01–04                                                       |
+| Import the same bytes/policy repeatedly or concurrently               | Equivalent immutable results and ordered diagnostics with independent per-call state                        | Service/model/result tests; AC-08–09, NFR-002                                                             |
+| Supply malformed, duplicate-key, unsupported or oversized input       | Structured deterministic failure within configured resource budgets                                         | Decoder and diagnostic-budget tests; AC-05–06, NFR-003                                                    |
+| Supply missing/defective optional GPS or weather                      | Retain source; warn and expose absence/invalid slots without fabricating samples                            | Optional-data tests; AC-04/07                                                                             |
+| Process an installed application recording offline                    | No network, writes or Qt import in the public importer                                                      | Fresh-process offline/write/Qt guards; AC-08–09                                                           |
+| Start the native Windows Qt module                                    | Validate settings before construction; show and close the real minimal window normally                      | Settings and native GUI tests; M1 acceptance                                                              |
+| Request rider-axis interpretation without verified semantics          | Future analysis must declare unverified/unavailable capability instead of scientific certainty              | Planned M3 evidence gates, not implemented M2 analysis                                                    |
+| Render an opaque video and an alpha overlay                           | Future frame generation and encoding remain independent; transparency works in the target editor            | Planned M6/DaVinci Resolve acceptance                                                                     |
+| Construct an analysis contract from caller-owned arrays/configuration | Own immutable data, retain source identity, reject unknown physical units and fabricated capability samples | Implemented Stage 1 [model tests](../../tests/test_analysis_models.py); scientific workers remain planned |
 
 ## Evidence and performance limits
 
@@ -48,3 +49,18 @@ ARC-001–004 require consistent arc42 views, Mermaid diagrams and linked scient
 ADRs before local M3 acceptance/publication. The future M3 report must trace these
 requirements alongside numerical/capability criteria. Architecture/documentation
 checks alone establish neither scientific correctness nor M3 completion.
+
+## Implemented device mathematics evidence
+
+`tests/test_device_analysis.py` covers analytic norms, explicit simulated stationary
+specific force and gravity, zero specific force, Pint SI/centimeter/foot/standard
+gravity conversions, unsupported/unknown units, wrong source/sequence bindings,
+missingness, float64 range defects, immutable arrays and deterministic diagnostics.
+All five originals are tested with no unit declarations: derived channels are
+unavailable and bytes/length/SHA-256/mtime are unchanged. An installed fresh-process
+guard verifies device calculations without file/network access or Qt imports.
+
+This supports SCI-004–006, SCI-010–012 and VAL-001/004 in device-only scope.
+AC-04 remains partial until projection/rotation stages; AC-06 has boundary evidence
+but does not qualify real source units. M3 remains open. Exact native Windows
+commands and outcomes belong in the [implementation plan](../implementation/DEV-REQ-003/PLAN.md).

@@ -25,8 +25,9 @@ unverified scientific assumptions are explicitly distinguished.
 ## Scope and evidence
 
 M1 supplies the minimal Qt bootstrap and development foundation; M2 supplies the
-read-only, Qt-independent importer. M3 analysis and M4–M8 product capabilities
-remain planned. Completion authority is the [roadmap](../ROADMAP.md), supported by
+read-only, Qt-independent importer. M3 implements immutable contracts and
+explicitly qualified device primitives; calibrated analysis and M4–M8 product
+capabilities remain planned. See the [analysis API](../development/ANALYSIS_MODELS.md). Completion authority is the [roadmap](../ROADMAP.md), supported by
 [M1](../validation/M1.md) and [M2](../validation/M2.md) validation evidence.
 
 Requirements and implementation steps stay in their existing directories;

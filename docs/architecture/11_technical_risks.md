@@ -19,3 +19,28 @@ algorithm equivalence or suitability for safety-critical interpretation. Resolve
 scientific questions through the [M3 plan](../implementation/DEV-REQ-003/PLAN.md)
 without changing original source evidence. M2 limitations and historical verification
 boundaries remain in the [acceptance report](../validation/M2.md).
+
+## M3 Stage 0 unresolved evidence and policy
+
+[ADR 0003](../decisions/0003-scientific-semantics-and-capability-gates.md) links
+actual M2/fixture observations to proposed channel gates. Owner acceptance of
+that policy and independent scientific qualification remain open:
+
+- Public Ride Forces/Apple guidance does not bind export fields to API quantities,
+  signs or units. No gravity addition/subtraction or g/SI conversion is qualified.
+- Gravity leaves yaw unresolved. The six source vectors, device label and Seated
+  default do not prove a rider frame; Manta's Flying pose and Watch wrist motion
+  need separate mounting/calibration references.
+- Source extrema and smoothingFactor=1 do not identify the source algorithm,
+  graph interval or endIndex inclusion. No per-fixture UI comparison exists.
+- Increasing GPS numbers do not establish seconds, epoch, datum or motion offset.
+  Negative-value semantics remain field-specific hypotheses; raw values survive
+  any future optional-product exclusion.
+- All originals are eligible for raw inspection, with units/axes UNKNOWN.
+  Definitive rider outputs and app equivalence remain unavailable; Iron Gwazi
+  additionally lacks GPS/gravity. Assumption-based exploratory output requires
+  explicit opt-in and PROVISIONAL labeling. Stage 2 enforces source-specific
+  unit/quantity contract gates; caller references do not certify source semantics.
+
+The reference protocol and safe proposed restrictions live in the ADR; this view
+retains the open risks without duplicating decision history or declaring M3 complete.
