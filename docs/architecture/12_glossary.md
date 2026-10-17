@@ -28,3 +28,8 @@
 | AnalysisResult                | Immutable Stage 1 contract retaining full M2 input, provenance, channels and diagnostics; no calculation service |
 | SampleValues                  | Owned float64 byte snapshot with explicit valid/missing rows and fresh read-only NumPy views                     |
 | VERIFIED channel              | Qualified only for its declared scope; verified raw data is not verified rider loading                           |
+
+OrthonormalFrame stores three explicit right-handed target axes as rows in DEVICE
+coordinates, with strict numerical admission and no source-calibration inference.
+RiderCalibration is a source-hash-bound exploratory frame declaration; it permits
+only explicitly opted-in PROVISIONAL projections, never verified real rider loading.

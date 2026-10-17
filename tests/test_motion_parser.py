@@ -396,7 +396,7 @@ def test_bounds_order_and_missing_required_fields() -> None:
     result = parse_motion(_source(root))
     assert isinstance(result, ImportFailure)
     assert any(item.code == "INVALID_INDEX_ORDER" for item in result.diagnostics)
-    for key in ("accelerationSequence", "startIndex", "endIndex"):
+    for key in ("accelerationSequence",):
         missing = _root()
         del missing[key]
         result = parse_motion(_source(missing))

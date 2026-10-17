@@ -1,135 +1,56 @@
 # Python validation and code quality
 
-The project uses Pydantic for runtime validation, Ruff for Python linting and
-formatting, and Pylance for editor type checking. mypy and Pyright provide
-repeatable command-line checks. All checks work offline after dependencies have
-been installed.
+Install tools and run the canonical checks in [Windows setup](SETUP.md).
+All installed checks work offline. Configuration lives in `pyproject.toml` and
+`.vscode/settings.json`; [AGENTS.md](../../AGENTS.md) governs evidence reuse.
 
-## Runtime validation
+## Runtime and static contracts
 
-`src/ride_forces_analyzer/config.py` defines `AppSettings`, an immutable Pydantic
-model used by the Qt startup function. The model validates a nonempty window
-title and integer dimensions from 1 through 16,777,215 pixels, Qt's documented
-maximum widget dimension. The upper bound prevents Qt conversion overflows and
-unsupported sizes before startup. Strict validation rejects coercion from
-strings, floats and booleans. Defaults are also validated, and unknown
-application-setting keys are rejected.
+`config.AppSettings` is an immutable, strict Pydantic bootstrap model. It rejects
+unknown keys, empty titles, coercion from strings/floats/booleans and dimensions
+outside 1–16,777,215 (Qt's widget limit). Defaults are validated. Recording/source
+models use owned frozen dataclasses; their [contracts](CANONICAL_MODELS.md) and
+[analysis contracts](ANALYSIS_MODELS.md) are separate from window settings.
 
-This model applies only to bootstrap window settings. It is not a recording
-schema. M2 Stage 1 now supplies immutable canonical/source representations;
-[Stage 5](IMPORT_SERVICE.md) adds complete importing; calibration remains planned.
-Original recording bytes remain
-read-only.
+- Ruff uses Python 3.14, 100 columns, `F`/`COM812`, LF and magic trailing commas.
+  Format checks report drift without rewriting files; COM812 is intentional.
+- mypy checks `src/` strictly with Pydantic's typed-constructor plugin.
+- Pylance/Pyright share strict Windows Python 3.14 configuration for `src/` and
+  `tests/`, excluding dependencies/caches. CLI Pyright is lock-pinned; its engine
+  version may differ from the editor's. CLI success does not verify editor UI.
+- VS Code uses the selected Windows interpreter and locked Ruff executable,
+  formats on save and applies explicit-save fixes. See setup for interpreter selection.
 
-The `frozen=True` class argument lets type checkers recognize immutability.
-The mypy Pydantic plugin generates typed constructor signatures and rejects
-extra arguments. Pylance/Pyright use Pydantic's native typing information.
+## Test coverage
 
-## Editor setup
+| Test group                                                                    | Contract                                                                                                         |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `test_project.py`, `test_fixture_inventory.py`                                | Exact five-file inventory, byte lengths/SHA-256, recursive schema observations                                   |
+| `test_settings.py`, `test_gui.py`                                             | Strict settings/bounds, native module startup, exposed window, resize and close                                  |
+| `test_ruff.py`                                                                | F401/COM812, accepted LF formatting and rejected drift/CRLF                                                      |
+| `test_source_models.py`, `test_recording_models.py`, `test_import_results.py` | Ownership, immutability, absence/defaults, source types and ordered outcomes                                     |
+| `test_decoder.py`, `test_motion_parser.py`, `test_optional_parser.py`         | Strict grammar/budgets, complete vectors/indices, optional metadata/attributes/GPS                               |
+| `test_import_service.py`                                                      | Full Path/bytes ingestion, repeated/concurrent results, shared budgets and fresh-process network/write/Qt guards |
+| `test_analysis_models.py`, `test_device_analysis.py`                          | Owned NumPy data, capability/unit/provenance gates, synthetic device norms and Pint conversion                   |
+| `tests/types/*.test.mjs`                                                      | Pyright constructor/frozen-field/mapping contracts and result-union narrowing                                    |
+| `tests/dependencies/*.test.mjs`                                               | Actual Node consumer regressions, Dependabot and label policy                                                    |
+| `tests/ci/changes.test.mjs`                                                   | Full-PR routing and the real PowerShell merge gate                                                               |
 
-The workspace recommends Microsoft Python, Pylance and Ruff. Its Windows
-interpreter is `.venv/Scripts/python.exe`. Pylance is explicitly selected as the
-language server and checks the workspace rather than only open files.
+Type-contract tests require analyzed files and expected diagnostic rules, not just
+an exit code. `tests/benchmark_importer.py` measures timing/Python allocations
+without performance assertions. Source-data tests retain original bytes and
+scientific unknowns; numerical synthetic success does not qualify real sensors.
+The [security report](../validation/DEPENDABOT.md) records override rationale and
+its dated open advisory. These Node tests are development tooling, not rendering.
 
-`[tool.pyright]` in `pyproject.toml` is the shared source of truth for strict
-Pylance and Pyright analysis. It covers `src/` and `tests/`, targets Python 3.14
-on Windows, and excludes temporary files and dependencies. Pylance uses the
-selected interpreter; the CLI resolves the project's `.venv`.
+Developer-tool regressions under `.agents/skills/` remain outside application
+discovery; their [skill instructions](../../.agents/skills/github-delivery/SKILL.md)
+define when to run them. [CI selection](CI.md) describes the corresponding jobs.
 
-Ruff linting is enabled and its VS Code extension uses `.venv/Scripts/ruff.exe`,
-matching the locked development tool. Ruff formats Python on save and applies
-its fixes and import sorting on explicit saves. These workspace settings take
-precedence over user-level Python formatter choices without modifying those
-user settings.
+## Primary references
 
-## Command-line checks
-
-Follow the execution and evidence rules in [AGENTS.md](../../AGENTS.md#validation-and-evidence):
-use focused checks while editing, then run all required suites once for the final content.
-Reuse successful results for a later authorized commit or push only while the checked
-inputs and environment remain unchanged and actual runner evidence is available.
-
-Complete the [Windows development setup](SETUP.md), then run:
-
-```powershell
-uv run ruff check .
-uv run ruff format --check src tests
-uv run mypy src
-npm run typecheck
-npm run test:types
-npm run test:dependencies
-uv run pytest
-```
-
-Ruff targets Python 3.14 with a 100-character line limit and enables only `F`
-and `COM812` lint rules. Its formatter writes LF line endings and retains magic
-trailing-comma behavior. The formatter check reports drift without rewriting files.
-Ruff warns that `COM812` can conflict with formatting; the rule is enabled by
-explicit project preference.
-mypy uses strict mode and the Pydantic plugin. Pyright is pinned in
-`package-lock.json`; it is a development tool, not an application dependency.
-
-Pylance and Pyright share configuration but are separate tools with potentially
-different bundled engine versions. CLI success is not a claim that VS Code's
-Problems view was manually inspected.
-
-## Tests
-
-- `tests/test_project.py` verifies the project version, exact five-recording inventory
-  and each original file's byte length and SHA-256 independently. The authorized
-  [recording catalog](RECORDINGS.md) covers Manta, Kraken, Taron, Voltron Nevera and Iron Gwazi.
-- `tests/test_settings.py` exercises defaults, custom settings, JSON round trips,
-  invalid dimensions and types, both valid dimension boundaries, invalid titles,
-  unknown keys and immutability.
-- `tests/test_gui.py` starts the native Windows Qt application with default and
-  custom Pydantic settings and checks the resulting title and dimensions.
-- `tests/test_ruff.py` verifies unused-import and missing-trailing-comma diagnostics and
-  verifies that the formatter accepts LF-formatted code and rejects drift and CRLF.
-- `tests/types/pydantic.test.mjs` checks typed constructors and frozen fields
-  through Pyright using the shared project settings. Temporary contracts are
-  stored under `.tmp/` and explicitly included in their test configuration.
-  The tests require a positive analyzed-file count and inspect diagnostic rules,
-  rather than relying solely on process exit status.
-- `tests/test_source_models.py`, `tests/test_recording_models.py` and
-  `tests/test_import_results.py` verify [canonical model](CANONICAL_MODELS.md)
-  ownership, immutability, source type retention, absence, diagnostics and results.
-- `tests/types/recording.test.mjs` adds public model constructor, immutable mapping,
-  frozen-field and literal outcome-tag contracts to `npm run test:types`.
-- `tests/test_motion_parser.py` covers all five complete motion sequences and
-  synthetic FR-011–016 defects; the type-contract suite also verifies narrowing
-  of the motion-specific subset result. See [motion parsing](MOTION_PARSING.md).
-- `tests/test_decoder.py` verifies Stage 2 grammar/encoding/dispatch failures,
-  input/resource budgets, exact source retention and bounded read-only I/O.
-  The Pyright suite also narrows the decoder-specific result; see
-  [strict decoding](STRICT_DECODING.md).
-- `tests/test_optional_parser.py` verifies Stage 4 metadata defaults, arbitrary
-  ordered attributes and every real GPS fix, plus optional defects and local
-  diagnostic budgets. Pyright also narrows the optional-specific subset result;
-  see [optional parsing](OPTIONAL_PARSING.md).
-- `tests/test_import_service.py` verifies full Path/bytes imports, all original
-  data, determinism/concurrency, aggregate diagnostic limits, safe recovery and
-  fresh-process Qt/network/write guards. `tests/benchmark_importer.py` records
-  Windows timings and traced Python allocation peaks without performance assertions;
-  see [the public service](IMPORT_SERVICE.md).
-- `tests/dependencies/security.test.mjs` checks the actual Node dependency consumers:
-  two TOML configuration parsers, inherited KaTeX trust rejection and three
-  micromark math-rendering contracts. See the [security follow-up](../validation/DEPENDABOT.md)
-  for override rationale and the remaining advisory. These are development-tool tests,
-  not application rendering features.
-
-The PR-only Windows quality job runs Ruff, formatter checks, mypy, Pyright, the
-type contracts, dependency regressions and pytest when code/test inputs change.
-Documentation linting remains a separate job selected by Markdown changes;
-see [CI selection](CI.md) for routing, failure handling and the required merge gate.
-
-## References
-
-Configuration was checked through Context7 against the official documentation:
-
-- [Pydantic model configuration](https://docs.pydantic.dev/latest/concepts/config/)
-- [Pydantic mypy integration](https://docs.pydantic.dev/latest/integrations/mypy/)
-- [Ruff editor settings](https://docs.astral.sh/ruff/editors/settings/)
-- [Pylance and Pyright configuration](https://github.com/microsoft/pylance-release/blob/main/USING_WITH_PYRIGHT.md)
-
-The widget-size contract was cross-checked through Context7 against the
-[Qt QWidget size documentation](https://doc.qt.io/qt-6/qwidget.html#QWIDGETSIZE_MAX).
+- [Pydantic configuration](https://docs.pydantic.dev/latest/concepts/config/) and
+  [mypy integration](https://docs.pydantic.dev/latest/integrations/mypy/).
+- [Ruff editor settings](https://docs.astral.sh/ruff/editors/settings/).
+- [Pylance/Pyright configuration](https://github.com/microsoft/pylance-release/blob/main/USING_WITH_PYRIGHT.md).
+- [Qt widget size](https://doc.qt.io/qt-6/qwidget.html#QWIDGETSIZE_MAX).

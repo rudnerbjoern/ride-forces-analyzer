@@ -76,7 +76,7 @@ def _decode_tree(text: str) -> object:
 def _schema_220(source: SourceEnvelope) -> DecodeSuccess:
     root = source.root
     assert root is not None
-    for key in ("accelerationSequence", "startIndex", "endIndex"):
+    for key in ("accelerationSequence",):
         if key not in root:
             raise DecodeProblem("MISSING_REQUIRED_FIELD", (key,), "Required core field is absent")
     acceleration = root["accelerationSequence"]
@@ -108,6 +108,8 @@ def _schema_220(source: SourceEnvelope) -> DecodeSuccess:
                     "Component must be a string or JSON number",
                 )
     for key in ("startIndex", "endIndex"):
+        if key not in root:
+            continue
         value = root[key]
         if not isinstance(value, SourceNumber) or value.value != value.value.to_integral_value():
             raise DecodeProblem(

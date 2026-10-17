@@ -6,8 +6,8 @@ from ride_forces_analyzer.config import AppSettings
 
 def test_default_settings() -> None:
     settings = AppSettings()
-    assert settings.window_title == "Ride Forces Analyzer — M1"
-    assert (settings.window_width, settings.window_height) == (900, 600)
+    assert settings.window_title == "Ride Forces Analyzer"
+    assert (settings.window_width, settings.window_height) == (1280, 820)
 
 
 def test_custom_settings_round_trip() -> None:

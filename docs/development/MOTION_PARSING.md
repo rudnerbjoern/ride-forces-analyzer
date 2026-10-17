@@ -1,6 +1,6 @@
-# Motion parsing — DEV-REQ-002 Stage 3
+# Motion parsing
 
-Stage 5 adds a shared diagnostic guard and composes this subset through the
+A shared diagnostic guard composes this subset through the
 [public import service](IMPORT_SERVICE.md). The independently callable
 `parse_motion(source, *, limits=DEFAULT_LIMITS)` still returns a motion-only result.
 Its `limits.max_diagnostics` cap is checked during generation; source shape/byte
@@ -82,7 +82,9 @@ All supplied indices must be integer-valued JSON numbers, excluding booleans
 and numeric strings. Integral fraction/exponent spellings are accepted without
 rewriting source tokens; fractional values fail. Each is independently bounded
 by the original acceleration array length, from zero through N-1.
-startIndex/endIndex are required and start must not exceed end. Optional gravityIndex
+Absent startIndex/endIndex use effective 0/N-1 bounds with INDEX_DEFAULTED
+warnings, preserving source absence. Supplied invalid values still fail, and
+effective start must not exceed end. Optional gravityIndex
 and inclineIndex need no relation to each other or the start/end interval.
 Taron retains gravityIndex=1513 before startIndex=2284. Iron Gwazi retains its
 gravity marker even though no gravity array exists. No slicing or time coordinate
@@ -99,8 +101,8 @@ vector/component codes. Device/gravity availability warnings are named above.
 Each diagnostic uses an escaped JSON Pointer and, for a motion sample, its
 original index. Messages identify defects without reproducing source values.
 Ordering follows existing severity/pointer/code rules, including stable ties.
-Document resource limits are now enforced by the Stage 2 decoder. Aggregate
-diagnostic count enforcement for a combined pipeline remains integration work.
+The decoder enforces document limits; the public service shares one aggregate
+diagnostic budget across motion and optional parsing.
 
 ```powershell
 uv run pytest tests/test_motion_parser.py

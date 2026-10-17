@@ -191,7 +191,7 @@ def test_dispatch_accepts_only_literal_220(version: str) -> None:
     assert result.source.root is not None
 
 
-@pytest.mark.parametrize("field", ["accelerationSequence", "startIndex", "endIndex"])
+@pytest.mark.parametrize("field", ["accelerationSequence"])
 def test_missing_core_fields_are_not_successful_decodes(field: str) -> None:
     raw = json.dumps({key: value for key, value in _BASE.items() if key != field}).encode()
     result = _failure(raw, "MISSING_REQUIRED_FIELD")

@@ -26,8 +26,11 @@ unverified scientific assumptions are explicitly distinguished.
 
 M1 supplies the minimal Qt bootstrap and development foundation; M2 supplies the
 read-only, Qt-independent importer. M3 implements immutable contracts and
-explicitly qualified device primitives; calibrated analysis and M4–M8 product
-capabilities remain planned. See the [analysis API](../development/ANALYSIS_MODELS.md). Completion authority is the [roadmap](../ROADMAP.md), supported by
+explicit device primitives, provisional frames and the source-app projection/mean
+with per-source evidence. General physical rider qualification is deferred; reduced M3 includes
+selected-range extrema and has focused Windows acceptance. GPS analytics is outside current scope.
+M4 includes the raw/calibrated explorer, focus workspace and coarse GPS overview; the persistent
+library and M5–M8 product capabilities remain planned. See the [analysis API](../development/ANALYSIS_MODELS.md). Completion authority is the [roadmap](../ROADMAP.md), supported by
 [M1](../validation/M1.md) and [M2](../validation/M2.md) validation evidence.
 
 Requirements and implementation steps stay in their existing directories;

@@ -1,0 +1,83 @@
+# Explorer validation
+
+The implemented [explorer contracts](../implementation/RAW_EXPLORER.md) are locally
+verified within the scope below. Reduced M3 is complete with [focused acceptance](M3.md); M4 library acceptance
+remains open. Current behavior is described in the contracts and [README](../../README.md),
+not by superseded implementation steps.
+
+## Verified scope
+
+- All five complete originals: plotted values/time coordinates, calibrated/raw
+  switching, source integrity (bytes, pinned length/SHA-256 and modification time).
+- Background imports, timer responsiveness, cancelled/malformed/failed input,
+  valid recording replacement and safe close during loading.
+- Sample navigation, inclusive/visible-range selection, bounded wheel/drag zoom,
+  marker-based reset, absent boundaries, source markers and axis visibility.
+- Live odd-window smoothing, right-click reset, -1/0/+1 g labels and fixed force
+  bounds; slider backgrounds remain dark in enabled/disabled states.
+- Plain-text metadata including literal markup, absent fields, duplicate attributes,
+  directional current-value cards and raw unknown-unit labels.
+- Focus workspace at 1280×820, custom 720×480, resize 800×500, compact Inspector,
+  scrollable fields, expandable details and direct diagnostic access.
+- GPS availability, route geometry and dialog lifecycle; native caption icon,
+  recording-specific title and no duplicate toolbar application name.
+
+## Runner evidence
+
+Native Windows x64 / Python 3.14.6 / PySide6 6.12.0; locked environment.
+Tested working tree: `chore/workspace-setup-and-docs`, base
+`4b201c42adb8201882bc9c91483ca03124290a57`. Scope: config defaults, explorer/GPS
+presentation, ui modules and associated settings/explorer/GUI tests.
+Commands run from repository root; logs/captures are ignored `.tmp/` artifacts.
+
+| Command / scope                                                                                                                                                                                                                                                                                  | Actual result                                                                  | Runner log                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ | ------------------------------- |
+| `uv run --locked pytest` — focus workspace and scientific/import regressions                                                                                                                                                                                                                     | 1,040 passed, 85.07 s                                                          | `.tmp/focus-final.log`          |
+| `uv run --locked pytest tests/test_gui.py tests/test_explorer_gui.py::test_focus_workspace_layout_and_current_value_cards tests/test_explorer_gui.py::test_smoothing_slider_preserves_source_time_and_selection tests/test_explorer_gui.py::test_focus_header_preserves_literal_device_metadata` | 5 passed, 8.34 s                                                               | `.tmp/focus-final-affected.log` |
+| `uv run --locked pytest tests/test_gui.py tests/test_explorer_gui.py::test_focus_workspace_layout_and_current_value_cards tests/test_explorer_gui.py::test_smoothing_slider_preserves_source_time_and_selection tests/test_explorer_gui.py::test_slider_background_stays_dark`                   | 5 passed, 9.34 s                                                               | `.tmp/slider-style.log`         |
+| `uv run --locked pytest tests/test_gui.py tests/test_explorer_gui.py::test_focus_workspace_layout_and_current_value_cards tests/test_explorer_gui.py::test_smoothing_slider_preserves_source_time_and_selection tests/test_explorer_gui.py::test_open_chart_navigation_selection_and_integrity`  | 9 passed, 13.60 s                                                              | `.tmp/caption-style.log`        |
+| `uv run --locked pytest tests/test_gui.py` — current toolbar/title                                                                                                                                                                                                                               | 2 passed, 3.16 s                                                               | `.tmp/toolbar-identity.log`     |
+| `uv run --locked ruff check .`; `uv run --locked ruff format --check src tests`; `uv run --locked mypy src`; `npm run typecheck`                                                                                                                                                                 | Passed; final 55 formatted files, 33 source files, zero typing errors/warnings | `.tmp/toolbar-identity.log`     |
+| `uv lock --check`; `npm run test:types`; `npm run test:dependencies`                                                                                                                                                                                                                             | 37 packages; 11 passed; 15 passed                                              | `.tmp/focus-quality.log`        |
+
+The full-suite result applies to its tested content; affected suites cover the
+subsequent plain-text header, slider style, caption and toolbar changes. Unaffected
+results are reused for unchanged executable inputs. These are local results, not
+hosted CI. This documentation review changes no executable inputs or acceptance.
+
+`.venv/Scripts/python.exe .tmp/capture-focus.py` and
+`.venv/Scripts/python.exe .tmp/capture-caption.py` produced inspected native captures
+in `.tmp/focus-workspace.png`, `.tmp/focus-compact.png` and `.tmp/caption-workspace.png`.
+The native dark-caption attribute was accepted. Optional Windows 11 caption/text/
+border colors were rejected by this environment; their exact colors remain unverified.
+
+## Desktop-independent GUI verification
+
+Native Windows x64 / Python 3.14.6 / Qt 6.12.0, unchanged locked dependencies.
+Test scope: PR #12 base `a5a5752c1653b2f6d4ee24cbf46590c32a8b98e7` plus
+`tests/test_explorer_gui.py` and this report. Interaction fixtures explicitly
+set a test-only minimum size and resize to 1280×820 after native exposure. This
+overrides native tracking limits on small desktops without changing application
+defaults; compact cases replace that minimum with 720×480. Layout cases independently exercise 720/1280 widths,
+chart/Inspector visibility, switching, resize and current values.
+Startup tests check requested size before show and allow desktop-constrained
+reductions after show, retaining diagnostic geometry in assertions.
+
+Focused runner `.tmp/pr12-layout-check.ps1` executes
+`.venv/Scripts/python.exe -m pytest tests/test_gui.py tests/test_explorer_gui.py -v`
+with `QT_QPA_PLATFORM=windows` at `QT_SCALE_FACTOR=1` and `3` sequentially.
+Both runs passed: 41 cases in 50.47 s at scale 1 and 41 in 58.41 s at scale 3
+(`.tmp/pr12-minimum-check.log`).
+Ruff check, Ruff format check and Pyright on `tests/test_explorer_gui.py` passed.
+Application code and dependencies are unchanged; unaffected evidence is reused.
+No additional full run was performed. Hosted success for this revision remains open.
+
+## Limits
+
+Tests simulate the file-picker result; manual picker navigation is not claimed.
+Compact windows scroll rather than show every field simultaneously. No universal
+latency guarantee exists for arbitrary input size; non-finite display bounds fail
+without replacing the previous usable recording. Clean-machine release/ARM64,
+physical calibration and private source-app algorithm identity remain unverified.
+[Time contracts](TIME_AXIS.md) and [source comparisons](APP_REFERENCE.md) retain
+numeric limits and known discrepancies. No Git delivery is part of these results.

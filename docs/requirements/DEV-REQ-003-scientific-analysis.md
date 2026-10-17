@@ -1,344 +1,134 @@
-# DEV-REQ-003 — Scientific Motion and GPS Analysis Engine
+# DEV-REQ-003 — Force preparation and basic extrema
 
-<!-- cspell:words AHRS stationarity Butterworth Goldens orthonormality acausal Missingness sosfiltfilt basemaps -->
+<!-- cspell:words Butterworth -->
 
-**Milestone:** M3
-**Status:** Proposed, documentation only
-**Platform:** Windows / Python 3.14.6
-**Precondition:** Verified M2 canonical importer contracts
-**Owner decision:** No scientific computation is authorized by this document alone.
-**Architecture authority:** [arc42 index](../architecture/README.md); maintain only
-its twelve chapters. [Source concepts](../architecture/08_concepts.md),
-[decisions](../architecture/09_architecture_decisions.md),
-[quality scenarios](../architecture/10_quality_requirements.md) and
-[scientific risks](../architecture/11_technical_risks.md) define the existing boundaries.
-**Recording scope:** All five [authorized fixtures](../development/RECORDINGS.md),
-including the acceleration-only Apple Watch Iron Gwazi profile.
+**Milestone:** M3 · **Status:** Complete within the owner-approved reduced scope;
+[focused Windows acceptance](../validation/M3.md).
+**Purpose:** Reliable preparation of imported Ride Forces channels for the explorer,
+subsequent replay and video overlays. This is not a general scientific analysis platform.
+**Input:** Verified M2 ImportSuccess and all five [authorized originals](../development/RECORDINGS.md).
+**Architecture:** The twelve [arc42 chapters](../architecture/README.md) remain authoritative.
+**Plan/evidence:** [Implementation plan](../implementation/DEV-REQ-003/PLAN.md),
+[source-app comparisons](../validation/APP_REFERENCE.md),
+[explorer validation](../validation/RAW_EXPLORER.md).
 
-## 1. Purpose and scope
+## 1. Required product behavior
 
-Build an offline, deterministic, provenance-aware scientific analysis engine for
-Ride Forces recordings. Consume the immutable canonical M2 model; never rewrite
-or alter original `.forces` files. Produce explicitly labeled acceleration,
-rider-frame force, filtering, statistics and GPS products for later M4–M7 use.
+- **SCI-001 Input:** Consume the immutable complete M2 result; never reparse JSON
+  in analysis or widgets, rewrite sources or invent absent sensors/directions.
+- **SCI-002 Provenance:** Retain source hash, algorithm, window, calculation time,
+  source/default sample rate, channel meaning/unit and per-source evidence status.
+- **SCI-003 Frames:** Use the source-app direction projection in ADR 0006 for the
+  product. Keep the stricter generic frame API independent; it makes no universal
+  physical rider-calibration claim.
+- **SCI-004–006 Quantities:** Preserve raw unknown-unit channels. App-reference g
+  uses the adopted source policy, without adding/subtracting gravity. Existing
+  device-vector norms and Pint conversion retain their explicit source-bound gates.
+- **SCI-007–009 Directions:** Independently normalize rounded source directions
+  only under ADR 0006 admission; reject degenerate/malformed bases with raw fallback.
+  Positive lateral means right, negative left; positive longitudinal acceleration,
+  negative braking. Do not infer yaw, mounting or physical orientation from gravity alone.
+- **SCI-010–012 Preservation:** Keep source units/epochs/sentinels, source extrema
+  and missing data intact. Computed products are separate artifacts. Unknowns and
+  unsupported capabilities stay explicit; no zero filling or source repair.
 
-The engine must distinguish measured or exported quantities, mathematically
-derived values, assumptions, unknown units and calibrated results. A successful
-numerical operation is not proof that its physical interpretation is correct.
+## 2. Time and smoothing
 
-In scope: coordinate-frame policies, acceleration magnitude, orientation and
-vector projection under validated assumptions, filtering, numerical statistics,
-quality flags, GPS geodesics, time alignment policies, reproducibility, comparison
-against original app values, and tested library integration.
+- **SIG-001:** Keep index/rate time INFERRED_UNIFORM; integer-rate replay uses
+  start-relative MM:SS.ff, ff a sample counter. GPS never controls sensor time.
+- **SIG-002:** Retain raw channels and unfiltered calibrated projections separately.
+- **SIG-005:** Use the implemented centered arithmetic mean with odd windows 1–51,
+  default 11, shortened/renormalized recording edges. One disables smoothing.
+  Always recompute from unfiltered projection. No added filter family is required.
+- **SIG-008:** Retain source-rate limitations; no extra physical precision or new
+  samples are implied. Smoothing may suppress short peaks.
+- Live slider updates, right-click default reset, raw toggle and reopen behavior
+  follow the [explorer contracts](../implementation/RAW_EXPLORER.md).
 
-Out of scope: reimplementing sensor acquisition, inventing gyroscope samples,
-certifying safety-critical accelerations, background tracking, live iPhone capture,
-mapping a known track, UI, playback, rendering, exporting final video, and direct
-changes to M2 source files.
+## 3. Basic extrema — implemented
 
-## 2. Mandatory library architecture
+- **SIG-006:** Return minimum/maximum for each of the three active displayed channels
+  over the inclusive selected sample interval. Use all available samples in that
+  interval and the selected raw or calibrated smoothing mode, without a second
+  selection-edge filtering pass. Chart visibility does not suppress a channel result.
+- **SIG-009:** Include interval endpoints/sample count, each extremum's value,
+  original sample index and recording-relative time. Replay labels use the existing
+  presentation formatter. If multiple samples tie, return the earliest source index.
+- Reject invalid/out-of-range/reversed intervals. A one-sample interval has equal
+  minimum and maximum. Preserve negative, positive and zero values exactly as the
+  chosen channel representation permits; do not substitute source minForce/maxForce.
+- **SIG-010:** Retain source identity, raw/calibrated mode, unit and smoothing window
+  so results cannot be reused for another source or setting. Raw extrema do not claim g.
+  Empty/unavailable channels return an explicit unavailable result or documented
+  validation error, never fabricated extrema.
 
-- **LIB-001 NumPy:** Required core for finite vector arrays, projections,
-  norms, matrix operations and reproducible numerical tests. Already specified
-  under the optional `analysis` extra.
-- **LIB-002 SciPy:** Required for `scipy.spatial.transform.Rotation`,
-  `scipy.signal` filtering and `scipy.interpolate` methods. Use vetted
-  library primitives rather than implementing signal-processing formulas anew.
-- **LIB-003 Pint:** Required for unit-aware public boundaries and conversions
-  once source-unit assignments have evidence. Keep inner numeric arrays in
-  explicitly declared canonical SI or dimensionless units for performance;
-  avoid allocating Pint objects for each individual sensor sample.
-- **LIB-004 GeographicLib:** Required for WGS84 inverse geodesics, azimuths
-  and inter-fix horizontal distances. Do not substitute planar Euclidean distance.
-- **LIB-005 Pandas:** Optional adapter for tabular analysis and later consumers;
-  avoid requiring it in every core numerical operation. Already in `analysis`.
-- **LIB-006 AHRS:** Evaluation only, not a mandatory dependency. No complete
-  gyroscope or magnetometer raw sequences were identified in the current
-  five-fixture inventory; prohibit claims of reliable full IMU sensor fusion from these files.
-- **LIB-007 pyproj:** Optional extension only if a concrete coordinate reference
-  system conversion need is approved. Do not duplicate GeographicLib's geodesic
-  function for the initial feature set.
-- **LIB-008 Dependency governance:** Verify license, locked version, Python
-  3.14.6 and Windows wheel/build compatibility, security advisories, tests and
-  compatibility before adding SciPy, Pint and GeographicLib via uv. Keep version
-  choices reviewed and consistent with existing `pyproject.toml` and `uv.lock`.
-  An upstream public API must not leak through the engine's stable domain API.
+## 4. Dependencies and output boundaries
 
-Reference APIs: SciPy Rotation and signal SOS, Pint, GeographicLib WGS84.
-Official documentation URLs are provided in section 11.
+- **LIB-001–003:** Reuse locked NumPy, existing SciPy frame math and Pint boundaries.
+  No new dependency is required for projection, mean or basic extrema. SciPy signal
+  processing/interpolation is not required for this milestone.
+- **LIB-005/008:** Pandas stays optional; retain locked installation, license and
+  compatibility rules. Installed libraries alone establish no feature requirement.
+- **RES-001–002/004–005:** Keep typed immutable results with provenance/capability,
+  independent of Qt/storage/playback/rendering. Presentation formatting lives outside
+  numeric calculations; widgets contain no analysis/validation logic. Recompute from
+  retained data when configuration changes; never rewrite an original recording.
+- Existing generic device/frame models remain supported and tested; no unrelated
+  API/dependency removal is part of reducing this scope.
 
-## 3. Scientific contracts and coordinate semantics
+## 5. Explicitly outside current M3 acceptance
 
-- **SCI-001 Input:** Accept only typed, validated recordings returned by M2,
-  including the source hash, schema version, sample rate, optional vectors and
-  GPS fixes. Fail closed for unsupported inputs; no reinterpretation of raw JSON
-  bypassing M2.
-- **SCI-002 Provenance:** Every analysis product stores source SHA-256, analysis
-  engine version, algorithm identifier, configuration, assumed unit system,
-  coordinate convention, time basis, quality decisions and calculation timestamp.
-- **SCI-003 Frames:** Define independent DEVICE, WORLD/GRAVITY and RIDER frames,
-  their axis basis, right/left handedness, positive direction and unit.
-  A frame transformation is permitted only when its interpretation is documented
-  and approved in an ADR with reference tests, linked from
-  [arc42 decisions](../architecture/09_architecture_decisions.md). Maintain the
-  accepted frame/unit/capability policy in [cross-cutting concepts](../architecture/08_concepts.md).
-- **SCI-004 Force terminology:** Distinguish accelerometer *specific force*
-  (proper acceleration) from gravity vector and gravity-compensated kinematic
-  acceleration. Avoid conflating accelerometer-derived rider loading with
-  gravitational acceleration or automatically adding the gravity sequence.
-  The original app's `accelerationSequence` relationship to
-  `gravitySequence` must be empirically established.
-- **SCI-005 Gravity convention:** Define standard gravity
-  `g0 = 9.80665 m/s^2` separately from a measured gravity vector. Unit `g`
-  as a loading factor is dimensionless when normalized by `g0`.
-  A stationary instrument can indicate approximately 1 g of specific force,
-  but sensor export conventions must be verified before imposing that on files.
-- **SCI-006 Derived magnitude:** Permit mathematically clear
-  `sqrt(x*x + y*y + z*z)` only with declared component units. Identify this
-  as a **device-vector magnitude**, not automatically vertical rider G.
-- **SCI-007 Rider projections:** Project via a verified orthonormal frame
-  and documented matrix convention. Check dot products, vector norms,
-  handedness, transformation direction, and whether vectors describe device
-  axes, rider axes or calibration corrections. Record positive and negative
-  vertical, lateral and longitudinal sign conventions explicitly.
-- **SCI-008 Calibration:** Preserve original calibration and direction vectors;
-  never silently normalize malformed/degenerate vectors or substitute defaults.
-  Distinguish ORIGINAL_APP_REFERENCE, VALIDATED_RIDER_FRAME, DEVICE_ONLY and
-  NOT_AVAILABLE capabilities. Report lack of rider-axis certainty.
-- **SCI-009 Rotation:** Use SciPy Rotation when quaternion/matrix rotation is
-  justified. Never synthesize quaternion orientation from gravity alone: yaw
-  about gravity remains indeterminate without another reference.
-- **SCI-010 Units:** No default GPS `speed` or `altitude` unit assignment
-  without upstream evidence. GeographicLib returns distances in meters;
-  GPS coordinate inputs are degrees under an explicitly stated WGS84 policy.
-- **SCI-011 Missingness:** Invalid or unavailable data stay missing with quality
-  flags; never replace with zero or interpolate across arbitrary gaps by default.
-- **SCI-012 Source independence:** Never overwrite M2 objects, timestamps,
-  calibration vectors, extrema or the original source.
+| Requirement area                                               | Current disposition                                                                      |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| LIB-004/006/007, GPS geodesics/speed/altitude/quality profiles | Not required; no GeographicLib/AHRS/pyproj adoption                                      |
+| GPS-001–010, VAL-005 analytical GPS engine                     | Not required; preserved import and existing coarse overview remain independent           |
+| SIG-003–004 Butterworth SOS/zero-phase filtering               | Deferred; current configurable mean is sufficient                                        |
+| SIG-006 events/threshold durations beyond extrema              | Deferred; no automatic event or safety classification                                    |
+| SIG-007 interpolation                                          | Deferred to an explicit playback requirement                                             |
+| SIG-009 mean/RMS/quantiles beyond basic extrema                | Deferred; no general statistics engine                                                   |
+| RES-003 general scientific/GPS profiles                        | No new profiles required; existing profiles remain supported                             |
+| Universal physical rider/sensor calibration                    | Not required for closure; capability limits and source-app evidence must remain explicit |
+| Full analysis performance/memory research                      | Not required; representative responsiveness is sufficient                                |
 
-## 4. Time-series and filtering
+These exclusions are accepted scope boundaries, not verified implementations.
+GPS remains a rough spatial reference under the owner's product decision, not a
+future M3 force/speed measurement requirement. Later additions need a concrete
+use case and explicit authorization. Combined/Orientation remain evidence-only.
 
-- **SIG-001 Time basis:** Derived `sample_index / sample_rate` is labeled
-  INFERRED_UNIFORM, not the raw device timestamp. Source GPS timestamps and
-  numeric `date` epochs remain unverified until an ADR documents evidence.
-- **SIG-002 Preserve raw:** Retain unfiltered samples and report both raw and
-  filtered results separately. A filtered peak may not be presented as a raw peak.
-- **SIG-003 Filter engine:** Support no filter and a configurable Butterworth
-  SOS zero-phase offline filter through `scipy.signal.sosfiltfilt`; make cutoff,
-  order, passband, sampling frequency and edge handling explicit.
-- **SIG-004 Zero-phase qualification:** A forward/backward filter eliminates
-  phase lag within its algorithmic assumptions but is acausal and unsuitable as
-  a live causal measurement. It can alter peak amplitude and has edge artifacts.
-  Short segments that do not satisfy pad requirements must return diagnostics,
-  not silently switch methods.
-- **SIG-005 Additional filters:** Optional simple moving-average and median
-  filters only as separately identified algorithms, each with exact window,
-  boundary and missing-data behavior; not implicit defaults.
-- **SIG-006 Events:** Reproducible peaks, troughs, threshold duration and
-  per-axis extrema must use explicit inclusive/exclusive segment boundaries
-  and raw/filtered selection. No hard-coded thresholds for ride safety.
-- **SIG-007 Interpolation:** Future-frame sampling needs an explicit,
-  policy-driven interpolation function on a validated monotonic time axis;
-  no extrapolation by default. Keep this mathematical primitive independent
-  of M5 playback.
-- **SIG-008 No artificial precision:** Retain provenance of 50 Hz samples,
-  observed rate limitations and inferred time. Interpolation must not be
-  presented as additional physical sensor measurements.
-- **SIG-009 Statistics:** Include sample count, minimum, maximum, mean,
-  root-mean-square and selected quantiles for each qualified channel.
-  Definitions for time-weighted statistics and sample intervals must be stated.
-- **SIG-010 Quality:** Track missing/invalid inputs, too-short segments,
-  optional marker uncertainty, filter edge sensitivity, outliers and potential
-  sensor clipping as *indicators*, not confirmed sensor faults.
+## 6. Validation and acceptance
 
-## 5. GPS and geodesic contracts
+- **VAL-001–004:** Reuse and extend meaningful analytic projection, sign, strict
+  frame/unit and centered-mean regressions; verify all allowed windows, edges,
+  constants/impulses and source immutability. No Butterworth or geodesic suite required.
+- **VAL-006–008:** All five originals retain exact bytes/hash and missing sensor
+  behavior. Keep independent Manta references, Kraken start mismatch and Voltron
+  maximum-display difference visible; exact private algorithm equivalence is not
+  required. Synthetic tolerances are distinct from rounded app comparisons.
+- **VAL-009:** Under the owner's current focused-test instruction, complete affected
+  native Windows checks and reuse only valid unchanged evidence. Do not run full
+  suites without renewed approval or claim a fresh full-suite pass. Retain a compact final
+  `docs/validation/M3.md` report before declaring M3 complete. Local acceptance
+  does not authorize Git delivery; follow AGENTS.md.
+- **VAL-010:** Check responsive loading/navigation and extrema/smoothing updates
+  on the five representative recordings. No universal timing/RAM claim or separate
+  benchmark platform is required.
 
-- **GPS-001 Data quality:** Keep each fix with original coordinates,
-  timestamps and accuracy metadata, including negative reported speed,
-  course and accuracy values. Treat apparent sentinels as unavailable
-  **for optional derived computations only** with explicit diagnostics,
-  without replacing the original values or asserting undocumented semantics.
-- **GPS-002 Validation:** Latitude [-90,90], longitude [-180,180] and finite
-  numeric values are required for computed WGS84 segments. Invalid points are
-  excluded from derived segments with a reason; original records remain intact.
-- **GPS-003 Geodesics:** Use `Geodesic.WGS84.Inverse` for horizontal inter-fix
-  distances and forward azimuth. Report horizontal ellipsoidal distance,
-  not 3D track length or ride manufacturer's track specification.
-- **GPS-004 Quality gating:** Configurable policy uses horizontal accuracy,
-  time monotonicity, duplicate timestamps, speed/accuracy flags and implausible
-  jumps. Define strict and exploratory profiles; log excluded segments and
-  avoid false precision. No arbitrary silent thresholds.
-- **GPS-005 Distance:** Summed accepted segments are a **GPS-derived horizontal
-  path estimate** only. Also report coverage, segment counts and uncertainty
-  limitations. Do not bridge invalid gaps by default.
-- **GPS-006 Derived speed:** Use distance/time only with a validated time
-  basis and positive time differences. Label estimated speed separately from
-  reported GPS speed and preserve the original speed field and its unknown unit.
-- **GPS-007 Altitude:** Altitude sequence may be displayed raw, but do not
-  claim validated heights or cumulative elevation without documented altitude
-  datum, accuracy and quality policy.
-- **GPS-008 Sensor alignment:** No exact GPS-to-motion timeline mapping unless
-  the source date epoch and GPS timestamp offset are verified. Preserve separate
-  time bases; any candidate alignment must be labeled provisional and testable.
-- **GPS-009 No map service:** Offline numerical processing only; geocoding,
-  reverse lookups, basemaps and uploads are outside M3.
-- **GPS-010 No track reconstruction claim:** Curved rail path, inversions and
-  magnetic/structural GPS obstructions make GNSS paths poor physical rail
-  reconstructions; do not equate result with track geometry or speed certification.
+| Criterion | Required evidence for reduced M3                                                                      |
+| --------- | ----------------------------------------------------------------------------------------------------- |
+| AC-01     | Adopted source-app policy, signs/time, raw fallback and explicit physical-calibration exclusions      |
+| AC-02     | Existing locked NumPy/SciPy/Pint compatibility; no new library requirement                            |
+| AC-03     | Immutable raw/calculated results with source/configuration provenance                                 |
+| AC-04     | Analytic norms/projections/rotations and directional signs; no universal physical qualification claim |
+| AC-05     | Existing centered-mean windows/edges, raw preservation and repeatable switching                       |
+| AC-06     | Basic extrema for all three channels and inclusive selections, deterministic ties and units           |
+| AC-07     | GPS stays reference-only and independent; absent GPS/gravity remains absent                           |
+| AC-08     | Existing source comparisons and known discrepancies accurately documented                             |
+| AC-09     | Original bytes retained; offline processing; analysis outside widgets                                 |
+| AC-10     | Owner-authorized focused Windows verification, responsive use, final report and aligned architecture  |
 
-## 6. Results and quality models
-
-- **RES-001:** Export a typed, immutable `AnalysisResult` with channels,
-  quantity labels, units, frame labels, sample-time description, raw/filtered
-  flags, result validity, diagnostics and reproducibility metadata.
-- **RES-002:** Each computed channel has capability state VERIFIED,
-  PROVISIONAL, UNAVAILABLE or INVALID; no provisional coordinate math hidden
-  behind a definitive `vertical_g` property.
-- **RES-003:** Define `AnalysisProfile` with deterministic default
-  `raw_device_only` and independently approved `rider_calibrated`,
-  `gps_exploratory` and `gps_strict` settings.
-- **RES-004:** Ensure output suitable for M4 charts, M5 timeline and M6
-  rendering, without importing Qt, FFmpeg or storage infrastructure.
-- **RES-005:** A documented algorithm/schema migration policy must permit
-  analysis recomputation from original M2 data. Results are derived artifacts,
-  not edits to original recordings.
-
-## 7. Validation and scientific acceptance
-
-- **VAL-001:** Create synthetic golden references: constant 1 g stationarity
-  under an explicitly defined simulated sensor convention, free-fall-like
-  zero-specific-force vector, orthogonal and inverted rider axes, known
-  rotations, known peaks, missing samples and distorted vectors.
-- **VAL-002:** Verify NumPy norms/matrix projections and SciPy rotations against
-  analytically calculated vectors; run orthogonality and sign tests, including
-  handedness and transpose-direction defects.
-- **VAL-003:** Verify filtering with constant, step, sine, impulse and short
-  sequences. Measure filter-induced peak changes and edge effects; test
-  exact profile parameter retention.
-- **VAL-004:** Verify Pint unit conversions and dimensional correctness at
-  API boundaries. Reject unknown source-unit assignments rather than guessing.
-- **VAL-005:** Verify GeographicLib against documented geodesic examples,
-  identical points, known WGS84 baselines, missing fixes and invalid coordinate
-  cases. Prohibit comparing horizontal distance to a 3D rail track directly.
-- **VAL-006:** Parameterize structural integration tests for all five actual
-  fixtures without modifying their bytes; test absent ride position, variable
-  metadata and GPS availability separately. Iron Gwazi must exercise missing
-  gravity/GPS capabilities without fabricated vectors, fixes or derived channels.
-- **VAL-007:** Compare `minForce` and `maxForce` from originals with the
-  source Ride Forces app's displayed metrics after confirming the app's
-  chosen axis, smoothing, recording segment and sign conventions. If no
-  independently captured reference exists, mark equivalence **UNVERIFIED**,
-  publish a discrepancy report and do not assert a match.
-- **VAL-008:** Record numeric tolerances for synthetic calculations separately
-  from empirical app-comparison tolerances. No arbitrary acceptable deviation
-  for unknown source algorithms.
-- **VAL-009:** All required Windows quality checks from `AGENTS.md`
-  pass locally, including dependency tests. Verify every acceptance criterion
-  and finalize `docs/validation/M3.md`, affected arc42 chapters/diagrams and
-  completion status before publication. Verify ARC-001–004 locally; documentation
-  checks do not establish scientific acceptance.
-  Selected pull-request CI suites and the final `check` gate must pass before
-  merge; record hosted outcomes in PR metadata without a completion-only commit.
-  Investigate failures and correct acceptance evidence invalidated by defects.
-- **VAL-010:** Benchmark representative batch/array execution with explicit
-  environment, recordings, timing and memory. No unsupported real-time claim.
-
-## 8. Acceptance criteria
-
-- **AC-01:** Documented, reviewed scientific ADR for source units, gravity,
-  frames, sign, time and unknowns, linked from arc42 chapter 09 with consistent
-  chapters 08/11; no unsupported default rider-frame output.
-- **AC-02:** Version-pinned NumPy, SciPy, Pint and GeographicLib dependency
-  decisions with locally verified Windows/Python compatibility, license and
-  integration evidence.
-- **AC-03:** Deterministic immutable raw and calculated channel API with full
-  provenance and capability flags.
-- **AC-04:** Analytic norms, projections and rotations verified by synthetic
-  golden cases, including negative and inverted axes.
-- **AC-05:** Explicit raw-versus-filtered computations validated and edge cases
-  diagnosed; filter parameters recorded and peaks not silently overwritten.
-- **AC-06:** Unit normalization validated with Pint; unverified source units
-  remain unassigned.
-- **AC-07:** GPS geodesics, speed estimates and quality filtering validated
-  with synthetic cases and the four GPS-bearing iPhone fixtures. All five
-  recordings participate in capability tests, including explicit unavailable
-  GPS/gravity-derived products for Iron Gwazi; no invented GPS precision or samples.
-- **AC-08:** App comparison report includes source `minForce`/`maxForce`,
-  same-segment analysis and explicit unresolved assumptions; claims of
-  equivalence require evidence beyond recorded extrema alone.
-- **AC-09:** No source recording mutation, no mandatory network calls,
-  no Qt coupling, no feature creep into M4–M7.
-- **AC-10:** Focused scientific tests and complete native-Windows checks pass
-  locally; the final M3 validation report records each criterion, exact commands,
-  results, traceability (including ARC-001–004) and limits before publication.
-  Relevant arc42 chapters and Mermaid diagrams match the verified implementation;
-  planned features and unresolved scientific assumptions remain explicitly labeled.
-
-## 9. Evidence gates and unresolved questions
-
-Document evidence separately for all five recordings as defined in
-[the M2 format analysis](FORMAT-ANALYSIS.md). Available fields differ by device:
-the four iPhone exports contain gravity/GPS, while Iron Gwazi has neither.
-Retained direction vectors or marker indices do not establish a missing sensor
-capability. Effective sample rate/riding position can be owner defaults and must
-remain distinct from source values. The files establish available arrays,
-metadata and source extrema, but **not** definitive axis semantics, sensor unit
-meanings, time epoch or upstream smoothing formula. Keep unresolved assumptions in
-[arc42 risks](../architecture/11_technical_risks.md).
-
-A scientific implementation must not proceed to a definitive rider-force
-calculation without resolving those issues from documented source-app
-behavior or measured reference tests. Device-only analyses may be delivered
-while rider-frame features remain unavailable or provisional. Missing evidence
-must produce a recorded limitation, not a fabricated calibration.
-
-Questions for an ADR or a reference-data collection protocol:
-
-- Does `accelerationSequence` represent device proper acceleration in g,
-  gravity-compensated acceleration, or another transformed source quantity?
-- Is `gravitySequence` dimensionless in g or measured in a different unit?
-- How are direction/calibration vectors defined relative to the iPhone and rider?
-- What axis, segment and filter produce Ride Forces `minForce` and `maxForce`?
-- Are numeric `date` and GPS timestamps Apple-reference-date seconds?
-  Do **not** implement this assumption without verification.
-- What units and invalid-value sentinels do source GPS speed and altitude use?
-- Is `endIndex` inclusive for derived statistics?
-
-## 10. Implementation and change control
-
-Follow [PLAN.md](../implementation/DEV-REQ-003/PLAN.md) and
-[PROMPTS.md](../implementation/DEV-REQ-003/PROMPTS.md) in order.
-Do not implement M3 until M2 contract readiness is confirmed and a separate
-implementation instruction is given. Do not silently change these scientific
-contracts; substantive changes require a reviewed requirement revision.
-
-### Architecture documentation requirements
-
-- **ARC-001 Structure:** The twelve chapters linked from the
-  [arc42 index](../architecture/README.md) are the maintained architecture.
-  Read/update task-relevant chapters; never create a parallel overview. Requirements,
-  stage instructions, API guides and dated acceptance evidence retain their existing roles.
-- **ARC-002 Consistency:** Keep strategy, dependencies, analysis building blocks,
-  runtime interactions, deployment implications, units/frames/capabilities, quality
-  scenarios, decisions and risks aligned with the implemented stage. Proposed M3
-  APIs/libraries remain planned until implemented and verified; an architecture
-  update alone does not authorize dependencies or scientific computation.
-- **ARC-003 Diagrams and decisions:** Use Mermaid where a diagram clarifies a
-  view; distinguish planned from implemented interactions. Check changed diagram
-  syntax locally and report visual-rendering limits. Preserve ADR rationale in
-  `docs/decisions/` and link new/revised scientific ADRs from chapter 09; do not
-  duplicate decision history across requirements and architecture chapters.
-- **ARC-004 Acceptance:** Finalize relevant chapters, glossary, scientific
-  limitations and requirement traceability before local M3 sign-off/publication.
-  Run applicable documentation/diagram checks after final edits. The initial
-  authorized delivery already includes these updates; green CI does not trigger
-  a completion-only architecture or validation commit.
-
-## 11. Primary documentation
-
-- [SciPy Rotation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html)
-- [SciPy SOS filtering](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.sosfiltfilt.html)
-- [NumPy documentation](https://numpy.org/doc/stable/)
-- [Pint documentation](https://pint.readthedocs.io/en/stable/)
-- [GeographicLib Python](https://geographiclib.sourceforge.io/html/python/)
-- [AHRS documentation](https://ahrs.readthedocs.io/)
+The criteria above define current acceptance; older stage reports only evidence
+their tested code/contracts and do not automatically satisfy the reduced criteria.
+**ARC-001–004:** Maintain only the twelve arc42 views, link ADRs from chapter 09,
+mark implemented/planned/unverified behavior and check changed diagrams/docs.
+Current criteria are verified in the focused acceptance report; broader excluded
+research is not a completion blocker.

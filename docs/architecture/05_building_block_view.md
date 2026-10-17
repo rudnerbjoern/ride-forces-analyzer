@@ -7,7 +7,11 @@
 ```mermaid
 flowchart TB
     Entry["__main__.main"] --> Settings["config.AppSettings"]
-    Entry --> Qt["Minimal PySide6 window"]
+    Entry --> Qt["Raw explorer window and Qt Charts"]
+    Qt --> Worker["Background load transport"]
+    Worker --> Presentation["explorer: raw view and local selections"]
+    Presentation --> Service
+    Presentation --> Domain
     Service["importers.service"] --> Decoder["importers.decoder"]
     Service --> Motion["importers.motion"]
     Service --> Optional["importers.optional"]
@@ -23,13 +27,17 @@ flowchart TB
     Device["analysis.device: explicit vectors / norms"] --> Analysis
     Device --> NumPy
     Device --> Pint["Pint: validated unit conversion"]
+    Frames["analysis.frames: explicit provisional frame vectors"] --> Device
+    Frames --> Analysis
+    Frames --> SciPy["SciPy: passive frame rotation"]
     Storage["storage: planned"] -.-> Domain
     Playback["playback: planned"] -.-> Domain
     Rendering["rendering: planned"] -.-> Domain
 ```
 
 Arrows express dependencies. Dashed arrows describe future consumers, not
-implemented services. Qt startup does not call the import service.
+implemented services. The explorer starts import through a background worker;
+widgets contain no parser, scientific transformations or source mutation.
 
 ## Contained building blocks
 
@@ -38,73 +46,61 @@ implemented services. Qt startup does not call the import service.
 | Bootstrap / settings | main validates AppSettings before creating the Qt window                                        | Implemented: [entry point](../../src/ride_forces_analyzer/__main__.py), [settings](../../src/ride_forces_analyzer/config.py) |
 | domain               | Recording, SourceEnvelope, SourceNumber, vectors, motion, metadata, attributes and GPS concepts | Implemented immutable representations: [domain](../../src/ride_forces_analyzer/domain/)                                      |
 | importers            | Strict decoding, motion/optional validation, ordered diagnostics and public import composition  | Implemented: [importers](../../src/ride_forces_analyzer/importers/)                                                          |
-| analysis             | Immutable contracts and device units/norms; calibration/filtering remain planned                | Implemented Stage 1 models: [analysis](../../src/ride_forces_analyzer/analysis/); scientific engine planned                  |
+| analysis             | Immutable contracts, device/frame math and source-app projection/mean                           | Implemented analysis services: [analysis](../../src/ride_forces_analyzer/analysis/); basic extrema implemented               |
 | storage              | Local ride library and persistence                                                              | Reserved package; services planned for later milestones                                                                      |
 | playback             | Playback timeline and interpolation consumption                                                 | Reserved package; services planned                                                                                           |
 | rendering            | Frame generation and separate encoding                                                          | Reserved package; services planned                                                                                           |
-| ui                   | Future widgets and product interactions                                                         | Reserved package; minimal window currently lives in the entry point                                                          |
+| ui                   | Raw chart controls and background import transport                                              | Implemented raw explorer; persistent library/playback remain planned                                                         |
 
-## Level 2: importer internals
+## Importer composition and interfaces
 
-- `decoder` separates bounded binary Path input from bytes decoding. Iterative
-  lexical preflight applies limits before full-tree allocation; strict JSON hooks
-  reject duplicates/constants and retain number tokens. Only a supported 2.2.0
-  object with required core shapes produces DecodeSuccess.
-- `motion` converts finite numbers/numeric strings into typed vectors, validates
-  sequence lengths and independently bounded indices, and preserves structural
-  calibration vectors. It performs no force or time calculation.
-- `optional` parses optional metadata, ordered arbitrary attributes and independent
-  indexed GPS slots. Defective optional values warn; source data is retained.
-- `service` composes decoding, motion and optional validation. One shared diagnostic
-  collector enforces the aggregate budget before building the full Recording.
-- `result` / `diagnostics` own immutable tagged outcomes and stable diagnostic data.
-  Only full service success exposes the complete available Recording.
+`decoder` performs bounded Path/bytes input, lexical preflight and strict 2.2.0
+JSON dispatch. `motion` validates components, paired lengths, independent indices
+and structural vectors. `optional` parses metadata, arbitrary ordered attributes
+and indexed GPS slots. `service` composes these workers with one per-call
+`DiagnosticBudget`; `result`/`diagnostics` expose immutable tagged outcomes.
+Only full-service success supplies a complete Recording.
 
-The domain recursively owns read-only source mappings, array tuples, immutable
-scalars and original bytes. Canonical collections are copied into tuples. Optional
-metadata, source provenance and explicit source/default origins remain typed.
+Use the [public Path/bytes API](../development/IMPORT_SERVICE.md). Standalone
+[decode](../development/STRICT_DECODING.md), [motion](../development/MOTION_PARSING.md)
+and [optional](../development/OPTIONAL_PARSING.md) APIs establish subset contracts.
+The [domain guide](../development/CANONICAL_MODELS.md) defines owned bytes/tree,
+source scalars, tuple collections and absence/default provenance.
 
-## Important interfaces
+## Analysis boundary
 
-The public package `ride_forces_analyzer.importers` exposes:
+[Analysis models](../development/ANALYSIS_MODELS.md) retain full M2 ImportSuccess,
+immutable NumPy data, provenance and independently bounded channel indices.
+Opt-in `analysis.device.analyze_device_vectors` accepts source-bound
+MotionUnitContract declarations and returns independent SI vectors/norms.
+It never runs automatically after import. Library calls stay behind this API;
+caller references do not certify source semantics.
 
-```python
-import_forces(path: Path, *, limits: ImportLimits = DEFAULT_LIMITS) -> ImportResult
-import_forces_bytes(data: bytes, *, limits: ImportLimits = DEFAULT_LIMITS) -> ImportResult
-```
+Stage 3 `analysis.frames` supplies strict explicit-basis validation, passive
+SciPy transforms and source-bound opt-in PROVISIONAL rider vectors. No real rider
+calibration is qualified by this strict API. Its universal qualification and general
+statistics are deferred; GPS analytics is outside reduced
+[DEV-REQ-003](../requirements/DEV-REQ-003-scientific-analysis.md) acceptance.
+The boundary stays independent of widgets, storage and encoding. All five fixtures
+participate in capability tests, including absent Watch gravity/GPS. Deeper future
+services are documented only when designed.
 
-Standalone `decode_forces` / `decode_forces_bytes`, `parse_motion` and
-`parse_optional_data` remain callable subset APIs. Their results establish only
-that subset's contract, not complete import success or scientific readiness.
-Detailed accessor and caller contracts are maintained in the
-[canonical-model](../development/CANONICAL_MODELS.md),
-[decoder](../development/STRICT_DECODING.md), [motion](../development/MOTION_PARSING.md),
-[optional-data](../development/OPTIONAL_PARSING.md) and
-[public API](../development/IMPORT_SERVICE.md) guides.
+`analysis.reference` supplies calibrated source-direction channels for any usable import to explorer
+presentation, retaining confirmed normalized-direction contracts, source hash, timestamp,
+library version and raw/filtered channels. It leaves strict frame APIs unchanged.
 
-## Level 3
+`gps_overview` prepares immutable approximate spatial reference segments from
+independent source GPS slots, preserving gaps and source ownership. `ui.gps`
+renders these in a separate offline dialog, enabled only for usable positions.
+The geometry has no dependencies on force analysis, sensor time or local selections.
 
-No deeper decomposition is needed for this implemented boundary. Future library,
-analysis, widgets and render services must be documented when designed, not
-invented to fill the template.
+The approved focus workspace keeps Qt-only structure in `ui.window` and local
+styling in `ui.theme` and native caption/icon integration in `ui.chrome`. Qt-independent `explorer` supplies compact header text,
+ordered metadata rows, sample clocks and directional current-value cards from
+unchanged presentation data. Split/scroll/expand state is view-only; no scientific
+or import operation moves into widgets. The separate GPS dialog is retained.
 
-## M3 analysis boundary
-
-[DEV-REQ-003](../requirements/DEV-REQ-003-scientific-analysis.md) now has executable
-immutable AnalysisProfile/AnalysisResult contracts under `analysis`, retaining
-full M2 ImportSuccess without re-decoding or mutating it. The
-[model guide](../development/ANALYSIS_MODELS.md) describes profiles, provenance,
-diagnostics, units/frames, independently bounded indices and owned array data.
-The opt-in `analysis.device.analyze_device_vectors` boundary accepts full M2
-ImportSuccess and source-bound MotionUnitContract declarations; it returns vectors,
-magnitudes, provenance and diagnostics. It does not run automatically after import. Intended later
-responsibilities are frame/calibration validation,
-filtering/statistics, GPS quality/geodesics and source-app comparison.
-These remain design responsibilities, not implemented scientific workers or
-approved calculation function signatures.
-
-Library calls stay behind the analysis API. Domain quantities, capabilities and
-provenance must remain meaningful without exposing upstream APIs to consumers.
-The engine stays independent of Qt, storage and encoders; later M4–M7 consumers
-use derived results. All five recordings must participate in capability/regression
-coverage, including unavailable gravity/GPS-derived channels for Iron Gwazi.
+Basic per-axis extrema for inclusive selections are implemented in the pure
+`force_extrema` module, with immutable source/mode/window/unit/index/time results.
+Explorer presentation exposes them in the inspector; widgets perform no calculation.
+Raw operation avoids importing the NumPy-backed analysis package. This is a small selected-range product, not a generic statistics engine.

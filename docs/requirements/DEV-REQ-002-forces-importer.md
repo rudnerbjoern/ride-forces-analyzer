@@ -75,7 +75,7 @@ records the Stage 0 implementation contract and proposed device-aware policies.
   result rather than silently applying version 2.2.0 semantics. An opt-in inspection
   mode may expose safe metadata, but must not report successful supported import.
 - **FR-008:** The minimum required fields for a *supported full recording* are
-  `schemaVersion`, `accelerationSequence`, `startIndex`, `endIndex`,
+  `schemaVersion`, `accelerationSequence`,
   and every acceleration `x/y/z` component. Gravity is an optional capability:
   Apple Watch absence is normal; absent iPhone gravity emits an explicit warning.
   Unknown device profiles warn without inventing capabilities. Present gravity
@@ -115,7 +115,9 @@ records the Stage 0 implementation contract and proposed device-aware policies.
   sequence length mismatch, missing vectors or defective components.
   Decide/document whether a mismatch is fatal for fully paired recordings; baseline
   implementation must treat it as a fatal structural error, not truncate or pad data.
-- **FR-014:** Validate `startIndex` and `endIndex` as integer, non-boolean,
+- **FR-014:** Per owner instruction on 2026-10-17, absent `startIndex` defaults
+  to zero and absent `endIndex` to N-1, each with INDEX_DEFAULTED warning and
+  unchanged source absence. Validate supplied values as integer, non-boolean,
   within `[0, N-1]`, with `startIndex <= endIndex`. Treat the inclusive/exclusive
   interpretation of the end index as **unverified**, retain original values and
   use no implied slicing in M2.

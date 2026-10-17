@@ -11,9 +11,14 @@ The product does not acquire sensor data or recreate the mobile recording app.
 M1 implements an executable minimal Qt window, validated bootstrap settings and
 separated subsystem packages. M2 implements lossless Path/bytes importing under
 schema 2.2.0, with immutable source/domain data and deterministic diagnostics.
-The current window is a placeholder: it does not invoke the importer.
-Analysis, library storage, explorer UI, playback, rendering, export, POV-video
-synchronization and standalone distribution remain planned.
+The raw explorer now invokes that importer through a background adapter and shows
+complete source-axis charts, sample navigation and inclusive local selections.
+M3 implements immutable analysis contracts and explicit device-unit/norm primitives.
+Source-app projection, live configurable smoothing and coarse GPS overview are
+implemented in the explorer. Reduced M3 includes selected-range per-axis
+extrema and focused Windows acceptance. Extra filters/events and universal physical rider
+qualification are deferred; GPS analytics is excluded. Persistent library, playback,
+rendering, export, synchronization and release remain planned.
 
 Authoritative scope: [roadmap](../ROADMAP.md),
 [importer requirements](../requirements/DEV-REQ-002-forces-importer.md) and
@@ -35,6 +40,6 @@ Implementation stages and delivery gates belong in their implementation plans.
 | Role                     | Contact / authority                                      | Expectations                                                                    |
 | ------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Project owner            | Repository owner; explicit review and operation approval | Useful offline tooling, preserved recordings and verified milestones            |
-| Desktop user             | Future product user; interaction design remains planned  | Import, inspect and export local rides without hidden data loss                 |
+| Desktop user             | Desktop explorer user                                    | Import, inspect and export local rides without hidden data loss                 |
 | Developer / coding agent | Repository instructions in AGENTS.md                     | Clear boundaries, stable contracts and reproducible Windows checks              |
 | Video editor             | Future M6/M7 consumer                                    | Independent opaque video and transparent overlays with verified synchronization |

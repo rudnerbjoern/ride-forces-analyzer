@@ -1,1 +1,1 @@
-"""Ui subsystem (implementation planned in roadmap)."""
+"""Raw explorer controls and background transport; domain logic stays outside Qt."""

@@ -8,10 +8,11 @@ from textwrap import dedent
 import pytest
 
 
+@pytest.mark.parametrize("scale_factor", ["1", "2"])
 @pytest.mark.parametrize("custom_settings", [False, True], ids=["default", "custom"])
-def test_application_starts_and_closes(custom_settings: bool) -> None:
-    title = "Custom window" if custom_settings else "Ride Forces Analyzer — M1"
-    size = (720, 480) if custom_settings else (900, 600)
+def test_application_starts_and_closes(custom_settings: bool, scale_factor: str) -> None:
+    title = "Custom window" if custom_settings else "Ride Forces Analyzer"
+    size = (720, 480) if custom_settings else (1280, 820)
     launch = (
         "from ride_forces_analyzer.config import AppSettings\n"
         "from ride_forces_analyzer.__main__ import main\n"
@@ -27,9 +28,14 @@ def test_application_starts_and_closes(custom_settings: bool) -> None:
         from PySide6.QtCore import QTimer
         from PySide6.QtWidgets import QApplication, QLabel, QMainWindow
 
+        original_show = QMainWindow.show
         original_exec = QApplication.exec
         failures = []
         inspected = []
+
+        def checked_show(self):
+            assert (self.width(), self.height()) == EXPECTED_SIZE
+            original_show(self)
 
         def inspect_window():
             try:
@@ -40,12 +46,23 @@ def test_application_starts_and_closes(custom_settings: bool) -> None:
                 assert window.isVisible()
                 assert window.windowHandle().isExposed()
                 assert window.windowTitle() == EXPECTED_TITLE
-                assert (window.width(), window.height()) == EXPECTED_SIZE
-                label = window.centralWidget()
-                assert isinstance(label, QLabel)
-                assert label.text() == (
-                    "Ride Forces Analyzer — M1 foundation\\nImport planned for M2"
-                )
+                assert not window.windowIcon().isNull()
+                assert all(label.text() != "Ride Forces Analyzer"
+                           for label in window.findChildren(QLabel))
+                available = window.screen().availableGeometry()
+                frame = window.frameGeometry()
+                actual = (window.width(), window.height())
+                margins = (frame.width() - window.width(),
+                           frame.height() - window.height())
+                limits = (available.width(), available.height())
+                for measured, requested, decoration, limit in zip(
+                        actual, EXPECTED_SIZE, margins, limits, strict=True):
+                    assert measured == requested or (
+                        requested + decoration > limit and 0 < measured < requested
+                    ), (actual, EXPECTED_SIZE, available, frame)
+                heading = window.findChild(QLabel, "recordingHeading")
+                assert heading is not None
+                assert "Open a .forces recording" in heading.text()
                 if sys.platform == "win32":
                     assert QApplication.platformName() == "windows"
                 window.resize(800, 500)
@@ -67,6 +84,7 @@ def test_application_starts_and_closes(custom_settings: bool) -> None:
             print("GUI smoke passed: startup, exposure, content, resize, close")
             return result
 
+        QMainWindow.show = checked_show
         QApplication.exec = checked_exec
         LAUNCH_APPLICATION
     """)
@@ -76,6 +94,7 @@ def test_application_starts_and_closes(custom_settings: bool) -> None:
         .replace("LAUNCH_APPLICATION", launch)
     )
     environment = os.environ.copy()
+    environment["QT_SCALE_FACTOR"] = scale_factor
     if sys.platform == "win32":
         environment["QT_QPA_PLATFORM"] = "windows"
     result = subprocess.run(

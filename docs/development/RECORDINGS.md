@@ -55,35 +55,20 @@ requires reviewing its authorization, tests and this catalog together.
 - Size: 862820 bytes.
 - SHA-256: `f48157cadbfeb374eeadf48112b0bbfc1e8b47c580cb303342cf65977054ad04`.
 
-## Current test coverage
+## Validation and scientific limits
 
-`tests/test_project.py` verifies the exact five-file inventory and checks each
-recording independently for its pinned byte length and SHA-256. Parametrized test
-IDs identify IronGwazi, Kraken, Manta, Taron and VoltronNevera in pytest discovery.
-The tests read bytes only; they do not parse or rewrite recordings.
-
-Run the focused checks from the repository root:
+`tests/test_project.py` verifies the exact five-file inventory and independently
+pins each original byte length/SHA-256. `tests/test_fixture_inventory.py` compares
+the complete [recursive snapshot](../../tests/fixtures/schema-inventory.json);
+see [format observations](../requirements/FORMAT-ANALYSIS.md).
 
 ```powershell
-uv run pytest tests/test_project.py
-uv run pytest tests/test_fixture_inventory.py tests/test_project.py
+uv run --locked pytest tests/test_fixture_inventory.py tests/test_project.py
 ```
 
-GUI, bootstrap-settings, lint and static typing tests do not consume recording
-samples and therefore need no per-recording variants. The CI pytest step
-collects all fixture cases automatically. Recordings remain excluded from CSpell
-and formatting checks so their original contents are not treated as source code.
-
-## Planned importer and analysis coverage
-
-Stage 0 now visits every JSON value in all five recordings and pins the
-[recursive snapshot](../../tests/fixtures/schema-inventory.json). Its tests preserve
-bytes and modification times; they do not establish importer success. See the
-[format analysis](../requirements/FORMAT-ANALYSIS.md) and
-[ADR 0002](../decisions/0002-forces-source-contract.md).
-
-M2 must validate lossless ingestion of all five recordings while preserving
-unknown fields and original bytes. M3 must cross-check coordinates, timing,
-calibration, filtering and GPS sentinels against the original Ride Forces app.
-The byte-integrity checks do not establish those scientific or schema contracts.
-Production M2/M3 functionality remains planned; Stage 0 inventory tests are implemented.
+The [public importer](IMPORT_SERVICE.md) losslessly imports all five originals;
+[M2 acceptance](../validation/M2.md) records full motion/GPS/metadata coverage.
+Analysis model/device tests preserve source bytes and exercise unavailable Watch
+capabilities. These checks do not qualify units, axes, calibration, timing,
+filtering, GPS sentinels or source-app equivalence; those remain M3 evidence gates.
+Recordings are excluded from spelling, formatting and normalization.

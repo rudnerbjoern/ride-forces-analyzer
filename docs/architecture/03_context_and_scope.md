@@ -16,7 +16,7 @@ flowchart LR
     Analyzer["Ride Forces Analyzer: implemented import boundary"]
     Result["Immutable recording and diagnostics"]
     Desktop["Desktop user"]
-    Window["Minimal Qt window: implemented"]
+    Window["Raw recording explorer: implemented"]
     Video["Local POV video: planned input"]
     Editor["Video editor: planned consumer"]
     Capture --> Original
@@ -24,13 +24,16 @@ flowchart LR
     Caller --> Analyzer
     Analyzer --> Result
     Desktop --> Window
+    Window --> Analyzer
     Video -.-> Analyzer
     Analyzer -.-> Editor
 ```
 
 Solid edges represent existing interactions; dashed edges are planned product
-interfaces. The minimal window is not connected to importing. Future analysis,
-playback, video/export interfaces do not exist yet.
+interfaces. The explorer calls the importer asynchronously; raw curves and
+sample controls make no universal physical calibration claim. Source-app
+projection/mean is implemented; selected-range extrema are implemented within reduced
+M3. GPS supplies coarse spatial context only. Playback and video/export remain planned.
 
 ## Technical context
 
@@ -39,7 +42,7 @@ playback, video/export interfaces do not exist yet.
 | Recording input                     | Local regular Path, bounded binary read, owned original bytes | Implemented; Windows network/device paths are rejected               |
 | Bytes input                         | Immutable Python bytes, no filesystem access                  | Implemented                                                          |
 | Import output                       | Typed ImportSuccess or ImportFailure in the caller process    | Implemented; no Qt dependency                                        |
-| Desktop bootstrap                   | Local PySide6 process and native Qt event loop                | Implemented minimal window only                                      |
+| Desktop bootstrap                   | Local PySide6 process and native Qt event loop                | Implemented raw explorer and background file opening                 |
 | POV input and video/image outputs   | Future local files; formats and sync follow later milestones  | Planned                                                              |
 | Dependency distribution / GitHub CI | Developer network access and Windows PR runners               | Development infrastructure; not an application processing dependency |
 

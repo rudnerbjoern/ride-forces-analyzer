@@ -1,4 +1,4 @@
-# Optional data parsing — DEV-REQ-002 Stage 4
+# Optional data parsing
 
 `importers.parse_optional_data(source: SourceEnvelope, *, limits: ImportLimits = DEFAULT_LIMITS)`
 returns `OptionalParseSuccess | ImportFailure`. Supply a supported 2.2.0 envelope
@@ -125,5 +125,31 @@ ownership, exact precision, negative values, deterministic warnings and budgets.
 See [M2 validation](../validation/M2.md) for actual results.
 
 This subset performs no full import, M3 scientific interpretation or Qt integration.
-The separately authorized Stage 5 now supplies full-recording integration; M2
-acceptance is verified; results are consolidated in the M2 validation report.
+Full-recording integration and verified M2 acceptance are documented in the linked
+service guide and validation report.
+
+## Weather fields and source-app evidence
+
+Weather is already included by the full importer in `Recording.metadata`:
+
+| Source key        | Metadata accessor  | Voltron source value | Source-app interpretation |
+| ----------------- | ------------------ | -------------------- | ------------------------- |
+| weatherConditions | weather_conditions | Mostly Clear         | Mostly Clear              |
+| temperature       | temperature        | 17.786710739135742   | 17.8 °C                   |
+| windDirection     | wind_direction     | 195                  | degrees; SSW sector       |
+| windSpeed         | wind_speed         | 0.9936420124626161   | m/s; rounds to 4 km/h     |
+| windGust          | wind_gust          | 3.874126195764542    | m/s; rounds to 14 km/h    |
+
+Evidence: owner-provided Voltron Nevera weather screenshot, 2026-10-17, compared
+with the original authorized fixture. Multiplying source wind values by 3.6
+matches the displayed integer km/h; 195 degrees lies in the 16-point SSW sector
+[191.25, 213.75). Temperature matches the displayed one-decimal Celsius value.
+This establishes the observed Voltron correspondence, not a guaranteed schema
+for every recording. The importer preserves source numeric units/precision and
+weather text; it performs no conversion, compass labeling or network lookup.
+Absent fields remain None; invalid optional values warn without preventing import.
+Exact source tokens remain in SourceEnvelope. Weather display in the explorer
+is separate from this metadata import contract.
+
+The dedicated full-import regression is
+`test_voltron_weather_metadata_matches_source_app` in `tests/test_optional_parser.py`.

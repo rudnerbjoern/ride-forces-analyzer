@@ -1,6 +1,6 @@
-# Strict source decoding — DEV-REQ-002 Stage 2
+# Strict source decoding
 
-Stage 2 implements bounded read-only inputs, strict JSON and schema dispatch.
+The decoder provides bounded read-only inputs, strict JSON and schema dispatch.
 It does not construct a Recording, call the motion parser, apply metadata/rate
 defaults, interpret GPS/time or perform analysis. See
 [ADR 0002](../decisions/0002-forces-source-contract.md) and
@@ -48,7 +48,7 @@ Duplicate detection compares decoded keys, including equivalent escape spellings
 The root must be an object; schemaVersion must be a nonempty string and exactly
 2.2.0. New versions require an explicit adapter and authorized source evidence.
 
-The 2.2.0 adapter checks required acceleration/start/end fields, nonempty
+The 2.2.0 adapter checks required acceleration and supplied start/end fields, nonempty
 acceleration array, sample objects with x/y/z string/number shapes, and integer-valued
 JSON start/end numbers. It does not convert components, validate measured finiteness,
 check marker bounds/paired lengths or require gravity/GPS/optional metadata.

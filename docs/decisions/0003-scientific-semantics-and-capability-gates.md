@@ -2,15 +2,14 @@
 
 <!-- cspell:words orthonormality -->
 
-Status: Proposed for owner review, 2026-10-14. Stage 0 documentation only.
-No M3 calculation, scientific API, dependency installation or source interpretation
-is implemented or authorized by this ADR. M2 structural import remains verified.
-
-Requirements: [DEV-REQ-003](../requirements/DEV-REQ-003-scientific-analysis.md),
-SCI-001–010, VAL-007 and the documentation/evidence portions of AC-01/AC-08;
-also SCI-011–012, SIG-001/002/006/008, GPS-001/002/004/006–010,
-RES-001–003 and VAL-006/008. ARC-001–004 apply to these stage-scoped documents,
-not a claim of final M3 acceptance. See the [Stage 0 plan](../implementation/DEV-REQ-003/PLAN.md).
+Status: Deferred general-scientific proposal; not a reduced-M3 completion gate.
+The current [requirements](../requirements/DEV-REQ-003-scientific-analysis.md) use
+the adopted [ADR 0006](0006-app-reference-projection.md) app-reference policy,
+existing centered mean and planned basic extrema. This research proposal retains
+scientific distinctions and reference protocols without authorizing computation,
+GPS analytics or universal physical calibration. Existing generic APIs still
+require their explicit unit/frame evidence. The current
+[plan](../implementation/DEV-REQ-003/PLAN.md) defines remaining product work.
 
 ## Context and verified boundary
 
