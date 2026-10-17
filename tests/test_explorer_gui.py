@@ -39,6 +39,9 @@ def explorer_window() -> Iterator[ExplorerWindow]:
     window = ExplorerWindow(AppSettings())
     window.show()
     wait_until(lambda: window.windowHandle().isExposed())
+    # Set the interaction layout after native startup geometry negotiation.
+    window.resize(1280, 820)
+    wait_until(lambda: window.width() == 1280 and window.inspector.isVisible())
     yield window
     window.close()
     QThreadPool.globalInstance().waitForDone()
@@ -674,8 +677,26 @@ def test_smoothing_slider_preserves_source_time_and_selection(
     assert window.smoothing_slider.value() == 5 and window.data.reference.smoothing_window == 11
 
 
-def test_focus_workspace_layout_and_current_value_cards(explorer_window: ExplorerWindow) -> None:
+@pytest.mark.parametrize("initial_width", [720, 1280], ids=["compact", "wide"])
+def test_focus_workspace_layout_and_current_value_cards(
+    explorer_window: ExplorerWindow,
+    initial_width: int,
+) -> None:
     window = explorer_window
+    window.resize(initial_width, 480)
+    QTest.qWait(50)
+    wide = initial_width >= 1080
+    assert window.inspector.isVisible() == wide
+    assert window.plot_panel.isVisible()
+    assert window.workspace.orientation() == (
+        Qt.Orientation.Horizontal if wide else Qt.Orientation.Vertical
+    )
+    if not wide:
+        window.inspector_button.click()
+        assert window.inspector.isVisible()
+        assert not window.plot_panel.isVisible()
+    window.resize(1280, 820)
+    QTest.qWait(50)
     assert window.inspector.isVisible()
     assert window.workspace.orientation() == Qt.Orientation.Horizontal
     assert not window.details_body.isVisible()

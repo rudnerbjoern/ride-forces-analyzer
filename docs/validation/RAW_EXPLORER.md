@@ -51,22 +51,25 @@ in `.tmp/focus-workspace.png`, `.tmp/focus-compact.png` and `.tmp/caption-worksp
 The native dark-caption attribute was accepted. Optional Windows 11 caption/text/
 border colors were rejected by this environment; their exact colors remain unverified.
 
-## Startup geometry verification
+## Desktop-independent GUI verification
 
-On PR #12 base `77588f4fb3be28706db6fb61458cd5766aa85a72` plus
-`tests/test_gui.py`, native Windows command
-`.venv/Scripts/python.exe -m pytest tests/test_gui.py -v -s` passed all four
-startup cases in 5.05 s (`.tmp/pr12-gui.log`). Default/custom settings run at Qt
-scale factors 1 and 2. Requested client size is exact before show; after show,
-reductions are accepted only in dimensions where the requested size plus native
-frame exceeds the available desktop. Other dimensions must remain exact.
-Assertions include actual/requested geometry and desktop/frame bounds.
-Ruff check, Ruff format check and Pyright on `tests/test_gui.py` also passed.
-The reported hosted default-size failure motivates this portable assertion;
-the original runner's actual geometry was not included in its failure output.
-The constrained local desktop retained the requested size, which is also valid.
-Application code and dependencies are unchanged; prior unaffected evidence is
-reused. No additional full run was performed; hosted success remains open.
+Native Windows x64 / Python 3.14.6 / Qt 6.12.0, unchanged locked dependencies.
+Test scope: PR #12 base `a37c0c80068cb85c40e9f072a83e2b0474f58f89` plus
+`tests/test_explorer_gui.py` and this report. Interaction fixtures explicitly
+resize to 1280×820 after native exposure; they do not assume startup retains that
+width on every desktop. Layout cases independently exercise 720/1280 widths,
+chart/Inspector visibility, switching, resize and current values.
+Startup tests check requested size before show and allow desktop-constrained
+reductions after show, retaining diagnostic geometry in assertions.
+
+Focused runner `.tmp/pr12-layout-check.ps1` executes
+`.venv/Scripts/python.exe -m pytest tests/test_gui.py tests/test_explorer_gui.py -v`
+with `QT_QPA_PLATFORM=windows` at `QT_SCALE_FACTOR=1` and `3` sequentially.
+Both runs passed: 41 cases in 45.16 s at scale 1 and 41 in 49.16 s at scale 3
+(`.tmp/pr12-layout-check.log`).
+Ruff check, Ruff format check and Pyright on `tests/test_explorer_gui.py` passed.
+Application code and dependencies are unchanged; unaffected evidence is reused.
+No additional full run was performed. Hosted success for this revision remains open.
 
 ## Limits
 
