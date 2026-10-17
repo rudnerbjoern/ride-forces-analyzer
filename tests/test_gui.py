@@ -10,8 +10,8 @@ import pytest
 
 @pytest.mark.parametrize("custom_settings", [False, True], ids=["default", "custom"])
 def test_application_starts_and_closes(custom_settings: bool) -> None:
-    title = "Custom window" if custom_settings else "Ride Forces Analyzer — M1"
-    size = (720, 480) if custom_settings else (900, 600)
+    title = "Custom window" if custom_settings else "Ride Forces Analyzer"
+    size = (720, 480) if custom_settings else (1280, 820)
     launch = (
         "from ride_forces_analyzer.config import AppSettings\n"
         "from ride_forces_analyzer.__main__ import main\n"
@@ -40,12 +40,13 @@ def test_application_starts_and_closes(custom_settings: bool) -> None:
                 assert window.isVisible()
                 assert window.windowHandle().isExposed()
                 assert window.windowTitle() == EXPECTED_TITLE
+                assert not window.windowIcon().isNull()
+                assert all(label.text() != "Ride Forces Analyzer"
+                           for label in window.findChildren(QLabel))
                 assert (window.width(), window.height()) == EXPECTED_SIZE
-                label = window.centralWidget()
-                assert isinstance(label, QLabel)
-                assert label.text() == (
-                    "Ride Forces Analyzer — M1 foundation\\nImport planned for M2"
-                )
+                heading = window.findChild(QLabel, "recordingHeading")
+                assert heading is not None
+                assert "Open a .forces recording" in heading.text()
                 if sys.platform == "win32":
                     assert QApplication.platformName() == "windows"
                 window.resize(800, 500)
