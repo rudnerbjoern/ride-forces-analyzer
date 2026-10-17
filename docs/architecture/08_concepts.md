@@ -2,111 +2,64 @@
 
 [Architecture index](README.md)
 
-## Source ownership and typed accessors
+## Source ownership and absence
 
-SourceEnvelope owns exact immutable input bytes and a recursively immutable
-JSON tree; a Path is provenance only. Retain original byte count and SHA-256
-where complete input is available. Retrieving original bytes is the lossless
-round-trip, not JSON re-encoding. Unknown nested fields, order, number tokens,
-numeric strings, null, absent properties and GPS values remain distinguishable.
-Canonical floating-point accessors never replace original evidence.
+SourceEnvelope owns exact immutable bytes, recursive mappings/tuples and source
+provenance; a Path is provenance only. Preserve unknown fields, ordering, number
+tokens versus numeric strings, null versus absence and all GPS values. Canonical
+floats supplement original evidence. Exact bytes, not re-encoding, are the round-trip.
 
-## Availability, defaults and scientific boundaries
+Device metadata controls expected availability, not scientific interpretation.
+Apple Watch may lack gravity/GPS. Absence-only owner defaults are rate 50 and
+ridingPosition Seated, with DEFAULT provenance and no insertion into source data.
+Invalid present rate fails; invalid riding position warns and becomes unavailable.
+Zero never denotes absence. Independent bounded markers do not imply chronology
+or slicing. GPS keeps independent indexed slots, including unavailable fixes;
+negative speed/course/accuracy remains preserved with warnings. Attributes keep
+arbitrary labels/order. See the [domain](../development/CANONICAL_MODELS.md) and
+[optional-data](../development/OPTIONAL_PARSING.md) contracts.
 
-Device metadata indicates expected data availability, not scientific semantics.
-The authorized Apple Watch fixture has acceleration but no gravity/GPS;
-missing capabilities stay explicit. iPhone/unknown-profile absence is diagnosed
-according to [ADR 0002](../decisions/0002-forces-source-contract.md).
+## Decoding, diagnostics and settings
 
-Owner-default sampleRate 50 and ridingPosition Seated apply only when absent,
-with source/default provenance and no insertion into the retained source tree.
-Invalid present rate fails core validation; invalid present riding position warns
-and becomes unavailable. Zero never means absent. A successful acceleration-only
-Recording is complete for available input, not proof of rider-analysis eligibility.
+Strict UTF-8 permits one retained leading BOM. Reject duplicate keys/non-JSON
+constants and unsupported versions; only 2.2.0 is dispatched. Preflight bounds
+bytes, depth, arrays, nodes, members and string/number lengths, including unknown
+content. [ImportLimits](../../src/ride_forces_analyzer/importers/limits.py) and the
+[decoder guide](../development/STRICT_DECODING.md) define defaults/ceilings.
+Budgets do not guarantee peak RAM, CPU time or hostile-filesystem behavior.
 
-Motion indices are bounded independently; Taron's gravityIndex before startIndex
-is valid structural evidence, not permission to infer chronology. Structural
-vectors are retained without normalization, axis mapping or force calculation.
-GPS slots keep their own length/order and source indices, with no alignment to
-acceleration. Negative speed/course/accuracy stays raw and warns; defective fixes
-retain slots with unavailable typed data. No units, epoch or sentinel interpretation
-is asserted. Ordered attributes retain arbitrary source labels and values.
+ImportSuccess owns a complete Recording; ImportFailure has none and carries an
+error. Diagnostics sort error/warning/info, escaped RFC 6901 pointer, then code,
+with stable ties. Messages identify defects without source payloads/coordinates.
+One shared per-call budget guards generation; overflow is fatal. Decoder/core
+errors stop later validation; optional defects recover only with usable core data.
+Caller misuse remains TypeError/ValueError. No shared recording state or global
+decoder mutation is introduced. See the [service](../development/IMPORT_SERVICE.md).
 
-## Strict decoding and resource policy
+AppSettings is a separate strict immutable Pydantic bootstrap model, rejecting
+unknown settings. [Quality scenarios](10_quality_requirements.md) link tests and
+acceptance evidence; commands belong in the development guide.
 
-Strict UTF-8 decoding permits one leading BOM while retaining it in source bytes.
-The root must be an object, duplicate keys/non-JSON constants are rejected and
-only schema 2.2.0 is dispatched. Iterative preflight bounds bytes, container depth,
-array lengths, nodes, object members and string/number-token lengths before
-full allocation, including unknown fields. A shared per-call diagnostic budget
-bounds validation while records are generated; overflow is fatal.
+## Analysis contracts and capability policy
 
-Actual defaults and configurable ceilings are maintained in
-[ImportLimits](../../src/ride_forces_analyzer/importers/limits.py),
-[decoder contracts](../development/STRICT_DECODING.md) and ADR 0002.
-These budgets do not guarantee peak RAM, CPU time or hostile-filesystem safety.
+[Analysis contracts](../development/ANALYSIS_MODELS.md) retain full M2 input,
+source hash, algorithm/configuration, explicit caller UTC time, quantity/unit/frame,
+time basis and raw/filtered provenance. SampleValues owns float64 bytes and explicit
+validity; fresh NumPy views cannot modify the model. Missing rows use NaN/false,
+valid zero stays finite/true. Indices bind to their own source sequence.
 
-## Results and diagnostics
+Channel states are VERIFIED, PROVISIONAL, UNAVAILABLE and INVALID. The
+raw_device_only default permits source values with UNKNOWN units; VERIFIED raw
+handling and VALID result structure do not certify physical interpretation.
+Physical values reject UNKNOWN/incompatible units. Assumed unit evidence requires
+PROVISIONAL and explicit exploratory permission; interpreted frames need references.
+Reference strings are caller attestations, not empirical proof or owner approval.
 
-ImportSuccess owns a complete immutable Recording; ImportFailure has no Recording
-and at least one error. Stable diagnostics carry severity, code, RFC 6901 JSON
-Pointer, message and optional source index. Order is error/warning/info, escaped
-pointer, then code; ties retain emission order. Messages identify defects without
-coordinate values, recording payloads or exception excerpts.
-
-Decoder/core errors fail fast before later stages. Optional defects can warn and
-recover if the core remains valid. Caller misuse remains distinct from source
-failure. There is no shared recording state or process-global decoder mutation.
-
-## Settings and validation
-
-Bootstrap AppSettings uses immutable strict Pydantic validation with rejected
-unknown settings; it is not a recording-schema model. Pylance/Pyright share strict
-configuration, mypy checks source and pytest verifies runtime contracts. All five
-originals have pinned byte-length/SHA-256 regression guards and full import tests.
-Quality workflows and dated evidence are linked from
-[chapter 10](10_quality_requirements.md); procedural details stay in development guides.
-
-## Future render concept
-
-Render frames independently of encoding, preserving independent opaque-video and
-transparent-overlay outputs. Alpha/video compatibility and time synchronization
-need explicit verification before implementing export; see [strategy](04_solution_strategy.md).
-
-## Planned M3 scientific contracts
-
-[DEV-REQ-003](../requirements/DEV-REQ-003-scientific-analysis.md) requires
-distinct proper acceleration, measured gravity and kinematic acceleration; no
-combination of source sequences is justified by successful M2 parsing. Define
-DEVICE, WORLD/GRAVITY and RIDER frames only with documented units, handedness,
-sign and transform direction. A scientific ADR/reference gate precedes verified
-rider outputs; synthetically correct rotations do not prove source calibration.
-
-Analysis products must retain source hash, algorithm/configuration, quantity,
-frame, time basis and raw/filtered provenance. Stage 1 represents channel states
-VERIFIED, PROVISIONAL, UNAVAILABLE and INVALID, with a deterministic raw_device_only
-default. Additional rider_calibrated, gps_exploratory and gps_strict profile labels
-require explicit policy references; their scientific workers remain planned.
-Unknown units/missing capabilities are not replaced with zero, standard gravity
-or synthetic sensor data.
-
-A future index/rate timeline is labeled INFERRED_UNIFORM and retains source/default
-rate provenance; source date/GPS epochs and offsets remain unverified. Keep raw
-samples alongside configurable offline filtering, with edge/short-segment and
-filter-induced peak changes explicit. Future accepted WGS84 segments yield a
-horizontal path estimate, not 3D track length; derived speed requires a verified
-time basis. Preserve rejected fixes and negative reported values in M2 evidence.
-These scientific operations remain planned, not implemented M2 interpretation.
-
-### Proposed scientific capability gate
-
-[ADR 0003](../decisions/0003-scientific-semantics-and-capability-gates.md) records
-Stage 0 observations and the proposed policy; owner review and scientific
-qualification remain open. Raw DEVICE x/y/z retains UNKNOWN units/directions.
-The proposed mathematical RIDER convention is right-handed, X forward, Y left,
-Z rider-up, with passive column-vector conversion; it is not a mapping of source
-vectors. WORLD/GRAVITY heading cannot be determined from gravity alone. Flying
-and Watch mounting require independent pose-specific evidence.
+[ADR 0003](../decisions/0003-scientific-semantics-and-capability-gates.md) remains a
+proposed scientific policy. Its right-handed RIDER convention (X forward, Y left,
+Z rider-up, passive column-vector conversion) does not map actual source vectors.
+Gravity leaves yaw unresolved; Flying/Watch mounting needs pose-specific evidence.
+The diagram describes the proposed per-channel policy, not the implemented runtime:
 
 ```mermaid
 flowchart TD
@@ -117,55 +70,138 @@ flowchart TD
     Limited -.-> OptIn["Only explicit exploratory assumptions: separate PROVISIONAL profile"]
 ```
 
-This is a proposed policy view, not an implemented analysis runtime. Gates apply
-per channel: structural pairing never proves gravity compensation, finite GPS
-never proves WGS84/time semantics, and numerical frame validity never proves
-rider calibration. All five originals permit raw inspection; none currently
-qualifies for definitive rider loading or source-app extrema equivalence.
-Iron Gwazi's absent GPS/gravity remains unavailable. Owner defaults and source
-extrema retain their M2 provenance. Unknown acceptance restricts capability;
-it never silently converts an assumption into a verified measurement.
+All originals permit raw inspection; none qualifies for definitive rider loading
+or source-app extrema equivalence. Unknowns restrict capability without modifying
+source evidence. [ADR 0004](../decisions/0004-analysis-contracts-and-library-policy.md)
+separates implemented models/device primitives from future scientific services.
 
-### Implemented Stage 1 model boundary
+## Implemented device-unit gates
 
-[Analysis contracts](../development/ANALYSIS_MODELS.md) now implement immutable
-profiles/results/channels, quantities/frames/time labels, source provenance and
-ordered diagnostics. Results retain full M2 ImportSuccess and use per-sequence
-index bounds. SampleValues owns float64 bytes and explicit row validity; each
-NumPy accessor is a fresh read-only view. Missing/invalid data remain distinct
-from finite zero and cannot be fabricated for absent Watch gravity/GPS.
+MotionUnitContract binds source SHA-256, acceleration/gravity sequence, common
+component unit, physical quantity and independent unit/quantity references.
+Absent sequence/contract yields UNAVAILABLE; a declaration cannot fabricate data.
+Pint converts SI, centimeters/s², feet/s² or explicit standard_gravity to m/s².
+Bare `g` is rejected; standard gravity is a conversion constant, not measured
+rider load. NumPy computes stable DEVICE norms without combining source channels.
 
-Physical values reject UNKNOWN or incompatible units; VERIFIED physical values
-reject ASSUMED unit evidence. Rider/world references and explicit provisional
-profile permission are required structurally. Caller reference strings do not
-establish empirical truth or grant owner approval. VERIFIED raw source handling
-and VALID result structure do not certify rider loading. Frame mapping, source
-units/epochs, yaw and app equivalence remain open under ADR 0003.
+Source indices, unit/quantity evidence, original unit and library versions remain
+retained. Float64 range failure creates INVALID products; norm overflow preserves
+usable vectors. Rounding/underflow never overwrites exact M2 precision. Synthetic
+tests do not qualify real source units, axes, time or GPS semantics.
 
-[ADR 0004](../decisions/0004-analysis-contracts-and-library-policy.md) separates
-these implemented contracts from future numerical workers and pending project
-dependency adoption. No processing, conversion, projection or GPS alignment is
-performed by model construction.
+## Planned scientific and rendering behavior
 
-### Implemented Stage 2 unit and device gates
+Distinct proper acceleration, gravity and kinematic acceleration require evidence
+before combination. Explorer index/rate time is INFERRED_UNIFORM with rate provenance;
+source/GPS epochs and offsets remain open. Preserve raw/filtered outputs with filter
+edges and peak effects. GPS is rough spatial reference; no derived ride speed
+or distance measurement is required. Generic physical rider qualification, extra
+scientific filters and sensor/GPS alignment are deferred or excluded from current M3.
+The explorer source-app path already implements a configurable centered mean;
+its adopted projection policy and per-source qualification are separate.
 
-`analysis.device` is opt-in and independent of model construction. MotionUnitContract
-binds SHA-256, ACCELERATION or GRAVITY, a supported common component unit, explicit
-SPECIFIC_FORCE/GRAVITY/KINEMATIC_ACCELERATION meaning and separate unit/quantity
-references. Neither field name determines meaning. A missing declaration leaves
-vectors and magnitude UNAVAILABLE; absent source gravity stays absent even with
-a declaration. Real fixtures have no qualified declarations.
+Render frames separately from encoding, with independent opaque video and
+transparent overlay outputs. Alpha compatibility and synchronization require
+later verification; see [strategy](04_solution_strategy.md).
 
-Pint converts SI, centimeters/s², feet/s² or explicitly declared standard_gravity
-to m/s². Bare `g`, dimensionless and unrelated units are rejected before calculation.
-Standard gravity is a conversion constant, not a measured gravity vector or
-rider load. NumPy computes the stable Euclidean norm of DEVICE components only;
-there is no source-channel combination. Unit/quantity references, original unit,
-library versions, source indices and source/algorithm provenance remain retained.
-Unknown physical axis mapping, yaw, source epochs and GPS units are unchanged.
+## Stage 3 frame gate
 
-Missing rows preserve NaN plus a false validity flag; zero remains valid zero.
-SI values/norms outside float64 range become INVALID products with errors. Floating
-point conversion can round/underflow within float64; exact source precision remains
-in M2 original bytes. Norm overflow does not discard usable vector components.
-No scientific source-app equivalence is established by the synthetic tests.
+[ADR 0005](../decisions/0005-passive-frame-transforms.md) defines rows as target
+axes expressed in DEVICE and passive `v_target = R @ v_device`. Inverse uses the
+opposite conversion; determinant +1 and orthogonality are mandatory. Admission
+is float64 absolute `1e-10`/relative zero, never normalization or calibration proof.
+
+Source-bound RiderCalibration plus matching unit/quantity evidence and explicit
+provisional profile permission yield PROVISIONAL rider vectors only. Raw source
+vectors, gravity or Seated/Flying metadata do not create a basis. No calibration
+means UNAVAILABLE; invalid math yields INVALID. References are attestations, not
+source-app truth. Exact source, assumptions, basis, libraries and units are retained.
+The generic frame path does not qualify originals. The separate confirmed Manta
+app-reference contract is described below; WORLD/GRAVITY heading stays open.
+
+## Raw explorer presentation
+
+The first explorer view reads the complete acceleration x/y/z sequences, preserving
+M2 source ownership. Horizontal coordinates are inferred seconds (`index / effective sample rate`), starting
+at zero and ending at `(count - 1) / rate`. The UI labels INFERRED_UNIFORM and
+source/default rate provenance; no measured timestamps or GPS alignment are claimed. Units
+and physical rider directions remain unknown. Viewport bounds include all source
+values with fixed bounds: negative minimum and positive maximum each padded by
+5% of its magnitude. Zero is included for one-sided data; all-zero data uses
+[-1, 1] display bounds. Only time can be zoomed; samples remain unchanged. Local selections are
+inclusive and independent of source endIndex semantics. Horizontal viewport changes
+are bounded to the first-to-last sample interval, preserving the zoom width when
+possible and stopping zoom-out at the complete recording. Mouse wheel zoom is
+anchored at the pointer and stops zoom-in at one sampling interval. Presentation preparation
+and selection validation live outside widgets; Qt handles chart interaction.
+Failed/cancelled opens retain the previous view, and no missing sensors are filled.
+
+Source marker presentation reads the retained start/end/gravity/incline indices
+outside Qt. The chart draws distinct vertical lines with source field names and
+inferred seconds; optional missing markers remain absent. Labels follow the time
+view without modifying the source, local selection or calibration capability.
+
+Default time view on load/reset uses effective start/end markers; absent source
+boundaries fall back independently to recording limits with INDEX_DEFAULTED
+warnings, without adding source markers. Initial cursor starts at effective start.
+Zoom-out remains bounded by the complete recording rather than the default view.
+
+Explorer metadata presentation maps name/location to Ride/Park and reads available
+Train/Row/Seat attributes as source text or exact numeric tokens. Absent/blank
+fields are omitted; duplicate attributes remain visible. Qt displays plain text
+above the chart without inferring locations, rides or seating.
+
+The app-reference path applies explicit unit-direction dot products and centered
+11-sample means, retaining raw projections/source values separately. The GUI uses
+the owner-adopted g interpretation and permits raw x/y/z switching without changing
+time or selection. It does not use the exact OrthonormalFrame contract or silently
+repair a rotation. All imports with usable directions can use it; policy is in
+ADR 0006 (chapter 09).
+
+Explorer display now uses replay-relative MM:SS.ff at integer sample rates, with
+ff denoting the sample counter (at 50 Hz, .47 = 47/50 second). Effective startIndex
+is replay zero; samples before it have negative labels. Recording-origin seconds
+remain the internal axis coordinates and are shown separately in readouts/tooltips.
+Axis labels follow zoom using sample-aligned category positions. Fractional rates
+retain explicit seconds instead of implying an integer replay counter.
+
+Calibrated forces now defaults on for all successfully prepared source directions,
+without a source-hash allowlist. Source hash remains provenance/evidence identity,
+not an availability gate. Preparation failures become CALIBRATION_UNAVAILABLE
+presentation notes and raw fallback; source/import logic remains outside widgets.
+Short nonempty recordings use normalized partial mean windows. Independently
+verified Manta provenance and general-policy source provenance remain distinct.
+
+Calibrated presentation follows the owner-confirmed source-app sign convention:
+positive lateral is right, negative is left; positive longitudinal is acceleration,
+negative is braking. Legends, visibility controls and sample readouts show these
+mappings without changing projected values or the separate generic RIDER frame.
+Raw x/y/z displays carry no directional interpretation.
+
+GPS product scope is a coarse spatial reference independent of ride/force
+measurement. Its irregular timestamped fixes, gaps and uncertainty must not define
+sensor time, force calibration or ride segmentation. A future map must distinguish
+approximate connected fixes from reconstructed track geometry; GPS-derived ride
+speed, distance and height remain unqualified. See the owner clarification in
+DEV-REQ-003 and the Voltron comparison report.
+
+Calibrated display smoothing is now locally configurable over odd windows 1–51,
+with the compared 11-sample mean retained as the opening default. The analysis
+reference filters original projected channels and records actual window/algorithm;
+presentation recomputes signed value bounds without changing sensor time, cursor,
+selection, raw data or GPS. Raw view disables the slider. One sample is unfiltered;
+the UI shows ±time support at the effective sample rate and updates curves during dragging.
+
+Calibrated force axes always include explicit -1 g, 0 g and +1 g labels/grid levels.
+Presentation extends the padded source range to at least [-1.05, 1.05]; Qt category
+axes place labels at numeric values with a bounded tick count. Source-unit raw
+views retain their original padding contract and carry no g interpretation.
+
+## Reduced-M3 extrema boundary
+
+Implemented extrema use the selected inclusive indices and existing full raw/calibrated
+channels at the current smoothing setting. No second filtering occurs at selection
+edges. Each of the three channels returns min/max value, source index and recording
+time; ties use the earliest index. Results retain source/mode/window/unit and interval
+count/bounds. This contract does not require threshold events, additional filters,
+GPS speed/geodesics or universal physical calibration.

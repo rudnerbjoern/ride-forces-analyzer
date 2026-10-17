@@ -1,74 +1,48 @@
 # Documentation index
 
-[Project README](../README.md) introduces the current scope and launch command;
-[AGENTS.md](../AGENTS.md) defines repository workflow and agent instructions.
-This directory contains project documentation, not generated artifacts or temporary files.
+[Project README](../README.md) covers capabilities and startup.
+[AGENTS.md](../AGENTS.md) defines durable project rules.
 
-## Scope and design
+## Scope, contracts and implementation
 
-- [Roadmap](ROADMAP.md): sequential milestones and exit criteria; M1 and M2 acceptance is verified.
-- [arc42 architecture index](architecture/README.md): twelve maintained chapters
-  covering implemented boundaries, planned capabilities and scientific uncertainty.
-- [ADR 0001](decisions/0001-platform.md): offline Windows platform and Python decision.
-- [ADR 0002](decisions/0002-forces-source-contract.md): accepted M2 API, source ownership,
-  device capabilities, resource limits and optional GPS policy.
-- [ADR 0003](decisions/0003-scientific-semantics-and-capability-gates.md): proposed M3
-  scientific nomenclature, evidence limits and safe per-channel capability gates.
-- [ADR 0004](decisions/0004-analysis-contracts-and-library-policy.md): implemented
-  Stage 1 models, Stage 2 device conversion, isolated Windows audit and deferred libraries.
+| Topic               | Authoritative documents                                                                                                                                                                                          |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Milestones          | [Roadmap](ROADMAP.md): M1/M2 and reduced M3 complete; M4 partial; M5–M8 planned                                                                                                                                  |
+| Architecture        | [arc42 index](architecture/README.md): twelve maintained views; ADRs via chapter 09                                                                                                                              |
+| Importer            | [DEV-REQ-002](requirements/DEV-REQ-002-forces-importer.md), [format observations](requirements/FORMAT-ANALYSIS.md), [plan](implementation/DEV-REQ-002/PLAN.md), [prompts](implementation/DEV-REQ-002/PROMPTS.md) |
+| Scientific analysis | [DEV-REQ-003](requirements/DEV-REQ-003-scientific-analysis.md), [plan](implementation/DEV-REQ-003/PLAN.md), [prompts](implementation/DEV-REQ-003/PROMPTS.md); unresolved source semantics remain explicit        |
 
-## M2 importer specification (accepted)
+## Development and APIs
 
-- [DEV-REQ-002](requirements/DEV-REQ-002-forces-importer.md): complete importer requirements and acceptance criteria.
-- [Observed .forces variants](requirements/FORMAT-ANALYSIS.md): five-fixture schema comparison and unverified semantics.
-- [M2 implementation plan](implementation/DEV-REQ-002/PLAN.md): staged scope, traceability and test gates.
-- [Sequential Codex prompts](implementation/DEV-REQ-002/PROMPTS.md): one implementation task per invocation.
+- [Windows setup](development/SETUP.md): installation/start scripts, required checks and VS Code.
+- [Code quality](development/CODE_QUALITY.md), [documentation tests](development/DOCUMENTATION_TESTS.md),
+  [CI routing](development/CI.md), [Dependabot policy](development/DEPENDABOT.md),
+  [Codex configuration](development/CODEX.md).
+- [Public importer](development/IMPORT_SERVICE.md), [canonical models](development/CANONICAL_MODELS.md),
+  [decoder](development/STRICT_DECODING.md), [motion](development/MOTION_PARSING.md),
+  [optional metadata/GPS](development/OPTIONAL_PARSING.md).
+- [Analysis contracts and device primitives](development/ANALYSIS_MODELS.md).
+- [Raw explorer plan](implementation/RAW_EXPLORER.md) and [Windows evidence](validation/RAW_EXPLORER.md):
+  local file-to-chart workflow, focus workspace, controls and limitations.
+- [Recording catalog](development/RECORDINGS.md): authorization, original filenames and fingerprints.
 
-## M3 scientific analysis specification (planned)
+## Validation evidence
 
-- [DEV-REQ-003](requirements/DEV-REQ-003-scientific-analysis.md): scientific
-  calculations, required libraries, safeguards and acceptance criteria.
-- [M3 implementation plan](implementation/DEV-REQ-003/PLAN.md): staged
-  dependency, motion, filtering, GPS and validation tasks.
-- [M3 Codex prompts](implementation/DEV-REQ-003/PROMPTS.md): one prompt per stage.
+- [Reduced M3 acceptance](validation/M3.md): per-criterion evidence, extrema and focused Windows checks.
 
-## Development
+- [M1 acceptance](validation/M1.md) and [delivery status](validation/M1_DELIVERY.md).
+- [M2 acceptance](validation/M2.md): criteria, traceability, Windows and hosted evidence.
+- [M3 input/model/device evidence](validation/M3_STAGES.md) and [Stage 3](validation/M3_STAGE3.md): scoped API evidence; current reduced-M3 acceptance is defined in its plan.
+- [Locked dependency inventory](validation/DEPENDENCIES.md), [Node security evidence](validation/DEPENDABOT.md),
+  [developer-tool verification](validation/DEVELOPER_TOOLS.md).
+- [Workspace scripts and documentation review](validation/WORKSPACE.md).
 
-- [Windows setup and validation](development/SETUP.md): installation, all checks and
-  VS Code Test Explorer configuration.
-- [Python code quality](development/CODE_QUALITY.md): Pydantic, Ruff, Pylance,
-  mypy, Pyright and regression-test scope.
-- [Canonical models](development/CANONICAL_MODELS.md): immutable M2 Stage 1 models,
-  source ownership and diagnostic/result contracts.
-- [Analysis contracts](development/ANALYSIS_MODELS.md): immutable M3 profiles/results,
-  provenance and capability restrictions; Stage 2 DEVICE norms and explicit Pint conversion.
-- [Motion parsing](development/MOTION_PARSING.md): Stage 3 subset API, field policies
-  and boundaries before complete importer integration.
-- [Strict decoding](development/STRICT_DECODING.md): Stage 2 source API, resource
-  budgets, schema dispatch and deterministic errors.
-- [Optional parsing](development/OPTIONAL_PARSING.md): Stage 4 metadata, ordered
-  attributes, independent GPS slots and nonfatal defect policies.
-- [Import service](development/IMPORT_SERVICE.md): Stage 5 public Path/bytes API,
-  full recordings, aggregate diagnostics, version policy and performance method.
-- [Real recordings](development/RECORDINGS.md): authorized fixture catalog and integrity checks.
-- [Documentation tests](development/DOCUMENTATION_TESTS.md): markdownlint, CSpell
-  and offline local-link checks.
-- [CI selection](development/CI.md): dependency check, conditional suites and required merge gate.
-- [Dependabot policy](development/DEPENDABOT.md): scheduled uv/npm/Actions PRs and security-update settings.
-- [Codex project settings](development/CODEX.md): project-local defaults, Context7
-  and memory configuration.
+Requirements define contracts; plans define stage gates; API guides explain usage;
+validation reports retain scoped commands/results and unresolved limits, without
+implementation diaries. Architecture belongs exclusively in arc42.
+Temporary logs/downloads belong in `.tmp/`.
 
-## Verification evidence
-
-- [M2 validation](validation/M2.md): final AC-01–AC-10 outcomes,
-  native Windows checks, fixture integrity, traceability and successful PR CI.
-- [M1 validation](validation/M1.md): current verified results, historical evidence
-  boundaries and acceptance evidence.
-- [M1 delivery plan](validation/M1_DELIVERY.md): branch, commit groups and PR verification order.
-- [Dependency audit](validation/DEPENDENCIES.md): dated release checks and pinned tooling.
-- [Node security follow-up](validation/DEPENDABOT.md): tested overrides, regression
-  coverage and the open braces advisory.
-
-Keep development instructions in `docs/development/`, architecture in
-`docs/architecture/`, decision records in `docs/decisions/` and dated verification
-results in `docs/validation/`. Temporary logs and downloads belong in `.tmp/`.
+[App-reference comparisons](validation/APP_REFERENCE.md) cover Manta, Kraken and
+Voltron Nevera, with per-recording qualification and screenshot/numeric evidence.
+It also includes GPS overview comparisons across all five originals and the
+unconfirmed source-speed color hypothesis.

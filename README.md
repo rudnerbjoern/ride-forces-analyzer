@@ -1,78 +1,87 @@
 # Ride Forces Analyzer
 
-Planned offline Windows application for importing Ride Forces (`.forces`) recordings,
-analyzing G-force traces and producing animated charts and transparent video overlays.
+Offline Windows desktop project for importing Ride Forces (`.forces`) recordings,
+analyzing G-force traces and producing charts and transparent video overlays.
 
-**Current scope:** M1 provides an executable minimal Qt window, validated startup settings,
-separate subsystem packages, tests and development tooling. M2 Stage 1 adds
-immutable canonical models and structured diagnostics for synthetic construction;
-see the [model guide](docs/development/CANONICAL_MODELS.md). Stage 3 adds
-[motion validation](docs/development/MOTION_PARSING.md) over supplied source trees.
-Stage 2 adds [strict source decoding](docs/development/STRICT_DECODING.md) from
-read-only paths or bytes. Stage 4 adds [optional metadata, attributes and GPS parsing](docs/development/OPTIONAL_PARSING.md),
-with explicit absence and owner-default provenance. Stage 5 exposes the
-[public read-only import service](docs/development/IMPORT_SERVICE.md), returning
-complete typed recordings for their available data. Calibrated analysis, storage, playback,
-GUI importing and rendering remain **planned**. M2 acceptance is verified;
-see the [final validation](docs/validation/M2.md).
-M3 Stage 1 adds [immutable analysis contracts](docs/development/ANALYSIS_MODELS.md)
-and an isolated scientific-library audit. Source units/calibration remain unverified;
-Stage 2 adds explicitly qualified DEVICE vectors/norms and Pint conversion in
-`analysis.device`. Real-recording units remain unqualified; rider/world calculations,
-filtering and GPS analysis remain planned.
-**M1 acceptance is verified**
-on Windows and in pull-request CI, and
-[PR #1](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/1) is merged.
+## Current capabilities
 
-## Requirements
+- **Lossless import:** offline [Path/bytes service](docs/development/IMPORT_SERVICE.md)
+  retains original bytes, metadata/weather, ordered attributes, GPS and diagnostics.
+- **Analysis primitives:** immutable [models](docs/development/ANALYSIS_MODELS.md),
+  explicit unit conversion, device-vector norms and opt-in provisional frame math.
+  General physical rider qualification remains open.
+- **Calibrated forces:** enabled by default for any imported recording with usable
+  direction vectors, using source projections and a configurable centered mean
+  (default: 11 samples).
+  Positive/negative lateral values mean right/left; positive/negative longitudinal
+  values mean acceleration/braking. Labels show these signs in the chart and readout.
+  Missing/invalid calibration data leave raw x/y/z available with an explanation.
+  See [source-app comparisons and processing policy](docs/validation/APP_REFERENCE.md).
+- **Focus workspace:** a dark chart-first layout with a right inspector for display,
+  selection and metadata; current values sit below the chart and technical details
+  stay collapsible. Small windows switch between chart and inspector.
+- **Raw explorer implemented:** open local recordings, inspect x/y/z curves,
+  navigate samples, zoom and select an inclusive interval. Import runs in the background.
+- **M3 complete (reduced scope):** selected-range minimum/maximum per axis with
+  sample/replay/recording time, current raw/calibrated mode and smoothing context.
+  Values update on selection, smoothing or recording changes in **Selection extrema**.
+  [Acceptance](docs/validation/M3.md) records focused native Windows verification.
+  Extra filters, general scientific calibration, events and broad statistics are deferred;
+  analytical GPS is outside current scope.
+- **Planned product work:** persistent ride library, playback, rendering, video
+  synchronization and standalone release.
 
-- Windows 10/11 with a desktop session for the native Qt application.
-- Python 3.14.6 and uv 0.13.0; uv can install the managed Python interpreter.
-- For development checks: Node.js 26.11.1 from `.node-version` and its bundled npm.
+The **Smoothing** slider offers odd windows from 1 (off) to 51 samples. A new
+recording starts at 11; right-click the slider to restore 11. Changes update the curves while dragging
+and preserve original values.
+The label shows the window and its time support at the actual sample rate.
+Stronger smoothing can reduce short force peaks. Calibrated charts always show
+the labeled reference levels -1 g, 0 g and +1 g.
 
-Node.js is a development dependency, not an application runtime dependency.
-FFmpeg is planned for later export milestones and is not required for M1.
+The explorer labels replay time as `MM:SS.ff`, where `ff` is the sample counter
+within the second at the displayed sample rate. Replay zero is the start marker;
+recording-origin seconds remain available in the readout. Raw views retain unknown units and
+rider directions explicit. Original files are never changed.
+Acceptance and remaining stages are tracked in the [roadmap](docs/ROADMAP.md).
 
-## Quick start
+## Install and start
 
-From the repository root in Windows PowerShell, with uv available:
+Windows 10/11 x64 with a desktop session is required. From Windows PowerShell:
 
 ```powershell
-uv python install 3.14.6
-uv sync --locked --all-extras --group dev
-uv run python -m ride_forces_analyzer
+.\setup.ps1
+.\start.ps1
 ```
 
-The last command opens the M1 window and waits until it is closed. The application
-currently displays a placeholder for the planned M2 import feature.
+Setup obtains uv 0.13.0 if needed, installs Python from `.python-version` and
+synchronizes the locked Python environment, including development and optional
+analysis/render packages. Downloads require network access; installed processing
+and startup work offline. Start waits until the window closes. Click **Open recording** (Ctrl+O), choose a
+`.forces` file and explore the three colored curves. Use the mouse wheel over the chart or drag to zoom in time, move the
+sample slider to inspect values, or enter a start/end selection and click
+**Zoom to selection**. **Select visible range** turns a zoomed viewport into a
+selection; **Reset view** restores the start/end marker interval (recording limits when
+a boundary is absent). Zoom-out can still show the complete recording. Stored start/end and available
+gravity/incline markers appear as labeled vertical lines. Available Ride, Park,
+Train, Row and Seat metadata appears in the inspector’s **Recording** section. Import notes explain optional-data
+warnings; technical details are expandable. The **Inspector** button toggles the
+side panel (or switches views in compact windows). **GPS overview** opens a separate offline, north-up route window when usable
+GPS positions exist. It marks start/end, retains spatial proportions and leaves
+missing fixes/time gaps disconnected. GPS is an approximate location reference,
+independent of force measurement; no background map or speed color contract is assumed.
+See the [verified first-slice scope](docs/validation/RAW_EXPLORER.md).
 
-For Node installation, the complete validation commands and VS Code Test Explorer setup,
-follow the [Windows development guide](docs/development/SETUP.md). CI runs only on
-pull requests and has separate application, skill and documentation jobs.
+For Node development tools, install the Node.js version from `.node-version`
+with bundled npm, then run `.\setup.ps1 -Development`.
+See [Windows setup](docs/development/SETUP.md) for checks, troubleshooting and
+VS Code interpreter/Test Explorer settings. Node is not an application dependency.
+FFmpeg is planned for later export work.
 
-## Documentation
+## Documentation and data
 
-Start with the [documentation index](docs/README.md). Key references:
-
-- [AGENTS.md](AGENTS.md): repository instructions for coding agents.
-- [Roadmap](docs/ROADMAP.md): milestone scope and acceptance criteria.
-- [arc42 architecture](docs/architecture/README.md): twelve chapters with Mermaid diagrams,
-  current foundation, planned boundaries and unresolved scientific contracts.
-- [M1 validation](docs/validation/M1.md): verified results and validation limits.
-- [M2 validation](docs/validation/M2.md): final importer acceptance and Windows/PR CI evidence.
-
-## Recording test data
-
-Four genuine recordings are included in `tests/fixtures/real/`: Manta, Kraken,
-Taron and Voltron Nevera. Their owner expressly authorizes using and publishing
-the complete files with all embedded data, including GPS, in this project for
-tests and development. Each file remains read-only and has its own byte-length
-and SHA-256 regression check. See the [recording catalog](docs/development/RECORDINGS.md)
-for filenames, digests and test scope. Other recordings require separate authorization.
-
-The owner additionally supplied the Apple Watch Iron Gwazi recording for the
-current M2 Stage 0 inspection. The five-file recursive inventory distinguishes
-its missing gravity/GPS from the iPhone profile; see
-[format observations](docs/requirements/FORMAT-ANALYSIS.md).
-The callable service imports all five read-only originals; see
-[M2 validation](docs/validation/M2.md).
+- [Documentation index](docs/README.md): requirements, API guides, plans and evidence.
+- [arc42 architecture](docs/architecture/README.md): subsystem boundaries and decisions.
+- [AGENTS.md](AGENTS.md): project rules and Git authorization.
+- [Recording catalog](docs/development/RECORDINGS.md): five authorized originals,
+  publication authorization and pinned byte lengths/SHA-256 digests. All originals,
+  including GPS, metadata and unknown fields, remain read-only.

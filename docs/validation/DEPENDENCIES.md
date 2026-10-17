@@ -1,53 +1,55 @@
-# Dependency audit — 2026-10-13
+# Locked dependency inventory
 
-This is a dated release-verification snapshot, not a claim that versions remain
-latest indefinitely. During the M1 updates, Context7 supplied configuration
-reference material; official PyPI, npm and GitHub release data supplied release
-versions. Stable, non-yanked releases were selected, with prereleases disallowed
-in `tool.uv`. `uv lock --upgrade` refreshed the Python resolution.
+Current versions come from repository manifests/locks, not a claim that packages
+are latest or free of vulnerabilities. `uv.lock` contains 37 packages including
+the local project. Optional installed packages do not imply implemented features;
+see [roadmap](../ROADMAP.md). License/compatibility boundaries are in ADR 0004 via
+the [architecture decision index](../architecture/09_architecture_decisions.md).
 
 ## Python
 
-`uv.lock` contains 32 packages including the local project; the 31 external
-packages below include the later Pydantic additions. Hatchling is pinned separately
-in `[build-system]` because isolated build dependencies are not part of `uv.lock`.
-Optional analysis/render packages are installed for compatibility validation;
-their functionality is not implemented in M1.
+| Package            | Locked version |
+| ------------------ | -------------- |
+| annotated-types    | 0.8.0          |
+| ast-serialize      | 0.13.0         |
+| colorama           | 0.4.6          |
+| flexcache          | 0.3            |
+| flexparser         | 0.4            |
+| iniconfig          | 2.3.1          |
+| librt              | 0.16.0         |
+| mypy               | 2.4.0          |
+| mypy-extensions    | 1.1.0          |
+| numpy              | 2.5.4          |
+| packaging          | 26.3           |
+| pandas             | 3.0.6          |
+| pathspec           | 1.1.1          |
+| pillow             | 12.3.0         |
+| pint               | 0.26.1         |
+| platformdirs       | 4.13.0         |
+| pluggy             | 1.6.0          |
+| pydantic           | 2.14.1         |
+| pydantic-core      | 2.50.1         |
+| pygments           | 2.21.0         |
+| pyqtgraph          | 0.14.0         |
+| pyside6            | 6.12.0         |
+| pyside6-addons     | 6.12.0         |
+| pyside6-essentials | 6.12.0         |
+| pyside6-pdf        | 6.12.0.140     |
+| pyside6-webengine  | 6.12.0.140     |
+| pytest             | 9.1.1          |
+| pytest-qt          | 4.5.0          |
+| python-dateutil    | 2.9.0.post0    |
+| ruff               | 0.17.0         |
+| scipy              | 1.18.1         |
+| shiboken6          | 6.12.0         |
+| six                | 1.17.0         |
+| typing-extensions  | 4.16.0         |
+| typing-inspection  | 0.4.4          |
+| tzdata             | 2026.5         |
 
-| Python package                                                              | Pinned version |
-| --------------------------------------------------------------------------- | -------------- |
-| [annotated-types](https://pypi.org/project/annotated-types/0.8.0/)          | 0.8.0          |
-| [ast-serialize](https://pypi.org/project/ast-serialize/0.13.0/)             | 0.13.0         |
-| [colorama](https://pypi.org/project/colorama/0.4.6/)                        | 0.4.6          |
-| [hatchling](https://pypi.org/project/hatchling/1.32.4/)                     | 1.32.4         |
-| [iniconfig](https://pypi.org/project/iniconfig/2.3.1/)                      | 2.3.1          |
-| [librt](https://pypi.org/project/librt/0.16.0/)                             | 0.16.0         |
-| [mypy](https://pypi.org/project/mypy/2.4.0/)                                | 2.4.0          |
-| [mypy-extensions](https://pypi.org/project/mypy-extensions/1.1.0/)          | 1.1.0          |
-| [numpy](https://pypi.org/project/numpy/2.5.4/)                              | 2.5.4          |
-| [packaging](https://pypi.org/project/packaging/26.3/)                       | 26.3           |
-| [pandas](https://pypi.org/project/pandas/3.0.6/)                            | 3.0.6          |
-| [pathspec](https://pypi.org/project/pathspec/1.1.1/)                        | 1.1.1          |
-| [pillow](https://pypi.org/project/pillow/12.3.0/)                           | 12.3.0         |
-| [pluggy](https://pypi.org/project/pluggy/1.6.0/)                            | 1.6.0          |
-| [pydantic](https://pypi.org/project/pydantic/2.14.1/)                       | 2.14.1         |
-| [pydantic-core](https://pypi.org/project/pydantic-core/2.50.1/)             | 2.50.1         |
-| [pygments](https://pypi.org/project/pygments/2.21.0/)                       | 2.21.0         |
-| [pyqtgraph](https://pypi.org/project/pyqtgraph/0.14.0/)                     | 0.14.0         |
-| [pyside6](https://pypi.org/project/pyside6/6.12.0/)                         | 6.12.0         |
-| [pyside6-addons](https://pypi.org/project/pyside6-addons/6.12.0/)           | 6.12.0         |
-| [pyside6-essentials](https://pypi.org/project/pyside6-essentials/6.12.0/)   | 6.12.0         |
-| [pyside6-pdf](https://pypi.org/project/pyside6-pdf/6.12.0.140/)             | 6.12.0.140     |
-| [pyside6-webengine](https://pypi.org/project/pyside6-webengine/6.12.0.140/) | 6.12.0.140     |
-| [pytest](https://pypi.org/project/pytest/9.1.1/)                            | 9.1.1          |
-| [pytest-qt](https://pypi.org/project/pytest-qt/4.5.0/)                      | 4.5.0          |
-| [python-dateutil](https://pypi.org/project/python-dateutil/2.9.0.post0/)    | 2.9.0.post0    |
-| [ruff](https://pypi.org/project/ruff/0.17.0/)                               | 0.17.0         |
-| [shiboken6](https://pypi.org/project/shiboken6/6.12.0/)                     | 6.12.0         |
-| [six](https://pypi.org/project/six/1.17.0/)                                 | 1.17.0         |
-| [typing-extensions](https://pypi.org/project/typing-extensions/4.16.0/)     | 4.16.0         |
-| [typing-inspection](https://pypi.org/project/typing-inspection/0.4.4/)      | 0.4.4          |
-| [tzdata](https://pypi.org/project/tzdata/2026.5/)                           | 2026.5         |
+Hatchling is pinned separately in `pyproject.toml` build-system metadata because
+isolated build dependencies are not part of `uv.lock`. Setup uses the complete
+locked environment; see [Windows setup](../development/SETUP.md).
 
 ## Node development tools
 
@@ -82,6 +84,5 @@ The requested Context7 launcher in `.codex/config.toml` is unpinned and is
 separate from these locked project dependencies; see [Codex settings](../development/CODEX.md).
 Actual validation results and acceptance evidence are recorded in [M1 validation](M1.md).
 
-The subsequent [Node security follow-up](DEPENDABOT.md) records two transitive
-dependency overrides, their compatibility checks and the remaining open braces
-advisory. This dated release inventory is not a claim that the dependency audit is clean.
+[Security evidence](DEPENDABOT.md) records the checked Node overrides and advisory
+limits. No fresh online release/security audit is implied by this lock inventory.

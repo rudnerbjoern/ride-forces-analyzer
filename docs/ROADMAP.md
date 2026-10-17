@@ -1,70 +1,56 @@
 # Roadmap
 
-## M1 — Project foundation
+Status describes the current implementation; partial functionality does not close
+an entire milestone. [README](../README.md) covers use, [architecture](architecture/README.md)
+covers subsystem boundaries, and validation reports retain scoped evidence.
 
-- [x] Create `src` layout, separated subsystems, executable minimal Qt window, metadata, docs, test
-      infrastructure, CI definition and fixture.
-- [x] Verify environment bootstrapping and native Qt GUI launch on **Windows**, Python 3.14.6.
-- [x] Verify GitHub Actions checks after repository creation (initial Python 3.13 commit).
-- [x] Verify local Ruff lint/format, mypy, Pyright, type contracts, pytest and documentation checks.
-- [x] Verify original Manta fixture bytes against the initial Git blob and regression digest.
-- [x] Verify both GitHub Actions jobs for the updated Python 3.14.6 configuration and tests.
-- [x] Commit the reviewed design documentation on the authorized M1 branch.
+| Milestone                  | Status   | Implemented                                                                                                                                   | Remaining acceptance                                                                                                         |
+| -------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| M1 — Foundation            | Complete | Windows setup/start, typed settings, Qt bootstrap, quality tooling and CI                                                                     | None within M1; [evidence](validation/M1.md)                                                                                 |
+| M2 — Importer              | Complete | Lossless offline Path/bytes import, metadata/weather, ordered attributes, independent GPS and diagnostics                                     | Additional schemas require explicit contracts; [evidence](validation/M2.md)                                                  |
+| M3 — Analysis              | Complete | Immutable analysis models, explicit units/device vectors, provisional frames, source-app projection/mean and selected-range extrema           | None within reduced M3; [focused acceptance](validation/M3.md)                                                               |
+| M4 — Explorer              | Partial  | Background loading, raw/calibrated charts, sample navigation, time zoom/reset, selection, markers, metadata, GPS overview and focus workspace | Persistent ride library and full M4 acceptance                                                                               |
+| M5 — Playback              | Planned  | —                                                                                                                                             | Deterministic playback clock, pause, seek, speed control and interpolation                                                   |
+| M6 — Exports               | Planned  | —                                                                                                                                             | CSV/JSON/PNG, opaque MP4, transparent overlay/PNG sequence, layout profiles and Resolve verification                         |
+| M7 — Video synchronization | Planned  | —                                                                                                                                             | Local video ingest, offsets, timeline preview and frame-accurate matching/export                                             |
+| M8 — Windows release       | Planned  | —                                                                                                                                             | Standalone package, diagnostics, install/uninstall and clean-Windows validation                                              |
 
-**Status:** Complete on 2026-10-13; see [verified acceptance evidence](validation/M1.md).
-[PR #1](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/1) was merged with
-owner authorization. The later [four-recording expansion](development/RECORDINGS.md)
-has separate verification notes in the M1 report.
-**Exit criteria:** Windows install and native GUI startup; all local checks in the
-[development guide](development/SETUP.md) pass; final acceptance documentation verified.
-Delivery uses an authorized branch and draft PR targeting `main`; selected CI suites
-and the final `check` gate must pass before an independently authorized merge.
+## Implemented analysis and explorer
 
-The callable M2 importer is implemented; GUI importing and M3–M8 remain planned.
-Each additional implementation stage requires a new owner instruction.
+Calibrated forces defaults on for any import with usable source directions;
+preparation errors retain raw channels with a diagnostic. Centered smoothing is
+configurable from 1–51 odd samples, default 11, with live updates and right-click
+reset. Lateral signs mean right/left; longitudinal signs mean acceleration/braking.
+The Manta reference has source-bound owner confirmation at its compared default
+window. Other files remain individually provisional despite feature availability.
+[Source-app evidence](validation/APP_REFERENCE.md) records the known Kraken start
+mismatch and Voltron vertical-maximum display difference.
 
-## M2 — Ride Forces importer
+The explorer supports bounded time zoom, marker-based default/reset, replay sample
+notation, fixed force bounds and -1/0/+1 g reference labels. GPS supplies coarse
+offline spatial context independently of force analysis. The dark focus workspace
+groups chart controls, current values and inspector settings; technical details
+are expandable. See [explorer contracts](implementation/RAW_EXPLORER.md) and
+[Windows validation](validation/RAW_EXPLORER.md).
 
-The read-only Path/bytes service imports schema 2.2.0 into immutable recordings,
-preserving original bytes, metadata, ordered attributes and independent GPS data.
-**Status:** Complete on 2026-10-13; local acceptance evidence is verified. Both Windows
-CI jobs additionally passed in [PR #7](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/7).
-See [M2 validation](validation/M2.md) and the [public API](development/IMPORT_SERVICE.md).
-**Exit:** All five [fixtures](development/RECORDINGS.md) import losslessly and every
-acceptance criterion passes. No M3 implementation is authorized by M2 completion.
+## Open work
 
-## M3 — G-force analysis
+1. Complete M4's persistent library and remaining explorer acceptance.
+2. Implement M5–M8 with their own acceptance gates.
 
-Use documented calibration vectors, transform into rider coordinates, validate sign conventions,
-compare reference UI statistics, implement configurable smoothing. **Exit:** tested, repeatable
-computations with deviation report.
+Reduced M3 is complete: selected-range min/max values are shown in the inspector
+with source sample, recording/replay time and processing context. All current
+AC-01–AC-10 have [focused native Windows evidence](validation/M3.md).
+The owner-authorized pre-delivery full check passed 1,060 application tests.
+Further full suites remain on hold until another explicit release.
 
-## M4 — Explorer GUI
+Additional filters, event detection, threshold durations, broad statistics,
+universal physical sensor/rider calibration and analysis benchmark research are
+deferred, not M3 completion requirements. GPS geodesics/speed analysis is outside
+the current product scope; GPS remains coarse spatial context. No GeographicLib
+adoption is required. Playback interpolation is scoped with M5 if needed.
 
-Ride library, 3-axis charts, scrubber, zoom, segment selection, statistics. **Exit:** all five complete
-fixtures can be browsed without blocking UI.
-
-## M5 — Playback
-
-Realtime marker, speed adjustment, pause, seek and sample interpolation. **Exit:** deterministic
-playback timeline.
-
-## M6 — Exports
-
-CSV, JSON, PNG, standalone MP4, alpha-ready overlay and PNG image sequence; profile-based layouts.
-**Exit:** visual sync and transparency verified in DaVinci Resolve.
-
-## M7 — Video synchronization
-
-Video ingest, offsets, timeline preview, frame-accurate matching and export. **Exit:** reproducible
-sync of a user-supplied POV recording.
-
-## M8 — Windows release
-
-Standalone packaging, diagnostics, install/uninstall, regression suite and documentation. **Exit:**
-app installed on a clean Windows VM and verified.
-
-Complete milestones sequentially. Record decisions in `docs/decisions/`.
-Complete acceptance and final documentation locally before publication. PR CI
-provides secondary validation before merge; its success requires no completion-only
-documentation commit. A detected defect invalidating acceptance must be resolved.
+Installed packages do not establish planned capabilities. GPS remains a spatial reference; the app-reference display makes no universal
+physical calibration claim. Excluded research is not a blocker for reduced M3.
+Each new stage and every Git delivery operation require the applicable authorization
+in [AGENTS.md](../AGENTS.md). No additional implementation is implied by this roadmap.

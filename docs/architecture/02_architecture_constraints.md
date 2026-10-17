@@ -39,6 +39,6 @@ are excluded from text normalization. Dependencies are locked and reviewed.
 
 Stage 1 analysis contracts use the already locked NumPy in the optional `analysis`
 extra. Pint was separately adopted for Stage 2 conversions. SciPy/GeographicLib have
-isolated Windows audit evidence but are not project dependencies yet; adoption
-requires a separate authorized manifest/lock change. AHRS and pyproj remain research only. Preserve actual binary/transitive
+isolated Windows audit evidence. Stage 3 adopts SciPy for frame rotations;
+GeographicLib still requires separate manifest/lock adoption. AHRS and pyproj remain research only. Preserve actual binary/transitive
 license notices for eventual distribution; see [ADR 0004](../decisions/0004-analysis-contracts-and-library-policy.md).

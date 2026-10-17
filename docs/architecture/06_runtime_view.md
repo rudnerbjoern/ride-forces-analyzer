@@ -9,12 +9,12 @@ sequenceDiagram
     actor User
     participant Entry as __main__.main
     participant Settings as config.AppSettings
-    participant Qt as QApplication / QMainWindow
+    participant Qt as QApplication / ExplorerWindow
     User->>Entry: Launch module with optional settings
     Entry->>Settings: Use supplied model or construct defaults
     Settings-->>Entry: Validated immutable settings
-    Entry->>Qt: Construct application and minimal window
-    Entry->>Qt: Set title, dimensions and placeholder label
+    Entry->>Qt: Construct application and raw explorer
+    Entry->>Qt: Set title, dimensions and raw chart controls
     Entry->>Qt: Show window and run event loop
     User->>Qt: Close window
     Qt-->>Entry: Event loop exit code
@@ -66,8 +66,8 @@ sequenceDiagram
 ```
 
 The bytes variant bypasses the file read and otherwise uses the same composition.
-A call is synchronous; scheduling, background workers and progress UI are not
-implemented. Invalid caller argument types/limit configuration raise TypeError or
+The public service remains synchronous; the raw explorer runs it on a Qt worker
+thread with an indeterminate progress indicator. Other callers choose scheduling. Invalid caller argument types/limit configuration raise TypeError or
 ValueError; expected source/I/O defects return structured failures.
 
 Optional missing/defective GPS does not invalidate usable core motion. Invalid
@@ -79,8 +79,10 @@ bytes/policy produce equivalent output. See [API contracts](../development/IMPOR
 
 ## Future scenarios
 
-Library import through widgets, calibrated scientific analysis, interactive playback, frame
-rendering, encoding and POV synchronization remain planned. This view introduces
+Selected-range extrema update on source/selection/mode/smoothing changes.
+Persistent ride library, interactive playback, frame
+rendering, encoding and POV synchronization remain planned. Universal physical
+rider qualification and analytical GPS are outside current M3 acceptance. This view introduces
 no invented runtime interactions for those services.
 
 ## Implemented device-only analysis
@@ -117,3 +119,55 @@ into rider G, and no calibration, filtering or GPS processing. The registry read
 installed definitions at module initialization; subsequent calculations perform
 no file or network access. Caller evidence references are explicit attestations,
 not an empirical verification service.
+
+## Explicit provisional frame projection
+
+A separate `analysis.frames.analyze_rider_frame` call checks M2 success, source-bound
+calibration, profile/assumption permission and independent device-unit contracts.
+Missing mapping/data/units returns excluded channels. An explicit admitted basis
+passes through SciPy passive rotation; resulting rider vectors are PROVISIONAL.
+Range failures yield INVALID, while other usable sequences remain independent.
+It never guesses source axes, normalizes input bases or labels real rider forces verified.
+The caller supplies UTC time; no clock alignment, gravity combination or filtering occurs.
+See [ADR 0005](../decisions/0005-passive-frame-transforms.md).
+
+## Raw explorer interaction
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Window as Raw explorer
+    participant Worker as Qt worker
+    participant View as Qt-independent presentation
+    participant Importer as M2 import service
+    User->>Window: Choose a local recording
+    Window->>Worker: Start background load and show progress
+    Worker->>View: Load and prepare raw view
+    View->>Importer: Read-only import
+    Importer-->>View: Full success or structured failure
+    View-->>Worker: Immutable axes and source or failure
+    Worker-->>Window: Queued completion
+    Window->>Window: Show complete x/y/z or retain previous view on failure
+    User->>Window: Navigate, zoom and choose an inclusive interval
+    Window->>View: Validate local sample selection
+```
+
+Cancelling the picker changes nothing. The previous view survives load errors.
+Application shutdown drains outstanding worker tasks after the window closes;
+it does not kill parsing mid-call. Axis labels use source values/inferred elapsed seconds,
+not rider G or a fabricated clock. Qt Charts handles interactive chart drawing;
+export frame generation and encoding remain separate planned subsystems.
+
+Background presentation attempts source-direction projection and a configurable centered mean
+(default 11) for every successful import. Loading selects calibrated curves by
+default; the checkbox switches arrays/value bounds while preserving time/selection.
+Expected calibration errors or absent optional NumPy retain raw data and a visible
+explanation. Source hashes do not gate availability.
+
+The focus workspace presents loaded curves with current-value cards and a right
+inspector. A width breakpoint switches compact windows between chart and inspector;
+scroll areas preserve reachable controls without changing chart coordinates.
+Global import-note access opens the inspector/details and scrolls to diagnostics
+after layout. Card values and clock text refresh from explorer presentation when
+sample, calibration or smoothing changes. Technical expansion is independent of
+analysis state. All raw/calibrated, failure and worker shutdown paths above remain.

@@ -146,8 +146,10 @@ A fresh-process check denies file/network access during construction, verifies
 no Qt import and requires no SciPy/Pint/GeographicLib import. Synthetic qualified
 descriptors test structural gates, not the actual files' scientific semantics.
 
-Beyond the separate Stage 2 device/unit primitives, frame validation math, filtering, geodesics,
-benchmarks and complete M3 acceptance remain later authorized stages. No fixture
+Source-app projection/centered mean is implemented separately in analysis.reference.
+Reduced M3 includes selected-range extrema and focused acceptance; additional
+filters, universal physical calibration and broad statistics are deferred, while
+GPS analytics is outside current scope. No fixture
 is reformatted and no new project dependency is adopted by this contract layer.
 
 ## Device-only vectors and units — Stage 2
@@ -215,3 +217,81 @@ axis mapping, gravity compensation, frame rotation, filtering, GPS units, timeli
 or epoch is calculated. All five originals remain unit-unqualified; Watch gravity
 and GPS remain absent. NumPy float64 rounding/underflow does not replace source
 precision; exact source bytes remain in the retained ImportSuccess.
+
+## Passive frame math and provisional rider vectors — Stage 3
+
+Opt-in `analysis.frames` requires the locked SciPy analysis extra:
+
+- `OrthonormalFrame(rows)`: three immutable Vector3 target axes expressed in DEVICE
+  coordinates. Rejects non-unit/skew/parallel/reflected bases without normalization;
+  numerical admission is absolute `1e-10`, relative zero, on orthogonality/determinant.
+- `rotate_vectors(samples, frame, *, inverse=False) -> SampleValues`: passive
+  `v_target = R @ v_device`, or its inverse. Rows of sample arrays multiply `R.T`.
+  This is unit-neutral math; missing rows remain explicit and finite range is checked.
+- `RiderCalibration(source_sha256, basis, references)`: explicit source-bound
+  exploratory mapping. No constructor infers mounting, yaw or a pose from source vectors.
+- `analyze_rider_frame(source, *, calculation_time, calibration=None, profile=None,
+  acceleration_contract=None, gravity_contract=None) -> AnalysisResult`: complete M2
+  input only. Available vectors require a rider_calibrated profile, `allow_provisional=True`,
+  named assumptions, policy references, calibration and independent motion contracts.
+
+Longitudinal/lateral/vertical columns follow the explicit project convention
+X forward/Y left/Z rider-up. Every available rider result remains PROVISIONAL;
+no API in this stage certifies real rider loading. Without calibration/qualified
+units/data, channels are UNAVAILABLE with reasons. Wrong source/profile/opt-in
+raises TypeError/ValueError; range defects yield INVALID with FRAME_TRANSFORM_RANGE.
+Diagnostics remain deterministic; raw unfiltered quantity/unit/time/source indices
+and complete M2 input survive. Profile configuration records source unit/quantity,
+NumPy/Pint/SciPy versions and the frame matrix/tolerance; references remain channel evidence.
+
+Example with a separately constructed synthetic basis and source-matching unit contract:
+
+```python
+from ride_forces_analyzer.analysis import AnalysisProfile, ProfileName
+from ride_forces_analyzer.analysis.frames import RiderCalibration, analyze_rider_frame
+
+profile = AnalysisProfile(
+    ProfileName.RIDER_CALIBRATED,
+    policy_references=("synthetic passive-basis test protocol",),
+    assumptions=("explicit simulated mounting; no real-app qualification",),
+    allow_provisional=True,
+)
+# imported, basis, unit_contract and calculation_time are explicit caller inputs.
+calibration = RiderCalibration(imported.source_sha256, basis, ("synthetic basis protocol",))
+result = analyze_rider_frame(
+    imported,
+    calculation_time=calculation_time,
+    calibration=calibration,
+    profile=profile,
+    acceleration_contract=unit_contract,
+)
+```
+
+All five real fixtures remain unit/frame-unqualified; absent Watch gravity stays
+absent. See [ADR 0005](../decisions/0005-passive-frame-transforms.md),
+[Stage 3 evidence](../validation/M3_STAGE3.md) and `tests/test_frames.py`. Source-app
+references remain required for generic physical calibration. This broader research
+is not reduced-M3 acceptance; existing app-reference projection/mean has separate
+evidence, and analytical GPS is outside current scope.
+
+## Selected-range extrema
+
+`ride_forces_analyzer.force_extrema.calculate_extrema(source, first, last, *, reference=None, calculation_time=None)`
+is a pure typed API with no Qt or optional NumPy requirement for raw use. The module
+sits outside the NumPy-backed analysis package so raw fallback remains available.
+Pass the current AppReference for calibrated values; its source hash, rate and
+channel lengths must match the recording. Raw mode reads original x/y/z; no source
+minForce/maxForce is substituted. Intervals are inclusive and must be valid.
+
+Frozen SelectionExtrema/ChannelExtrema/Extremum results retain source identity,
+algorithm, aware calculation time, mode/unit/window/capability, effective rate/origin,
+interval endpoints/count and each min/max value/index/recording second. Ties use
+the earliest source sample. Empty/invalid intervals, mismatched references or
+non-finite selected values raise ValueError. Filtering is never repeated at selection
+edges. Source arrays/bytes are unchanged.
+
+ExplorerData.selection_extrema delegates calculation; extrema_text formats replay
+notation and processing context. The inspector refreshes on load, mode, smoothing
+and selection changes, including while the slider is held. Cursor/zoom or hiding
+a curve does not change the result. [Reduced M3 acceptance](../validation/M3.md)
+records focused tests; this is not a general statistics or physical-calibration API.

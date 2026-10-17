@@ -360,3 +360,12 @@ cache and tracing overhead. Do not create throughput guarantees, a performance
 threshold test or a new dependency. The development utility never rewrites a
 fixture. See [public contracts](../development/IMPORT_SERVICE.md) and
 [M2 validation](../validation/M2.md) for final Stage 6 acceptance and hosted CI evidence.
+
+## Owner amendment — absent start/end boundaries, 2026-10-17
+
+For the explorer's default view/reset, the owner specified independent fallbacks:
+absent startIndex uses zero; absent endIndex uses N-1. Supported import therefore
+allows these fields to be absent. Canonical indices retain effective bounded
+values; INDEX_DEFAULTED warnings and unchanged source-envelope absence distinguish
+fallbacks from stored markers. Present malformed, out-of-bounds or reversed indices
+still fail. No source marker is fabricated and no end-index slicing is inferred.

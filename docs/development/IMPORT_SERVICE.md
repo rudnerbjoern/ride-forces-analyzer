@@ -1,4 +1,4 @@
-# Public import service — DEV-REQ-002 Stage 5
+# Public import service
 
 The public facade in `ride_forces_analyzer.importers` provides:
 
@@ -26,7 +26,8 @@ result = import_forces_bytes(b"{}")  # Structured INVALID_SCHEMA_VERSION failure
 `import_forces(path: Path, *, limits=DEFAULT_LIMITS) -> ImportResult` uses bounded
 read-only local binary I/O. `import_forces_bytes(data: bytes, *, limits=DEFAULT_LIMITS)`
 requires immutable bytes and performs no filesystem access. Both are synchronous,
-Qt-independent and offline; there is no library, GUI, analysis or export integration.
+Qt-independent and offline. The raw explorer calls this API through a background
+adapter; no UI dependency is added to the service.
 The caller controls scheduling; no background thread or progress interface is added.
 
 ## Pipeline and outcomes — FR-028–030
@@ -141,5 +142,5 @@ preexisting bytes, native allocations and total process/OS RAM. No performance
 threshold is enforced. Actual measurements and environment are in
 [M2 validation](../validation/M2.md).
 
-Full M2 acceptance/hosted CI and the consolidated M2 report belong to separately
-authorized Stage 6. This stage stops at the callable import boundary.
+Full M2 acceptance, traceability and hosted CI evidence are recorded in
+[M2 validation](../validation/M2.md). GUI integration remains planned.

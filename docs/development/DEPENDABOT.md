@@ -34,10 +34,9 @@ are not evidence of compatibility or a clean security audit.
 
 GitHub's security-update setting is separate from the YAML version-update schedule.
 Enable Dependabot alerts/dependency graph and automatic security updates in
-repository settings. On 2026-10-13, the alerts endpoint returned HTTP 204 (enabled).
-Automatic security updates initially returned `enabled=false, paused=false`.
-After the owner's requested activation, the REST read confirmed
-`enabled=true, paused=false`. The YAML schedule still requires publication to `main`.
+repository settings. The recorded 2026-10-13 setup check reports alerts enabled and automatic security
+updates `enabled=true, paused=false`. This is scoped configuration evidence,
+not a fresh service-side verification. The YAML schedule targets `main`.
 No alert is dismissed by this configuration.
 
 Keep the reviewed smol-toml and scoped KaTeX overrides until upstream resolution
@@ -61,14 +60,7 @@ Policy tests parse YAML using the already locked CSpell consumer, cover ecosyste
 coverage, security/major-update separation, constrained schedules and read-only
 PR CI, and protect existing security overrides. They add no dependencies and are
 not a complete validation of GitHub's service-side configuration schema.
-Native Windows verification on 2026-10-13: `npm run test:dependencies` passed
-12 cases; the CI selector/gate command passed 33 cases; `uv lock --check` resolved
-32 packages with a consistent lock. Actionlint 1.7.12 accepted the PR workflow.
-`npm run test:docs` passed 33 link cases; Markdownlint checked 33 files and CSpell
-86 files, both with zero issues. No manifest dependency or lock version was changed.
-Dependabot configuration changes select code checks; non-Markdown dependency PRs
-skip documentation tests under the project routing policy. Changes to documentation
-tools must additionally receive their affected local checks before merge.
+Recorded results remain in [developer-tool validation](../validation/DEVELOPER_TOOLS.md).
 
 ## Primary references
 

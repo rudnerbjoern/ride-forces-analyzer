@@ -1,8 +1,8 @@
-# Canonical models and diagnostics — DEV-REQ-002 Stage 1
+# Canonical models and diagnostics
 
-Stage 1 implements manually constructible immutable representations and result
-types. It does not decode a file, validate source schema versions, create import
-diagnostics from raw fields, calculate forces, infer time or integrate Qt.
+The domain and result layers provide immutable representations. Construction
+performs no decoding, schema dispatch, raw-field diagnostics, force calculation,
+time inference or Qt integration.
 [ADR 0002](../decisions/0002-forces-source-contract.md) defines the larger contract;
 [M2 validation](../validation/M2.md) records actual verification.
 
@@ -43,12 +43,11 @@ unsupported objects are rejected to prevent lossy/mutable source representations
 Construct `SourceNumber("1.00")` for a JSON number, and ordinary `"1.00"` for a
 JSON string. Number tokens retain exact spelling plus a Decimal value, including
 precision, exponent and signed zero. Equality distinguishes `1` from `1.0`.
-This scalar representation is not a JSON document decoder. Stage 2 must capture
-tokens before native float conversion and enforce all document/resource policies.
+The [decoder](STRICT_DECODING.md) captures tokens before float conversion and
+enforces document/resource policies.
 
 The model intentionally does not verify that supplied bytes and supplied tree
-correspond: doing so would require the forbidden decoder in Stage 1. The Stage 2
-decoder now constructs both from the same retained input; see
+correspond. The decoder constructs both from the same retained input; see
 [strict decoding](STRICT_DECODING.md). SourceEnvelope/Recording
 equality is supported; objects containing mappings are not promised to be hashable
 or serializable with `dataclasses.asdict`. Ordinary mutation is blocked; Python's
@@ -65,9 +64,11 @@ MotionSequence copies caller sequences into tuples. Acceleration is nonempty;
 provided gravity must have equal length and valid Vector3 values. Absent gravity
 is `None` and `paired_motion_available=False`, never zero vectors. Indices are
 nonnegative, bounded by acceleration length, and start does not exceed end.
+Start/end are effective bounds: missing source fields default to 0/N-1 with
+INDEX_DEFAULTED warnings; source absence remains visible in the source envelope.
 Gravity/incline markers may precede start or each other; no slicing occurs.
-Constructor preconditions protect canonical object consistency. Stage 3 must still
-validate raw source fields and convert defects into structured diagnostics.
+Constructors protect canonical consistency; the motion parser validates raw fields
+and produces structured diagnostics.
 
 SampleRate defaults to `(50.0, ValueOrigin.DEFAULT)` and RidingPosition to
 `("Seated", ValueOrigin.DEFAULT)`, implementing the owner's absence policies.
@@ -151,5 +152,5 @@ checked through Context7 against the official
 documentation. Stage 2 now enforces [decoder resource limits](STRICT_DECODING.md).
 Native Windows checks and measurements are recorded in
 [M2 validation](../validation/M2.md).
-Total process/native peak-RAM and hosted CI for the uncommitted changes remain unverified;
-full M2 acceptance remains Stage 6 work.
+Total process/native peak RAM remains unverified. Full M2 acceptance and its
+hosted evidence are recorded in that report.

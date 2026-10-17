@@ -7,21 +7,22 @@
 The top goals are integrity, offline use, deterministic diagnostics, separation
 of concerns and honest scientific provenance. Importer NFR-001–007 and AC-01–10
 are defined in [DEV-REQ-002](../requirements/DEV-REQ-002-forces-importer.md).
-M1/M2 acceptance is verified; M3 scientific criteria remain planned.
+M1/M2 and reduced M3 acceptance are verified; broader scientific research remains
+deferred. [M3 evidence](../validation/M3.md) uses the owner-authorized focused checks.
 
 ## Quality scenarios
 
-| Scenario                                                              | Required response                                                                                           | Verification                                                                                              |
-| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Import any of the five authorized originals                           | Preserve all bytes/GPS/unknown content and available typed data; never write the input                      | Integrity, inventory and service tests; M2 AC-01–04                                                       |
-| Import the same bytes/policy repeatedly or concurrently               | Equivalent immutable results and ordered diagnostics with independent per-call state                        | Service/model/result tests; AC-08–09, NFR-002                                                             |
-| Supply malformed, duplicate-key, unsupported or oversized input       | Structured deterministic failure within configured resource budgets                                         | Decoder and diagnostic-budget tests; AC-05–06, NFR-003                                                    |
-| Supply missing/defective optional GPS or weather                      | Retain source; warn and expose absence/invalid slots without fabricating samples                            | Optional-data tests; AC-04/07                                                                             |
-| Process an installed application recording offline                    | No network, writes or Qt import in the public importer                                                      | Fresh-process offline/write/Qt guards; AC-08–09                                                           |
-| Start the native Windows Qt module                                    | Validate settings before construction; show and close the real minimal window normally                      | Settings and native GUI tests; M1 acceptance                                                              |
-| Request rider-axis interpretation without verified semantics          | Future analysis must declare unverified/unavailable capability instead of scientific certainty              | Planned M3 evidence gates, not implemented M2 analysis                                                    |
-| Render an opaque video and an alpha overlay                           | Future frame generation and encoding remain independent; transparency works in the target editor            | Planned M6/DaVinci Resolve acceptance                                                                     |
-| Construct an analysis contract from caller-owned arrays/configuration | Own immutable data, retain source identity, reject unknown physical units and fabricated capability samples | Implemented Stage 1 [model tests](../../tests/test_analysis_models.py); scientific workers remain planned |
+| Scenario                                                              | Required response                                                                                           | Verification                                                                                                               |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Import any of the five authorized originals                           | Preserve all bytes/GPS/unknown content and available typed data; never write the input                      | Integrity, inventory and service tests; M2 AC-01–04                                                                        |
+| Import the same bytes/policy repeatedly or concurrently               | Equivalent immutable results and ordered diagnostics with independent per-call state                        | Service/model/result tests; AC-08–09, NFR-002                                                                              |
+| Supply malformed, duplicate-key, unsupported or oversized input       | Structured deterministic failure within configured resource budgets                                         | Decoder and diagnostic-budget tests; AC-05–06, NFR-003                                                                     |
+| Supply missing/defective optional GPS or weather                      | Retain source; warn and expose absence/invalid slots without fabricating samples                            | Optional-data tests; AC-04/07                                                                                              |
+| Process an installed application recording offline                    | No network, writes or Qt import in the public importer                                                      | Fresh-process offline/write/Qt guards; AC-08–09                                                                            |
+| Start the native Windows Qt module                                    | Validate settings before construction; show and close the real explorer window normally                     | Settings and native GUI tests; M1 acceptance                                                                               |
+| Request rider-axis interpretation without verified semantics          | Analysis declares provisional/unavailable capability where independent evidence is missing                  | Implemented capability gates; independent physical qualification remains open                                              |
+| Render an opaque video and an alpha overlay                           | Future frame generation and encoding remain independent; transparency works in the target editor            | Planned M6/DaVinci Resolve acceptance                                                                                      |
+| Construct an analysis contract from caller-owned arrays/configuration | Own immutable data, retain source identity, reject unknown physical units and fabricated capability samples | Implemented Stage 1 [model tests](../../tests/test_analysis_models.py); device/frame/reference workers have separate tests |
 
 ## Evidence and performance limits
 
@@ -39,11 +40,12 @@ local observations, not thresholds or total-RAM/cold-cache guarantees. See the
 
 ## Planned M3 acceptance and architecture consistency
 
-[DEV-REQ-003](../requirements/DEV-REQ-003-scientific-analysis.md) requires analytic
-vector/rotation references, unit and filtering tests, WGS84 examples and explicit
-app-comparison limits. VAL-006/AC-07 cover all five immutable fixtures: actual GPS
-segments on the four iPhone profiles and unavailable GPS/gravity-derived products
-on Iron Gwazi. M3 AC-01–10 are not yet verified.
+[DEV-REQ-003](../requirements/DEV-REQ-003-scientific-analysis.md) requires the
+existing projection/mean/sign/time contracts, basic selected-range extrema and
+retained app-comparison limits. All five originals participate with unchanged
+bytes and explicit missing sensors. AC-07 verifies GPS reference-only separation,
+not WGS84 geodesics or derived speeds. AC-06 covers the implemented pure extrema API and inspector integration;
+reduced M3 is verified by its focused acceptance report.
 
 ARC-001–004 require consistent arc42 views, Mermaid diagrams and linked scientific
 ADRs before local M3 acceptance/publication. The future M3 report must trace these
@@ -61,6 +63,41 @@ unavailable and bytes/length/SHA-256/mtime are unchanged. An installed fresh-pro
 guard verifies device calculations without file/network access or Qt imports.
 
 This supports SCI-004–006, SCI-010–012 and VAL-001/004 in device-only scope.
-AC-04 remains partial until projection/rotation stages; AC-06 has boundary evidence
-but does not qualify real source units. M3 remains open. Exact native Windows
-commands and outcomes belong in the [implementation plan](../implementation/DEV-REQ-003/PLAN.md).
+Existing frame/reference suites supply additional AC-04 evidence. Unit-boundary
+tests do not establish reduced AC-06 extrema or real physical source qualification.
+Exact native Windows results belong in the linked scoped validation reports.
+
+## Stage 3 frame evidence
+
+`tests/test_frames.py` checks signed analytic bases, non-axis-aligned transforms,
+inverses, norm invariance, reflections/skew/degeneracy, owned arrays/missingness,
+range failure, explicit opt-in/source bindings and unavailable outputs for all five
+originals. Native Windows [Stage 3 results](../validation/M3_STAGE3.md) trace
+SCI-003/007–009 and VAL-001–002. This supplies synthetic AC-04 evidence; empirical
+calibration and broad ADR 0003 approval are deferred. Reduced-M3 acceptance
+is complete with basic extrema and focused Windows evidence; it does not claim
+universal physical qualification.
+
+## First raw explorer slice
+
+The owner prioritized a first usable M4 slice before complete scientific acceptance.
+`tests/test_explorer.py` checks raw presentation/local indices;
+`tests/test_explorer_gui.py` exercises all five originals, complete chart points,
+viewport bounds, navigation/selection, cancellation/errors, background responsiveness
+and close-during-load. [Windows evidence](../validation/RAW_EXPLORER.md) records the
+actual results. This establishes raw inspection, not calibrated rider analysis,
+full M4 library functionality, playback or export.
+
+[App-reference evidence](../validation/APP_REFERENCE.md) adds analytic projection/
+mean tests, five-file extrema cross-checks, source binding and native GUI raw-switch
+verification. Numerical agreement and explicit owner confirmation establish the Manta
+app-reference contract. This does not qualify arbitrary imports.
+
+## Reduced-M3 acceptance
+
+Verify deterministic selected-range extrema on all three channels, earliest ties,
+single-sample/invalid selections, raw/calibrated units and source/window identity.
+Existing mean/projection/sign/time and fixture tests remain relevant. Confirm
+representative responsive use rather than introducing a benchmark platform.
+Additional filter families, GPS analytics and universal physical calibration are
+excluded from current milestone acceptance; keep their limits visible.

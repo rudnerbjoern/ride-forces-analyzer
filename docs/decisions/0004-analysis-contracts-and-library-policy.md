@@ -1,10 +1,10 @@
 # ADR 0004 — Analysis contracts and scientific library policy
 
 Status: Proposed for owner review, 2026-10-14. Stage 1 model contracts are
-implemented and tested. Stage 2 device primitives and Pint adoption were separately
-instructed; calibrated scientific calculations and other dependency adoption
-remain separate gates. [ADR 0003](0003-scientific-semantics-and-capability-gates.md)
-remains proposed; no source-unit or rider-frame uncertainty is resolved here.
+implemented and tested. Device primitives with Pint, strict SciPy frame transforms and the separate
+source-app projection/mean are implemented. General scientific qualification,
+broad statistics and GeographicLib adoption are not required by reduced M3. [ADR 0003](0003-scientific-semantics-and-capability-gates.md)
+is deferred research; no physical source-unit or rider-frame uncertainty is resolved here.
 
 Requirements: [DEV-REQ-003](../requirements/DEV-REQ-003-scientific-analysis.md),
 LIB-001–008, SCI-001–003, RES-001–005 and ARC-001–004. AC-02/AC-03 are only
@@ -30,7 +30,7 @@ free-threaded Python, clean-VM installation and source builds are unverified.
 | Library       | Audited version | Top-level license | Python requirement | Project lock / installation | Native evidence                                                 |
 | ------------- | --------------- | ----------------- | ------------------ | --------------------------- | --------------------------------------------------------------- |
 | NumPy         | 2.5.4           | BSD-3-Clause      | >=3.12             | Already locked/installed    | cp314 Windows AMD64 wheel; immutable-buffer smoke               |
-| SciPy         | 1.18.1          | BSD-3-Clause      | >=3.12             | Absent; proposed adoption   | cp314 Windows AMD64 wheel; rotation/filter/interpolation smokes |
+| SciPy         | 1.18.1          | BSD-3-Clause      | >=3.12             | Adopted for passive frames  | cp314 Windows AMD64 wheel; rotation/filter/interpolation smokes |
 | Pint          | 0.26.1          | BSD-3-Clause      | >=3.12             | Adopted in Stage 2          | Universal wheel; conversion/dimensionality smoke                |
 | GeographicLib | 2.1             | MIT               | >=3.7              | Absent; proposed adoption   | Universal wheel; synthetic WGS84 inverse smoke                  |
 | Pandas        | 3.0.6           | BSD-3-Clause      | >=3.11             | Already locked/installed    | cp314 Windows AMD64 wheel; optional table smoke                 |
@@ -42,17 +42,12 @@ SciPy declares `numpy>=2.0.0,<2.8`; existing NumPy 2.5.4 satisfies it. Pandas on
 Python 3.14 requires NumPy >=2.3.3. Only base candidate packages were installed:
 upstream documentation/test extras and their unrelated dependencies were excluded.
 
-`uv lock --check` accepted the unchanged root lock (**32 packages**). An isolated
-audit project under `.tmp/m3-stage1-audit/` pinned NumPy/SciPy/Pint/GeographicLib/
-Pandas exactly and required Python ==3.14.6. Its separate uv lock resolved
-**13 packages** including the audit project; locked, no-build synchronization
-installed **12 distributions** from wheels. Eight synthetic integration checks
-passed together in that environment. This demonstrates the selected candidates
-can coexist on the tested Windows interpreter, not that they are adopted by RFA.
-Root `pyproject.toml`, `uv.lock`, `.venv` dependency selections and Node locks
-were not changed during Stage 1. SciPy, Pint and GeographicLib were then absent
-from the project environment. Stage 2 separately adopts only Pint; SciPy and
-GeographicLib still require their own authorized dependency/lock changes.
+The isolated `.tmp/m3-stage1-audit/` environment pinned the candidates on
+Python 3.14.6 (13-package audit lock, 12 installed distributions); eight synthetic
+integration checks passed. This proves compatibility in that audit scope, not
+adoption of every candidate or real-source physical qualification. Current root
+adoption is NumPy/Pint/SciPy; [locked inventory](../validation/DEPENDENCIES.md)
+reflects the actual project environment. GeographicLib is not required for the current GPS reference-only product.
 
 ### License and security scope
 
@@ -75,7 +70,7 @@ adoption/release; no alert or quality rule was suppressed.
 ### Roles and deferred libraries
 
 Use existing NumPy for the model's immutable array boundary and future finite
-numeric kernels. SciPy remains the proposed implementation of rotation,
+numeric kernels. SciPy implements passive rotations and remains the proposed worker for
 offline SOS filtering and interpolation. Pint implements the Stage 2 dimensional
 boundary only with independently qualified source units. GeographicLib remains
 the proposed declared-WGS84 horizontal geometry implementation.
@@ -93,8 +88,9 @@ it does not replace GeographicLib for the initial WGS84 policy. Neither was inst
 Implemented in [analysis.models](../../src/ride_forces_analyzer/analysis/models.py)
 and exported from `ride_forces_analyzer.analysis`; the
 [model guide](../development/ANALYSIS_MODELS.md) gives concrete contracts and tests.
-There is no `analyze` service, norm, projection, unit conversion, filtering,
-geodesic calculation, storage adapter or GUI integration in project code.
+Model construction performs no calculation. Device norms/unit conversion and
+strict provisional frame math are implemented. ADR 0006 defines the separate
+source-app projection/mean consumed by the explorer; geodesics and storage remain planned.
 
 - AnalysisResult retains full M2 ImportSuccess, profile, provenance, ordered
   diagnostics and immutable channels. Source schema/bytes/GPS/import diagnostics
@@ -170,3 +166,13 @@ and [Pint conversion documentation](https://pint.readthedocs.io/en/stable/user/n
 Context7 was used for NumPy ownership and SciPy/Pint boundaries. Primary release
 metadata and installed wheel files, rather than a documentation version alone,
 establish the version-specific audit facts. Temporary evidence remains in `.tmp/`.
+
+## Stage 3 adoption — 2026-10-17
+
+The separately instructed frame stage adopts SciPy 1.18.1 in the analysis extra,
+retaining existing NumPy versions. The candidate audit table describes evaluation scope; SciPy is
+root-locked/installed for passive rotation. Filtering/interpolation and
+GeographicLib remain deferred. [ADR 0005](0005-passive-frame-transforms.md) and
+[Stage 3 validation](../validation/M3_STAGE3.md) record current integration,
+license notices, metadata limits and numerical/capability tests. No verified
+real-source coordinate mapping is established by this adoption.
