@@ -16,6 +16,7 @@ analysis = [
     "pandas>=3.0.6",
     "pint==0.26.1",
     "pyqtgraph>=0.14.0",
+    "scipy==1.18.1",
 ]
 render = ["Pillow>=12.3.0"]
 
