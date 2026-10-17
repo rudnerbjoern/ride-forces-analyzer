@@ -51,6 +51,23 @@ in `.tmp/focus-workspace.png`, `.tmp/focus-compact.png` and `.tmp/caption-worksp
 The native dark-caption attribute was accepted. Optional Windows 11 caption/text/
 border colors were rejected by this environment; their exact colors remain unverified.
 
+## Startup geometry verification
+
+On PR #12 base `77588f4fb3be28706db6fb61458cd5766aa85a72` plus
+`tests/test_gui.py`, native Windows command
+`.venv/Scripts/python.exe -m pytest tests/test_gui.py -v -s` passed all four
+startup cases in 5.05 s (`.tmp/pr12-gui.log`). Default/custom settings run at Qt
+scale factors 1 and 2. Requested client size is exact before show; after show,
+reductions are accepted only in dimensions where the requested size plus native
+frame exceeds the available desktop. Other dimensions must remain exact.
+Assertions include actual/requested geometry and desktop/frame bounds.
+Ruff check, Ruff format check and Pyright on `tests/test_gui.py` also passed.
+The reported hosted default-size failure motivates this portable assertion;
+the original runner's actual geometry was not included in its failure output.
+The constrained local desktop retained the requested size, which is also valid.
+Application code and dependencies are unchanged; prior unaffected evidence is
+reused. No additional full run was performed; hosted success remains open.
+
 ## Limits
 
 Tests simulate the file-picker result; manual picker navigation is not claimed.

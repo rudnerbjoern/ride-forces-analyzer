@@ -53,7 +53,8 @@ can suppress short peaks; 5–11 at 50 Hz is an exploration recommendation, not 
 
 ## Workspace and metadata
 
-Default size is 1280×820. The dark chart-first layout provides global Open/GPS/
+Requested default size is 1280×820; Windows may reduce the shown size when the
+available desktop cannot accommodate it and its native frame. The dark chart-first layout provides global Open/GPS/
 notes/Inspector actions, local calibration/zoom/curve controls and current-value
 cards below the chart. The right inspector groups Display, Selection and Recording.
 Technical provenance, full-precision values and diagnostics are expandable; opening
