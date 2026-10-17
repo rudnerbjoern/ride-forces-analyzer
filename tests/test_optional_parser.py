@@ -18,6 +18,8 @@ from ride_forces_analyzer.importers import (
     DecodeSuccess,
     ImportFailure,
     ImportLimits,
+    ImportSuccess,
+    import_forces,
     MotionParseSuccess,
     OptionalParseSuccess,
     Severity,
@@ -624,3 +626,24 @@ def test_missing_source_root_is_failure_and_optional_success_never_validates_cor
     assert isinstance(parse_motion(subset.source), ImportFailure)
     with pytest.raises(ValueError, match="limits"):
         parse_optional_data(subset.source, limits=cast(ImportLimits, None))
+
+
+def test_voltron_weather_metadata_matches_source_app() -> None:
+    path = next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces"))
+    original = path.read_bytes()
+    result = import_forces(path)
+    assert isinstance(result, ImportSuccess)
+    metadata = result.recording.metadata
+    assert metadata.weather_conditions == "Mostly Clear"
+    assert metadata.temperature == 17.786710739135742
+    assert metadata.wind_direction == 195.0
+    assert metadata.wind_speed == 0.9936420124626161
+    assert metadata.wind_gust == 3.874126195764542
+    assert metadata.temperature is not None and metadata.wind_direction is not None
+    assert metadata.wind_speed is not None and metadata.wind_gust is not None
+    assert round(metadata.temperature, 1) == 17.8
+    assert round(metadata.wind_speed * 3.6) == 4
+    assert round(metadata.wind_gust * 3.6) == 14
+    assert 191.25 <= metadata.wind_direction < 213.75  # SSW sector, centered at 202.5 degrees.
+    assert result.recording.source.original_bytes == original
+    assert path.read_bytes() == original

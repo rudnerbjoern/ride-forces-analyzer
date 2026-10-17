@@ -246,8 +246,21 @@ def validate_motion(source: SourceEnvelope, diagnostics: DiagnosticBudget) -> Mo
             severity=Severity.WARNING,
         )
     sample_rate = _rate(root, diagnostics)
-    start = _index(root, "startIndex", length, diagnostics, required=True)
-    end = _index(root, "endIndex", length, diagnostics, required=True)
+    start = _index(root, "startIndex", length, diagnostics)
+    end = _index(root, "endIndex", length, diagnostics)
+    for key in ("startIndex", "endIndex"):
+        if key not in root:
+            _diagnose(
+                diagnostics,
+                "INDEX_DEFAULTED",
+                (key,),
+                "Absent boundary uses the recording extent; source absence is preserved",
+                severity=Severity.WARNING,
+            )
+    if "startIndex" not in root:
+        start = 0
+    if "endIndex" not in root and length:
+        end = length - 1
     gravity_index = _index(root, "gravityIndex", length, diagnostics)
     incline_index = _index(root, "inclineIndex", length, diagnostics)
     if start is not None and end is not None and start > end:
