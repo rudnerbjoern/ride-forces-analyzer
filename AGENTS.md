@@ -11,11 +11,12 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 - MUST keep this file limited to durable project-wide rules. Milestone status belongs in the roadmap; stage steps, deliverables and specific gates belong in the applicable implementation plan. NEVER update this file solely for implementation progress.
 - MUST read [README](README.md), [roadmap](docs/ROADMAP.md), [architecture](docs/architecture/README.md), applicable requirements and implementation plan before edits. Use [docs index](docs/README.md) for references.
 - MUST keep changes scoped and consistent. NEVER refactor unrelated code. MUST align code, tests, configuration and docs.
+- MUST document the current project state, implemented behavior, planned work and known limits. MUST replace or consolidate superseded descriptions rather than append chronological updates. NEVER maintain development diaries, step-by-step implementation narratives or accounts of intermediate failures and fixes in project documentation. MUST keep validation evidence compact: commands, results, platform, tested scope/revision and remaining limits. Preserve necessary scientific evidence, decision rationale and recording authorization without turning them into development chronicles.
 
 ## Repository and Git
 
 - MUST use [github-delivery](.agents/skills/github-delivery/SKILL.md) for Git/GitHub delivery; reuse its helpers and authoritative commit policy. NEVER generate replacement operation scripts. Skill use NEVER grants mutation authorization.
-- MUST preserve user changes. Staged files = owner-reviewed. NEVER modify, unstage, replace or repurpose them without explicit authorization.
+- MUST preserve user changes. Staging is a review marker and MUST NEVER block authorized working-tree changes or trigger a confirmation request. Working copies of staged files MAY be edited without separate authorization; NEVER modify, unstage, replace or repurpose index entries without explicit owner authorization.
 - MUST obtain explicit owner authorization for staging, committing, pushing, PR creation and merging, covering the operation and scope.
 - MUST work on an authorized dedicated feature branch. Create new branches from `main`; continue related work on its existing branch. Preserve user changes during switches.
 - NEVER commit on `main` or detached HEAD. NEVER push to remote `main`, delete it or bypass this restriction via force, `--all`, `--mirror` or alternative destination refs.
