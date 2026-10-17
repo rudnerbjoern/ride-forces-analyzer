@@ -30,6 +30,14 @@ def wait_until(predicate: Callable[[], bool], timeout: float = 15) -> None:
         time.sleep(0.001)  # Let Python import workers acquire the GIL during cold startup.
 
 
+def resize_workspace(window: ExplorerWindow, width: int, height: int) -> None:
+    """Exercise a real layout even when Windows limits normal desktop tracking."""
+    window.setMinimumSize(width, height)
+    window.resize(width, height)
+    wait_until(lambda: (window.width(), window.height()) == (width, height))
+    QTest.qWait(50)
+
+
 @pytest.fixture
 def explorer_window() -> Iterator[ExplorerWindow]:
     application = QApplication.instance()
@@ -39,8 +47,8 @@ def explorer_window() -> Iterator[ExplorerWindow]:
     window = ExplorerWindow(AppSettings())
     window.show()
     wait_until(lambda: window.windowHandle().isExposed())
-    # Set the interaction layout after native startup geometry negotiation.
-    window.resize(1280, 820)
+    # Test-controlled minimum size keeps interaction layout independent of the desktop.
+    resize_workspace(window, 1280, 820)
     wait_until(lambda: window.width() == 1280 and window.inspector.isVisible())
     yield window
     window.close()
@@ -683,7 +691,7 @@ def test_focus_workspace_layout_and_current_value_cards(
     initial_width: int,
 ) -> None:
     window = explorer_window
-    window.resize(initial_width, 480)
+    resize_workspace(window, initial_width, 480)
     QTest.qWait(50)
     wide = initial_width >= 1080
     assert window.inspector.isVisible() == wide
@@ -695,7 +703,7 @@ def test_focus_workspace_layout_and_current_value_cards(
         window.inspector_button.click()
         assert window.inspector.isVisible()
         assert not window.plot_panel.isVisible()
-    window.resize(1280, 820)
+    resize_workspace(window, 1280, 820)
     QTest.qWait(50)
     assert window.inspector.isVisible()
     assert window.workspace.orientation() == Qt.Orientation.Horizontal
@@ -714,7 +722,7 @@ def test_focus_workspace_layout_and_current_value_cards(
     assert [label.text() for label in window.value_names] == ["x", "y", "z"]
     assert all("unknown" in label.text() for label in window.value_hints)
     window.reference_toggle.setChecked(True)
-    window.resize(720, 480)
+    resize_workspace(window, 720, 480)
     QTest.qWait(50)
     assert (window.width(), window.height()) == (720, 480)
     assert window.workspace.orientation() == Qt.Orientation.Vertical
@@ -731,7 +739,7 @@ def test_focus_workspace_layout_and_current_value_cards(
     assert note_position.y() + window.notes.height() > 0
     window.details_button.click()
     assert not window.notes_button.isChecked() and not window.notes.isVisible()
-    window.resize(1280, 820)
+    resize_workspace(window, 1280, 820)
     QTest.qWait(50)
     assert window.workspace.orientation() == Qt.Orientation.Horizontal
     assert window.inspector.isVisible()
@@ -811,7 +819,7 @@ def test_selected_extrema_updates_and_remains_independent(
     window.position.setValue(75)
     window.reset_button.click()
     assert tuple(label.text() for label in window.extrema_labels) == texts
-    window.resize(720, 480)
+    resize_workspace(window, 720, 480)
     window.inspector_button.setChecked(True)
     QApplication.processEvents()
     window.inspector.ensureWidgetVisible(window.extrema_labels[-1])

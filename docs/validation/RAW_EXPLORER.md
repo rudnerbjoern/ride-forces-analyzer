@@ -54,10 +54,11 @@ border colors were rejected by this environment; their exact colors remain unver
 ## Desktop-independent GUI verification
 
 Native Windows x64 / Python 3.14.6 / Qt 6.12.0, unchanged locked dependencies.
-Test scope: PR #12 base `a37c0c80068cb85c40e9f072a83e2b0474f58f89` plus
+Test scope: PR #12 base `a5a5752c1653b2f6d4ee24cbf46590c32a8b98e7` plus
 `tests/test_explorer_gui.py` and this report. Interaction fixtures explicitly
-resize to 1280×820 after native exposure; they do not assume startup retains that
-width on every desktop. Layout cases independently exercise 720/1280 widths,
+set a test-only minimum size and resize to 1280×820 after native exposure. This
+overrides native tracking limits on small desktops without changing application
+defaults; compact cases replace that minimum with 720×480. Layout cases independently exercise 720/1280 widths,
 chart/Inspector visibility, switching, resize and current values.
 Startup tests check requested size before show and allow desktop-constrained
 reductions after show, retaining diagnostic geometry in assertions.
@@ -65,8 +66,8 @@ reductions after show, retaining diagnostic geometry in assertions.
 Focused runner `.tmp/pr12-layout-check.ps1` executes
 `.venv/Scripts/python.exe -m pytest tests/test_gui.py tests/test_explorer_gui.py -v`
 with `QT_QPA_PLATFORM=windows` at `QT_SCALE_FACTOR=1` and `3` sequentially.
-Both runs passed: 41 cases in 45.16 s at scale 1 and 41 in 49.16 s at scale 3
-(`.tmp/pr12-layout-check.log`).
+Both runs passed: 41 cases in 50.47 s at scale 1 and 41 in 58.41 s at scale 3
+(`.tmp/pr12-minimum-check.log`).
 Ruff check, Ruff format check and Pyright on `tests/test_explorer_gui.py` passed.
 Application code and dependencies are unchanged; unaffected evidence is reused.
 No additional full run was performed. Hosted success for this revision remains open.
