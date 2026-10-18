@@ -1,59 +1,53 @@
-# Local delivery validation
+# Release validation
 
-Scope: current desktop, export and Windows-packaging changes on
-`feat/windows-release-packages`, based on `5555f57`; version 0.1.0.
-Application and test content verified through `2725747`; subsequent documentation
-changes require the documentation checks below. Review: [PR #17](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/17).
+Scope: version 0.2.0 on `release/v0.2.0`, based on `a06386e`.
 Platform: native Windows x64, Python 3.14.6, Qt/PySide6 6.12.0,
-PyInstaller 6.22.3, Node 26.11.1. Original recordings remain unchanged.
+PyInstaller 6.22.3, uv 0.13.0 and Node 26.11.1.
 
 ## Local checks
 
-- `uv sync --locked --all-extras --group dev --group build` and
-  `uv lock --check`: passed; 44 locked packages, installed environment unchanged.
+- `uv lock --check`: passed; only the project version changed in the lockfile.
 - `ruff check .`, `ruff format --check src tests`, `mypy src`:
   passed; 109 formatted files and 64 typed source files.
 - `npm run typecheck`: no errors or warnings.
-- `npm run test:types`, `npm run test:dependencies` and
+- `npm run test:types`, `npm run test:dependencies`,
   `node --test tests/ci/changes.test.mjs`: 11, 20 and 45 tests passed.
-- `pytest -ra --durations=20 --junitxml=.tmp/test-results/application-ci-fix.xml --basetemp=.tmp/pytest-ci-fix`:
-  all 1,519 application tests passed, including native GUI and recording integrity.
-- Separate delivery-tool checks: Ruff check/format, mypy on the helper/tests and
-  `pytest .agents/skills/github-delivery/tests -ra --basetemp=.tmp/pytest-skill-ci-fix`:
-  passed; 81 tool tests. Application discovery remains separate.
-- `actionlint -verbose -shellcheck= -pyflakes=`: no errors in three workflows.
-- `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .github/scripts/test-gitleaks.ps1`:
-  scanner detection, deleted-secret history and complete redaction passed.
-- `gitleaks git --log-opts=--all --redact=100 --no-banner --no-color --exit-code 1`
-  and `gitleaks dir packaging --redact=100 --no-banner --no-color --exit-code 1`:
-  no findings in existing history or new packaging materials.
-- `uv build --out-dir .tmp/delivery-python-packages`: source distribution and
-  wheel built successfully.
-- `npm run test:docs`: Markdown, spelling and 52 link tests passed.
-- `pwsh.exe -NoProfile -File .tmp/reproduce-ci.ps1`: all 11 dependency/workflow
-  tests passed with Windows PowerShell child processes launched from PowerShell 7.
-  The About GUI test also passed with exact parsed link-target comparison.
+- `pytest -ra --durations=20 --junitxml=.tmp/test-results/v020-application.xml --basetemp=.tmp/pytest-v020`:
+  all 1,519 application tests passed, including native GUI and original recording
+  byte-length/SHA-256 checks. No recording data changed.
+- `pytest .agents/skills/github-delivery/tests -ra --basetemp=.tmp/pytest-skill-v020`:
+  all 81 separate delivery-tool tests passed.
+- `uv build --out-dir .tmp/v020-python-packages`: version 0.2.0 wheel and source
+  distribution built successfully.
+- `npm run test:docs`: Markdown, spelling and local-link checks passed.
 
-Native executables from the locked environment ran directly where using
-`uv run` would unnecessarily resynchronize the shared test environment.
-Runner output is retained in `.tmp/delivery-*.log`.
+Native executables from the locked environment ran directly to avoid repeated
+environment synchronization. Runner evidence is retained in `.tmp/v020-*.log`.
+Hosted PR and tag-workflow results are separate evidence in GitHub.
 
 ## Windows downloads
 
-`python -m scripts.build_windows --release` built the standalone EXE, standard
-ZIP, complete ZIP, available upstream sources and SHA-256 manifest.
-`python -m scripts.check_windows_packages .tmp/windows-build/assets --recording tests/fixtures/real/Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces`
-checks actual executables, archive contents and hashes. All three executables
-passed isolated startup, German/light UI, 9,640-sample import and 4K rendering;
-the complete ZIP also passed CPU video encoding with its adjacent FFmpeg.
+`python -m scripts.build_windows --release --work .tmp/v020-windows-build` built
+the standalone EXE, standard ZIP, complete ZIP, available upstream sources and
+SHA-256 manifest. The actual package check was:
 
-Artifacts under `.tmp/windows-build/assets/`: EXE 78,603,081 bytes;
-standard ZIP 78,730,845 bytes; complete ZIP 168,979,184 bytes; available upstream
-sources ZIP 461,702,979 bytes. Exact hashes are in `WINDOWS-SHA256SUMS.txt`.
+```powershell
+python -m scripts.check_windows_packages .tmp/v020-windows-build/assets --recording tests/fixtures/real/Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces
+```
+
+All three executables reported version 0.2.0 and passed isolated visible GUI
+startup, German/light presentation, 9,640-sample import and 4K rendering. The
+complete ZIP also passed CPU video encoding using its adjacent FFmpeg.
+ZIP contents, notices and all manifest hashes passed verification.
+
+Local candidate sizes: EXE 78,602,628 bytes; standard ZIP 78,730,155 bytes;
+complete ZIP 168,978,494 bytes; available upstream sources ZIP 461,702,979 bytes.
+Hosted builds can differ in size; their own checksum manifests are authoritative.
 
 ## Limits
 
-Missing Qt PDF and complete static FFmpeg source/notice material is documented
-in the included redistribution catalog and does not block package construction.
-This is not a completed license review, clean-VM or code-signing qualification.
-No new tag or public release was created. Hosted PR outcomes belong in PR metadata.
+Missing Qt PDF and complete static FFmpeg source/notice material remains recorded
+in the included redistribution catalog. This is not a completed license review,
+clean-VM or code-signing qualification. The release policy classifies 0.2.0 as a
+prerelease. Public release acceptance additionally requires a successful tag
+workflow and verification of the attached Source, EXE and both ZIP downloads.

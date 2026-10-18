@@ -30,7 +30,7 @@ historical acceptance reports are not maintained.
   [Codex settings](development/CODEX.md).
 - [Dependency inventory](validation/DEPENDENCIES.md),
   [third-party licenses](../THIRD_PARTY_NOTICES.md).
-- [First public release preparation](development/RELEASE.md).
+- [Releases and Windows downloads](development/RELEASE.md).
 - [Desktop, export and Windows-package validation](validation/WINDOWS_PACKAGES.md).
 - [Recording catalog and authorization](development/RECORDINGS.md),
   [recording reuse license](../tests/fixtures/real/README.md), [image reuse license](images/README.md).

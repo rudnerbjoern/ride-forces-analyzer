@@ -3,6 +3,13 @@
 Explore Ride Forces recordings and create G-force overlays for your coaster
 videos. Processing stays local and preserves original recordings.
 
+## Included in version 0.2.0
+
+- Portable Windows EXE, standard ZIP and complete ZIP with FFmpeg, plus source downloads.
+- Remembered folders, language and appearance, with Windows defaults for new users.
+- About information and optional GitHub update notifications.
+- Export filenames based on the recording, estimated output size and remaining time.
+
 ## Installation
 
 For Windows x64, `Ride-Forces-Analyzer-{{VERSION}}-windows-x64.exe` starts without
