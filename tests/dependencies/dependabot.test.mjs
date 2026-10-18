@@ -80,7 +80,7 @@ test("Changed workflow validation is checksum-pinned and required by the final g
   assert.equal(lint.needs, "dependency-check");
   assert.equal(lint.if, "${{ needs.dependency-check.outputs.workflows == 'true' }}");
   assert.equal(lint["timeout-minutes"], 10);
-  assert.deepEqual(lint.steps[0].with, { "persist-credentials": false, ref: "${{ github.sha }}" });
+  assert.deepEqual(lint.steps[0].with, { "persist-credentials": false, ref: "${{ inputs.revision || github.sha }}" });
   const install = lint.steps.find(step => step.name === "Install checksum-pinned actionlint").run;
   assert.match(install, /actionlint_1\.7\.12_windows_amd64\.zip/);
   assert.match(install, /6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9/);
@@ -101,7 +101,7 @@ test("Secret scanning is mandatory, checksum-pinned and cannot silently skip the
   assert.equal(scan["timeout-minutes"], 10);
   assert.ok(!Object.hasOwn(scan, "if") && !Object.hasOwn(scan, "needs"));
   assert.ok(!Object.hasOwn(scan, "continue-on-error"));
-  assert.deepEqual(scan.steps[0].with, { "persist-credentials": false, "fetch-depth": 0, ref: "${{ github.sha }}" });
+  assert.deepEqual(scan.steps[0].with, { "persist-credentials": false, "fetch-depth": 0, ref: "${{ inputs.revision || github.sha }}" });
   const install = scan.steps.find(step => step.name === "Install checksum-pinned Gitleaks").run;
   assert.match(install, /gitleaks_8\.30\.1_windows_x64\.zip/);
   assert.match(install, /d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e/);
@@ -129,8 +129,9 @@ test("Source releases publish only reviewed tag revisions after quality and pack
   assert.deepEqual(workflow.permissions, { contents: "read" });
   assert.equal(workflow.concurrency["cancel-in-progress"], false);
   assert.equal(workflow.jobs.source["timeout-minutes"], 10);
-  assert.deepEqual(workflow.jobs.quality, { uses: "./.github/workflows/ci.yml", with: { "full-checks": true } });
-  assert.equal(workflow.jobs.source.needs, "quality");
+  assert.deepEqual(workflow.jobs.quality, { needs: "source", uses: "./.github/workflows/ci.yml",
+    with: { "full-checks": true, revision: "${{ needs.source.outputs.commit }}" } });
+  assert.equal(workflow.jobs.source.needs, undefined);
   assert.equal(workflow.jobs.source.steps[0].with.ref, "${{ inputs.tag || github.sha }}");
   assert.equal(workflow.jobs.source.outputs.commit, "${{ steps.revision.outputs.commit }}");
   assert.equal(workflow.jobs.source.steps.find(step => step.id === "policy").env.RELEASE_SHA,
@@ -258,10 +259,11 @@ test("Dependabot PRs use the existing read-only PR CI, with no automatic merge w
   const workflowSource = await readFile(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
   const workflow = parseDocument(workflowSource).toJS();
   assert.deepEqual(workflow.on, { pull_request: { branches: ["main"] }, workflow_dispatch: null,
-    workflow_call: { inputs: { "full-checks": { type: "boolean", required: true } } } });
+    workflow_call: { inputs: { "full-checks": { type: "boolean", required: true },
+      revision: { type: "string", required: false } } } });
   for (const job of Object.values(workflow.jobs)) {
     for (const step of job.steps.filter(step => step.uses?.startsWith("actions/checkout@"))) {
-      assert.equal(step.with.ref, "${{ github.sha }}");
+      assert.equal(step.with.ref, "${{ inputs.revision || github.sha }}");
     }
   }
   assert.deepEqual(workflow.permissions, { contents: "read" });

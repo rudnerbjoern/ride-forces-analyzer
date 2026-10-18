@@ -8,7 +8,10 @@ Every run additionally requires the independent secret-scanning job.
 Pinned tool downloads retry all transfer errors three times, with 30-second
 connection and 120-second per-attempt limits. TLS certificate/revocation checks
 and archive SHA-256 verification remain mandatory; exhausted retries fail the job.
-Every checkout pins the event commit SHA, including when invoked for a release tag.
+Every checkout pins the event commit SHA, or the explicit immutable `revision`
+provided by a reusable release call. Release preparation resolves and validates
+the tag commit before passing it to the full CI suite; package builds and
+publication remain gated on that suite's success for the same commit.
 There is no duplicate CI run on pushes to `main`.
 
 New PR pushes cancel older runs of the same workflow and PR. Manual runs have

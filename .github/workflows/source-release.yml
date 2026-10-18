@@ -15,11 +15,12 @@ concurrency:
   cancel-in-progress: false
 jobs:
   quality:
+    needs: source
     uses: ./.github/workflows/ci.yml
     with:
       full-checks: true
+      revision: ${{ needs.source.outputs.commit }}
   source:
-    needs: quality
     permissions:
       contents: read
       pull-requests: read

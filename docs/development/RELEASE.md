@@ -12,7 +12,7 @@ validation. [Windows setup](SETUP.md) owns the required local checks.
 
 - The tag must exactly equal `v` plus `project.version`. Supported versions are
   three numeric components, optionally followed by an `a`, `b` or `rc` number.
-- The tag, event SHA and checkout must identify the same commit. The commit must
+- The tag, resolved release SHA and source checkout must identify the same commit. The commit must
   be contained in `origin/main` and associated with a merged PR targeting this
   repository's `main`. Full CI, including mandatory Gitleaks history scanning,
   must pass for that same revision.
@@ -39,8 +39,9 @@ current workflow from `main` with the `tag` input, for example:
 gh workflow run source-release.yml --ref main -f tag=v0.2.0
 ```
 
-Quality checks use the current workflow revision. Source and Windows downloads
-are rebuilt from the resolved tagged commit, with the same ancestry, merged-PR,
+Quality checks use the current workflow definition and check out the resolved
+tagged commit. Source and Windows downloads are rebuilt from that same commit,
+with the same ancestry, merged-PR,
 version and checksum gates. Concurrent runs for the same tag are serialized.
 Release ZIP artifacts are downloaded without automatic decompression so their
 original filenames, bytes and checksums remain intact. Existing releases are
