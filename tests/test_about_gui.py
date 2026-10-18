@@ -2,6 +2,8 @@
 
 # cspell:words Über Unabhängiges Projekt Schließen
 
+from xml.etree.ElementTree import fromstring
+
 from PySide6.QtWidgets import QApplication, QLabel, QPushButton
 
 from ride_forces_analyzer import __version__
@@ -20,7 +22,10 @@ def test_about_dialog_identity_translation_and_reuse(explorer_window: ExplorerWi
     for value in (__version__, "Björn Rudner", "GPL", "CC BY-SA 4.0", "not affiliated"):
         assert value in text
     assert any(
-        label.openExternalLinks() and "https://rideforces.com/" in label.text() for label in labels
+        anchor.get("href") == "https://rideforces.com/"
+        for label in labels
+        if label.openExternalLinks()
+        for anchor in fromstring(f"<div>{label.text()}</div>").iter("a")
     )
     window.language.setCurrentIndex(1)
     window.appearance.setCurrentIndex(1)

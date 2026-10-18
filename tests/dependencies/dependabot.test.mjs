@@ -6,6 +6,11 @@ import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
 import test from "node:test";
 
+// Let Windows PowerShell discover its own modules when invoked from PowerShell 7.
+const windowsPowerShellEnvironment = Object.fromEntries(
+  Object.entries(process.env).filter(([name]) => name.toLowerCase() !== "psmodulepath"),
+);
+
 // Reuse the existing, locked CSpell YAML consumer; add no test dependency.
 const project = createRequire(import.meta.url);
 const configConsumer = createRequire(project.resolve("cspell-config-lib"));
@@ -180,7 +185,7 @@ ConvertTo-Json -Compress -InputObject $global:recorded
     for (const [preview, exit] of [["true", 0], ["false", 0], ["true", 1]]) {
       const result = spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script], {
         encoding: "utf8", timeout: 30000,
-        env: { ...process.env, RELEASE_TAG: "v0.1.0", RELEASE_SHA: "a".repeat(40),
+        env: { ...windowsPowerShellEnvironment, RELEASE_TAG: "v0.1.0", RELEASE_SHA: "a".repeat(40),
           RELEASE_PREVIEW: preview, FAKE_EXIT: String(exit), WINDOWS_EXE: "app.exe",
           WINDOWS_STANDARD: "standard.zip", WINDOWS_COMPLETE: "complete.zip" },
       });
@@ -221,7 +226,7 @@ test("Actual release artifact verifier rejects a modified Windows download", asy
     await writeFile(script, `$ErrorActionPreference = 'Stop'\nfunction git {\n $global:LASTEXITCODE = 0\n if ($args[0] -eq 'rev-parse') { $env:RELEASE_SHA }\n}\n${body}\nWrite-Output 'Artifact verification passed'\n`);
     const run = () => spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script], {
       cwd: directory, encoding: "utf8", timeout: 30000,
-      env: { ...process.env, RELEASE_TAG: "v0.1.0", RELEASE_SHA: "a".repeat(40), RELEASE_PREVIEW: "true",
+      env: { ...windowsPowerShellEnvironment, RELEASE_TAG: "v0.1.0", RELEASE_SHA: "a".repeat(40), RELEASE_PREVIEW: "true",
         WINDOWS_EXE: "app.exe", WINDOWS_STANDARD: "standard.zip", WINDOWS_COMPLETE: "complete.zip" },
     });
     const valid = run();
