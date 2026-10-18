@@ -7,40 +7,81 @@ and the partial-M6 boundary.
 
 ## Verified scope
 
-All five profiles support landscape 3840×2160 and portrait 2160×3840, complete
-geometry/labels, signed forces, missing tilt, smoothing and replay clocks.
-Previews match production frames at the exact selected source sample, independently
-of output fps. Both aspects persist in presets/jobs; mixed-aspect batches work.
+All five profiles support landscape 3840×2160 and portrait 2160×3840, signed forces,
+missing tilt, smoothing and replay clocks. Exact-source-sample previews match
+production frames independently of video fps. Theme graphics omit Hz/fps labels.
+Vertical defaults positive-down/negative-up; lateral histories advance upward with
+left/right deflection; longitudinal acceleration remains above zero and braking
+below. No display direction changes source values.
 
-Eight real short encodes cover codec × aspect × CPU/GPU preference, with every
-layout represented and German examples included. FFprobe checks codec, dimensions, fps and frame count;
-complete CPU decoding and pixel checks verify alpha, backgrounds and panels.
-Cancellation/corrupt output cannot publish an incomplete file.
-Original-byte preservation is checked for all five recordings.
+G-Orbit uses a square circular-backed region with transparent corners. All force
+tracks are 30 px wide: Vertical/Longitudinal outer radius 290 px, Lateral outer
+radius 212 px with its inner edge preserved. Bold scales, white current bars,
+signed readouts and the right 0–180° orientation semicircle fit both aspects and
+languages. Missing orientation omits its marker. No direction hints, profile
+name or replay footer are rendered.
 
-Native scope: Windows x64, Python 3.14.6 / Qt 6.12.0 / FFmpeg 9.0.2,
-NVIDIA RTX 4070 Ti (driver 617.14), Vulkan ProRes and NVENC H.264;
-`feat/4k-force-exports`, base `d88304e25dc67b9c0cec6ffe9c55f03d4d74e66b`,
-plus rendering/export UI/test changes. Locked dependencies are unchanged.
+Independent positive/negative peak envelopes hold for 1.5 source-time seconds,
+release at 1 g/s, restart at new/repeated extremes and reset at gaps or selection
+start. Fractional source positions and arbitrary query order are covered. Muted
+peak bars and alpha-65 arc fills are checked against actual RGBA pixels, alongside
+opaque current bars, background transparency and physical force directions.
+
+Eight representative short encodes cover codec × aspect × CPU/GPU preference,
+with all layouts represented. Codec, dimensions, fps, frame count, complete CPU
+decode, alpha and opaque backgrounds are checked. Native assistant lifecycle,
+language switching and controlled 4K-equivalent layouts retain focused coverage.
+Original recordings and locked dependencies are unchanged.
+Each layout now owns its renderer and region metadata in a separate built-in
+module. Registry coverage checks every persisted profile, and a substituted custom
+renderer verifies that placement/scaling does not depend on concrete layout classes.
+The [layout API](../development/EXPORT_LAYOUTS.md) documents the extension contract.
+Visual design constants are named and described at the start of each profile,
+including independent portrait styling. Regression coverage checks individual
+font/palette overrides without affecting other layouts, configurable peak timing
+and rejection of invalid hold/release values. Default appearance remains unchanged.
+
+## Local acceptance evidence
+
+Native Windows x64, Python 3.14.6 / Qt 6.12.0 / FFmpeg 9.0.2;
+`feat/export-theme-improvements`, base `661ff4cc84a234a4ca4302e4a88dc338eab24711`,
+plus theme rendering, previews, assistant and reference/test/documentation changes.
 
 ```text
-python -m pytest tests/test_rendering.py tests/test_export_preview.py tests/test_export_gui.py tests/test_export_batches.py -q
+uv lock --check
+uv run --locked ruff check .
+uv run --locked ruff format --check src tests
+uv run --locked mypy src
+npm run typecheck
+npm run test:types
+npm run test:dependencies
+node --test tests/ci/changes.test.mjs
+uv run --locked pytest --basetemp=.tmp/delivery-pytest
+npm run test:docs
 ```
 
-Pure frame/glyph checks retain complete layout/aspect coverage. Exact-sample
-preview parity is rendered once per aspect; a lightweight renderer spy verifies
-30/50/60 fps cursor independence. Shared GUI cancellation is tested once, while
-the existing picker test covers layout-specific inversion controls.
-Current focused verification is scoped below; full-recording compatibility remains
-separate from the reduced integration matrix.
+Results on 2026-10-18: all 1,442 application tests passed in 213.95 s,
+including per-layout style configuration and independent portrait settings.
+Lock consistency, lint/format (91 files), mypy (58 source files), strict Pyright,
+11 type-contract tests, 15 dependency-contract tests, 41 CI-routing tests and
+documentation checks (65 link tests plus Markdown/spelling) passed.
+The toolchain used uv 0.13.0 and pinned native Node 26.11.1.
+Actual full-run output: `.tmp/delivery-full-check.log`.
+Fourteen representative full-canvas RGBA frames matched the pre-refactor hashes
+byte-for-byte, covering every layout, both aspects, English/transparent and
+German/opaque output, with multiple G-Orbit source positions. All eleven reference
+PNG hashes also matched after regeneration. Comparison evidence:
+`.tmp/layout-constants-equivalence.log` and `.tmp/layout-baseline.json`.
+The reference PNGs use fixed Manta sample 4782,
+11-sample smoothing and the unchanged source hash; the final G-Orbit image was
+visually inspected. Reference regeneration command:
+`uv run --locked python scripts/render_export_reference.py`.
+Temporary reference runner evidence: `.tmp/layout-constants-*.log`.
 
-Test-scope verification: native Windows/Python 3.14.6/Qt 6.12.0/FFmpeg 9.0.2,
-test-only changes based on fc759bb2c94a4fbf254eaa84d59e9f28bfd4424c.
-`uv run --locked pytest tests/test_rendering.py tests/test_export_preview.py tests/test_i18n.py tests/test_export_gui.py tests/test_export_batches.py --basetemp=.tmp/test-scope-pytest -q --durations=10`
-passes 331 cases in 83.83 s. All nine batch cases pass for the final file content;
-changed-test Ruff/format and strict Pyright pass. Output:
-`.tmp/test-scope-*.log`. No runtime, dependency or fixture change, full application
-run or hosted CI result is implied by this focused evidence.
+Local acceptance covers the complete application suite and the changed theme,
+layout and documentation scope. It does not establish a new full-recording
+render, physical 4K desktop inspection or hosted CI result. Actual long-recording
+and editor compatibility remains scoped below.
 
 ## Full-recording compatibility evidence
 

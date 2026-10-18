@@ -62,7 +62,7 @@ def render_reference(output: Path) -> None:
             fps=50,
             window_seconds=12.0,
             output="transparent",
-            invert_vertical=layout == "column",
+            invert_vertical=True,
             invert_lateral=layout == "column",
         )
         timeline = prepare_export(data, settings, first, last)

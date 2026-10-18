@@ -95,7 +95,7 @@ def test_export_dialog_tracks_loaded_source_and_range(explorer_window: ExplorerW
     dialog.profile_buttons[0].click()
     assert dialog.profile_buttons[0].isChecked()
     assert dialog.pages.currentIndex() == 0 and not dialog.start.isVisible()
-    assert not dialog.flip_vertical.isChecked() and not dialog.flip_lateral.isChecked()
+    assert dialog.flip_vertical.isChecked() and not dialog.flip_lateral.isChecked()
     wait_until(lambda: dialog.preview_result is not None)
     dialog.interval.setCurrentIndex(1)
     wait_until(lambda: dialog.preview_result is not None)
@@ -108,12 +108,13 @@ def test_export_dialog_tracks_loaded_source_and_range(explorer_window: ExplorerW
     dialog.back.click()
     assert dialog.pages.currentIndex() == 0
     dialog.layout_profile.setCurrentIndex(4)
-    assert dialog.flip_vertical.isChecked() and dialog.flip_lateral.isChecked()
+    assert dialog.flip_vertical.isChecked() and not dialog.flip_lateral.isChecked()
     dialog.layout_profile.setCurrentIndex(3)
-    assert not dialog.flip_vertical.isEnabled() and not dialog.flip_lateral.isEnabled()
+    assert dialog.flip_vertical.isEnabled() and not dialog.flip_lateral.isEnabled()
+    assert dialog.flip_vertical.isChecked()
     dialog.layout_profile.setCurrentIndex(0)
-    assert dialog.flip_vertical.isEnabled() and dialog.flip_lateral.isEnabled()
-    assert not dialog.flip_vertical.isChecked() and not dialog.flip_lateral.isChecked()
+    assert dialog.flip_vertical.isEnabled() and not dialog.flip_lateral.isEnabled()
+    assert dialog.flip_vertical.isChecked() and not dialog.flip_lateral.isChecked()
     dialog.close()
 
 

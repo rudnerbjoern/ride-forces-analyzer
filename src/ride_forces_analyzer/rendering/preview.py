@@ -61,11 +61,21 @@ def build_previews(
             else replace(
                 settings,
                 layout=layout,
-                invert_vertical=layout == "column",
+                invert_vertical=True,
                 invert_lateral=layout == "column",
             )
         )
-        frame = OverlayRenderer(replace(timeline, settings=profile)).render_sample(sample)
+        channels = tuple(
+            replace(channel, inverted=profile.invert_vertical)
+            if index == 0
+            else replace(channel, inverted=profile.invert_lateral)
+            if index == 1
+            else channel
+            for index, channel in enumerate(timeline.channels)
+        )
+        frame = OverlayRenderer(
+            replace(timeline, settings=profile, channels=channels),
+        ).render_sample(sample)
         canvas = backdrop.resize(frame.size, Image.Resampling.NEAREST)
         image = (
             Image.alpha_composite(canvas, frame)

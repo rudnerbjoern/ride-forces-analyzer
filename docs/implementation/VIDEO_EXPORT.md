@@ -1,5 +1,11 @@
 # 4K ride overlay export
 
+Layout drawing is split into individual built-in modules with a small renderer
+protocol and explicit registration. See the [layout API](../development/EXPORT_LAYOUTS.md)
+for extension steps; persisted profile keys and output appearance remain unchanged.
+Each layout's named, commented constants define its visual styling, including its
+portrait variants and, for G-Orbit, peak timing. Shared renderers use those values.
+
 <!-- cspell:words qscale -->
 
 ## Owner scope
@@ -46,24 +52,61 @@ FFV1 is only evaluated, with size/import limits in the validation report.
 - Transparent ProRes 4444 MOV is the default; opaque H.264 MP4 is independent.
   RGBA Pillow frame generation and external FFmpeg encoding remain separate.
 - One shared source position and centered cursor in each time plot; configurable
-  1–60 s context, default 12. Compact profiles show three forces plus numeric tilt;
+  1–60 s context, default 12. Compact time plots show three forces plus numeric tilt;
   the original column includes a fourth orientation plot. G-Orbit uses independent
-  signed gauges instead of time plots; it never reconstructs attitude from forces.
+  signed concentric force arcs instead of time plots: vertical left, longitudinal
+  right and lateral on the upper inner semicircle. A separate right orientation
+  semicircle carries a marker at the measured angle (0° top, 90° right, 180° bottom),
+  without stretching the source's 0–180° range or reconstructing attitude from
+  forces. Missing tilt has no marker. G-Orbit has no replay footer. Its square
+  region uses a circular translucent background with fully transparent corners.
+  All force arcs are 30 px thick at landscape size. Vertical and Longitudinal
+  extend inward from outer radius 290 px; Lateral extends outward to radius
+  212 px while retaining its inner edge. Scale numbers are bold. White 6 px
+  current-value bars cross the tracks with dark 12 px outlines. Portrait output
+  scales all dimensions proportionally. Numeric readouts sit inside the arcs.
+- G-Orbit holds positive and negative peaks independently for 1.5 source-time
+  seconds, then releases toward zero at 1 g/s, never below the current magnitude.
+  Reaching the held value again restarts its hold; a new larger peak replaces it
+  immediately. Peak tracks start at the prepared interval's first sample and reset
+  on missing data. Random-access previews and video frames use the same immutable
+  source-time envelopes, independent of query order and export fps.
+  Peak bars are 4 px wide with dark outlines, using muted cyan/green/orange
+  (#008cac/#24a65e/#ad6c2e). Corresponding arc fills use alpha 65/255, composited
+  over the track; opaque current arcs and white current markers remain on top.
 - Compact panel RGBA is (7,15,25,210), with transparent surroundings and opaque
   vivid cyan/green/orange data, outlined text/curves and visible -1/0/+1 references.
   Flow Ribbon region is (384,1692,3072,360); Corner Instruments (2808,140,840,1120);
-  Capsule (768,108,2304,300); G-Orbit (192,1260,1120,792), in x/y/width/height pixels.
+  Capsule (768,108,2304,300); G-Orbit (192,1260,800,800), in x/y/width/height pixels.
+  Portrait G-Orbit is (240,2412,1188,1188), retaining circular proportions.
   Rounded corners retain transparency. Opaque output composites panels over black.
 - Configurable 24/25/30/50/60 video fps, default 50. Source sample time remains
   index/rate; fractional output positions interpolate adjacent values. Inclusive
   source ranges include the final sample interval; duration rounds up to a frame.
 - Export calibrated channels at the current centered-mean setting. Force bounds
   use selected extrema plus 5% outward padding and include -1/0/+1 g labels.
-  Column vertical/lateral inversion defaults on; compact charts default positive-up.
-  G-Orbit gauge directions are fixed and the corresponding inversion controls disabled.
+  Every layout defaults to vertical positive-down (seat pressure) and negative-up
+  (lifting). G-Orbit uses a left semicircle with zero at its equator and signed
+  extremes at the bottom/top. Vertical direction remains manually reversible in
+  every layout. Saved presets retain their explicit vertical direction.
+  Time advances left-to-right on horizontal axes and bottom-to-top on vertical
+  axes: left/bottom is past, right/top is future. Lateral histories use a vertical
+  time axis advancing upward, with negative
+  (left) forces left of the centered zero axis and positive (right) forces right.
+  Current-only lateral instruments indicate left/right horizontally; G-Orbit uses
+  its upper semicircle, centered at the top. Both
+  directions share the larger absolute selected bound, preserving equal scale.
+  This direction is fixed across all themes/aspects/previews. Legacy lateral
+  inversion settings remain readable in presets but do not reverse the display;
+  the assistant disables lateral inversion. Numeric signs remain unchanged.
   Axis inversion does not negate source values or change right/left/braking signs.
-- Replay labels retain source sample-counter notation; Hz and video fps are
-  separate. Default range uses effective start/end markers; selection and entire
+  Longitudinal acceleration (positive) always appears above zero; deceleration /
+  braking (negative) always appears below zero, in histories and current-only
+  instruments across all themes/aspects. Longitudinal direction is not invertible.
+- Replay labels retain source sample-counter notation. Theme graphics omit sample
+  rate (Hz) and export frame rate (fps); neither describes the underlying POV
+  video's frame rate. Technical rates remain in settings/metadata and encoding.
+  Default range uses effective start/end markers; selection and entire
   recording are selectable. Context outside the exported interval stays blank.
 - Orientation is the angle of current normalized source gravity to normalized
   stored vertical (0–180°), with clipped cosine. It is not yaw or GPS heading.

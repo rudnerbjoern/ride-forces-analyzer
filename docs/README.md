@@ -28,6 +28,8 @@ at the same strong G-force peak, with complete placement and enlarged details.
   [models](development/CANONICAL_MODELS.md), [decoder](development/STRICT_DECODING.md),
   [motion](development/MOTION_PARSING.md), [metadata/GPS](development/OPTIONAL_PARSING.md).
 - [Analysis APIs](development/ANALYSIS_MODELS.md).
+- [Export layout API](development/EXPORT_LAYOUTS.md): per-layout modules,
+  renderer contract and explicit plugin registration.
 - [Recording catalog](development/RECORDINGS.md): authorization, filenames and hashes.
 - [Dependency inventory](validation/DEPENDENCIES.md) and
   [dated security boundary](validation/DEPENDABOT.md).

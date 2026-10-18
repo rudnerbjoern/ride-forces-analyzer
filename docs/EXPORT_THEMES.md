@@ -15,6 +15,15 @@ The overview preserves placement in the full 3840×2160 landscape canvas.
 Checkerboards illustrate transparent space and translucent panels; they are
 not exported. Detail views below enlarge each instrument region.
 These are actual production-renderer frames, not interface mockups.
+All layouts default to positive vertical forces below zero (seat pressure) and
+negative forces above zero (lifting), with unchanged signed readouts.
+Lateral histories advance upward in time and deflect left/right around a
+centered zero axis. G-Orbit shows the current lateral force on an upper inner
+semicircle: negative left, positive right, with equal scale in both directions.
+Longitudinal acceleration is always above zero and braking below zero, including
+G-Orbit's right semicircle; numeric signs remain unchanged.
+Theme graphics contain no Hz/fps labels; source sample rate and overlay export
+frame rate are technical settings, not the frame rate of the underlying video.
 
 ## Flow Ribbon
 
@@ -44,8 +53,19 @@ A slim strip at the top presents the same three channels, replay time and tilt.
 
 ## G-Orbit
 
-A lower-left gauge emphasizes the signed vertical force, with lateral and
-longitudinal indicators alongside it. The ring shows force, not vehicle attitude.
+A lower-left instrument combines force arcs around one center: vertical on the
+outer left half, longitudinal on the outer right half and lateral on the upper
+inner half. A separate right semicircle carries a white orientation marker,
+showing 0° at the top, 90° right and 180° below. Missing orientation
+has no marker. Channel names and signed readouts accompany the arcs; direction
+hints and the replay footer are omitted.
+The instrument occupies a square region with a circular translucent background;
+the surrounding corners remain transparent in overlay output.
+The profile name appears in the selector, not in the exported graphic.
+All three force tracks are 30 px thick, with bold scales and white current-value
+bars. Narrower, muted peak bars hold each direction's maximum for 1.5 seconds,
+then release at 1 g/s. Subtle translucent fills extend to the held peaks;
+numeric readouts continue to show the current forces.
 
 ![G-Orbit detail with a cyan −3.72 g vertical gauge and signed side indicators](images/manta-orbit-detail.png)
 
@@ -82,8 +102,8 @@ The [script](../scripts/render_export_reference.py) replaces the eleven referenc
 PNGs in `docs/images` and writes `manta-reference.json` with the source identity,
 sample, values and settings. It always uses **zero-based source sample 4782**,
 11-sample smoothing, English labels, landscape, 50 fps, a 12-second window and
-the original marker range. Column inversion stays enabled; compact layouts stay
-positive-up. It never searches for a new maximum. The source SHA-256 must match
+the original marker range. Vertical defaults positive-down; lateral defaults
+left/right and longitudinal positive-up. It never searches for a new maximum. The source SHA-256 must match
 the authorized Manta recording or generation stops.
 
 To inspect changes before replacing the documentation images:

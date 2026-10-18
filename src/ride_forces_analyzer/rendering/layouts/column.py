@@ -1,0 +1,227 @@
+"""Original four-panel force/orientation column."""
+
+# cspell:words WINDIR segoeui
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+from PIL import Image, ImageDraw, ImageFont
+
+if TYPE_CHECKING:
+    from ..model import ExportChannel, ExportTimeline
+
+from math import ceil, floor
+import os
+from pathlib import Path
+from ride_forces_analyzer.explorer import format_sample_time
+from ride_forces_analyzer.i18n import tr
+from .common import lateral_x
+from .contracts import LayoutPlugin
+
+FONT_FILE = "segoeui.ttf"  # Regular Windows font file.
+FONT_SIZE = 25  # Hint, scale and clock text size.
+LARGE_FONT_SIZE = 37  # Channel title and current-value text size.
+CANVAS_WIDTH = 3840  # Reference landscape canvas width.
+NATIVE_SIZE = (960, 2160)  # Native column drawing dimensions.
+LANDSCAPE_REGION = (2880, 0, 960, 2160)  # Landscape placement: x, y, width, height.
+PORTRAIT_REGION = (612, 300, 1440, 3240)  # Portrait placement: x, y, width, height.
+BACKGROUND_COLOR = (0, 0, 0, 255)  # Opaque column background RGBA.
+CHANNEL_COLORS = (
+    "#8edce1",
+    "#ebd36a",
+    "#dba8e0",
+    "#e9a571",
+)  # Vertical, lateral, longitudinal and orientation colors.
+PANEL_HEIGHT = 540  # Vertical spacing and height per instrument.
+LEGEND_LINE = (26, 37, 63, 37)  # Color legend line relative to panel top.
+LEGEND_WIDTH = 4  # Color legend line thickness.
+TITLE_POSITION = (76, 15)  # Channel title relative to panel top.
+HINT_POSITION = (76, 64)  # Channel hint relative to panel top.
+HINT_COLOR = "#9da2a8"  # Channel hint text color.
+PLOT_BOUNDS = (94, 116, 934, 474)  # Plot rectangle relative to panel top.
+PLOT_COLOR = "#141214"  # Plot fill color.
+PLOT_OUTLINE_COLOR = "#85858a"  # Plot border color.
+RULE_WIDTH = 2  # Plot border, grid and cursor thickness.
+GRID_COLOR = "#3b393e"  # Force grid color.
+SCALE_COLOR = "#dddddd"  # Scale and clock text color.
+SCALE_TOP_GAP = 8  # Gap above lateral-axis numbers.
+SCALE_LEFT_GAP = 12  # Gap before vertical-axis numbers and time label.
+CURSOR_COLOR = "#dddddd"  # Current-time cursor color.
+VALUE_POSITION = (934, 17)  # Current-value anchor relative to panel top.
+VALUE_COLOR = "#eeeeee"  # Current-value text color.
+TRACE_WIDTH = 3  # Force trace thickness.
+SINGLE_POINT_RADIUS = 2  # Marker radius for a single available sample.
+CLOCK_TOP = 484  # Clock text offset from panel top.
+
+WIDTH = CANVAS_WIDTH
+COLUMN_WIDTH, HEIGHT = NATIVE_SIZE
+COLUMN_X = WIDTH - COLUMN_WIDTH
+
+
+LATERAL_SCALE_ANCHOR = "ms"  # Centered baseline anchor above lateral scale ticks.
+LEFT_TEXT_ANCHOR = "rm"  # Right-middle anchor for labels before plots.
+VALUE_TEXT_ANCHOR = "ra"  # Right-aligned current value anchor.
+CLOCK_TEXT_ANCHOR = "ma"  # Centered clock label anchor.
+
+
+class ColumnRenderer:
+    def __init__(self, timeline: ExportTimeline) -> None:
+        self.timeline = timeline
+        font = Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts" / FONT_FILE
+        self.font = (
+            ImageFont.truetype(str(font), FONT_SIZE)
+            if font.is_file()
+            else ImageFont.load_default(size=FONT_SIZE)
+        )
+        self.large = (
+            ImageFont.truetype(str(font), LARGE_FONT_SIZE)
+            if font.is_file()
+            else ImageFont.load_default(size=LARGE_FONT_SIZE)
+        )
+        self.base = Image.new("RGBA", NATIVE_SIZE, BACKGROUND_COLOR)
+        draw = ImageDraw.Draw(self.base)
+        for row, channel in enumerate(timeline.channels):
+            y = row * PANEL_HEIGHT
+            draw.line(
+                (LEGEND_LINE[0], y + LEGEND_LINE[1], LEGEND_LINE[2], y + LEGEND_LINE[3]),
+                fill=CHANNEL_COLORS[row],
+                width=LEGEND_WIDTH,
+            )
+            draw.text(
+                (TITLE_POSITION[0], y + TITLE_POSITION[1]),
+                tr(channel.name, language=timeline.settings.language),
+                font=self.large,
+                fill=CHANNEL_COLORS[row],
+            )
+            draw.text(
+                (HINT_POSITION[0], y + HINT_POSITION[1]),
+                tr(channel.hint, language=timeline.settings.language),
+                font=self.font,
+                fill=HINT_COLOR,
+            )
+            box = self.plot_box(row)
+            draw.rectangle(box, fill=PLOT_COLOR, outline=PLOT_OUTLINE_COLOR, width=RULE_WIDTH)
+            for tick in channel.ticks:
+                if row == 1:
+                    px = lateral_x(channel, tick, box[0], box[2])
+                    draw.line((px, box[1], px, box[3]), fill=GRID_COLOR, width=RULE_WIDTH)
+                    draw.text(
+                        (px, box[1] - SCALE_TOP_GAP),
+                        f"{tick:g}{channel.unit}",
+                        font=self.font,
+                        fill=SCALE_COLOR,
+                        anchor=LATERAL_SCALE_ANCHOR,
+                    )
+                    continue
+                py = self.value_y(channel, tick, row)
+                draw.line((box[0], py, box[2], py), fill=GRID_COLOR, width=RULE_WIDTH)
+                draw.text(
+                    (box[0] - SCALE_LEFT_GAP, py),
+                    f"{tick:g}{channel.unit}",
+                    font=self.font,
+                    fill=SCALE_COLOR,
+                    anchor=LEFT_TEXT_ANCHOR,
+                )
+            if row == 1:
+                cursor = (box[1] + box[3]) / 2
+                draw.line((box[0], cursor, box[2], cursor), fill=CURSOR_COLOR, width=RULE_WIDTH)
+                draw.text(
+                    (box[0] - SCALE_LEFT_GAP, cursor),
+                    tr("Time ↑", language=timeline.settings.language),
+                    font=self.font,
+                    fill=SCALE_COLOR,
+                    anchor=LEFT_TEXT_ANCHOR,
+                )
+            else:
+                cursor = (box[0] + box[2]) / 2
+                draw.line((cursor, box[1], cursor, box[3]), fill=CURSOR_COLOR, width=RULE_WIDTH)
+
+    @staticmethod
+    def plot_box(row: int) -> tuple[int, int, int, int]:
+        y = row * PANEL_HEIGHT
+        return (PLOT_BOUNDS[0], y + PLOT_BOUNDS[1], PLOT_BOUNDS[2], y + PLOT_BOUNDS[3])
+
+    def value_y(self, channel: ExportChannel, value: float, row: int) -> float:
+        _, top, _, bottom = self.plot_box(row)
+        fraction = (value - channel.low) / (channel.high - channel.low)
+        if not channel.inverted:
+            fraction = 1 - fraction
+        return top + fraction * (bottom - top)
+
+    def render_column(self, frame: int) -> Image.Image:
+        return self.render_position(self.timeline.sample_position(frame))
+
+    def trace_point(
+        self,
+        channel: ExportChannel,
+        value: float,
+        fraction: float,
+        row: int,
+    ) -> tuple[float, float]:
+        left, top, right, bottom = self.plot_box(row)
+        if row == 1:
+            return lateral_x(channel, value, left, right), bottom - fraction * (bottom - top)
+        return left + fraction * (right - left), self.value_y(channel, value, row)
+
+    def render_position(self, position: float) -> Image.Image:
+        image = self.base.copy()
+        draw = ImageDraw.Draw(image)
+        rate = self.timeline.sample_rate
+        half = self.timeline.settings.window_seconds * rate / 2
+        left = position - half
+        first = max(self.timeline.first, ceil(left))
+        last = min(self.timeline.last, floor(position + half))
+        for row, channel in enumerate(self.timeline.channels):
+            value = self.timeline.value_at(channel, position)
+            text = (
+                tr("Unavailable", language=self.timeline.settings.language)
+                if value is None
+                else tr(
+                    "{0:.2f} {1}",
+                    value,
+                    channel.unit,
+                    language=self.timeline.settings.language,
+                )
+            )
+            draw.text(
+                (VALUE_POSITION[0], row * PANEL_HEIGHT + VALUE_POSITION[1]),
+                text,
+                font=self.large,
+                fill=VALUE_COLOR,
+                anchor=VALUE_TEXT_ANCHOR,
+            )
+            x0, _, x1, _ = self.plot_box(row)
+            points: list[tuple[float, float]] = []
+            for index in range(first, last + 1):
+                sample = channel.values[index]
+                if sample is None:
+                    if len(points) > 1:
+                        draw.line(points, fill=CHANNEL_COLORS[row], width=TRACE_WIDTH)
+                    points = []
+                    continue
+                points.append(self.trace_point(channel, sample, (index - left) / (2 * half), row))
+            if len(points) > 1:
+                draw.line(points, fill=CHANNEL_COLORS[row], width=TRACE_WIDTH)
+            elif points:
+                px, py = points[0]
+                draw.ellipse(
+                    (
+                        px - SINGLE_POINT_RADIUS,
+                        py - SINGLE_POINT_RADIUS,
+                        px + SINGLE_POINT_RADIUS,
+                        py + SINGLE_POINT_RADIUS,
+                    ),
+                    fill=CHANNEL_COLORS[row],
+                )
+            clock = format_sample_time(round(position) - self.timeline.replay_origin, rate)
+            draw.text(
+                ((x0 + x1) / 2, row * PANEL_HEIGHT + CLOCK_TOP),
+                clock,
+                font=self.font,
+                fill=SCALE_COLOR,
+                anchor=CLOCK_TEXT_ANCHOR,
+            )
+        return image
+
+
+PLUGIN = LayoutPlugin("column", LANDSCAPE_REGION, PORTRAIT_REGION, ColumnRenderer)

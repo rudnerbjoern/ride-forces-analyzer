@@ -28,7 +28,16 @@ def test_portrait_contains_complete_region(manta: ExplorerData, layout: str) -> 
     assert x > 0 and y > 0 and x + width < frame.width and y + height < frame.height
     region = renderer.render_region(0)
     assert region.size == (width, height)
-    assert frame.getchannel("A").getbbox() == (x, y, x + width, y + height)
+    bounds = frame.getchannel("A").getbbox()
+    if layout == "orbit":
+        assert width == height and bounds is not None
+        assert x <= bounds[0] < x + 10 and y <= bounds[1] < y + 10
+        assert x + width - 10 < bounds[2] <= x + width
+        assert y + height - 10 < bounds[3] <= y + height
+        assert frame.getchannel("A").getpixel((x, y)) == 0
+        assert frame.getchannel("A").getpixel((x + width - 1, y + height - 1)) == 0
+    else:
+        assert bounds == (x, y, x + width, y + height)
     expected = renderer.render_sample(3500).crop((x, y, x + width, y + height))
     background = Image.new("RGBA", region.size, "black")
     assert (
@@ -65,11 +74,11 @@ def test_previews_match_production_at_exact_graph_sample(
             else replace(
                 settings,
                 layout=profile.layout,
-                invert_vertical=profile.layout == "column",
+                invert_vertical=True,
                 invert_lateral=profile.layout == "column",
             )
         )
-        actual = OverlayRenderer(replace(timeline, settings=chosen)).render_sample(sample)
+        actual = OverlayRenderer(prepare_export(manta, chosen, first, last)).render_sample(sample)
         expected = (
             Image.alpha_composite(Image.new("RGBA", actual.size, "#162533"), actual)
             .resize((540, 960) if aspect == "portrait" else (960, 540), Image.Resampling.LANCZOS)
