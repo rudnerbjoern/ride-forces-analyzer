@@ -1,6 +1,10 @@
 # Documentation
 
 [Project README](../README.md) explains the application and startup.
+The analyzer processes `.forces` recordings made with the external
+[Ride Forces app](https://rideforces.com/) for iPhone or Apple Watch.
+This is an independent project, with no affiliation with, endorsement from or
+sponsorship by that app or its developer.
 [Roadmap](ROADMAP.md) distinguishes implemented scope from open work.
 [Architecture](architecture/README.md) describes the system in twelve arc42 chapters;
 chapter 9 retains decision status and rationale. Completed requirements, stage plans and

@@ -26,6 +26,16 @@ Invalid model construction fails before window creation. The GUI smoke test star
 the real module in a separate Windows process and exits through the Qt event loop;
 its tests exercise the real bootstrap contract above.
 
+## Optional update discovery
+
+Before normal interaction, the explorer schedules an optional update check after
+the event loop starts. A controller applies the saved opt-in, daily attempt limit
+and skipped version. A worker calls the Qt-independent release service; only the
+GUI thread updates status or opens a release notice. Closing the main window
+suppresses late results. Network operations have bounded reads/timeouts and never
+block the GUI or recording processing. Manual checks in About bypass the daily
+interval and show errors; automatic errors are silent. No installer is invoked.
+
 ## Read-only import and failures
 
 ```mermaid

@@ -5,8 +5,15 @@ See the [roadmap](../ROADMAP.md) and [analysis concepts](../architecture/08_conc
 
 ## Loading and presentation
 
+- The toolbar's About dialog shows package version, project purpose, copyright,
+  licenses and external project/source-app links. It supports live English/German
+  translation and light/dark appearance, and states independence from Ride Forces.
 - Open local `.forces` through the lossless M2 service in a background worker.
   Cancelled/failed imports retain the last usable recording; shutdown drains workers.
+  Successful file-dialog imports remember their folder across restarts in the local
+  `preferences.sqlite3` database beside the export database. Missing folders or
+  unreadable preferences use the dialog's default directory; cancellation and failed
+  imports preserve the previous folder. Preference write failures do not block imports.
 - Display every sample in three colored, independently visible curves. Raw x/y/z
   retains unknown units. Calibrated forces defaults on whenever source directions
   are usable; otherwise raw display includes a calibration diagnostic.

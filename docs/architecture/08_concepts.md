@@ -99,5 +99,17 @@ precedes exclusive publication. Manual Onride alignment remains external.
 SQLite stores versioned export presets and immutable batch snapshots, not original
 recordings or media. Sequential jobs reimport/check source hashes; per-job failures
 continue, cancellation retains completed files and discards incomplete work.
+An independent local `preferences.sqlite3` stores separate folders for the last
+successful file-dialog import and video export. Missing folders or unavailable
+storage fall back to native dialog defaults without blocking imports or exports.
+The same preferences store retains the last selected UI language and appearance;
+invalid or unavailable values fall back to the preferred OS display language
+(German when German, otherwise English) and system appearance. System appearance
+follows Qt's effective OS color scheme and change notifications; unknown means dark.
+Explicit light/dark preferences override OS changes.
+Update preferences store the optional daily startup check, last attempt time and
+skipped release tag. Public release lookup and version comparison live outside
+widgets; UI workers handle transport scheduling and present the result. See
+[release discovery](../development/RELEASE.md#in-application-update-discovery).
 See [export](../implementation/VIDEO_EXPORT.md) and
 [batch](../implementation/EXPORT_BATCHES.md) contracts.

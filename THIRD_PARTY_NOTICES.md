@@ -33,12 +33,13 @@ module terms. The project's or-later grant does not relicense GPL-3.0-only
 dependencies or guarantee that the combined application can select a future GPL
 version while retaining the same dependencies.
 
-Installed PySide6 metadata lists only one commercial-license notice per distribution;
-no complete Qt open-source/third-party notice collection was found in the installed
-PySide6 package. **Before binary distribution**, collect the matching Qt/PySide6
-license texts, third-party notices and corresponding sources. Metadata is not enough.
-WebEngine/Pdf are installed transitively but not imported by application source.
-If packaged, their additional components, including Chromium, need their own audit.
+Installed PySide6 metadata does not supply the full Qt notice collection.
+[QT-NOTICES.txt](packaging/QT-NOTICES.txt) supplies original license and attribution
+texts from the official Qt/PySide 6.12.0 source archives for the relevant modules.
+The existing packager includes that text in the EXE and both ZIPs. The source
+archives are pinned in `packaging/redistribution.json` for source delivery.
+Qt PDF/Chromium is not covered by those archives: PyInstaller collects a PDF
+plugin even without a direct application import. Its sources/notices remain open.
 
 NumPy has 20 license-related files. SciPy's main notice covers OpenBLAS, LAPACK
 and GCC runtime components, including
@@ -77,6 +78,10 @@ this inventory does not establish patent clearance.
 
 These are not application imports. Preserve their terms when redistributing a
 development environment rather than only project source.
+
+PyInstaller 6.22.3 is an optional locked build-group tool (GPLv2-or-later with its
+special distribution/bootloader exception). Its full COPYING text is collected
+in Windows candidates. It does not change the project's GPL-3.0-or-later grant.
 
 | Installed Python tools                                                                                | Observed license                                                    |
 | :---------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------ |
@@ -142,3 +147,14 @@ notice gaps, retain fallback-font provenance, arrange corresponding-source deliv
 notices survive packaging. The five supplied recordings and 14 documentation PNGs
 are CC BY-SA 4.0 under their separate attribution/scope notices. This is
 not installer acceptance, a security scan or a complete embedded-library audit.
+
+The Windows builder now collects installed runtime notice files, the Python
+license and the PyInstaller bootloader license/exception into local candidates.
+The complete candidate additionally retains the exact pinned FFmpeg publisher's
+LICENSE/README and executable build information, plus the static Qt notice text.
+Qt PDF/Chromium and FFmpeg's complete static-library corresponding sources remain
+open; generic upstream links do not supply the missing corresponding sources.
+`packaging/redistribution.json` records these gaps and is shipped with the binaries;
+the package builder reports them without blocking publication. This does not
+resolve or waive the external license/source obligations;
+see [package boundaries](docs/development/RELEASE.md#windows-packages).

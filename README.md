@@ -2,10 +2,15 @@
 
 Explore your coaster rides. See the forces. Bring them into your videos.
 
-Ride Forces Analyzer is a Windows desktop application for recordings exported
-from the **Ride Forces** mobile app. Open a `.forces` file, explore how vertical,
+Ride Forces Analyzer is a Windows desktop application for ride data recorded
+with the [**Ride Forces** app](https://rideforces.com/) on an iPhone or Apple Watch
+and exported as `.forces` files. Open a recording, explore how vertical,
 lateral and longitudinal G-forces change throughout the ride, and turn the data
 into an overlay for your Onride footage.
+
+**Independent project:** Ride Forces Analyzer is developed independently of the
+Ride Forces app and its developer. This project is not affiliated with, endorsed
+by or sponsored by them.
 
 Your recordings stay on your computer. Processing works offline and never
 changes the original files.
@@ -70,8 +75,18 @@ synchronization is not available yet.
 ## Choose your workspace
 
 Switch between **English and German**, and between **dark and light** appearance.
+Language and appearance choices are remembered. Without a saved choice, German
+Windows selects German and other languages select English; **System** appearance
+follows Windows' current light/dark scheme.
 The chart stays central, with display settings, selection and ride details in
 the inspector. Smaller windows let you switch between the chart and inspector.
+
+The **About…** dialog shows version/license information and offers **Check for
+updates…**. Optional startup checks are off by default and run at most once daily
+when enabled. A newer published GitHub release, including a prerelease, offers
+**Open release**, **Later** or **Skip this version**. Update checks send no
+recordings, GPS data or file paths; downloads and installation remain manual.
+Offline use does not require update checks.
 
 ![The same Voltron Nevera recording in the light workspace, with force curves and inspector visible](docs/images/workspace-light.png)
 
@@ -79,7 +94,8 @@ the inspector. Smaller windows let you switch between the chart and inspector.
 
 ## Get started
 
-You need **Windows 10 or 11, 64-bit**, and a recording exported as `.forces`.
+You need **Windows 10 or 11, 64-bit**, and a recording made with the
+[Ride Forces app](https://rideforces.com/) and exported as `.forces`.
 A standalone installer is not available yet. Download or clone this project,
 open PowerShell in its folder and run:
 
@@ -98,6 +114,12 @@ you can open and process recordings offline.
 Video export also needs FFmpeg. Install the supplied version with
 `setup.ps1 -VideoExport`, or select an existing `ffmpeg.exe` in the assistant.
 See the [setup guide](docs/development/SETUP.md) for detailed installation help.
+
+Release packaging provides a standalone Windows EXE, a standard ZIP without
+FFmpeg and a complete ZIP including FFmpeg. No Python installation is needed
+for these packages. Available upstream sources and checksums accompany the files;
+missing third-party source material is recorded in the included license notices.
+The new binary downloads have not yet been published on GitHub.
 
 ## Understanding the display
 
