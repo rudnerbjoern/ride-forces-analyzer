@@ -70,6 +70,7 @@ scroll areas keep all controls reachable at 720×480. Sliders show only their na
 track and handle. Native caption uses a force-trace icon and loaded ride name;
 the application name is not repeated in the toolbar. Unsupported Windows caption
 colors retain system defaults; native window controls remain intact.
+The status bar permanently displays the application version at the bottom right.
 
 Settings → Application selects Dark, Light or System appearance and UI language.
 Save applies and persists both choices; Cancel preserves them. Startup restores

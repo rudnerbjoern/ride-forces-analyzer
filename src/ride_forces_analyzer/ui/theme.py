@@ -49,6 +49,7 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
 QSplitter::handle { background: #101720; }
 QPlainTextEdit { background: #101a27; border: 1px solid #35465c; border-radius: 5px; padding: 6px; }
 QStatusBar { background: #151f2b; color: #a9bdd5; border-top: 1px solid #2b394a; }
+QStatusBar::item { border: none; }
 QProgressBar { border: 0; background: #223044; max-height: 4px; }
 QProgressBar::chunk { background: #4383ff; }
 QToolTip { background: #223044; color: #e3ebf5; border: 1px solid #627d9f; padding: 6px; }

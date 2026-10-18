@@ -4,6 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
+from ride_forces_analyzer import __version__
 from ride_forces_analyzer.i18n import Language, tr
 from .translation import bind, set_ui_language, system_ui_language
 
@@ -449,6 +450,9 @@ class ExplorerWindow(QMainWindow):
         self.progress.hide()
         layout.addWidget(self.progress)
         self.setCentralWidget(body)
+        version_label = QLabel(f"v{__version__}")
+        version_label.setObjectName("applicationVersion")
+        self.statusBar().addPermanentWidget(version_label)
         bind(self.statusBar(), tr("Ready — open a recording"), "message")
         self._set_controls(False)
         self.axis_x.setRange(0, 1)

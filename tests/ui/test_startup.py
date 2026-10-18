@@ -30,6 +30,7 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
 
         from PySide6.QtCore import QTimer
         from PySide6.QtWidgets import QApplication, QLabel, QMainWindow
+        from ride_forces_analyzer import __version__
         from ride_forces_analyzer.i18n import tr
         from ride_forces_analyzer.ui.translation import system_ui_language
 
@@ -54,6 +55,12 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
                 assert not window.windowIcon().isNull()
                 assert all(label.text() != "Ride Forces Analyzer"
                            for label in window.findChildren(QLabel))
+                version = window.findChild(QLabel, "applicationVersion")
+                assert version is not None and version.isVisible()
+                assert version.text() == f"v{__version__}"
+                window.statusBar().showMessage("Working")
+                assert version.isVisible()
+                assert version.x() > window.statusBar().width() / 2
                 available = window.screen().availableGeometry()
                 frame = window.frameGeometry()
                 actual = (window.width(), window.height())
