@@ -16,7 +16,7 @@ explicit scientific provenance are the primary quality goals.
 | Unqualified real sensor interpretation                  | Preserve provisional/unavailable status and known discrepancies                   | [Source comparisons](../validation/APP_REFERENCE.md)                                                             |
 | Desktop interaction                                     | Responsive load/navigation, bounded zoom, reachable wide/compact controls         | Explorer/native GUI suites; [explorer contract](../implementation/RAW_EXPLORER.md)                               |
 | Change UI language or theme                             | Readable text and preserved data/view state                                       | Theme/i18n GUI suites; [localization contract](../development/LOCALIZATION.md)                                   |
-| Render opaque/transparent output                        | Separate frames/encoding, complete geometry/alpha, validated publication          | Rendering/preview/encoder suites; [encoder compatibility boundary](07_deployment_view.md#encoder-installation)   |
+| Render opaque/transparent output                        | Separate frames/encoding, complete geometry/alpha, exclusive publication          | Rendering/preview/encoder suites; [encoder compatibility boundary](07_deployment_view.md#encoder-installation)   |
 | Reopen/run saved batches                                | Durable snapshots, hash checks, independent failures and cooperative cancellation | Storage/batch suites; [batch contract](../implementation/EXPORT_BATCHES.md)                                      |
 
 The maintained regression suites verify current contracts rather than archived

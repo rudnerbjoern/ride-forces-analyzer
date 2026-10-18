@@ -55,8 +55,8 @@ compact profiles to `rendering.layouts`: ribbon, corner cards, capsule or signed
 orbit gauges. The original four-panel column remains available. The encoder
 consumes the selected rectangular region, pads to 4K and
 encodes one transparent ProRes 4444 MOV or independent opaque H.264 MP4.
-Real NVIDIA probes select Vulkan/NVENC or explicit CPU fallback. Every output
-frame is decoded before exclusive publication. Widgets only configure/transport
+Real NVIDIA probes select Vulkan/NVENC or explicit CPU fallback. Completed output
+is published exclusively. Widgets only configure/transport
 background jobs. Manual Resolve alignment is outside the processing path.
 [Export contracts](../implementation/VIDEO_EXPORT.md) and
 [encoder compatibility boundary](07_deployment_view.md#encoder-installation) scope this partial M6 implementation;

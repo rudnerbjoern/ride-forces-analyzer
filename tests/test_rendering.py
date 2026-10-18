@@ -11,6 +11,7 @@ from threading import Event
 from tempfile import TemporaryDirectory
 from collections.abc import Iterator
 from typing import Literal
+from unittest.mock import patch
 
 from PIL import Image
 import pytest
@@ -201,7 +202,13 @@ def test_native_encoder_produces_4k_video_with_verified_alpha(
     timeline = prepare_export(manta, settings, 3600, 3603)
     output = export_directory / ("overlay.mov" if mode == "transparent" else "opaque.mp4")
     progress: list[tuple[int, int]] = []
-    export_video(timeline, output, ffmpeg=ffmpeg, progress=lambda a, b: progress.append((a, b)))
+    with patch(
+        "ride_forces_analyzer.rendering.encoding.subprocess.Popen",
+        wraps=subprocess.Popen,
+    ) as processes:
+        export_video(timeline, output, ffmpeg=ffmpeg, progress=lambda a, b: progress.append((a, b)))
+    # One encoder process, plus the optional GPU capability probe.
+    assert processes.call_count == 1 + int(prefer_gpu)
     assert progress[-1] == (2, 2)
     probe = subprocess.run(
         [
@@ -291,18 +298,6 @@ def test_cancel_during_real_encoding_leaves_no_output(
             progress=cancel_after_frame,
         )
     assert not output.exists()
-
-
-def test_decoder_rejects_corrupt_output(export_directory: Path) -> None:
-    from ride_forces_analyzer.rendering.encoding import validate_video
-
-    ffmpeg = Path(".tmp/ffmpeg/bin/ffmpeg.exe").resolve()
-    if not ffmpeg.is_file():
-        pytest.skip("Native FFmpeg integration requires installed export tools")
-    broken = export_directory / "broken.mov"
-    broken.write_bytes(b"not a video")
-    with pytest.raises(RuntimeError, match="failed decoding"):
-        validate_video(ffmpeg, broken, 1, Event())
 
 
 @pytest.mark.parametrize("layout", ["ribbon", "corners", "capsule"])

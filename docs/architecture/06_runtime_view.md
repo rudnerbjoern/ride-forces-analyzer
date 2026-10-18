@@ -189,8 +189,8 @@ range/profile/aspect/language. A Qt worker prepares/streams frames to FFmpeg; NV
 or NVENC is selected only after an actual encode probe, otherwise CPU is used.
 Signals report backend/progress, completion and failure without blocking widgets.
 Cancellation or window close sets a thread event; incomplete files are discarded.
-The service decodes every encoded frame and checks the frame count before an
-exclusive final publication. No existing file is replaced. The user aligns the
+The service publishes the completed encoder output exclusively.
+No existing file is replaced. The user aligns the
 single exported overlay with an Onride clip externally in Resolve.
 
 ## Saved batch runtime
@@ -208,7 +208,7 @@ sequenceDiagram
     UI->>Queue: Queue snapshot and unique output root
     loop Each recording/preset job
         Queue->>Queue: Reimport, check hash, restore smoothing/range
-        Queue->>Encoder: Render and validate one video
+        Queue->>Encoder: Render and encode one video
         Encoder-->>Queue: Complete output or failure/cancellation
         Queue-->>UI: Progress and per-job result
         Queue->>Queue: Persist incremental run report
