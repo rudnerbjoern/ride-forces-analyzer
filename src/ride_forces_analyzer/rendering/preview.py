@@ -1,4 +1,8 @@
-"""Single-sample export previews using the production renderer, without encoding."""
+"""Single-sample export previews using the production renderer, without encoding.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 # cspell:words LANCZOS
 

@@ -6,6 +6,9 @@ labels: enhancement
 
 # Feature request
 
+Do not attach private recordings or personal data. Report security concerns through
+[SECURITY.md](https://github.com/rudnerbjoern/ride-forces-analyzer/blob/main/SECURITY.md).
+
 ## Problem or use case
 
 <!-- Describe the need. Check existing issues and the roadmap for planned work. -->
@@ -16,5 +19,5 @@ labels: enhancement
 
 ## Scope
 
-<!-- Link a related milestone or requirement if known. Mention alternatives or exclusions if useful.
+<!-- Link a related roadmap item if known. Mention alternatives or exclusions if useful.
 Keep offline processing and the documented architecture boundaries in mind. -->

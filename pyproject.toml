@@ -6,7 +6,10 @@ build-backend = "hatchling.build"
 name = "ride-forces-analyzer"
 version = "0.1.0"
 description = "Offline Windows desktop application for Ride Forces measurement analysis and video visualization"
+authors = [{ name = "Björn Rudner" }]
 readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 requires-python = ">=3.14.6,<3.15"
 dependencies = ["PySide6>=6.12.0,<7", "pydantic>=2.14.1,<3"]
 

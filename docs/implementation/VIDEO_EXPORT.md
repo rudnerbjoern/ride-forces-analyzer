@@ -8,16 +8,16 @@ portrait variants and, for G-Orbit, peak timing. Shared renderers use those valu
 
 <!-- cspell:words qscale -->
 
-## Owner scope
+## Supported output
 
 One video per recording in a landscape 3840×2160 or portrait 2160×3840 canvas.
 Select Flow Ribbon (opening default),
 Corner Instruments, Telemetry Capsule, G-Orbit or the original four-panel column.
 Manual Onride alignment stays in DaVinci Resolve; no video ingestion,
 synchronization, persistent library or general playback milestone is implied.
-Produce complete Manta, Kraken and Voltron Nevera overlays as validation artifacts.
 Small file size and editing compatibility are priorities. ProRes is implemented;
-FFV1 is only evaluated, with size/import limits in the validation report.
+FFV1 is evaluated only. The [deployment view](../architecture/07_deployment_view.md#encoder-installation)
+records the concise full-recording/editor compatibility boundary.
 
 ## Contracts
 
@@ -123,20 +123,3 @@ FFV1 is only evaluated, with size/import limits in the validation report.
   reused; FFmpeg full build is external and checksum-pinned in ffmpeg.json.
   setup.ps1 -VideoExport installs it; the dialog also accepts an installed executable.
   Original recording bytes, metadata, GPS and source values remain unchanged.
-
-## Acceptance
-
-Native Windows evidence belongs in [export validation](../validation/VIDEO_EXPORT.md):
-independent orientation snapshots, all-original preparation/integrity, frame counts
-and interpolation/gaps, actual RGBA positions/polarity, real CPU/GPU 4K encodes and
-alpha decode, cancellation/no overwrite, GUI lifecycle and focused strict checks.
-Pure rendering checks cover every layout/aspect, translucent panel alpha,
-glyphs, signs, negative G-Orbit readings and absent tilt. Representative real
-encodes cover both codecs/aspects/backend preferences with all layouts represented;
-language geometry and encoder command options have independent checks. The native
-layout picker and shared worker lifecycle are tested without multiplying every
-profile across the full export workflow.
-Inspect rendered frames and the completed three full recordings, including correct
-codec, 4K dimensions, 50 fps, expected duration/frame counts and full decode.
-Retain the codec compatibility source and distinguish it from an actual Resolve
-UI import. A full M6 milestone closure and a new full suite are outside this scope.

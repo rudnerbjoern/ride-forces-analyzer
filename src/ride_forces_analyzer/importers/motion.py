@@ -1,4 +1,8 @@
-"""FR-011–016: pure motion validation over an owned source tree, without decoding."""
+"""FR-011–016: pure motion validation over an owned source tree, without decoding.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field

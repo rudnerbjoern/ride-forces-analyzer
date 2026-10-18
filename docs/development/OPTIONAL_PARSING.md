@@ -122,11 +122,10 @@ fixes across the five recordings. Pinned byte count/SHA-256 and before/after byt
 and modification times verify integrity. Synthetic cases cover malformed fields,
 independent counts, sparse/unavailable slots, arbitrary ordered attributes,
 ownership, exact precision, negative values, deterministic warnings and budgets.
-See [M2 validation](../validation/M2.md) for actual results.
+See the [import boundary](../architecture/08_concepts.md#source-ownership-and-validation) for source observations and limits.
 
 This subset performs no full import, M3 scientific interpretation or Qt integration.
-Full-recording integration and verified M2 acceptance are documented in the linked
-service guide and validation report.
+The linked service guide describes complete-recording composition.
 
 ## Weather fields and source-app evidence
 

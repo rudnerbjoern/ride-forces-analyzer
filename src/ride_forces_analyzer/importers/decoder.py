@@ -1,4 +1,8 @@
-"""Stage 2: bounded read-only inputs and strict schema-aware JSON decoding."""
+"""Stage 2: bounded read-only inputs and strict schema-aware JSON decoding.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 # cspell:words fstat
 

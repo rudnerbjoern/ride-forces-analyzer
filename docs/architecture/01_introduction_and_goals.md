@@ -21,10 +21,9 @@ qualification are deferred; GPS analytics is excluded. Five-profile 4K transpare
 video export with previews and saved batches is implemented as a partial M6 slice. Persistent library, interactive
 playback, remaining exports, synchronization and release remain planned.
 
-Authoritative scope: [roadmap](../ROADMAP.md),
-[importer requirements](../requirements/DEV-REQ-002-forces-importer.md) and
-[analysis requirements](../requirements/DEV-REQ-003-scientific-analysis.md).
-Implementation stages and delivery gates belong in their implementation plans.
+The [roadmap](../ROADMAP.md) owns completed and remaining product scope.
+These architecture chapters and the linked API/product contracts describe current
+behavior; completed requirement plans and acceptance diaries are not maintained.
 
 ## Quality goals
 

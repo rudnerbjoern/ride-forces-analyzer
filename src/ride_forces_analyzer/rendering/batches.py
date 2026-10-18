@@ -1,4 +1,8 @@
-"""Reproducible sequential batch exports, independent of Qt and SQLite connections."""
+"""Reproducible sequential batch exports, independent of Qt and SQLite connections.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from collections.abc import Callable, Sequence
 from datetime import datetime, UTC

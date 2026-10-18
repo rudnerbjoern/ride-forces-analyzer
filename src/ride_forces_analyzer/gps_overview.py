@@ -1,4 +1,8 @@
-"""Independent approximate GPS geometry for spatial reference, never force analysis."""
+"""Independent approximate GPS geometry for spatial reference, never force analysis.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from dataclasses import dataclass
 from math import cos, radians, sin, sqrt

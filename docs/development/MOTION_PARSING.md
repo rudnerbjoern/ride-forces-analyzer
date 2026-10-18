@@ -9,8 +9,8 @@ budgets require prior decoding.
 Scope: FR-011–016 over an existing immutable source tree. This is a pure motion
 validation boundary, not a complete file importer. Decoding/resource guards,
 optional GPS/metadata and full service composition are separate boundaries.
-See [ADR 0002](../decisions/0002-forces-source-contract.md) and
-[M2 validation](../validation/M2.md).
+See [import decision](../architecture/09_architecture_decisions.md#source-ownership-and-import) and
+[import contract](../architecture/08_concepts.md#source-ownership-and-validation).
 
 ## API and caller obligations
 

@@ -3,7 +3,7 @@
 <!-- cspell:words Flojector -->
 
 Calibrated forces is available by default for every import with usable directions.
-Availability does not imply scientific qualification. [ADR 0006](../decisions/0006-app-reference-projection.md)
+Availability does not imply scientific qualification. [source-app projection decision](../architecture/09_architecture_decisions.md#source-app-projection)
 defines the owner-adopted source-app policy; [explorer contracts](../implementation/RAW_EXPLORER.md)
 define live smoothing and presentation.
 
@@ -206,6 +206,6 @@ uv run --locked pytest tests/test_reference.py tests/test_explorer.py tests/test
 
 Independent screenshots and rounded numeric comparisons establish the scoped
 contracts above, not pixel identity or private source-algorithm equivalence.
-[Explorer verification](RAW_EXPLORER.md) and [M3 acceptance](M3.md) own their
+[explorer contract](../implementation/RAW_EXPLORER.md) and [analysis contract](../architecture/08_concepts.md#scientific-provenance-and-gates) own their
 separate product acceptance. GPS units/epochs/sentinels and general physical
 rider calibration remain unqualified.

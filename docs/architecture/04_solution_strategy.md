@@ -59,7 +59,7 @@ Real NVIDIA probes select Vulkan/NVENC or explicit CPU fallback. Every output
 frame is decoded before exclusive publication. Widgets only configure/transport
 background jobs. Manual Resolve alignment is outside the processing path.
 [Export contracts](../implementation/VIDEO_EXPORT.md) and
-[verification](../validation/VIDEO_EXPORT.md) scope this partial M6 implementation;
+[encoder compatibility boundary](07_deployment_view.md#encoder-installation) scope this partial M6 implementation;
 PNG sequences and additional export products remain planned.
 
 `storage.exports` persists versioned preset/batch definitions in SQLite; originals
@@ -71,21 +71,21 @@ worker transport, not SQL, import validation or execution logic.
 
 ## Scientific strategy
 
-[DEV-REQ-003](../requirements/DEV-REQ-003-scientific-analysis.md) defines reduced
+The [analysis boundary](08_concepts.md#scientific-provenance-and-gates) defines reduced
 M3: existing force preparation/mean, basic extrema and verified contracts. Generic
 device/frame APIs keep explicit source-bound unit gates; universal physical rider
 calibration is deferred and is not a completion prerequisite. GPS is reference-only.
 
 The app-reference path implements independently normalized source directions and
-a configurable centered mean, with per-source evidence; see ADR 0006 via chapter 09.
+a configurable centered mean, with per-source evidence; see the source-app projection decision via chapter 09.
 NumPy provides array mathematics and Pint converts declared common component units
 to SI. SciPy supports existing explicit frame rotations. Additional scientific
 filters are deferred; any playback interpolation needs its own M5 requirement.
 GeographicLib/geodesic speed analysis is not required. Pandas is a tabular adapter;
 AHRS is research only, pyproj requires an approved conversion use case. Adoption
-policy and rationale belong to [ADR 0004](../decisions/0004-analysis-contracts-and-library-policy.md).
+policy and rationale belong to [analysis library decision](09_architecture_decisions.md#analysis-models-and-libraries).
 
 Use explicit profiles, raw/filtered provenance and per-channel capability gates.
 Do not combine acceleration/gravity, infer yaw or merge GPS/motion clocks without
 independent evidence. [Concepts](08_concepts.md), [decisions](09_architecture_decisions.md)
-and [risks](11_technical_risks.md) maintain these boundaries; stage tasks stay in the plan.
+and [risks](11_technical_risks.md) maintain these boundaries; open product work stays in the roadmap.

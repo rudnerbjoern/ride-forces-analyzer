@@ -40,8 +40,8 @@ Type-contract tests require analyzed files and expected diagnostic rules, not ju
 an exit code. `tests/benchmark_importer.py` measures timing/Python allocations
 without performance assertions. Source-data tests retain original bytes and
 scientific unknowns; numerical synthetic success does not qualify real sensors.
-The [security report](../validation/DEPENDABOT.md) records override rationale and
-its dated open advisory. These Node tests are development tooling, not rendering.
+The [dependency policy](DEPENDABOT.md#node-overrides-and-security-boundary) records
+override rationale and security limits. These Node tests are development tooling, not rendering.
 
 Developer-tool regressions under `.agents/skills/` remain outside application
 discovery; their [skill instructions](../../.agents/skills/github-delivery/SKILL.md)

@@ -1,4 +1,8 @@
-"""Canonical immutable representations, without decoding or scientific inference."""
+"""Canonical immutable representations, without decoding or scientific inference.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field

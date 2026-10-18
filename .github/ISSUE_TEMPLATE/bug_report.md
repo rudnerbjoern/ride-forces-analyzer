@@ -6,6 +6,10 @@ labels: bug
 
 # Bug report
 
+For vulnerabilities or exposed credentials, use the private reporting route in
+[SECURITY.md](https://github.com/rudnerbjoern/ride-forces-analyzer/blob/main/SECURITY.md).
+Do not attach private recordings, GPS data or sensitive logs to a public issue.
+
 ## Problem
 
 <!-- Describe the actual and expected behavior. Search existing issues first. -->
@@ -21,6 +25,12 @@ Do not upload additional recordings or GPS data without separate owner authoriza
 - Application version or commit:
 - Python and uv versions, if running from source:
 
+<!-- For display problems: resolution, Windows scaling, language and light/dark theme.
+For video-export problems: layout, output profile, FFmpeg version and GPU, if relevant.
+Omit environment details unrelated to the problem. -->
+
 ## Evidence
 
-<!-- Include relevant diagnostics or screenshots without secrets or personal data. -->
+<!-- Include the exact error and relevant diagnostics or screenshots without secrets
+or personal data. State whether it also occurs with an existing project fixture.
+Only share a new recording after maintainer approval and publication permission. -->

@@ -1,4 +1,8 @@
-"""Source-time peak hold envelopes, independent of frame order and video rate."""
+"""Source-time peak hold envelopes, independent of frame order and video rate.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from dataclasses import dataclass
 from math import floor, isfinite

@@ -1,4 +1,8 @@
-"""Stage 1 immutable contracts; no scientific calculations or source interpretation."""
+"""Stage 1 immutable contracts; no scientific calculations or source interpretation.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field

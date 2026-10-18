@@ -2,6 +2,18 @@
 
 ## Authorization and use
 
+Copyright © 2026 Björn Rudner. All five complete recordings in this catalog are
+licensed by Björn Rudner under
+**CC BY-SA 4.0**, expressly approved on 2026-10-18, including embedded GPS positions,
+timestamps, sensor values, metadata and unknown fields. The
+[license scope and attribution](../../tests/fixtures/real/README.md) identify the
+licensor and reuse conditions; the [complete legal text](../../tests/fixtures/real/LICENSE-CC-BY-SA-4.0.txt)
+is supplied alongside the files. Recipients may share and adapt the recordings,
+including commercially, with attribution, a license link and change indications.
+Shared adaptations must use the same or an officially compatible license under
+the ShareAlike terms.
+This grant does not license program code, documentation images or future recordings.
+
 The owner expressly authorizes using and publishing all four complete Ride Forces
 recordings below in this project for testing and development, including all
 embedded data such as authentic GPS positions and metadata. Manta was authorized
@@ -60,14 +72,14 @@ requires reviewing its authorization, tests and this catalog together.
 `tests/test_project.py` verifies the exact five-file inventory and independently
 pins each original byte length/SHA-256. `tests/test_fixture_inventory.py` compares
 the complete [recursive snapshot](../../tests/fixtures/schema-inventory.json);
-see [format observations](../requirements/FORMAT-ANALYSIS.md).
+see [source observations](../architecture/08_concepts.md#source-ownership-and-validation).
 
 ```powershell
 uv run --locked pytest tests/test_fixture_inventory.py tests/test_project.py
 ```
 
 The [public importer](IMPORT_SERVICE.md) losslessly imports all five originals;
-[M2 acceptance](../validation/M2.md) records full motion/GPS/metadata coverage.
+the [import contract](../architecture/08_concepts.md#source-ownership-and-validation) summarizes full motion/GPS/metadata preservation.
 Analysis model/device tests preserve source bytes and exercise unavailable Watch
 capabilities. These checks do not qualify units, axes, calibration, timing,
 filtering, GPS sentinels or source-app equivalence. The separate

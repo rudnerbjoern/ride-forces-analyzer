@@ -1,4 +1,8 @@
-"""Device-only mathematics with explicit source-specific unit/quantity contracts."""
+"""Device-only mathematics with explicit source-specific unit/quantity contracts.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from dataclasses import dataclass, replace
 from datetime import datetime

@@ -1,19 +1,19 @@
 # Roadmap
 
-Milestone status refers to the scope defined by its requirements, not every
+Milestone status refers to the implemented/remaining scope below, not every
 possible feature. [README](../README.md) explains current use;
 [architecture](architecture/README.md) owns subsystem design.
 
-| Milestone                  | Status                  | Implemented / remaining scope                                                                                                                                                  |
-| -------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| M1 — Foundation            | Complete                | Windows setup/start, strict settings, Qt bootstrap, tooling and CI; [acceptance](validation/M1.md)                                                                             |
-| M2 — Importer              | Complete                | Lossless offline import, metadata/weather, attributes, GPS and diagnostics; [acceptance](validation/M2.md)                                                                     |
-| M3 — Analysis              | Complete, reduced scope | Immutable models, explicit device/frame APIs, source-app projection/mean and selected-range extrema; [acceptance](validation/M3.md)                                            |
-| M4 — Explorer              | Partial                 | Raw/calibrated charts, markers, time zoom, selection, extrema, GPS, light/dark and English/German UI; persistent ride library and full acceptance remain                       |
-| M5 — Playback              | Planned                 | Deterministic clock, pause, seek, speed and interpolation                                                                                                                      |
-| M6 — Exports               | Partial                 | Five 4K layouts, portrait/landscape, transparent/opaque video, previews, SQLite presets/batches and optional NVIDIA encoding; CSV/JSON/PNG sequence and full acceptance remain |
-| M7 — Video synchronization | Planned                 | Local video ingest, offsets, timeline preview and frame-accurate alignment                                                                                                     |
-| M8 — Windows release       | Planned                 | Standalone package, install/uninstall, diagnostics and clean-Windows verification                                                                                              |
+| Milestone                  | Status                  | Implemented / remaining scope                                                                                                                                                         |
+| :------------------------- | :---------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| M1 — Foundation            | Complete                | Windows setup/start, strict settings, Qt bootstrap, tooling and CI; [bootstrap contract](architecture/06_runtime_view.md#qt-bootstrap)                                                |
+| M2 — Importer              | Complete                | Lossless offline import, metadata/weather, attributes, GPS and diagnostics; [import contract](architecture/08_concepts.md#source-ownership-and-validation)                            |
+| M3 — Analysis              | Complete, reduced scope | Immutable models, explicit device/frame APIs, source-app projection/mean and selected-range extrema; [analysis contract](architecture/08_concepts.md#scientific-provenance-and-gates) |
+| M4 — Explorer              | Partial                 | Raw/calibrated charts, markers, time zoom, selection, extrema, GPS, light/dark and English/German UI; persistent ride library and full acceptance remain                              |
+| M5 — Playback              | Planned                 | Deterministic clock, pause, seek, speed and interpolation                                                                                                                             |
+| M6 — Exports               | Partial                 | Five 4K layouts, portrait/landscape, transparent/opaque video, previews, SQLite presets/batches and optional NVIDIA encoding; CSV/JSON/PNG sequence and full acceptance remain        |
+| M7 — Video synchronization | Planned                 | Local video ingest, offsets, timeline preview and frame-accurate alignment                                                                                                            |
+| M8 — Windows release       | Planned                 | Standalone package, install/uninstall, diagnostics and clean-Windows verification                                                                                                     |
 
 ## Product boundaries
 

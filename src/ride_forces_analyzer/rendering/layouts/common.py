@@ -1,4 +1,8 @@
-"""Shared drawing primitives; layout geometry stays with each profile."""
+"""Shared drawing primitives; layout geometry stays with each profile.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 # cspell:words WINDIR segoeui segoeuib
 

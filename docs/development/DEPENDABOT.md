@@ -34,19 +34,35 @@ are not evidence of compatibility or a clean security audit.
 
 GitHub's security-update setting is separate from the YAML version-update schedule.
 Enable Dependabot alerts/dependency graph and automatic security updates in
-repository settings. The recorded 2026-10-13 setup check reports alerts enabled and automatic security
-updates `enabled=true, paused=false`. This is scoped configuration evidence,
-not a fresh service-side verification. The YAML schedule targets `main`.
+repository settings; the YAML alone does not establish their current service-side
+state. The YAML schedule targets `main`.
 No alert is dismissed by this configuration.
 
 Keep the reviewed smol-toml and scoped KaTeX overrides until upstream resolution
-and tests justify changing them; see the dated [security audit](../validation/DEPENDABOT.md).
+and tests justify changing them.
 An advisory without an available compatible fix cannot be guaranteed an automatic
 fix. uv/Python/Node interpreter pins, action input versions such as setup-uv's
 `with.version`, editor extensions and documentation version references still need
 coordinated maintenance; the Actions ecosystem updates action references.
 The first actual uv updater run must confirm support for the project's current
 Python constraints and lock revision. Local tests do not prove hosted updater success.
+
+## Node overrides and security boundary
+
+Node is development tooling, not an application runtime dependency.
+`package.json` and `package-lock.json` retain smol-toml 1.9.1 for
+[its security fix](https://github.com/squirrelchat/smol-toml/security/advisories/GHSA-r4xh-jqrq-34v2)
+and scoped KaTeX 0.19.0 for
+[inherited trust handling](https://github.com/KaTeX/KaTeX/security/advisories/GHSA-238p-pmpm-9mq7).
+The KaTeX override crosses the consumer's declared range; real-consumer regression
+tests cover compatibility within this project.
+
+Deeply nested glob patterns can exhaust the braces parser stack
+([advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)). Project globs are
+small configured patterns; no application API accepts arbitrary glob input.
+Current advisory and fix availability require a fresh audit. Compatibility tests
+do not establish a clean security audit or cover editor extension bundles and
+native Python binaries.
 
 ## Local checks
 
@@ -60,7 +76,7 @@ Policy tests parse YAML using the already locked CSpell consumer, cover ecosyste
 coverage, security/major-update separation, constrained schedules and read-only
 PR CI, and protect existing security overrides. They add no dependencies and are
 not a complete validation of GitHub's service-side configuration schema.
-Recorded results remain in [developer-tool validation](../validation/DEVELOPER_TOOLS.md).
+The [CI guide](CI.md) owns routing and hosted-verification boundaries.
 
 ## Primary references
 

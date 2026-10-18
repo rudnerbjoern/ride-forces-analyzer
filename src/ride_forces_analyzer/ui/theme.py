@@ -1,4 +1,8 @@
-"""Application-wide light/dark presentation, independent of scientific/export data."""
+"""Application-wide light/dark presentation, independent of scientific/export data.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from dataclasses import dataclass
 from typing import Literal

@@ -1,4 +1,8 @@
-"""Minimal internal layout extension contract, without Qt or encoders."""
+"""Minimal internal layout extension contract, without Qt or encoders.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from __future__ import annotations
 from dataclasses import dataclass

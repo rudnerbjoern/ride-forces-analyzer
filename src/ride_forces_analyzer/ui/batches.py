@@ -1,4 +1,8 @@
-"""Saved batch editor and Qt transport for sequential offline exports."""
+"""Saved batch editor and Qt transport for sequential offline exports.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from ride_forces_analyzer.i18n import tr
 from .translation import bind, items, headers

@@ -1,4 +1,8 @@
-"""Small transactional SQLite store; no Qt, source recordings or rendered media."""
+"""Small transactional SQLite store; no Qt, source recordings or rendered media.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 # cspell:words LOCALAPPDATA NOCASE
 

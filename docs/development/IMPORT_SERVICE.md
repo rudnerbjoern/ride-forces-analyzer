@@ -54,7 +54,7 @@ as valid source defects. No process-global decoder, integer or recursion setting
 Bounded decode/schema/motion/diagnostic failures retain original bytes/hash/count
 where available. Malformed JSON may have no source tree; schema failures may retain
 a decoded tree. Unreadable/oversized input has no complete source/count/hash.
-Never infer a complete-source digest from a partial read. See [ADR 0002](../decisions/0002-forces-source-contract.md).
+Never infer a complete-source digest from a partial read. See [import decision](../architecture/09_architecture_decisions.md#source-ownership-and-import).
 
 Repeated same input/policy calls yield equivalent immutable output and diagnostics.
 Each call owns independent tree/recording/diagnostic state; concurrent bytes calls
@@ -108,14 +108,14 @@ Decoder failures remain fail-fast single-diagnostic results and fit every positi
 
 All byte/depth/sequence/node/object/string/number budgets apply to unknown content
 as well as interpreted fields before domain allocation. Defaults and permitted
-configuration follow ADR 0002; limits are not peak-RAM or throughput guarantees.
+configuration follow the import decision; limits are not peak-RAM or throughput guarantees.
 Messages identify defects without source values, GPS traces or exception payloads.
 Warning definitions are in the motion/optional guides; whole-document errors in the decoder guide.
 
 ## Later versions
 
 To add a schema version, obtain authorized source evidence, inventory it and record
-differences in the format analysis/ADR. Add explicit decoder dispatch and matching
+differences in the schema inventory and source-contract ADR. Add explicit decoder dispatch and matching
 version-specific motion/optional adapters before full service composition, plus
 positive/negative byte/Path/integrity tests. Preserve 2.2.0 regressions and reject
 unknown versions until their contracts are implemented. Merely adding a version to
@@ -139,8 +139,5 @@ after a warmup, then one separate traced allocation measurement for each adapter
 GC runs outside timings. Path timings include local reads with warm filesystem cache;
 bytes input is preloaded. Tracemalloc reports Python allocations only, excluding
 preexisting bytes, native allocations and total process/OS RAM. No performance
-threshold is enforced. Actual measurements and environment are in
-[M2 validation](../validation/M2.md).
-
-Full M2 acceptance, traceability and hosted CI evidence are recorded in
-[M2 validation](../validation/M2.md). GUI integration remains planned.
+threshold is enforced. The [import boundary](../architecture/08_concepts.md#source-ownership-and-validation)
+summarizes guarantees and limits. The explorer integrates this service in a background worker.

@@ -109,6 +109,16 @@ Open the folder in Windows VS Code and install the extensions recommended in
 The default interpreter is `.venv/Scripts/python.exe`. An existing interpreter
 selection takes precedence: use **Python: Select Interpreter** to select that file.
 
+The Python Environments extension uses `uv pip` for package inspection when uv
+is available on VS Code's process PATH; pip is not installed in `.venv`.
+Workspace settings enable this behavior and register the root project as a venv.
+The package-manager identifier remains `ms-python.python:pip`; the extension
+substitutes uv when available. The setup script's `.tmp/uv-windows/uv.exe` is
+project-local and is not automatically on VS Code's PATH. For the IDE package
+view, make uv available on your user PATH and fully restart VS Code afterward.
+Reloading a window alone may retain the old process PATH. Keep dependency changes
+in `pyproject.toml` and the lockfile rather than installing packages through the UI.
+
 The **Testing** view discovers pytest under `tests/`, refreshes on Python saves
 and supports individual tests or **Run All Tests**. unittest is disabled; the
 working directory is the repository root. npm and skill tests run separately.

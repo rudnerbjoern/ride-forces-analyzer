@@ -40,4 +40,4 @@ are excluded from text normalization. Dependencies are locked and reviewed.
 Analysis uses locked NumPy/Pint/SciPy in the optional `analysis` extra.
 GeographicLib is not adopted or required for the GPS reference-only scope.
 AHRS and pyproj remain research only. Preserve actual binary/transitive
-license notices for eventual distribution; see [ADR 0004](../decisions/0004-analysis-contracts-and-library-policy.md).
+license notices for eventual distribution; see [analysis library decision](09_architecture_decisions.md#analysis-models-and-libraries).

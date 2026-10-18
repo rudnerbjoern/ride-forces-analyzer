@@ -1,4 +1,8 @@
-"""Original four-panel force/orientation column."""
+"""Original four-panel force/orientation column.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 # cspell:words WINDIR segoeui
 

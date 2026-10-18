@@ -1,4 +1,8 @@
-"""Regenerate the Manta documentation images at one fixed source sample."""
+"""Regenerate the Manta documentation images at one fixed source sample.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 # cspell:words segoeui LANCZOS getchannel getextrema WINDIR
 

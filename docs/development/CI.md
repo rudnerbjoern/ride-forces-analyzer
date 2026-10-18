@@ -63,9 +63,8 @@ Git histories, Unicode/spaces/renames/deletions, invalid revisions, output routi
 and the actual PowerShell gate, using `.tmp/` repositories. Dependency tests cover
 templates, label rules and permissions; actionlint checks workflow syntax.
 These checks do not prove hosted label assignment, hosted conditional execution
-or current branch protection. Dated evidence is retained in
-[developer-tool validation](../validation/DEVELOPER_TOOLS.md); fresh hosted outcomes
-require an authorized PR run and read-only settings inspection.
+or current branch protection. Fresh hosted outcomes require an authorized PR run
+and read-only settings inspection; they belong in the PR metadata.
 
 References: [issue templates](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository),
 [Labeler](https://github.com/actions/labeler),

@@ -1,4 +1,8 @@
-"""Reviewed German UI catalog; English source templates are the stable keys."""
+"""Reviewed German UI catalog; English source templates are the stable keys.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 # Catalog data contains German prose; English source templates are also checked
 # at their application call sites. German wording is reviewed with native UI checks.

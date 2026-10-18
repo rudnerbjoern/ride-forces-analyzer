@@ -1,4 +1,8 @@
-"""Export dialog and Qt worker transport; rendering/encoding stay in their subsystem."""
+"""Export dialog and Qt worker transport; rendering/encoding stay in their subsystem.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from ride_forces_analyzer.i18n import get_language, tr
 from .translation import bind, items

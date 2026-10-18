@@ -113,3 +113,30 @@ Missing sensor data is never invented.
 
 For current limitations and planned features, see the [roadmap](docs/ROADMAP.md).
 The [documentation index](docs/README.md) links detailed behavior and source comparisons.
+
+## Contributing and security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, checks, pull requests and recording
+permissions. Report vulnerabilities privately using [SECURITY.md](SECURITY.md).
+
+## License
+
+Copyright © 2026 Björn Rudner.
+
+The program source code is licensed under the **GNU General Public License,
+version 3 or (at your option) any later version** (`GPL-3.0-or-later`).
+You may use, modify and redistribute it under those terms, including commercially.
+The program is provided without any warranty; see [LICENSE](LICENSE) for the full terms.
+
+The five supplied test recordings, including their GPS data and metadata, are
+separately licensed under **CC BY-SA 4.0**. Shared adaptations must follow its
+ShareAlike terms. See their
+[license and attribution](tests/fixtures/real/README.md) and the
+[recording catalog](docs/development/RECORDINGS.md).
+The 14 supplied documentation images are also licensed under **CC BY-SA 4.0**;
+see their [image license and attribution](docs/images/README.md).
+These grants do not automatically apply to your own recordings or exports.
+Third-party components retain their own licenses. The project license does not
+replace the applicable Qt/PySide6, FFmpeg or other dependency obligations.
+See [third-party licenses and materials](THIRD_PARTY_NOTICES.md) for the inventory
+and remaining redistribution requirements.

@@ -79,8 +79,8 @@ caller references do not certify source semantics.
 `analysis.frames` supplies strict explicit-basis validation, passive
 SciPy transforms and source-bound opt-in PROVISIONAL rider vectors. No real rider
 calibration is qualified by this strict API. Its universal qualification and general
-statistics are deferred; GPS analytics is outside reduced
-[DEV-REQ-003](../requirements/DEV-REQ-003-scientific-analysis.md) acceptance.
+statistics are deferred; GPS analytics is outside the implemented
+[analysis boundary](08_concepts.md#scientific-provenance-and-gates).
 The boundary stays independent of widgets, storage and encoding. All five fixtures
 participate in capability tests, including absent Watch gravity/GPS. Deeper future
 services are documented only when designed.

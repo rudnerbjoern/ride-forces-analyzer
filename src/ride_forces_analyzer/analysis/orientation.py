@@ -1,4 +1,8 @@
-"""Source-app tilt: angle between current gravity and stored vertical direction."""
+"""Source-app tilt: angle between current gravity and stored vertical direction.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from math import acos, degrees, hypot
 

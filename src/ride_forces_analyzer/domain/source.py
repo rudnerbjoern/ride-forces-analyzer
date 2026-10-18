@@ -1,4 +1,8 @@
-"""Owned original bytes and recursively immutable, unnormalized source values."""
+"""Owned original bytes and recursively immutable, unnormalized source values.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field

@@ -1,4 +1,8 @@
-"""Versioned, immutable definitions for saved export presets and batch snapshots."""
+"""Versioned, immutable definitions for saved export presets and batch snapshots.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from pathlib import Path
 from typing import Literal, Self

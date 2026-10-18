@@ -1,4 +1,8 @@
-"""Qt-independent raw-recording presentation and local sample-selection contracts."""
+"""Qt-independent raw-recording presentation and local sample-selection contracts.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from ride_forces_analyzer.i18n import diagnostic_message, get_language, tr
 

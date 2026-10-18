@@ -1,4 +1,8 @@
-"""Offline presentation text; source data, identifiers and clocks stay unchanged."""
+"""Offline presentation text; source data, identifiers and clocks stay unchanged.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from typing import Literal
 

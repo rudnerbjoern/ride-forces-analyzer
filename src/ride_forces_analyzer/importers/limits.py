@@ -1,4 +1,8 @@
-"""Immutable per-call budgets for strict source decoding (ADR 0002)."""
+"""Immutable per-call budgets for the arc42 read-only import boundary.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from dataclasses import dataclass, fields
 import sys
