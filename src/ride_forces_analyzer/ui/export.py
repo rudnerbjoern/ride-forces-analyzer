@@ -868,7 +868,7 @@ class ExportDialog(QDialog):
     @Slot()
     def _update_eta(self) -> None:
         if self._total_frames > 0 and self._completed_frames >= self._total_frames:
-            bind(self.eta, tr("Frames complete · finalizing and verifying video…"))
+            bind(self.eta, tr("Frames complete · finalizing video…"))
             return
         seconds = remaining_seconds(
             monotonic() - self._export_started,

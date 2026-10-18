@@ -223,7 +223,7 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     assert dialog.eta_timer.interval() == 2000
     wait_until(lambda: "1:30" in dialog.eta.text())
     dialog.worker.signals.progress.emit(1000, 1000)
-    wait_until(lambda: "finalizing" in dialog.eta.text())
+    wait_until(lambda: dialog.eta.text() == "Frames complete · finalizing video…")
     dialog.reject()
     assert dialog.isVisible()
     assert not window.close()  # A close requests cancellation, never abandons a live worker.

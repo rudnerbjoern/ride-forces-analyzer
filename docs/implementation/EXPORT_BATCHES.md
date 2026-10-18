@@ -35,7 +35,7 @@ This implements export configuration storage, not the M4 ride/media library.
   snapshots the requested definitions and executes them sequentially in a worker.
   Missing/invalid/changed sources fail their job and leave other jobs runnable.
   Every job imports again and checks the original digest, restores smoothing, then
-  uses the existing production renderer/encoder and complete-decode publication.
+  uses the existing production renderer/encoder and exclusive publication.
 - Each run creates a unique output directory, numbered batch folders and safe,
   numbered recording/preset filenames. Never overwrite previous outputs. Persist
   per-job completed/failed/cancelled/skipped states in run-report.json.
