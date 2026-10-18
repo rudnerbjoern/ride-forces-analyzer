@@ -33,7 +33,7 @@ Git nor editor tooling may normalize or reformat these recordings.
 ## Fixture catalog
 
 The sizes and SHA-256 digests below were computed by reading the original bytes.
-They are pinned in `tests/test_project.py`; intentionally replacing a recording
+They are pinned in `tests/support/recordings.py`; intentionally replacing a recording
 requires reviewing its authorization, tests and this catalog together.
 
 ### Iron Gwazi
@@ -69,13 +69,14 @@ requires reviewing its authorization, tests and this catalog together.
 
 ## Validation and scientific limits
 
-`tests/test_project.py` verifies the exact five-file inventory and independently
-pins each original byte length/SHA-256. `tests/test_fixture_inventory.py` compares
+`tests/recordings/test_integrity.py` verifies the exact five-file inventory and the
+original byte lengths/SHA-256 pinned in `tests/support/recordings.py`.
+`tests/recordings/test_inventory.py` compares
 the complete [recursive snapshot](../../tests/fixtures/schema-inventory.json);
 see [source observations](../architecture/08_concepts.md#source-ownership-and-validation).
 
 ```powershell
-uv run --locked pytest tests/test_fixture_inventory.py tests/test_project.py
+uv run --locked pytest tests/recordings/test_inventory.py tests/recordings/test_integrity.py
 ```
 
 The [public importer](IMPORT_SERVICE.md) losslessly imports all five originals;

@@ -23,25 +23,39 @@ models use owned frozen dataclasses; their [contracts](CANONICAL_MODELS.md) and
 
 ## Test coverage
 
-| Test group                                                                    | Contract                                                                                                         |
-| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `test_project.py`, `test_fixture_inventory.py`                                | Exact five-file inventory, byte lengths/SHA-256, recursive schema observations                                   |
-| `test_settings.py`, `test_gui.py`                                             | Strict settings/bounds, native module startup, exposed window, resize and close                                  |
-| `test_ruff.py`                                                                | F401/COM812, accepted LF formatting and rejected drift/CRLF                                                      |
-| `test_source_models.py`, `test_recording_models.py`, `test_import_results.py` | Ownership, immutability, absence/defaults, source types and ordered outcomes                                     |
-| `test_decoder.py`, `test_motion_parser.py`, `test_optional_parser.py`         | Strict grammar/budgets, complete vectors/indices, optional metadata/attributes/GPS                               |
-| `test_import_service.py`                                                      | Full Path/bytes ingestion, repeated/concurrent results, shared budgets and fresh-process network/write/Qt guards |
-| `test_analysis_models.py`, `test_device_analysis.py`                          | Owned NumPy data, capability/unit/provenance gates, synthetic device norms and Pint conversion                   |
-| `tests/types/*.test.mjs`                                                      | Pyright constructor/frozen-field/mapping contracts and result-union narrowing                                    |
-| `tests/dependencies/*.test.mjs`                                               | Actual Node consumer regressions, Dependabot and label policy                                                    |
-| `tests/ci/changes.test.mjs`                                                   | Full-PR routing and the real PowerShell merge gate                                                               |
+Python suites live under `tests/<subsystem>/test_<behavior>.py`:
+
+| Directory                        | Responsibility                                                         |
+| :------------------------------- | :--------------------------------------------------------------------- |
+| domain                           | Source ownership and immutable recording models                        |
+| importers                        | Decoding, motion, optional fields, diagnostics and Path/bytes import   |
+| analysis                         | Analysis models, device/frame math, source references and extrema      |
+| explorer                         | Qt-independent presentation, selections and GPS geometry               |
+| rendering                        | Frames, layouts, previews, encoding, progress, estimates and batches   |
+| storage                          | Persistent application preferences                                     |
+| localization                     | Translation catalog, overlay text and OS language defaults             |
+| ui                               | Native Qt startup, explorer, dialogs, appearance and user interactions |
+| updates                          | Release discovery, transport and update preferences                    |
+| recordings                       | Original fixture hashes and recursive schema inventory                 |
+| packaging                        | Release policy, source archives and Windows packages                   |
+| tooling                          | Application settings/version and Ruff contracts                        |
+| support                          | Shared fixture paths, pinned identities and inventory helper           |
+| types / dependencies / ci / docs | Separate Node type, dependency, CI and documentation checks            |
 
 Type-contract tests require analyzed files and expected diagnostic rules, not just
-an exit code. `tests/benchmark_importer.py` measures timing/Python allocations
+an exit code. `tests/importers/benchmark.py` measures timing/Python allocations
 without performance assertions. Source-data tests retain original bytes and
 scientific unknowns; numerical synthetic success does not qualify real sensors.
 The [dependency policy](DEPENDABOT.md#node-overrides-and-security-boundary) records
 override rationale and security limits. These Node tests are development tooling, not rendering.
+
+Run a subsystem directly, for example `uv run --locked pytest tests/importers`
+or `uv run --locked pytest tests/ui/test_export.py`. Names describe behavior;
+folders identify the responsible subsystem. No additional marker matrix is needed.
+Shared data fixtures live in `tests/conftest.py`; GUI-only fixtures and preference
+isolation live in `tests/ui/conftest.py`. Reusable waits and workspace sizing
+are in `tests/ui/helpers.py`; original recording constants are in
+`tests/support/recordings.py`. Original `.forces` files remain under `tests/fixtures/`.
 
 Developer-tool regressions under `.agents/skills/` remain outside application
 discovery; their [skill instructions](../../.agents/skills/github-delivery/SKILL.md)
@@ -54,6 +68,16 @@ parser errors, numerical edges, source preservation and translation placeholders
 Check layout geometry, glyph bounds and alpha directly in rendered frames for
 every supported layout/aspect. Test video-rate mapping independently of repeated
 full-frame rendering.
+
+GUI loading covers Manta with gravity/GPS and Iron Gwazi without those sensors.
+Shared zoom, wheel and selection interactions run once with Manta; fixture-wide
+import and scientific contracts remain in their dedicated suites. Full imports
+check all five originals once; adapter equivalence, repeatability and concurrent
+ownership use one recording rather than repeating the complete fixture matrix.
+Export-dialog, palette and language interaction tests use 8 × 8 renderer test
+frames while keeping actual preview workers, compositing and UI updates. Dedicated
+rendering/preview tests and the two native 4K scaling checks retain real frames.
+See [focused runtime evidence](../validation/TEST_RUNTIME.md).
 
 Real encoder integration uses eight representative cases covering output codec ×
 aspect × CPU/GPU preference, with every layout represented and German examples

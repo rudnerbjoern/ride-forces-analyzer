@@ -108,7 +108,7 @@ paths or decoder exception excerpts in messages. JSON Pointers identify fields.
 No URLs are fetched, positions looked up, telemetry sent or Qt imported.
 
 ```powershell
-uv run pytest tests/test_decoder.py tests/test_project.py
+uv run pytest tests/importers/test_decoder.py tests/recordings/test_integrity.py
 ```
 
 Tests cover every decoder failure category and resource threshold, preflight

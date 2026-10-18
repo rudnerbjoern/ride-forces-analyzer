@@ -111,7 +111,7 @@ Invalid caller limit configuration raises `ValueError` as in the decoder API.
 ## Verification and boundaries
 
 ```powershell
-uv run pytest tests/test_optional_parser.py tests/test_project.py
+uv run pytest tests/importers/test_optional.py tests/recordings/test_integrity.py
 uv run mypy src
 npm run typecheck
 npm run test:types
@@ -151,4 +151,4 @@ Exact source tokens remain in SourceEnvelope. Weather display in the explorer
 is separate from this metadata import contract.
 
 The dedicated full-import regression is
-`test_voltron_weather_metadata_matches_source_app` in `tests/test_optional_parser.py`.
+`test_voltron_weather_metadata_matches_source_app` in `tests/importers/test_optional.py`.

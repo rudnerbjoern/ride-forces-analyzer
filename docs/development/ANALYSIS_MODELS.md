@@ -137,7 +137,7 @@ epoch. Production callers choose their own explicit calculation time.
 ## Verification and scope
 
 ```powershell
-uv run --locked pytest -o cache_dir=.tmp/pytest-cache tests/test_analysis_models.py
+uv run --locked pytest -o cache_dir=.tmp/pytest-cache tests/analysis/test_models.py
 ```
 
 Tests cover caller aliases/read-only views, explicit missing versus zero,
@@ -270,7 +270,7 @@ result = analyze_rider_frame(
 
 All five real fixtures remain unit/frame-unqualified; absent Watch gravity stays
 absent. See [passive frame decision](../architecture/09_architecture_decisions.md#passive-frame-transforms),
-[analysis contract](../architecture/08_concepts.md#scientific-provenance-and-gates) and `tests/test_frames.py`. Source-app
+[analysis contract](../architecture/08_concepts.md#scientific-provenance-and-gates) and `tests/analysis/test_frames.py`. Source-app
 references remain required for generic physical calibration. This broader research
 is not reduced-M3 acceptance; existing app-reference projection/mean has separate
 evidence, and analytical GPS is outside current scope.
