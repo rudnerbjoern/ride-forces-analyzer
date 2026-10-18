@@ -123,13 +123,19 @@ test("Secret scanning is mandatory, checksum-pinned and cannot silently skip the
 test("Source releases publish only reviewed tag revisions after quality and package checks", async () => {
   const source = await readFile(new URL("../../.github/workflows/source-release.yml", import.meta.url), "utf8");
   const workflow = parseDocument(source).toJS();
-  assert.deepEqual(workflow.on, { push: { tags: ["v*"] } });
+  assert.deepEqual(workflow.on, { push: { tags: ["v*"] }, workflow_dispatch: {
+    inputs: { tag: { description: "Existing version tag to publish", required: true, type: "string" } },
+  } });
   assert.deepEqual(workflow.permissions, { contents: "read" });
   assert.equal(workflow.concurrency["cancel-in-progress"], false);
   assert.equal(workflow.jobs.source["timeout-minutes"], 10);
   assert.deepEqual(workflow.jobs.quality, { uses: "./.github/workflows/ci.yml", with: { "full-checks": true } });
   assert.equal(workflow.jobs.source.needs, "quality");
-  assert.equal(workflow.jobs.source.steps[0].with.ref, "${{ github.sha }}");
+  assert.equal(workflow.jobs.source.steps[0].with.ref, "${{ inputs.tag || github.sha }}");
+  assert.equal(workflow.jobs.source.outputs.commit, "${{ steps.revision.outputs.commit }}");
+  assert.equal(workflow.jobs.source.steps.find(step => step.id === "policy").env.RELEASE_SHA,
+    "${{ steps.revision.outputs.commit }}");
+  assert.equal(workflow.concurrency.group, "${{ github.workflow }}-${{ inputs.tag || github.ref_name }}");
   assert.ok(!Object.hasOwn(workflow.jobs.source, "if"), "Do not bypass failed quality jobs");
   assert.match(source, /check-source-release\.py/);
   assert.match(source, /uv build --out-dir/);
@@ -142,7 +148,10 @@ test("Source releases publish only reviewed tag revisions after quality and pack
   }
   const release = workflow.jobs.release;
   assert.deepEqual(release.needs, ["quality", "source", "windows"]);
-  assert.equal(release.if, "${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}");
+  assert.equal(release.if, "${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) }}");
+  assert.equal(release.steps[0].with.ref, "${{ needs.source.outputs.commit }}");
+  assert.equal(release.env.RELEASE_SHA, "${{ needs.source.outputs.commit }}");
+  assert.equal(release.env.RELEASE_TAG, "${{ inputs.tag || github.ref_name }}");
   assert.deepEqual(release.permissions, { contents: "write", actions: "read" });
   assert.equal(release["timeout-minutes"], 10);
   assert.equal(workflow.jobs.source.steps[0].with["fetch-depth"], 0);
@@ -154,11 +163,13 @@ test("Source releases publish only reviewed tag revisions after quality and pack
   const windows = workflow.jobs.windows;
   assert.deepEqual(windows.needs, ["quality", "source"]);
   assert.equal(windows["timeout-minutes"], 30);
-  assert.equal(windows.steps[0].with.ref, "${{ github.sha }}");
+  assert.equal(windows.steps[0].with.ref, "${{ needs.source.outputs.commit }}");
   assert.match(windows.steps.find(step => step.id === "build").run, /scripts\.build_windows --release/);
   assert.ok(windows.steps.some(step => step.run?.includes("scripts.check_windows_packages")));
   assert.ok(!windows.permissions?.contents || windows.permissions.contents === "read");
   assert.ok(downloads.every(step => !step.with["run-id"] && !step.with["github-token"]));
+  assert.ok(downloads.every(step => step.with["skip-decompress"] === true),
+    "Keep release ZIPs intact instead of extracting them during artifact download");
   const publication = release.steps.find(step => step.name === "Publish GitHub Release").run;
   assert.match(publication, /'--verify-tag'/);
   assert.match(publication, /'--generate-notes'/);

@@ -32,6 +32,20 @@ validation. [Windows setup](SETUP.md) owns the required local checks.
 The tag target is rechecked before publication; this is not an atomic lock against
 concurrent remote tag changes. Do not move published version tags.
 
+To retry publication of an existing tag after a workflow correction, dispatch the
+current workflow from `main` with the `tag` input, for example:
+
+```powershell
+gh workflow run source-release.yml --ref main -f tag=v0.2.0
+```
+
+Quality checks use the current workflow revision. Source and Windows downloads
+are rebuilt from the resolved tagged commit, with the same ancestry, merged-PR,
+version and checksum gates. Concurrent runs for the same tag are serialized.
+Release ZIP artifacts are downloaded without automatic decompression so their
+original filenames, bytes and checksums remain intact. Existing releases are
+never overwritten by this retry path.
+
 ## In-application update discovery
 
 The About dialog offers a manual release check and an opt-in startup check
