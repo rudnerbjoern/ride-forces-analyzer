@@ -14,7 +14,8 @@ historical acceptance reports are not maintained.
 
 - [Explorer and GPS](implementation/RAW_EXPLORER.md).
 - [Video export](implementation/VIDEO_EXPORT.md), [saved presets and batches](implementation/EXPORT_BATCHES.md).
-- [All export themes](EXPORT_THEMES.md), [layout extension API](development/EXPORT_LAYOUTS.md).
+- [All export themes](EXPORT_THEMES.md), [layout extension API](development/EXPORT_LAYOUTS.md),
+  [Manta video with the G-Orbit overlay](https://youtu.be/tsRzD416voU).
 - [English/German presentation](development/LOCALIZATION.md).
 - Import APIs: [service](development/IMPORT_SERVICE.md), [models](development/CANONICAL_MODELS.md),
   [decoder](development/STRICT_DECODING.md), [motion](development/MOTION_PARSING.md),

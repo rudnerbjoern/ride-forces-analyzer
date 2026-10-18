@@ -19,6 +19,9 @@ Small file size and editing compatibility are priorities. ProRes is implemented;
 FFV1 is evaluated only. The [deployment view](../architecture/07_deployment_view.md#encoder-installation)
 records the concise full-recording/editor compatibility boundary.
 
+See the [Manta G-Orbit demo on YouTube](https://youtu.be/tsRzD416voU) for an example
+of the exported template over Onride footage.
+
 ## Contracts
 
 - The save dialog suggests the original `.forces` filename stem with `.mov` or
