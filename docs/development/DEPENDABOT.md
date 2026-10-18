@@ -2,7 +2,8 @@
 
 The native [.github/dependabot.yml](../../.github/dependabot.yml) schedules version
 updates through GitHub Dependabot. A separate scheduled Actions workflow is not
-needed; project CI remains PR-only. Configuration takes effect after integration
+needed; dependency proposals use the existing PR checks. Manual CI and source-tag
+validation are described in the [CI guide](CI.md). Configuration takes effect after integration
 into the default branch, `main`. Dependabot creates its own update branches/PRs;
 it does not push directly to `main` or merge changes.
 

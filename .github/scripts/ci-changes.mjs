@@ -20,7 +20,12 @@ export function classifyChanges(filenames) {
   let code = false;
   let documentation = false;
   let skills = false;
+  let workflows = false;
   for (const filename of filenames) {
+    if (filename.startsWith(".github/workflows/") || filename.startsWith(".github/scripts/")
+      || filename.startsWith("tests/ci/") || filename.startsWith("tests/dependencies/")) {
+      workflows = true;
+    }
     if (skillInputs.has(filename) || filename.startsWith(".github/workflows/")
       || filename.startsWith(".github/scripts/") || filename.startsWith("tests/ci/")) {
       skills = true;
@@ -40,7 +45,7 @@ export function classifyChanges(filenames) {
       code = true;
     }
   }
-  return { code, documentation, skills };
+  return { code, documentation, skills, workflows };
 }
 
 export function changedPaths(base, head, cwd = process.cwd()) {
@@ -71,11 +76,22 @@ export function writeOutputs(selection, output) {
     throw new Error("GITHUB_OUTPUT is required");
   }
   appendFileSync(output,
-    `code=${selection.code}\ndocumentation=${selection.documentation}\nskills=${selection.skills}\n`, "utf8");
+    `code=${selection.code}\ndocumentation=${selection.documentation}\nskills=${selection.skills}\nworkflows=${selection.workflows}\n`, "utf8");
+}
+
+export function selectChecks(eventName, base, head, cwd = process.cwd(), fullChecks = false) {
+  if (eventName === "workflow_dispatch" || fullChecks) {
+    return { code: true, documentation: true, skills: true, workflows: true };
+  }
+  if (eventName === "pull_request") {
+    return classifyChanges(changedPaths(base, head, cwd));
+  }
+  throw new Error(`Unsupported CI event: ${eventName}`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const selection = classifyChanges(changedPaths(process.env.PR_BASE_SHA, process.env.PR_HEAD_SHA));
+  const selection = selectChecks(process.env.GITHUB_EVENT_NAME, process.env.PR_BASE_SHA,
+    process.env.PR_HEAD_SHA, process.cwd(), process.env.CI_FULL_CHECKS === "true");
   writeOutputs(selection, process.env.GITHUB_OUTPUT);
-  console.log(`Code checks: ${selection.code}; documentation checks: ${selection.documentation}; skill checks: ${selection.skills}`);
+  console.log(`Code checks: ${selection.code}; documentation checks: ${selection.documentation}; skill checks: ${selection.skills}; workflow checks: ${selection.workflows}`);
 }

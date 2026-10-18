@@ -54,6 +54,10 @@ This does not verify ARM64, free-threaded Python, a clean VM or a release instal
 
 [PR CI](../development/CI.md) selects application, documentation and skill jobs on
 Windows after local acceptance. It cannot replace native desktop verification.
+Manual CI runs all three suites, workflow validation and mandatory secret scanning; a separate `v*` tag workflow validates source
+archives and package builds before a narrowly authorized job publishes a source
+release under the [release policy](../development/RELEASE.md). Neither runs a duplicate
+full check after a push to `main`.
 The partial M6 video export uses offline FFmpeg; standalone installation/uninstallation remains planned for
 M8; the checkout is a development environment, not a released installer.
 

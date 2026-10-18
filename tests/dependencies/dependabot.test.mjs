@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
 import { createRequire } from "node:module";
 import test from "node:test";
 
@@ -65,10 +67,135 @@ test("Schedules are staggered and version strategies retain usable constraints",
   }
 });
 
+test("Changed workflow validation is checksum-pinned and required by the final gate", async () => {
+  const source = await readFile(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const workflow = parseDocument(source).toJS();
+  const lint = workflow.jobs.actionlint;
+  assert.equal(lint.needs, "dependency-check");
+  assert.equal(lint.if, "${{ needs.dependency-check.outputs.workflows == 'true' }}");
+  assert.equal(lint["timeout-minutes"], 10);
+  assert.deepEqual(lint.steps[0].with, { "persist-credentials": false, ref: "${{ github.sha }}" });
+  const install = lint.steps.find(step => step.name === "Install checksum-pinned actionlint").run;
+  assert.match(install, /actionlint_1\.7\.12_windows_amd64\.zip/);
+  assert.match(install, /6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9/);
+  assert.match(install, /Get-FileHash.*SHA256/);
+  assert.ok(workflow.jobs.check.needs.includes("actionlint"));
+  const env = workflow.jobs.check.steps[0].env;
+  assert.equal(env.WORKFLOWS_REQUIRED, "${{ needs.dependency-check.outputs.workflows }}");
+  assert.equal(env.WORKFLOWS_RESULT, "${{ needs.actionlint.result }}");
+});
+
+test("Secret scanning is mandatory, checksum-pinned and cannot silently skip the merge gate", async () => {
+  const source = await readFile(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const workflow = parseDocument(source).toJS();
+  const scan = workflow.jobs.gitleaks;
+  assert.equal(scan["runs-on"], "windows-latest");
+  assert.equal(scan["timeout-minutes"], 10);
+  assert.ok(!Object.hasOwn(scan, "if") && !Object.hasOwn(scan, "needs"));
+  assert.ok(!Object.hasOwn(scan, "continue-on-error"));
+  assert.deepEqual(scan.steps[0].with, { "persist-credentials": false, "fetch-depth": 0, ref: "${{ github.sha }}" });
+  const install = scan.steps.find(step => step.name === "Install checksum-pinned Gitleaks").run;
+  assert.match(install, /gitleaks_8\.30\.1_windows_x64\.zip/);
+  assert.match(install, /d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e/);
+  assert.match(install, /Get-FileHash.*SHA256/);
+  assert.match(install, /useDefault = true/);
+  assert.ok(scan.steps.some(step => step.run === "./.github/scripts/test-gitleaks.ps1"));
+  const command = scan.steps.find(step => step.name === "Scan complete fetched Git history").run;
+  for (const flag of ["--log-opts=--all", "--ignore-gitleaks-allow", "--redact=100", "--exit-code 1",
+    "--config=.tmp/gitleaks/rules.toml", "--gitleaks-ignore-path=.tmp/gitleaks/empty-ignore"]) {
+    assert.ok(command.includes(flag), flag);
+  }
+  assert.ok(!scan.steps.some(step => step.uses?.startsWith("actions/upload-artifact@")));
+  assert.ok(workflow.jobs.check.needs.includes("gitleaks"));
+  assert.equal(workflow.jobs.check.steps[0].env.GITLEAKS_RESULT, "${{ needs.gitleaks.result }}");
+});
+
+test("Source releases publish only reviewed tag revisions after quality and package checks", async () => {
+  const source = await readFile(new URL("../../.github/workflows/source-release.yml", import.meta.url), "utf8");
+  const workflow = parseDocument(source).toJS();
+  assert.deepEqual(workflow.on, { push: { tags: ["v*"] } });
+  assert.deepEqual(workflow.permissions, { contents: "read" });
+  assert.equal(workflow.concurrency["cancel-in-progress"], false);
+  assert.equal(workflow.jobs.source["timeout-minutes"], 10);
+  assert.deepEqual(workflow.jobs.quality, { uses: "./.github/workflows/ci.yml", with: { "full-checks": true } });
+  assert.equal(workflow.jobs.source.needs, "quality");
+  assert.equal(workflow.jobs.source.steps[0].with.ref, "${{ github.sha }}");
+  assert.ok(!Object.hasOwn(workflow.jobs.source, "if"), "Do not bypass failed quality jobs");
+  assert.match(source, /check-source-release\.py/);
+  assert.match(source, /uv build --out-dir/);
+  const uploads = workflow.jobs.source.steps.filter(step => step.uses?.startsWith("actions/upload-artifact@"));
+  assert.deepEqual(uploads.map(step => step.with.path), [".tmp/release/source.zip", ".tmp/release/SHA256SUMS.txt", ".tmp/release/release-notes.md"]);
+  for (const upload of uploads) {
+    assert.equal(upload.with.archive, false);
+    assert.equal(upload.with["retention-days"], 14);
+    assert.equal(upload.with["if-no-files-found"], "error");
+  }
+  const release = workflow.jobs.release;
+  assert.deepEqual(release.needs, ["quality", "source"]);
+  assert.equal(release.if, "${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}");
+  assert.deepEqual(release.permissions, { contents: "write", actions: "read" });
+  assert.equal(release["timeout-minutes"], 10);
+  assert.equal(workflow.jobs.source.steps[0].with["fetch-depth"], 0);
+  assert.match(source, /check-release-policy\.py/);
+  const downloads = release.steps.filter(step => step.uses?.startsWith("actions/download-artifact@"));
+  assert.deepEqual(downloads.map(step => step.with.name), ["source.zip", "SHA256SUMS.txt", "release-notes.md"]);
+  assert.ok(downloads.every(step => !step.with["run-id"] && !step.with["github-token"]));
+  const publication = release.steps.find(step => step.name === "Publish GitHub Release").run;
+  assert.match(publication, /'--verify-tag'/);
+  assert.match(publication, /'--generate-notes'/);
+  assert.match(publication, /'--prerelease'/);
+  assert.ok(!/gh release edit|git push|--clobber/.test(source));
+});
+
+test("Actual publication command preserves preview flags and rejects failed release creation", async () => {
+  const source = await readFile(new URL("../../.github/workflows/source-release.yml", import.meta.url), "utf8");
+  const workflow = parseDocument(source).toJS();
+  const body = workflow.jobs.release.steps.find(step => step.name === "Publish GitHub Release").run;
+  await mkdir(".tmp", { recursive: true });
+  const directory = await mkdtemp(path.resolve(".tmp/release-command-"));
+  const script = path.join(directory, "publication.ps1");
+  try {
+    await writeFile(script, `$ErrorActionPreference = 'Stop'
+function gh {
+    $global:recorded = @($args)
+    $global:LASTEXITCODE = [int]$env:FAKE_EXIT
+}
+${body}
+ConvertTo-Json -Compress -InputObject $global:recorded
+`);
+    for (const [preview, exit] of [["true", 0], ["false", 0], ["true", 1]]) {
+      const result = spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script], {
+        encoding: "utf8", timeout: 30000,
+        env: { ...process.env, RELEASE_TAG: "v0.1.0", RELEASE_SHA: "a".repeat(40),
+          RELEASE_PREVIEW: preview, FAKE_EXIT: String(exit) },
+      });
+      assert.ifError(result.error);
+      if (exit) {
+        assert.notEqual(result.status, 0, "Failed publication must fail the workflow");
+        continue;
+      }
+      assert.equal(result.status, 0, result.stderr);
+      const args = JSON.parse(result.stdout.trim());
+      assert.deepEqual(args.slice(0, 5), ["release", "create", "v0.1.0", ".tmp/release/source.zip", ".tmp/release/SHA256SUMS.txt"]);
+      assert.ok(args.includes("--verify-tag") && args.includes("--generate-notes"));
+      assert.equal(args.includes("--prerelease"), preview === "true");
+      assert.equal(args.includes("--latest=false"), preview === "true");
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("Dependabot PRs use the existing read-only PR CI, with no automatic merge workflow", async () => {
   const workflowSource = await readFile(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
   const workflow = parseDocument(workflowSource).toJS();
-  assert.deepEqual(Object.keys(workflow.on), ["pull_request"]);
+  assert.deepEqual(workflow.on, { pull_request: { branches: ["main"] }, workflow_dispatch: null,
+    workflow_call: { inputs: { "full-checks": { type: "boolean", required: true } } } });
+  for (const job of Object.values(workflow.jobs)) {
+    for (const step of job.steps.filter(step => step.uses?.startsWith("actions/checkout@"))) {
+      assert.equal(step.with.ref, "${{ github.sha }}");
+    }
+  }
   assert.deepEqual(workflow.permissions, { contents: "read" });
   assert.ok(!/pull_request_target|--auto|enable_auto_merge|merge_pull_request/.test(workflowSource));
   const manifests = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8"));
