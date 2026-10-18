@@ -39,7 +39,7 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
 
         def inspect_window():
             try:
-                windows = QApplication.topLevelWidgets()
+                windows = [widget for widget in QApplication.topLevelWidgets() if widget.isVisible()]
                 assert len(windows) == 1
                 window = windows[0]
                 assert isinstance(window, QMainWindow)

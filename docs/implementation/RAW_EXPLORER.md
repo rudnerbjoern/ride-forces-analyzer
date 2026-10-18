@@ -54,7 +54,7 @@ can suppress short peaks; 5–11 at 50 Hz is an exploration recommendation, not 
 ## Workspace and metadata
 
 Requested default size is 1280×820; Windows may reduce the shown size when the
-available desktop cannot accommodate it and its native frame. The dark chart-first layout provides global Open/GPS/
+available desktop cannot accommodate it and its native frame. The chart-first layout provides global Open/GPS/
 notes/Inspector actions, local calibration/zoom/curve controls and current-value
 cards below the chart. The right inspector groups Display, Selection and Recording.
 Technical provenance, full-precision values and diagnostics are expandable; opening
@@ -63,6 +63,24 @@ scroll areas keep all controls reachable at 720×480. Sliders show only their na
 track and handle. Native caption uses a force-trace icon and loaded ride name;
 the application name is not repeated in the toolbar. Unsupported Windows caption
 colors retain system defaults; native window controls remain intact.
+
+Toolbar appearance selects Dark or Light during the session; startup remains
+Dark. Shared application palette/styles cover controls, disabled/selected states,
+tables, lists, tooltips, dialogs and GPS. Charts use scheme-specific backgrounds,
+axes, force/raw colors and markers; light text/channel/marker colors have at least
+4.5:1 contrast against the white chart panel. The main native caption follows the
+scheme when Windows supports its color attributes. Changing appearance preserves
+recording identity/values, hidden curves, selection, zoom, sample and smoothing.
+Export previews/videos retain their production colors and independent preview
+background selection; application appearance never changes export settings.
+
+English/German UI language switches immediately while preserving source/analysis,
+sample, selection, hidden curves and zoom. German numeric readouts use decimal
+commas; replay sample-counter notation stays unchanged. Known metadata labels and
+diagnostic explanations are localized; source values, diagnostic codes and paths
+are preserved. Complete original diagnostics remain selectable in technical details.
+English is the startup default, configurable through AppSettings; toolbar language
+selection is session-only. See [localization](../development/LOCALIZATION.md).
 
 Show available Ride, Park, Train, Row and Seat fields as plain text, preserving
 ordered duplicates and numeric tokens. Omit absent/blank metadata; do not infer it
