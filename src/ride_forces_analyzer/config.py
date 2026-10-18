@@ -1,6 +1,7 @@
 """Validated bootstrap configuration, separate from recording/domain models."""
 
 from pydantic import BaseModel, Field
+from .i18n import Language
 
 # Qt's documented maximum widget size; reject unsupported sizes before startup.
 MAX_WINDOW_DIMENSION = 16_777_215
@@ -12,3 +13,4 @@ class AppSettings(BaseModel, frozen=True, strict=True, extra="forbid", validate_
     window_title: str = Field(default="Ride Forces Analyzer", min_length=1)
     window_width: int = Field(default=1280, gt=0, le=MAX_WINDOW_DIMENSION)
     window_height: int = Field(default=820, gt=0, le=MAX_WINDOW_DIMENSION)
+    language: Language = "en"
