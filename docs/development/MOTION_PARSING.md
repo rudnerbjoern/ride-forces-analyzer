@@ -7,9 +7,9 @@ Its `limits.max_diagnostics` cap is checked during generation; source shape/byte
 budgets require prior decoding.
 
 Scope: FR-011–016 over an existing immutable source tree. This is a pure motion
-validation boundary, not a complete file importer. Stage 2 decoding, dispatch and
-resource guards are implemented separately; Stage 4 parses optional GPS/metadata
-and Stage 5 supplies full integration. See [ADR 0002](../decisions/0002-forces-source-contract.md) and
+validation boundary, not a complete file importer. Decoding/resource guards,
+optional GPS/metadata and full service composition are separate boundaries.
+See [ADR 0002](../decisions/0002-forces-source-contract.md) and
 [M2 validation](../validation/M2.md).
 
 ## API and caller obligations

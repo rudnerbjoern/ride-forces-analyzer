@@ -5,23 +5,16 @@
 Status: Deferred general-scientific proposal; not a reduced-M3 completion gate.
 The current [requirements](../requirements/DEV-REQ-003-scientific-analysis.md) use
 the adopted [ADR 0006](0006-app-reference-projection.md) app-reference policy,
-existing centered mean and planned basic extrema. This research proposal retains
+existing centered mean and implemented basic extrema. This research proposal retains
 scientific distinctions and reference protocols without authorizing computation,
 GPS analytics or universal physical calibration. Existing generic APIs still
 require their explicit unit/frame evidence. The current
-[plan](../implementation/DEV-REQ-003/PLAN.md) defines remaining product work.
+[scope](../implementation/DEV-REQ-003/PLAN.md) defines the completed product boundary.
 
 ## Context and verified boundary
 
-Reviewed at repository revision `0db96029c724edccb8175c7843bf8f18be3b808d`:
-[public service](../../src/ride_forces_analyzer/importers/service.py),
-[result types](../../src/ride_forces_analyzer/importers/result.py),
-[canonical models](../../src/ride_forces_analyzer/domain/models.py),
-[source ownership](../../src/ride_forces_analyzer/domain/source.py),
-[motion](../../src/ride_forces_analyzer/importers/motion.py) and
-[optional validation](../../src/ride_forces_analyzer/importers/optional.py).
-Existing tests reconfirmed these contracts on native Windows Python 3.14.6/uv;
-exact commands/outcomes are recorded in the plan.
+The [import service](../development/IMPORT_SERVICE.md) supplies preserved source
+evidence; [M2 acceptance](../validation/M2.md) scopes its verification.
 
 `import_forces(Path, *, limits=DEFAULT_LIMITS)` and
 `import_forces_bytes(bytes, *, limits=DEFAULT_LIMITS)` return immutable
@@ -87,7 +80,8 @@ Exact source extrema are observations, with unknown axis, unit and processing:
 Every smoothingFactor token is `1`. This does not prove an unfiltered sequence,
 window size, filter family or source-extrema formula. Manta's negative extreme
 and Flying metadata do not establish a sign inversion or permit a Seated transform.
-No extrema have been recomputed or compared against an independently captured UI.
+Computed extrema and independent UI comparisons are recorded in
+[source comparisons](../validation/APP_REFERENCE.md), separately from these tokens.
 
 ## Primary references and their limits
 
@@ -125,7 +119,8 @@ Ride Forces algorithm or app runtime was inspected.
 
 ## Proposed decisions and unresolved evidence matrix
 
-The decisions below constrain future work; they are not implemented analysis.
+The proposed general-qualification gates below do not replace implemented
+device/frame APIs or the separately adopted ADR 0006 display policy.
 
 | Topic                   | Known fact / candidate                                   | Safe proposed policy                                             | Evidence needed to qualify physical output                                |
 | ----------------------- | -------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -216,15 +211,15 @@ cannot supply missing data.
 
 Proposed eligibility is per channel/profile/source, not per successful file import:
 
-| Capability                 | Minimum evidence / gate                                    | Current fixture policy                                    |
-| -------------------------- | ---------------------------------------------------------- | --------------------------------------------------------- |
-| DEVICE_ONLY raw inspection | M2 full success; retained source identity/types            | All five eligible for raw scalars; units/axes UNKNOWN     |
-| Device-vector magnitude    | Declared common component unit and tested math             | No physical magnitude yet; raw data only                  |
-| Gravity-compensated motion | Verified quantity/unit/sign/frame and sample pairing       | Unavailable; Watch gravity absent, iPhone semantics open  |
-| VALIDATED_RIDER_FRAME      | Approved frame/pose evidence and synthetic/empirical tests | Unavailable for every original                            |
-| ORIGINAL_APP_REFERENCE     | Independently captured matching app settings/UI/export     | No current qualifying reference                           |
-| GPS geometry               | Valid slots, reviewed coordinates/datum/quality policy     | iPhone data retained but qualification open; Watch absent |
-| GPS physical speed / sync  | Qualified geometry/time scale; verified offsets for sync   | Unavailable; epochs/scale/alignment open                  |
+| Capability                 | Minimum evidence / gate                                    | Current fixture policy                                          |
+| -------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------- |
+| DEVICE_ONLY raw inspection | M2 full success; retained source identity/types            | All five eligible for raw scalars; units/axes UNKNOWN           |
+| Device-vector magnitude    | Declared common component unit and tested math             | No physical magnitude yet; raw data only                        |
+| Gravity-compensated motion | Verified quantity/unit/sign/frame and sample pairing       | Unavailable; Watch gravity absent, iPhone semantics open        |
+| VALIDATED_RIDER_FRAME      | Approved frame/pose evidence and synthetic/empirical tests | Unavailable for every original                                  |
+| ORIGINAL_APP_REFERENCE     | Independently captured matching app settings/UI/export     | Manta confirmation and other source-specific limits in ADR 0006 |
+| GPS geometry               | Valid slots, reviewed coordinates/datum/quality policy     | iPhone data retained but qualification open; Watch absent       |
+| GPS physical speed / sync  | Qualified geometry/time scale; verified offsets for sync   | Unavailable; epochs/scale/alignment open                        |
 
 NOT_AVAILABLE describes a capability exclusion. Proposed channel states remain
 VERIFIED, PROVISIONAL, UNAVAILABLE and INVALID per RES-002. VERIFIED is scoped
@@ -245,10 +240,10 @@ not g-labeled rider channels. It must not silently enable rider_calibrated or GP
 profiles. Unknowns are valid documented outcomes, not zeros or errors hidden by
 fallback. Owner approval can accept exclusions for milestone scope; it cannot
 establish units, calibration, epoch or app equivalence without evidence.
-AC-01 still needs owner ADR review; AC-08 requires the later comparison record.
-Neither is fully accepted by this Stage 0 draft, and M3 remains open.
+This proposed physical-qualification policy remains open. Reduced M3 uses its
+own adopted display/acceptance contracts and is complete; see [M3 acceptance](../validation/M3.md).
 
-## Reference collection and next-stage gate
+## References required for general physical qualification
 
 For each device/acquisition profile and app version, retain a source-hash-linked
 record of sensor/mount orientation, Watch wrist/arm stability, ride pose, raw API
@@ -266,8 +261,6 @@ measure any motion/GPS offset. Compare quantities only after unit/frame/time gat
 match. Keep synthetic numeric tolerances separate from empirical discrepancy
 criteria; no percentage tolerance for an unknown algorithm is proposed.
 
-Stage 1 may design APIs/dependency policy only after a separate owner instruction;
-this ADR identifies unresolved evidence without installing libraries or performing
-scientific calculations. Before any definitive rider interpretation, review the ADR
+This ADR identifies unresolved physical evidence. Before any definitive rider interpretation, review the ADR
 and supply qualifying references or retain the exclusion. Source bytes, all GPS
 data and M2 contracts remain unchanged. No next stage starts automatically.

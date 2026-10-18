@@ -1,1 +1,1 @@
-"""Rendering subsystem (implementation planned in roadmap)."""
+"""Independent RGBA frame generation and offline 4K video encoding."""

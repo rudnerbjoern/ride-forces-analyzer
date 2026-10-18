@@ -1,0 +1,76 @@
+"""Single-sample export previews using the production renderer, without encoding."""
+
+# cspell:words LANCZOS
+
+from dataclasses import dataclass, replace
+from typing import Literal
+
+from PIL import Image, ImageDraw
+
+from ride_forces_analyzer.explorer import ExplorerData
+from .frames import OverlayRenderer
+from .model import ExportLayout, ExportSettings, PROFILES, prepare_export
+
+
+@dataclass(frozen=True, slots=True)
+class ProfilePreview:
+    layout: ExportLayout
+    title: str
+    image: Image.Image
+
+
+@dataclass(frozen=True, slots=True)
+class ExportPreview:
+    sample: int
+    outside_range: bool
+    profiles: tuple[ProfilePreview, ...]
+
+
+def build_previews(
+    data: ExplorerData,
+    settings: ExportSettings,
+    first: int,
+    last: int,
+    sample: int,
+    background: Literal["checker", "light", "dark"] = "checker",
+) -> ExportPreview:
+    if not 0 <= sample < data.count:
+        raise ValueError("Preview sample outside recording")
+    data.select(first, last)
+    outside = not first <= sample <= last
+    timeline = prepare_export(
+        data,
+        settings,
+        0 if outside else first,
+        data.count - 1 if outside else last,
+    )
+    previews: list[ProfilePreview] = []
+    width, height = settings.dimensions
+    size = (width // 4, height // 4)
+    backdrop = Image.new("RGBA", size, "#e4eaf0" if background != "dark" else "#162533")
+    if background == "checker":
+        draw = ImageDraw.Draw(backdrop)
+        for y in range(0, size[1], 30):
+            for x in range(0, size[0], 30):
+                if (x // 30 + y // 30) % 2:
+                    draw.rectangle((x, y, x + 29, y + 29), fill="#aebfce")
+    for layout, title in PROFILES:
+        profile = (
+            settings
+            if layout == settings.layout
+            else replace(
+                settings,
+                layout=layout,
+                invert_vertical=layout == "column",
+                invert_lateral=layout == "column",
+            )
+        )
+        frame = OverlayRenderer(replace(timeline, settings=profile)).render_sample(sample)
+        canvas = backdrop.resize(frame.size, Image.Resampling.NEAREST)
+        image = (
+            Image.alpha_composite(canvas, frame)
+            .resize(size, Image.Resampling.LANCZOS)
+            .convert("RGB")
+        )
+        previews.append(ProfilePreview(layout, title, image))
+    return ExportPreview(sample, outside, tuple(previews))

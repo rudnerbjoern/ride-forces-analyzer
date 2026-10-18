@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const codeInputs = new Set([
-  "pyproject.toml", "uv.lock", ".python-version", ".node-version",
+  "pyproject.toml", "uv.lock", ".python-version", ".node-version", "ffmpeg.json",
   "package.json", "package-lock.json", ".gitignore", ".gitattributes", ".editorconfig",
   ".vscode/settings.json",
   ".github/dependabot.yml",

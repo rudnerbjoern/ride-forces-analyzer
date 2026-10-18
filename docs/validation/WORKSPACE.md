@@ -1,50 +1,54 @@
-# Workspace setup validation
+# Workspace verification
 
-The Windows workspace supplies `setup.ps1` and `start.ps1`.
-[Setup guide](../development/SETUP.md) is authoritative for current versions,
-locked installation, checks and editor settings. Current application startup/layout
-is covered in [explorer validation](RAW_EXPLORER.md).
+<!-- cspell:words basetemp -->
 
-## Verified script behavior
+[Windows setup](../development/SETUP.md) owns installation, startup and current
+tool versions. The setup/start scripts were verified on native Windows x64,
+Python 3.14.6 / uv 0.13.0 / Node 26.11.1, in the workspace-setup scope based on
+`4b201c42adb8201882bc9c91483ca03124290a57`.
 
-Native Windows x64 / Python 3.14.6 / uv 0.13.0 / Node 26.11.1, on
-`chore/workspace-setup-and-docs`, base `4b201c42adb8201882bc9c91483ca03124290a57`.
-Script scope: setup/start and workspace documentation; `.tmp/workspace-checks.log`
-and temporary runners retain actual output.
+Recorded checks passed for locked development setup, isolated absent-environment
+bootstrap, repeat setup, caller-directory restoration, missing-environment errors
+and native start/close. A mismatched Node version is rejected before sync.
+Start installs nothing and waits for window close.
 
-| Native command / scenario                                                           | Result                                                                                                     |
-| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .tmp/run-setup.ps1`        | Development setup completed with locked Python/Node dependencies                                           |
-| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .tmp/test-clean-setup.ps1` | Isolated absent environment created; uv bootstrap and Python selection passed                              |
-| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .tmp/test-workspace.ps1`   | Parse, missing-environment error, repeat setup, caller-directory restoration and native start/close passed |
-| Development setup with mismatched Node 26.5.0                                       | Rejected before dependency synchronization                                                                 |
+This is script-level verification, not clean-OS/interpreter installation, ARM64,
+manual editor interaction or release acceptance.
+Current GUI checks belong in [explorer verification](RAW_EXPLORER.md).
 
-Start performs no installation and waits for the window to close. Setup can use
-installed Python/cached wheels; initial missing downloads require network.
-Clean OS/interpreter installation, ARM64 and manual VS Code interactions are not
-verified by these checks. Original recordings are never installation inputs.
-Runtime/API/quality results are scoped in the relevant acceptance reports; no
-claim of a fresh security or scientific audit is made here.
+## Documentation verification
 
-## Documentation consistency
+The maintained documentation describes current behavior, acceptance boundaries,
+API contracts, scientific limits and open work. Validation evidence is scoped;
+application checks are not rerun for prose-only edits. Current review commands:
 
-The documentation describes current behavior, implemented/planned boundaries and
-known limits. Validation retains compact revision/platform/command/result scope;
-it is not an implementation diary. Roadmap entries agree with importer, analysis,
-explorer and GPS modules. ADR rationale, scientific references/discrepancies,
-requirements and recording authorization/digests remain retained.
+```text
+npm run test:docs
+```
 
-Documentation-only scope (2026-10-17): README, roadmap/index, affected architecture,
-analysis/importer plans/ADRs and validation summaries, including owner-approved
-reduced M3 scope and explicit deferred/excluded work. No source, tests, fixtures,
-locks or check configuration changed. Native Windows `npm run test:docs` and
-`.tmp/node-v26.11.1-win-x64/node.exe .tmp/stage3-mermaid.mjs` verify Markdown,
-spelling, local links and arc42 diagram syntax; results are recorded in
-`.tmp/explorer-docs.log` and `.tmp/docs-mermaid.log`. Application test evidence is
-reused for unchanged executable inputs. Mermaid visual/hosted rendering and a
-fresh security/release audit are outside this review.
+Documentation-only scope: README and docs on `feat/4k-force-exports`, based on
+d88304e25dc67b9c0cec6ffe9c55f03d4d74e66b. Native Windows Node 26.5.0:
+Markdown/spelling passed and all 63 local-link cases passed
+(`.tmp/docs-consolidation.log`). This is scoped tooling evidence, not pinned
+Node 26.11.1 full-stack acceptance. No application code, fixtures or locks changed.
 
-Results: Markdown lint passed for 62 documents, spelling for 138 files, all 62
-local-link tests passed, and all nine arc42 Mermaid definitions parsed.
-`git diff --check` passed. These checks cover documentation consistency/syntax;
-they do not claim new application or hosted acceptance.
+`python .tmp/check-doc-diagrams.py` verifies all nine retained Mermaid definitions
+against the reviewed index: only one plain label changed and all control syntax
+is identical (`.tmp/docs-diagrams.log`). No new parser/visual rendering, runtime,
+hosted CI, external-link or scientific verification is claimed.
+
+## Current delivery verification
+
+Native Windows x64, Python 3.14.6 / Qt 6.12.0 / uv 0.13.0 /
+Node 26.11.1 with locked dependencies. Scope: the complete export, batch,
+localization, theme, reference-script and documentation changes on
+`feat/4k-force-exports`, based on d88304e25dc67b9c0cec6ffe9c55f03d4d74e66b.
+
+All [required checks](../development/SETUP.md#required-project-checks) passed:
+lock consistency, Ruff lint/format, strict mypy/Pyright, type/dependency contracts,
+CI routing and documentation. `uv run --locked pytest --basetemp=.tmp/delivery-pytest`
+passed **1,441 cases** in 263.87 s. Documentation passes all 64 local-link cases,
+Markdown and spelling. Native runner output is retained in
+`.tmp/delivery-full-check.log` and `.tmp/delivery-final-check.log`; final
+documentation receives its affected check before publication.
+These are local results, not hosted CI or new full-recording export evidence.

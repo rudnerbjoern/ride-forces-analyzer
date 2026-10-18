@@ -22,21 +22,12 @@ unverified scientific assumptions are explicitly distinguished.
 | 11      | [Risks and technical debt](11_technical_risks.md)          | Scientific uncertainty and integration limits               |
 | 12      | [Glossary](12_glossary.md)                                 | Domain and architecture vocabulary                          |
 
-## Scope and evidence
+## Ownership
 
-M1 supplies the minimal Qt bootstrap and development foundation; M2 supplies the
-read-only, Qt-independent importer. M3 implements immutable contracts and
-explicit device primitives, provisional frames and the source-app projection/mean
-with per-source evidence. General physical rider qualification is deferred; reduced M3 includes
-selected-range extrema and has focused Windows acceptance. GPS analytics is outside current scope.
-M4 includes the raw/calibrated explorer, focus workspace and coarse GPS overview; the persistent
-library and M5–M8 product capabilities remain planned. See the [analysis API](../development/ANALYSIS_MODELS.md). Completion authority is the [roadmap](../ROADMAP.md), supported by
-[M1](../validation/M1.md) and [M2](../validation/M2.md) validation evidence.
-
-Requirements and implementation steps stay in their existing directories;
-development guides describe detailed API usage and reproducible checks. Chapter 09
-links the existing decision records in `docs/decisions/` rather than copying their
-history. Those records are decision evidence, not an alternative architecture view.
+The [roadmap](../ROADMAP.md) owns milestone status; requirements define acceptance
+and API guides define detailed contracts. These chapters describe implemented
+boundaries and explicit planned services. Chapter 09 links ADR rationale rather
+than duplicating it. Scientific uncertainty remains explicit across these views.
 
 This structure follows the [arc42 template sections](https://docs.arc42.org/home/)
 and [arc42 method](https://arc42.org/method/). Keep documentation proportional to

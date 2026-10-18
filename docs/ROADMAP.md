@@ -1,56 +1,41 @@
 # Roadmap
 
-Status describes the current implementation; partial functionality does not close
-an entire milestone. [README](../README.md) covers use, [architecture](architecture/README.md)
-covers subsystem boundaries, and validation reports retain scoped evidence.
+Milestone status refers to the scope defined by its requirements, not every
+possible feature. [README](../README.md) explains current use;
+[architecture](architecture/README.md) owns subsystem design.
 
-| Milestone                  | Status   | Implemented                                                                                                                                   | Remaining acceptance                                                                                                         |
-| -------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| M1 — Foundation            | Complete | Windows setup/start, typed settings, Qt bootstrap, quality tooling and CI                                                                     | None within M1; [evidence](validation/M1.md)                                                                                 |
-| M2 — Importer              | Complete | Lossless offline Path/bytes import, metadata/weather, ordered attributes, independent GPS and diagnostics                                     | Additional schemas require explicit contracts; [evidence](validation/M2.md)                                                  |
-| M3 — Analysis              | Complete | Immutable analysis models, explicit units/device vectors, provisional frames, source-app projection/mean and selected-range extrema           | None within reduced M3; [focused acceptance](validation/M3.md)                                                               |
-| M4 — Explorer              | Partial  | Background loading, raw/calibrated charts, sample navigation, time zoom/reset, selection, markers, metadata, GPS overview and focus workspace | Persistent ride library and full M4 acceptance                                                                               |
-| M5 — Playback              | Planned  | —                                                                                                                                             | Deterministic playback clock, pause, seek, speed control and interpolation                                                   |
-| M6 — Exports               | Planned  | —                                                                                                                                             | CSV/JSON/PNG, opaque MP4, transparent overlay/PNG sequence, layout profiles and Resolve verification                         |
-| M7 — Video synchronization | Planned  | —                                                                                                                                             | Local video ingest, offsets, timeline preview and frame-accurate matching/export                                             |
-| M8 — Windows release       | Planned  | —                                                                                                                                             | Standalone package, diagnostics, install/uninstall and clean-Windows validation                                              |
+| Milestone                  | Status                  | Implemented / remaining scope                                                                                                                                                  |
+| -------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| M1 — Foundation            | Complete                | Windows setup/start, strict settings, Qt bootstrap, tooling and CI; [acceptance](validation/M1.md)                                                                             |
+| M2 — Importer              | Complete                | Lossless offline import, metadata/weather, attributes, GPS and diagnostics; [acceptance](validation/M2.md)                                                                     |
+| M3 — Analysis              | Complete, reduced scope | Immutable models, explicit device/frame APIs, source-app projection/mean and selected-range extrema; [acceptance](validation/M3.md)                                            |
+| M4 — Explorer              | Partial                 | Raw/calibrated charts, markers, time zoom, selection, extrema, GPS, light/dark and English/German UI; persistent ride library and full acceptance remain                       |
+| M5 — Playback              | Planned                 | Deterministic clock, pause, seek, speed and interpolation                                                                                                                      |
+| M6 — Exports               | Partial                 | Five 4K layouts, portrait/landscape, transparent/opaque video, previews, SQLite presets/batches and optional NVIDIA encoding; CSV/JSON/PNG sequence and full acceptance remain |
+| M7 — Video synchronization | Planned                 | Local video ingest, offsets, timeline preview and frame-accurate alignment                                                                                                     |
+| M8 — Windows release       | Planned                 | Standalone package, install/uninstall, diagnostics and clean-Windows verification                                                                                              |
 
-## Implemented analysis and explorer
+## Product boundaries
 
-Calibrated forces defaults on for any import with usable source directions;
-preparation errors retain raw channels with a diagnostic. Centered smoothing is
-configurable from 1–51 odd samples, default 11, with live updates and right-click
-reset. Lateral signs mean right/left; longitudinal signs mean acceleration/braking.
-The Manta reference has source-bound owner confirmation at its compared default
-window. Other files remain individually provisional despite feature availability.
-[Source-app evidence](validation/APP_REFERENCE.md) records the known Kraken start
-mismatch and Voltron vertical-maximum display difference.
+Calibrated display is available for any usable import; failures retain raw data.
+Source-bound Manta confirmation does not qualify arbitrary recordings or all
+smoothing windows. Kraken's start mismatch and Voltron's maximum-display difference
+remain in [source comparisons](validation/APP_REFERENCE.md).
 
-The explorer supports bounded time zoom, marker-based default/reset, replay sample
-notation, fixed force bounds and -1/0/+1 g reference labels. GPS supplies coarse
-offline spatial context independently of force analysis. The dark focus workspace
-groups chart controls, current values and inspector settings; technical details
-are expandable. See [explorer contracts](implementation/RAW_EXPLORER.md) and
-[Windows validation](validation/RAW_EXPLORER.md).
+GPS supplies coarse spatial context only. Universal physical rider calibration,
+additional filter families, automatic events, threshold durations, broad statistics
+and analysis benchmark research are deferred. They are not reduced-M3 blockers.
+Installed libraries do not establish implemented features.
 
-## Open work
+SQLite stores export configuration, not the planned ride library. Exports use
+manual Onride alignment; interactive playback and synchronization are separate.
 
-1. Complete M4's persistent library and remaining explorer acceptance.
-2. Implement M5–M8 with their own acceptance gates.
+## Next product work
 
-Reduced M3 is complete: selected-range min/max values are shown in the inspector
-with source sample, recording/replay time and processing context. All current
-AC-01–AC-10 have [focused native Windows evidence](validation/M3.md).
-The owner-authorized pre-delivery full check passed 1,060 application tests.
-Further full suites remain on hold until another explicit release.
+1. Finish M4's persistent library and remaining explorer acceptance.
+2. Complete M6 beyond the [video](implementation/VIDEO_EXPORT.md) and
+   [batch](implementation/EXPORT_BATCHES.md) contracts.
+3. Scope M5, M7 and M8 independently.
 
-Additional filters, event detection, threshold durations, broad statistics,
-universal physical sensor/rider calibration and analysis benchmark research are
-deferred, not M3 completion requirements. GPS geodesics/speed analysis is outside
-the current product scope; GPS remains coarse spatial context. No GeographicLib
-adoption is required. Playback interpolation is scoped with M5 if needed.
-
-Installed packages do not establish planned capabilities. GPS remains a spatial reference; the app-reference display makes no universal
-physical calibration claim. Excluded research is not a blocker for reduced M3.
-Each new stage and every Git delivery operation require the applicable authorization
-in [AGENTS.md](../AGENTS.md). No additional implementation is implied by this roadmap.
+Only focused tests are currently authorized; full suites need renewed owner
+approval. A roadmap entry grants no implementation or Git-operation authorization.

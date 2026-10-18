@@ -2,7 +2,7 @@
 
 <!-- cspell:words orthonormal orthogonalization -->
 
-Status: Implemented for the separately instructed M3 Stage 3 on 2026-10-17.
+Status: Implemented numerical convention; general physical source mapping remains open.
 This decides numerical conventions and restrictions only. It does not accept the
 source-semantic proposals in [ADR 0003](0003-scientific-semantics-and-capability-gates.md)
 or qualify any real recording. Trace: SCI-003/007–009, VAL-001–002, AC-01/04 and ARC-001–004.
@@ -76,7 +76,7 @@ admission and any future empirical app-comparison tolerance. Identity, signed
 quarter-turns, a non-axis-aligned basis, inverted poses, inverse/norm invariants,
 reflection/skew rejection, missingness, overflow, source binding and all five
 fail-closed originals are checked. Exact Windows commands/results and remaining
-limits belong in [Stage 3 validation](../validation/M3_STAGE3.md).
+limits belong in [M3 validation](../validation/M3.md).
 M3 scientific acceptance, ADR 0003 owner review and source-app equivalence remain open.
 
 Subsequent owner evidence: Manta screenshots and a source-bound directional

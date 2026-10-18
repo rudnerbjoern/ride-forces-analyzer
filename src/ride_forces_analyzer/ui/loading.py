@@ -1,5 +1,7 @@
 """Qt worker transport; parsing and presentation preparation live outside widgets."""
 
+from ride_forces_analyzer.i18n import tr
+
 from pathlib import Path
 
 from PySide6.QtCore import QObject, QRunnable, Signal, Slot
@@ -23,6 +25,8 @@ class LoadWorker(QRunnable):
         try:
             outcome = load_recording(self.path)
         except Exception:
-            self.signals.failed.emit("Unexpected load error. The previous recording is unchanged.")
+            self.signals.failed.emit(
+                tr("Unexpected load error. The previous recording is unchanged."),
+            )
         else:
             self.signals.completed.emit(outcome)

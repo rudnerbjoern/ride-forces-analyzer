@@ -1,1 +1,1 @@
-"""Storage subsystem (implementation planned in roadmap)."""
+"""Local SQLite export presets/batches; persistent ride-library services remain planned."""

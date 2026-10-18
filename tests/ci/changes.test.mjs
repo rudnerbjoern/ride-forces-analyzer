@@ -20,7 +20,7 @@ for (const filename of ["README.md", "AGENTS.md", "docs/nested/PLAN.md",
 for (const filename of ["src/ride_forces_analyzer/importers/service.py", "tests/test_decoder.py",
   "tests/types/recording.test.mjs", "tests/docs/documentation.test.mjs",
   "tests/fixtures/schema-inventory.json", "tests/fixtures/real/recording.forces",
-  "pyproject.toml", "uv.lock", ".python-version", ".node-version", "package.json",
+  "pyproject.toml", "uv.lock", ".python-version", ".node-version", "ffmpeg.json", "package.json",
   "package-lock.json", ".github/workflows/ci.yml", ".github/dependabot.yml", ".github/labeler.yml", ".github/scripts/ci-changes.mjs",
   ".gitignore", ".gitattributes", ".editorconfig", ".vscode/settings.json", "tools/check.ps1",
   "tests/ci/changes.test.mjs"]) {

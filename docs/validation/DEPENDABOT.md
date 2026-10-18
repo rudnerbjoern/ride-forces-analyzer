@@ -26,18 +26,10 @@ Do not force dependency downgrades or remove overrides without reviewing resolve
 locks and affected tests. Editor extension bundles and native Python binaries are
 outside this Node audit. [Update policy](../development/DEPENDABOT.md) defines maintenance.
 
-## Verified compatibility
+## Compatibility boundary
 
-Native Windows Node 26.11.1/npm 11.20.0; tested override revision
+Native Windows Node 26.11.1/npm 11.20.0, tested override revision
 `62b10dfd27d725ddac656bbeb645d59e530602e1`.
-`npm ci --no-audit --no-fund` installed 195 packages;
-`npm run test:dependencies` passed six security cases: real-consumer TOML parsing,
-inherited-trust rejection and micromark math rendering. No rendered HTML is
-inserted into a browser. Ruff/mypy/Pyright, 39 pytest cases and documentation
-checks passed in that scope. Current expanded dependency suite has 15 passing
-cases recorded in [explorer quality evidence](RAW_EXPLORER.md).
-
-[Windows CI run](https://github.com/rudnerbjoern/ride-forces-analyzer/actions/runs/38398967539)
-for [PR #4](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/4) passed
-39 pytest, three typing, six dependency and 21 document-link cases. Those hosted
-results apply to the cited revision; no current PR/alert state is asserted.
+`npm run test:dependencies` passed its real-consumer TOML, inherited-trust and
+micromark rendering checks. This verifies the tested override behavior, not all
+upstream consumers, current advisories or a fresh online audit.

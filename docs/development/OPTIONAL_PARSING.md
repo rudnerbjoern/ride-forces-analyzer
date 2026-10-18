@@ -6,7 +6,7 @@ from the [strict decoder](STRICT_DECODING.md). The function performs no I/O,
 network access, motion validation, resampling, unit conversion or epoch conversion.
 Its success describes only optional accessors, never a complete `Recording`.
 The [motion parser](MOTION_PARSING.md) remains independently callable; the
-separately authorized [Stage 5 service](IMPORT_SERVICE.md) now composes a complete import.
+[public service](IMPORT_SERVICE.md) composes a complete import.
 
 ## Metadata and source ownership — FR-009–010, FR-022, FR-025
 
@@ -101,7 +101,7 @@ the existing severity/JSON Pointer/code policy and original sample indices.
 Document syntax, schema and shape budgets remain the decoder's responsibility;
 constructing an arbitrary SourceEnvelope manually does not establish those guards.
 
-Stage 4 enforces `limits.max_diagnostics` locally (default 1,000). Exactly at the
+Optional parsing enforces `limits.max_diagnostics` locally (default 1,000). Exactly at the
 budget is accepted. The next diagnostic replaces the last slot with a fatal limit
 record and stops parsing; no successful truncated warning set is returned.
 The [full service](IMPORT_SERVICE.md) now shares this guard with motion validation;

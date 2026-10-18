@@ -16,6 +16,7 @@ build/
 *.png
 *.sqlite3
 !tests/fixtures/**/*.png
+!docs/images/*.png
 
 # Keep the temporary directory, but ignore its contents.
 /.tmp/*
@@ -23,3 +24,6 @@ build/
 
 # Documentation development dependencies.
 node_modules/
+
+# Generated local video exports.
+/exports/

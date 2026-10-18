@@ -92,8 +92,10 @@ subsequent replay and video overlays. This is not a general scientific analysis 
 
 These exclusions are accepted scope boundaries, not verified implementations.
 GPS remains a rough spatial reference under the owner's product decision, not a
-future M3 force/speed measurement requirement. Later additions need a concrete
-use case and explicit authorization. Combined/Orientation remain evidence-only.
+force/speed measurement requirement. Later additions need a concrete
+use case and explicit authorization. Combined force remains comparison evidence
+within M3; exported tilt belongs to the separate
+[video contract](../implementation/VIDEO_EXPORT.md).
 
 ## 6. Validation and acceptance
 
@@ -126,8 +128,8 @@ use case and explicit authorization. Combined/Orientation remain evidence-only.
 | AC-09     | Original bytes retained; offline processing; analysis outside widgets                                 |
 | AC-10     | Owner-authorized focused Windows verification, responsive use, final report and aligned architecture  |
 
-The criteria above define current acceptance; older stage reports only evidence
-their tested code/contracts and do not automatically satisfy the reduced criteria.
+The criteria above define current acceptance; scoped checks do not automatically
+qualify broader scientific claims.
 **ARC-001–004:** Maintain only the twelve arc42 views, link ADRs from chapter 09,
 mark implemented/planned/unverified behavior and check changed diagrams/docs.
 Current criteria are verified in the focused acceptance report; broader excluded

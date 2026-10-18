@@ -40,7 +40,7 @@ def app_icon() -> QIcon:
     return icon
 
 
-def style_native_caption(window_id: int) -> None:
+def style_native_caption(window_id: int, *, dark: bool = True) -> None:
     """Use supported DWM attributes, allowing older Windows to retain defaults."""
     if sys.platform != "win32":
         return
@@ -49,7 +49,12 @@ def style_native_caption(window_id: int) -> None:
         setter.argtypes = [wintypes.HWND, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD]
         setter.restype = ctypes.c_long
         # COLORREF uses 0x00BBGGRR. Unsupported attributes leave native defaults.
-        for attribute, value in ((20, 1), (34, 0x4A392B), (35, 0x2B1F15), (36, 0xF5EBE3)):
+        attributes = (
+            ((20, 1), (34, 0x4A392B), (35, 0x2B1F15), (36, 0xF5EBE3))
+            if dark
+            else ((20, 0), (34, 0xE2D3C6), (35, 0xF6EFE9), (36, 0x422B17))
+        )
+        for attribute, value in attributes:
             setting = wintypes.DWORD(value)
             setter(window_id, attribute, ctypes.byref(setting), ctypes.sizeof(setting))
     except OSError:

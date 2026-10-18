@@ -39,7 +39,7 @@ All motion/vector components are finite decimal strings; GPS members are JSON
 numbers. Every element was examined. Object member order has no semantic meaning;
 source date/GPS timestamp epoch is unverified. These observations do not constitute
 universal mandatory fields. [ADR 0002](../decisions/0002-forces-source-contract.md)
-records the Stage 0 implementation contract and proposed device-aware policies.
+records the implemented source contract and device-aware policies.
 
 ## 3. Canonical importer contract
 
@@ -236,13 +236,10 @@ they are not local acceptance criteria.
 
 ## 7. Implementation references
 
-See [implementation plan](../implementation/DEV-REQ-002/PLAN.md),
-[sequential Codex prompts](../implementation/DEV-REQ-002/PROMPTS.md) and
-[observed format analysis](FORMAT-ANALYSIS.md). M2 has immutable Stage 1 models
-and diagnostic/result types, plus the separately authorized
-[Stage 3 motion subset](../development/MOTION_PARSING.md) and
-[Stage 2 strict decoder](../development/STRICT_DECODING.md) and
-[Stage 4 optional parser](../development/OPTIONAL_PARSING.md). The
-[Stage 5 public service](../development/IMPORT_SERVICE.md) now integrates these
-into complete typed recordings. M2 acceptance is verified; each subsequent stage needs
-a separate instruction.
+The [scope](../implementation/DEV-REQ-002/PLAN.md) and
+[observed format analysis](FORMAT-ANALYSIS.md) complement these requirements.
+The [public service](../development/IMPORT_SERVICE.md) composes immutable models,
+the [decoder](../development/STRICT_DECODING.md),
+[motion validation](../development/MOTION_PARSING.md) and
+[optional parsing](../development/OPTIONAL_PARSING.md) into complete recordings.
+[M2 acceptance](../validation/M2.md) is verified.

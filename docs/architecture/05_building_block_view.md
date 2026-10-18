@@ -30,9 +30,9 @@ flowchart TB
     Frames["analysis.frames: explicit provisional frame vectors"] --> Device
     Frames --> Analysis
     Frames --> SciPy["SciPy: passive frame rotation"]
-    Storage["storage: planned"] -.-> Domain
+    Storage["storage: SQLite export definitions"] --> Rendering
     Playback["playback: planned"] -.-> Domain
-    Rendering["rendering: planned"] -.-> Domain
+    Rendering["rendering: 4K frames / encoder"] --> Explorer
 ```
 
 Arrows express dependencies. Dashed arrows describe future consumers, not
@@ -47,10 +47,10 @@ widgets contain no parser, scientific transformations or source mutation.
 | domain               | Recording, SourceEnvelope, SourceNumber, vectors, motion, metadata, attributes and GPS concepts | Implemented immutable representations: [domain](../../src/ride_forces_analyzer/domain/)                                      |
 | importers            | Strict decoding, motion/optional validation, ordered diagnostics and public import composition  | Implemented: [importers](../../src/ride_forces_analyzer/importers/)                                                          |
 | analysis             | Immutable contracts, device/frame math and source-app projection/mean                           | Implemented analysis services: [analysis](../../src/ride_forces_analyzer/analysis/); basic extrema implemented               |
-| storage              | Local ride library and persistence                                                              | Reserved package; services planned for later milestones                                                                      |
+| storage              | SQLite export presets and batch snapshots                                                       | Implemented export configuration; persistent ride library remains planned                                                    |
 | playback             | Playback timeline and interpolation consumption                                                 | Reserved package; services planned                                                                                           |
-| rendering            | Frame generation and separate encoding                                                          | Reserved package; services planned                                                                                           |
-| ui                   | Raw chart controls and background import transport                                              | Implemented raw explorer; persistent library/playback remain planned                                                         |
+| rendering            | Independent RGBA generation and FFmpeg encoding                                                 | Implemented five-profile landscape/portrait transparent/opaque video                                                         |
+| ui                   | Raw chart controls and background import/export transport                                       | Implemented raw explorer; persistent library/playback remain planned                                                         |
 
 ## Importer composition and interfaces
 
@@ -76,7 +76,7 @@ MotionUnitContract declarations and returns independent SI vectors/norms.
 It never runs automatically after import. Library calls stay behind this API;
 caller references do not certify source semantics.
 
-Stage 3 `analysis.frames` supplies strict explicit-basis validation, passive
+`analysis.frames` supplies strict explicit-basis validation, passive
 SciPy transforms and source-bound opt-in PROVISIONAL rider vectors. No real rider
 calibration is qualified by this strict API. Its universal qualification and general
 statistics are deferred; GPS analytics is outside reduced
@@ -104,3 +104,32 @@ Basic per-axis extrema for inclusive selections are implemented in the pure
 `force_extrema` module, with immutable source/mode/window/unit/index/time results.
 Explorer presentation exposes them in the inspector; widgets perform no calculation.
 Raw operation avoids importing the NumPy-backed analysis package. This is a small selected-range product, not a generic statistics engine.
+
+## Video export boundary
+
+`analysis.orientation` implements source-gravity-to-vertical tilt with missing/zero
+vectors retained as gaps. `rendering.model` binds source identity, smoothing,
+inclusive ranges and fixed per-panel bounds to an independent video frame clock.
+`rendering.frames` draws the original column or delegates compact profiles to
+`rendering.layouts`; it can produce a full transparent RGBA frame independently.
+`ExportSettings` owns landscape/portrait dimensions. Shared region geometry drives
+frame composition and encoder padding; portrait force cards reflow vertically.
+Previews downsample the complete canvas proportionally. SQLite preset/job snapshots
+retain the aspect, with landscape as the backward-compatible default.
+The compact ribbon, corners, capsule and orbit preserve translucent panels and
+opaque data. `rendering.encoding` probes NVIDIA Vulkan/NVENC, streams the selected
+bounded region to FFmpeg, validates a complete decode and publishes one
+new output exclusively. No GPU or codec operation changes the source clock/data.
+`rendering.preview` prepares five exact-source-sample snapshots with the production
+renderer and preview-only contrast backgrounds, independent of FFmpeg and Qt.
+Out-of-range cursors are flagged without clamping. `ui.export` owns the two-step
+assistant, image transport, debounced/revision-gated preview jobs, queued progress and cooperative cancellation;
+no renderer/encoder logic lives in widgets. See [export contracts](../implementation/VIDEO_EXPORT.md).
+
+`storage.export_models` owns versioned immutable presets, source-bound jobs and
+batch definitions. `storage.exports` owns SQLite schema/version protection,
+transactional writes and the per-user database path. `rendering.batches` validates
+source identity and applies saved smoothing/ranges before sequential exports;
+its run report distinguishes completed, failed, cancelled and skipped jobs.
+`ui.batches` edits saved queues and transports worker results. No recording bytes
+or rendered media enter SQLite; preset changes cannot alter stored job snapshots.

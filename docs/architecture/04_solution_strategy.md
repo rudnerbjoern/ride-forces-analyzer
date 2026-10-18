@@ -18,10 +18,10 @@ flowchart LR
     Canonical --> Explorer["Raw/calibrated explorer and GPS overview"]
     Analysis --> Explorer
     Explorer -.-> Playback["M5 playback: planned"]
-    Analysis -.-> Frames["M6 frame generation: planned"]
-    Frames -.-> Encoder["M6 encoding: planned"]
-    Encoder -.-> Opaque["Opaque video"]
-    Encoder -.-> Overlay["Transparent overlay / PNG sequence"]
+    Analysis --> Frames["4K RGBA frame generation"]
+    Frames --> Encoder["Offline FFmpeg encoding"]
+    Encoder --> Opaque["Opaque video"]
+    Encoder --> Overlay["ProRes 4444 transparent overlay"]
     POV["Local POV video"] -.-> Sync["M7 synchronization: planned"]
     Sync -.-> Frames
 ```
@@ -34,24 +34,40 @@ analysis or synchronization. M2 ingestion does not establish those semantics.
 
 - `domain` owns representations; `importers` owns external format adapters and
   diagnostics. A valid source tree or motion subset is not a complete import.
-- `analysis` exposes immutable contracts and explicit Stage 2 DEVICE vector/unit
+- `analysis` exposes immutable contracts and explicit DEVICE vector/unit
   primitives. Source-app projection/mean and strict provisional frame transforms are implemented;
   basic selected-range extrema are implemented. General physical rider qualification
-  and broad statistics are outside current M3 acceptance. `storage`, `playback` and `rendering` remain reserved boundaries
-  without implemented services. Their details follow their milestone requirements.
+  and broad statistics are outside current M3 acceptance. `storage` implements
+  SQLite export presets/batches; the ride library and `playback` remain planned.
+  `rendering` implements the
+  owner-requested 4K overlay slice, independently of interactive playback.
 - `ui` owns the raw explorer, Qt Charts interactions and background worker transport.
   `explorer` prepares raw/calibrated presentation and validates local selections
   independently of Qt. The entry point uses strictly validated settings.
 - Each import owns its bytes, immutable tree and diagnostics; no shared mutable
   recording state or process-global decoder configuration is introduced.
 
-## Planned export policy
+## Implemented export policy
 
-M6 keeps frame generation independent of encoding and supports both an opaque
-standalone MP4/H.264 video and a transparent overlay. PNG RGBA frame sequences
-are the alpha baseline; any alpha-video codec requires compatibility verification
-in DaVinci Resolve. FFmpeg integration, rendering and final encoding remain
-planned; installed optional dependencies do not constitute these capabilities.
+`rendering.model` prepares source-bound calibrated forces, tilt and a deterministic
+source/video clock. `rendering.frames` generates Pillow RGBA frames, delegating
+compact profiles to `rendering.layouts`: ribbon, corner cards, capsule or signed
+orbit gauges. The original four-panel column remains available. The encoder
+consumes the selected rectangular region, pads to 4K and
+encodes one transparent ProRes 4444 MOV or independent opaque H.264 MP4.
+Real NVIDIA probes select Vulkan/NVENC or explicit CPU fallback. Every output
+frame is decoded before exclusive publication. Widgets only configure/transport
+background jobs. Manual Resolve alignment is outside the processing path.
+[Export contracts](../implementation/VIDEO_EXPORT.md) and
+[verification](../validation/VIDEO_EXPORT.md) scope this partial M6 implementation;
+PNG sequences and additional export products remain planned.
+
+`storage.exports` persists versioned preset/batch definitions in SQLite; originals
+remain external read-only files. `rendering.batches` imports each job, checks its
+saved source hash, restores its immutable preset/range and runs the existing
+encoder sequentially. A unique run directory and incremental result report retain
+completed work across per-job failure/cancellation. Qt owns queue editing and
+worker transport, not SQL, import validation or execution logic.
 
 ## Scientific strategy
 

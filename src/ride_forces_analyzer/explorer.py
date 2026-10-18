@@ -1,5 +1,7 @@
 """Qt-independent raw-recording presentation and local sample-selection contracts."""
 
+from ride_forces_analyzer.i18n import diagnostic_message, get_language, tr
+
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from importlib.util import find_spec
@@ -51,6 +53,19 @@ class ExplorerData:
     reference_error: str | None = None
 
     @property
+    def localized_notes(self) -> str:
+        if get_language() == "en":
+            return self.notes
+        lines = [
+            f"{item.severity.value.upper()} {item.code} {item.json_path}: "
+            f"{diagnostic_message(item.code, item.message)}"
+            for item in self.source.diagnostics
+        ]
+        if self.reference_error:
+            lines.append(f"CALIBRATION_UNAVAILABLE: {tr(self.reference_error)}")
+        return "\n".join(lines) or tr("No import diagnostics.")
+
+    @property
     def plotted_channels(self) -> tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]:
         return (
             self.reference.channels if self.reference_enabled and self.reference else self.channels
@@ -60,9 +75,9 @@ class ExplorerData:
     def channel_names(self) -> tuple[str, str, str]:
         return (
             (
-                "Vertical",
-                "Lateral (+ right / − left)",
-                "Longitudinal (+ acceleration / − braking)",
+                tr("Vertical"),
+                tr("Lateral (+ right / − left)"),
+                tr("Longitudinal (+ acceleration / − braking)"),
             )
             if self.reference_enabled
             else ("x", "y", "z")
@@ -93,9 +108,9 @@ class ExplorerData:
     def smoothing_text(self) -> str:
         window = self.reference.smoothing_window if self.reference else 11
         if window == 1:
-            return "1 sample • Smoothing off"
+            return tr("1 sample • Smoothing off")
         half_ms = (window // 2) / self.sample_rate * 1000
-        return f"{window} samples • ±{half_ms:g} ms • Centered mean"
+        return tr("{0} samples • ±{1:g} ms • Centered mean", window, half_ms)
 
     def with_smoothing(self, window: int) -> "ExplorerData":
         if self.reference is None:
@@ -124,25 +139,41 @@ class ExplorerData:
 
     @property
     def metadata_text(self) -> str:
-        return "  |  ".join(f"{label}: {value}" for label, value in self.metadata_fields)
+        return "  |  ".join(f"{tr(label)}: {value}" for label, value in self.metadata_fields)
 
     @property
     def metadata_rows_text(self) -> str:
-        return "\n".join(f"{label}: {value}" for label, value in self.metadata_fields)
+        return "\n".join(f"{tr(label)}: {value}" for label, value in self.metadata_fields)
 
     @property
     def overview_text(self) -> str:
         recording = self.source.recording
-        return f"{recording.metadata.device or 'Unknown device'} · {self.count:,} samples · {self.sample_rate:g} Hz"
+        return tr(
+            "{0} · {1:,} samples · {2:g} Hz",
+            recording.metadata.device or tr("Unknown device"),
+            self.count,
+            self.sample_rate,
+        )
 
     @property
     def availability_text(self) -> str:
-        gravity = "available" if self.source.recording.motion.gravity is not None else "absent"
-        return f"Gravity {gravity} · GPS {self.source.recording.gps_status.value} · Inferred time"
+        gravity = (
+            tr("available") if self.source.recording.motion.gravity is not None else tr("absent")
+        )
+        return tr(
+            "Gravity {0} · GPS {1} · Inferred time",
+            gravity,
+            tr(self.source.recording.gps_status.value),
+        )
 
     def sample_clock_text(self, index: int) -> str:
         self.select(index, index)
-        return f"Replay {self.replay_text(index)} · Recording {self.time_at(index):.3f} s · {self.sample_rate:g} Hz"
+        return tr(
+            "Replay {0} · Recording {1:.3f} s · {2:g} Hz",
+            self.replay_text(index),
+            self.time_at(index),
+            self.sample_rate,
+        )
 
     def sample_cards(self, index: int) -> tuple[tuple[str, str, str], ...]:
         self.select(index, index)
@@ -153,14 +184,14 @@ class ExplorerData:
             value = values[index]
             if self.reference_enabled:
                 meanings = (
-                    ("Vertical force", "Vertical force"),
-                    ("Left", "Right"),
-                    ("Braking", "Acceleration"),
+                    (tr("Vertical force"), tr("Vertical force")),
+                    (tr("Left"), tr("Right")),
+                    (tr("Braking"), tr("Acceleration")),
                 )
-                meaning = "Neutral" if value == 0 else meanings[axis][int(value > 0)]
-                cards.append((name.partition(" (")[0], f"{value:+.2f} g", meaning))
+                meaning = tr("Neutral") if value == 0 else meanings[axis][int(value > 0)]
+                cards.append((name.partition(" (")[0], tr("{0:+.2f} g", value), meaning))
             else:
-                cards.append((name, f"{value:.6g}", "Unit unknown"))
+                cards.append((name, tr("{0:.6g}", value), tr("Unit unknown")))
         return tuple(cards)
 
     def selection_extrema(self, first: int, last: int) -> SelectionExtrema:
@@ -174,21 +205,36 @@ class ExplorerData:
     def extrema_text(self, first: int, last: int) -> tuple[str, tuple[str, ...]]:
         result = self.selection_extrema(first, last)
         context = (
-            f"Calibrated · {result.smoothing_window} samples smoothing · g"
+            tr("Calibrated · {0} samples smoothing · g", result.smoothing_window)
             if result.mode == "calibrated"
-            else "Raw source · Unfiltered · Unit unknown"
+            else tr("Raw source · Unfiltered · Unit unknown")
         )
         rows: list[str] = []
         for channel in result.channels:
             points: list[str] = []
-            for label, point in (("Min", channel.minimum), ("Max", channel.maximum)):
-                value = f"{point.value:+.2f} g" if result.unit == "g" else f"{point.value:.6g}"
-                points.append(
-                    f"{label} {value} · Replay {self.replay_text(point.index)}\n"
-                    f"Sample {point.index} · Recording {point.recording_seconds:.3f} s",
+            for label, point in ((tr("Min"), channel.minimum), (tr("Max"), channel.maximum)):
+                value = (
+                    tr("{0:+.2f} g", point.value)
+                    if result.unit == "g"
+                    else tr("{0:.6g}", point.value)
                 )
-            rows.append(f"{channel.name}\n" + "\n".join(points))
-        return f"{context} · {result.sample_rate:g} Hz · {result.count:,} selected", tuple(rows)
+                points.append(
+                    tr(
+                        "{0} {1} · Replay {2}\nSample {3} · Recording {4:.3f} s",
+                        label,
+                        value,
+                        self.replay_text(point.index),
+                        point.index,
+                        point.recording_seconds,
+                    ),
+                )
+            rows.append(f"{tr(channel.name)}\n" + "\n".join(points))
+        return tr(
+            "{0} · {1:g} Hz · {2:,} selected",
+            context,
+            result.sample_rate,
+            result.count,
+        ), tuple(rows)
 
     @property
     def count(self) -> int:
@@ -233,9 +279,9 @@ class ExplorerData:
     @property
     def replay_time_label(self) -> str:
         return (
-            f"Replay time (MM:SS.ff @ {self.sample_rate:g} Hz; ff = sample)"
+            tr("Replay time (MM:SS.ff @ {0:g} Hz; ff = sample)", self.sample_rate)
             if self.sample_rate.is_integer()
-            else f"Replay time (s @ {self.sample_rate:g} Hz)"
+            else tr("Replay time (s @ {0:g} Hz)", self.sample_rate)
         )
 
     def replay_text(self, index: int) -> str:
@@ -272,12 +318,16 @@ class ExplorerData:
     def sample_text(self, index: int) -> str:
         self.select(index, index)
         values = "   ".join(
-            f"{name} {axis[index]:.6g}"
+            tr("{0} {1:.6g}", name, axis[index])
             for name, axis in zip(self.channel_names, self.plotted_channels, strict=True)
         )
-        return (
-            f"Sample {index:,}   |   Replay {self.replay_text(index)} @ {self.sample_rate:g} Hz"
-            f"   |   Recording {self.time_at(index):.3f} s   |   {values}"
+        return tr(
+            "Sample {0:,}   |   Replay {1} @ {2:g} Hz   |   Recording {3:.3f} s   |   {4}",
+            index,
+            self.replay_text(index),
+            self.sample_rate,
+            self.time_at(index),
+            values,
         )
 
 
@@ -291,22 +341,24 @@ def present_recording(source: ImportSuccess) -> ExplorerData:
     )
     name = recording.metadata.name
     path = recording.source.provenance.path
-    title = name or (path.stem if path is not None else "Recording")
-    device = recording.metadata.device or "Unknown device"
-    gravity = "available" if motion.gravity is not None else "absent"
-    gps = recording.gps_status.value
+    title = name or (path.stem if path is not None else tr("Recording"))
+    device = recording.metadata.device or tr("Unknown device")
+    gravity = tr("available") if motion.gravity is not None else tr("absent")
+    gps = tr(recording.gps_status.value)
     rate = motion.sample_rate
-    summary = (
-        f"{device}  |  {len(motion.acceleration):,} samples  |  "
-        f"Sample rate {rate.value:g} Hz ({rate.origin.value})  |  Time: INFERRED_UNIFORM  |  Gravity {gravity}  |  GPS {gps}"
+    summary = tr(
+        "{0}  |  {1:,} samples  |  Sample rate {2:g} Hz ({3})  |  Time: INFERRED_UNIFORM  |  Gravity {4}  |  GPS {5}",
+        device,
+        len(motion.acceleration),
+        rate.value,
+        rate.origin.value,
+        gravity,
+        gps,
     )
-    notes = (
-        "\n".join(
-            f"{item.severity.value.upper()} {item.code} {item.json_path}: {item.message}"
-            for item in source.diagnostics
-        )
-        or "No import diagnostics."
-    )
+    notes = "\n".join(
+        f"{item.severity.value.upper()} {item.code} {item.json_path}: {item.message}"
+        for item in source.diagnostics
+    ) or tr("No import diagnostics.")
     low = min(0.0, min(min(axis) for axis in channels))
     high = max(0.0, max(max(axis) for axis in channels))
     # Pad each signed extremum independently; keep zero visible for one-sided data.
@@ -323,9 +375,12 @@ def present_recording(source: ImportSuccess) -> ExplorerData:
         except ValueError as error:
             reference_error = str(error)
     else:
-        reference_error = "The optional NumPy analysis package is not installed"
+        reference_error = tr("The optional NumPy analysis package is not installed")
     if reference_error:
-        notes += f"\nCALIBRATION_UNAVAILABLE: {reference_error}. Raw recording remains available."
+        notes += tr(
+            "\nCALIBRATION_UNAVAILABLE: {0}. Raw recording remains available.",
+            reference_error,
+        )
     return ExplorerData(
         source,
         channels,
@@ -347,6 +402,6 @@ def load_recording(path: Path) -> ExplorerData | ImportFailure:
 def failure_text(failure: ImportFailure) -> str:
     """Bounded field-oriented feedback, never an exception or recording payload."""
     items = failure.diagnostics[:5]
-    return "Could not open recording. " + "; ".join(
-        f"{item.code}: {item.message}" for item in items
+    return tr("Could not open recording. ") + "; ".join(
+        f"{item.code}: {diagnostic_message(item.code, item.message)}" for item in items
     )
