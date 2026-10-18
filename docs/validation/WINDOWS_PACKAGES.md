@@ -2,6 +2,8 @@
 
 Scope: current desktop, export and Windows-packaging changes on
 `feat/windows-release-packages`, based on `5555f57`; version 0.1.0.
+Application and test content verified through `2725747`; subsequent documentation
+changes require the documentation checks below. Review: [PR #17](https://github.com/rudnerbjoern/ride-forces-analyzer/pull/17).
 Platform: native Windows x64, Python 3.14.6, Qt/PySide6 6.12.0,
 PyInstaller 6.22.3, Node 26.11.1. Original recordings remain unchanged.
 
@@ -14,10 +16,10 @@ PyInstaller 6.22.3, Node 26.11.1. Original recordings remain unchanged.
 - `npm run typecheck`: no errors or warnings.
 - `npm run test:types`, `npm run test:dependencies` and
   `node --test tests/ci/changes.test.mjs`: 11, 20 and 45 tests passed.
-- `pytest -ra --durations=20 --junitxml=.tmp/test-results/application.xml --basetemp=.tmp/pytest-full-delivery`:
+- `pytest -ra --durations=20 --junitxml=.tmp/test-results/application-ci-fix.xml --basetemp=.tmp/pytest-ci-fix`:
   all 1,519 application tests passed, including native GUI and recording integrity.
 - Separate delivery-tool checks: Ruff check/format, mypy on the helper/tests and
-  `pytest .agents/skills/github-delivery/tests -ra --basetemp=.tmp/pytest-skill-delivery`:
+  `pytest .agents/skills/github-delivery/tests -ra --basetemp=.tmp/pytest-skill-ci-fix`:
   passed; 81 tool tests. Application discovery remains separate.
 - `actionlint -verbose -shellcheck= -pyflakes=`: no errors in three workflows.
 - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .github/scripts/test-gitleaks.ps1`:
@@ -28,6 +30,9 @@ PyInstaller 6.22.3, Node 26.11.1. Original recordings remain unchanged.
 - `uv build --out-dir .tmp/delivery-python-packages`: source distribution and
   wheel built successfully.
 - `npm run test:docs`: Markdown, spelling and 52 link tests passed.
+- `pwsh.exe -NoProfile -File .tmp/reproduce-ci.ps1`: all 11 dependency/workflow
+  tests passed with Windows PowerShell child processes launched from PowerShell 7.
+  The About GUI test also passed with exact parsed link-target comparison.
 
 Native executables from the locked environment ran directly where using
 `uv run` would unnecessarily resynchronize the shared test environment.
