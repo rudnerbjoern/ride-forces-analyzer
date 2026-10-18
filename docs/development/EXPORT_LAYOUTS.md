@@ -75,5 +75,5 @@ remain behavior contracts rather than arbitrary design values.
 Registry tests also substitute a small custom renderer to verify that composition
 uses the plugin interface, rather than recognizing concrete layout classes.
 See the [arc42 building blocks](../architecture/05_building_block_view.md) for the
-subsystem boundary and [export verification](../validation/VIDEO_EXPORT.md) for
+subsystem boundary and [encoder compatibility boundary](../architecture/07_deployment_view.md#encoder-installation) for
 current evidence.

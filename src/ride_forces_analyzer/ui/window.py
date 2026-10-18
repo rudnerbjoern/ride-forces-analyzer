@@ -1,4 +1,8 @@
-"""First usable raw-recording explorer; Qt Charts owns interactive chart drawing."""
+"""First usable raw-recording explorer; Qt Charts owns interactive chart drawing.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 # cspell:words Deutsch
 

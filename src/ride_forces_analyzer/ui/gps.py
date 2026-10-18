@@ -1,4 +1,8 @@
-"""Offline spatial overview with independent Qt scene and no sensor timeline."""
+"""Offline spatial overview with independent Qt scene and no sensor timeline.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from ride_forces_analyzer.i18n import tr
 from .translation import bind

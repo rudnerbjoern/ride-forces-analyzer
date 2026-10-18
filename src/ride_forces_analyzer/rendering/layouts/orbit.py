@@ -1,4 +1,8 @@
-"""G-Orbit: force arcs, signed peak hold and a 0–180 degree tilt instrument."""
+"""G-Orbit: force arcs, signed peak hold and a 0–180 degree tilt instrument.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 # cspell:words segoeui segoeuib
 

@@ -1,4 +1,8 @@
-"""Validated bootstrap configuration, separate from recording/domain models."""
+"""Validated bootstrap configuration, separate from recording/domain models.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from pydantic import BaseModel, Field
 from .i18n import Language

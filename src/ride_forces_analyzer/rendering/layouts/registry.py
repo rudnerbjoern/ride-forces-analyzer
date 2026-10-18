@@ -1,4 +1,8 @@
-"""Explicit offline layout registry; add built-in plugins here."""
+"""Explicit offline layout registry; add built-in plugins here.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from __future__ import annotations
 from types import MappingProxyType

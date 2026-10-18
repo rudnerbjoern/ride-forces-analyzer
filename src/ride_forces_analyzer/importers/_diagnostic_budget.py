@@ -1,4 +1,8 @@
-"""Shared bounded diagnostics for standalone subsets and full import calls."""
+"""Shared bounded diagnostics for standalone subsets and full import calls.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from dataclasses import dataclass, field
 

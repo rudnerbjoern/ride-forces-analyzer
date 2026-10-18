@@ -1,7 +1,7 @@
 # Recording explorer — implemented contracts
 
-The explorer is a usable M4 slice. Reduced M3 has [focused acceptance](../validation/M3.md); M4 library acceptance
-remains open; see [roadmap](../ROADMAP.md) and [Windows evidence](../validation/RAW_EXPLORER.md).
+The explorer is a usable M4 slice; the persistent ride library remains planned.
+See the [roadmap](../ROADMAP.md) and [analysis concepts](../architecture/08_concepts.md#scientific-provenance-and-gates).
 
 ## Loading and presentation
 
@@ -10,7 +10,7 @@ remains open; see [roadmap](../ROADMAP.md) and [Windows evidence](../validation/
 - Display every sample in three colored, independently visible curves. Raw x/y/z
   retains unknown units. Calibrated forces defaults on whenever source directions
   are usable; otherwise raw display includes a calibration diagnostic.
-- Projection and smoothing follow [ADR 0006](../decisions/0006-app-reference-projection.md).
+- Projection and smoothing follow [source-app projection decision](../architecture/09_architecture_decisions.md#source-app-projection).
   Feature availability is independent of per-source scientific verification.
 - Calibrated lateral positive/negative means right/left; longitudinal means
   acceleration/braking. Raw values have no rider-direction claims.
@@ -96,14 +96,7 @@ timestamp intervals. One usable point can be displayed. Replacement/main-window
 close closes its GPS dialog. GPS never controls force values, timing or selection.
 No base map, network, invented fixes or confirmed speed-color contract is provided.
 
-## Acceptance boundary
-
-Native Windows tests cover startup/custom sizes, resizing, all five originals,
-every plotted point, live navigation/smoothing/reset, zoom/selection/markers,
-raw fallback, missing metadata, error recovery, responsive imports, GPS lifecycle
-and exact source integrity. Visual checks cover wide/compact layouts and native
-caption. Retain exact commands/results/platform/scope in the validation report.
-Persistent storage, playback, statistics, rendering and export are outside this slice.
+## Selection extrema
 
 The inspector's Selection extrema panel shows all three channels' min/max for the
 inclusive selected interval, even when a curve is hidden. Values use the active

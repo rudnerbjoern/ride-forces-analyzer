@@ -19,7 +19,9 @@ product features; the [roadmap](../ROADMAP.md) owns that status.
 
 NumPy/Pint/SciPy support existing analysis boundaries; Pillow supports frame
 rendering and Python's sqlite3 supports export configuration without a server.
-[ADR 0004](../decisions/0004-analysis-contracts-and-library-policy.md) retains
+[analysis library decision](../architecture/09_architecture_decisions.md#analysis-models-and-libraries) retains
 scientific library rationale and binary-license limits.
-[Node security evidence](DEPENDABOT.md) is dated and does not replace a fresh
+[Node security policy](../development/DEPENDABOT.md#node-overrides-and-security-boundary) does not replace a fresh
 release audit. Standalone redistribution must inspect actual assembled notices.
+The [third-party license inventory](../../THIRD_PARTY_NOTICES.md) records inspected
+Qt Charts/FFmpeg terms, fonts/materials and outstanding notice/source duties.

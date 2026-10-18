@@ -1,4 +1,4 @@
-# Analysis contracts and device primitives — DEV-REQ-003
+# Analysis contracts and device primitives
 
 The [analysis package](../../src/ride_forces_analyzer/analysis/) exposes executable
 model contracts. `analysis.device` provides opt-in qualified DEVICE vectors/norms
@@ -6,9 +6,9 @@ and Pint conversion; explicit provisional frames and source-app calibrated
 projection are implemented as separate contracts below.
 Use the already locked NumPy from the `analysis` extra. The regular bootstrap
 and M2 importer do not import this package. The
-[library/API ADR](../decisions/0004-analysis-contracts-and-library-policy.md)
-records audit evidence, adoption gates and API migration policy;
-[ADR 0003](../decisions/0003-scientific-semantics-and-capability-gates.md) remains
+[analysis library decision](../architecture/09_architecture_decisions.md#analysis-models-and-libraries)
+records library roles, adoption gates and immutable API boundaries;
+[physical qualification boundary](../architecture/09_architecture_decisions.md#physical-qualification) remains
 the proposed scientific qualification policy.
 
 ## Public model shape
@@ -48,8 +48,8 @@ opt-in profile with named assumptions. Reference strings are caller attestations
 not automatic qualification of a source. No current real fixture is assigned these
 units or projected into RIDER/WORLD_GRAVITY by the implemented models.
 
-Interpreted frames require references. The proposed right-handed/passive convention
-and unresolved yaw/pose mapping remain in ADR 0003. Ordinary DEVICE labels retain
+Interpreted frames require references. The right-handed/passive numerical convention
+is implemented; physical yaw/pose mapping remains unqualified. Ordinary DEVICE labels retain
 source x/y/z, not known Earth or rider directions. Pint's `g` symbol is gram,
 not the project's dimensionless loading ratio; future conversion must use the
 explicit standard-gravity normalization policy, never an ambiguous symbol.
@@ -269,8 +269,8 @@ result = analyze_rider_frame(
 ```
 
 All five real fixtures remain unit/frame-unqualified; absent Watch gravity stays
-absent. See [ADR 0005](../decisions/0005-passive-frame-transforms.md),
-[M3 evidence](../validation/M3.md) and `tests/test_frames.py`. Source-app
+absent. See [passive frame decision](../architecture/09_architecture_decisions.md#passive-frame-transforms),
+[analysis contract](../architecture/08_concepts.md#scientific-provenance-and-gates) and `tests/test_frames.py`. Source-app
 references remain required for generic physical calibration. This broader research
 is not reduced-M3 acceptance; existing app-reference projection/mean has separate
 evidence, and analytical GPS is outside current scope.
@@ -294,5 +294,5 @@ edges. Source arrays/bytes are unchanged.
 ExplorerData.selection_extrema delegates calculation; extrema_text formats replay
 notation and processing context. The inspector refreshes on load, mode, smoothing
 and selection changes, including while the slider is held. Cursor/zoom or hiding
-a curve does not change the result. [Reduced M3 acceptance](../validation/M3.md)
-records focused tests; this is not a general statistics or physical-calibration API.
+a curve does not change the result. The [analysis contract](../architecture/08_concepts.md#scientific-provenance-and-gates)
+summarizes this scope; it is not a general statistics or physical-calibration API.

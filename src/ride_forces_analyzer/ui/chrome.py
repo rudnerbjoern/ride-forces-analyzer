@@ -1,4 +1,8 @@
-"""App identity and native Windows caption colors; standard window controls remain."""
+"""App identity and native Windows caption colors; standard window controls remain.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 # cspell:words Pixmap pixmap COLORREF BBGGRR dwmapi
 

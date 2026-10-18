@@ -24,7 +24,7 @@ AppSettings rejects unknown settings and invalid title/dimensions outside widget
 Window dimensions are positive and at most 16,777,215 pixels, the Qt widget limit.
 Invalid model construction fails before window creation. The GUI smoke test starts
 the real module in a separate Windows process and exits through the Qt event loop;
-see [M1 evidence](../validation/M1.md).
+its tests exercise the real bootstrap contract above.
 
 ## Read-only import and failures
 
@@ -129,7 +129,7 @@ passes through SciPy passive rotation; resulting rider vectors are PROVISIONAL.
 Range failures yield INVALID, while other usable sequences remain independent.
 It never guesses source axes, normalizes input bases or labels real rider forces verified.
 The caller supplies UTC time; no clock alignment, gravity combination or filtering occurs.
-See [ADR 0005](../decisions/0005-passive-frame-transforms.md).
+See [passive frame decision](09_architecture_decisions.md#passive-frame-transforms).
 
 ## Raw explorer interaction
 

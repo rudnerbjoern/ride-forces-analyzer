@@ -1,4 +1,8 @@
-"""Offline full-recording imports and independently callable source/validation subsets."""
+"""Offline full-recording imports and independently callable source/validation subsets.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from .decoder import DecodeResult, DecodeSuccess, decode_forces, decode_forces_bytes
 from .diagnostics import ImportDiagnostic, Severity, json_pointer, ordered_diagnostics

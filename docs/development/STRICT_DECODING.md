@@ -3,8 +3,8 @@
 The decoder provides bounded read-only inputs, strict JSON and schema dispatch.
 It does not construct a Recording, call the motion parser, apply metadata/rate
 defaults, interpret GPS/time or perform analysis. See
-[ADR 0002](../decisions/0002-forces-source-contract.md) and
-[M2 validation](../validation/M2.md).
+[import decision](../architecture/09_architecture_decisions.md#source-ownership-and-import) and
+[import contract](../architecture/08_concepts.md#source-ownership-and-validation).
 
 ## Public API
 
@@ -75,7 +75,7 @@ or digest. No hash of a prefix is presented as an original-file hash.
 All limits are immutable per-call positive non-boolean integers below sys.maxsize.
 max_depth additionally supports 1–128, a conservative ceiling for the recursive
 standard-library decoder and source copying; Python globals are never changed.
-Defaults follow ADR 0002:
+Defaults follow the import decision:
 
 - max_bytes: 16,777,216.
 - max_depth: 32 (root container = 1).

@@ -1,4 +1,8 @@
-"""FR-009–010, FR-017–022, FR-025: optional source accessors, without full import."""
+"""FR-009–010, FR-017–022, FR-025: optional source accessors, without full import.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field

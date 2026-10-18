@@ -25,6 +25,5 @@ guards and its separate regression suite. Its authorization flag cannot replace
 owner approval. Application pytest/Test Explorer excludes these skill tests;
 [CI routing](CI.md) selects their own job only for relevant inputs.
 
-Dated helper tests, simulated GitHub transport, actual read-only checks and their
-limits are retained in [developer-tool validation](../validation/DEVELOPER_TOOLS.md).
-No fresh-session skill discovery or live mutation is established by those tests.
+The [CI guide](CI.md) describes check routing and verification boundaries.
+Simulated helper tests do not establish fresh-session skill discovery or live GitHub behavior.

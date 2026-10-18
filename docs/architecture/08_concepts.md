@@ -17,6 +17,15 @@ a complete Recording; ImportFailure has none. Diagnostics sort by severity,
 escaped JSON pointer and code with stable ties. Caller misuse raises.
 [Importer contracts](../development/IMPORT_SERVICE.md) own exact API details.
 
+The five original fixtures contain 48,029 acceleration vectors, 39,317 available
+gravity vectors and 698 GPS fixes. iPhone recordings have paired gravity/GPS;
+the Apple Watch fixture lacks both. Taron/Voltron omit sampleRate, so the explicit
+50 Hz absence policy applies. Motion components are decimal strings; GPS fields
+are JSON numbers. These corpus observations are not a manufacturer specification.
+The complete machine-readable [schema inventory](../../tests/fixtures/schema-inventory.json)
+and [recording catalog](../development/RECORDINGS.md) preserve reproducible source
+evidence, exact hashes and publication/licensing authorization.
+
 ## Scientific provenance and gates
 
 Analysis retains complete M2 input, source identity, algorithm/configuration,
@@ -33,8 +42,8 @@ The generic frame path uses proper orthonormal bases, passive
 `v_target = R @ v_device`, inverse transpose, and explicit provisional permission.
 Admission tolerance is absolute 1e-10, relative zero. Source directions are never
 silently repaired into that basis. Gravity does not resolve yaw.
-[ADR 0005](../decisions/0005-passive-frame-transforms.md) owns the convention;
-[ADR 0003](../decisions/0003-scientific-semantics-and-capability-gates.md) remains
+[passive frame decision](09_architecture_decisions.md#passive-frame-transforms) owns the convention;
+[physical qualification boundary](09_architecture_decisions.md#physical-qualification) remains
 a proposed general qualification policy.
 
 The separate product path normalizes admitted rounded source direction rows,
@@ -42,7 +51,7 @@ projects acceleration and applies an odd centered mean, 1–51 samples (default 
 Edges shorten and renormalize; recomputation starts from unfiltered projections.
 Usable imports default to calibrated display; preparation errors retain raw data.
 Source hashes establish provenance, not availability.
-[ADR 0006](../decisions/0006-app-reference-projection.md) and
+[source-app projection decision](09_architecture_decisions.md#source-app-projection) and
 [source comparisons](../validation/APP_REFERENCE.md) define source-bound evidence.
 Positive lateral means right; positive longitudinal means acceleration.
 Generic RIDER-frame signs remain a separate contract.

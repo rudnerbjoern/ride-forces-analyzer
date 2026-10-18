@@ -3,8 +3,8 @@
 The domain and result layers provide immutable representations. Construction
 performs no decoding, schema dispatch, raw-field diagnostics, force calculation,
 time inference or Qt integration.
-[ADR 0002](../decisions/0002-forces-source-contract.md) defines the larger contract;
-[M2 validation](../validation/M2.md) records actual verification.
+[import decision](../architecture/09_architecture_decisions.md#source-ownership-and-import) defines the larger contract;
+the [architecture](../architecture/08_concepts.md#source-ownership-and-validation) summarizes source ownership and corpus observations.
 
 ## Public boundaries
 
@@ -149,7 +149,5 @@ checked through Context7 against the official
 [dataclasses](https://docs.python.org/3.14/library/dataclasses.html) and
 [mapping proxy](https://docs.python.org/3.14/library/types.html#types.MappingProxyType)
 documentation. The decoder enforces [resource limits](STRICT_DECODING.md).
-Native Windows checks and measurements are recorded in
-[M2 validation](../validation/M2.md).
-Total process/native peak RAM remains unverified. Full M2 acceptance and its
-hosted evidence are recorded in that report.
+The [import boundary](../architecture/08_concepts.md#source-ownership-and-validation) summarizes implemented guarantees.
+Total process/native peak RAM remains unverified.

@@ -1,4 +1,8 @@
-"""Offline FFmpeg encoding with bounded memory, cancellation and exclusive publication."""
+"""Offline FFmpeg encoding with bounded memory, cancellation and exclusive publication.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 # cspell:words bitstreams colorspace creationflags ENOTSUP EXDEV faststart hwupload lavfi libx movflags nostdin nvenc prores qscale rawvideo xerror yuva
 

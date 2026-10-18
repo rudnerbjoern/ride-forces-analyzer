@@ -1,4 +1,8 @@
-"""Qt worker transport; parsing and presentation preparation live outside widgets."""
+"""Qt worker transport; parsing and presentation preparation live outside widgets.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from ride_forces_analyzer.i18n import tr
 

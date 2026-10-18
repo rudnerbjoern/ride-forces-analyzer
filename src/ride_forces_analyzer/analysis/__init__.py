@@ -1,4 +1,8 @@
-"""Immutable analysis contracts; opt-in device primitives live in analysis.device."""
+"""Immutable analysis contracts; opt-in device primitives live in analysis.device.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from .models import (
     AnalysisChannel,

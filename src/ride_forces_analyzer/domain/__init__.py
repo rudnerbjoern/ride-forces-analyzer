@@ -1,4 +1,8 @@
-"""Immutable source and canonical recording models, independent of importer/UI logic."""
+"""Immutable source and canonical recording models, independent of importer/UI logic.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from .models import (
     Attribute,

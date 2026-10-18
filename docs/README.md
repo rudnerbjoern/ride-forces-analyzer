@@ -1,46 +1,39 @@
-# Documentation index
+# Documentation
 
-[Project README](../README.md) covers startup and use.
-[Roadmap](ROADMAP.md) is the authority for milestone status.
-[AGENTS.md](../AGENTS.md) defines durable collaboration rules.
+[Project README](../README.md) explains the application and startup.
+[Roadmap](ROADMAP.md) distinguishes implemented scope from open work.
+[Architecture](architecture/README.md) describes the system in twelve arc42 chapters;
+chapter 9 retains decision status and rationale. Completed requirements, stage plans and
+historical acceptance reports are not maintained.
 
-## Product contracts
+## Current product and API contracts
 
-| Topic             | Contract                                                                                                                                                         | Verification                                                              |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Importer          | [Requirements](requirements/DEV-REQ-002-forces-importer.md), [scope](implementation/DEV-REQ-002/PLAN.md), [format observations](requirements/FORMAT-ANALYSIS.md) | [M2](validation/M2.md)                                                    |
-| Analysis          | [Requirements](requirements/DEV-REQ-003-scientific-analysis.md), [scope](implementation/DEV-REQ-003/PLAN.md)                                                     | [M3](validation/M3.md), [source comparisons](validation/APP_REFERENCE.md) |
-| Explorer / GPS    | [Explorer contract](implementation/RAW_EXPLORER.md)                                                                                                              | [Explorer](validation/RAW_EXPLORER.md)                                    |
-| Video export      | [Formats, profiles and previews](implementation/VIDEO_EXPORT.md)                                                                                                 | [Video / editor compatibility](validation/VIDEO_EXPORT.md)                |
-| Presets / batches | [SQLite and queue contracts](implementation/EXPORT_BATCHES.md)                                                                                                   | [Persistence / queue](validation/EXPORT_BATCHES.md)                       |
-| Localization      | [English/German presentation](development/LOCALIZATION.md)                                                                                                       | [Text / layout](validation/LOCALIZATION.md)                               |
+- [Explorer and GPS](implementation/RAW_EXPLORER.md).
+- [Video export](implementation/VIDEO_EXPORT.md), [saved presets and batches](implementation/EXPORT_BATCHES.md).
+- [All export themes](EXPORT_THEMES.md), [layout extension API](development/EXPORT_LAYOUTS.md).
+- [English/German presentation](development/LOCALIZATION.md).
+- Import APIs: [service](development/IMPORT_SERVICE.md), [models](development/CANONICAL_MODELS.md),
+  [decoder](development/STRICT_DECODING.md), [motion](development/MOTION_PARSING.md),
+  [metadata/GPS](development/OPTIONAL_PARSING.md).
+- [Analysis APIs](development/ANALYSIS_MODELS.md), [scientific source comparisons](validation/APP_REFERENCE.md).
 
-## Development
+## Development and publication
 
-The [Manta export layout reference](EXPORT_THEMES.md) compares all five profiles
-at the same strong G-force peak, with complete placement and enlarged details.
-
-- [Windows setup](development/SETUP.md): installation, startup and canonical checks.
+- [Windows setup and checks](development/SETUP.md), [contributions](../CONTRIBUTING.md),
+  [agent rules](../AGENTS.md), [private security reports](../SECURITY.md).
 - [Code quality](development/CODE_QUALITY.md), [documentation checks](development/DOCUMENTATION_TESTS.md),
   [CI routing](development/CI.md), [dependency updates](development/DEPENDABOT.md),
-  [Codex configuration](development/CODEX.md).
-- Import APIs: [service](development/IMPORT_SERVICE.md),
-  [models](development/CANONICAL_MODELS.md), [decoder](development/STRICT_DECODING.md),
-  [motion](development/MOTION_PARSING.md), [metadata/GPS](development/OPTIONAL_PARSING.md).
-- [Analysis APIs](development/ANALYSIS_MODELS.md).
-- [Export layout API](development/EXPORT_LAYOUTS.md): per-layout modules,
-  renderer contract and explicit plugin registration.
-- [Recording catalog](development/RECORDINGS.md): authorization, filenames and hashes.
-- [Dependency inventory](validation/DEPENDENCIES.md) and
-  [dated security boundary](validation/DEPENDABOT.md).
-- [Foundation acceptance](validation/M1.md), [workspace verification](validation/WORKSPACE.md)
-  and [developer-tool verification](validation/DEVELOPER_TOOLS.md).
+  [Codex settings](development/CODEX.md).
+- [Dependency inventory](validation/DEPENDENCIES.md),
+  [third-party licenses](../THIRD_PARTY_NOTICES.md).
+- [First public release preparation](development/RELEASE.md).
+- [Recording catalog and authorization](development/RECORDINGS.md),
+  [recording reuse license](../tests/fixtures/real/README.md), [image reuse license](images/README.md).
 
-## Documentation ownership
+## Ownership
 
-Architecture lives exclusively in the [twelve arc42 chapters](architecture/README.md);
-chapter 09 links ADR rationale. Requirements define acceptance, contracts/API guides
-define behavior, and validation pages retain concise scope/results/limits.
-Scientific comparisons and recording permissions are evidence, not development logs.
-Temporary runner output belongs in `.tmp/`; implementation diaries and completed
-execution prompts are not maintained.
+Keep current behavior, planned work and known limits distinct. Architecture owns
+the system overview; API guides own detailed interfaces and product contracts own
+interaction/output rules. Preserve necessary scientific observations, decision
+rationale, security findings and recording permissions. Temporary runner evidence
+belongs in `.tmp/`; do not turn documentation into development chronicles.

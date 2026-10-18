@@ -1,4 +1,8 @@
-"""Immutable import diagnostics and deterministic JSON Pointer ordering."""
+"""Immutable import diagnostics and deterministic JSON Pointer ordering.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from collections.abc import Sequence
 from dataclasses import dataclass

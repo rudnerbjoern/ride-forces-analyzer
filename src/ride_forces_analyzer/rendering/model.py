@@ -1,4 +1,8 @@
-"""Immutable export preparation, time mapping and display contracts; no widgets."""
+"""Immutable export preparation, time mapping and display contracts; no widgets.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 from dataclasses import dataclass
 from fractions import Fraction

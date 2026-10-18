@@ -1,4 +1,8 @@
-"""Qt text bindings and locale switching; no translation of opaque source values."""
+"""Qt text bindings and locale switching; no translation of opaque source values.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 # cspell:words qtbase
 

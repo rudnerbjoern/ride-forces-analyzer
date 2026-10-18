@@ -44,7 +44,7 @@ Caches/downloads belong in `.tmp/`.
 Analysis models require NumPy; opt-in `analysis.device` additionally requires
 Pint, and `analysis.frames` requires SciPy. Its private registry loads bundled definitions at initialization with no
 disk cache; calculations need no cloud, Qt or per-sample Pint objects.
-[ADR 0004](../decisions/0004-analysis-contracts-and-library-policy.md) retains
+[analysis library decision](09_architecture_decisions.md#analysis-models-and-libraries) retains
 Windows x64 wheel compatibility and license boundaries. SciPy supports explicit frames;
 GeographicLib is not required by reduced M3; no new numerical dependency is needed
 for basic extrema.
@@ -65,8 +65,16 @@ executable. Installation may download the archive; video processing never downlo
 codecs or uses cloud services. Pillow is an existing locked render extra; Windows
 Segoe UI supplies text, with a scalable bundled Pillow-font fallback. Supported
 NVIDIA devices can use Vulkan ProRes 4444 or NVENC H.264; CPU remains independent.
-[Native export evidence](../validation/VIDEO_EXPORT.md) records actual hardware,
-codec/alpha verification and the separate Resolve compatibility boundary.
+Representative native checks cover CPU/GPU encodes, both aspects, preview parity,
+alpha and full decoding. The original landscape column was exported for complete
+Manta/Kraken/Voltron recordings (9,640/10,084/10,504 frames at 50 fps) and imported
+into Resolve 21.1.0.17 as 3840×2160 ProRes 4444 with Straight alpha and exact frame
+counts. Start/ride/end comparisons retained exact alpha and mean RGB error below
+0.022/255. This establishes media-pool import, not a visually qualified Onride
+composite or complete-ride coverage of every layout/aspect/language. ProRes files
+remain large; FFV1 was evaluated but is not an application output. See
+[FFmpeg ProRes options](https://www.ffmpeg.org/ffmpeg-codecs.html#ProRes) and the
+[Blackmagic codec list](https://documents.blackmagicdesign.com/SupportNotes/DaVinci_Resolve_19_Supported_Codec_List.pdf).
 
 ## Local export configuration
 

@@ -45,11 +45,3 @@ This implements export configuration storage, not the M4 ride/media library.
 - Saved definitions survive restart; they do not embed sensor bytes or discover
   relocated files automatically. Moving/changing a source requires a new job.
   Automatic resume and a persistent execution-history UI are outside this scope.
-
-## Acceptance
-
-[Native Windows evidence](../validation/EXPORT_BATCHES.md) must cover SQLite
-reopen/version protection, duplicate/invalid-write rollback, preset snapshots,
-multiple rides/presets, saved custom ranges, digest mismatch, per-job failures,
-cancellation/no overwrite, four real videos from two recordings × two presets,
-native save/load/update/queue/run-all UI, close lifecycle and focused strict checks.
