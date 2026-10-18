@@ -128,7 +128,7 @@ Previews downsample the complete canvas proportionally. SQLite preset/job snapsh
 retain the aspect, with landscape as the backward-compatible default.
 The compact ribbon, corners, capsule and orbit preserve translucent panels and
 opaque data. `rendering.encoding` probes NVIDIA Vulkan/NVENC, streams the selected
-bounded region to FFmpeg, validates a complete decode and publishes one
+bounded region to FFmpeg and publishes one
 new output exclusively. No GPU or codec operation changes the source clock/data.
 `rendering.preview` prepares five exact-source-sample snapshots with the production
 renderer and preview-only contrast backgrounds, independent of FFmpeg and Qt.

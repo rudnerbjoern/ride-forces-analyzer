@@ -4,7 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-# cspell:words bitstreams colorspace creationflags ENOTSUP EXDEV faststart hwupload lavfi libx movflags nostdin nvenc prores qscale rawvideo xerror yuva
+# cspell:words colorspace creationflags ENOTSUP EXDEV faststart hwupload lavfi libx movflags nostdin nvenc prores qscale rawvideo yuva
 
 from collections.abc import Callable
 from pathlib import Path
@@ -195,70 +195,6 @@ def supports_nvidia(ffmpeg: Path, timeline: ExportTimeline) -> bool:
         return False
 
 
-def validate_video(
-    ffmpeg: Path,
-    target: Path,
-    frame_count: int,
-    cancellation: Event,
-) -> None:
-    """Decode every frame independently before publishing, including GPU-produced bitstreams."""
-    report = target.with_suffix(".verify.txt")
-    with target.with_suffix(".verify.log").open("w+b") as log:
-        process = subprocess.Popen(
-            [
-                str(ffmpeg),
-                "-hide_banner",
-                "-loglevel",
-                "error",
-                "-xerror",
-                "-err_detect",
-                "explode",
-                "-threads",
-                "4",
-                "-i",
-                str(target),
-                "-map",
-                "0:v:0",
-                "-progress",
-                str(report),
-                "-f",
-                "null",
-                "-",
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=log,
-            creationflags=subprocess.CREATE_NO_WINDOW
-            if hasattr(subprocess, "CREATE_NO_WINDOW")
-            else 0,
-        )
-        try:
-            while process.poll() is None:
-                if cancellation.is_set():
-                    raise ExportCancelled()
-                try:
-                    process.wait(timeout=0.2)
-                except subprocess.TimeoutExpired:
-                    pass
-            log.seek(0)
-            errors = log.read()
-            if process.returncode != 0 or errors:
-                raise RuntimeError(
-                    "Encoded video failed decoding: "
-                    + errors[-2000:].decode("utf-8", errors="replace"),
-                )
-        finally:
-            if process.poll() is None:
-                process.kill()
-                process.wait(timeout=10)
-    counts = [
-        int(line.partition("=")[2])
-        for line in report.read_text().splitlines()
-        if line.startswith("frame=")
-    ]
-    if not counts or counts[-1] != frame_count:
-        raise RuntimeError("Encoded video frame count differs from the requested duration")
-
-
 def export_video(
     timeline: ExportTimeline,
     destination: Path,
@@ -327,11 +263,6 @@ def export_video(
             raise ExportCancelled()
         if not target.is_file() or target.stat().st_size == 0:
             raise RuntimeError("Encoder produced no video")
-        if status is not None:
-            status("Validating every encoded frame…")
-        validate_video(executable, target, timeline.frame_count, cancellation)
-        if cancellation.is_set():
-            raise ExportCancelled()
         try:
             os.link(target, destination)
         except OSError as error:

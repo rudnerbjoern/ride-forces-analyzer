@@ -64,7 +64,7 @@ records the concise full-recording/editor compatibility boundary.
   During a single-video export, a two-second timer estimates remaining frame time
   from elapsed monotonic time per submitted frame and pending frame count, displayed
   as minutes:seconds. Startup overhead is included. Before the first frame it shows
-  an estimating state; after the last frame it shows finalization/verification,
+  an estimating state; after the last frame it shows finalization,
   whose duration is not predicted. Cancellation, failure and completion clear the ETA.
 - One shared source position and centered cursor in each time plot; configurable
   1–60 s context, default 12. Compact time plots show three forces plus numeric tilt;
@@ -131,8 +131,8 @@ records the concise full-recording/editor compatibility boundary.
   receive the CPU qscale option. Only the selected layout region crosses the raw-frame pipe;
   the encoder pads the remaining transparent/opaque canvas to the selected dimensions.
 - Background export provides progress/cancellation; window close requests cancel.
-  Existing files are never overwritten. Decode every output frame and verify its
-  count before exclusive publication. Use same-volume hard links to avoid doubling
+  Existing files are never overwritten. Publish the completed encoder output
+  exclusively. Use same-volume hard links to avoid doubling
   large videos; cross-volume publication copies exclusively and removes partial output.
 - Processing remains offline after installation. Existing Pillow dependency is
   reused; FFmpeg full build is external and checksum-pinned in ffmpeg.json.

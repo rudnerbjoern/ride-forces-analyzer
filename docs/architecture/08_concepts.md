@@ -93,8 +93,8 @@ language independently of the UI. See [localization](../development/LOCALIZATION
 Production RGBA frame generation is separate from FFmpeg encoding.
 Shared profile/aspect geometry drives previews and video padding. Previews use the
 exact cursor; encodes use an independent deterministic video clock.
-Transparent ProRes and opaque H.264 are independent outputs; complete decoding
-precedes exclusive publication. Manual Onride alignment remains external.
+Transparent ProRes and opaque H.264 are independent outputs, published exclusively
+after encoding. Manual Onride alignment remains external.
 
 SQLite stores versioned export presets and immutable batch snapshots, not original
 recordings or media. Sequential jobs reimport/check source hashes; per-job failures

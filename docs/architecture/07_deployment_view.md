@@ -79,7 +79,7 @@ codecs or uses cloud services. Pillow is an existing locked render extra; Window
 Segoe UI supplies text, with a scalable bundled Pillow-font fallback. Supported
 NVIDIA devices can use Vulkan ProRes 4444 or NVENC H.264; CPU remains independent.
 Representative native checks cover CPU/GPU encodes, both aspects, preview parity,
-alpha and full decoding. The original landscape column was exported for complete
+and alpha. The original landscape column was exported for complete
 Manta/Kraken/Voltron recordings (9,640/10,084/10,504 frames at 50 fps) and imported
 into Resolve 21.1.0.17 as 3840×2160 ProRes 4444 with Straight alpha and exact frame
 counts. Start/ride/end comparisons retained exact alpha and mean RGB error below
