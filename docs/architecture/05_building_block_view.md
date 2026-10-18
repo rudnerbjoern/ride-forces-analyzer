@@ -110,8 +110,18 @@ Raw operation avoids importing the NumPy-backed analysis package. This is a smal
 `analysis.orientation` implements source-gravity-to-vertical tilt with missing/zero
 vectors retained as gaps. `rendering.model` binds source identity, smoothing,
 inclusive ranges and fixed per-panel bounds to an independent video frame clock.
-`rendering.frames` draws the original column or delegates compact profiles to
-`rendering.layouts`; it can produce a full transparent RGBA frame independently.
+`rendering.layouts` provides one module per built-in profile and an explicit
+registry of immutable layout metadata and factories. Each renderer implements
+the same native-RGBA-region/source-position protocol. Shared drawing primitives
+and a three-channel chart base support the related compact profiles; G-Orbit and
+Column draw independently. `rendering.frames` selects the registered renderer and
+composes its region into a full RGBA frame, without layout-specific drawing branches.
+Each profile owns its documented design constants, including typography, geometry,
+palette and stroke widths. Shared chart algorithms consume profile-specific values;
+portrait variants retain their own profile's styling rather than another layout's.
+`rendering.peaks` prepares immutable signed peak-hold envelopes from the selected
+source interval for G-Orbit. Hold/release follows source time, so random preview
+seeks and video-rate changes do not depend on prior render calls.
 `ExportSettings` owns landscape/portrait dimensions. Shared region geometry drives
 frame composition and encoder padding; portrait force cards reflow vertically.
 Previews downsample the complete canvas proportionally. SQLite preset/job snapshots
@@ -122,6 +132,9 @@ bounded region to FFmpeg, validates a complete decode and publishes one
 new output exclusively. No GPU or codec operation changes the source clock/data.
 `rendering.preview` prepares five exact-source-sample snapshots with the production
 renderer and preview-only contrast backgrounds, independent of FFmpeg and Qt.
+The [layout API guide](../development/EXPORT_LAYOUTS.md) documents registration,
+stable persisted keys and extension rules; plugins are built in, not discovered
+or installed dynamically.
 Out-of-range cursors are flagged without clamping. `ui.export` owns the two-step
 assistant, image transport, debounced/revision-gated preview jobs, queued progress and cooperative cancellation;
 no renderer/encoder logic lives in widgets. See [export contracts](../implementation/VIDEO_EXPORT.md).

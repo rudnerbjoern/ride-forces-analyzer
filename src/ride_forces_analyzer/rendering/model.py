@@ -46,7 +46,7 @@ class ExportSettings:
             raise ValueError("Visible time window must be from 1 to 60 seconds")
         if self.output not in ("transparent", "opaque"):
             raise ValueError("Unknown export output mode")
-        if self.layout not in ("column", "ribbon", "corners", "capsule", "orbit"):
+        if self.layout not in tuple(key for key, _ in PROFILES):
             raise ValueError("Unknown export layout")
 
 

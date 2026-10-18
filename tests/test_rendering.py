@@ -3,6 +3,7 @@
 # cspell:words ffprobe frombytes getcolors getpixel getchannel getextrema hwupload prores qscale rawvideo libx
 
 from dataclasses import replace
+from math import radians, sin, cos
 from pathlib import Path
 import json
 import subprocess
@@ -18,8 +19,16 @@ from ride_forces_analyzer.analysis.orientation import orientation_degrees
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.rendering.encoding import ExportCancelled, encoder_command, export_video
 from ride_forces_analyzer.rendering.frames import COLUMN_X, WIDTH, OverlayRenderer
-from ride_forces_analyzer.rendering.model import ExportSettings, prepare_export
-from ride_forces_analyzer.rendering.layouts import COLORS, REGIONS, CompactRenderer
+from ride_forces_analyzer.rendering.model import (
+    ExportLayout,
+    ExportSettings,
+    PROFILES,
+    prepare_export,
+)
+from ride_forces_analyzer.rendering.layouts import COLORS, REGIONS, create_renderer, lateral_x
+from ride_forces_analyzer.rendering.layouts.charts import ChartRenderer
+from ride_forces_analyzer.rendering.layouts.column import ColumnRenderer
+from ride_forces_analyzer.rendering.layouts.orbit import OrbitRenderer
 from test_project import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
 
 
@@ -118,12 +127,14 @@ def test_4k_canvas_has_single_right_column_and_all_panels(manta: ExplorerData, m
         assert colors is not None
         rgb = tuple(bytes.fromhex(channel.color[1:])) + (255,)
         assert any(color == rgb for _, color in colors)
-    assert renderer.value_y(timeline.channels[0], 1, 0) > renderer.value_y(
+    column = renderer.renderer
+    assert isinstance(column, ColumnRenderer)
+    assert column.value_y(timeline.channels[0], 1, 0) > column.value_y(
         timeline.channels[0],
         0,
         0,
     )
-    assert renderer.value_y(timeline.channels[2], 1, 2) < renderer.value_y(
+    assert column.value_y(timeline.channels[2], 1, 2) < column.value_y(
         timeline.channels[2],
         0,
         2,
@@ -319,7 +330,8 @@ def test_compact_profiles_preserve_alpha_color_and_force_scales(
     assert all(
         any(color == (*bytes.fromhex(rgb[1:]), 255) for _, color in colors) for rgb in COLORS
     )
-    compact = CompactRenderer(timeline)
+    compact = create_renderer(timeline)
+    assert isinstance(compact, ChartRenderer)
     for row, channel in enumerate(timeline.channels[:3]):
         assert {-1.0, 0.0, 1.0} <= set(channel.ticks)
         assert compact.value_y(channel, 1, row) < compact.value_y(channel, 0, row)
@@ -331,6 +343,209 @@ def test_compact_profiles_preserve_alpha_color_and_force_scales(
     assert opaque.getchannel("A").getextrema() == (255, 255)
 
 
+@pytest.mark.parametrize("layout", [layout for layout, _ in PROFILES])
+def test_vertical_force_direction_and_manual_override(
+    manta: ExplorerData,
+    layout: ExportLayout,
+) -> None:
+    default = prepare_export(manta, ExportSettings(layout=layout), 3600, 3699)
+    reversed_direction = prepare_export(
+        manta,
+        replace(default.settings, invert_vertical=False),
+        3600,
+        3699,
+    )
+    assert default.channels[0].values == reversed_direction.channels[0].values
+    for timeline in (default, reversed_direction):
+        vertical = timeline.channels[0]
+        renderer = OverlayRenderer(timeline)
+        if layout == "orbit":
+            assert isinstance(renderer.renderer, OrbitRenderer)
+            ys = [sin(radians(renderer.renderer.orbit_angle(value))) for value in (-1, 0, 1)]
+            assert renderer.renderer.orbit_angle(0) == 180
+        else:
+            chart = renderer.renderer
+            assert isinstance(chart, (ChartRenderer, ColumnRenderer))
+            ys = [chart.value_y(vertical, value, 0) for value in (-1, 0, 1)]
+        if timeline.settings.invert_vertical:
+            assert ys[0] < ys[1] < ys[2]  # Negative lifts; positive presses into the seat.
+        else:
+            assert ys[0] > ys[1] > ys[2]
+
+
+@pytest.mark.parametrize("layout", [layout for layout, _ in PROFILES])
+def test_lateral_direction_is_horizontal_and_time_advances_up(
+    manta: ExplorerData,
+    layout: ExportLayout,
+) -> None:
+    timeline = prepare_export(manta, ExportSettings(layout=layout), 3600, 3699)
+    channel = timeline.channels[1]
+    # Unequal source bounds must still give equal distances from the centered zero.
+    channel = replace(channel, low=-2.1, high=1.05)
+    left = lateral_x(channel, -1, 0, 200)
+    zero = lateral_x(channel, 0, 0, 200)
+    right = lateral_x(channel, 1, 0, 200)
+    assert left < zero == 100 < right
+    assert zero - left == pytest.approx(right - zero)
+    assert lateral_x(replace(channel, inverted=False), -1, 0, 200) == left
+    if layout == "orbit":
+        return
+    renderer = OverlayRenderer(timeline)
+    chart = renderer.renderer
+    assert isinstance(chart, (ChartRenderer, ColumnRenderer))
+    points = [chart.trace_point(channel, value, 0.5, 1) for value in (-1, 0, 1)]
+    assert points[0][0] < points[1][0] < points[2][0]
+    assert points[0][1] == points[1][1] == points[2][1]
+    earlier = chart.trace_point(channel, 0, 0.25, 1)
+    later = chart.trace_point(channel, 0, 0.75, 1)
+    assert earlier[0] == later[0] and earlier[1] > later[1]
+    for row in (0, 2):
+        earlier = chart.trace_point(timeline.channels[row], 0, 0.25, row)
+        later = chart.trace_point(timeline.channels[row], 0, 0.75, row)
+        assert earlier[0] < later[0] and earlier[1] == later[1]
+
+
+@pytest.mark.parametrize("layout", [layout for layout, _ in PROFILES])
+def test_longitudinal_acceleration_up_and_braking_down(
+    manta: ExplorerData,
+    layout: ExportLayout,
+) -> None:
+    timeline = prepare_export(manta, ExportSettings(layout=layout), 3600, 3601)
+    channel = timeline.channels[2]
+    assert not channel.inverted
+    renderer = OverlayRenderer(timeline)
+    if layout != "orbit":
+        chart = renderer.renderer
+        assert isinstance(chart, (ChartRenderer, ColumnRenderer))
+        braking, zero, acceleration = [
+            chart.trace_point(channel, value, 0.5, 2) for value in (-1, 0, 1)
+        ]
+        assert braking[0] == zero[0] == acceleration[0]
+        assert acceleration[1] < zero[1] < braking[1]
+    else:
+        assert isinstance(renderer.renderer, OrbitRenderer)
+        assert sin(radians(renderer.renderer.orbit_angle(1, 2))) < 0
+        assert sin(radians(renderer.renderer.orbit_angle(-1, 2))) > 0
+
+
+@pytest.mark.parametrize("row", [0, 1, 2])
+def test_orbit_signed_arcs_paint_physical_directions(manta: ExplorerData, row: int) -> None:
+    timeline = prepare_export(manta, ExportSettings(layout="orbit"), 3600, 3601)
+    for value in (-1.0, 1.0):
+        channels = tuple(
+            replace(channel, values=(value,) * manta.count, low=-1.05, high=1.05)
+            if index == row
+            else channel
+            for index, channel in enumerate(timeline.channels)
+        )
+        renderer = OrbitRenderer(replace(timeline, channels=channels))
+        image = renderer.render_position(3600)
+        radius = 192 if row == 1 else 282
+
+        def pixel(v: float) -> tuple[int, int]:
+            angle = radians(renderer.orbit_angle(v, row))
+            return round(400 + radius * cos(angle)), round(400 + radius * sin(angle))
+
+        expected = (*bytes.fromhex(COLORS[row][1:]), 255)
+        assert image.getpixel(pixel(value / 2)) == expected
+        assert image.getpixel(pixel(-value / 2)) != expected
+        if row == 1:
+            assert (pixel(value)[0] < 400) == (value < 0)
+
+
+def test_orbit_orientation_keeps_real_degrees() -> None:
+    assert [OrbitRenderer.orientation_angle(v) for v in (0, 90, 180)] == [-90, 0, 90]
+
+
+def test_orbit_peak_hold_shading_and_markers(manta: ExplorerData) -> None:
+    timeline = prepare_export(manta, ExportSettings(layout="orbit"), 3600, 3700)
+    values = tuple(0.8 if index == 3600 else 0.0 for index in range(manta.count))
+    longitudinal = replace(timeline.channels[2], values=values, low=-1.05, high=1.05)
+    renderer = OrbitRenderer(
+        replace(timeline, channels=(*timeline.channels[:2], longitudinal, timeline.channels[3])),
+    )
+    image = renderer.render_position(3605)
+    a = radians(-40)
+    pixel = (round(400 + 275 * cos(a)), round(400 + 275 * sin(a)))
+    expected = Image.alpha_composite(
+        Image.new("RGBA", (1, 1), (210, 230, 245, 75)),
+        Image.new("RGBA", (1, 1), (173, 108, 46, 65)),
+    ).getpixel((0, 0))
+    assert image.getpixel(pixel) == expected
+    a = radians(renderer.orbit_angle(0.8, 2))
+    assert image.getpixel((round(400 + 275 * cos(a)), round(400 + 275 * sin(a)))) == (
+        173,
+        108,
+        46,
+        255,
+    )
+    assert image.getpixel((665, 400)) == (255, 255, 255, 255)
+    assert image.getpixel((62, 400)) == (7, 15, 25, 210)  # No unsupported left orientation arc.
+
+
+def test_orbit_lateral_stroke_grows_outward_with_shifted_scale(manta: ExplorerData) -> None:
+    timeline = prepare_export(manta, ExportSettings(layout="orbit"), 3600, 3601)
+    lateral = replace(timeline.channels[1], values=(1.0,) * manta.count, low=-1.05, high=1.05)
+    renderer = OrbitRenderer(
+        replace(timeline, channels=(timeline.channels[0], lateral, *timeline.channels[2:])),
+    )
+    image = renderer.render_position(3600)
+    expected = (*bytes.fromhex(COLORS[1][1:]), 255)
+
+    def pixel(radius: int) -> object:
+        a = radians(310)
+        return image.getpixel((round(400 + radius * cos(a)), round(400 + radius * sin(a))))
+
+    assert pixel(186) == expected  # Original inner portion remains occupied.
+    assert pixel(208) == expected  # Additional twelve pixels extend outward.
+    assert pixel(178) != expected
+    assert pixel(218) != expected
+    # Allow the adjacent raster column when cos(270°) falls just below zero.
+    assert any(image.getpixel((x, 179)) == (228, 237, 245, 255) for x in (399, 400))
+
+
+@pytest.mark.parametrize("row,angle,inner", [(0, 140, 264), (2, -40, 264)])
+def test_orbit_force_stroke_thickens_inward(
+    manta: ExplorerData,
+    row: int,
+    angle: int,
+    inner: int,
+) -> None:
+    timeline = prepare_export(manta, ExportSettings(layout="orbit"), 3600, 3601)
+    channels = tuple(
+        replace(channel, values=(1.0,) * manta.count, low=-1.05, high=1.05)
+        if index == row
+        else channel
+        for index, channel in enumerate(timeline.channels)
+    )
+    renderer = OrbitRenderer(replace(timeline, channels=channels))
+    image = renderer.render_position(3600)
+    expected = (*bytes.fromhex(COLORS[row][1:]), 255)
+
+    # Probe within the filled quadrant, away from ticks and the value marker.
+    def pixel(radius: int) -> object:
+        a = radians(angle)
+        return image.getpixel((round(400 + radius * cos(a)), round(400 + radius * sin(a))))
+
+    assert pixel(288) == expected
+    assert pixel(inner) == expected  # Newly occupied inner part of the stroke.
+    assert pixel(256) != expected
+    assert pixel(294) != expected  # Outer edge remains at radius 290.
+
+
+def test_orbit_orientation_marker_is_omitted_when_unavailable(manta: ExplorerData) -> None:
+    timeline = prepare_export(manta, ExportSettings(layout="orbit"), 3600, 3601)
+    for value in (45.0, None):
+        orientation = replace(timeline.channels[3], values=(value,) * manta.count)
+        renderer = OrbitRenderer(
+            replace(timeline, channels=(*timeline.channels[:3], orientation)),
+        )
+        image = renderer.render_position(3600)
+        a = radians(renderer.orientation_angle(45))
+        pixel = (round(400 + 344 * cos(a)), round(400 + 344 * sin(a)))
+        assert (image.getpixel(pixel) == (255, 255, 255, 255)) == (value is not None)
+
+
 def test_orbit_preserves_negative_forces_and_absent_orientation(manta: ExplorerData) -> None:
     start = manta.source.recording.indices.start + 72 * 50
     timeline = prepare_export(manta, ExportSettings(layout="orbit"), start, start + 1)
@@ -338,10 +553,14 @@ def test_orbit_preserves_negative_forces_and_absent_orientation(manta: ExplorerD
     orientation = replace(timeline.channels[3], values=(None,) * manta.count)
     timeline = replace(timeline, channels=(*timeline.channels[:3], orientation))
     image = OverlayRenderer(timeline).render_region(0)
-    assert image.size == (1120, 792)
+    assert image.size == (800, 800)
+    assert all(
+        image.getchannel("A").getpixel(point) == 0
+        for point in ((0, 0), (799, 0), (0, 799), (799, 799))
+    )
     assert image.getchannel("A").getextrema() == (0, 255)
     assert image.getchannel("A").histogram()[210] > 400_000
-    colors = image.getcolors(1120 * 792)
+    colors = image.getcolors(800 * 800)
     assert colors is not None
     assert all(
         any(color == (*bytes.fromhex(rgb[1:]), 255) for _, color in colors) for rgb in COLORS

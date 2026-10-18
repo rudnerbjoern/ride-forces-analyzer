@@ -1,6 +1,6 @@
 """Catalog integrity, safe formatting and reproducible localized overlay labels."""
 
-# cspell:words Messpunkte Fahrtzeit Vorgabe Deutsch Neigung geladen autouse textbbox
+# cspell:words Messpunkte Fahrtzeit Vorgabe Deutsch Neigung geladen autouse textbbox Rechts Beschleunigung Bremsen
 
 from dataclasses import replace
 from collections.abc import Iterator
@@ -159,6 +159,24 @@ def test_german_overlay_labels_fit_and_language_is_reproducible(
     second = OverlayRenderer(timeline).render_sample(3600)
     assert first.tobytes() == second.tobytes()
     assert calls and any("Neigung" in text for text, _, _ in calls)
+    assert not any("Hz" in text or "fps" in text for text, _, _ in calls)
+    assert not any("G-ORBIT" in text for text, _, _ in calls)
+    if layout == "orbit":
+        assert not any("Replay" in text or "Fahrtzeit" in text for text, _, _ in calls)
+        assert not any(
+            text
+            in {
+                "Right",
+                "Left",
+                "Acceleration",
+                "Braking",
+                "Rechts",
+                "Links",
+                "Beschleunigung",
+                "Bremsen",
+            }
+            for text, _, _ in calls
+        )
     for text, (width, height), (left, top, right, bottom) in calls:
         assert 0 <= left <= right <= width and 0 <= top <= bottom <= height, (
             text,

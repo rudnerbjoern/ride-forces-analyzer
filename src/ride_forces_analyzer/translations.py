@@ -219,6 +219,7 @@ GERMAN: dict[str, str] = {
     "LATERAL": "QUER",
     "LONG.": "LÄNGS",
     "Time →": "Zeit →",
+    "Time ↑": "Zeit ↑",
     "Replay {0}": "Fahrtzeit {0}",
     "Tilt unavailable": "Neigung fehlt",
     "Tilt {0:.1f}°": "Neigung {0:.1f}°",

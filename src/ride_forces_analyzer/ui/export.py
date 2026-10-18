@@ -299,10 +299,11 @@ class ExportDialog(QDialog):
             QCheckBox(),
             tr("Positive values below zero, as in the reference"),
         )
-        self.flip_vertical.setChecked(False)
+        self.flip_vertical.setChecked(True)
         form.addRow(bind(QLabel(), tr("Vertical")), self.flip_vertical)
-        self.flip_lateral = bind(QCheckBox(), tr("Positive values below zero, as in the reference"))
+        self.flip_lateral = bind(QCheckBox(), tr("+ Right / − Left"))
         self.flip_lateral.setChecked(False)
+        self.flip_lateral.setEnabled(False)
         form.addRow(bind(QLabel(), tr("Lateral")), self.flip_lateral)
         self.gpu = bind(QCheckBox(), tr("Use NVIDIA GPU when supported; CPU fallback otherwise"))
         self.gpu.setChecked(True)
@@ -508,12 +509,8 @@ class ExportDialog(QDialog):
         self.fps.setCurrentText(str(settings.fps))
         self.seconds.setValue(settings.window_seconds)
         self.smoothing.setCurrentIndex(preset.smoothing_window // 2)
-        self.flip_vertical.setChecked(
-            settings.invert_vertical if settings.layout != "orbit" else False,
-        )
-        self.flip_lateral.setChecked(
-            settings.invert_lateral if settings.layout != "orbit" else False,
-        )
+        self.flip_vertical.setChecked(settings.invert_vertical)
+        self.flip_lateral.setChecked(False)
         self.gpu.setChecked(settings.prefer_gpu)
         self.interval.setCurrentIndex(("markers", "selection", "entire").index(preset.range_mode))
         self._schedule_preview()
@@ -734,10 +731,10 @@ class ExportDialog(QDialog):
 
     @Slot(int)
     def _layout_changed(self, index: int) -> None:
-        self.flip_vertical.setChecked(index == 4)
-        self.flip_lateral.setChecked(index == 4)
-        self.flip_vertical.setEnabled(index != 3)
-        self.flip_lateral.setEnabled(index != 3)
+        self.flip_vertical.setChecked(True)
+        self.flip_lateral.setChecked(False)
+        self.flip_vertical.setEnabled(True)
+        self.flip_lateral.setEnabled(False)
 
     @Slot()
     def _browse(self) -> None:
@@ -801,8 +798,8 @@ class ExportDialog(QDialog):
         self.worker = None
         for control in self.controls:
             control.setEnabled(True)
-        self.flip_vertical.setEnabled(self.layout_profile.currentIndex() != 3)
-        self.flip_lateral.setEnabled(self.layout_profile.currentIndex() != 3)
+        self.flip_vertical.setEnabled(True)
+        self.flip_lateral.setEnabled(False)
         self.start.setEnabled(True)
         self.back.setEnabled(True)
         bind(self.cancel, tr("Close"), "text")
