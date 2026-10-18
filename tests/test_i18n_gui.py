@@ -26,6 +26,7 @@ from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.ui.batches import BatchDialog
 from ride_forces_analyzer.ui.export import ExportDialog
 from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.preferences import SettingsDialog
 from test_explorer_gui import explorer_window as explorer_window, resize_workspace, wait_until
 from test_project import REAL_FIXTURE_DIRECTORY
 
@@ -50,21 +51,25 @@ def assert_combo_text_fits(combo: QComboBox) -> None:
 
 
 @pytest.mark.parametrize("appearance", [0, 1])
-def test_toolbar_choices_fit_after_repeated_language_switches(
+def test_settings_choices_fit_after_repeated_language_switches(
     explorer_window: ExplorerWindow,
     appearance: int,
 ) -> None:
     window = explorer_window
-    window.appearance.setCurrentIndex(appearance)
+    window.set_appearance(appearance)
+    window.settings_action.trigger()
+    dialog = window.findChild(SettingsDialog, "settingsDialog")
+    assert dialog is not None
     try:
         for language in (0, 1, 0, 1):
-            window.language.setCurrentIndex(language)
+            window.set_ui_language(language)
             QApplication.processEvents()
-            assert_combo_text_fits(window.appearance)
-            assert_combo_text_fits(window.language)
+            assert_combo_text_fits(dialog.appearance)
+            assert_combo_text_fits(dialog.language)
     finally:
-        window.language.setCurrentIndex(0)
-        window.appearance.setCurrentIndex(0)
+        dialog.reject()
+        window.set_ui_language(0)
+        window.set_appearance(0)
 
 
 @pytest.mark.parametrize(
@@ -116,7 +121,7 @@ def test_german_export_in_4k_workspace_keeps_controls_reachable(
                 assert dialog.next.isVisible() and dialog.rect().contains(dialog.next.geometry())
                 assert dialog.next.text() == 'Export prüfen →'
                 for language in (0, 1, 0, 1):
-                    window.language.setCurrentIndex(language)
+                    window.set_ui_language(language)
                     app.processEvents()
                     for parent in (window, dialog):
                         for combo in parent.findChildren(QComboBox):
@@ -190,7 +195,7 @@ def test_language_switch_preserves_state_and_source_metadata(
     bounds = window.axis_x.min(), window.axis_x.max()
     values = tuple(tuple(series.points()) for series in window.series)
     try:
-        window.language.setCurrentIndex(1)
+        window.set_ui_language(1)
         assert get_language() == "de"
         assert window.open_action.text() == "Aufnahme öffnen…"
         assert window.reset_button.text() == "Ansicht zurücksetzen"
@@ -220,11 +225,11 @@ def test_language_switch_preserves_state_and_source_metadata(
         resize_workspace(window, 720, 480)
         assert window.inspector_button.text() == "Details"
         assert window.inspector_button.isVisible()
-        window.language.setCurrentIndex(0)
+        window.set_ui_language(0)
         assert window.open_action.text() == "Open recording…"
         assert "Row:" in window.ride_metadata.text()
     finally:
-        window.language.setCurrentIndex(0)
+        window.set_ui_language(0)
 
 
 def test_german_export_and_batch_dialogs_fit_and_save_language(
@@ -235,7 +240,7 @@ def test_german_export_and_batch_dialogs_fit_and_save_language(
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
     wait_until(window.open_action.isEnabled)
     assert window.data is not None
-    window.language.setCurrentIndex(1)
+    window.set_ui_language(1)
     try:
         with TemporaryDirectory(dir=".tmp") as directory:
             store = ExportStore(Path(directory) / "exports.sqlite3")
@@ -295,4 +300,4 @@ def test_german_export_and_batch_dialogs_fit_and_save_language(
             assert batches.close_button.text() == "Schließen"
             batches.close()
     finally:
-        window.language.setCurrentIndex(0)
+        window.set_ui_language(0)

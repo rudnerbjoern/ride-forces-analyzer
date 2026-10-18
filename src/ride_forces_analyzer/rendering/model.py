@@ -13,6 +13,9 @@ from ride_forces_analyzer.analysis.orientation import orientation_degrees
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.i18n import Language
 
+FrameRate = int | Literal["60000/1001"]
+EXPORT_FRAME_RATES: tuple[FrameRate, ...] = (24, 25, 30, 50, "60000/1001", 60)
+
 ExportLayout = Literal["column", "ribbon", "corners", "capsule", "orbit"]
 PROFILES: tuple[tuple[ExportLayout, str], ...] = (
     ("ribbon", "Flow Ribbon"),
@@ -25,7 +28,7 @@ PROFILES: tuple[tuple[ExportLayout, str], ...] = (
 
 @dataclass(frozen=True, slots=True)
 class ExportSettings:
-    fps: int = 50
+    fps: FrameRate = 50
     window_seconds: float = 12.0
     output: Literal["transparent", "opaque"] = "transparent"
     invert_vertical: bool = True
@@ -39,13 +42,22 @@ class ExportSettings:
     def dimensions(self) -> tuple[int, int]:
         return (2160, 3840) if self.aspect == "portrait" else (3840, 2160)
 
+    @property
+    def frame_rate(self) -> Fraction:
+        """Exact encoder rate; retain the fractional ratio rather than rounding to 59.94."""
+        return Fraction(self.fps)
+
+    @property
+    def fps_label(self) -> str:
+        return "59.94" if self.fps == "60000/1001" else str(self.fps)
+
     def __post_init__(self) -> None:
         if self.language not in ("en", "de"):
             raise ValueError("Unsupported overlay language")
         if self.aspect not in ("landscape", "portrait"):
             raise ValueError("Unknown export aspect ratio")
-        if type(self.fps) is not int or not 1 <= self.fps <= 120:
-            raise ValueError("Frame rate must be an integer from 1 to 120")
+        if not (type(self.fps) is int and 1 <= self.fps <= 120) and self.fps != "60000/1001":
+            raise ValueError("Frame rate must be an integer from 1 to 120 or 60000/1001")
         if not isfinite(self.window_seconds) or not 1 <= self.window_seconds <= 60:
             raise ValueError("Visible time window must be from 1 to 60 seconds")
         if self.output not in ("transparent", "opaque"):
@@ -90,14 +102,17 @@ class ExportTimeline:
         # Include the last selected source sample's complete sample interval.
         return ceil(
             Fraction(self.last - self.first + 1)
-            * self.settings.fps
+            * self.settings.frame_rate
             / Fraction(str(self.sample_rate)),
         )
 
     def sample_position(self, frame: int) -> float:
         if not 0 <= frame < self.frame_count:
             raise ValueError("Frame outside export interval")
-        return min(self.last, self.first + frame * self.sample_rate / self.settings.fps)
+        return min(
+            self.last,
+            self.first + frame * self.sample_rate / float(self.settings.frame_rate),
+        )
 
     def value_at(self, channel: ExportChannel, position: float) -> float | None:
         lower = max(self.first, min(self.last, floor(position)))

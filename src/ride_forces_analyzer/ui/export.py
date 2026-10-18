@@ -43,6 +43,7 @@ from ride_forces_analyzer.rendering.encoding import ExportCancelled, export_vide
 from ride_forces_analyzer.rendering.progress import remaining_seconds
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.rendering.model import (
+    EXPORT_FRAME_RATES,
     ExportSettings,
     ExportTimeline,
     PROFILES,
@@ -187,6 +188,7 @@ class ExportDialog(QDialog):
         self.resize(1240, 820)
         self.setWindowModality(Qt.WindowModality.WindowModal)
         self.data, self.first, self.last = data, first, last
+        self.preferences = Preferences()
         self.store = store if store is not None else ExportStore(default_database_path())
         self.saved: tuple[SavedPreset, ...] = ()
         self.batch_window: QDialog | None = None
@@ -283,8 +285,8 @@ class ExportDialog(QDialog):
         )
         form.addRow(bind(QLabel(), tr("Output")), self.mode)
         self.fps = QComboBox()
-        items(self.fps, ["24", "25", "30", "50", "60"])
-        self.fps.setCurrentText("50")
+        items(self.fps, [ExportSettings(fps=rate).fps_label for rate in EXPORT_FRAME_RATES])
+        self.fps.setCurrentText(ExportSettings(fps=self.preferences.export_fps()).fps_label)
         form.addRow(bind(QLabel(), tr("Video frame rate")), self.fps)
         self.interval = QComboBox()
         items(
@@ -412,7 +414,6 @@ class ExportDialog(QDialog):
         self._export_started = 0.0
         self._completed_frames = 0
         self._total_frames = 0
-        self.preferences = Preferences()
         self.status.setWordWrap(True)
         self.status.setTextFormat(Qt.TextFormat.PlainText)
         layout.addWidget(self.status)
@@ -545,9 +546,9 @@ class ExportDialog(QDialog):
             next(i for i, (key, _) in enumerate(PROFILES) if key == settings.layout),
         )
         self.mode.setCurrentIndex(0 if settings.output == "transparent" else 1)
-        if self.fps.findText(str(settings.fps)) < 0:
-            self.fps.addItem(str(settings.fps))
-        self.fps.setCurrentText(str(settings.fps))
+        if self.fps.findText(settings.fps_label) < 0:
+            self.fps.addItem(settings.fps_label)
+        self.fps.setCurrentText(settings.fps_label)
         self.seconds.setValue(settings.window_seconds)
         self.smoothing.setCurrentIndex(preset.smoothing_window // 2)
         self.flip_vertical.setChecked(settings.invert_vertical)
@@ -625,7 +626,7 @@ class ExportDialog(QDialog):
         return ExportSettings(
             language="de" if self.overlay_language.currentIndex() == 1 else "en",
             aspect="landscape" if self.aspect.currentIndex() == 0 else "portrait",
-            fps=int(self.fps.currentText()),
+            fps="60000/1001" if self.fps.currentText() == "59.94" else int(self.fps.currentText()),
             window_seconds=float(self.seconds.value()),
             output="transparent" if self.mode.currentIndex() == 0 else "opaque",
             invert_vertical=self.flip_vertical.isChecked(),

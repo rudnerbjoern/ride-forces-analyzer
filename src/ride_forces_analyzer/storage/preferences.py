@@ -9,6 +9,7 @@ from pathlib import Path
 import sqlite3
 
 from .exports import default_database_path
+from ride_forces_analyzer.rendering.model import EXPORT_FRAME_RATES, FrameRate
 from ride_forces_analyzer.i18n import Language
 from typing import Literal
 from math import isfinite
@@ -46,6 +47,18 @@ class Preferences:
 
     def remember_appearance(self, value: Literal["dark", "light", "system"]) -> None:
         self._write("appearance", value)
+
+    def export_fps(self) -> FrameRate:
+        value = self._read("export_fps")
+        for rate in EXPORT_FRAME_RATES:
+            if str(rate) == value:
+                return rate
+        return 50
+
+    def remember_export_fps(self, value: FrameRate) -> None:
+        if type(value) not in (int, str) or value not in EXPORT_FRAME_RATES:
+            raise ValueError("Unsupported default export frame rate")
+        self._write("export_fps", str(value))
 
     def automatic_updates(self) -> bool:
         return self._read("automatic_updates") == "true"

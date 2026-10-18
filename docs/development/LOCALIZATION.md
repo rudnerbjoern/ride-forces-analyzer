@@ -1,7 +1,8 @@
 # English and German presentation
 
 The application supports English and German offline, with no new dependencies.
-The toolbar switches UI language immediately. Language and light/dark appearance
+Settings → Application provides language and appearance choices. Save applies
+them immediately; Cancel preserves the active settings. Language and light/dark appearance
 are saved in local `preferences.sqlite3` and restored on startup. Without valid
 preferences, the preferred Windows display language selects German when its
 language is German (including regional variants); all other languages fall back
@@ -9,7 +10,7 @@ to English. Appearance defaults to System, following Windows' effective light/da
 scheme at startup and when it changes (including OS-scheduled changes). An unknown
 system scheme falls back to dark. Explicit Dark/Light choices override Windows;
 selecting System restores automatic following. An explicit `AppSettings(language="de")`
-overrides the saved language for startup; subsequent toolbar changes are saved.
+overrides the saved language for startup; subsequent choices in Settings are saved.
 Both languages support the light/dark schemes and compact explorer layout.
 Dropdown widths follow their complete item texts, including after language
 changes; translated choices retain room for the dropdown arrow. Saved preset

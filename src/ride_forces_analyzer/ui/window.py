@@ -4,12 +4,11 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-# cspell:words Deutsch
-
-from ride_forces_analyzer.i18n import tr
-from .translation import bind, items, set_ui_language, system_ui_language
+from ride_forces_analyzer.i18n import Language, tr
+from .translation import bind, set_ui_language, system_ui_language
 
 from pathlib import Path
+from typing import Literal
 
 from PySide6.QtCharts import QCategoryAxis, QChart, QChartView, QLineSeries, QValueAxis
 from PySide6.QtCore import QPointF, Qt, QThreadPool, QTimer, Signal, Slot
@@ -27,7 +26,6 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QApplication,
-    QComboBox,
     QCheckBox,
     QDialog,
     QFrame,
@@ -59,6 +57,7 @@ from ride_forces_analyzer.gps_overview import prepare_gps_overview
 
 from .chrome import app_icon, style_native_caption
 from .about import AboutDialog
+from .preferences import SettingsDialog
 from .updates import UpdateController
 from .gps import gps_dialog
 from .loading import LoadWorker
@@ -103,10 +102,12 @@ class ExplorerWindow(QMainWindow):
             if "language" in settings.model_fields_set
             else self.preferences.language(system_ui_language())
         )
+        self.ui_language: Language = language
         application = QApplication.instance()
         if isinstance(application, QApplication):
             set_ui_language(application, language)
         appearance = self.preferences.appearance()
+        self.appearance_preference: Literal["dark", "light", "system"] = appearance
         self.theme = THEMES[
             system_theme(application)
             if appearance == "system" and isinstance(application, QApplication)
@@ -147,31 +148,17 @@ class ExplorerWindow(QMainWindow):
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         toolbar.addWidget(spacer)
-        self.language = QComboBox()
-        bind(self.language, tr("Language"), "accessibleName")
-        items(self.language, ["English", "Deutsch"])
-        self.language.setCurrentIndex(1 if language == "de" else 0)
-        self.language.currentIndexChanged.connect(self.set_ui_language)
-        language_action = toolbar.addWidget(self.language)
-        self.appearance = QComboBox()
-        bind(self.appearance, tr("Appearance"), "accessibleName")
-        bind(
-            self.appearance,
-            tr("Application appearance · does not change exported videos"),
-            "toolTip",
-        )
-        items(self.appearance, [tr("Dark"), tr("Light"), tr("System")])
-        self.appearance.setCurrentIndex({"dark": 0, "light": 1, "system": 2}[appearance])
-        self.appearance.currentIndexChanged.connect(self.set_appearance)
-        toolbar.addWidget(self.appearance)
         self.notes_button = bind(QPushButton(), tr("Import notes"))
         self.notes_button.setCheckable(True)
         self.notes_button.toggled.connect(self._show_notes)
-        toolbar.addWidget(self.notes_button)
+        notes_action = toolbar.addWidget(self.notes_button)
         self.inspector_button = bind(QPushButton(), tr("Inspector"))
         self.inspector_button.setCheckable(True)
-        toolbar.insertWidget(language_action, self.inspector_button)
+        toolbar.insertWidget(notes_action, self.inspector_button)
         self.addToolBar(toolbar)
+        self.settings_action = bind(QAction(self), tr("Settings…"))
+        self.settings_action.triggered.connect(self.show_settings)
+        toolbar.addAction(self.settings_action)
         self.about_action = bind(QAction(self), tr("About…"))
         self.about_action.triggered.connect(self.show_about)
         toolbar.addAction(self.about_action)
@@ -478,7 +465,8 @@ class ExplorerWindow(QMainWindow):
         application = QApplication.instance()
         if not isinstance(application, QApplication):
             return
-        set_ui_language(application, "de" if index == 1 else "en")
+        self.ui_language = "de" if index == 1 else "en"
+        set_ui_language(application, self.ui_language)
         self.preferences.remember_language("de" if index == 1 else "en")
         if self.data is not None:
             self._refresh_diagnostics()
@@ -491,21 +479,21 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(int)
     def set_appearance(self, index: int) -> None:
-        self.preferences.remember_appearance(
-            "system" if index == 2 else "light" if index == 1 else "dark",
-        )
+        self.appearance_preference = "system" if index == 2 else "light" if index == 1 else "dark"
+        self.preferences.remember_appearance(self.appearance_preference)
         self._apply_appearance()
 
     def _system_appearance_changed(self, scheme: Qt.ColorScheme) -> None:
-        if self.appearance.currentIndex() == 2:
+        if self.appearance_preference == "system":
             self._apply_appearance()
 
     def _apply_appearance(self) -> None:
         application = QApplication.instance()
         if isinstance(application, QApplication):
-            index = self.appearance.currentIndex()
             self.theme = THEMES[
-                system_theme(application) if index == 2 else "light" if index == 1 else "dark"
+                system_theme(application)
+                if self.appearance_preference == "system"
+                else self.appearance_preference
             ]
             apply_theme(application, self.theme)
         self._style_chart()
@@ -656,6 +644,13 @@ class ExplorerWindow(QMainWindow):
             return
         self.batch_window = BatchDialog(ExportStore(default_database_path()), self)
         self.batch_window.show()
+
+    @Slot()
+    def show_settings(self) -> None:
+        dialog = SettingsDialog(self.preferences, self, language=self.ui_language)
+        dialog.language_selected.connect(self.set_ui_language)
+        dialog.appearance_selected.connect(self.set_appearance)
+        dialog.open()
 
     @Slot()
     def show_about(self) -> None:
@@ -1044,7 +1039,7 @@ class ExplorerWindow(QMainWindow):
                 "gravityIndex": "Gravity marker",
                 "inclineIndex": "Incline marker",
             }
-            display_name = tr(marker_names[name]) if self.language.currentIndex() == 1 else name
+            display_name = tr(marker_names[name]) if self.ui_language == "de" else name
             bind(label, f"{display_name} · {self.data.replay_text(index)}", "text")
             bind(
                 label,

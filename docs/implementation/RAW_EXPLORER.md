@@ -71,8 +71,9 @@ track and handle. Native caption uses a force-trace icon and loaded ride name;
 the application name is not repeated in the toolbar. Unsupported Windows caption
 colors retain system defaults; native window controls remain intact.
 
-Toolbar appearance selects Dark or Light during the session; startup remains
-Dark. Shared application palette/styles cover controls, disabled/selected states,
+Settings → Application selects Dark, Light or System appearance and UI language.
+Save applies and persists both choices; Cancel preserves them. Startup restores
+the saved choices, defaulting to OS language and System appearance. Shared application palette/styles cover controls, disabled/selected states,
 tables, lists, tooltips, dialogs and GPS. Charts use scheme-specific backgrounds,
 axes, force/raw colors and markers; light text/channel/marker colors have at least
 4.5:1 contrast against the white chart panel. The main native caption follows the
@@ -81,13 +82,13 @@ recording identity/values, hidden curves, selection, zoom, sample and smoothing.
 Export previews/videos retain their production colors and independent preview
 background selection; application appearance never changes export settings.
 
-English/German UI language switches immediately while preserving source/analysis,
+Saving English/German UI language applies immediately while preserving source/analysis,
 sample, selection, hidden curves and zoom. German numeric readouts use decimal
 commas; replay sample-counter notation stays unchanged. Known metadata labels and
 diagnostic explanations are localized; source values, diagnostic codes and paths
 are preserved. Complete original diagnostics remain selectable in technical details.
-English is the startup default, configurable through AppSettings; toolbar language
-selection is session-only. See [localization](../development/LOCALIZATION.md).
+Without a saved choice, startup follows the OS language (German or English
+fallback); AppSettings can explicitly override it. See [localization](../development/LOCALIZATION.md).
 
 Show available Ride, Park, Train, Row and Seat fields as plain text, preserving
 ordered duplicates and numeric tokens. Omit absent/blank metadata; do not infer it

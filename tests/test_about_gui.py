@@ -27,8 +27,8 @@ def test_about_dialog_identity_translation_and_reuse(explorer_window: ExplorerWi
         if label.openExternalLinks()
         for anchor in fromstring(f"<div>{label.text()}</div>").iter("a")
     )
-    window.language.setCurrentIndex(1)
-    window.appearance.setCurrentIndex(1)
+    window.set_ui_language(1)
+    window.set_appearance(1)
     QApplication.processEvents()
     assert dialog.windowTitle() == "Über Ride Forces Analyzer"
     assert any("Unabhängiges Projekt" in label.text() for label in labels)

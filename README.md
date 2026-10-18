@@ -72,12 +72,19 @@ selected section. Choose the overlay language independently of the application.
 - **Saved presets and batches:** reuse settings or run several ride/preset
   combinations sequentially. Completed videos survive cancellation of the queue.
 
+For footage recorded at **59.94 fps**, select the matching export rate
+(`60000/1001`) and use the same frame rate in your editing timeline.
+Use **Settings → Export** to save your preferred frame rate for new exports.
+Saved presets and batches keep their own settings.
+
 Align the exported overlay with your footage in the editor. Automatic video
 synchronization is not available yet.
 
 ## Choose your workspace
 
-Switch between **English and German**, and between **dark and light** appearance.
+Use **Settings → Application** to choose **English or German** and
+**Dark, Light or System** appearance. Save applies your choices; Cancel keeps
+the previous settings.
 Language and appearance choices are remembered. Without a saved choice, German
 Windows selects German and other languages select English; **System** appearance
 follows Windows' current light/dark scheme.

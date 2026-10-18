@@ -89,10 +89,10 @@ def test_previews_match_production_at_exact_graph_sample(
         OverlayRenderer(timeline).render_sample(last + 1)
 
 
-@pytest.mark.parametrize("fps", [30, 50, 60])
+@pytest.mark.parametrize("fps", [30, 50, 60, "60000/1001"])
 def test_preview_sample_is_independent_of_video_rate(
     manta: ExplorerData,
-    fps: int,
+    fps: int | Literal["60000/1001"],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     positions: list[float] = []

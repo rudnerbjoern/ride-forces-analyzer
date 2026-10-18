@@ -57,7 +57,7 @@ def test_sqlite_survives_reopen_with_snapshots_and_transaction_rollback(
 ) -> None:
     path = export_directory / "exports.sqlite3"
     store = ExportStore(path)
-    chosen = preset()
+    chosen = SavedPreset(name="Ribbon", settings=ExportSettings(fps="60000/1001"))
     store.save_preset(chosen)
     store.create_batch("Weekend")
     store.append_jobs("Weekend", (short_job(manta, chosen),))
@@ -69,7 +69,7 @@ def test_sqlite_survives_reopen_with_snapshots_and_transaction_rollback(
         overwrite=True,
     )
     assert ExportStore(path).presets()[0].settings.fps == 30
-    assert ExportStore(path).batch("Weekend").jobs[0].preset.settings.fps == 50
+    assert ExportStore(path).batch("Weekend").jobs[0].preset.settings.fps == "60000/1001"
     with pytest.raises(ExportStoreError):
         store.save_preset(chosen.model_copy(update={"name": "ribbon"}))
     with pytest.raises(ExportStoreError):
