@@ -44,6 +44,18 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 The scripts target Windows x64; other architectures are unverified. Source
 recordings are never installation inputs and remain read-only.
 
+## Video export tools
+
+Run `.\setup.ps1 -VideoExport` to install the FFmpeg full build pinned by
+[ffmpeg.json](../../ffmpeg.json), including its SHA-256 checksum. Native curl/tar
+fetch and extract the publisher archive under `.tmp/`; repeat setup reuses the
+installed encoder. Cleaning `.tmp/` removes this optional tool installation.
+The export dialog can also use an existing ffmpeg.exe without downloading anything.
+Installed export processing is offline. Pillow is already a locked render extra;
+no new Python dependency is introduced. The full build supports Vulkan ProRes
+and NVIDIA NVENC when the actual GPU probe succeeds; CPU encoding remains usable.
+See [export usage](../../README.md) and [contracts](../implementation/VIDEO_EXPORT.md).
+
 ## Manual equivalent
 
 With uv 0.13.0 on PATH (or use `.tmp\uv-windows\uv.exe`):

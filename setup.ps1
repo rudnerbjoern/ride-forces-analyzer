@@ -1,5 +1,5 @@
-# Install the locked native Windows Python environment; optionally install Node tools.
-param([switch]$Development)
+# Install the locked native Windows environment; optional Node and video export tools.
+param([switch]$Development, [switch]$VideoExport)
 
 $ErrorActionPreference = 'Stop'
 Push-Location $PSScriptRoot
@@ -48,6 +48,27 @@ try {
     if ($Development) {
         & npm.cmd ci --no-audit --no-fund --cache "$PSScriptRoot/.tmp/npm-cache"
         if ($LASTEXITCODE -ne 0) { throw 'Node dependency installation failed.' }
+    }
+    if ($VideoExport) {
+        $encoder = Join-Path $PSScriptRoot '.tmp/ffmpeg/bin/ffmpeg.exe'
+        if (-not (Test-Path $encoder)) {
+            $ffmpeg = Get-Content ffmpeg.json -Raw | ConvertFrom-Json
+            $archive = Join-Path $PSScriptRoot '.tmp/ffmpeg-full.7z'
+            if (-not (Test-Path $archive) -or (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $ffmpeg.sha256) {
+                & curl.exe --fail --location --output $archive "https://github.com/GyanD/codexffmpeg/releases/download/$($ffmpeg.version)/ffmpeg-$($ffmpeg.version)-full_build.7z"
+                if ($LASTEXITCODE -ne 0) { throw 'FFmpeg download failed.' }
+            }
+            if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $ffmpeg.sha256) {
+                throw 'FFmpeg archive checksum mismatch.'
+            }
+            New-Item -ItemType Directory -Force .tmp/ffmpeg-distribution, .tmp/ffmpeg/bin | Out-Null
+            & tar.exe -xf $archive -C .tmp/ffmpeg-distribution
+            if ($LASTEXITCODE -ne 0) { throw 'FFmpeg extraction failed.' }
+            Get-ChildItem .tmp/ffmpeg-distribution -Recurse -Filter '*.exe' | Copy-Item -Destination .tmp/ffmpeg/bin
+            Get-ChildItem .tmp/ffmpeg-distribution -Recurse -File | Where-Object { $_.Name -match '^(LICENSE|README)' } | Copy-Item -Destination .tmp/ffmpeg -Force
+        }
+        & $encoder -version
+        if ($LASTEXITCODE -ne 0) { throw 'FFmpeg startup failed.' }
     }
     Write-Host 'Environment ready. Start the application with ./start.ps1.'
 } finally {
