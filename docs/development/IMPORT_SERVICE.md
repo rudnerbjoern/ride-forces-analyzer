@@ -124,8 +124,8 @@ the decoder map does not establish correct full-import semantics for another sch
 ## Regression and measurement
 
 ```powershell
-uv run pytest tests/test_import_service.py tests/test_motion_parser.py tests/test_optional_parser.py tests/test_project.py
-uv run python tests/benchmark_importer.py --repetitions 5
+uv run pytest tests/importers/test_service.py tests/importers/test_motion.py tests/importers/test_optional.py tests/recordings/test_integrity.py
+uv run python -m tests.importers.benchmark --repetitions 5
 ```
 
 Tests exercise both public adapters, all five complete originals, byte equality,

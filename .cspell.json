@@ -32,6 +32,9 @@
   ],
   "words": [
     "Deutsch",
+    "conftest",
+    "pytestmark",
+    "usefixtures",
     "basetemp",
     "capsys",
     "nonblocking",

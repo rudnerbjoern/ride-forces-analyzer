@@ -130,7 +130,7 @@ outcomes for full file/bytes imports.
 ## Validation
 
 ```powershell
-uv run pytest tests/test_source_models.py tests/test_recording_models.py tests/test_import_results.py
+uv run pytest tests/domain/test_source.py tests/domain/test_recording.py tests/importers/test_results.py
 uv run mypy src
 npm run typecheck
 npm run test:types
