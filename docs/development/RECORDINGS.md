@@ -9,9 +9,9 @@ with the original M1 fixture; Kraken, Taron and Voltron Nevera were added and
 expressly authorized on 2026-10-13.
 
 This publication authorization covers the original quartet. The owner additionally
-supplied Iron Gwazi on 2026-10-13 for the current Stage 0 inspection and confirmed
+supplied Iron Gwazi on 2026-10-13 for inspection and confirmed
 its Apple Watch availability profile. The owner subsequently explicitly authorized
-committing and pushing the complete fifth fixture with the Stage 0 work on
+committing and pushing the complete fifth fixture on
 2026-10-13. PR creation and merge require separate authorization.
 Additional recordings require their
 own authorization before inclusion or publication. Keep every `.forces` file
@@ -70,5 +70,7 @@ The [public importer](IMPORT_SERVICE.md) losslessly imports all five originals;
 [M2 acceptance](../validation/M2.md) records full motion/GPS/metadata coverage.
 Analysis model/device tests preserve source bytes and exercise unavailable Watch
 capabilities. These checks do not qualify units, axes, calibration, timing,
-filtering, GPS sentinels or source-app equivalence; those remain M3 evidence gates.
+filtering, GPS sentinels or source-app equivalence. The separate
+[source comparisons](../validation/APP_REFERENCE.md) define qualified display
+contracts and remaining physical uncertainties.
 Recordings are excluded from spelling, formatting and normalization.

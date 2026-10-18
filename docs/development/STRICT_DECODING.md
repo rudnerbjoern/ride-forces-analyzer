@@ -84,7 +84,7 @@ Defaults follow ADR 0002:
 - max_object_members: 1,024 per object.
 - max_string_length: 65,536 decoded characters per string/key.
 - max_number_length: 128 characters per exact numeric token.
-- max_diagnostics: 1,000; Stage 2 stops at its first fatal error and always uses one.
+- max_diagnostics: 1,000; decoding stops at its first fatal error and always uses one.
 
 A JSON-aware iterative preflight checks grammar, nesting, array/member/node budgets,
 keys, number tokens and decoded string lengths before complete tree allocation.
@@ -93,7 +93,7 @@ are decoded individually only after their lexical budget passes. Complete decodi
 then uses strict constant/duplicate hooks as defense in depth.
 Exactly at a supported budget passes; excess emits RESOURCE_LIMIT_EXCEEDED with
 the limit name and escaped JSON Pointer. Output diagnostic count is inherently
-bounded here; the Stage 5 combined pipeline now enforces its aggregate budget.
+bounded here; the combined import pipeline enforces its aggregate budget.
 Shape/byte budgets do not promise exact peak RAM or throughput. A runtime recursion
 failure is also a structured resource error rather than an uncaught exception.
 
@@ -102,7 +102,7 @@ failure is also a structured resource error rather than an uncaught exception.
 Codes: EMPTY_INPUT, INVALID_UTF8, INVALID_JSON, NON_JSON_NUMBER, INVALID_JSON_NUMBER,
 DUPLICATE_JSON_KEY, INVALID_ROOT, INVALID_SCHEMA_VERSION, UNSUPPORTED_SCHEMA_VERSION,
 MISSING_REQUIRED_FIELD, INVALID_REQUIRED_FIELD, RESOURCE_LIMIT_EXCEEDED,
-SOURCE_NOT_FOUND, SOURCE_UNREADABLE, INVALID_SOURCE_PATH. Stage 2 returns the first
+SOURCE_NOT_FOUND, SOURCE_UNREADABLE, INVALID_SOURCE_PATH. Decoding returns the first
 fatal error in deterministic traversal/adapter order; never includes source values,
 paths or decoder exception excerpts in messages. JSON Pointers identify fields.
 No URLs are fetched, positions looked up, telemetry sent or Qt imported.

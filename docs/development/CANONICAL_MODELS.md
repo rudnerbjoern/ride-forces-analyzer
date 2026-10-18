@@ -87,11 +87,10 @@ GpsSequence preserves every original indexed slot as GpsEntry, including
 `fix=None` for an unavailable fix. GPS count is independent of acceleration count.
 Recording distinguishes ABSENT, PRESENT (including an empty sequence), and INVALID
 (no usable container). Negative speed/course/accuracy and finite suspicious
-coordinates remain represented. [Stage 4 optional parsing](OPTIONAL_PARSING.md)
-now generates GPS/metadata warnings and accessors independently of full import.
-Device-based gravity availability
-is now handled by the [Stage 3 motion parser](MOTION_PARSING.md); Stage 1
-constructors still perform no profile inference.
+coordinates remain represented. [Optional parsing](OPTIONAL_PARSING.md)
+generates GPS/metadata warnings and accessors independently of full import.
+The [motion parser](MOTION_PARSING.md) handles device-based gravity availability;
+model constructors perform no profile inference.
 
 ## Diagnostics and results
 
@@ -125,8 +124,8 @@ Both result constructors copy and order diagnostic lists. Standard representatio
 omit source bytes/tree, GPS coordinates, sequences and recording metadata to avoid
 accidental trace dumps. Caller-supplied diagnostic messages still require safe,
 field-oriented text; no automatic sensitive-content classifier is implemented.
-These constructors still perform no parsing; the separately authorized
-[Stage 5 service](IMPORT_SERVICE.md) now returns these outcomes for full file/bytes imports.
+Constructors perform no parsing; the [service](IMPORT_SERVICE.md) returns these
+outcomes for full file/bytes imports.
 
 ## Validation
 
@@ -137,7 +136,7 @@ npm run typecheck
 npm run test:types
 ```
 
-The new Pyright contracts exercise literal-tag narrowing, invalid typed
+Pyright contracts exercise literal-tag narrowing, invalid typed
 construction, frozen-field assignment and source-mapping mutation. Existing
 Pydantic contracts remain in the same npm suite. Synthetic runtime tests cover
 owned byte/tree/sequence inputs, exact source tokens, defaults and absence,
@@ -149,7 +148,7 @@ dynamic view unless its backing dictionary is privately owned. These choices wer
 checked through Context7 against the official
 [dataclasses](https://docs.python.org/3.14/library/dataclasses.html) and
 [mapping proxy](https://docs.python.org/3.14/library/types.html#types.MappingProxyType)
-documentation. Stage 2 now enforces [decoder resource limits](STRICT_DECODING.md).
+documentation. The decoder enforces [resource limits](STRICT_DECODING.md).
 Native Windows checks and measurements are recorded in
 [M2 validation](../validation/M2.md).
 Total process/native peak RAM remains unverified. Full M2 acceptance and its

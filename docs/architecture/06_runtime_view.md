@@ -77,11 +77,11 @@ oversized inputs have no complete-source digest; no partial read is represented
 as complete provenance. Each call owns independent state, so repeated same
 bytes/policy produce equivalent output. See [API contracts](../development/IMPORT_SERVICE.md).
 
-## Future scenarios
+## Product boundaries
 
 Selected-range extrema update on source/selection/mode/smoothing changes.
-Persistent ride library, interactive playback, frame
-rendering, encoding and POV synchronization remain planned. Universal physical
+Persistent ride library, interactive playback and POV synchronization remain
+planned. Frame rendering and encoding are implemented for the 4K overlay slice. Universal physical
 rider qualification and analytical GPS are outside current M3 acceptance. This view introduces
 no invented runtime interactions for those services.
 
@@ -156,7 +156,7 @@ Cancelling the picker changes nothing. The previous view survives load errors.
 Application shutdown drains outstanding worker tasks after the window closes;
 it does not kill parsing mid-call. Axis labels use source values/inferred elapsed seconds,
 not rider G or a fabricated clock. Qt Charts handles interactive chart drawing;
-export frame generation and encoding remain separate planned subsystems.
+export frame generation and encoding are separate implemented services.
 
 Background presentation attempts source-direction projection and a configurable centered mean
 (default 11) for every successful import. Loading selects calibrated curves by
@@ -171,3 +171,41 @@ Global import-note access opens the inspector/details and scrolls to diagnostics
 after layout. Card values and clock text refresh from explorer presentation when
 sample, calibration or smoothing changes. Technical expansion is independent of
 analysis state. All raw/calibrated, failure and worker shutdown paths above remain.
+
+## 4K export runtime
+
+Export snapshots the loaded immutable recording, current smoothing and selected
+range/profile/aspect/language. A Qt worker prepares/streams frames to FFmpeg; NVIDIA Vulkan
+or NVENC is selected only after an actual encode probe, otherwise CPU is used.
+Signals report backend/progress, completion and failure without blocking widgets.
+Cancellation or window close sets a thread event; incomplete files are discarded.
+The service decodes every encoded frame and checks the frame count before an
+exclusive final publication. No existing file is replaced. The user aligns the
+single exported overlay with an Onride clip externally in Resolve.
+
+## Saved batch runtime
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant UI as Batch window
+    participant Store as SQLite export store
+    participant Queue as Batch worker/service
+    participant Encoder as Existing export service
+    User->>UI: Run selected or all saved batches
+    UI->>Store: Read immutable batch definitions
+    Store-->>UI: Source paths, hashes, ranges and preset snapshots
+    UI->>Queue: Queue snapshot and unique output root
+    loop Each recording/preset job
+        Queue->>Queue: Reimport, check hash, restore smoothing/range
+        Queue->>Encoder: Render and validate one video
+        Encoder-->>Queue: Complete output or failure/cancellation
+        Queue-->>UI: Progress and per-job result
+        Queue->>Queue: Persist incremental run report
+    end
+```
+
+Expected job failures are recorded and processing continues; cancellation discards
+the active incomplete encode and skips remaining jobs. Completed files stay intact.
+Close/Escape requests cancellation and never abandons an active encoder. Presets
+and definitions survive restart; resume/history services remain outside scope.

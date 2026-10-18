@@ -1,87 +1,115 @@
 # Ride Forces Analyzer
 
-Offline Windows desktop project for importing Ride Forces (`.forces`) recordings,
-analyzing G-force traces and producing charts and transparent video overlays.
+Explore your coaster rides. See the forces. Bring them into your videos.
 
-## Current capabilities
+Ride Forces Analyzer is a Windows desktop application for recordings exported
+from the **Ride Forces** mobile app. Open a `.forces` file, explore how vertical,
+lateral and longitudinal G-forces change throughout the ride, and turn the data
+into an overlay for your Onride footage.
 
-- **Lossless import:** offline [Path/bytes service](docs/development/IMPORT_SERVICE.md)
-  retains original bytes, metadata/weather, ordered attributes, GPS and diagnostics.
-- **Analysis primitives:** immutable [models](docs/development/ANALYSIS_MODELS.md),
-  explicit unit conversion, device-vector norms and opt-in provisional frame math.
-  General physical rider qualification remains open.
-- **Calibrated forces:** enabled by default for any imported recording with usable
-  direction vectors, using source projections and a configurable centered mean
-  (default: 11 samples).
-  Positive/negative lateral values mean right/left; positive/negative longitudinal
-  values mean acceleration/braking. Labels show these signs in the chart and readout.
-  Missing/invalid calibration data leave raw x/y/z available with an explanation.
-  See [source-app comparisons and processing policy](docs/validation/APP_REFERENCE.md).
-- **Focus workspace:** a dark chart-first layout with a right inspector for display,
-  selection and metadata; current values sit below the chart and technical details
-  stay collapsible. Small windows switch between chart and inspector.
-- **Raw explorer implemented:** open local recordings, inspect x/y/z curves,
-  navigate samples, zoom and select an inclusive interval. Import runs in the background.
-- **M3 complete (reduced scope):** selected-range minimum/maximum per axis with
-  sample/replay/recording time, current raw/calibrated mode and smoothing context.
-  Values update on selection, smoothing or recording changes in **Selection extrema**.
-  [Acceptance](docs/validation/M3.md) records focused native Windows verification.
-  Extra filters, general scientific calibration, events and broad statistics are deferred;
-  analytical GPS is outside current scope.
-- **Planned product work:** persistent ride library, playback, rendering, video
-  synchronization and standalone release.
+Your recordings stay on your computer. Processing works offline and never
+changes the original files.
 
-The **Smoothing** slider offers odd windows from 1 (off) to 51 samples. A new
-recording starts at 11; right-click the slider to restore 11. Changes update the curves while dragging
-and preserve original values.
-The label shows the window and its time support at the actual sample rate.
-Stronger smoothing can reduce short force peaks. Calibrated charts always show
-the labeled reference levels -1 g, 0 g and +1 g.
+![Voltron Nevera recording in the dark workspace, showing three force curves, current values and selected-range extrema](docs/images/workspace-dark.png)
 
-The explorer labels replay time as `MM:SS.ff`, where `ff` is the sample counter
-within the second at the displayed sample rate. Replay zero is the start marker;
-recording-origin seconds remain available in the readout. Raw views retain unknown units and
-rider directions explicit. Original files are never changed.
-Acceptance and remaining stages are tracked in the [roadmap](docs/ROADMAP.md).
+*Explore the complete ride, inspect a moment, or focus on a selected section.*
 
-## Install and start
+## What you can do
 
-Windows 10/11 x64 with a desktop session is required. From Windows PowerShell:
+- **Explore three force channels together.** Follow vertical loads, right/left
+  forces, acceleration and braking on a shared time axis. Show or hide individual
+  curves and inspect the values at any sample.
+- **Focus on the interesting part.** Zoom with the mouse wheel or drag across
+  the chart. Start/end markers define the initial view; reset returns to it.
+  Select a section to see its minimum and maximum values for every channel.
+- **Smooth the display interactively.** Adjust the slider while watching the
+  curves update. Right-click to restore the default. Smoothing changes the
+  displayed curves, while your original measurements remain intact.
+- **Keep the ride context nearby.** View available ride, park, train, row and
+  seat information. Open an approximate GPS route overview when positions are
+  present in the recording.
+- **Prepare several exports at once.** Save your preferred settings, reuse them
+  for another ride, and queue multiple recordings and layouts for one batch run.
+
+Directional forces are shown when the recording contains usable calibration
+directions. Otherwise, you can still inspect the raw x/y/z channels, with an
+explanation of what is unavailable.
+
+## Make overlays for your videos
+
+The export assistant shows the current graph sample before you render.
+Compare five layouts, adjust the settings and check the result in the preview.
+
+![Export assistant showing five layout thumbnails, landscape settings and a large transparent Flow Ribbon preview](docs/images/export-preview.png)
+
+*The checkerboard shows transparency; it is not part of the exported video.*
+
+Choose **Flow Ribbon** for a strip along the bottom, **Corner Instruments** for
+the upper right, **Telemetry Capsule** for the top, **G-Orbit** for signed force
+gauges, or the **four-panel column** for force and orientation plots.
+
+![All five export layouts compared at Manta's strong negative vertical-force peak](docs/images/manta-export-themes.png)
+
+[Compare every layout in detail using the same Manta moment](docs/EXPORT_THEMES.md).
+
+Every layout supports **4K landscape** for classic YouTube videos and **portrait**
+for Shorts or TikTok. Export the whole recording, its marker interval or your
+selected section. Choose the overlay language independently of the application.
+
+- **Transparent MOV (ProRes 4444):** place it above your footage in a video editor
+  such as DaVinci Resolve. These editing files can be large.
+- **Opaque MP4 (H.264):** export a video with a solid background.
+- **Optional NVIDIA acceleration:** supported hardware speeds up encoding;
+  CPU export remains available.
+- **Saved presets and batches:** reuse settings or run several ride/preset
+  combinations sequentially. Completed videos survive cancellation of the queue.
+
+Align the exported overlay with your footage in the editor. Automatic video
+synchronization is not available yet.
+
+## Choose your workspace
+
+Switch between **English and German**, and between **dark and light** appearance.
+The chart stays central, with display settings, selection and ride details in
+the inspector. Smaller windows let you switch between the chart and inspector.
+
+![The same Voltron Nevera recording in the light workspace, with force curves and inspector visible](docs/images/workspace-light.png)
+
+*The light scheme shows the same recording, selection and current values.*
+
+## Get started
+
+You need **Windows 10 or 11, 64-bit**, and a recording exported as `.forces`.
+A standalone installer is not available yet. Download or clone this project,
+open PowerShell in its folder and run:
 
 ```powershell
 .\setup.ps1
 .\start.ps1
 ```
 
-Setup obtains uv 0.13.0 if needed, installs Python from `.python-version` and
-synchronizes the locked Python environment, including development and optional
-analysis/render packages. Downloads require network access; installed processing
-and startup work offline. Start waits until the window closes. Click **Open recording** (Ctrl+O), choose a
-`.forces` file and explore the three colored curves. Use the mouse wheel over the chart or drag to zoom in time, move the
-sample slider to inspect values, or enter a start/end selection and click
-**Zoom to selection**. **Select visible range** turns a zoomed viewport into a
-selection; **Reset view** restores the start/end marker interval (recording limits when
-a boundary is absent). Zoom-out can still show the complete recording. Stored start/end and available
-gravity/incline markers appear as labeled vertical lines. Available Ride, Park,
-Train, Row and Seat metadata appears in the inspector’s **Recording** section. Import notes explain optional-data
-warnings; technical details are expandable. The **Inspector** button toggles the
-side panel (or switches views in compact windows). **GPS overview** opens a separate offline, north-up route window when usable
-GPS positions exist. It marks start/end, retains spatial proportions and leaves
-missing fixes/time gaps disconnected. GPS is an approximate location reference,
-independent of force measurement; no background map or speed color contract is assumed.
-See the [verified first-slice scope](docs/validation/RAW_EXPLORER.md).
+Setup requires internet access to download the environment. After installation,
+you can open and process recordings offline.
 
-For Node development tools, install the Node.js version from `.node-version`
-with bundled npm, then run `.\setup.ps1 -Development`.
-See [Windows setup](docs/development/SETUP.md) for checks, troubleshooting and
-VS Code interpreter/Test Explorer settings. Node is not an application dependency.
-FFmpeg is planned for later export work.
+1. Click **Open recording** (Ctrl+O) and select your file.
+2. Explore the chart, move the sample slider or select an interval.
+3. Click **Export 4K…**, choose a layout and review the preview before exporting.
 
-## Documentation and data
+Video export also needs FFmpeg. Install the supplied version with
+`setup.ps1 -VideoExport`, or select an existing `ffmpeg.exe` in the assistant.
+See the [setup guide](docs/development/SETUP.md) for detailed installation help.
 
-- [Documentation index](docs/README.md): requirements, API guides, plans and evidence.
-- [arc42 architecture](docs/architecture/README.md): subsystem boundaries and decisions.
-- [AGENTS.md](AGENTS.md): project rules and Git authorization.
-- [Recording catalog](docs/development/RECORDINGS.md): five authorized originals,
-  publication authorization and pinned byte lengths/SHA-256 digests. All originals,
-  including GPS, metadata and unknown fields, remain read-only.
+## Understanding the display
+
+Replay time uses `MM:SS.ff`, where `ff` counts samples within a second rather
+than hundredths. At 50 Hz, `01:31.47` means 91.94 seconds.
+Positive lateral values mean right; positive longitudinal values mean acceleration.
+Negative values mean left and braking respectively.
+
+Results depend on the recording, calibration and smoothing. The display follows
+documented source-app conventions; exact agreement with every recording is not
+guaranteed. GPS is a rough location reference, not a force or speed measurement.
+Missing sensor data is never invented.
+
+For current limitations and planned features, see the [roadmap](docs/ROADMAP.md).
+The [documentation index](docs/README.md) links detailed behavior and source comparisons.

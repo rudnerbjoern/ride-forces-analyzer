@@ -23,13 +23,13 @@ remain PROVISIONAL. Generic frame APIs retain their stricter independent gates.
 Missing/invalid directions or unavailable numerical support preserve raw operation
 with a calibration diagnostic. Hashes identify provenance, not feature eligibility.
 
-| Quantity     | Source-app evidence / implementation limit                                                                     |
-| ------------ | -------------------------------------------------------------------------------------------------------------- |
-| Lateral      | Positive right, negative left                                                                                  |
-| Longitudinal | Positive acceleration, negative braking                                                                        |
-| Combined     | Norm of filtered directional components; evidence tests only, no production Combined chart                     |
-| Orientation  | Angle of normalized current source gravity to stored vertical, clipped cosine before acos; evidence tests only |
-| Time         | Start-relative `MM:SS.ff`, ff is sample counter at integer rate; internal recording seconds remain index/rate  |
+| Quantity     | Source-app evidence / implementation limit                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Lateral      | Positive right, negative left                                                                                           |
+| Longitudinal | Positive acceleration, negative braking                                                                                 |
+| Combined     | Norm of filtered directional components; evidence tests only, no production Combined chart                              |
+| Orientation  | Angle of normalized current source gravity to stored vertical, clipped cosine before acos; implemented for video export |
+| Time         | Start-relative `MM:SS.ff`, ff is sample counter at integer rate; internal recording seconds remain index/rate           |
 
 At 50 Hz default 11 samples has nominal N/rate 0.22 s, endpoint span 0.20 s and
 ±0.10 s support. Means are not cascaded. Manta unfiltered vertical extrema are
@@ -193,26 +193,19 @@ Manta 0.318, Kraken 0.099, Taron 0.266, Voltron 0.346, without fitted lag, quali
 selection or smoothing. The weak relationship means geometric step speed cannot
 replace source speed. Speed coloring remains plausible, not a confirmed app contract.
 
-## Validation evidence and limits
+## Verification boundary
 
-Native Windows / Python 3.14.6 / Qt 6.12.0 / locked NumPy 2.5.4; working-tree branch
-`chore/workspace-setup-and-docs`, base `4b201c42adb8201882bc9c91483ca03124290a57`.
-Reference/source evidence lives in `tests/test_reference.py`, `tests/test_explorer.py`,
-`tests/test_explorer_gui.py`, `tests/test_optional_parser.py` and GPS tests.
+Native Windows / Python 3.14.6 / Qt 6.12.0 / locked NumPy 2.5.4;
+reference implementation based on 4b201c42adb8201882bc9c91483ca03124290a57.
+Recorded focused checks passed for source references, weather accessors, smoothing,
+force levels and GPS presentation. Maintained regression command:
 
-| Recorded command / scope                                                                                                                                                           | Actual result       | Evidence                             |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ------------------------------------ |
-| `uv run --locked pytest tests/test_reference.py` — screenshot extrema/replay                                                                                                       | 23 passed, 8.74 s   | `.tmp/voltron-check.log`             |
-| `uv run --locked pytest tests/test_optional_parser.py` — weather/accessors                                                                                                         | 237 passed, 2.50 s  | `.tmp/weather-check.log`             |
-| `uv run --locked pytest` — general calibrated default                                                                                                                              | 994 passed, 98.50 s | `.tmp/general-calibration-final.log` |
-| `uv run --locked pytest tests/test_reference.py tests/test_explorer.py tests/test_explorer_gui.py::test_smoothing_slider_preserves_source_time_and_selection` — all 26 odd windows | 86 passed, 11.71 s  | `.tmp/smoothing-check.log`           |
-| `uv run --locked pytest tests/test_explorer.py tests/test_gui.py tests/test_explorer_gui.py` — persistent reference levels                                                         | 62 passed, 33.67 s  | `.tmp/force-levels.log`              |
+```text
+uv run --locked pytest tests/test_reference.py tests/test_explorer.py tests/test_optional_parser.py
+```
 
-These scoped runs also passed Ruff lint/format and strict typing. Current broader
-and affected GUI evidence is in [explorer validation](RAW_EXPLORER.md); earlier
-counts are not presented as fresh full-suite results. Native investigation scripts
-`.tmp/analyze-all-gps.py`, `.tmp/render-all-gps.py`, `.tmp/analyze-voltron-gps.py`
-and `.tmp/render-gps.py` retain source hashes/numerical outputs in `.tmp/`.
-Comparison captures and owner screenshots establish visual/rounded agreement,
-not pixel-identical output or private source-algorithm identity. Reduced M3 acceptance is recorded [separately](M3.md).
-GPS units/epochs/sentinels and general physical rider calibration remain unqualified.
+Independent screenshots and rounded numeric comparisons establish the scoped
+contracts above, not pixel identity or private source-algorithm equivalence.
+[Explorer verification](RAW_EXPLORER.md) and [M3 acceptance](M3.md) own their
+separate product acceptance. GPS units/epochs/sentinels and general physical
+rider calibration remain unqualified.

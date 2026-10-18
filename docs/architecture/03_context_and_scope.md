@@ -18,7 +18,7 @@ flowchart LR
     Desktop["Desktop user"]
     Window["Raw recording explorer: implemented"]
     Video["Local POV video: planned input"]
-    Editor["Video editor: planned consumer"]
+    Editor["Video editor: exported overlay consumer"]
     Capture --> Original
     Original --> Analyzer
     Caller --> Analyzer
@@ -26,14 +26,16 @@ flowchart LR
     Desktop --> Window
     Window --> Analyzer
     Video -.-> Analyzer
-    Analyzer -.-> Editor
+    Analyzer --> Editor
 ```
 
 Solid edges represent existing interactions; dashed edges are planned product
 interfaces. The explorer calls the importer asynchronously; raw curves and
 sample controls make no universal physical calibration claim. Source-app
 projection/mean is implemented; selected-range extrema are implemented within reduced
-M3. GPS supplies coarse spatial context only. Playback and video/export remain planned.
+M3. GPS supplies coarse spatial context only. The 4K overlay exporter writes one
+video in one of five layouts for manual alignment in Resolve; interactive playback
+and POV synchronization remain planned.
 
 ## Technical context
 
@@ -43,7 +45,8 @@ M3. GPS supplies coarse spatial context only. Playback and video/export remain p
 | Bytes input                         | Immutable Python bytes, no filesystem access                  | Implemented                                                          |
 | Import output                       | Typed ImportSuccess or ImportFailure in the caller process    | Implemented; no Qt dependency                                        |
 | Desktop bootstrap                   | Local PySide6 process and native Qt event loop                | Implemented raw explorer and background file opening                 |
-| POV input and video/image outputs   | Future local files; formats and sync follow later milestones  | Planned                                                              |
+| Video output                        | Local ProRes MOV / H.264 MP4, five layouts and two aspects    | Implemented; manual external alignment                               |
+| POV input / synchronization         | Local video ingest and matching                               | Planned                                                              |
 | Dependency distribution / GitHub CI | Developer network access and Windows PR runners               | Development infrastructure; not an application processing dependency |
 
 [Chapter 05](05_building_block_view.md) documents callable interfaces;

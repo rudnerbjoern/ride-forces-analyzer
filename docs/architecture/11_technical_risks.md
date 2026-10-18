@@ -2,22 +2,22 @@
 
 [Architecture index](README.md)
 
-| Risk / debt                      | Known state                                                                                                                | Consequence / next evidence gate                                                                                        |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Unverified motion semantics      | General physical source/frame qualification remains open; app-reference signs/scale have scoped evidence                   | Retain scoped app-reference evidence; universal physical qualification is deferred                                      |
-| Unverified time / indices        | Epoch, end-index convention and a common motion/GPS clock are unresolved                                                   | Preserve indices/timestamps; no inferred synchronization or chronology claim                                            |
-| GPS interpretation               | Negative speed/course/accuracy and suspicious values are preserved with warnings                                           | Units, sentinels and physical plausibility require independent evidence                                                 |
-| Device capability differences    | Apple Watch can lack gravity/GPS; present arrays can still be defective                                                    | Never synthesize missing sensors; separate import success from analysis readiness                                       |
-| Schema evolution                 | Only 2.2.0 is supported; observed fixtures are not a manufacturer specification                                            | Obtain authorized evidence and explicit adapters/tests before accepting another version                                 |
-| Resource / filesystem guarantees | Shape/diagnostic budgets are implemented; total RAM, cold-cache and hostile filesystem/ACL behavior are not fully verified | Retain conservative limits and document benchmark/mock boundaries                                                       |
-| GUI and service integration      | Raw explorer opens files and shows source curves; persistent library/playback are planned                                  | Retain implemented interactive import; complete library/playback acceptance separately                                  |
-| Export and release compatibility | Encoding, alpha-video compatibility, POV timing and clean-VM installation are planned                                      | Verify target editor/codecs and standalone deployment in M6–M8                                                          |
-| Dependency security              | The recorded Node dependency audit has an open advisory                                                                    | Follow the dated [security follow-up](../validation/DEPENDABOT.md); do not infer resolution from architecture migration |
+| Risk / debt                      | Known state                                                                                                                       | Consequence / next evidence gate                                                                                        |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Unverified motion semantics      | General physical source/frame qualification remains open; app-reference signs/scale have scoped evidence                          | Retain scoped app-reference evidence; universal physical qualification is deferred                                      |
+| Unverified time / indices        | Epoch, end-index convention and a common motion/GPS clock are unresolved                                                          | Preserve indices/timestamps; no inferred synchronization or chronology claim                                            |
+| GPS interpretation               | Negative speed/course/accuracy and suspicious values are preserved with warnings                                                  | Units, sentinels and physical plausibility require independent evidence                                                 |
+| Device capability differences    | Apple Watch can lack gravity/GPS; present arrays can still be defective                                                           | Never synthesize missing sensors; separate import success from analysis readiness                                       |
+| Schema evolution                 | Only 2.2.0 is supported; observed fixtures are not a manufacturer specification                                                   | Obtain authorized evidence and explicit adapters/tests before accepting another version                                 |
+| Resource / filesystem guarantees | Shape/diagnostic budgets are implemented; total RAM, cold-cache and hostile filesystem/ACL behavior are not fully verified        | Retain conservative limits and document benchmark/mock boundaries                                                       |
+| GUI and service integration      | Raw explorer opens files and shows source curves; persistent library/playback are planned                                         | Retain implemented interactive import; complete library/playback acceptance separately                                  |
+| Export and release compatibility | ProRes/H.264 encode and Resolve import have scoped evidence; Onride compositing, synchronization and clean-VM release remain open | Retain codec evidence and verify remaining M6–M8 boundaries                                                             |
+| Dependency security              | The recorded Node dependency audit has an open advisory                                                                           | Follow the dated [security follow-up](../validation/DEPENDABOT.md); do not infer resolution from architecture migration |
 
 M2 parsing/integrity acceptance does not establish sensor accuracy, Ride Forces
 algorithm equivalence or suitability for safety-critical interpretation. Resolve
 scientific questions through the [M3 plan](../implementation/DEV-REQ-003/PLAN.md)
-without changing original source evidence. M2 limitations and historical verification
+without changing original source evidence. M2 limitations and scoped verification
 boundaries remain in the [acceptance report](../validation/M2.md).
 
 ## Unresolved scientific qualification
@@ -41,13 +41,13 @@ that policy and independent scientific qualification remain open:
 - All originals are eligible for raw inspection, with units/axes UNKNOWN.
   Definitive rider outputs and app equivalence remain unavailable; Iron Gwazi
   additionally lacks GPS/gravity. Assumption-based exploratory output requires
-  explicit opt-in and PROVISIONAL labeling. Stage 2 enforces source-specific
+  explicit opt-in and PROVISIONAL labeling. Device analysis enforces source-specific
   unit/quantity contract gates; caller references do not certify source semantics.
 
 The reference protocol and safe proposed restrictions live in the ADR; this view
-retains the open risks without duplicating decision history or declaring M3 complete.
+retains physical limits separately from reduced-M3 product acceptance.
 
-Stage 3 supplies validated numerical transforms and a PROVISIONAL-only rider gate,
+Frame analysis supplies validated numerical transforms and a PROVISIONAL-only rider gate,
 not empirical calibration. The directly ordered source direction vectors fail its
 strict numerical admission policy; they must not be silently normalized into a
 physical frame. Qualification still needs versioned axis/mount/pose references.

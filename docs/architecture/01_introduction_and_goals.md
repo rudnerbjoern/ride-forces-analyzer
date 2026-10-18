@@ -17,12 +17,13 @@ M3 implements immutable analysis contracts and explicit device-unit/norm primiti
 Source-app projection, live configurable smoothing and coarse GPS overview are
 implemented in the explorer. Reduced M3 includes selected-range per-axis
 extrema and focused Windows acceptance. Extra filters/events and universal physical rider
-qualification are deferred; GPS analytics is excluded. Persistent library, playback,
-rendering, export, synchronization and release remain planned.
+qualification are deferred; GPS analytics is excluded. Five-profile 4K transparent/opaque
+video export with previews and saved batches is implemented as a partial M6 slice. Persistent library, interactive
+playback, remaining exports, synchronization and release remain planned.
 
 Authoritative scope: [roadmap](../ROADMAP.md),
 [importer requirements](../requirements/DEV-REQ-002-forces-importer.md) and
-[planned scientific requirements](../requirements/DEV-REQ-003-scientific-analysis.md).
+[analysis requirements](../requirements/DEV-REQ-003-scientific-analysis.md).
 Implementation stages and delivery gates belong in their implementation plans.
 
 ## Quality goals
@@ -42,4 +43,4 @@ Implementation stages and delivery gates belong in their implementation plans.
 | Project owner            | Repository owner; explicit review and operation approval | Useful offline tooling, preserved recordings and verified milestones            |
 | Desktop user             | Desktop explorer user                                    | Import, inspect and export local rides without hidden data loss                 |
 | Developer / coding agent | Repository instructions in AGENTS.md                     | Clear boundaries, stable contracts and reproducible Windows checks              |
-| Video editor             | Future M6/M7 consumer                                    | Independent opaque video and transparent overlays with verified synchronization |
+| Video editor             | Export consumer                                          | Opaque video / transparent overlays; manual alignment until M7                  |

@@ -15,7 +15,7 @@
 - The importer supports only the explicitly dispatched schema 2.2.0. New versions
   require authorized evidence, an adapter and regression coverage.
 - Importing and scientific processing stay outside Qt widgets. Frame generation
-  and encoding must remain separate responsibilities for future exports.
+  and encoding remain separate responsibilities for implemented and future exports.
 
 ## Data and scientific constraints
 
@@ -37,8 +37,7 @@ Finish milestone acceptance and documentation locally before publication; CI is
 secondary validation. Temporary artifacts belong in `.tmp/`; source recordings
 are excluded from text normalization. Dependencies are locked and reviewed.
 
-Stage 1 analysis contracts use the already locked NumPy in the optional `analysis`
-extra. Pint was separately adopted for Stage 2 conversions. SciPy/GeographicLib have
-isolated Windows audit evidence. Stage 3 adopts SciPy for frame rotations;
-GeographicLib still requires separate manifest/lock adoption. AHRS and pyproj remain research only. Preserve actual binary/transitive
+Analysis uses locked NumPy/Pint/SciPy in the optional `analysis` extra.
+GeographicLib is not adopted or required for the GPS reference-only scope.
+AHRS and pyproj remain research only. Preserve actual binary/transitive
 license notices for eventual distribution; see [ADR 0004](../decisions/0004-analysis-contracts-and-library-policy.md).

@@ -1,8 +1,9 @@
 # Analysis contracts and device primitives — DEV-REQ-003
 
 The [analysis package](../../src/ride_forces_analyzer/analysis/) exposes executable
-model contracts. The separate Stage 2 `analysis.device` module adds opt-in
-qualified DEVICE vectors/norms and Pint conversion; calibrated analysis remains planned.
+model contracts. `analysis.device` provides opt-in qualified DEVICE vectors/norms
+and Pint conversion; explicit provisional frames and source-app calibrated
+projection are implemented as separate contracts below.
 Use the already locked NumPy from the `analysis` extra. The regular bootstrap
 and M2 importer do not import this package. The
 [library/API ADR](../decisions/0004-analysis-contracts-and-library-policy.md)
@@ -152,7 +153,7 @@ filters, universal physical calibration and broad statistics are deferred, while
 GPS analytics is outside current scope. No fixture
 is reformatted and no new project dependency is adopted by this contract layer.
 
-## Device-only vectors and units — Stage 2
+## Device-only vectors and units
 
 Public opt-in API: `ride_forces_analyzer.analysis.device` (NumPy and Pint analysis
 extra required). Importing just `analysis` models does not import Pint.
@@ -218,7 +219,7 @@ or epoch is calculated. All five originals remain unit-unqualified; Watch gravit
 and GPS remain absent. NumPy float64 rounding/underflow does not replace source
 precision; exact source bytes remain in the retained ImportSuccess.
 
-## Passive frame math and provisional rider vectors — Stage 3
+## Passive frame math and provisional rider vectors
 
 Opt-in `analysis.frames` requires the locked SciPy analysis extra:
 
@@ -269,7 +270,7 @@ result = analyze_rider_frame(
 
 All five real fixtures remain unit/frame-unqualified; absent Watch gravity stays
 absent. See [ADR 0005](../decisions/0005-passive-frame-transforms.md),
-[Stage 3 evidence](../validation/M3_STAGE3.md) and `tests/test_frames.py`. Source-app
+[M3 evidence](../validation/M3.md) and `tests/test_frames.py`. Source-app
 references remain required for generic physical calibration. This broader research
 is not reduced-M3 acceptance; existing app-reference projection/mean has separate
 evidence, and analytical GPS is outside current scope.
