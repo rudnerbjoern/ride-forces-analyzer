@@ -45,6 +45,9 @@ explanation of what is unavailable.
 The export assistant shows the current graph sample before you render.
 Compare five layouts, adjust the settings and check the result in the preview.
 
+See G-Orbit in action: [watch the Manta demo on YouTube](https://youtu.be/tsRzD416voU),
+with the exported overlay placed over Onride footage.
+
 ![Export assistant showing five layout thumbnails, landscape settings and a large transparent Flow Ribbon preview](docs/images/export-preview.png)
 
 *The checkerboard shows transparency; it is not part of the exported video.*

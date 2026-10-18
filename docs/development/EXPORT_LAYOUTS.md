@@ -4,6 +4,9 @@ Layouts are internal, explicitly registered plugins. No package discovery,
 installation, network access or third-party code loading is involved.
 The public selection and saved-preset keys remain unchanged.
 
+For an example of a rendered template in use, watch the
+[Manta G-Orbit demo on YouTube](https://youtu.be/tsRzD416voU).
+
 ## Files and responsibilities
 
 | File under `src/ride_forces_analyzer/rendering/layouts/` | Responsibility                                                  |

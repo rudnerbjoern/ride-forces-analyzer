@@ -53,6 +53,8 @@ A slim strip at the top presents the same three channels, replay time and tilt.
 
 ## G-Orbit
 
+[Watch the Manta video with the G-Orbit overlay on YouTube](https://youtu.be/tsRzD416voU).
+
 A lower-left instrument combines force arcs around one center: vertical on the
 outer left half, longitudinal on the outer right half and lateral on the upper
 inner half. A separate right semicircle carries a white orientation marker,

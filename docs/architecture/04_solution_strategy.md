@@ -52,7 +52,7 @@ analysis or synchronization. M2 ingestion does not establish those semantics.
 `rendering.model` prepares source-bound calibrated forces, tilt and a deterministic
 source/video clock. `rendering.frames` generates Pillow RGBA frames, delegating
 compact profiles to `rendering.layouts`: ribbon, corner cards, capsule or signed
-orbit gauges. The original four-panel column remains available. The encoder
+orbit gauges ([Manta G-Orbit video example](https://youtu.be/tsRzD416voU)). The original four-panel column remains available. The encoder
 consumes the selected rectangular region, pads to 4K and
 encodes one transparent ProRes 4444 MOV or independent opaque H.264 MP4.
 Real NVIDIA probes select Vulkan/NVENC or explicit CPU fallback. Completed output

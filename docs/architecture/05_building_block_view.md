@@ -107,6 +107,9 @@ Raw operation avoids importing the NumPy-backed analysis package. This is a smal
 
 ## Video export boundary
 
+The [Manta G-Orbit video example](https://youtu.be/tsRzD416voU) shows the exported
+overlay composed over Onride footage.
+
 `analysis.orientation` implements source-gravity-to-vertical tilt with missing/zero
 vectors retained as gaps. `rendering.model` binds source identity, smoothing,
 inclusive ranges and fixed per-panel bounds to an independent video frame clock.
