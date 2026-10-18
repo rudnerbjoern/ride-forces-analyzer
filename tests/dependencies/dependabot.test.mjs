@@ -79,6 +79,8 @@ test("Changed workflow validation is checksum-pinned and required by the final g
   assert.match(install, /actionlint_1\.7\.12_windows_amd64\.zip/);
   assert.match(install, /6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9/);
   assert.match(install, /Get-FileHash.*SHA256/);
+  assert.match(install, /--retry 3 --retry-all-errors --connect-timeout 30 --max-time 120/);
+  assert.doesNotMatch(install, /--insecure|--ssl-no-revoke|--ssl-revoke-best-effort/);
   assert.ok(workflow.jobs.check.needs.includes("actionlint"));
   const env = workflow.jobs.check.steps[0].env;
   assert.equal(env.WORKFLOWS_REQUIRED, "${{ needs.dependency-check.outputs.workflows }}");
@@ -99,6 +101,8 @@ test("Secret scanning is mandatory, checksum-pinned and cannot silently skip the
   assert.match(install, /d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e/);
   assert.match(install, /Get-FileHash.*SHA256/);
   assert.match(install, /useDefault = true/);
+  assert.match(install, /--retry 3 --retry-all-errors --connect-timeout 30 --max-time 120/);
+  assert.doesNotMatch(install, /--insecure|--ssl-no-revoke|--ssl-revoke-best-effort/);
   assert.ok(scan.steps.some(step => step.run === "./.github/scripts/test-gitleaks.ps1"));
   const command = scan.steps.find(step => step.name === "Scan complete fetched Git history").run;
   for (const flag of ["--log-opts=--all", "--ignore-gitleaks-allow", "--redact=100", "--exit-code 1",

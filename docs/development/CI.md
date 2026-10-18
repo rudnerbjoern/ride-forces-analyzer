@@ -5,6 +5,9 @@ workflow runs on pull requests targeting `main` and on manual dispatch; all jobs
 use native Windows. Manual dispatch selects all three suites without PR SHAs.
 The same workflow is reusable by source-release validation with all suites enabled.
 Every run additionally requires the independent secret-scanning job.
+Pinned tool downloads retry all transfer errors three times, with 30-second
+connection and 120-second per-attempt limits. TLS certificate/revocation checks
+and archive SHA-256 verification remain mandatory; exhausted retries fail the job.
 Every checkout pins the event commit SHA, including when invoked for a release tag.
 There is no duplicate CI run on pushes to `main`.
 

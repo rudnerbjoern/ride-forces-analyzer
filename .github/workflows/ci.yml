@@ -28,7 +28,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force .tmp/gitleaks | Out-Null
           $archive = '.tmp/gitleaks/gitleaks_8.30.1_windows_x64.zip'
-          curl.exe --fail --silent --show-error --location --retry 3 --proto '=https' https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_windows_x64.zip --output $archive
+          curl.exe --fail --silent --show-error --location --retry 3 --retry-all-errors --connect-timeout 30 --max-time 120 --proto '=https' https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_windows_x64.zip --output $archive
           if ($LASTEXITCODE -ne 0) { throw 'Gitleaks download failed.' }
           $expected = 'd29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e'
           if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Gitleaks checksum mismatch.' }
@@ -82,7 +82,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force .tmp/actionlint | Out-Null
           $archive = '.tmp/actionlint/actionlint_1.7.12_windows_amd64.zip'
-          curl.exe --fail --silent --show-error --location --retry 3 --proto '=https' https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_amd64.zip --output $archive
+          curl.exe --fail --silent --show-error --location --retry 3 --retry-all-errors --connect-timeout 30 --max-time 120 --proto '=https' https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_amd64.zip --output $archive
           if ($LASTEXITCODE -ne 0) { throw 'actionlint download failed.' }
           $expected = '6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9'
           if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'actionlint checksum mismatch.' }
