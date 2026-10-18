@@ -24,6 +24,9 @@ analysis = [
 render = ["Pillow>=12.3.0"]
 
 [dependency-groups]
+build = [
+    "pyinstaller==6.22.3",
+]
 dev = ["pytest>=9.1.1", "ruff>=0.17.0", "mypy>=2.4.0", "pytest-qt>=4.5.0"]
 
 [project.scripts]

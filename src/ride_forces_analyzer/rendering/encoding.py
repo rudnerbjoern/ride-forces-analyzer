@@ -13,6 +13,7 @@ import errno
 import os
 import shutil
 import subprocess
+import sys
 from threading import Event
 from uuid import uuid4
 
@@ -30,6 +31,10 @@ def find_ffmpeg(explicit: Path | None = None) -> Path:
         if not explicit.is_file():
             raise ValueError("Choose an existing FFmpeg executable")
         return explicit.resolve()
+    if getattr(sys, "frozen", False):
+        bundled = Path(sys.executable).resolve().parent / "ffmpeg.exe"
+        if bundled.is_file():
+            return bundled
     executable = shutil.which("ffmpeg")
     if executable:
         return Path(executable)
