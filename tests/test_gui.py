@@ -30,6 +30,8 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
 
         from PySide6.QtCore import QTimer
         from PySide6.QtWidgets import QApplication, QLabel, QMainWindow
+        from ride_forces_analyzer.i18n import tr
+        from ride_forces_analyzer.ui.translation import system_ui_language
 
         original_show = QMainWindow.show
         original_exec = QApplication.exec
@@ -65,7 +67,10 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
                     ), (actual, EXPECTED_SIZE, available, frame)
                 heading = window.findChild(QLabel, "recordingHeading")
                 assert heading is not None
-                assert "Open a .forces recording" in heading.text()
+                assert heading.text() == str(tr(
+                    "Open a .forces recording to explore your ride",
+                    language=system_ui_language(),
+                ))
                 if sys.platform == "win32":
                     assert QApplication.platformName() == "windows"
                 window.resize(800, 500)

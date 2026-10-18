@@ -44,7 +44,7 @@ def explorer_window() -> Iterator[ExplorerWindow]:
     if application is None:
         application = QApplication([])
     assert isinstance(application, QApplication)
-    window = ExplorerWindow(AppSettings())
+    window = ExplorerWindow(AppSettings(language="en"))
     window.show()
     wait_until(lambda: window.windowHandle().isExposed())
     # Test-controlled minimum size keeps interaction layout independent of the desktop.

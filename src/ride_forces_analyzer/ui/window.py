@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words Deutsch
 
 from ride_forces_analyzer.i18n import tr
-from .translation import bind, items, set_ui_language
+from .translation import bind, items, set_ui_language, system_ui_language
 
 from pathlib import Path
 
@@ -51,15 +51,18 @@ from PySide6.QtWidgets import (
 )
 
 from ride_forces_analyzer.config import AppSettings
+from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.explorer import ExplorerData, failure_text
 from ride_forces_analyzer.importers import ImportFailure
 
 from ride_forces_analyzer.gps_overview import prepare_gps_overview
 
 from .chrome import app_icon, style_native_caption
+from .about import AboutDialog
+from .updates import UpdateController
 from .gps import gps_dialog
 from .loading import LoadWorker
-from .theme import THEMES, apply_theme
+from .theme import THEMES, apply_theme, system_theme
 
 
 class SmoothingSlider(QSlider):
@@ -93,15 +96,30 @@ class ExplorerWindow(QMainWindow):
     def __init__(self, settings: AppSettings) -> None:
         super().__init__()
         self._application_title = settings.window_title
+        self.preferences = Preferences()
+        self.updates = UpdateController(self, self.preferences)
+        language = (
+            settings.language
+            if "language" in settings.model_fields_set
+            else self.preferences.language(system_ui_language())
+        )
         application = QApplication.instance()
         if isinstance(application, QApplication):
-            set_ui_language(application, settings.language)
-        self.theme = THEMES["dark"]
+            set_ui_language(application, language)
+        appearance = self.preferences.appearance()
+        self.theme = THEMES[
+            system_theme(application)
+            if appearance == "system" and isinstance(application, QApplication)
+            else "light"
+            if appearance == "light"
+            else "dark"
+        ]
         bind(self, settings.window_title, "windowTitle")
         self.setWindowIcon(app_icon())
         self.resize(settings.window_width, settings.window_height)
         self.data: ExplorerData | None = None
         self._worker: LoadWorker | None = None
+        self._chosen_path: Path | None = None
         self.open_action = bind(QAction(self), tr("Open recording…"))
         self.open_action.setShortcut(QKeySequence.StandardKey.Open)
         self.open_action.triggered.connect(self.choose_file)
@@ -132,7 +150,7 @@ class ExplorerWindow(QMainWindow):
         self.language = QComboBox()
         bind(self.language, tr("Language"), "accessibleName")
         items(self.language, ["English", "Deutsch"])
-        self.language.setCurrentIndex(1 if settings.language == "de" else 0)
+        self.language.setCurrentIndex(1 if language == "de" else 0)
         self.language.currentIndexChanged.connect(self.set_ui_language)
         language_action = toolbar.addWidget(self.language)
         self.appearance = QComboBox()
@@ -142,7 +160,8 @@ class ExplorerWindow(QMainWindow):
             tr("Application appearance · does not change exported videos"),
             "toolTip",
         )
-        items(self.appearance, [tr("Dark"), tr("Light")])
+        items(self.appearance, [tr("Dark"), tr("Light"), tr("System")])
+        self.appearance.setCurrentIndex({"dark": 0, "light": 1, "system": 2}[appearance])
         self.appearance.currentIndexChanged.connect(self.set_appearance)
         toolbar.addWidget(self.appearance)
         self.notes_button = bind(QPushButton(), tr("Import notes"))
@@ -153,6 +172,9 @@ class ExplorerWindow(QMainWindow):
         self.inspector_button.setCheckable(True)
         toolbar.insertWidget(language_action, self.inspector_button)
         self.addToolBar(toolbar)
+        self.about_action = bind(QAction(self), tr("About…"))
+        self.about_action.triggered.connect(self.show_about)
+        toolbar.addAction(self.about_action)
         self.gps_window: QDialog | None = None
         self._wide_layout: bool | None = None
         body = QWidget()
@@ -447,6 +469,9 @@ class ExplorerWindow(QMainWindow):
         self._style_axes()
         self._style_chart()
         self._adapt_layout()
+        if isinstance(application, QApplication):
+            application.styleHints().colorSchemeChanged.connect(self._system_appearance_changed)
+        QTimer.singleShot(0, lambda: self.updates.check(manual=False))
 
     @Slot(int)
     def set_ui_language(self, index: int) -> None:
@@ -454,6 +479,7 @@ class ExplorerWindow(QMainWindow):
         if not isinstance(application, QApplication):
             return
         set_ui_language(application, "de" if index == 1 else "en")
+        self.preferences.remember_language("de" if index == 1 else "en")
         if self.data is not None:
             self._refresh_diagnostics()
             bind(self.ride_metadata, self.data.metadata_rows_text)
@@ -465,9 +491,22 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(int)
     def set_appearance(self, index: int) -> None:
-        self.theme = THEMES["light" if index == 1 else "dark"]
+        self.preferences.remember_appearance(
+            "system" if index == 2 else "light" if index == 1 else "dark",
+        )
+        self._apply_appearance()
+
+    def _system_appearance_changed(self, scheme: Qt.ColorScheme) -> None:
+        if self.appearance.currentIndex() == 2:
+            self._apply_appearance()
+
+    def _apply_appearance(self) -> None:
         application = QApplication.instance()
         if isinstance(application, QApplication):
+            index = self.appearance.currentIndex()
+            self.theme = THEMES[
+                system_theme(application) if index == 2 else "light" if index == 1 else "dark"
+            ]
             apply_theme(application, self.theme)
         self._style_chart()
         self._draw_channels()
@@ -566,6 +605,7 @@ class ExplorerWindow(QMainWindow):
                 return
         if self.gps_window is not None:
             self.gps_window.close()
+        self.updates.stopped = True
         super().closeEvent(event)
 
     def _set_controls(self, enabled: bool) -> None:
@@ -618,15 +658,25 @@ class ExplorerWindow(QMainWindow):
         self.batch_window.show()
 
     @Slot()
+    def show_about(self) -> None:
+        dialog = self.findChild(AboutDialog, "aboutDialog")
+        if dialog is None:
+            dialog = AboutDialog(self, self.updates)
+        dialog.show()
+        dialog.raise_()
+        dialog.activateWindow()
+
+    @Slot()
     def choose_file(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
             self,
             tr("Open Ride Forces recording"),
-            "",
+            self.preferences.recording_directory(),
             tr("Ride Forces (*.forces);;All files (*)"),
         )
         if filename:
-            self.open_path(Path(filename))
+            self._chosen_path = Path(filename)
+            self.open_path(self._chosen_path)
 
     def open_path(self, path: Path) -> None:
         if self._worker is not None:
@@ -653,6 +703,9 @@ class ExplorerWindow(QMainWindow):
             self._failed(tr("Unable to display recording."))
             return
         outcome = outcome.with_reference(outcome.reference is not None)
+        if self._chosen_path is not None:
+            self.preferences.remember_recording(self._chosen_path)
+            self._chosen_path = None
         if self.gps_window is not None:
             self.gps_window.close()
             self.gps_window.deleteLater()
@@ -849,6 +902,7 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(str)
     def _failed(self, message: str) -> None:
+        self._chosen_path = None
         self._finish_loading()
         bind(self.statusBar(), "", "toolTip")
         bind(self.statusBar(), message, "message")

@@ -1,19 +1,104 @@
 """Native light/dark presentation without recording, viewport or export changes."""
 
+# cspell:words Über
+
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from PySide6.QtGui import QColor, QPalette
-from PySide6.QtWidgets import QApplication, QGraphicsView
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QAbstractButton,
+    QApplication,
+    QComboBox,
+    QFileDialog,
+    QGraphicsView,
+    QToolBar,
+)
 import pytest
 
 from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.ui.batches import BatchDialog
 from ride_forces_analyzer.ui.export import ExportDialog
-from ride_forces_analyzer.ui.theme import THEMES
+from ride_forces_analyzer.ui.theme import THEMES, ThemeName
 from ride_forces_analyzer.ui.window import ExplorerWindow
 from test_explorer_gui import explorer_window as explorer_window, wait_until
 from test_project import REAL_FIXTURE_DIRECTORY
+from ride_forces_analyzer.config import AppSettings
+
+
+def test_system_appearance_follows_changes_until_manually_selected(
+    explorer_window: ExplorerWindow,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ride_forces_analyzer.ui import window as ui_window
+
+    window = explorer_window
+    effective_theme: ThemeName = "light"
+
+    def current_theme(application: QApplication) -> ThemeName:
+        return effective_theme
+
+    monkeypatch.setattr(ui_window, "system_theme", current_theme)
+    window.appearance.setCurrentIndex(0)
+    window.appearance.setCurrentIndex(2)
+    assert window.theme.name == "light"
+    assert window.preferences.appearance() == "system"
+    effective_theme = "dark"
+    application = QApplication.instance()
+    assert isinstance(application, QApplication)
+    application.styleHints().colorSchemeChanged.emit(Qt.ColorScheme.Dark)
+    assert window.theme.name == "dark"
+    window.appearance.setCurrentIndex(1)
+    application.styleHints().colorSchemeChanged.emit(Qt.ColorScheme.Dark)
+    assert window.theme.name == "light"
+    assert window.preferences.appearance() == "light"
+
+
+def test_toolbar_controls_share_one_height(explorer_window: ExplorerWindow) -> None:
+    window = explorer_window
+    toolbar = window.findChild(QToolBar)
+    assert toolbar is not None
+    for language, appearance in ((0, 0), (1, 1), (1, 0), (0, 1)):
+        window.language.setCurrentIndex(language)
+        window.appearance.setCurrentIndex(appearance)
+        QApplication.processEvents()
+        controls = [toolbar.widgetForAction(action) for action in toolbar.actions()]
+        heights = {
+            widget.height()
+            for widget in controls
+            if isinstance(widget, (QAbstractButton, QComboBox))
+        }
+        assert len(heights) == 1, heights
+
+
+def test_new_window_restores_selected_language_and_theme(explorer_window: ExplorerWindow) -> None:
+    window = explorer_window
+    window.language.setCurrentIndex(1)
+    window.appearance.setCurrentIndex(1)
+    restored = ExplorerWindow(AppSettings())
+    try:
+        assert restored.language.currentIndex() == 1
+        assert restored.appearance.currentIndex() == 1
+        assert restored.theme.name == "light"
+        assert restored.about_action.text() == "Über …"
+    finally:
+        restored.close()
+        restored.deleteLater()
+
+
+def test_native_file_dialog_inherits_valid_point_size(explorer_window: ExplorerWindow) -> None:
+    window = explorer_window
+    for index in (0, 1):
+        window.appearance.setCurrentIndex(index)
+        QApplication.processEvents()
+        dialog = QFileDialog(window)
+        try:
+            dialog.ensurePolished()
+            assert window.font().pointSizeF() > 0
+            assert dialog.font().pointSizeF() > 0
+        finally:
+            dialog.deleteLater()
 
 
 def test_light_text_and_channel_colors_have_readable_contrast() -> None:
