@@ -105,7 +105,7 @@ The decoder enforces document limits; the public service shares one aggregate
 diagnostic budget across motion and optional parsing.
 
 ```powershell
-uv run pytest tests/test_motion_parser.py
+uv run pytest tests/importers/test_motion.py
 ```
 
 Parametric tests examine every component of all five recordings, retain their

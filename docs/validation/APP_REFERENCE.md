@@ -201,7 +201,7 @@ Recorded focused checks passed for source references, weather accessors, smoothi
 force levels and GPS presentation. Maintained regression command:
 
 ```text
-uv run --locked pytest tests/test_reference.py tests/test_explorer.py tests/test_optional_parser.py
+uv run --locked pytest tests/analysis/test_reference.py tests/explorer/test_data.py tests/importers/test_optional.py
 ```
 
 Independent screenshots and rounded numeric comparisons establish the scoped
