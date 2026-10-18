@@ -117,11 +117,9 @@ def test_export_dialog_tracks_loaded_source_and_range(explorer_window: ExplorerW
     dialog.close()
 
 
-@pytest.mark.parametrize("profile", [0, 3], ids=["ribbon", "orbit"])
 def test_export_worker_progress_cancel_and_gui_recovery(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
-    profile: int,
 ) -> None:
     from ride_forces_analyzer.ui import export as ui_export
     from ride_forces_analyzer.rendering.encoding import ExportCancelled
@@ -132,7 +130,7 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     window.export_button.click()
     dialog = window.export_window
     assert isinstance(dialog, ExportDialog)
-    dialog.layout_profile.setCurrentIndex(profile)
+    dialog.layout_profile.setCurrentIndex(3)
     wait_until(lambda: dialog.preview_result is not None)
     dialog.next.click()
     started = Event()
@@ -141,7 +139,7 @@ def test_export_worker_progress_cancel_and_gui_recovery(
         from ride_forces_analyzer.rendering.model import ExportTimeline
 
         assert isinstance(args[0], ExportTimeline)
-        assert args[0].settings.layout == ("ribbon" if profile == 0 else "orbit")
+        assert args[0].settings.layout == "orbit"
         started.set()
         cancelled = kwargs["cancelled"]
         assert isinstance(cancelled, Event)
@@ -165,15 +163,12 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     assert not dialog.start.isEnabled()
     dialog.worker.signals.progress.emit(5, 10)
     wait_until(lambda: dialog.progress.value() == 50)
-    if profile == 3:
-        dialog.reject()
-        assert dialog.isVisible()
+    dialog.reject()
+    assert dialog.isVisible()
     assert not window.close()  # A close requests cancellation, never abandons a live worker.
     wait_until(lambda: dialog.worker is None)
     QThreadPool.globalInstance().waitForDone()
     assert dialog.start.isEnabled()
-    assert dialog.flip_vertical.isEnabled() == (profile != 3)
-    assert dialog.flip_lateral.isEnabled() == (profile != 3)
     assert "cancelled" in dialog.status.text()
     dialog.close()
 

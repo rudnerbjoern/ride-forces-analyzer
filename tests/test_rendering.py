@@ -1,6 +1,6 @@
 """Export clocks, source-bound orientation, real RGBA geometry and offline encoding."""
 
-# cspell:words ffprobe frombytes getcolors getpixel getchannel getextrema hwupload prores qscale rawvideo
+# cspell:words ffprobe frombytes getcolors getpixel getchannel getextrema hwupload prores qscale rawvideo libx
 
 from dataclasses import replace
 from pathlib import Path
@@ -152,10 +152,19 @@ def test_cancel_and_existing_destination_preserve_files(
     assert not (export_directory / "cancel.mov").exists()
 
 
-@pytest.mark.parametrize("prefer_gpu", [False, True], ids=["cpu", "gpu-auto"])
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
-@pytest.mark.parametrize("mode", ["transparent", "opaque"])
-@pytest.mark.parametrize("layout", ["column", "ribbon", "corners", "capsule", "orbit"])
+@pytest.mark.parametrize(
+    "layout,mode,aspect,prefer_gpu,language",
+    [
+        ("column", "transparent", "landscape", False, "en"),
+        ("ribbon", "transparent", "landscape", True, "en"),
+        ("corners", "transparent", "portrait", False, "de"),
+        ("orbit", "transparent", "portrait", True, "en"),
+        ("capsule", "opaque", "landscape", False, "en"),
+        ("column", "opaque", "landscape", True, "de"),
+        ("orbit", "opaque", "portrait", False, "en"),
+        ("ribbon", "opaque", "portrait", True, "en"),
+    ],
+)
 def test_native_encoder_produces_4k_video_with_verified_alpha(
     manta: ExplorerData,
     export_directory: Path,
@@ -163,8 +172,9 @@ def test_native_encoder_produces_4k_video_with_verified_alpha(
     prefer_gpu: bool,
     layout: Literal["column", "ribbon", "corners", "capsule", "orbit"],
     aspect: Literal["landscape", "portrait"],
-    language: Literal["en", "de"] = "en",
+    language: Literal["en", "de"],
 ) -> None:
+    # Cover codec × aspect × backend preference once; pure tests own layout/language geometry.
     # Local integration is explicit; clean CI without FFmpeg still runs all pure contracts.
     ffmpeg = Path(".tmp/ffmpeg/bin/ffmpeg.exe").resolve()
     if not ffmpeg.is_file():
@@ -229,15 +239,22 @@ def test_native_encoder_produces_4k_video_with_verified_alpha(
     assert left[3] == (0 if mode == "transparent" else 255)
     expected_alpha = 255 if mode == "opaque" or layout == "column" else 210
     assert abs(right[3] - expected_alpha) <= 2
-    command = encoder_command(ffmpeg, timeline, output)
-    assert "-an" in command and "-n" in command
-    gpu_command = encoder_command(ffmpeg, timeline, output, use_gpu=True)
-    assert "-qscale:v" not in gpu_command  # This CPU option corrupts Vulkan 4444 output.
+
+
+@pytest.mark.parametrize("mode", ["transparent", "opaque"])
+def test_encoder_commands_preserve_codec_specific_options(manta: ExplorerData, mode: str) -> None:
+    settings = ExportSettings(output="transparent" if mode == "transparent" else "opaque")
+    timeline = prepare_export(manta, settings, 3600, 3603)
+    cpu = encoder_command(Path("ffmpeg.exe"), timeline, Path("output"))
+    gpu = encoder_command(Path("ffmpeg.exe"), timeline, Path("output"), use_gpu=True)
+    for command in (cpu, gpu):
+        assert "-an" in command and "-n" in command
+    assert "-qscale:v" not in gpu  # This CPU option corrupts Vulkan 4444 output.
     if mode == "transparent":
-        assert (
-            "prores_ks_vulkan" in gpu_command
-            and "hwupload" in gpu_command[gpu_command.index("-vf") + 1]
-        )
+        assert "prores_ks" in cpu and "-qscale:v" in cpu
+        assert "prores_ks_vulkan" in gpu and "hwupload" in gpu[gpu.index("-vf") + 1]
+    else:
+        assert "libx264" in cpu and "h264_nvenc" in gpu
 
 
 def test_cancel_during_real_encoding_leaves_no_output(

@@ -47,6 +47,33 @@ Developer-tool regressions under `.agents/skills/` remain outside application
 discovery; their [skill instructions](../../.agents/skills/github-delivery/SKILL.md)
 define when to run them. [CI selection](CI.md) describes the corresponding jobs.
 
+## Test design
+
+Test each responsibility at its own boundary. Keep exhaustive cheap cases for
+parser errors, numerical edges, source preservation and translation placeholders.
+Check layout geometry, glyph bounds and alpha directly in rendered frames for
+every supported layout/aspect. Test video-rate mapping independently of repeated
+full-frame rendering.
+
+Real encoder integration uses eight representative cases covering output codec ×
+aspect × CPU/GPU preference, with every layout represented and German examples
+included. GPU preference may fall back to CPU; command-contract tests verify GPU
+options independently of installed hardware. Batch integration uses two real jobs
+with different rides/formats; pure queue tests own the full ride/preset cross-product.
+Run shared GUI progress/cancellation once; test layout-specific controls in the
+existing interaction checks. Add variants only for distinct risks, not to multiply
+every independent option across an expensive end-to-end workflow.
+
+GUI layout references use a 3840 × 2160 editing desktop at 150% and 200%
+scaling: logical working areas of 2560 × 1400 and 1920 × 1040 reserve taskbar
+space. Shared interaction fixtures use the latter; export layout checks use both
+with English/German text. These are test-controlled Qt client sizes, independent
+of the runner's physical monitor. Native startup separately checks actual desktop
+constraints. Compact layouts retain targeted navigation/scrolling regressions,
+not a second full workflow matrix. Video frame resolution and portrait/landscape
+export tests remain independent of desktop size. A layout check on a smaller CI
+desktop does not establish visual acceptance on a physical 4K display.
+
 ## Primary references
 
 - [Pydantic configuration](https://docs.pydantic.dev/latest/concepts/config/) and

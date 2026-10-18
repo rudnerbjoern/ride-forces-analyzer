@@ -87,9 +87,12 @@ Native Windows evidence belongs in [export validation](../validation/VIDEO_EXPOR
 independent orientation snapshots, all-original preparation/integrity, frame counts
 and interpolation/gaps, actual RGBA positions/polarity, real CPU/GPU 4K encodes and
 alpha decode, cancellation/no overwrite, GUI lifecycle and focused strict checks.
-Profile acceptance additionally checks all five layouts through real CPU/GPU
-transparent/opaque encoders, translucent panel alpha, opaque glyphs/data, unchanged
-signs, negative G-Orbit readings, absent tilt and the native layout picker.
+Pure rendering checks cover every layout/aspect, translucent panel alpha,
+glyphs, signs, negative G-Orbit readings and absent tilt. Representative real
+encodes cover both codecs/aspects/backend preferences with all layouts represented;
+language geometry and encoder command options have independent checks. The native
+layout picker and shared worker lifecycle are tested without multiplying every
+profile across the full export workflow.
 Inspect rendered frames and the completed three full recordings, including correct
 codec, 4K dimensions, 50 fps, expected duration/frame counts and full decode.
 Retain the codec compatibility source and distinguish it from an actual Resolve

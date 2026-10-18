@@ -8,8 +8,11 @@ from textwrap import dedent
 import pytest
 
 
-@pytest.mark.parametrize("scale_factor", ["1", "2"])
-@pytest.mark.parametrize("custom_settings", [False, True], ids=["default", "custom"])
+@pytest.mark.parametrize(
+    "custom_settings,scale_factor",
+    [(False, "1.5"), (False, "2"), (True, "1")],
+    ids=["desktop-150-percent", "desktop-200-percent", "custom-settings"],
+)
 def test_application_starts_and_closes(custom_settings: bool, scale_factor: str) -> None:
     title = "Custom window" if custom_settings else "Ride Forces Analyzer"
     size = (720, 480) if custom_settings else (1280, 820)

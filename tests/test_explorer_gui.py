@@ -48,8 +48,9 @@ def explorer_window() -> Iterator[ExplorerWindow]:
     window.show()
     wait_until(lambda: window.windowHandle().isExposed())
     # Test-controlled minimum size keeps interaction layout independent of the desktop.
-    resize_workspace(window, 1280, 820)
-    wait_until(lambda: window.width() == 1280 and window.inspector.isVisible())
+    # Logical working area of a 4K desktop at 200%, reserving taskbar space.
+    resize_workspace(window, 1920, 1040)
+    wait_until(lambda: window.width() == 1920 and window.inspector.isVisible())
     yield window
     window.close()
     QThreadPool.globalInstance().waitForDone()

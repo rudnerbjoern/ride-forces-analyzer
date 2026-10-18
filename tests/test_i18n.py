@@ -30,7 +30,6 @@ import re
 from test_rendering import (
     manta as manta,
     export_directory as export_directory,
-    test_native_encoder_produces_4k_video_with_verified_alpha as encode_checked,
 )
 
 
@@ -127,17 +126,6 @@ def test_saved_language_roundtrip_and_old_presets_default_to_english(
     store.save_batch(SavedBatch(name="Mixed", jobs=(make_job(manta, chosen),)))
     assert ExportStore(store.path).presets()[0].settings.language == "de"
     assert ExportStore(store.path).batch("Mixed").jobs[0].preset.settings.language == "de"
-
-
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
-@pytest.mark.parametrize("mode", ["transparent", "opaque"])
-def test_native_german_video_encoding(
-    manta: ExplorerData,
-    export_directory: Path,
-    aspect: Literal["landscape", "portrait"],
-    mode: str,
-) -> None:
-    encode_checked(manta, export_directory, mode, True, "orbit", aspect, language="de")
 
 
 @pytest.mark.parametrize("layout", [profile[0] for profile in PROFILES])

@@ -9,8 +9,9 @@ source path/hash validation, per-job failure continuation, cancellation and uniq
 output directories. Completed videos survive cancellation; preset changes do not
 alter existing jobs.
 
-Native integration reopens SQLite and exports four actual short 4K videos:
-Manta/Kraken × transparent Flow Ribbon/opaque G-Orbit. Each is completely decoded
+Native integration reopens SQLite and exports two actual short 4K videos:
+Manta with transparent Flow Ribbon and Kraken with opaque G-Orbit. Pure queue
+tests retain the full ride/preset cross-product. Each video is completely decoded
 before publication and both originals remain byte-identical.
 GUI checks cover several presets/recordings, assistant reopen, restored settings,
 run-all selection and parent-close cancellation. GUI transport stubs are distinct

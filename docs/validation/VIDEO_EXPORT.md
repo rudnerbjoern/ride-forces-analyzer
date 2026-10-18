@@ -1,6 +1,6 @@
 # Video export verification
 
-<!-- cspell:words BGRA -->
+<!-- cspell:words BGRA basetemp -->
 
 [Export contracts](../implementation/VIDEO_EXPORT.md) define supported outputs
 and the partial-M6 boundary.
@@ -12,8 +12,8 @@ geometry/labels, signed forces, missing tilt, smoothing and replay clocks.
 Previews match production frames at the exact selected source sample, independently
 of output fps. Both aspects persist in presets/jobs; mixed-aspect batches work.
 
-Real short encodes cover five profiles × two aspects × transparent/opaque ×
-CPU/GPU selection. FFprobe checks codec, dimensions, fps and frame count;
+Eight real short encodes cover codec × aspect × CPU/GPU preference, with every
+layout represented and German examples included. FFprobe checks codec, dimensions, fps and frame count;
 complete CPU decoding and pixel checks verify alpha, backgrounds and panels.
 Cancellation/corrupt output cannot publish an incomplete file.
 Original-byte preservation is checked for all five recordings.
@@ -27,10 +27,20 @@ plus rendering/export UI/test changes. Locked dependencies are unchanged.
 python -m pytest tests/test_rendering.py tests/test_export_preview.py tests/test_export_gui.py tests/test_export_batches.py -q
 ```
 
-The recorded aspect scope has 96 distinct passing cases. Changed-file Ruff,
-mypy and strict Pyright passed. Native previews/review pages and decoded frames
-were visually inspected. Scoped Node checks use 26.5.0; pinned 26.11.1 full-stack
-or a current full application suite is not claimed.
+Pure frame/glyph checks retain complete layout/aspect coverage. Exact-sample
+preview parity is rendered once per aspect; a lightweight renderer spy verifies
+30/50/60 fps cursor independence. Shared GUI cancellation is tested once, while
+the existing picker test covers layout-specific inversion controls.
+Current focused verification is scoped below; full-recording compatibility remains
+separate from the reduced integration matrix.
+
+Test-scope verification: native Windows/Python 3.14.6/Qt 6.12.0/FFmpeg 9.0.2,
+test-only changes based on fc759bb2c94a4fbf254eaa84d59e9f28bfd4424c.
+`uv run --locked pytest tests/test_rendering.py tests/test_export_preview.py tests/test_i18n.py tests/test_export_gui.py tests/test_export_batches.py --basetemp=.tmp/test-scope-pytest -q --durations=10`
+passes 331 cases in 83.83 s. All nine batch cases pass for the final file content;
+changed-test Ruff/format and strict Pyright pass. Output:
+`.tmp/test-scope-*.log`. No runtime, dependency or fixture change, full application
+run or hosted CI result is implied by this focused evidence.
 
 ## Full-recording compatibility evidence
 

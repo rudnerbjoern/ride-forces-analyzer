@@ -40,17 +40,15 @@ def test_portrait_contains_complete_region(manta: ExplorerData, layout: str) -> 
     )
 
 
-@pytest.mark.parametrize("fps", [30, 50, 60])
 @pytest.mark.parametrize("aspect", ["landscape", "portrait"])
 def test_previews_match_production_at_exact_graph_sample(
     manta: ExplorerData,
-    fps: int,
     aspect: Literal["landscape", "portrait"],
 ) -> None:
     sample = manta.source.recording.indices.start + 72 * 50 + 1
     settings = ExportSettings(
         layout="orbit",
-        fps=fps,
+        fps=30,
         aspect=aspect,
         invert_vertical=False,
         invert_lateral=False,
@@ -80,6 +78,25 @@ def test_previews_match_production_at_exact_graph_sample(
         assert profile.image.tobytes() == expected.tobytes()
     with pytest.raises(ValueError, match="outside"):
         OverlayRenderer(timeline).render_sample(last + 1)
+
+
+@pytest.mark.parametrize("fps", [30, 50, 60])
+def test_preview_sample_is_independent_of_video_rate(
+    manta: ExplorerData,
+    fps: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    positions: list[float] = []
+
+    def record_position(self: OverlayRenderer, position: float) -> Image.Image:
+        positions.append(position)
+        return Image.new("RGBA", (8, 8), (0, 0, 0, 0))
+
+    monkeypatch.setattr(OverlayRenderer, "render_sample", record_position)
+    sample = manta.source.recording.indices.start + 72 * 50 + 1
+    result = build_previews(manta, ExportSettings(fps=fps), sample - 101, sample + 100, sample)
+    assert result.sample == sample
+    assert positions == [sample] * len(PROFILES)
 
 
 @pytest.mark.parametrize("mode", ["transparent", "opaque"])

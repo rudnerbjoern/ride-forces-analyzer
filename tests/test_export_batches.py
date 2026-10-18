@@ -206,40 +206,36 @@ def test_cancel_stops_remaining_jobs_and_keeps_completed_files(
         run_batches((SavedBatch(name="Empty"),), export_directory)
 
 
-def test_saved_batch_reopens_and_exports_two_rides_two_presets(export_directory: Path) -> None:
+def test_saved_batch_reopens_and_exports_different_rides_and_formats(
+    export_directory: Path,
+) -> None:
     ffmpeg = Path(".tmp/ffmpeg/bin/ffmpeg.exe").resolve()
     if not ffmpeg.is_file():
         pytest.skip("Requires native export tools")
     store = ExportStore(export_directory / "real.sqlite3")
     sources: list[tuple[Path, bytes]] = []
     jobs: list[BatchJob] = []
-    for ride in ("Manta", "Kraken"):
+    presets = (
+        SavedPreset(name="Ribbon", settings=ExportSettings(layout="ribbon", prefer_gpu=False)),
+        SavedPreset(
+            name="Orbit opaque",
+            settings=ExportSettings(layout="orbit", output="opaque", prefer_gpu=False),
+        ),
+    )
+    for ride, chosen in zip(("Manta", "Kraken"), presets, strict=True):
         path = next(REAL_FIXTURE_DIRECTORY.glob(f"{ride}-*.forces"))
         sources.append((path, path.read_bytes()))
         data = load_recording(path)
         assert isinstance(data, ExplorerData)
-        jobs.extend(
-            (
-                short_job(data),
-                short_job(
-                    data,
-                    SavedPreset(
-                        name="Orbit opaque",
-                        settings=ExportSettings(layout="orbit", output="opaque", prefer_gpu=False),
-                    ),
-                ),
-            ),
-        )
+        jobs.append(short_job(data, chosen))
     store.save_batch(SavedBatch(name="Real", jobs=tuple(jobs)))
     result = run_batches(ExportStore(store.path).batches(), export_directory, ffmpeg=ffmpeg)
-    assert len(result.results) == 4
+    assert len(result.results) == 2
     assert all(
         item.status == "completed" and item.output is not None and item.output.stat().st_size > 0
         for item in result.results
     )
     assert [item.output.suffix for item in result.results if item.output] == [
-        ".mov",
-        ".mp4",
         ".mov",
         ".mp4",
     ]

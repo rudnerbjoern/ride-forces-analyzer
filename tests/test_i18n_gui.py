@@ -67,7 +67,16 @@ def test_toolbar_choices_fit_after_repeated_language_switches(
         window.appearance.setCurrentIndex(0)
 
 
-def test_german_export_at_200_percent_scaling_keeps_all_controls_reachable() -> None:
+@pytest.mark.parametrize(
+    "scale_factor,workspace_size,dialog_size",
+    [("1.5", (2560, 1400), (2200, 1200)), ("2", (1920, 1040), (1800, 960))],
+    ids=["4k-150-percent", "4k-200-percent"],
+)
+def test_german_export_in_4k_workspace_keeps_controls_reachable(
+    scale_factor: str,
+    workspace_size: tuple[int, int],
+    dialog_size: tuple[int, int],
+) -> None:
     script = dedent("""
         from pathlib import Path
         from tempfile import TemporaryDirectory
@@ -85,11 +94,13 @@ def test_german_export_at_200_percent_scaling_keeps_all_controls_reachable() -> 
         data = load_recording(next(Path('tests').rglob('Manta-*.forces')))
         assert isinstance(data, ExplorerData)
         window._loaded(data)
+        # Test layout dimensions independently of the runner's physical desktop.
+        window.setMinimumSize(*WORKSPACE_SIZE)
         window.show()
         dialog = ExportDialog(data, 0, data.count-1, window,
                               store=ExportStore(Path(directory.name)/'exports.sqlite3'))
+        dialog.setMinimumSize(*DIALOG_SIZE)
         dialog.show()
-        dialog.resize(960, 540)
         deadline = time.monotonic() + 20
         failures = []
         def inspect():
@@ -99,7 +110,9 @@ def test_german_export_at_200_percent_scaling_keeps_all_controls_reachable() -> 
             try:
                 assert dialog.preview_result is not None
                 scroll = dialog.findChild(QScrollArea, 'exportContentScroll')
-                assert scroll is not None and scroll.verticalScrollBar().maximum() > 0
+                assert (window.width(), window.height()) == WORKSPACE_SIZE
+                assert (dialog.width(), dialog.height()) == DIALOG_SIZE
+                assert scroll is not None and scroll.verticalScrollBar().maximum() == 0
                 assert dialog.next.isVisible() and dialog.rect().contains(dialog.next.geometry())
                 assert dialog.next.text() == 'Export prüfen →'
                 for language in (0, 1, 0, 1):
@@ -118,11 +131,19 @@ def test_german_export_at_200_percent_scaling_keeps_all_controls_reachable() -> 
                             for index in range(combo.count()):
                                 text = combo.itemText(index)
                                 assert field.width() >= combo.fontMetrics().horizontalAdvance(text), text
-                scroll.verticalScrollBar().setValue(scroll.verticalScrollBar().maximum())
-                app.processEvents()
-                assert dialog.frameGeometry().height() <= dialog.screen().availableGeometry().height()
-                dialog.grab().save('.tmp/german-export-200-percent.png')
-                print('PASS: native German export at 200% with scrollable settings and visible actions')
+                assert scroll.horizontalScrollBar().maximum() == 0
+                # One separate compact fallback check; this is not the 4K reference layout.
+                if DIALOG_SIZE == (1800, 960):
+                    dialog.setMinimumSize(0, 0)
+                    available = dialog.screen().availableGeometry()
+                    decoration = dialog.frameGeometry().size() - dialog.size()
+                    dialog.resize(min(960, available.width() - decoration.width()),
+                                  min(400, available.height() - decoration.height()))
+                    app.processEvents()
+                    assert scroll.verticalScrollBar().maximum() > 0
+                    assert dialog.next.isVisible() and dialog.rect().contains(dialog.next.geometry())
+                    assert dialog.frameGeometry().height() <= available.height()
+                print('PASS: native German export in 4K layout with visible settings and actions')
             except BaseException as error:
                 failures.append(error)
             finally:
@@ -135,7 +156,11 @@ def test_german_export_at_200_percent_scaling_keeps_all_controls_reachable() -> 
         if failures:
             raise failures[0]
     """)
-    environment = {**os.environ, "QT_SCALE_FACTOR": "2", "QT_QPA_PLATFORM": "windows"}
+    script = script.replace("WORKSPACE_SIZE", repr(workspace_size)).replace(
+        "DIALOG_SIZE",
+        repr(dialog_size),
+    )
+    environment = {**os.environ, "QT_SCALE_FACTOR": scale_factor, "QT_QPA_PLATFORM": "windows"}
     result = subprocess.run(
         [sys.executable, "-c", script],
         env=environment,
