@@ -46,3 +46,4 @@ try {
 } finally {
     Remove-Item -Recurse -Force $directory
 }
+exit 0
