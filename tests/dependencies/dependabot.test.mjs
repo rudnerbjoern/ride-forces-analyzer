@@ -3,7 +3,13 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { createRequire } from "node:module";
+import { createHash } from "node:crypto";
 import test from "node:test";
+
+// Let Windows PowerShell discover its own modules when invoked from PowerShell 7.
+const windowsPowerShellEnvironment = Object.fromEntries(
+  Object.entries(process.env).filter(([name]) => name.toLowerCase() !== "psmodulepath"),
+);
 
 // Reuse the existing, locked CSpell YAML consumer; add no test dependency.
 const project = createRequire(import.meta.url);
@@ -135,14 +141,23 @@ test("Source releases publish only reviewed tag revisions after quality and pack
     assert.equal(upload.with["if-no-files-found"], "error");
   }
   const release = workflow.jobs.release;
-  assert.deepEqual(release.needs, ["quality", "source"]);
+  assert.deepEqual(release.needs, ["quality", "source", "windows"]);
   assert.equal(release.if, "${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}");
   assert.deepEqual(release.permissions, { contents: "write", actions: "read" });
   assert.equal(release["timeout-minutes"], 10);
   assert.equal(workflow.jobs.source.steps[0].with["fetch-depth"], 0);
   assert.match(source, /check-release-policy\.py/);
   const downloads = release.steps.filter(step => step.uses?.startsWith("actions/download-artifact@"));
-  assert.deepEqual(downloads.map(step => step.with.name), ["source.zip", "SHA256SUMS.txt", "release-notes.md"]);
+  assert.deepEqual(downloads.map(step => step.with.name), ["source.zip", "SHA256SUMS.txt", "release-notes.md",
+    "${{ needs.windows.outputs.exe }}", "${{ needs.windows.outputs.standard }}", "${{ needs.windows.outputs.complete }}",
+    "WINDOWS-SHA256SUMS.txt", "corresponding-sources.zip"]);
+  const windows = workflow.jobs.windows;
+  assert.deepEqual(windows.needs, ["quality", "source"]);
+  assert.equal(windows["timeout-minutes"], 30);
+  assert.equal(windows.steps[0].with.ref, "${{ github.sha }}");
+  assert.match(windows.steps.find(step => step.id === "build").run, /scripts\.build_windows --release/);
+  assert.ok(windows.steps.some(step => step.run?.includes("scripts.check_windows_packages")));
+  assert.ok(!windows.permissions?.contents || windows.permissions.contents === "read");
   assert.ok(downloads.every(step => !step.with["run-id"] && !step.with["github-token"]));
   const publication = release.steps.find(step => step.name === "Publish GitHub Release").run;
   assert.match(publication, /'--verify-tag'/);
@@ -170,8 +185,9 @@ ConvertTo-Json -Compress -InputObject $global:recorded
     for (const [preview, exit] of [["true", 0], ["false", 0], ["true", 1]]) {
       const result = spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script], {
         encoding: "utf8", timeout: 30000,
-        env: { ...process.env, RELEASE_TAG: "v0.1.0", RELEASE_SHA: "a".repeat(40),
-          RELEASE_PREVIEW: preview, FAKE_EXIT: String(exit) },
+        env: { ...windowsPowerShellEnvironment, RELEASE_TAG: "v0.1.0", RELEASE_SHA: "a".repeat(40),
+          RELEASE_PREVIEW: preview, FAKE_EXIT: String(exit), WINDOWS_EXE: "app.exe",
+          WINDOWS_STANDARD: "standard.zip", WINDOWS_COMPLETE: "complete.zip" },
       });
       assert.ifError(result.error);
       if (exit) {
@@ -182,9 +198,46 @@ ConvertTo-Json -Compress -InputObject $global:recorded
       const args = JSON.parse(result.stdout.trim());
       assert.deepEqual(args.slice(0, 5), ["release", "create", "v0.1.0", ".tmp/release/source.zip", ".tmp/release/SHA256SUMS.txt"]);
       assert.ok(args.includes("--verify-tag") && args.includes("--generate-notes"));
+      for (const asset of ["app.exe", "standard.zip", "complete.zip", "WINDOWS-SHA256SUMS.txt", "corresponding-sources.zip"]) {
+        assert.ok(args.includes(`.tmp/release/${asset}`));
+      }
       assert.equal(args.includes("--prerelease"), preview === "true");
       assert.equal(args.includes("--latest=false"), preview === "true");
     }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("Actual release artifact verifier rejects a modified Windows download", async () => {
+  const workflow = parseDocument(await readFile(new URL("../../.github/workflows/source-release.yml", import.meta.url), "utf8")).toJS();
+  const body = workflow.jobs.release.steps.find(step => step.name === "Verify artifacts and current tag before publication").run;
+  const directory = await mkdtemp(path.resolve(".tmp/windows-release-verifier-"));
+  const target = path.join(directory, ".tmp/release");
+  const hash = data => createHash("sha256").update(data).digest("hex");
+  try {
+    await mkdir(target, { recursive: true });
+    await writeFile(path.join(target, "source.zip"), "synthetic source");
+    await writeFile(path.join(target, "SHA256SUMS.txt"), `${hash("synthetic source")}  source.zip\n`);
+    const names = ["app.exe", "standard.zip", "complete.zip", "corresponding-sources.zip"];
+    for (const name of names) await writeFile(path.join(target, name), "synthetic binary");
+    await writeFile(path.join(target, "WINDOWS-SHA256SUMS.txt"), names.map(name => `${hash("synthetic binary")}  ${name}\n`).join(""));
+    const script = path.join(directory, "verify.ps1");
+    await writeFile(script, `$ErrorActionPreference = 'Stop'\nfunction git {\n $global:LASTEXITCODE = 0\n if ($args[0] -eq 'rev-parse') { $env:RELEASE_SHA }\n}\n${body}\nWrite-Output 'Artifact verification passed'\n`);
+    const run = () => spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script], {
+      cwd: directory, encoding: "utf8", timeout: 30000,
+      env: { ...windowsPowerShellEnvironment, RELEASE_TAG: "v0.1.0", RELEASE_SHA: "a".repeat(40), RELEASE_PREVIEW: "true",
+        WINDOWS_EXE: "app.exe", WINDOWS_STANDARD: "standard.zip", WINDOWS_COMPLETE: "complete.zip" },
+    });
+    const valid = run();
+    assert.ifError(valid.error);
+    assert.equal(valid.status, 0, valid.stderr);
+    assert.match(valid.stdout, /Artifact verification passed/);
+    await writeFile(path.join(target, "app.exe"), "tampered");
+    const changed = run();
+    assert.ifError(changed.error);
+    assert.notEqual(changed.status, 0);
+    assert.match(changed.stderr, /Windows artifact checksum mismatch/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

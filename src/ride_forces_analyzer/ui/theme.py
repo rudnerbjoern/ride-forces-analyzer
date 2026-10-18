@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from PySide6.QtGui import QColor, QPalette
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 
@@ -16,7 +17,7 @@ from PySide6.QtWidgets import QApplication
 STYLESHEET = """
 QMainWindow, QDialog { background: #101720; color: #e3ebf5; }
 QWidget#InspectorBody { background: #101720; }
-QWidget { font-family: "Segoe UI"; font-size: 12px; color: #e3ebf5; }
+QWidget { font-family: "Segoe UI"; font-size: 9pt; color: #e3ebf5; }
 QToolBar { background: #151f2b; border: 0; border-bottom: 1px solid #2b394a; spacing: 8px; padding: 4px; }
 QToolBar QLabel { font-weight: 600; padding: 0 10px 0 4px; }
 QPushButton, QToolButton { background: #223044; border: 1px solid #35465c; border-radius: 6px; padding: 6px 10px; }
@@ -63,9 +64,17 @@ QHeaderView::section { background: #223044; color: #e3ebf5; border: 1px solid #3
 QTableWidget { gridline-color: #35465c; }
 QPushButton:checked, QToolButton:checked, QToolButton#Primary { color: white; }
 QComboBox:disabled, QDoubleSpinBox:disabled, QLineEdit:disabled { color: #718096; }
+QToolBar QPushButton, QToolBar QToolButton, QToolBar QComboBox {
+    min-height: 20px; max-height: 20px; padding: 6px 10px;
+}
 """
 
 ThemeName = Literal["dark", "light"]
+
+
+def system_theme(application: QApplication) -> ThemeName:
+    """Follow the current effective OS scheme, including scheduled changes."""
+    return "light" if application.styleHints().colorScheme() == Qt.ColorScheme.Light else "dark"
 
 
 @dataclass(frozen=True, slots=True)

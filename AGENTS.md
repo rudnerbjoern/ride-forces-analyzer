@@ -2,6 +2,14 @@
 
 Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 
+## Highest-priority project rules: simplicity and authorized scope
+
+- MUST give these simplicity and scope rules the highest priority within project instructions.
+- MUST keep simple tasks simple and choose the simplest solution that fully satisfies the owner's request, reusing existing code and workflows.
+- NEVER make a simple task unnecessarily complex or turn it into a broader engineering project. NEVER introduce unnecessary complexity, abstractions, tools, frameworks or processes.
+- NEVER expand task scope under any circumstances without the owner's prior explicit permission. Useful, recommended or related work is NEVER automatically authorized.
+- NEVER invent requirements or act on assumptions or ideas about tasks the owner has not assigned. MUST perform only the requested work and necessary checks, then STOP.
+
 ## Communication and scope
 
 - MUST communicate in German unless requested otherwise. Code, identifiers, docs and commits: English.

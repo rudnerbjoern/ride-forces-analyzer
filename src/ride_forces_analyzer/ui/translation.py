@@ -27,6 +27,13 @@ _bindings: WeakKeyDictionary[QObject, dict[str, Text]] = WeakKeyDictionary()
 _qt_translator: QTranslator | None = None
 
 
+def system_ui_language() -> Language:
+    """Use the preferred OS display language, not Qt's mutable default locale."""
+    languages = QLocale.system().uiLanguages()
+    primary = languages[0].lower().replace("_", "-").split("-")[0] if languages else ""
+    return "de" if primary == "de" else "en"
+
+
 def _apply(widget: QObject, prop: str, value: str) -> None:
     if prop.startswith("item:") and isinstance(widget, QComboBox):
         widget.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)

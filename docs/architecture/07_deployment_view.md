@@ -61,6 +61,15 @@ full check after a push to `main`.
 The partial M6 video export uses offline FFmpeg; standalone installation/uninstallation remains planned for
 M8; the checkout is a development environment, not a released installer.
 
+The Windows packaging path builds a PyInstaller EXE with an embedded interpreter
+and libraries, plus standard and FFmpeg-complete ZIPs with notices. An isolated
+native smoke checker executes each artifact and the complete package's CPU encoder.
+The release workflow requires these checks and integrity verification of supplied
+source archives before publishing binaries. Missing provider sources are recorded
+in the shipped redistribution catalog and reported without blocking the build;
+local candidates do not establish public binary or clean-VM acceptance. See
+[Windows packages](../development/RELEASE.md#windows-packages).
+
 ## Encoder installation
 
 `setup.ps1 -VideoExport` installs the version/checksum-pinned full FFmpeg build

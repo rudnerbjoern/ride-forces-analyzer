@@ -13,7 +13,7 @@ possible feature. [README](../README.md) explains current use;
 | M5 — Playback              | Planned                 | Deterministic clock, pause, seek, speed and interpolation                                                                                                                             |
 | M6 — Exports               | Partial                 | Five 4K layouts, portrait/landscape, transparent/opaque video, previews, SQLite presets/batches and optional NVIDIA encoding; CSV/JSON/PNG sequence and full acceptance remain        |
 | M7 — Video synchronization | Planned                 | Local video ingest, offsets, timeline preview and frame-accurate alignment                                                                                                            |
-| M8 — Windows release       | Planned                 | Standalone package, install/uninstall, diagnostics and clean-Windows verification                                                                                                     |
+| M8 — Windows release       | Partial                 | Local EXE/ZIP candidates and release pipeline; redistribution sources/notices and clean-Windows verification remain                                                                   |
 
 ## Product boundaries
 
@@ -37,5 +37,5 @@ manual Onride alignment; interactive playback and synchronization are separate.
    [batch](implementation/EXPORT_BATCHES.md) contracts.
 3. Scope M5, M7 and M8 independently.
 
-Only focused tests are currently authorized; full suites need renewed owner
-approval. A roadmap entry grants no implementation or Git-operation authorization.
+Validation scope follows the owner's current instructions. A roadmap entry grants
+no implementation or Git-operation authorization.

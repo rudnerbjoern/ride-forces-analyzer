@@ -1,6 +1,13 @@
 """Synthetic Stage 1 models; no original recording is decoded here."""
 
+# cspell:words autouse LOCALAPPDATA
+
 import pytest
+from collections.abc import Iterator
+from tempfile import TemporaryDirectory
+from pathlib import Path
+
+from ride_forces_analyzer.i18n import get_language, set_language
 
 from ride_forces_analyzer.domain import (
     MotionSequence,
@@ -11,6 +18,24 @@ from ride_forces_analyzer.domain import (
     SourceNumber,
     Vector3,
 )
+
+
+@pytest.fixture(autouse=True)
+def isolated_user_preferences(
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
+) -> Iterator[None]:
+    """GUI tests and their subprocesses never read or overwrite user preferences."""
+    if "gui" not in request.path.stem:
+        yield
+        return
+    with TemporaryDirectory(dir=".tmp") as directory:
+        monkeypatch.setenv("LOCALAPPDATA", str(Path(directory).resolve()))
+        original_language = get_language()
+        try:
+            yield
+        finally:
+            set_language(original_language)
 
 
 @pytest.fixture

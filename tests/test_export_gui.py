@@ -22,11 +22,13 @@ from test_project import REAL_FIXTURE_DIRECTORY
 def isolated_export_database(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     from ride_forces_analyzer.ui import export as ui_export
     from ride_forces_analyzer.storage import exports as storage
+    from ride_forces_analyzer.storage import preferences
 
     with TemporaryDirectory(dir=".tmp") as directory:
         path = Path(directory).resolve() / "exports.sqlite3"
         monkeypatch.setattr(ui_export, "default_database_path", lambda: path)
         monkeypatch.setattr(storage, "default_database_path", lambda: path)
+        monkeypatch.setattr(preferences, "default_database_path", lambda: path)
         yield
 
 
@@ -35,6 +37,50 @@ def preview_ready(dialog: ExportDialog) -> ExportPreview:
     result = dialog.preview_result
     assert result is not None
     return result
+
+
+def test_save_dialog_suggests_source_name_and_restores_successful_export_folder(
+    explorer_window: ExplorerWindow,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ride_forces_analyzer.ui import export as ui_export
+    from ride_forces_analyzer.storage.preferences import Preferences
+
+    window = explorer_window
+    source = next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces"))
+    window.open_path(source)
+    wait_until(window.open_action.isEnabled)
+    window.export_button.click()
+    dialog = window.export_window
+    assert isinstance(dialog, ExportDialog)
+    preview_ready(dialog)
+    dialog.next.click()
+    with TemporaryDirectory(dir=".tmp") as temporary:
+        output = Path(temporary).resolve() / "custom.mov"
+        suggestions: list[str] = []
+
+        def destination(*args: object, **kwargs: object) -> tuple[str, str]:
+            suggestions.append(str(args[2]))
+            return (str(output), "") if len(suggestions) == 1 else ("", "")
+
+        monkeypatch.setattr(QFileDialog, "getSaveFileName", destination)
+
+        def encoder(path: Path | None = None) -> Path:
+            return Path(__file__)
+
+        def export(*args: object, **kwargs: object) -> Path:
+            return output
+
+        monkeypatch.setattr(ui_export, "find_ffmpeg", encoder)
+        monkeypatch.setattr(ui_export, "export_video", export)
+        dialog.start.click()
+        wait_until(lambda: dialog.worker is None)
+        assert Path(suggestions[0]).name == source.stem + ".mov"
+        assert Preferences(dialog.preferences.path).export_directory() == str(output.parent)
+        dialog.start.click()
+        assert Path(suggestions[1]) == output.parent / (source.stem + ".mov")
+        assert dialog.preferences.export_directory() == str(output.parent)
+    dialog.close()
 
 
 def test_portrait_format_refreshes_all_previews_and_review(
@@ -48,6 +94,13 @@ def test_portrait_format_refreshes_all_previews_and_review(
     dialog = window.export_window
     assert isinstance(dialog, ExportDialog)
     preview_ready(dialog)
+    estimate = dialog.size_estimate.text()
+    assert "Estimated file size:" in estimate and "MiB" in estimate
+    dialog.mode.setCurrentIndex(1)
+    assert dialog.size_estimate.text() != estimate
+    assert dialog.review_size_estimate.text() == dialog.size_estimate.text()
+    dialog.mode.setCurrentIndex(0)
+    assert dialog.size_estimate.text() == estimate
     dialog.aspect.setCurrentIndex(1)
     wait_until(lambda: dialog.preview_result is None)
     result = preview_ready(dialog)
@@ -135,6 +188,8 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     wait_until(lambda: dialog.preview_result is not None)
     dialog.next.click()
     started = Event()
+    clock = 0.0
+    monkeypatch.setattr(ui_export, "monotonic", lambda: clock)
 
     def fake_export(*args: object, **kwargs: object) -> Path:
         from ride_forces_analyzer.rendering.model import ExportTimeline
@@ -162,8 +217,13 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     wait_until(started.is_set)
     assert isinstance(dialog.worker, ExportWorker)
     assert not dialog.start.isEnabled()
-    dialog.worker.signals.progress.emit(5, 10)
-    wait_until(lambda: dialog.progress.value() == 50)
+    clock = 10.0
+    dialog.worker.signals.progress.emit(100, 1000)
+    wait_until(lambda: dialog.progress.value() == 10)
+    assert dialog.eta_timer.interval() == 2000
+    wait_until(lambda: "1:30" in dialog.eta.text())
+    dialog.worker.signals.progress.emit(1000, 1000)
+    wait_until(lambda: "finalizing" in dialog.eta.text())
     dialog.reject()
     assert dialog.isVisible()
     assert not window.close()  # A close requests cancellation, never abandons a live worker.
@@ -171,6 +231,7 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     QThreadPool.globalInstance().waitForDone()
     assert dialog.start.isEnabled()
     assert "cancelled" in dialog.status.text()
+    assert not dialog.eta_timer.isActive() and dialog.eta.text() == ""
     dialog.close()
 
 

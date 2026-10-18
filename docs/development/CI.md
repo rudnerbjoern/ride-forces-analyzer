@@ -124,10 +124,19 @@ bytes/hashes against the fixture inventory in a Git source ZIP. It also builds
 the Python wheel and source distribution. Only the verified Git source ZIP and its
 SHA-256 file and prepared release notes are retained as direct-download Actions artifacts for 14 days,
 without an additional ZIP wrapper; the Python packages
-are build checks, not published binaries. Runs for different tags remain independent.
+are build checks. Runs for different tags remain independent.
+
+A separate read-only Windows job (30-minute limit) installs the locked build group,
+checks binary redistribution inputs, builds the standalone EXE and standard/complete
+ZIPs, and executes all three with isolated preferences and a restricted PATH. Its
+outputs include checksums and corresponding sources. Publication depends on this
+job as well as full quality/source checks. Missing provider sources are documented
+and reported; missing or modified catalog-listed archives fail verification. See
+[Windows package scope and open inputs](RELEASE.md#windows-packages).
 
 After source validation, a separate publication job attaches the ZIP/checksum to
-a GitHub release. It alone has `contents: write`, plus artifact read permission.
+a GitHub release together with the verified Windows downloads, their checksum file
+and corresponding-source archive. It alone has `contents: write`, plus artifact read permission.
 The [release policy](RELEASE.md) defines main ancestry, merged-PR and version gates,
 prerelease classification and maintained release notes. No job creates tags or
 changes repository visibility. This does not replace pre-release application/GUI validation or test

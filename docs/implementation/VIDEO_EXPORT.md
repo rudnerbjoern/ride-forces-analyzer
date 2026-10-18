@@ -21,6 +21,11 @@ records the concise full-recording/editor compatibility boundary.
 
 ## Contracts
 
+- The save dialog suggests the original `.forces` filename stem with `.mov` or
+  `.mp4` for the selected output. Successfully completed exports remember their
+  destination folder across restarts in `preferences.sqlite3`, independently of
+  the recording folder. A missing folder falls back to the dialog default;
+  cancellation and failed exports preserve the previous folder.
 - Video format selects 16:9 landscape or 9:16 portrait. All five profiles fit
   completely inside the selected canvas. Portrait Ribbon/Capsule use vertical
   force cards; Corner Instruments, G-Orbit and the four-panel column retain their
@@ -51,6 +56,16 @@ records the concise full-recording/editor compatibility boundary.
   the source sample while open. Escape/close respects active encoding cancellation.
 - Transparent ProRes 4444 MOV is the default; opaque H.264 MP4 is independent.
   RGBA Pillow frame generation and external FFmpeg encoding remain separate.
+  Settings and review show a live approximate file-size range in MiB, using the
+  rounded frame count, canvas/overlay area and output codec. This is an uncalibrated
+  planning heuristic, not a measured bitrate or guaranteed bound. Motion, detail,
+  filtering and CPU/GPU encoding may put the actual size outside that range.
+  Estimation needs no FFmpeg and never renders a trial clip.
+  During a single-video export, a two-second timer estimates remaining frame time
+  from elapsed monotonic time per submitted frame and pending frame count, displayed
+  as minutes:seconds. Startup overhead is included. Before the first frame it shows
+  an estimating state; after the last frame it shows finalization/verification,
+  whose duration is not predicted. Cancellation, failure and completion clear the ETA.
 - One shared source position and centered cursor in each time plot; configurable
   1–60 s context, default 12. Compact time plots show three forces plus numeric tilt;
   the original column includes a fourth orientation plot. G-Orbit uses independent

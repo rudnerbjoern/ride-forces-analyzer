@@ -4,9 +4,17 @@
 
 ## Business context
 
-The owner supplies exported recordings from the external Ride Forces app on
+The owner supplies exported recordings from the external
+[Ride Forces app](https://rideforces.com/) on
 an iPhone or Apple Watch. The analyzer consumes local files; it does not connect
 to the mobile app, acquire sensors or upload ride data.
+
+Ride Forces Analyzer is developed independently of the Ride Forces app and its
+developer, without affiliation, endorsement or sponsorship.
+
+Optional update discovery contacts the public GitHub Releases API only: manual
+checks or opt-in daily startup checks. It sends no recording contents or file
+paths and is independent of offline import, analysis and export processing.
 
 ```mermaid
 flowchart LR
