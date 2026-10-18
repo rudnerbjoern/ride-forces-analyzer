@@ -1,20 +1,61 @@
 name: CI
 on:
   pull_request:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      full-checks:
+        type: boolean
+        required: true
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: read
 jobs:
+  gitleaks:
+    name: Secret scanning
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+      - name: Install checksum-pinned Gitleaks
+        run: |
+          New-Item -ItemType Directory -Force .tmp/gitleaks | Out-Null
+          $archive = '.tmp/gitleaks/gitleaks_8.30.1_windows_x64.zip'
+          curl.exe --fail --silent --show-error --location --retry 3 --retry-all-errors --connect-timeout 30 --max-time 120 --proto '=https' https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_windows_x64.zip --output $archive
+          if ($LASTEXITCODE -ne 0) { throw 'Gitleaks download failed.' }
+          $expected = 'd29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e'
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Gitleaks checksum mismatch.' }
+          Expand-Archive -Path $archive -DestinationPath .tmp/gitleaks -Force
+          [IO.File]::WriteAllLines('.tmp/gitleaks/rules.toml', @('[extend]', 'useDefault = true'))
+          [IO.File]::WriteAllText('.tmp/gitleaks/empty-ignore', '')
+      - name: Verify scanner detection and redaction
+        run: ./.github/scripts/test-gitleaks.ps1
+      - name: Scan complete fetched Git history
+        run: |
+          .tmp/gitleaks/gitleaks.exe git --log-opts=--all --config=.tmp/gitleaks/rules.toml --gitleaks-ignore-path=.tmp/gitleaks/empty-ignore --ignore-gitleaks-allow --redact=100 --no-banner --no-color --exit-code 1 --report-format json --report-path .tmp/gitleaks/report.json .
+          if ($LASTEXITCODE -ne 0) { throw 'Secret scan failed; review the redacted scan output.' }
+
   dependency-check:
     runs-on: windows-latest
+    timeout-minutes: 5
     outputs:
       code: ${{ steps.changes.outputs.code }}
       documentation: ${{ steps.changes.outputs.documentation }}
       skills: ${{ steps.changes.outputs.skills }}
+      workflows: ${{ steps.changes.outputs.workflows }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: '.node-version'
@@ -23,16 +64,45 @@ jobs:
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CI_FULL_CHECKS: ${{ inputs.full-checks || false }}
         run: node .github/scripts/ci-changes.mjs
+
+  actionlint:
+    name: Workflow validation
+    needs: dependency-check
+    if: ${{ needs.dependency-check.outputs.workflows == 'true' }}
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Install checksum-pinned actionlint
+        run: |
+          New-Item -ItemType Directory -Force .tmp/actionlint | Out-Null
+          $archive = '.tmp/actionlint/actionlint_1.7.12_windows_amd64.zip'
+          curl.exe --fail --silent --show-error --location --retry 3 --retry-all-errors --connect-timeout 30 --max-time 120 --proto '=https' https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_amd64.zip --output $archive
+          if ($LASTEXITCODE -ne 0) { throw 'actionlint download failed.' }
+          $expected = '6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9'
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'actionlint checksum mismatch.' }
+          Expand-Archive -Path $archive -DestinationPath .tmp/actionlint -Force
+      - name: Validate all workflows
+        run: |
+          .tmp/actionlint/actionlint.exe -verbose '-shellcheck=' '-pyflakes='
+          if ($LASTEXITCODE -ne 0) { throw 'Workflow validation failed.' }
 
   code:
     needs: dependency-check
     if: ${{ needs.dependency-check.outputs.code == 'true' }}
     runs-on: windows-latest
+    timeout-minutes: 15
     env:
       NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
       - uses: astral-sh/setup-uv@v10.3.0
         with:
           version: '0.13.0'
@@ -43,33 +113,58 @@ jobs:
           node-version-file: '.node-version'
           cache: 'npm'
       - run: npm ci --no-audit --no-fund
-      - run: uv run ruff check .
-      - run: uv run ruff format --check src tests
-      - run: uv run mypy src
+      - run: uv run --locked ruff check .
+      - run: uv run --locked ruff format --check src tests
+      - run: uv run --locked mypy src
       - run: npm run typecheck
       - run: npm run test:types
       - run: npm run test:dependencies
       - if: ${{ needs.dependency-check.outputs.documentation != 'true' }}
         run: npm run spellcheck
-      - run: uv run pytest
+      - name: Application tests
+        id: pytest
+        run: uv run --locked pytest -ra --durations=20 --junitxml=.tmp/test-results/application.xml
+      - name: Retain application test report
+        if: ${{ !cancelled() && (steps.pytest.outcome == 'success' || steps.pytest.outcome == 'failure') }}
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: application-test-results
+          path: .tmp/test-results/application.xml
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
 
   skills:
     needs: dependency-check
     if: ${{ needs.dependency-check.outputs.skills == 'true' }}
     runs-on: windows-latest
+    timeout-minutes: 10
     env:
       NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
       - uses: astral-sh/setup-uv@v10.3.0
         with:
           version: '0.13.0'
           python-version: '3.14.6'
       - run: uv sync --locked --all-extras --group dev
-      - run: uv run ruff check .agents/skills/github-delivery
-      - run: uv run ruff format --check .agents/skills/github-delivery
-      - run: uv run mypy .agents/skills/github-delivery/scripts/git_delivery.py .agents/skills/github-delivery/tests/test_github_delivery.py
-      - run: uv run pytest .agents/skills/github-delivery/tests
+      - run: uv run --locked ruff check .agents/skills/github-delivery
+      - run: uv run --locked ruff format --check .agents/skills/github-delivery
+      - run: uv run --locked mypy .agents/skills/github-delivery/scripts/git_delivery.py .agents/skills/github-delivery/tests/test_github_delivery.py
+      - name: Delivery skill tests
+        id: pytest
+        run: uv run --locked pytest .agents/skills/github-delivery/tests -ra --durations=20 --junitxml=.tmp/test-results/skills.xml
+      - name: Retain delivery skill test report
+        if: ${{ !cancelled() && (steps.pytest.outcome == 'success' || steps.pytest.outcome == 'failure') }}
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: skill-test-results
+          path: .tmp/test-results/skills.xml
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
       - if: ${{ needs.dependency-check.outputs.code != 'true' && needs.dependency-check.outputs.documentation != 'true' }}
         uses: actions/setup-node@v7.1.0
         with:
@@ -84,10 +179,13 @@ jobs:
     needs: dependency-check
     if: ${{ needs.dependency-check.outputs.documentation == 'true' }}
     runs-on: windows-latest
+    timeout-minutes: 5
     env:
       NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: '.node-version'
@@ -96,24 +194,31 @@ jobs:
       - run: npm run test:docs
 
   check:
-    needs: [dependency-check, code, documentation, skills]
+    needs: [dependency-check, code, documentation, skills, gitleaks, actionlint]
     if: ${{ always() }}
     runs-on: windows-latest
+    timeout-minutes: 5
     steps:
       - name: Require successful applicable checks
         env:
           DEPENDENCY_RESULT: ${{ needs.dependency-check.result }}
+          GITLEAKS_RESULT: ${{ needs.gitleaks.result }}
           CODE_REQUIRED: ${{ needs.dependency-check.outputs.code }}
           DOCUMENTATION_REQUIRED: ${{ needs.dependency-check.outputs.documentation }}
           SKILLS_REQUIRED: ${{ needs.dependency-check.outputs.skills }}
+          WORKFLOWS_REQUIRED: ${{ needs.dependency-check.outputs.workflows }}
           CODE_RESULT: ${{ needs.code.result }}
           DOCUMENTATION_RESULT: ${{ needs.documentation.result }}
           SKILLS_RESULT: ${{ needs.skills.result }}
+          WORKFLOWS_RESULT: ${{ needs.actionlint.result }}
         run: |
+          if ($env:GITLEAKS_RESULT -ne 'success') {
+            throw 'Required secret scan did not succeed.'
+          }
           if ($env:DEPENDENCY_RESULT -ne 'success') {
             throw 'Change detection failed; test selection is not verified.'
           }
-          foreach ($suite in @('CODE', 'DOCUMENTATION', 'SKILLS')) {
+          foreach ($suite in @('CODE', 'DOCUMENTATION', 'SKILLS', 'WORKFLOWS')) {
             $required = [Environment]::GetEnvironmentVariable("${suite}_REQUIRED")
             $result = [Environment]::GetEnvironmentVariable("${suite}_RESULT")
             if ($required -ne 'true' -and $required -ne 'false') {

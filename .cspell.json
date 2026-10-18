@@ -31,6 +31,10 @@
     "**/uv.lock"
   ],
   "words": [
+    "shellcheck",
+    "Gitleaks",
+    "notin",
+    "junitxml",
     "rudnerbjoern",
     "Björn",
     "Rudner",
