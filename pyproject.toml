@@ -36,6 +36,7 @@ ride-forces-analyzer = "ride_forces_analyzer.__main__:main"
 packages = ["src/ride_forces_analyzer"]
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 testpaths = ["tests"]
 
 [tool.ruff]

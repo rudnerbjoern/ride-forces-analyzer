@@ -94,6 +94,7 @@
     "pyrightconfig",
     "PySide",
     "pytest",
+    "PSModulePath",
     "RGBA",
     "rtol",
     "setflags",
