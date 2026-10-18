@@ -12,6 +12,7 @@ from .translation import bind, items
 from pathlib import Path
 from functools import partial
 from threading import Event
+from time import monotonic
 
 from PySide6.QtCore import QEvent, QObject, QRunnable, QThreadPool, Qt, Signal, Slot, QSize, QTimer
 from PySide6.QtGui import QCloseEvent, QImage, QPixmap, QResizeEvent, QIcon
@@ -39,6 +40,8 @@ from PIL import Image
 
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering.encoding import ExportCancelled, export_video, find_ffmpeg
+from ride_forces_analyzer.rendering.progress import remaining_seconds
+from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.rendering.model import (
     ExportSettings,
     ExportTimeline,
@@ -132,6 +135,7 @@ class PreviewView(QLabel):
 
 
 class ExportSignals(QObject):
+    saved = Signal(str)
     progress = Signal(int, int)
     finished = Signal(str)
     failed = Signal(str)
@@ -163,6 +167,7 @@ class ExportWorker(QRunnable):
         except Exception as error:
             self.signals.failed.emit(tr("Export failed: {0}", error))
         else:
+            self.signals.saved.emit(str(path))
             self.signals.finished.emit(tr("Saved {0}", path))
 
 
@@ -312,6 +317,17 @@ class ExportDialog(QDialog):
         self.gpu = bind(QCheckBox(), tr("Use NVIDIA GPU when supported; CPU fallback otherwise"))
         self.gpu.setChecked(True)
         form.addRow(bind(QLabel(), tr("Acceleration")), self.gpu)
+        self.size_estimate = QLabel()
+        self.size_estimate.setWordWrap(True)
+        form.addRow(self.size_estimate)
+        self.size_note = bind(
+            QLabel(),
+            tr(
+                "Rough planning range, not a guarantee. Actual size depends on motion, detail and CPU/GPU encoding.",
+            ),
+        )
+        self.size_note.setWordWrap(True)
+        form.addRow(self.size_note)
         self.encoder = QLineEdit()
         try:
             bind(self.encoder, str(find_ffmpeg()), "text")
@@ -335,6 +351,17 @@ class ExportDialog(QDialog):
         self.summary.setWordWrap(True)
         self.summary.setTextFormat(Qt.TextFormat.PlainText)
         review_layout.addWidget(self.summary)
+        self.review_size_estimate = QLabel()
+        self.review_size_estimate.setWordWrap(True)
+        review_layout.addWidget(self.review_size_estimate)
+        review_size_note = bind(
+            QLabel(),
+            tr(
+                "Rough planning range, not a guarantee. Actual size depends on motion, detail and CPU/GPU encoding.",
+            ),
+        )
+        review_size_note.setWordWrap(True)
+        review_layout.addWidget(review_size_note)
         review_layout.addStretch()
         self.pages.addWidget(review_page)
         self.pages.setMaximumWidth(500)
@@ -377,9 +404,19 @@ class ExportDialog(QDialog):
         self.progress.setRange(0, 100)
         layout.addWidget(self.progress)
         self.status = bind(QLabel(), tr("Ready. Original recording remains unchanged."))
+        self.eta = QLabel()
+        self.eta.setWordWrap(True)
+        self.eta_timer = QTimer(self)
+        self.eta_timer.setInterval(2000)
+        self.eta_timer.timeout.connect(self._update_eta)
+        self._export_started = 0.0
+        self._completed_frames = 0
+        self._total_frames = 0
+        self.preferences = Preferences()
         self.status.setWordWrap(True)
         self.status.setTextFormat(Qt.TextFormat.PlainText)
         layout.addWidget(self.status)
+        layout.addWidget(self.eta)
         buttons = QHBoxLayout()
         self.back = bind(QPushButton(), tr("Back"))
         self.back.clicked.connect(self._back)
@@ -605,6 +642,7 @@ class ExportDialog(QDialog):
 
     @Slot()
     def _schedule_preview(self) -> None:
+        self._update_size_estimate()
         self.preview_revision += 1
         self.preview_result = None
         self.next.setEnabled(False)
@@ -685,6 +723,7 @@ class ExportDialog(QDialog):
         bind(self.preview_note, tr("Preview failed: {0}", message), "text")
 
     def _update_summary(self) -> None:
+        self._update_size_estimate()
         first, last = self._bounds()
         width, height = self._settings().dimensions
         bind(
@@ -707,6 +746,20 @@ class ExportDialog(QDialog):
                 self.data.replay_text(self.current_sample),
             ),
             "text",
+        )
+
+    def _update_size_estimate(self) -> None:
+        from ride_forces_analyzer.rendering.size_estimate import estimate_size_bytes
+
+        first, last = self._bounds()
+        low, high = estimate_size_bytes(self._settings(), last - first + 1, self.data.sample_rate)
+        bind(
+            self.size_estimate,
+            tr("Estimated file size: {0:.0f}–{1:.0f} MiB", low / 2**20, high / 2**20),
+        )
+        bind(
+            self.review_size_estimate,
+            tr("Estimated file size: {0:.0f}–{1:.0f} MiB", low / 2**20, high / 2**20),
         )
 
     def changeEvent(self, event: QEvent) -> None:
@@ -764,10 +817,13 @@ class ExportDialog(QDialog):
             bind(self.status, tr(str(error)), "text")
             return
         suffix = ".mov" if settings.output == "transparent" else ".mp4"
+        source_path = self.data.source.recording.source.provenance.path
+        name = f"{source_path.stem if source_path is not None else 'ride-forces-4k'}{suffix}"
+        suggested = Path(self.preferences.export_directory()) / name
         filename, _ = QFileDialog.getSaveFileName(
             self,
             tr("Save 4K video"),
-            f"ride-forces-4k{suffix}",
+            str(suggested),
             tr("Video (*{0})", suffix),
         )
         if not filename:
@@ -777,7 +833,13 @@ class ExportDialog(QDialog):
         worker.signals.status.connect(self._status_message)
         worker.signals.finished.connect(self._finished)
         worker.signals.failed.connect(self._finished)
+        worker.signals.saved.connect(self._export_saved)
         self.worker = worker
+        self._export_started = monotonic()
+        self._completed_frames = 0
+        self._total_frames = timeline.frame_count
+        self._update_eta()
+        self.eta_timer.start()
         self.progress.setValue(0)
         for control in self.controls:
             control.setEnabled(False)
@@ -788,17 +850,47 @@ class ExportDialog(QDialog):
         QThreadPool.globalInstance().start(worker)
 
     @Slot(str)
+    def _export_saved(self, path: str) -> None:
+        self.preferences.remember_export(Path(path))
+
+    @Slot(str)
     def _status_message(self, message: str) -> None:
         bind(self.status, tr(message))
 
     @Slot(int, int)
     def _progress(self, current: int, total: int) -> None:
+        self._completed_frames, self._total_frames = current, total
         self.progress.setValue(current * 100 // total)
         if current == total:
             bind(self.status, tr("Finalizing video…"), "text")
+            self._update_eta()
+
+    @Slot()
+    def _update_eta(self) -> None:
+        if self._total_frames > 0 and self._completed_frames >= self._total_frames:
+            bind(self.eta, tr("Frames complete · finalizing and verifying video…"))
+            return
+        seconds = remaining_seconds(
+            monotonic() - self._export_started,
+            self._completed_frames,
+            self._total_frames,
+        )
+        if seconds is None:
+            bind(self.eta, tr("Remaining frame time: estimating…"))
+        else:
+            bind(
+                self.eta,
+                tr(
+                    "Remaining frame time: about {0}:{1:02d} (min:sec)",
+                    seconds // 60,
+                    seconds % 60,
+                ),
+            )
 
     @Slot(str)
     def _finished(self, message: str) -> None:
+        self.eta_timer.stop()
+        bind(self.eta, "")
         self.worker = None
         for control in self.controls:
             control.setEnabled(True)
@@ -813,6 +905,8 @@ class ExportDialog(QDialog):
     def _cancel(self) -> None:
         if self.worker is not None:
             self.worker.cancelled.set()
+            self.eta_timer.stop()
+            bind(self.eta, "")
             bind(self.status, tr("Cancelling export…"), "text")
         else:
             self.close()
@@ -822,7 +916,7 @@ class ExportDialog(QDialog):
             event.ignore()
             return
         if self.worker is not None:
-            self.worker.cancelled.set()
+            self._cancel()
             bind(self.status, tr("Cancelling export; close after completion."), "text")
             event.ignore()
         else:
