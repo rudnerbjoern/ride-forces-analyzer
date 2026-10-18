@@ -3,8 +3,8 @@
 The [release workflow](../../.github/workflows/source-release.yml) handles
 owner-authorized pushes of `v*` tags on native Windows. It prepares source, a
 standalone Windows x64 EXE and standard/complete ZIPs. Binary publication is
-accompanied by documented missing redistribution material below; no installer
-or new public binary release has been produced.
+accompanied by documented missing redistribution material below. Version 0.2.0
+provides these portable downloads; no installer is included.
 Local acceptance and owner review still precede tag creation; CI is secondary
 validation. [Windows setup](SETUP.md) owns the required local checks.
 
@@ -92,7 +92,7 @@ Publication rechecks all downloaded asset hashes and the live tag, then attaches
 the source ZIP, EXE, both Windows ZIPs, checksums and corresponding sources. A
 documented missing provider source does not block the workflow. Missing or modified
 files that are explicitly listed in the catalog still fail verification.
-No CI execution or public release of this new packaging path has been performed.
+Version 0.2.0 uses this path for all four user-facing download variants.
 
 ## Distribution boundaries
 
@@ -103,4 +103,4 @@ Original bytes and attribution notices remain intact. See
 
 Actions artifacts are retained for 14 days; attached GitHub release assets are
 separate downloads. Existing tags do not trigger the workflow retroactively.
-Hosted publication is unverified until an authorized new tag exercises this workflow.
+Each release requires a successful tag workflow and verification of its attached assets.

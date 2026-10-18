@@ -129,28 +129,17 @@ separate reuse statement; it is not a Windows Segoe UI redistribution permission
 
 ## Evidence and release limits
 
-Scope: native Windows x64, 2026-10-18, Python 3.14.6 / Qt 6.12.0,
-locked environment and tracked assets on `chore/gpl-3-or-later`, base
-`fe467461e00494c00297d3938b2c1e95e49adf24`. No runtime/dependency changes.
-Inspected: installed METADATA/RECORD/license texts, Node lock declarations,
-source imports/assets, archive digest and actual encoder license/build output.
-Temporary evidence: `.tmp/python-license-audit.json`,
-`.tmp/license-audit-summary.log`, `.tmp/ffmpeg-license.log`,
-`.tmp/ffmpeg-buildconf.log` and `.tmp/ffmpeg-archive-files.log`.
-Native commands: `uv run --locked python .tmp/audit-licenses.py`,
-`ffmpeg -L`, `ffmpeg -buildconf`, PowerShell `Get-FileHash` and archive listing.
-Documentation validation: `npm run test:docs` (Markdown/spelling and 66 local-link
-tests); output is retained in `.tmp/third-party-docs.log`.
-
-Before binary release, assemble exact shipped files and full notices, resolve Qt
-notice gaps, retain fallback-font provenance, arrange corresponding-source delivery and verify
-notices survive packaging. The five supplied recordings and 14 documentation PNGs
+The inventory covers installed METADATA/RECORD/license texts, Node lock declarations,
+tracked assets, the pinned encoder archive and actual encoder license/build output.
+Version 0.2.0 retains the locked runtime versions. The
+[release validation](docs/validation/WINDOWS_PACKAGES.md) records package checks.
+The five supplied recordings and 14 documentation PNGs
 are CC BY-SA 4.0 under their separate attribution/scope notices. This is
 not installer acceptance, a security scan or a complete embedded-library audit.
 
-The Windows builder now collects installed runtime notice files, the Python
-license and the PyInstaller bootloader license/exception into local candidates.
-The complete candidate additionally retains the exact pinned FFmpeg publisher's
+The Windows builder collects installed runtime notice files, the Python
+license and the PyInstaller bootloader license/exception into each package.
+The complete package additionally retains the exact pinned FFmpeg publisher's
 LICENSE/README and executable build information, plus the static Qt notice text.
 Qt PDF/Chromium and FFmpeg's complete static-library corresponding sources remain
 open; generic upstream links do not supply the missing corresponding sources.

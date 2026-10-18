@@ -13,7 +13,7 @@ possible feature. [README](../README.md) explains current use;
 | M5 — Playback              | Planned                 | Deterministic clock, pause, seek, speed and interpolation                                                                                                                             |
 | M6 — Exports               | Partial                 | Five 4K layouts, portrait/landscape, transparent/opaque video, previews, SQLite presets/batches and optional NVIDIA encoding; CSV/JSON/PNG sequence and full acceptance remain        |
 | M7 — Video synchronization | Planned                 | Local video ingest, offsets, timeline preview and frame-accurate alignment                                                                                                            |
-| M8 — Windows release       | Partial                 | Local EXE/ZIP candidates and release pipeline; redistribution sources/notices and clean-Windows verification remain                                                                   |
+| M8 — Windows release       | Partial                 | Portable EXE, standard/complete ZIPs and tag release pipeline; redistribution sources/notices, signing and clean-Windows verification remain                                          |
 
 ## Product boundaries
 
