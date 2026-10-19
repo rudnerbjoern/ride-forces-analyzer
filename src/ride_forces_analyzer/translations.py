@@ -193,6 +193,7 @@ GERMAN: dict[str, str] = {
     "{0} @ {1:g} Hz": "{0} bei {1:g} Hz",
     "{0:,}": "{0:,}",
     "{0:g} Hz ({1})": "{0:g} Hz ({1})",
+    "{0:.3f} s": "{0:.3f} s",
     "Calibrated forces\nSource directions\n{0}\nInferred time": "Kalibrierte Kräfte\nQuellrichtungen\n{0}\nAbgeleitete Zeit",
     "Raw acceleration x/y/z\nUnits and rider directions unverified\nInferred time": "Rohbeschleunigung x/y/z\nEinheiten und Fahrtrichtungen ungeprüft\nAbgeleitete Zeit",
     "Source provenance and import diagnostics appear here.": "Herkunft der Daten und Importdiagnosen erscheinen hier.",

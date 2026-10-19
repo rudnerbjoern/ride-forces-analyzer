@@ -189,6 +189,13 @@ under `.tmp/technical-details*.png`. Runner evidence is retained in
 `.tmp/technical-details-*.log` and `.tmp/documentation-tests.log`.
 The complete application suite was not repeated.
 
+The technical seconds format `{0:.3f} s` has an explicit German catalog entry.
+On native Windows, `9728d30` plus that entry passes
+`.venv/Scripts/python.exe -m pytest tests/localization/test_catalog.py -q`:
+324 tests, including catalog completeness, placeholder preservation and localized
+overlay rendering. Ruff and formatting pass. Runner evidence is retained in
+`.tmp/localization-catalog-tests.log`.
+
 ## Selection highlight
 
 Native Windows, `9ecf659` plus the current UI changes. The From/To interval has
