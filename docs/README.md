@@ -28,14 +28,12 @@ historical acceptance reports are not maintained.
 
 - [Windows setup and checks](development/SETUP.md), [contributions](../CONTRIBUTING.md),
   [agent rules](../AGENTS.md), [private security reports](../SECURITY.md).
-- [Code quality](development/CODE_QUALITY.md), [documentation checks](development/DOCUMENTATION_TESTS.md),
-  [CI routing](development/CI.md), [dependency updates](development/DEPENDABOT.md),
+- [Code and documentation quality](development/CODE_QUALITY.md),
+  [CI routing](development/CI.md),
   [Codex settings](development/CODEX.md).
-- [Dependency inventory](validation/DEPENDENCIES.md),
+- [Dependencies and update policy](development/DEPENDENCIES.md),
   [third-party licenses](../THIRD_PARTY_NOTICES.md).
 - [Releases and Windows downloads](development/RELEASE.md).
-- [Desktop, export and Windows-package validation](validation/WINDOWS_PACKAGES.md),
-  [airtime context and layout validation](validation/AIRTIME_CONTEXT.md).
 - [Recording catalog and authorization](development/RECORDINGS.md),
   [recording reuse license](../tests/fixtures/real/README.md), [image reuse license](images/README.md).
 

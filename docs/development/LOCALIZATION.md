@@ -1,6 +1,6 @@
 # English and German presentation
 
-The application supports English and German offline, with no new dependencies.
+The application supports English and German offline.
 Settings → Application provides language and appearance choices. Save applies
 them immediately; Cancel preserves the active settings. Language and light/dark appearance
 are saved in local `preferences.sqlite3` and restored on startup. Without valid
@@ -12,6 +12,8 @@ system scheme falls back to dark. Explicit Dark/Light choices override Windows;
 selecting System restores automatic following. An explicit `AppSettings(language="de")`
 overrides the saved language for startup; subsequent choices in Settings are saved.
 Both languages support the light/dark schemes and compact explorer layout.
+Preference validation and storage fallback rules belong to the
+[runtime contracts](CODE_QUALITY.md#runtime-and-static-contracts).
 Dropdown widths follow their complete item texts, including after language
 changes; translated choices retain room for the dropdown arrow. Saved preset
 prompts participate in the same live translation bindings.

@@ -26,7 +26,8 @@ changes the original files.
   curves and inspect the values at any sample.
 - **Focus on the interesting part.** Zoom with the mouse wheel or drag across
   the chart. Start/end markers define the initial view; reset returns to it.
-  Select a section to see its minimum and maximum values for every channel.
+  The inspector shows minimum and maximum values for the visible section of
+  every channel.
 - **Smooth the display interactively.** Adjust the slider while watching the
   curves update. Right-click to restore the default. Smoothing changes the
   displayed curves, while your original measurements remain intact.

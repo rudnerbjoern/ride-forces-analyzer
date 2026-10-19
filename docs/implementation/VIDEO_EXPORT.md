@@ -1,10 +1,8 @@
 # 4K ride overlay export
 
-Layout drawing is split into individual built-in modules with a small renderer
-protocol and explicit registration. See the [layout API](../development/EXPORT_LAYOUTS.md)
-for extension steps; persisted profile keys and output appearance remain unchanged.
-Each layout's named, commented constants define its visual styling, including its
-portrait variants and, for G-Orbit, peak timing. Shared renderers use those values.
+This document defines export behavior and output contracts. Component boundaries
+belong to the [building block view](../architecture/05_building_block_view.md#video-export-boundary);
+layout styling and extension belong to the [layout API](../development/EXPORT_LAYOUTS.md).
 
 <!-- cspell:words qscale -->
 
@@ -12,11 +10,12 @@ portrait variants and, for G-Orbit, peak timing. Shared renderers use those valu
 
 One video per recording in a landscape 3840×2160 or portrait 2160×3840 canvas.
 Select Flow Ribbon (opening default),
-Corner Instruments, Telemetry Capsule, G-Orbit or the original four-panel column.
-Manual Onride alignment stays in DaVinci Resolve; no video ingestion,
-synchronization, persistent library or general playback milestone is implied.
-Small file size and editing compatibility are priorities. ProRes is implemented;
-FFV1 is evaluated only. The [deployment view](../architecture/07_deployment_view.md#encoder-installation)
+Corner Instruments, Telemetry Capsule, G-Orbit or the four-panel column.
+Onride alignment is manual in DaVinci Resolve; source-video ingestion and
+synchronization are outside this export. Planned product scope belongs in the
+[roadmap](../ROADMAP.md).
+Transparent ProRes 4444 MOV and opaque H.264 MP4 are supported outputs. The
+[deployment view](../architecture/07_deployment_view.md#encoder-installation)
 records the concise full-recording/editor compatibility boundary.
 
 See the [Manta G-Orbit demo on YouTube](https://youtu.be/tsRzD416voU) for an example
@@ -77,32 +76,29 @@ of the exported template over Onride footage.
   whose duration is not predicted. Cancellation, failure and completion clear the ETA.
 - One shared source position and centered cursor in each time plot; configurable
   1–60 s context, default 12. Compact time plots show three forces plus numeric tilt;
-  the original column includes a fourth orientation plot. G-Orbit uses independent
+  the column includes a fourth orientation plot. G-Orbit uses independent
   signed concentric force arcs instead of time plots: vertical left, longitudinal
   right and lateral on the upper inner semicircle. A separate right orientation
   semicircle carries a marker at the measured angle (0° top, 90° right, 180° bottom),
   without stretching the source's 0–180° range or reconstructing attitude from
   forces. Missing tilt has no marker. G-Orbit has no replay footer. Its square
   region uses a circular translucent background with fully transparent corners.
-  All force arcs are 30 px thick at landscape size. Vertical and Longitudinal
-  extend inward from outer radius 290 px; Lateral extends outward to radius
-  212 px while retaining its inner edge. Scale numbers are bold. White 6 px
-  current-value bars cross the tracks with dark 12 px outlines. Portrait output
-  scales all dimensions proportionally. Numeric readouts sit inside the arcs.
+  Scale numbers are bold; white current-value bars cross the tracks with dark
+  outlines. Portrait output scales all dimensions proportionally. Numeric
+  readouts sit inside the arcs.
 - G-Orbit holds positive and negative peaks independently for 1.5 source-time
   seconds, then releases toward zero at 1 g/s, never below the current magnitude.
   Reaching the held value again restarts its hold; a new larger peak replaces it
   immediately. Peak tracks start at the prepared interval's first sample and reset
   on missing data. Random-access previews and video frames use the same immutable
   source-time envelopes, independent of query order and export fps.
-  Peak bars are 4 px wide with dark outlines, using muted cyan/green/orange
-  (#008cac/#a8974c for vertical/lateral; longitudinal green/red by sign). Corresponding arc fills use alpha 65/255, composited
+  Peak bars have dark outlines and muted channel colors, with longitudinal
+  green/red by sign. Translucent arc fills are composited
   over the track; opaque current arcs and white current markers remain on top.
-- Compact panel RGBA is (7,15,25,210), with transparent surroundings and opaque
-  vivid cyan vertical and yellow lateral data, green/red longitudinal data, outlined text/curves and visible -1/0/+1 references.
-  Flow Ribbon region is (384,1692,3072,360); Corner Instruments (2808,140,840,1120);
-  Capsule (768,108,2304,300); G-Orbit (192,1260,800,800), in x/y/width/height pixels.
-  Portrait G-Orbit is (240,2412,1188,1188), retaining circular proportions.
+- Compact panels are translucent, with transparent surroundings and opaque
+  cyan vertical and yellow lateral data, green/red longitudinal data, outlined
+  text/curves and visible -1/0/+1 references. Exact placement, dimensions and
+  drawing styles are defined by the [layout design constants](../development/EXPORT_LAYOUTS.md#design-constants).
   Rounded corners retain transparency. Opaque output composites panels over black.
 - Configurable 24/25/30/50/59.94/60 video fps, default 50. The 59.94 option uses
   the exact `60000/1001` ratio for timing, frame counts and FFmpeg, retained as
@@ -151,4 +147,8 @@ of the exported template over Onride footage.
 - Processing remains offline after installation. Existing Pillow dependency is
   reused; FFmpeg full build is external and checksum-pinned in ffmpeg.json.
   setup.ps1 -VideoExport installs it; the dialog also accepts an installed executable.
+  FFmpeg Browse opens the folder of the current path, including relative paths
+  and paths whose executable is missing. A directory entered directly opens
+  that directory; an empty field uses the native dialog default. Cancelling
+  preserves the current path, and choosing a file updates it.
   Original recording bytes, metadata, GPS and source values remain unchanged.

@@ -796,10 +796,15 @@ class ExportDialog(QDialog):
 
     @Slot()
     def _browse(self) -> None:
+        configured = self.encoder.text().strip()
+        directory = ""
+        if configured:
+            candidate = Path(configured).expanduser()
+            directory = str((candidate if candidate.is_dir() else candidate.parent).resolve())
         path, _ = QFileDialog.getOpenFileName(
             self,
             tr("Choose FFmpeg"),
-            "",
+            directory,
             tr("FFmpeg (ffmpeg.exe);;All files (*)"),
         )
         if path:

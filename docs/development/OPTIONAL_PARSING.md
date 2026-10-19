@@ -8,7 +8,7 @@ Its success describes only optional accessors, never a complete `Recording`.
 The [motion parser](MOTION_PARSING.md) remains independently callable; the
 [public service](IMPORT_SERVICE.md) composes a complete import.
 
-## Metadata and source ownership — FR-009–010, FR-022, FR-025
+## Metadata and source ownership
 
 All bytes and the complete immutable source tree remain owned by the same envelope.
 Unknown root/nested members, original strings, numeric tokens, nulls and absence
@@ -32,7 +32,7 @@ Typed numeric floats are approximate accessors. Exact tokens/Decimal values stay
 in the envelope, including underflow and source precision beyond float precision.
 These contracts use the existing [canonical models](CANONICAL_MODELS.md).
 
-## Ordered arbitrary attributes — FR-017
+## Ordered arbitrary attributes
 
 Absent or defective attribute containers yield `attributes=None`; source presence
 distinguishes the two. A present valid empty array yields `()`. Objects require
@@ -45,7 +45,7 @@ siblings remain in original order; the complete original array and extensions
 stay in the envelope. Typed attribute offsets after a defect are not source indices.
 Taron's Row=2 then Seat=1 and Iron Gwazi's two entries are verified explicitly.
 
-## Independent GPS — FR-018–021
+## Independent GPS
 
 `gps_status` distinguishes ABSENT, PRESENT and INVALID. PRESENT describes a valid
 array container, including empty arrays and arrays whose fixes are all unavailable.
@@ -80,7 +80,7 @@ device-profile diagnostics belong to the motion parser; optional parsing does no
 invent device capabilities or repeat that warning. Supplied Apple Watch GPS is
 validated normally rather than discarded because the current fixture lacks it.
 
-## Diagnostics and limits — FR-025
+## Diagnostics and limits
 
 | Code                        | Severity | Typed effect                                                  |
 | --------------------------- | -------- | ------------------------------------------------------------- |
@@ -104,7 +104,7 @@ constructing an arbitrary SourceEnvelope manually does not establish those guard
 Optional parsing enforces `limits.max_diagnostics` locally (default 1,000). Exactly at the
 budget is accepted. The next diagnostic replaces the last slot with a fatal limit
 record and stops parsing; no successful truncated warning set is returned.
-The [full service](IMPORT_SERVICE.md) now shares this guard with motion validation;
+The [full service](IMPORT_SERVICE.md) shares this guard with motion validation;
 decoder failures remain fail-fast single-diagnostic results.
 Invalid caller limit configuration raises `ValueError` as in the decoder API.
 
@@ -112,9 +112,6 @@ Invalid caller limit configuration raises `ValueError` as in the decoder API.
 
 ```powershell
 uv run pytest tests/importers/test_optional.py tests/recordings/test_integrity.py
-uv run mypy src
-npm run typecheck
-npm run test:types
 ```
 
 Tests compare all optional fields, attributes and all ten fields in all 698 GPS
@@ -131,20 +128,18 @@ The linked service guide describes complete-recording composition.
 
 Weather is already included by the full importer in `Recording.metadata`:
 
-| Source key        | Metadata accessor  | Voltron source value | Source-app interpretation |
-| ----------------- | ------------------ | -------------------- | ------------------------- |
-| weatherConditions | weather_conditions | Mostly Clear         | Mostly Clear              |
-| temperature       | temperature        | 17.786710739135742   | 17.8 °C                   |
-| windDirection     | wind_direction     | 195                  | degrees; SSW sector       |
-| windSpeed         | wind_speed         | 0.9936420124626161   | m/s; rounds to 4 km/h     |
-| windGust          | wind_gust          | 3.874126195764542    | m/s; rounds to 14 km/h    |
+| Source key        | Metadata accessor  |
+| ----------------- | ------------------ |
+| weatherConditions | weather_conditions |
+| temperature       | temperature        |
+| windDirection     | wind_direction     |
+| windSpeed         | wind_speed         |
+| windGust          | wind_gust          |
 
-Evidence: owner-provided Voltron Nevera weather screenshot, 2026-10-17, compared
-with the original authorized fixture. Multiplying source wind values by 3.6
-matches the displayed integer km/h; 195 degrees lies in the 16-point SSW sector
-[191.25, 213.75). Temperature matches the displayed one-decimal Celsius value.
-This establishes the observed Voltron correspondence, not a guaranteed schema
-for every recording. The importer preserves source numeric units/precision and
+The [Voltron weather comparison](../validation/APP_REFERENCE.md#weather-metadata)
+retains the supplied screenshot evidence, exact values and observed conversions;
+it does not establish a guaranteed unit schema for every recording.
+The importer preserves source numeric units/precision and
 weather text; it performs no conversion, compass labeling or network lookup.
 Absent fields remain None; invalid optional values warn without preventing import.
 Exact source tokens remain in SourceEnvelope. Weather display in the explorer

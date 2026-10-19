@@ -1,14 +1,15 @@
-# Recording explorer — implemented contracts
+# Recording explorer
 
-The explorer is a usable M4 slice; the persistent ride library remains planned.
-See the [roadmap](../ROADMAP.md) and [analysis concepts](../architecture/08_concepts.md#scientific-provenance-and-gates).
+This document defines current interaction and display contracts. Product scope
+belongs in the [roadmap](../ROADMAP.md); scientific boundaries belong in
+[analysis concepts](../architecture/08_concepts.md#scientific-provenance-and-gates).
 
 ## Loading and presentation
 
 - The toolbar's About dialog shows package version, project purpose, copyright,
   licenses and external project/source-app links. It supports live English/German
   translation and light/dark appearance, and states independence from Ride Forces.
-- Open local `.forces` through the lossless M2 service in a background worker.
+- Open local `.forces` without changing their contents, using a background worker.
   Cancelled/failed imports retain the last usable recording; shutdown drains workers.
   Successful file-dialog imports remember their folder across restarts in the local
   `preferences.sqlite3` database beside the export database. Missing folders or
@@ -37,11 +38,6 @@ See the [roadmap](../ROADMAP.md) and [analysis concepts](../architecture/08_conc
   sample, smoothing, calibration, language and appearance changes. Raw mode
   retains Unit unknown without a context classification.
 - Preserve original bytes, unknown fields, absent sensors and all source arrays.
-  Qt widgets delegate import/scientific calculations to their existing subsystems.
-- Visible-range extrema use one table per channel, with a bold channel heading,
-  aligned Min/Max values and replay times. Smaller detail rows retain the sample
-  index and recording seconds. The display follows the current language, mode,
-  smoothing and visible diagram interval.
 
 ## Time, zoom and selection
 
@@ -95,10 +91,11 @@ can suppress short peaks; 5–11 at 50 Hz is an exploration recommendation, not 
 Requested default size is 1280×820; Windows may reduce the shown size when the
 available desktop cannot accommodate it and its native frame. The chart-first layout provides global Open/GPS/
 notes/Inspector actions, local calibration/zoom/curve controls and current-value
-cards below the chart. The right inspector groups Display, Selection and Recording.
+cards below the chart. The right inspector groups Display, Selection,
+Visible range extrema, Recording and Technical details.
 The chart expands and shrinks with the available workspace height, keeping its
 controls and current-value cards visible without plot-area scrolling at normal
-desktop sizes (including 1280×720). Its previous viewport height is not a minimum.
+desktop sizes (including 1280×720).
 At very small sizes, the plot retains a 240-pixel minimum height and scrolling
 remains available so that controls are not clipped or hidden.
 Technical details group source provenance, processing and the current sample
@@ -138,8 +135,8 @@ from filenames or GPS. Weather remains available through the importer metadata A
 
 ## GPS overview
 
-Open a separate offline north-up view when usable coordinates exist. Pure geometry
-preparation uses a local WGS84 approximation; Qt preserves proportions and marks
+Open a separate offline north-up view when usable coordinates exist. A local
+WGS84 approximation preserves proportions and marks
 first/last points. Missing/out-of-range coordinates remain in source; omit them
 from display and break connections at missing fixes or missing/zero or negative/>2 s
 timestamp intervals. One usable point can be displayed. Replacement/main-window
@@ -154,4 +151,7 @@ the existing Select visible range mapping. Values use the active
 raw/calibrated window and include source sample plus replay/recording time.
 Results update on source, zoom, reset, mode and smoothing. Moving the cursor or
 editing From/To sample does not change the result unless the viewport changes.
-The pure force_extrema API owns calculation and validation; widgets only display.
+Each channel has a table with a bold heading, aligned Min/Max values and replay
+times. Smaller detail rows retain the sample index and recording seconds.
+Calculation and presentation responsibilities belong to the
+[building block view](../architecture/05_building_block_view.md#analysis-boundary).

@@ -118,5 +118,5 @@ bytes-only offline behavior. Permission/race/read failures use deterministic moc
 these do not establish Windows ACL or hostile-filesystem integration behavior.
 The shared Pyright suite verifies narrowing of the decoder-specific union.
 
-Context7 was consulted for the standard-library JSON hooks and permissive defaults;
-see the [CPython JSON documentation](https://github.com/python/cpython/blob/main/Doc/library/json.rst).
+Standard-library JSON hooks and permissive defaults are described in the
+[CPython JSON documentation](https://github.com/python/cpython/blob/main/Doc/library/json.rst).

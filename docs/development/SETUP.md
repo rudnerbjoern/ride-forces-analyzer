@@ -91,7 +91,7 @@ npm run test:docs
 
 For separate package verification, `uv build` writes ignored `dist/` artifacts.
 Installed checks work offline. Coverage and limits are described in
-[code quality](CODE_QUALITY.md), [documentation tests](DOCUMENTATION_TESTS.md) and
+[code and documentation quality](CODE_QUALITY.md) and
 [CI selection](CI.md). Application pytest/Test Explorer discovers `tests/` only;
 the [delivery skill](../../.agents/skills/github-delivery/SKILL.md) owns its separate
 regression commands, run only for affected skill inputs.

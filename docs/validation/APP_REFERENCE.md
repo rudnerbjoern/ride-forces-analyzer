@@ -132,9 +132,15 @@ rounded bins may not sum exactly to totals:
 
 ## Weather metadata
 
+Evidence is the owner-provided Voltron Nevera weather screenshot from 2026-10-17,
+compared with the original authorized fixture.
 Voltron's screenshot corroborates Mostly Clear, temperature 17.786710739135742
 (17.8 °C), wind direction 195 degrees (SSW), speed 0.9936420124626161 m/s
 (4 km/h rounded) and gust 3.874126195764542 m/s (14 km/h rounded).
+Multiplying the source wind values by 3.6 matches the displayed integer km/h;
+195 degrees lies in the 16-point SSW sector [191.25, 213.75). Temperature matches
+the one-decimal Celsius display. This is a source-specific comparison, not a
+guaranteed unit schema for every recording.
 The importer retains all five optional fields; absent/invalid values retain
 existing diagnostics. [Parser contract](../development/OPTIONAL_PARSING.md#weather-fields-and-source-app-evidence)
 and the full-import regression cover exact accessors, rounding and original bytes.
@@ -195,10 +201,9 @@ replace source speed. Speed coloring remains plausible, not a confirmed app cont
 
 ## Verification boundary
 
-Native Windows / Python 3.14.6 / Qt 6.12.0 / locked NumPy 2.5.4;
-reference implementation based on 4b201c42adb8201882bc9c91483ca03124290a57.
-Recorded focused checks passed for source references, weather accessors, smoothing,
-force levels and GPS presentation. Maintained regression command:
+Source-specific regressions cover these comparisons, weather accessors, smoothing,
+force levels and GPS presentation using the pinned original recordings. Run the
+maintained checks on native Windows from the repository root:
 
 ```text
 uv run --locked pytest tests/analysis/test_reference.py tests/explorer/test_data.py tests/importers/test_optional.py

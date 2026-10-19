@@ -19,7 +19,14 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 - MUST keep this file limited to durable project-wide rules. Milestone status belongs in the roadmap; stage steps, deliverables and specific gates belong in the applicable implementation plan. NEVER update this file solely for implementation progress.
 - MUST read [README](README.md), [roadmap](docs/ROADMAP.md), [architecture](docs/architecture/README.md), applicable requirements and implementation plan before edits. Use [docs index](docs/README.md) for references.
 - MUST keep changes scoped and consistent. NEVER refactor unrelated code. MUST align code, tests, configuration and docs.
-- MUST document the current project state, implemented behavior, planned work and known limits. MUST replace or consolidate superseded descriptions rather than append chronological updates. NEVER maintain development diaries, step-by-step implementation narratives or accounts of intermediate failures and fixes in project documentation. MUST keep validation evidence compact: commands, results, platform, tested scope/revision and remaining limits. Preserve necessary scientific evidence, decision rationale and recording authorization without turning them into development chronicles.
+
+## Documentation: current state, never development history
+
+- MUST describe the current behavior, contracts, relevant decisions, planned work and known limits. MUST update existing descriptions in place and consolidate superseded content. NEVER append sections for individual chat turns, UI adjustments, bug fixes or test reruns.
+- NEVER maintain development diaries, chronological implementation narratives, intermediate failure/fix reports or accumulating lists of historical test counts, revisions and commands in project documentation. An executed test or completed change alone NEVER justifies a documentation addition.
+- NEVER create or extend a validation report for routine changes unless the owner or applicable implementation/acceptance plan explicitly requires one. Ordinary changes need only relevant behavior/contract documentation and a concise validation result in the response; actual runner logs belong in `.tmp/`.
+- Required validation reports MUST summarize the final tested scope in one compact account: commands, results, platform, revision/file scope and remaining limits. MUST replace obsolete evidence rather than append another run history. NEVER copy terminal output, session progress, repeated command lists or intermediate troubleshooting into tracked documentation.
+- MUST preserve necessary scientific evidence, ADR rationale and recording authorization in their designated documents. This exception NEVER authorizes unrelated implementation or test history.
 
 ## Repository and Git
 
@@ -58,7 +65,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 
 - MUST complete milestone acceptance entirely on native Windows locally: verify ALL criteria, finalize the validation report and completion status, then run checks affected by final documentation BEFORE staging/commit/push.
 - MUST treat PR CI as secondary validation and a merge gate, NEVER as a prerequisite for local milestone acceptance. Local completion NEVER authorizes Git operations or another stage.
-- MUST include final acceptance documentation in the initial delivery. NEVER add a completion-only commit solely because CI became green; record hosted outcomes in PR metadata. CI failures MUST block merge and be investigated; acceptance evidence invalidated by a defect MUST be corrected.
+- MUST include explicitly required final acceptance documentation in the initial delivery; this NEVER requires a report for routine changes without an applicable requirement. NEVER add a completion-only commit solely because CI became green; record hosted outcomes in PR metadata. CI failures MUST block merge and be investigated; acceptance evidence invalidated by a defect MUST be corrected in place.
 - MUST read instructions/task docs once per working context. Re-read ONLY changed content, unresolved relevant sections or lost context.
 - MUST batch independent reads/searches. Parallelize independent checks ONLY without shared mutable files, environments or GUI resources; dependencies MUST remain sequential.
 - MUST test changed behavior/public contracts and add bug regression tests. Run focused checks first; repeat ONLY checks affected by edits/failures.

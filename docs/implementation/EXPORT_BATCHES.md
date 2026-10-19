@@ -8,13 +8,14 @@ Persist named export presets and reusable batch definitions in local SQLite.
 One recording can have multiple presets; a batch can include multiple recordings,
 and selected or all saved batches run as one sequential queue. Each recording /
 preset combination produces its own video, not a concatenation of different rides.
-This implements export configuration storage, not the M4 ride/media library.
+Saved export configuration does not manage a ride/media library; planned product
+scope belongs in the [roadmap](../ROADMAP.md).
 
 ## Contracts
 
-- Use Python sqlite3 and existing Pydantic; no new dependencies or database server.
-  Default database: `%LOCALAPPDATA%/Ride Forces Analyzer/exports.sqlite3`, with
-  version 1 and transactional preset/batch writes. Unsupported or damaged databases
+- Saved configuration is local, with transactional preset/batch writes. The
+  [deployment view](../architecture/07_deployment_view.md#local-export-configuration)
+  owns the database path and storage boundary. Unsupported or damaged databases
   are reported, never silently replaced. Preset and batch names are unique.
 - Presets retain layout, landscape/portrait aspect, overlay language, output mode, fps, time context, axis inversion, GPU
   preference, odd 1–51 sample smoothing and range policy. Save as creates a new

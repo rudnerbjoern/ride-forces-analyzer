@@ -1,4 +1,4 @@
-# Python validation and code quality
+# Code quality and validation
 
 Install tools and run the canonical checks in [Windows setup](SETUP.md).
 All installed checks work offline. Configuration lives in `pyproject.toml` and
@@ -11,6 +11,14 @@ unknown keys, empty titles, coercion from strings/floats/booleans and dimensions
 outside 1–16,777,215 (Qt's widget limit). Defaults are validated. Recording/source
 models use owned frozen dataclasses; their [contracts](CANONICAL_MODELS.md) and
 [analysis contracts](ANALYSIS_MODELS.md) are separate from window settings.
+
+Preference setters validate inputs at runtime without coercion: language and
+appearance accept only their declared choices, update consent requires a boolean,
+timestamps must be finite numbers, tags require strings and directory tracking
+requires `Path` objects. Export frame rates retain supported-rate validation.
+Invalid inputs raise `ValueError` before changing storage. Keys are statically
+restricted to supported names. SQLite stores text values; invalid stored values
+and unavailable storage retain safe defaults.
 
 - Ruff uses Python 3.14, 100 columns, `F`/`COM812`, LF and magic trailing commas.
   Format checks report drift without rewriting files; COM812 is intentional.
@@ -46,7 +54,7 @@ Type-contract tests require analyzed files and expected diagnostic rules, not ju
 an exit code. `tests/importers/benchmark.py` measures timing/Python allocations
 without performance assertions. Source-data tests retain original bytes and
 scientific unknowns; numerical synthetic success does not qualify real sensors.
-The [dependency policy](DEPENDABOT.md#node-overrides-and-security-boundary) records
+The [dependency policy](DEPENDENCIES.md#node-overrides-and-security-boundary) records
 override rationale and security limits. These Node tests are development tooling, not rendering.
 
 Run a subsystem directly, for example `uv run --locked pytest tests/importers`
@@ -77,7 +85,8 @@ ownership use one recording rather than repeating the complete fixture matrix.
 Export-dialog, palette and language interaction tests use 8 × 8 renderer test
 frames while keeping actual preview workers, compositing and UI updates. Dedicated
 rendering/preview tests and the two native 4K scaling checks retain real frames.
-See [focused runtime evidence](../validation/TEST_RUNTIME.md).
+This separation keeps interaction tests small without reducing production-frame
+coverage. Timing comparisons and individual test-run logs belong in `.tmp/`.
 
 Real encoder integration uses eight representative cases covering output codec ×
 aspect × CPU/GPU preference, with every layout represented and German examples
@@ -97,6 +106,37 @@ constraints. Compact layouts retain targeted navigation/scrolling regressions,
 not a second full workflow matrix. Video frame resolution and portrait/landscape
 export tests remain independent of desktop size. A layout check on a smaller CI
 desktop does not establish visual acceptance on a physical 4K display.
+
+## Documentation checks
+
+Install the locked Node tools through [Windows setup](SETUP.md), then run:
+
+```powershell
+npm run test:docs
+```
+
+The suite works offline and combines `lint:docs`, `spellcheck` and
+`test:docs:links`; each can also run separately. It does not modify files or fetch
+external targets. [CI selection](CI.md) defines when the documentation job runs.
+
+### Scope and limitations
+
+| Check        | Configuration / behavior                                                                                                                                           |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Markdownlint | `.markdownlint-cli2.jsonc`: root Markdown, `docs/`, `.github/` and `.agents/skills/`; default rules except MD013/MD036, aligned MD060 tables; respects Git ignores |
+| CSpell       | `.cspell.json`: English, case-insensitive language settings and bundled Python dictionary; shared with VS Code; checks configured code/docs/configuration patterns |
+| Local links  | `tests/docs/documentation.test.mjs`: markdown-it parses links/images in root/docs/GitHub/skill Markdown; targets must exist inside the repository                  |
+
+CSpell excludes environments, dependencies, temporary/build outputs, lock files
+and `.forces`. Correct spelling errors; add only legitimate project/tool names.
+Link tests resolve relative paths from each document and leading slashes from the
+repository root. They skip links inside code, external URLs, query strings and
+heading fragments; they verify neither external availability nor anchor spelling.
+Fixture links check existence without parsing or modifying recordings.
+
+Recommended VS Code extensions consume the same Markdown/CSpell configuration.
+CLI success does not establish interactive editor feedback or Mermaid rendering.
+Changed Mermaid definitions require a separate syntax check; report visual limits.
 
 ## Primary references
 

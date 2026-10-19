@@ -115,7 +115,10 @@ vectors retained as gaps. `rendering.model` binds source identity, smoothing,
 inclusive ranges and fixed per-panel bounds to an independent video frame clock.
 `analysis.airtime` prepares immutable, causal presentation labels from smoothed
 vertical source g and recent load changes. Compact chart renderers consume these
-labels independently of video fps and seek order. Its
+labels independently of video fps and seek order.
+`ExplorerData` also exposes source-index label ranges for the workspace;
+Qt maps their time bounds to the clipped, zoom-dependent context strip and
+uses the current label in the vertical value card. The
 [provisional thresholds and limits](../implementation/AIRTIME.md) do not establish
 scientific qualification or a general ride-event analysis service.
 `rendering.layouts` provides one module per built-in profile and an explicit
