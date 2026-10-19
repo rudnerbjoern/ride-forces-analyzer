@@ -35,7 +35,7 @@ from ride_forces_analyzer.storage.preferences import Preferences
         ("remember_update_check", float("inf")),
         ("remember_update_check", -float("inf")),
         ("skip_update", 123),
-        ("skip_update", b"v0.2.0"),
+        ("skip_update", b"v0.3.0"),
         ("skip_update", None),
         ("remember_recording", "ride.forces"),
         ("remember_recording", None),

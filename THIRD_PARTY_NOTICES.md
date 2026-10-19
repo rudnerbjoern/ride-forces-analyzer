@@ -131,7 +131,7 @@ separate reuse statement; it is not a Windows Segoe UI redistribution permission
 
 The inventory covers installed METADATA/RECORD/license texts, Node lock declarations,
 tracked assets, the pinned encoder archive and actual encoder license/build output.
-Version 0.2.0 retains the locked runtime versions. The
+Version 0.3.0 retains the locked runtime versions. The
 [Windows package guide](docs/development/RELEASE.md#windows-packages) defines
 package checks and their verification limits.
 The five supplied recordings and 14 documentation PNGs
