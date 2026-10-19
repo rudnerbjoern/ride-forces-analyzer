@@ -24,7 +24,7 @@ LABEL_FONT_SIZE = 30  # Channel title and unavailable-value size in pixels.
 NUMBER_FONT_SIZE = 76  # Main force readout size in pixels.
 SMALL_FONT_SIZE = 24  # Hints and footer size in pixels.
 TICK_FONT_SIZE = 19  # Scale and time-axis label size in pixels.
-CHANNEL_COLORS = ("#00ceff", "#35f58a", "#ffa044")  # Vertical, lateral and longitudinal colors.
+CHANNEL_COLORS = ("#00ceff", "#ebd36a", "#ffa044")  # Vertical, lateral and longitudinal colors.
 PANEL_CORNER_RADIUS = 36  # Rounded panel corner radius in pixels.
 PANEL_FILL = (7, 15, 25, 210)  # Translucent panel RGBA fill.
 PANEL_OUTLINE = (200, 225, 245, 135)  # Panel border RGBA color.
@@ -33,6 +33,8 @@ TEXT_OUTLINE_WIDTH = 1  # Glyph outline thickness in pixels.
 TEXT_OUTLINE_COLOR = (0, 0, 0, 230)  # Glyph outline RGBA color.
 
 COLORS = CHANNEL_COLORS
+ACCELERATION_COLOR = "#35f58a"  # Positive longitudinal data.
+BRAKING_COLOR = "#ff4545"  # Negative longitudinal data.
 
 
 def lateral_x(channel: ExportChannel, value: float, left: float, right: float) -> float:

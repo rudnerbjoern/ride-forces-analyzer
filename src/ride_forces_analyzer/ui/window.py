@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
     QGraphicsSimpleTextItem,
+    QGraphicsRectItem,
     QLabel,
     QMainWindow,
     QPlainTextEdit,
@@ -221,6 +222,8 @@ class ExplorerWindow(QMainWindow):
         self.chart.addAxis(self.axis_x, Qt.AlignmentFlag.AlignBottom)
         self.chart.addAxis(self.axis_y, Qt.AlignmentFlag.AlignLeft)
         self.series: list[QLineSeries] = []
+        self.vertical_context_bars: list[QGraphicsRectItem] = []
+        self.vertical_context_ranges: tuple[tuple[str, int, int], ...] = ()
         axes = QHBoxLayout()
         self.visibility: list[QCheckBox] = []
         for name, color in (("x", "#2563eb"), ("y", "#ea580c"), ("z", "#059669")):
@@ -238,6 +241,13 @@ class ExplorerWindow(QMainWindow):
             axes.addWidget(toggle)
         axes.addStretch()
         plot_layout.insertLayout(1, axes)
+        self.visibility[0].toggled.connect(self._set_vertical_context_visible)
+        self.airtime_legend = QLabel()
+        self.airtime_legend.setWordWrap(True)
+        self.airtime_legend.hide()
+        plot_layout.insertWidget(2, self.airtime_legend)
+        self.chart.plotAreaChanged.connect(self._redraw_vertical_context)
+        self.axis_x.rangeChanged.connect(self._redraw_vertical_context)
         self.source_marker_lines: dict[str, QLineSeries] = {}
         self.source_marker_labels: dict[str, QGraphicsSimpleTextItem] = {}
         for name, color in (
@@ -782,6 +792,7 @@ class ExplorerWindow(QMainWindow):
         self.axis_x.rangeChanged.connect(self._redraw_time_labels)
         self.axis_x.rangeChanged.connect(self._bound_time_view)
         self.axis_x.rangeChanged.connect(self._redraw_source_markers)
+        self.axis_x.rangeChanged.connect(self._redraw_vertical_context)
         self.axis_x.setRange(*outcome.default_time_range)
         bind(
             self.axis_y,
@@ -862,6 +873,62 @@ class ExplorerWindow(QMainWindow):
             self.value_labels[i].setStyleSheet(f"color: {color};")
         self.chart.setTitle("")
         self.signs.setVisible(active)
+        self._draw_vertical_context()
+
+    def _draw_vertical_context(self) -> None:
+        for bar in self.vertical_context_bars:
+            self.chart.scene().removeItem(bar)
+        self.vertical_context_bars.clear()
+        self.vertical_context_ranges = ()
+        self.airtime_legend.hide()
+        if self.data is None or not self.data.reference_enabled:
+            return
+        colors = self.theme.vertical_context_colors
+        self.vertical_context_ranges = self.data.vertical_context_segments
+        for label, _, _ in self.vertical_context_ranges:
+            bar = QGraphicsRectItem(self.chart)
+            bar.setPen(QPen(Qt.PenStyle.NoPen))
+            bar.setBrush(QColor(colors.get(label, self.theme.muted)))
+            bar.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
+            bar.setZValue(10)
+            self.vertical_context_bars.append(bar)
+        self.airtime_legend.setText(
+            " &nbsp; ".join(
+                f'<span style="color:{color}">● {tr(label)}</span>'
+                for label, color in colors.items()
+            ),
+        )
+        bind(
+            self.airtime_legend,
+            tr("Airtime context uses provisional thresholds."),
+            "toolTip",
+        )
+        self._set_vertical_context_visible(self.visibility[0].isChecked())
+
+    @Slot(bool)
+    def _set_vertical_context_visible(self, visible: bool) -> None:
+        self.airtime_legend.setVisible(visible and bool(self.vertical_context_bars))
+        self._redraw_vertical_context()
+
+    def _redraw_vertical_context(self) -> None:
+        if self.data is None:
+            return
+        plot = self.chart.plotArea()
+        low, high = self.axis_x.min(), self.axis_x.max()
+        enabled = self.data.reference_enabled and self.visibility[0].isChecked()
+        for bar, (_, first, last) in zip(
+            self.vertical_context_bars,
+            self.vertical_context_ranges,
+            strict=True,
+        ):
+            start = max(low, self.data.time_at(first))
+            end = min(high, self.data.time_at(last))
+            visible = enabled and high > low and end > start and plot.height() > 10
+            bar.setVisible(visible)
+            if visible:
+                left = plot.left() + (start - low) / (high - low) * plot.width()
+                right = plot.left() + (end - low) / (high - low) * plot.width()
+                bar.setRect(left, plot.bottom() - 10, right - left, 10)
 
     @Slot(int)
     def set_smoothing(self, position: int) -> None:
@@ -924,6 +991,14 @@ class ExplorerWindow(QMainWindow):
             bind(value, number, "text")
             bind(hint, meaning, "text")
             bind(value, meaning, "toolTip")
+        context = self.data.airtime_context
+        color = (
+            self.theme.vertical_context_colors.get(context.at(index), self.theme.muted)
+            if self.data.reference_enabled and context is not None
+            else self.theme.muted
+        )
+        self.value_hints[0].setStyleSheet(f"color: {color};")
+        bind(self.value_hints[0], self.value_hints[0].text(), "toolTip")
 
     @Slot()
     def _refresh_diagnostics(self) -> None:

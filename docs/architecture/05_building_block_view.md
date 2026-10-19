@@ -113,6 +113,11 @@ overlay composed over Onride footage.
 `analysis.orientation` implements source-gravity-to-vertical tilt with missing/zero
 vectors retained as gaps. `rendering.model` binds source identity, smoothing,
 inclusive ranges and fixed per-panel bounds to an independent video frame clock.
+`analysis.airtime` prepares immutable, causal presentation labels from smoothed
+vertical source g and recent load changes. Compact chart renderers consume these
+labels independently of video fps and seek order. Its
+[provisional thresholds and limits](../implementation/AIRTIME.md) do not establish
+scientific qualification or a general ride-event analysis service.
 `rendering.layouts` provides one module per built-in profile and an explicit
 registry of immutable layout metadata and factories. Each renderer implements
 the same native-RGBA-region/source-position protocol. Shared drawing primitives

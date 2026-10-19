@@ -19,6 +19,60 @@ from tests.ui.helpers import resize_workspace, wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
 
 
+def test_vertical_context_bar_preserves_curve_and_tracks_viewport(
+    explorer_window: ExplorerWindow,
+) -> None:
+    window = explorer_window
+    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
+    wait_until(window.open_action.isEnabled)
+    data = window.data
+    assert data is not None and data.reference_enabled
+    original = data.plotted_channels[0]
+    for appearance in (0, 1):
+        window.set_appearance(appearance)
+        QApplication.processEvents()
+        segments = data.vertical_context_segments
+        assert len(window.vertical_context_bars) == len(segments)
+        assert window.series[0].pen().style() == Qt.PenStyle.SolidLine
+        assert window.series[0].pen().color().name() == window.theme.forces[0]
+        assert tuple(p.y() for p in window.series[0].points()) == original
+        for bar, (label, _, _) in zip(window.vertical_context_bars, segments, strict=True):
+            assert bar.brush().color().name() == window.theme.vertical_context_colors[label]
+        window.axis_x.setRange(data.time_at(4200), data.time_at(4300))
+        window.zoom_wheel(0.5, 2)
+        QApplication.processEvents()
+        plot = window.chart.plotArea()
+        visible = [bar for bar in window.vertical_context_bars if bar.isVisible()]
+        assert visible
+        low, high = window.axis_x.min(), window.axis_x.max()
+        for bar, (_, first, last) in zip(window.vertical_context_bars, segments, strict=True):
+            start = max(low, data.time_at(first))
+            end = min(high, data.time_at(last))
+            assert bar.isVisible() == (end > start)
+            if bar.isVisible():
+                assert bar.rect().left() == pytest.approx(
+                    plot.left() + (start - low) / (high - low) * plot.width(),
+                )
+                assert bar.rect().right() == pytest.approx(
+                    plot.left() + (end - low) / (high - low) * plot.width(),
+                )
+        for bar in visible:
+            assert bar.rect().height() == 10
+            assert bar.rect().bottom() == pytest.approx(plot.bottom())
+            assert bar.rect().left() >= plot.left() - 1e-6
+            assert bar.rect().right() <= plot.right() + 1e-6
+        window.visibility[0].setChecked(False)
+        assert all(not bar.isVisible() for bar in window.vertical_context_bars)
+        window.set_smoothing(5)
+        assert all(not bar.isVisible() for bar in window.vertical_context_bars)
+        window.visibility[0].setChecked(True)
+        assert any(bar.isVisible() for bar in window.vertical_context_bars)
+    window.reference_toggle.setChecked(False)
+    assert not window.vertical_context_bars
+    assert window.series[0].pen().style() == Qt.PenStyle.SolidLine
+    assert tuple(p.y() for p in window.series[0].points()) == data.channels[0]
+
+
 @pytest.mark.parametrize(
     "filename",
     [name for name in REAL_FIXTURES if name.startswith(("Manta-", "IronGwazi-"))],
@@ -678,6 +732,12 @@ def test_focus_workspace_layout_and_current_value_cards(
         assert [label.text() for label in window.value_labels] == [
             card[1] for card in window.data.sample_cards(index)
         ]
+        context = window.data.airtime_context
+        assert context is not None
+        assert window.value_hints[0].text() == window.data.sample_cards(index)[0][2]
+        assert window.theme.vertical_context_colors[context.at(index)] in (
+            window.value_hints[0].styleSheet()
+        )
     window.reference_toggle.setChecked(False)
     assert [label.text() for label in window.value_names] == ["x", "y", "z"]
     assert all("unknown" in label.text() for label in window.value_hints)

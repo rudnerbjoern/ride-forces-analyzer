@@ -19,7 +19,7 @@ import os
 from pathlib import Path
 from ride_forces_analyzer.explorer import format_sample_time
 from ride_forces_analyzer.i18n import tr
-from .common import lateral_x
+from .common import ACCELERATION_COLOR, BRAKING_COLOR
 from .contracts import LayoutPlugin
 
 FONT_FILE = "segoeui.ttf"  # Regular Windows font file.
@@ -48,7 +48,6 @@ PLOT_OUTLINE_COLOR = "#85858a"  # Plot border color.
 RULE_WIDTH = 2  # Plot border, grid and cursor thickness.
 GRID_COLOR = "#3b393e"  # Force grid color.
 SCALE_COLOR = "#dddddd"  # Scale and clock text color.
-SCALE_TOP_GAP = 8  # Gap above lateral-axis numbers.
 SCALE_LEFT_GAP = 12  # Gap before vertical-axis numbers and time label.
 CURSOR_COLOR = "#dddddd"  # Current-time cursor color.
 VALUE_POSITION = (934, 17)  # Current-value anchor relative to panel top.
@@ -62,7 +61,6 @@ COLUMN_WIDTH, HEIGHT = NATIVE_SIZE
 COLUMN_X = WIDTH - COLUMN_WIDTH
 
 
-LATERAL_SCALE_ANCHOR = "ms"  # Centered baseline anchor above lateral scale ticks.
 LEFT_TEXT_ANCHOR = "rm"  # Right-middle anchor for labels before plots.
 VALUE_TEXT_ANCHOR = "ra"  # Right-aligned current value anchor.
 CLOCK_TEXT_ANCHOR = "ma"  # Centered clock label anchor.
@@ -99,24 +97,16 @@ class ColumnRenderer:
             )
             draw.text(
                 (HINT_POSITION[0], y + HINT_POSITION[1]),
-                tr(channel.hint, language=timeline.settings.language),
+                tr(
+                    "− Left / + Right" if row == 1 else channel.hint,
+                    language=timeline.settings.language,
+                ),
                 font=self.font,
                 fill=HINT_COLOR,
             )
             box = self.plot_box(row)
             draw.rectangle(box, fill=PLOT_COLOR, outline=PLOT_OUTLINE_COLOR, width=RULE_WIDTH)
             for tick in channel.ticks:
-                if row == 1:
-                    px = lateral_x(channel, tick, box[0], box[2])
-                    draw.line((px, box[1], px, box[3]), fill=GRID_COLOR, width=RULE_WIDTH)
-                    draw.text(
-                        (px, box[1] - SCALE_TOP_GAP),
-                        f"{tick:g}{channel.unit}",
-                        font=self.font,
-                        fill=SCALE_COLOR,
-                        anchor=LATERAL_SCALE_ANCHOR,
-                    )
-                    continue
                 py = self.value_y(channel, tick, row)
                 draw.line((box[0], py, box[2], py), fill=GRID_COLOR, width=RULE_WIDTH)
                 draw.text(
@@ -126,19 +116,8 @@ class ColumnRenderer:
                     fill=SCALE_COLOR,
                     anchor=LEFT_TEXT_ANCHOR,
                 )
-            if row == 1:
-                cursor = (box[1] + box[3]) / 2
-                draw.line((box[0], cursor, box[2], cursor), fill=CURSOR_COLOR, width=RULE_WIDTH)
-                draw.text(
-                    (box[0] - SCALE_LEFT_GAP, cursor),
-                    tr("Time ↑", language=timeline.settings.language),
-                    font=self.font,
-                    fill=SCALE_COLOR,
-                    anchor=LEFT_TEXT_ANCHOR,
-                )
-            else:
-                cursor = (box[0] + box[2]) / 2
-                draw.line((cursor, box[1], cursor, box[3]), fill=CURSOR_COLOR, width=RULE_WIDTH)
+            cursor = (box[0] + box[2]) / 2
+            draw.line((cursor, box[1], cursor, box[3]), fill=CURSOR_COLOR, width=RULE_WIDTH)
 
     @staticmethod
     def plot_box(row: int) -> tuple[int, int, int, int]:
@@ -162,9 +141,7 @@ class ColumnRenderer:
         fraction: float,
         row: int,
     ) -> tuple[float, float]:
-        left, top, right, bottom = self.plot_box(row)
-        if row == 1:
-            return lateral_x(channel, value, left, right), bottom - fraction * (bottom - top)
+        left, _, right, _ = self.plot_box(row)
         return left + fraction * (right - left), self.value_y(channel, value, row)
 
     def render_position(self, position: float) -> Image.Image:
@@ -203,10 +180,40 @@ class ColumnRenderer:
                         draw.line(points, fill=CHANNEL_COLORS[row], width=TRACE_WIDTH)
                     points = []
                     continue
-                points.append(self.trace_point(channel, sample, (index - left) / (2 * half), row))
+                point = self.trace_point(channel, sample, (index - left) / (2 * half), row)
+                if row == 2:
+                    color = ACCELERATION_COLOR if sample >= 0 else BRAKING_COLOR
+                    if points:
+                        previous = channel.values[index - 1]
+                        assert previous is not None
+                        previous_color = ACCELERATION_COLOR if previous >= 0 else BRAKING_COLOR
+                        if previous_color != color:
+                            fraction = previous / (previous - sample)
+                            zero = (
+                                points[-1][0] + fraction * (point[0] - points[-1][0]),
+                                self.value_y(channel, 0, row),
+                            )
+                            draw.line((points[-1], zero), fill=previous_color, width=TRACE_WIDTH)
+                            draw.line((zero, point), fill=color, width=TRACE_WIDTH)
+                        else:
+                            draw.line((points[-1], point), fill=color, width=TRACE_WIDTH)
+                    else:
+                        px, py = point
+                        draw.ellipse(
+                            (
+                                px - SINGLE_POINT_RADIUS,
+                                py - SINGLE_POINT_RADIUS,
+                                px + SINGLE_POINT_RADIUS,
+                                py + SINGLE_POINT_RADIUS,
+                            ),
+                            fill=color,
+                        )
+                    points = [point]
+                    continue
+                points.append(point)
             if len(points) > 1:
                 draw.line(points, fill=CHANNEL_COLORS[row], width=TRACE_WIDTH)
-            elif points:
+            elif points and row != 2:
                 px, py = points[0]
                 draw.ellipse(
                     (

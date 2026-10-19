@@ -17,13 +17,23 @@ not exported. Detail views below enlarge each instrument region.
 These are actual production-renderer frames, not interface mockups.
 All layouts default to positive vertical forces below zero (seat pressure) and
 negative forces above zero (lifting), with unchanged signed readouts.
-Lateral histories advance upward in time and deflect left/right around a
+Compact lateral histories advance upward in time and deflect left/right around a
 centered zero axis. G-Orbit shows the current lateral force on an upper inner
 semicircle: negative left, positive right, with equal scale in both directions.
 Longitudinal acceleration is always above zero and braking below zero, including
 G-Orbit's right semicircle; numeric signs remain unchanged.
+Across all themes, lateral diagrams and bars are yellow. G-Orbit uses muted yellow
+for lateral peak markers and translucent peak fills. Longitudinal data is green
+for acceleration and red for braking.
+This applies to curves and their current-point markers, and to G-Orbit's current
+arc, peak fills and peak markers. Channel headings and numeric text retain their
+theme colors.
 Theme graphics contain no Hz/fps labels; source sample rate and overlay export
 frame rate are technical settings, not the frame rate of the underlying video.
+Flow Ribbon, Corner Instruments and Telemetry Capsule show source-time vertical
+context using the provisional [airtime heuristic](implementation/AIRTIME.md).
+It distinguishes Floater, Airtime, Strong Airtime and Ejector using load and
+recent onset, independently of axis inversion. Missing values show Unavailable.
 
 ## Flow Ribbon
 
@@ -76,8 +86,10 @@ numeric readouts continue to show the current forces.
 ## Four-panel column
 
 The right-hand column includes three force plots and a dedicated orientation
-plot. Its default vertical/lateral axes are inverted, unlike the compact charts;
-the underlying signed values are identical.
+plot. All four timelines advance left-to-right. Its default vertical/lateral
+force axes are positive-down, unlike the compact lateral charts;
+the underlying signed values are identical. The longitudinal trace is green for
+acceleration and red for braking, changing color at zero crossings.
 
 ![Four-panel column detail showing all force plots and the orientation curve](images/manta-column-detail.png)
 

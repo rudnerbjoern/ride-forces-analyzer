@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from ride_forces_analyzer.i18n import diagnostic_message, get_language, tr
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from importlib.util import find_spec
 from typing import TYPE_CHECKING
@@ -19,6 +19,7 @@ from ride_forces_analyzer.importers import ImportFailure, ImportSuccess, import_
 
 if TYPE_CHECKING:
     from ride_forces_analyzer.analysis.reference import AppReference
+    from ride_forces_analyzer.analysis.airtime import AirtimeContext
 
 
 def format_sample_time(offset: int, rate: float) -> str:
@@ -55,6 +56,15 @@ class ExplorerData:
     reference: "AppReference | None" = None
     reference_enabled: bool = False
     reference_error: str | None = None
+    airtime_context: "AirtimeContext | None" = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        context = None
+        if self.reference is not None:
+            from ride_forces_analyzer.analysis.airtime import AirtimeContext
+
+            context = AirtimeContext.prepare(self.reference.channels[0], self.sample_rate)
+        object.__setattr__(self, "airtime_context", context)
 
     @property
     def localized_notes(self) -> str:
@@ -86,6 +96,23 @@ class ExplorerData:
             if self.reference_enabled
             else ("x", "y", "z")
         )
+
+    @property
+    def vertical_context_segments(self) -> tuple[tuple[str, int, int], ...]:
+        """Inclusive drawing ranges sharing boundary points, only for calibrated g."""
+        if not self.reference_enabled or self.airtime_context is None:
+            return ()
+        labels = self.airtime_context.labels
+        if not labels:
+            return ()
+        segments: list[tuple[str, int, int]] = []
+        start = 0
+        for index in range(1, len(labels)):
+            if labels[index] != labels[start]:
+                segments.append((labels[start], start, index))
+                start = index
+        segments.append((labels[start], start, len(labels) - 1))
+        return tuple(segments)
 
     def with_reference(self, enabled: bool) -> "ExplorerData":
         active = enabled and self.reference is not None
@@ -193,6 +220,8 @@ class ExplorerData:
                     (tr("Braking"), tr("Acceleration")),
                 )
                 meaning = tr("Neutral") if value == 0 else meanings[axis][int(value > 0)]
+                if axis == 0 and self.airtime_context is not None:
+                    meaning = tr(self.airtime_context.at(index))
                 cards.append((name.partition(" (")[0], tr("{0:+.2f} g", value), meaning))
             else:
                 cards.append((name, tr("{0:.6g}", value), tr("Unit unknown")))

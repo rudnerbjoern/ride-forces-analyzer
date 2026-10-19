@@ -294,3 +294,26 @@ def test_current_value_card_direction_signs(
     cards = view.sample_cards(0)
     assert (cards[1][2], cards[2][2]) == meanings
     assert (cards[1][1], cards[2][1]) == (f"{lateral:+.2f} g", f"{longitudinal:+.2f} g")
+
+
+def test_vertical_card_uses_shared_stabilized_context(synthetic_recording: Recording) -> None:
+    from ride_forces_analyzer.domain import RecordingVectors
+    from ride_forces_analyzer.i18n import tr
+
+    recording = replace(
+        synthetic_recording,
+        motion=MotionSequence([Vector3(value, 0, 0) for value in [1.0] * 50 + [-0.8] * 50]),
+        vectors=RecordingVectors(
+            vertical_direction=Vector3(1, 0, 0),
+            lateral_direction=Vector3(0, 1, 0),
+            longitudinal_direction=Vector3(0, 0, 1),
+        ),
+    )
+    view = present_recording(ImportSuccess(recording)).with_reference(True).with_smoothing(1)
+    context = view.airtime_context
+    assert context is not None
+    for index in (99, 50, 49, 75):
+        assert view.sample_cards(index)[0][2] == tr(context.at(index))
+    assert view.with_reference(False).sample_cards(99)[0][2] == tr("Unit unknown")
+    smoothed = view.with_smoothing(11)
+    assert smoothed.airtime_context is not None and smoothed.airtime_context is not context

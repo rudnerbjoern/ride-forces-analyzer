@@ -21,6 +21,20 @@ See the [roadmap](../ROADMAP.md) and [analysis concepts](../architecture/08_conc
   Feature availability is independent of per-source scientific verification.
 - Calibrated lateral positive/negative means right/left; longitudinal means
   acceleration/braking. Raw values have no rider-direction claims.
+- A 10-pixel strip at the bottom inside the plot shows stabilized
+  [vertical airtime context](AIRTIME.md) colors: violet Heavy Gs, neutral Normal Gs, light blue Light Gs, cyan Floater,
+  yellow Airtime, orange Strong Airtime and red Ejector. A wrapping legend names
+  the categories and its tooltip identifies the provisional thresholds. Light
+  appearance uses darker shades of the same hues for contrast. The strip follows the time axis
+  when zooming/resizing and clips to the visible interval. Force curves keep their
+  normal channel colors and original points, without additional force filtering.
+  The vertical visibility control includes the context strip and its legend.
+  Raw x/y/z curves keep their existing single colors without airtime claims.
+- The vertical value card below the chart shows the current stabilized context
+  instead of the static Vertical force hint, using the matching context color
+  and localized text. It shares the strip's prepared analysis and refreshes on
+  sample, smoothing, calibration, language and appearance changes. Raw mode
+  retains Unit unknown without a context classification.
 - Preserve original bytes, unknown fields, absent sensors and all source arrays.
   Qt widgets delegate import/scientific calculations to their existing subsystems.
 
