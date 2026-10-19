@@ -9,6 +9,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:disable
 
 GERMAN: dict[str, str] = {
+    "Application": "Anwendung",
+    "Settings…": "Einstellungen …",
+    "Settings": "Einstellungen",
+    "Export": "Export",
+    "Default video frame rate": "Standard-Bildrate (fps)",
+    "Applies to new exports. Saved presets and batches keep their own frame rates.": "Gilt für neue Exporte. Gespeicherte Vorgaben und Stapel behalten ihre eigene Bildrate.",
     "Check for updates at startup (once per day)": "Beim Start nach Updates suchen (einmal täglich)",
     "Optional GitHub connection. No recordings, GPS data or file paths are sent.": "Optionale GitHub-Verbindung. Aufnahmen, GPS-Daten und Dateipfade werden nicht übertragen.",
     "Check for updates…": "Nach Updates suchen …",

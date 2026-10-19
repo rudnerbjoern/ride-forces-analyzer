@@ -40,8 +40,8 @@ def test_system_appearance_follows_changes_until_manually_selected(
         return effective_theme
 
     monkeypatch.setattr(ui_window, "system_theme", current_theme)
-    window.appearance.setCurrentIndex(0)
-    window.appearance.setCurrentIndex(2)
+    window.set_appearance(0)
+    window.set_appearance(2)
     assert window.theme.name == "light"
     assert window.preferences.appearance() == "system"
     effective_theme = "dark"
@@ -49,7 +49,7 @@ def test_system_appearance_follows_changes_until_manually_selected(
     assert isinstance(application, QApplication)
     application.styleHints().colorSchemeChanged.emit(Qt.ColorScheme.Dark)
     assert window.theme.name == "dark"
-    window.appearance.setCurrentIndex(1)
+    window.set_appearance(1)
     application.styleHints().colorSchemeChanged.emit(Qt.ColorScheme.Dark)
     assert window.theme.name == "light"
     assert window.preferences.appearance() == "light"
@@ -60,8 +60,8 @@ def test_toolbar_controls_share_one_height(explorer_window: ExplorerWindow) -> N
     toolbar = window.findChild(QToolBar)
     assert toolbar is not None
     for language, appearance in ((0, 0), (1, 1), (1, 0), (0, 1)):
-        window.language.setCurrentIndex(language)
-        window.appearance.setCurrentIndex(appearance)
+        window.set_ui_language(language)
+        window.set_appearance(appearance)
         QApplication.processEvents()
         controls = [toolbar.widgetForAction(action) for action in toolbar.actions()]
         heights = {
@@ -74,12 +74,12 @@ def test_toolbar_controls_share_one_height(explorer_window: ExplorerWindow) -> N
 
 def test_new_window_restores_selected_language_and_theme(explorer_window: ExplorerWindow) -> None:
     window = explorer_window
-    window.language.setCurrentIndex(1)
-    window.appearance.setCurrentIndex(1)
+    window.set_ui_language(1)
+    window.set_appearance(1)
     restored = ExplorerWindow(AppSettings())
     try:
-        assert restored.language.currentIndex() == 1
-        assert restored.appearance.currentIndex() == 1
+        assert restored.ui_language == "de"
+        assert restored.appearance_preference == "light"
         assert restored.theme.name == "light"
         assert restored.about_action.text() == "Über …"
     finally:
@@ -90,7 +90,7 @@ def test_new_window_restores_selected_language_and_theme(explorer_window: Explor
 def test_native_file_dialog_inherits_valid_point_size(explorer_window: ExplorerWindow) -> None:
     window = explorer_window
     for index in (0, 1):
-        window.appearance.setCurrentIndex(index)
+        window.set_appearance(index)
         QApplication.processEvents()
         dialog = QFileDialog(window)
         try:
@@ -136,7 +136,7 @@ def test_theme_switch_preserves_recording_and_chart_state(
     points = tuple(tuple(line.points()) for line in window.series)
     viewport = (window.axis_x.min(), window.axis_x.max(), window.axis_y.min(), window.axis_y.max())
     for index, name in ((1, "light"), (0, "dark")):
-        window.appearance.setCurrentIndex(index)
+        window.set_appearance(index)
         QApplication.processEvents()
         theme = THEMES["light" if name == "light" else "dark"]
         assert window.data is data
@@ -183,7 +183,7 @@ def test_dialogs_and_gps_follow_light_and_dark(explorer_window: ExplorerWindow) 
         wait_until(lambda: dialog.preview_result is not None)
         result = dialog.preview_result
         for index in (1, 0):
-            window.appearance.setCurrentIndex(index)
+            window.set_appearance(index)
             QApplication.processEvents()
             expected = QColor("#ffffff" if index else "#182330")
             assert view.palette().base().color() == expected

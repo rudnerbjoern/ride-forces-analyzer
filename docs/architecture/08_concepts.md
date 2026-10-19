@@ -93,6 +93,8 @@ language independently of the UI. See [localization](../development/LOCALIZATION
 Production RGBA frame generation is separate from FFmpeg encoding.
 Shared profile/aspect geometry drives previews and video padding. Previews use the
 exact cursor; encodes use an independent deterministic video clock.
+The 59.94 fps option retains the exact `60000/1001` rate in settings and storage;
+rational arithmetic determines frame counts independently of sensor timing.
 Transparent ProRes and opaque H.264 are independent outputs, published exclusively
 after encoding. Manual Onride alignment remains external.
 
@@ -100,7 +102,9 @@ SQLite stores versioned export presets and immutable batch snapshots, not origin
 recordings or media. Sequential jobs reimport/check source hashes; per-job failures
 continue, cancellation retains completed files and discards incomplete work.
 An independent local `preferences.sqlite3` stores separate folders for the last
-successful file-dialog import and video export. Missing folders or unavailable
+successful file-dialog import and video export.
+It also stores the explicitly saved default export frame rate (50 fps fallback);
+per-export edits and preset/batch frame rates remain independent. Missing folders or unavailable
 storage fall back to native dialog defaults without blocking imports or exports.
 The same preferences store retains the last selected UI language and appearance;
 invalid or unavailable values fall back to the preferred OS display language

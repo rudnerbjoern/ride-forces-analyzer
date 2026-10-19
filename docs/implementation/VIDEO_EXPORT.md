@@ -24,6 +24,12 @@ of the exported template over Onride footage.
 
 ## Contracts
 
+- Settings → Export stores a default video frame rate in `preferences.sqlite3`.
+  New export assistants use this rate; without a valid preference they use 50 fps.
+  Save changes the persistent default; Cancel leaves it unchanged. Temporary
+  assistant changes never update the default. Loaded presets and saved batches
+  keep their own rates, including the exact `60000/1001` ratio.
+
 - The save dialog suggests the original `.forces` filename stem with `.mov` or
   `.mp4` for the selected output. Successfully completed exports remember their
   destination folder across restarts in `preferences.sqlite3`, independently of
@@ -98,7 +104,10 @@ of the exported template over Onride footage.
   Capsule (768,108,2304,300); G-Orbit (192,1260,800,800), in x/y/width/height pixels.
   Portrait G-Orbit is (240,2412,1188,1188), retaining circular proportions.
   Rounded corners retain transparency. Opaque output composites panels over black.
-- Configurable 24/25/30/50/60 video fps, default 50. Source sample time remains
+- Configurable 24/25/30/50/59.94/60 video fps, default 50. The 59.94 option uses
+  the exact `60000/1001` ratio for timing, frame counts and FFmpeg, retained as
+  that ratio in saved presets/batches. Select a matching 59.94 editing timeline
+  for GoPro footage recorded at that rate. Source sample time remains
   index/rate; fractional output positions interpolate adjacent values. Inclusive
   source ranges include the final sample interval; duration rounds up to a frame.
 - Export calibrated channels at the current centered-mean setting. Force bounds

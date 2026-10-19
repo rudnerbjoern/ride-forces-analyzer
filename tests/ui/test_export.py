@@ -272,7 +272,7 @@ def test_stale_preview_is_discarded_after_fast_profile_changes(
 
     original = ui_export.build_previews
     started, release = Event(), Event()
-    calls: list[tuple[str, int]] = []
+    calls: list[tuple[str, int | str]] = []
 
     def delayed(
         data: ExplorerData,
@@ -330,7 +330,7 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     window.export_button.click()
     dialog = window.export_window
     assert isinstance(dialog, ExportDialog)
-    names = ["Orbit30", "Ribbon50"]
+    names = ["Orbit5994", "Ribbon50"]
 
     def name_dialog(*args: object, **kwargs: object) -> tuple[str, bool]:
         return names.pop(0), True
@@ -341,7 +341,7 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     monkeypatch.setattr(QInputDialog, "getText", name_dialog)
     monkeypatch.setattr(QInputDialog, "getItem", batch_dialog)
     dialog.layout_profile.setCurrentIndex(3)
-    dialog.fps.setCurrentText("30")
+    dialog.fps.setCurrentText("59.94")
     dialog.smoothing.setCurrentIndex(1)
     dialog.seconds.setValue(12.5)
     dialog.interval.setCurrentIndex(2)
@@ -355,6 +355,7 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     saved = dialog.store.batch("Weekend")
     assert len(saved.jobs) == 2
     assert saved.jobs[0].preset.settings.layout == "orbit"
+    assert saved.jobs[0].preset.settings.fps == "60000/1001"
     assert saved.jobs[0].preset.smoothing_window == 3
     assert saved.jobs[1].preset.settings.layout == "ribbon"
     dialog.fps.setCurrentText("25")
@@ -365,11 +366,11 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     reopened = window.export_window
     assert isinstance(reopened, ExportDialog)
     assert reopened.preset_selector.count() == 3
-    reopened.preset_selector.setCurrentText("Orbit30")
+    reopened.preset_selector.setCurrentText("Orbit5994")
     reopened.load_preset.click()
     preview_ready(reopened)
     assert reopened.layout_profile.currentIndex() == 3
-    assert reopened.fps.currentText() == "30" and reopened.seconds.value() == 12.5
+    assert reopened.fps.currentText() == "59.94" and reopened.seconds.value() == 12.5
     assert reopened.smoothing.currentIndex() == 1 and reopened.interval.currentIndex() == 2
     assert "3 samples" in reopened.preview_caption.text()
     assert window.data is not None and window.data.reference is not None

@@ -177,7 +177,7 @@ def test_native_encoder_produces_4k_video_with_verified_alpha(
     if not ffmpeg.is_file():
         pytest.skip("Native FFmpeg integration requires installed export tools")
     settings = ExportSettings(
-        fps=25,
+        fps="60000/1001" if not prefer_gpu and aspect == "landscape" else 25,
         output="transparent" if mode == "transparent" else "opaque",
         prefer_gpu=prefer_gpu,
         layout=layout,
@@ -194,7 +194,7 @@ def test_native_encoder_produces_4k_video_with_verified_alpha(
         export_video(timeline, output, ffmpeg=ffmpeg, progress=lambda a, b: progress.append((a, b)))
     # One encoder process, plus the optional GPU capability probe.
     assert processes.call_count == 1 + int(prefer_gpu)
-    assert progress[-1] == (2, 2)
+    assert progress[-1] == (timeline.frame_count, timeline.frame_count)
     probe = subprocess.run(
         [
             str(ffmpeg.with_name("ffprobe.exe")),
@@ -211,8 +211,8 @@ def test_native_encoder_produces_4k_video_with_verified_alpha(
     )
     stream = json.loads(probe.stdout)["streams"][0]
     assert (stream["width"], stream["height"]) == settings.dimensions
-    assert stream["r_frame_rate"] == "25/1"
-    assert int(stream["nb_frames"]) == 2
+    assert stream["r_frame_rate"] == ("60000/1001" if settings.fps == "60000/1001" else "25/1")
+    assert int(stream["nb_frames"]) == timeline.frame_count
     assert stream["codec_name"] == ("prores" if mode == "transparent" else "h264")
     result = subprocess.run(
         [
@@ -545,3 +545,19 @@ def test_orbit_preserves_negative_forces_and_absent_orientation(manta: ExplorerD
     assert all(
         any(color == (*bytes.fromhex(rgb[1:]), 255) for _, color in colors) for rgb in COLORS
     )
+
+
+def test_fractional_frame_rate_keeps_exact_duration_and_source_positions(
+    manta: ExplorerData,
+) -> None:
+    settings = ExportSettings(fps="60000/1001")
+    timeline = prepare_export(manta, settings, 100, 149)
+    assert settings.fps_label == "59.94"
+    assert timeline.frame_count == 60
+    assert timeline.sample_position(1) == pytest.approx(100 + 50 * 1001 / 60000)
+    # Isolate clock arithmetic over 1001 seconds without rendering or inventing sensor data.
+    clock = replace(timeline, first=0, last=50 * 1001 - 1)
+    assert clock.frame_count == 60000
+    assert clock.sample_position(30000) == 25025
+    command = encoder_command(Path("ffmpeg.exe"), timeline, Path("out.mov"), use_gpu=False)
+    assert command[command.index("-framerate") + 1] == "60000/1001"

@@ -27,7 +27,7 @@ def estimate_size_bytes(
     """Account for the final sample interval and rounding to an encoded frame."""
     if sample_count < 1 or sample_rate <= 0:
         raise ValueError("A positive sample count and sample rate are required")
-    frames = ceil(Fraction(sample_count) * settings.fps / Fraction(str(sample_rate)))
+    frames = ceil(Fraction(sample_count) * settings.frame_rate / Fraction(str(sample_rate)))
     width, height = settings.dimensions
     _, _, overlay_width, overlay_height = export_region(settings)
     base, overlay = (
