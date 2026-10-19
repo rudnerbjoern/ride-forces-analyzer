@@ -4,10 +4,13 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
+# cspell:words cellspacing
+
 from ride_forces_analyzer.i18n import diagnostic_message, get_language, tr
 
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
+from html import escape
 from importlib.util import find_spec
 from typing import TYPE_CHECKING
 from math import ceil, floor, isclose, isfinite
@@ -16,6 +19,19 @@ from pathlib import Path
 from ride_forces_analyzer.force_extrema import SelectionExtrema, calculate_extrema
 from ride_forces_analyzer.domain import SourceNumber
 from ride_forces_analyzer.importers import ImportFailure, ImportSuccess, import_forces
+
+
+def _details_table(rows: tuple[tuple[str, str], ...]) -> str:
+    return (
+        '<table width="100%" cellspacing="0" cellpadding="2">'
+        + "".join(
+            f'<tr><td valign="top">{escape(label)}</td>'
+            f'<td align="right" valign="top">{escape(value)}</td></tr>'
+            for label, value in rows
+        )
+        + "</table>"
+    )
+
 
 if TYPE_CHECKING:
     from ride_forces_analyzer.analysis.reference import AppReference
@@ -235,7 +251,13 @@ class ExplorerData:
             reference=self.reference if self.reference_enabled else None,
         )
 
-    def extrema_text(self, first: int, last: int) -> tuple[str, tuple[str, ...]]:
+    def extrema_text(
+        self,
+        first: int,
+        last: int,
+        *,
+        rich: bool = False,
+    ) -> tuple[str, tuple[str, ...]]:
         result = self.selection_extrema(first, last)
         context = (
             tr("Calibrated · {0} samples smoothing · g", result.smoothing_window)
@@ -245,6 +267,7 @@ class ExplorerData:
         rows: list[str] = []
         for channel in result.channels:
             points: list[str] = []
+            table_rows: list[str] = []
             for label, point in ((tr("Min"), channel.minimum), (tr("Max"), channel.maximum)):
                 value = (
                     tr("{0:+.2f} g", point.value)
@@ -261,7 +284,25 @@ class ExplorerData:
                         point.recording_seconds,
                     ),
                 )
-            rows.append(f"{tr(channel.name)}\n" + "\n".join(points))
+                details = tr(
+                    "Sample {0} · Recording {1:.3f} s",
+                    point.index,
+                    point.recording_seconds,
+                )
+                table_rows.append(
+                    f'<tr><td>{escape(label)}</td><td align="right"><b>{escape(value)}</b></td>'
+                    f'<td align="right">{escape(self.replay_text(point.index))}</td></tr>'
+                    f'<tr><td colspan="3"><small>{escape(details)}</small></td></tr>',
+                )
+            rows.append(
+                '<table width="100%" cellspacing="0" cellpadding="2">'
+                f'<tr><th colspan="2" align="left">{escape(tr(channel.name))}</th>'
+                f'<td align="right">{escape(tr("Replay"))}</td></tr>'
+                + "".join(table_rows)
+                + "</table>"
+                if rich
+                else f"{tr(channel.name)}\n" + "\n".join(points),
+            )
         return tr(
             "{0} · {1:g} Hz · {2:,} selected",
             context,
@@ -325,6 +366,12 @@ class ExplorerData:
         self.select(index, index)
         return index / self.sample_rate
 
+    def sample_at_time(self, seconds: float) -> int:
+        """Return the nearest sample, clamped to the recording bounds."""
+        if not isfinite(seconds):
+            raise ValueError("Sample time must be finite")
+        return round(min(self.count - 1, max(0.0, seconds * self.sample_rate)))
+
     def select(self, first: int, last: int) -> SampleRange:
         if type(first) is not int or type(last) is not int or not 0 <= first <= last < self.count:
             raise ValueError("Selection requires bounded, ordered sample indices")
@@ -348,8 +395,40 @@ class ExplorerData:
         last = ceil(sample_coordinate(high))
         return self.select(first, last)
 
-    def sample_text(self, index: int) -> str:
+    @property
+    def technical_summary(self) -> str:
+        recording = self.source.recording
+        rate = recording.motion.sample_rate
+        rows = (
+            (tr("Device"), recording.metadata.device or tr("Unknown device")),
+            (tr("Samples"), tr("{0:,}", self.count)),
+            (tr("Sample rate"), tr("{0:g} Hz ({1})", rate.value, rate.origin.value)),
+            (tr("Time basis"), "INFERRED_UNIFORM"),
+            (
+                tr("Gravity"),
+                tr("available") if recording.motion.gravity is not None else tr("absent"),
+            ),
+            ("GPS", tr(recording.gps_status.value)),
+        )
+        return _details_table(rows)
+
+    def sample_text(self, index: int, *, rich: bool = False) -> str:
         self.select(index, index)
+        if rich:
+            rows = (
+                (tr("Sample"), tr("{0:,}", index)),
+                (tr("Replay"), tr("{0} @ {1:g} Hz", self.replay_text(index), self.sample_rate)),
+                (tr("Recording"), tr("{0:.3f} s", self.time_at(index))),
+                *(
+                    (name, tr("{0:.6g}", axis[index]))
+                    for name, axis in zip(
+                        self.channel_names,
+                        self.plotted_channels,
+                        strict=True,
+                    )
+                ),
+            )
+            return _details_table(rows)
         values = "   ".join(
             tr("{0} {1:.6g}", name, axis[index])
             for name, axis in zip(self.channel_names, self.plotted_channels, strict=True)

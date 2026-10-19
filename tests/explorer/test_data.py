@@ -20,6 +20,46 @@ from ride_forces_analyzer.explorer import format_sample_time, present_recording
 from ride_forces_analyzer.importers import ImportSuccess, import_forces_bytes
 
 
+def test_nearest_sample_uses_recording_time_and_clamps_bounds(
+    synthetic_recording: Recording,
+) -> None:
+    view = present_recording(ImportSuccess(synthetic_recording))
+    for seconds, expected in (
+        (-1.0, 0),
+        (0.0, 0),
+        (0.49 / view.sample_rate, 0),
+        (0.51 / view.sample_rate, 1),
+        (view.duration, view.count - 1),
+        (view.duration + 1, view.count - 1),
+    ):
+        assert view.sample_at_time(seconds) == expected
+    for invalid in (float("nan"), float("inf"), -float("inf")):
+        with pytest.raises(ValueError, match="finite"):
+            view.sample_at_time(invalid)
+
+
+def test_technical_tables_preserve_provenance_precision_and_literal_metadata(
+    synthetic_recording: Recording,
+) -> None:
+    recording = replace(
+        synthetic_recording,
+        metadata=replace(synthetic_recording.metadata, device="<b>Phone & Watch</b>"),
+    )
+    view = present_recording(ImportSuccess(recording))
+    summary = view.technical_summary
+    assert "&lt;b&gt;Phone &amp; Watch&lt;/b&gt;" in summary
+    assert "<b>Phone" not in summary
+    for value in ("INFERRED_UNIFORM", "default", "Gravity", "GPS", "absent"):
+        assert value in summary
+    rich = view.sample_text(1, rich=True)
+    assert rich.count("<tr>") == 6
+    for text in ("Sample", "Replay", "Recording", view.replay_text(1), f"{view.time_at(1):.3f} s"):
+        assert text in rich
+    for name, channel in zip(view.channel_names, view.plotted_channels, strict=True):
+        assert name in rich and f"{channel[1]:.6g}" in rich
+    assert "<table" not in view.sample_text(1)
+
+
 def test_raw_view_preserves_original_and_exact_source_axes(synthetic_recording: Recording) -> None:
     source = ImportSuccess(synthetic_recording)
     view = present_recording(source)

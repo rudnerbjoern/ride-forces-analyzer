@@ -49,10 +49,13 @@ This image grant is separate from the GPL-3.0-or-later license for program code.
 
 `workspace-dark.png` and `workspace-light.png` show the same Voltron Nevera
 source sample 4960, replay `01:07.39` at 50 Hz, with 11-sample smoothing and
-selection 4200–5100. The marker interval remains visible. Both captures use the
+selection 4200–5100, highlighted by a translucent band in the chart. The marker
+interval remains visible. Both captures use the
 English interface at 1600×1100 and show the context strip, current Ejector Airtime
-and selection extrema. The chart fits the available height without a vertical
-workspace scrollbar or capture-specific layout changes. Light appearance uses darker context colors for contrast.
+and visible-range extrema. The chart fits the available height without a vertical
+workspace scrollbar or capture-specific layout changes. The airtime legend sits
+below the diagram, near the context strip and above sample navigation. Light
+appearance uses darker context colors for contrast.
 
 `export-preview.png` shows the native export assistant at 1500×1000, using the
 same source sample and smoothing. Its five thumbnails and large Flow Ribbon

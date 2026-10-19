@@ -15,7 +15,7 @@ by or sponsored by them.
 Your recordings stay on your computer. Processing works offline and never
 changes the original files.
 
-![Voltron Nevera in the dark workspace, showing three force curves, a colored airtime context strip, current Ejector Airtime and selected-range extrema](docs/images/workspace-dark.png)
+![Voltron Nevera in the dark workspace, showing three force curves, a colored airtime context strip, current Ejector Airtime and visible-range extrema](docs/images/workspace-dark.png)
 
 *Explore the ride, follow the airtime context strip and inspect the selected moment.*
 

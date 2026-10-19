@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Literal
 
 from PySide6.QtCharts import QCategoryAxis, QChart, QChartView, QLineSeries, QValueAxis
-from PySide6.QtCore import QPointF, Qt, QThreadPool, QTimer, Signal, Slot
+from PySide6.QtCore import QElapsedTimer, QPointF, Qt, QThreadPool, QTimer, Signal, Slot
 from PySide6.QtGui import (
     QAction,
     QCloseEvent,
@@ -43,6 +43,8 @@ from PySide6.QtWidgets import (
     QSlider,
     QScrollArea,
     QSizePolicy,
+    QStyle,
+    QStyleOptionSpinBox,
     QSplitter,
     QSpinBox,
     QToolBar,
@@ -77,8 +79,91 @@ class SmoothingSlider(QSlider):
         super().mousePressEvent(event)
 
 
+class SelectionSpinBox(QSpinBox):
+    """Use 1/5/10/20/50-sample steps after 0/1/2/3/5 seconds holding an arrow."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._hold_timer = QElapsedTimer()
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        self._hold_timer.invalidate()
+        option = QStyleOptionSpinBox()
+        self.initStyleOption(option)
+        button = self.style().hitTestComplexControl(
+            QStyle.ComplexControl.CC_SpinBox,
+            option,
+            event.position().toPoint(),
+            self,
+        )
+        if event.button() == Qt.MouseButton.LeftButton and button in (
+            QStyle.SubControl.SC_SpinBoxUp,
+            QStyle.SubControl.SC_SpinBoxDown,
+        ):
+            self._hold_timer.start()
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        self._hold_timer.invalidate()
+        super().mouseReleaseEvent(event)
+
+    def stepBy(self, steps: int) -> None:
+        elapsed = self._hold_timer.elapsed() if self._hold_timer.isValid() else 0
+        stride = (
+            50
+            if elapsed >= 5000
+            else 20
+            if elapsed >= 3000
+            else 10
+            if elapsed >= 2000
+            else 5
+            if elapsed >= 1000
+            else 1
+        )
+        super().stepBy(steps * stride)
+
+
 class TimeChartView(QChartView):
     zoom_requested = Signal(float, float)
+    sample_requested = Signal(float)
+
+    def __init__(self, chart: QChart) -> None:
+        super().__init__(chart)
+        self._press_position: QPointF | None = None
+        self._dragged = False
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        self._press_position = (
+            event.position() if event.button() == Qt.MouseButton.LeftButton else None
+        )
+        self._dragged = False
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        if self._press_position is not None:
+            self._dragged |= (
+                event.position() - self._press_position
+            ).manhattanLength() >= QApplication.startDragDistance()
+            if not self._dragged:
+                event.accept()
+                return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        clicked = (
+            event.button() == Qt.MouseButton.LeftButton
+            and self._press_position is not None
+            and not self._dragged
+            and (event.position() - self._press_position).manhattanLength()
+            < QApplication.startDragDistance()
+        )
+        self._press_position = None
+        chart = self.chart()
+        point = chart.mapFromScene(self.mapToScene(event.position().toPoint()))
+        plot = chart.plotArea()
+        super().mouseReleaseEvent(event)
+        if clicked and plot.contains(point) and plot.width() > 0:
+            self.sample_requested.emit((point.x() - plot.left()) / plot.width())
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         chart = self.chart()
@@ -207,8 +292,12 @@ class ExplorerWindow(QMainWindow):
         self.chart.setBackgroundRoundness(0)
         self.chart.legend().hide()
         self.chart.setAnimationOptions(QChart.AnimationOption.NoAnimation)
+        chart_margins = self.chart.margins()
+        chart_margins.setBottom(0)
+        self.chart.setMargins(chart_margins)
         self.chart_view = TimeChartView(self.chart)
         self.chart_view.zoom_requested.connect(self.zoom_wheel)
+        self.chart_view.sample_requested.connect(self.select_chart_sample)
         self.chart_view.setObjectName("recordingChart")
         self.chart_view.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.chart_view.setRubberBand(QChartView.RubberBand.HorizontalRubberBand)
@@ -216,6 +305,12 @@ class ExplorerWindow(QMainWindow):
         # Let the plot shrink instead of reusing its previous viewport height.
         self.chart_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Ignored)
         plot_layout.addWidget(self.chart_view, 1)
+        self.selection_band = QGraphicsRectItem(self.chart)
+        self.selection_band.setPen(QPen(Qt.PenStyle.NoPen))
+        self.selection_band.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
+        self.selection_band.setZValue(1)
+        self.selection_band.hide()
+        self.chart.plotAreaChanged.connect(self._redraw_selection)
         self.axis_x = QValueAxis()
         bind(self.axis_x, tr("Elapsed time (s)"), "titleText")
         self.axis_x.setLabelFormat("%.3f")
@@ -247,7 +342,7 @@ class ExplorerWindow(QMainWindow):
         self.airtime_legend = QLabel()
         self.airtime_legend.setWordWrap(True)
         self.airtime_legend.hide()
-        plot_layout.insertWidget(2, self.airtime_legend)
+        plot_layout.addWidget(self.airtime_legend)
         self.chart.plotAreaChanged.connect(self._redraw_vertical_context)
         self.axis_x.rangeChanged.connect(self._redraw_vertical_context)
         self.source_marker_lines: dict[str, QLineSeries] = {}
@@ -385,9 +480,9 @@ class ExplorerWindow(QMainWindow):
 
         selection, selection_layout = self._panel(tr("SELECTION"))
         fields = QGridLayout()
-        self.first = QSpinBox()
+        self.first = SelectionSpinBox()
         self.first.setObjectName("selectionStart")
-        self.last = QSpinBox()
+        self.last = SelectionSpinBox()
         self.last.setObjectName("selectionEnd")
         fields.addWidget(bind(QLabel(), tr("From sample")), 0, 0)
         fields.addWidget(bind(QLabel(), tr("To sample")), 0, 1)
@@ -401,14 +496,14 @@ class ExplorerWindow(QMainWindow):
         self.last.valueChanged.connect(self.update_selection)
         inspector_layout.addWidget(selection)
 
-        extrema, extrema_layout = self._panel(tr("SELECTION EXTREMA"))
+        extrema, extrema_layout = self._panel(tr("VISIBLE RANGE EXTREMA"))
         self.extrema_context = bind(QLabel(), tr("Select a recording to inspect minimum/maximum"))
         self.extrema_context.setWordWrap(True)
         self.extrema_context.setTextFormat(Qt.TextFormat.PlainText)
         extrema_layout.addWidget(self.extrema_context)
         self.extrema_labels = [QLabel() for _ in range(3)]
         for extrema_label in self.extrema_labels:
-            extrema_label.setTextFormat(Qt.TextFormat.PlainText)
+            extrema_label.setTextFormat(Qt.TextFormat.RichText)
             extrema_label.setWordWrap(True)
             extrema_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
             extrema_layout.addWidget(extrema_label)
@@ -433,7 +528,7 @@ class ExplorerWindow(QMainWindow):
         details_body_layout.setContentsMargins(0, 0, 0, 0)
         self.summary = bind(QLabel(), tr("Source provenance and import diagnostics appear here."))
         self.summary.setWordWrap(True)
-        self.summary.setTextFormat(Qt.TextFormat.PlainText)
+        self.summary.setTextFormat(Qt.TextFormat.RichText)
         self.disclaimer = bind(
             QLabel(),
             tr("Raw source values · Units and rider directions unverified"),
@@ -441,17 +536,26 @@ class ExplorerWindow(QMainWindow):
         self.disclaimer.setWordWrap(True)
         self.readout = bind(QLabel(), tr("No recording loaded"))
         self.readout.setWordWrap(True)
+        self.readout.setTextFormat(Qt.TextFormat.RichText)
         self.readout.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.notes = QPlainTextEdit()
         self.original_diagnostics = bind(QCheckBox(), tr("Original diagnostics (technical text)"))
         self.original_diagnostics.toggled.connect(self._refresh_diagnostics)
         self.original_diagnostics.hide()
-        details_body_layout.addWidget(self.original_diagnostics)
         self.notes.setReadOnly(True)
         self.notes.setMinimumHeight(160)
         self.notes.hide()
-        for detail in (self.summary, self.disclaimer, self.readout, self.notes):
+        for title, detail in (
+            (tr("Source"), self.summary),
+            (tr("Processing"), self.disclaimer),
+            (tr("Current sample"), self.readout),
+        ):
+            heading = bind(QLabel(), title)
+            heading.setObjectName("SectionTitle")
+            details_body_layout.addWidget(heading)
             details_body_layout.addWidget(detail)
+        details_body_layout.addWidget(self.original_diagnostics)
+        details_body_layout.addWidget(self.notes)
         details_layout.addWidget(self.details_body)
         self.details_body.hide()
         self.details_button.toggled.connect(self._toggle_details)
@@ -520,6 +624,7 @@ class ExplorerWindow(QMainWindow):
         self.chart.setBackgroundBrush(QColor(self.theme.panel))
         self.chart_view.setBackgroundBrush(QColor(self.theme.panel))
         self._style_axes()
+        self._redraw_selection()
         for (name, line), color in zip(
             self.source_marker_lines.items(),
             self.theme.markers,
@@ -743,7 +848,7 @@ class ExplorerWindow(QMainWindow):
         bind(self.heading, outcome.title, "text")
         bind(self.ride_metadata, outcome.metadata_rows_text, "text")
         self.ride_metadata.setVisible(bool(outcome.metadata_text))
-        bind(self.summary, outcome.summary, "text")
+        bind(self.summary, outcome.technical_summary, "text")
         bind(self.header_summary, outcome.overview_text, "text")
         bind(self.availability, outcome.availability_text, "text")
         self._draw_channels()
@@ -792,6 +897,8 @@ class ExplorerWindow(QMainWindow):
         self._style_axes()
         bind(self.axis_x, outcome.replay_time_label, "titleText")
         self.axis_x.rangeChanged.connect(self._redraw_time_labels)
+        self.axis_x.rangeChanged.connect(self._redraw_selection)
+        self.axis_x.rangeChanged.connect(self._refresh_extrema)
         self.axis_x.rangeChanged.connect(self._bound_time_view)
         self.axis_x.rangeChanged.connect(self._redraw_source_markers)
         self.axis_x.rangeChanged.connect(self._redraw_vertical_context)
@@ -836,15 +943,16 @@ class ExplorerWindow(QMainWindow):
         if self.data is None:
             return
         active = self.data.reference_enabled
+        bind(self.summary, self.data.technical_summary, "text")
         bind(
             self.disclaimer,
             tr(
-                "Calibrated forces • Source directions • {0} • Inferred time",
-                self.data.smoothing_text,
+                "Calibrated forces\nSource directions\n{0}\nInferred time",
+                self.data.smoothing_text.replace(" • ", "\n"),
             )
             if active
             else tr(
-                "Raw acceleration x/y/z • Units and rider directions unverified • Inferred time",
+                "Raw acceleration x/y/z\nUnits and rider directions unverified\nInferred time",
             ),
             "text",
         )
@@ -979,7 +1087,7 @@ class ExplorerWindow(QMainWindow):
     def _refresh_sample(self, index: int) -> None:
         if self.data is None:
             return
-        bind(self.readout, self.data.sample_text(index), "text")
+        bind(self.readout, self.data.sample_text(index, rich=True), "text")
         bind(self.time_readout, self.data.sample_clock_text(index), "text")
         for caption, value, hint, display in zip(
             self.value_names,
@@ -1025,6 +1133,12 @@ class ExplorerWindow(QMainWindow):
             width = high - low
             first = max(0.0, min(time - width / 2, self.data.duration - width))
             self.axis_x.setRange(first, first + width)
+
+    @Slot(float)
+    def select_chart_sample(self, fraction: float) -> None:
+        if self.data is not None:
+            low, high = self.axis_x.min(), self.axis_x.max()
+            self.position.setValue(self.data.sample_at_time(low + fraction * (high - low)))
 
     @Slot(float, float)
     def zoom_wheel(self, fraction: float, steps: float) -> None:
@@ -1142,11 +1256,36 @@ class ExplorerWindow(QMainWindow):
             )
 
     @Slot()
+    def _redraw_selection(self) -> None:
+        if self.data is None or self.last.value() >= self.data.count:
+            self.selection_band.hide()
+            return
+        plot = self.chart.plotArea()
+        low, high = self.axis_x.min(), self.axis_x.max()
+        first = max(low, self.data.time_at(self.first.value()))
+        last = min(high, self.data.time_at(self.last.value()))
+        visible = high > low and last >= first and plot.width() > 0 and plot.height() > 0
+        self.selection_band.setVisible(visible)
+        if visible:
+            left = plot.left() + (first - low) / (high - low) * plot.width()
+            right = plot.left() + (last - low) / (high - low) * plot.width()
+            if right - left < 2:
+                left = max(plot.left(), min(left - 1, plot.right() - 2))
+                right = min(plot.right(), left + 2)
+            color = self.chart_view.palette().highlight().color()
+            color.setAlpha(32)
+            self.selection_band.setBrush(color)
+            self.selection_band.setRect(left, plot.top(), right - left, plot.height())
+
+    @Slot()
     def update_selection(self) -> None:
         if self.data is None:
             return
-        self.first.setMaximum(self.last.value())
-        self.last.setMinimum(self.first.value())
+        # Reassigning an unchanged range stops native spin-button auto-repeat.
+        if self.first.maximum() != self.last.value():
+            self.first.setMaximum(self.last.value())
+        if self.last.minimum() != self.first.value():
+            self.last.setMinimum(self.first.value())
         selected = self.data.select(self.first.value(), self.last.value())
         bind(
             self.selection_label,
@@ -1159,12 +1298,15 @@ class ExplorerWindow(QMainWindow):
             ),
             "text",
         )
+        self._redraw_selection()
         self._refresh_extrema()
 
+    @Slot()
     def _refresh_extrema(self) -> None:
         if self.data is None:
             return
-        context, rows = self.data.extrema_text(self.first.value(), self.last.value())
+        visible = self.data.select_visible(self.axis_x.min(), self.axis_x.max())
+        context, rows = self.data.extrema_text(visible.first, visible.last, rich=True)
         bind(self.extrema_context, context, "text")
         for label, text in zip(self.extrema_labels, rows, strict=True):
             bind(label, text, "text")

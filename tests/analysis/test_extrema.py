@@ -85,6 +85,24 @@ def test_reference_binding_shape_finite_and_timestamp_guards() -> None:
         calculate_extrema(source, 0, 1, calculation_time=datetime(2026, 10, 17))
 
 
+def test_rich_extrema_keep_values_times_and_source_details() -> None:
+    view = present_recording(sample_source()).with_reference(True)
+    context, rows = view.extrema_text(1, 1, rich=True)
+    assert context == view.extrema_text(1, 1)[0]
+    result = view.selection_extrema(1, 1)
+    for row, channel in zip(rows, result.channels, strict=True):
+        assert row.startswith('<table width="100%"')
+        assert f">{channel.name}</th>" in row
+        assert ">Replay</td>" in row
+        for point in (channel.minimum, channel.maximum):
+            assert f"{point.value:+.2f} g" in row
+            assert view.replay_text(point.index) in row
+            assert f"Sample {point.index}" in row
+            assert f"Recording {point.recording_seconds:.3f} s" in row
+    raw_rows = view.with_reference(False).extrema_text(1, 1, rich=True)[1]
+    assert all(" g" not in row for row in raw_rows)
+
+
 def test_selection_does_not_filter_again_at_edges() -> None:
     source = sample_source()
     view = present_recording(source).with_reference(True)

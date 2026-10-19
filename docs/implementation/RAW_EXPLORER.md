@@ -23,8 +23,9 @@ See the [roadmap](../ROADMAP.md) and [analysis concepts](../architecture/08_conc
   acceleration/braking. Raw values have no rider-direction claims.
 - A 10-pixel strip at the bottom inside the plot shows stabilized
   [vertical airtime context](AIRTIME.md) colors: violet Heavy Gs, neutral Normal Gs, light blue Light Gs, cyan Floater,
-  yellow Airtime, orange Strong Airtime and red Ejector. A wrapping legend names
-  the categories and its tooltip identifies the provisional thresholds. Light
+  yellow Airtime, orange Strong Airtime and red Ejector. A wrapping legend below
+  the diagram, above sample navigation, names the categories near the strip;
+  its tooltip identifies the provisional thresholds. Light
   appearance uses darker shades of the same hues for contrast. The strip follows the time axis
   when zooming/resizing and clips to the visible interval. Force curves keep their
   normal channel colors and original points, without additional force filtering.
@@ -37,6 +38,10 @@ See the [roadmap](../ROADMAP.md) and [analysis concepts](../architecture/08_conc
   retains Unit unknown without a context classification.
 - Preserve original bytes, unknown fields, absent sensors and all source arrays.
   Qt widgets delegate import/scientific calculations to their existing subsystems.
+- Visible-range extrema use one table per channel, with a bold channel heading,
+  aligned Min/Max values and replay times. Smaller detail rows retain the sample
+  index and recording seconds. The display follows the current language, mode,
+  smoothing and visible diagram interval.
 
 ## Time, zoom and selection
 
@@ -49,8 +54,21 @@ fractional rates use explicit seconds. Recording seconds remain in the readout.
 Initial/reset view uses start/end markers independently, falling back to 0/N-1
 for each absent boundary. Missing boundaries produce importer warnings, not drawn
 markers. Present invalid indices remain errors. The initial cursor uses effective
-start; local inclusive selection is independent.
+start; local inclusive selection is independent. Editing From/To sample immediately
+updates a translucent highlight in the chart without changing its zoom or cursor.
+The highlight follows zoom/resize, clips to the plot and stays visible as a thin
+mark for a single selected sample. It works in raw/calibrated and light/dark views
+without intercepting clicks or drag-to-zoom interactions.
+Holding either field's up/down arrow repeats sample steps until release or the
+valid range boundary; the chart highlight updates throughout. Step size increases
+from 1 to 5 after one second, 10 after two seconds, 20 after three seconds and
+50 after five seconds.
+Release restores single-sample steps for the next click or keyboard step.
 
+A left click inside the plot selects the nearest sample at that recording time,
+using the current time zoom, and updates the slider, cursor and value cards.
+Small pointer movements below the native drag threshold still count as clicks;
+dragging to zoom and clicks outside the plot do not select a sample.
 Mouse wheel zooms time around the pointer (1.25 per notch); dragging, zoom to
 selection and select visible range preserve sample bounds. Zoom-out stops at the
 first/last sample. Minimum view width is one sampling interval. Selection boundary
@@ -83,7 +101,11 @@ controls and current-value cards visible without plot-area scrolling at normal
 desktop sizes (including 1280×720). Its previous viewport height is not a minimum.
 At very small sizes, the plot retains a 240-pixel minimum height and scrolling
 remains available so that controls are not clipped or hidden.
-Technical provenance, full-precision values and diagnostics are expandable; opening
+Technical details group source provenance, processing and the current sample
+under separate localized headings. Source fields and sample values use aligned
+label/value tables; processing settings use individual lines. Device metadata is
+escaped as literal text, and existing numeric precision and diagnostics remain
+available. These details are expandable; opening
 notes reveals/scrolls to them. Below 1080 pixels width, Inspector switches views;
 scroll areas keep all controls reachable at 720×480. Sliders show only their narrow
 track and handle. Native caption uses a force-trace icon and loaded ride name;
@@ -124,10 +146,12 @@ timestamp intervals. One usable point can be displayed. Replacement/main-window
 close closes its GPS dialog. GPS never controls force values, timing or selection.
 No base map, network, invented fixes or confirmed speed-color contract is provided.
 
-## Selection extrema
+## Visible-range extrema
 
-The inspector's Selection extrema panel shows all three channels' min/max for the
-inclusive selected interval, even when a curve is hidden. Values use the active
+The inspector's Visible range extrema panel shows all three channels' min/max for
+the visible time range, even when a curve is hidden. Sample boundaries follow
+the existing Select visible range mapping. Values use the active
 raw/calibrated window and include source sample plus replay/recording time.
-Results update on source/selection/mode/smoothing, independently of cursor/zoom.
+Results update on source, zoom, reset, mode and smoothing. Moving the cursor or
+editing From/To sample does not change the result unless the viewport changes.
 The pure force_extrema API owns calculation and validation; widgets only display.
