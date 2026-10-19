@@ -20,7 +20,7 @@ def test_manual_update_popup_skip_and_open_actions(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     window = explorer_window
-    candidate = AvailableRelease("v0.3.0", f"{REPOSITORY_URL}/releases/tag/v0.3.0")
+    candidate = AvailableRelease("v0.3.1", f"{REPOSITORY_URL}/releases/tag/v0.3.1")
 
     def available(current: str) -> AvailableRelease:
         return candidate
@@ -33,7 +33,7 @@ def test_manual_update_popup_skip_and_open_actions(
     wait_until(lambda: window.updates.worker is None)
     notice = window.findChild(QMessageBox, "updateNotice")
     assert notice is not None and notice.isVisible()
-    assert "v0.3.0" in notice.text()
+    assert "v0.3.1" in notice.text()
     button(notice, "Later").click()
     QApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
     assert window.preferences.skipped_update() == ""
@@ -43,7 +43,7 @@ def test_manual_update_popup_skip_and_open_actions(
     assert notice is not None
     button(notice, "Skip this version").click()
     QApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
-    assert window.preferences.skipped_update() == "v0.3.0"
+    assert window.preferences.skipped_update() == "v0.3.1"
     about.automatic_updates.setChecked(True)
     window.preferences.remember_update_check(0)
     window.updates.check(manual=False)
