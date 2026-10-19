@@ -22,7 +22,7 @@ REQUIRED_FILES = cast(tuple[str, ...], MODULE["REQUIRED_FILES"])
     "change,tag,error",
     [
         ("none", "v0.1.0", None),
-        ("none", "v0.3.0", "project.version"),
+        ("none", "v0.3.1", "project.version"),
         ("recording", "v0.1.0", "integrity"),
         ("extra-recording", "v0.1.0", "inventory"),
         ("missing-license", "v0.1.0", "required"),

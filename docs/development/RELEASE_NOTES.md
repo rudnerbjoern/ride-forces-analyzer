@@ -3,7 +3,9 @@
 Explore Ride Forces recordings and create G-force overlays for your coaster
 videos. Processing stays local and preserves original recordings.
 
-## Included in version 0.3.0
+## Included in version 0.3.1
+
+- Corrected Windows package verification for language and appearance settings.
 
 - Portable Windows EXE, standard ZIP and complete ZIP with FFmpeg, plus source downloads.
 - A colored airtime context strip that follows chart zoom, with stable vertical-force

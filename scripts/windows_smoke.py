@@ -34,8 +34,8 @@ def smoke_test(report: Path, recording: Path | None, with_ffmpeg: bool) -> None:
         application.processEvents()
         assert window.isVisible() and window.windowHandle().isExposed()
         result["gui"] = True
-        window.language.setCurrentIndex(1)
-        window.appearance.setCurrentIndex(1)
+        window.set_ui_language(1)
+        window.set_appearance(1)
         application.processEvents()
         assert window.theme.name == "light" and window.about_action.text() == "Über …"
         result["german_light"] = True
