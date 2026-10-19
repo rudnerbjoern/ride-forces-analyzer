@@ -213,6 +213,8 @@ class ExplorerWindow(QMainWindow):
         self.chart_view.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.chart_view.setRubberBand(QChartView.RubberBand.HorizontalRubberBand)
         self.chart_view.setMinimumSize(0, 240)
+        # Let the plot shrink instead of reusing its previous viewport height.
+        self.chart_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Ignored)
         plot_layout.addWidget(self.chart_view, 1)
         self.axis_x = QValueAxis()
         bind(self.axis_x, tr("Elapsed time (s)"), "titleText")

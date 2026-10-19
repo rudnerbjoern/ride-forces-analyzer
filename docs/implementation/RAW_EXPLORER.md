@@ -78,6 +78,11 @@ Requested default size is 1280×820; Windows may reduce the shown size when the
 available desktop cannot accommodate it and its native frame. The chart-first layout provides global Open/GPS/
 notes/Inspector actions, local calibration/zoom/curve controls and current-value
 cards below the chart. The right inspector groups Display, Selection and Recording.
+The chart expands and shrinks with the available workspace height, keeping its
+controls and current-value cards visible without plot-area scrolling at normal
+desktop sizes (including 1280×720). Its previous viewport height is not a minimum.
+At very small sizes, the plot retains a 240-pixel minimum height and scrolling
+remains available so that controls are not clipped or hidden.
 Technical provenance, full-precision values and diagnostics are expandable; opening
 notes reveals/scrolls to them. Below 1080 pixels width, Inspector switches views;
 scroll areas keep all controls reachable at 720×480. Sliders show only their narrow

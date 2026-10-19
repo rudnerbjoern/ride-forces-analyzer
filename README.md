@@ -15,9 +15,9 @@ by or sponsored by them.
 Your recordings stay on your computer. Processing works offline and never
 changes the original files.
 
-![Voltron Nevera recording in the dark workspace, showing three force curves, current values and selected-range extrema](docs/images/workspace-dark.png)
+![Voltron Nevera in the dark workspace, showing three force curves, a colored airtime context strip, current Ejector Airtime and selected-range extrema](docs/images/workspace-dark.png)
 
-*Explore the complete ride, inspect a moment, or focus on a selected section.*
+*Explore the ride, follow the airtime context strip and inspect the selected moment.*
 
 ## What you can do
 
@@ -30,6 +30,10 @@ changes the original files.
 - **Smooth the display interactively.** Adjust the slider while watching the
   curves update. Right-click to restore the default. Smoothing changes the
   displayed curves, while your original measurements remain intact.
+- **Follow the airtime context.** A colored strip below the curves distinguishes
+  normal loads, Floater, Airtime, Strong Airtime and Ejector. The vertical value
+  card shows the current context, with stable labels that avoid rapid flicker.
+  These are provisional interpretations of the recording, not measured sensations.
 - **Keep the ride context nearby.** View available ride, park, train, row and
   seat information. Open an approximate GPS route overview when positions are
   present in the recording.
@@ -48,7 +52,7 @@ Compare five layouts, adjust the settings and check the result in the preview.
 See G-Orbit in action: [watch the Manta demo on YouTube](https://youtu.be/tsRzD416voU),
 with the exported overlay placed over Onride footage.
 
-![Export assistant showing five layout thumbnails, landscape settings and a large transparent Flow Ribbon preview](docs/images/export-preview.png)
+![Export assistant showing five current layout thumbnails and a Flow Ribbon preview with Ejector Airtime, yellow lateral history and green/red longitudinal history](docs/images/export-preview.png)
 
 *The checkerboard shows transparency; it is not part of the exported video.*
 
@@ -59,6 +63,10 @@ gauges, or the **four-panel column** for force and orientation plots.
 ![All five export layouts compared at Manta's strong negative vertical-force peak](docs/images/manta-export-themes.png)
 
 [Compare every layout in detail using the same Manta moment](docs/EXPORT_THEMES.md).
+
+Export themes use yellow for lateral data, green for acceleration and red for
+braking. Flow Ribbon, Corner Instruments and Telemetry Capsule also show the
+current vertical context with the same colors and labels as the workspace.
 
 Every layout supports **4K landscape** for classic YouTube videos and **portrait**
 for Shorts or TikTok. Export the whole recording, its marker interval or your
@@ -98,9 +106,9 @@ when enabled. A newer published GitHub release, including a prerelease, offers
 recordings, GPS data or file paths; downloads and installation remain manual.
 Offline use does not require update checks.
 
-![The same Voltron Nevera recording in the light workspace, with force curves and inspector visible](docs/images/workspace-light.png)
+![The same Voltron Nevera sample in the light workspace, with the airtime context strip, Ejector Airtime value card and selection inspector](docs/images/workspace-light.png)
 
-*The light scheme shows the same recording, selection and current values.*
+*The light scheme shows the same sample and selection, with darker context colors for readability.*
 
 ## Get started
 
@@ -144,6 +152,12 @@ Replay time uses `MM:SS.ff`, where `ff` counts samples within a second rather
 than hundredths. At 50 Hz, `01:31.47` means 91.94 seconds.
 Positive lateral values mean right; positive longitudinal values mean acceleration.
 Negative values mean left and braking respectively.
+
+The airtime strip follows the chart's time zoom. Its context uses vertical load
+and recent changes, with short confirmation times and separate entry/exit bounds
+to stabilize the labels. Curve values and numeric readouts keep their existing
+smoothing. Floater/Ejector boundaries are provisional and depend on calibration
+and filtering; see the [airtime context and limits](docs/implementation/AIRTIME.md).
 
 Results depend on the recording, calibration and smoothing. The display follows
 documented source-app conventions; exact agreement with every recording is not

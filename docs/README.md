@@ -17,6 +17,7 @@ historical acceptance reports are not maintained.
 - [All export themes](EXPORT_THEMES.md), [layout extension API](development/EXPORT_LAYOUTS.md),
   [Manta video with the G-Orbit overlay](https://youtu.be/tsRzD416voU).
 - [Provisional airtime context](implementation/AIRTIME.md).
+- [Current screenshots, reference settings and image license](images/README.md).
 - [English/German presentation](development/LOCALIZATION.md).
 - Import APIs: [service](development/IMPORT_SERVICE.md), [models](development/CANONICAL_MODELS.md),
   [decoder](development/STRICT_DECODING.md), [motion](development/MOTION_PARSING.md),

@@ -699,6 +699,45 @@ def test_smoothing_slider_preserves_source_time_and_selection(
     assert window.smoothing_slider.value() == 5 and window.data.reference.smoothing_window == 11
 
 
+@pytest.mark.parametrize("language", [0, 1], ids=["english", "german"])
+@pytest.mark.parametrize("appearance", [0, 1], ids=["dark", "light"])
+def test_chart_shrinks_to_available_height_without_workspace_scrolling(
+    explorer_window: ExplorerWindow,
+    language: int,
+    appearance: int,
+) -> None:
+    window = explorer_window
+    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
+    wait_until(window.open_action.isEnabled)
+    window.set_ui_language(language)
+    window.set_appearance(appearance)
+    window.position.setValue(4960)
+    points = tuple(window.series[0].points())
+    time_range = (window.axis_x.min(), window.axis_x.max())
+    heights: list[int] = []
+    for width, height in ((1600, 1100), (1280, 820), (1280, 720), (1600, 1100)):
+        resize_workspace(window, width, height)
+        QApplication.processEvents()
+        assert window.plot_scroll.verticalScrollBar().maximum() == 0
+        assert not window.plot_scroll.verticalScrollBar().isVisible()
+        viewport = window.plot_scroll.viewport()
+        for control in (
+            window.reference_toggle,
+            window.slider,
+            window.position,
+            *window.value_labels,
+        ):
+            bounds = control.rect().translated(control.mapTo(viewport, QPoint(0, 0)))
+            assert viewport.rect().contains(bounds)
+        assert window.chart.plotArea().height() > 100
+        assert tuple(window.series[0].points()) == points
+        assert (window.axis_x.min(), window.axis_x.max()) == time_range
+        assert window.position.value() == 4960
+        heights.append(window.chart_view.height())
+    assert heights[0] > heights[1] > heights[2]
+    assert heights[3] == heights[0]
+
+
 @pytest.mark.parametrize("initial_width", [720, 1280], ids=["compact", "wide"])
 def test_focus_workspace_layout_and_current_value_cards(
     explorer_window: ExplorerWindow,
