@@ -148,10 +148,9 @@ no Qt import and requires no SciPy/Pint/GeographicLib import. Synthetic qualifie
 descriptors test structural gates, not the actual files' scientific semantics.
 
 Source-app projection/centered mean is implemented separately in analysis.reference.
-Reduced M3 includes selected-range extrema and focused acceptance; additional
-filters, universal physical calibration and broad statistics are deferred, while
-GPS analytics is outside current scope. No fixture
-is reformatted and no new project dependency is adopted by this contract layer.
+Selected-range extrema have their own contract below. Planned analysis features
+and milestone status belong in the [roadmap](../ROADMAP.md); model construction
+does not perform GPS analytics or qualify physical calibration.
 
 ## Device-only vectors and units
 
@@ -271,9 +270,8 @@ result = analyze_rider_frame(
 All five real fixtures remain unit/frame-unqualified; absent Watch gravity stays
 absent. See [passive frame decision](../architecture/09_architecture_decisions.md#passive-frame-transforms),
 [analysis contract](../architecture/08_concepts.md#scientific-provenance-and-gates) and `tests/analysis/test_frames.py`. Source-app
-references remain required for generic physical calibration. This broader research
-is not reduced-M3 acceptance; existing app-reference projection/mean has separate
-evidence, and analytical GPS is outside current scope.
+references remain required for generic physical calibration. Existing app-reference
+projection/mean has separate [source-bound evidence](../validation/APP_REFERENCE.md).
 
 ## Selected-range extrema
 

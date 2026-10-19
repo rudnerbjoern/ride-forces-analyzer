@@ -2,18 +2,17 @@
 
 <!-- cspell:words Pendrill -->
 
-`analysis.airtime.AirtimeContext` prepares immutable labels from the existing
-smoothed, calibrated vertical channel and effective source sample rate. It does
+Airtime context uses the existing smoothed, calibrated vertical channel and
+effective source sample rate. It does
 not change measurements, filters, axis signs or recordings. Flow Ribbon, Corner
 Instruments and Capsule use these labels in their vertical hint, in both aspects
 and languages. Column and G-Orbit retain their existing labels.
 The explorer shows the same prepared labels and shared palette in a 10-pixel
-context strip at the bottom inside the calibrated plot. Qt-independent
-`ExplorerData` supplies source-index ranges; widgets map their time bounds into
-rectangles, clipped to the current viewport and updated on zoom/resize. Dark appearance matches the
+context strip at the bottom inside the calibrated plot. The strip clips to the
+visible time range and follows zoom/resize. Dark appearance matches the
 export palette; light appearance uses darker equivalents for readable contrast.
-The graph values, smoothing and numeric readouts remain unchanged. Focused native Windows GUI regression checks cover the context strip, zoom,
-visibility, appearance and current-value card. Full application acceptance remains open.
+The graph values, smoothing and numeric readouts remain unchanged. Component
+responsibilities belong to the [building block view](../architecture/05_building_block_view.md#video-export-boundary).
 
 ## Presentation heuristic
 
@@ -91,18 +90,6 @@ not a fully qualified biomechanical jerk measurement. Calibration, sensor motion
 filter settings, rider posture and restraints limit sensation inference. Existing
 source-contract limits still apply. Thresholds need owner review against recordings.
 
-Complete native Windows application and quality checks passed for the current
-working tree: 1,539 Python tests, including GUI and native FFmpeg integration,
-with no skips. Strict mypy/Pyright, Ruff, formatting, Node contracts, dependency
-checks, CI routing and documentation checks passed. Exact commands, environment,
-revision scope and limitations are recorded in the
-[validation report](../validation/AIRTIME_CONTEXT.md). Scientific qualification
-remains open. The reference-image generator provides a visual review artifact only.
-
-Read-only native Windows exploration of the authorized Voltron fixture, using
-11-sample smoothing over its marker interval, reduced text changes from 415 to
-121. Airtime-label runs shorter than 0.1 s fell from 64 to 5; the remaining short
-runs include generic transition labels. Floater near 53–55 s and 58 s became
-stable, strong ejector near 67–68 s remained, and isolated 0.02 s ejector labels
-near 77.7 s and 135.5 s disappeared. This exploratory comparison is not test-suite
-or scientific qualification evidence. Temporary analysis artifacts live in `.tmp/`.
+Automated behavior checks and reference images do not establish scientific
+qualification. The [image reference scripts](../images/README.md#image-content-and-reproduction)
+provide visual review artifacts; scientific qualification remains open.

@@ -65,8 +65,10 @@ Failed loads retain the previous view. All metadata is plain source text.
 Recording time is inferred `index / effective_rate`, not an acquisition epoch.
 Integer-rate replay uses start-relative `MM:SS.ff`, with a within-second sample
 counter; fractional rates use seconds. GPS never determines this clock.
-Selections are inclusive; extrema use existing full channels and earliest ties,
-independent of cursor, zoom and curve visibility.
+Selections are inclusive; extrema use existing full channels and earliest ties.
+Inspector extrema follow the visible time range, independently of cursor and
+curve visibility. The explicit From/To interval is a separate export/zoom
+selection, highlighted in the chart without changing the current viewport.
 
 Only time zooms. Recording limits bound zoom-out; one sampling interval bounds
 zoom-in. Reset uses effective start/end. Force bounds pad signed extrema by 5%;

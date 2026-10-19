@@ -11,9 +11,8 @@ sourced threads from memory generation; settings do not authorize manual memory 
 Context7 runs through unpinned `npx -y @upstash/context7-mcp`, requiring Node/npm
 and network in the Codex host. It is separate from locked application dependencies.
 
-The file parsed as TOML and the local CLI accepted memory feature settings.
-Fresh-session model/settings application, configured Context7 startup and actual
-memory generation remain unverified. See the
+The active host must support and apply these settings; repository configuration
+alone does not verify model selection, Context7 startup or memory behavior. See the
 [configuration guide](https://learn.chatgpt.com/docs/config-file/config-basic) and
 [reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 

@@ -104,8 +104,8 @@ and do not rewrite existing issues/PRs.
 
 [Label rules](../../.github/labeler.yml) assign `documentation` for Markdown,
 `dependencies` for manifests/locks/Dependabot, and `ci` for workflows/CI scripts,
-tests or label rules. Existing labels are preserved; `dependencies` and `ci` were
-created with owner authorization. Priority/scientific review stays manual.
+tests or label rules. Existing labels are preserved. Priority/scientific review
+stays manual.
 
 The separate [labeler workflow](../../.github/workflows/labeler.yml) uses trusted
 configuration via `pull_request_target` for opened/synchronized/reopened PRs to
@@ -118,34 +118,23 @@ remains read-only; no scheduled workflow or new runtime dependency is introduced
 ## Source release tags
 
 The separate [source-release workflow](../../.github/workflows/source-release.yml)
-runs for pushed `v*` tags with read-only permissions. It first calls the full CI
-for that tag revision; a failed, skipped or cancelled quality run blocks the source
-job. The source job has a ten-minute limit and verifies that the tag equals `v`
-plus `project.version`, checks required license
-and setup files, rejects local/binary artifacts, and verifies original recording
-bytes/hashes against the fixture inventory in a Git source ZIP. It also builds
-the Python wheel and source distribution. Only the verified Git source ZIP and its
-SHA-256 file and prepared release notes are retained as direct-download Actions artifacts for 14 days,
-without an additional ZIP wrapper; the Python packages
-are build checks. Runs for different tags remain independent.
+runs for pushed `v*` tags and authorized manual retries. It calls full CI for the
+resolved tag revision; a failed, skipped or cancelled quality run blocks release
+preparation. Source validation has a ten-minute limit and verifies the source
+archive, recording integrity, Python package builds and release-policy gates.
 
 A separate read-only Windows job (30-minute limit) installs the locked build group,
 checks binary redistribution inputs, builds the standalone EXE and standard/complete
 ZIPs, and executes all three with isolated preferences and a restricted PATH. Its
 outputs include checksums and corresponding sources. Publication depends on this
 job as well as full quality/source checks. Missing provider sources are documented
-and reported; missing or modified catalog-listed archives fail verification. See
-[Windows package scope and open inputs](RELEASE.md#windows-packages).
+and reported; missing or modified catalog-listed archives fail verification.
 
-After source validation, a separate publication job attaches the ZIP/checksum to
-a GitHub release together with the verified Windows downloads, their checksum file
-and corresponding-source archive. It alone has `contents: write`, plus artifact read permission.
-The [release policy](RELEASE.md) defines main ancestry, merged-PR and version gates,
-prerelease classification and maintained release notes. No job creates tags or
-changes repository visibility. This does not replace pre-release application/GUI validation or test
-installation on a clean Windows machine. Existing tags do not trigger a run
-retroactively. Release checks apply after the workflow is integrated and a new
-tag is pushed.
+Only the publication job has `contents: write` and artifact read permission.
+No job creates tags or changes repository visibility. The
+[release guide](RELEASE.md) owns tag/version/ancestry policy, retry behavior,
+artifact handling, download verification and outstanding redistribution limits.
+Hosted success does not replace local application/GUI or clean-Windows validation.
 
 ## Verification boundaries
 

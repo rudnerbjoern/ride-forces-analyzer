@@ -12,7 +12,7 @@
 | Resource / filesystem guarantees | Shape/diagnostic budgets are implemented; total RAM, cold-cache and hostile filesystem/ACL behavior are not fully verified        | Retain conservative limits and document benchmark/mock boundaries                                                               |
 | GUI and service integration      | Raw explorer opens files and shows source curves; persistent library/playback are planned                                         | Retain implemented interactive import; complete library/playback acceptance separately                                          |
 | Export and release compatibility | ProRes/H.264 encode and Resolve import have scoped evidence; Onride compositing, synchronization and clean-VM release remain open | Retain codec evidence and verify remaining M6–M8 boundaries                                                                     |
-| Dependency security              | Node tooling includes parser risks; current advisory status requires a fresh audit                                                | Retain reviewed overrides and follow the [dependency policy](../development/DEPENDABOT.md#node-overrides-and-security-boundary) |
+| Dependency security              | Node tooling includes parser risks; current advisory status requires a fresh audit                                                | Retain reviewed overrides; follow the [dependency policy](../development/DEPENDENCIES.md#node-overrides-and-security-boundary)  |
 
 M2 parsing/integrity acceptance does not establish sensor accuracy, Ride Forces
 algorithm equivalence or suitability for safety-critical interpretation. Resolve

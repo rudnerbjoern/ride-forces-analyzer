@@ -6,7 +6,7 @@ A shared diagnostic guard composes this subset through the
 Its `limits.max_diagnostics` cap is checked during generation; source shape/byte
 budgets require prior decoding.
 
-Scope: FR-011–016 over an existing immutable source tree. This is a pure motion
+This API validates motion fields in an existing immutable source tree. It is a pure motion
 validation boundary, not a complete file importer. Decoding/resource guards,
 optional GPS/metadata and full service composition are separate boundaries.
 See [import decision](../architecture/09_architecture_decisions.md#source-ownership-and-import) and
@@ -37,7 +37,7 @@ MotionParseResult is MotionParseSuccess | ImportFailure. Success carries the
 same source envelope, MotionSequence, RecordingIndices, RecordingVectors and
 ordered diagnostics. It deliberately exposes no complete Recording or GPS status.
 Failure carries no recording, at least one error, retained source and any known
-nonempty version string. A success of this subset is not full M2 import acceptance
+nonempty version string. A success of this subset is not complete import success
 or permission to calculate rider-axis forces. Outcomes and source data are immutable.
 
 ## Conversion and preservation

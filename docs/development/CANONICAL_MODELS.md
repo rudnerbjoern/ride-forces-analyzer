@@ -11,7 +11,7 @@ the [architecture](../architecture/08_concepts.md#source-ownership-and-validatio
 Import data concepts from `ride_forces_analyzer.domain` and diagnostics/outcomes
 from `ride_forces_analyzer.importers`. Domain modules have no importer/UI dependency.
 Both packages use standard-library dataclasses with `frozen=True, slots=True`.
-Pydantic continues to validate bootstrap settings; no new dependency is needed.
+Bootstrap settings have a separate [strict runtime contract](CODE_QUALITY.md#runtime-and-static-contracts).
 
 | Concept              | Implemented representation                                             |
 | -------------------- | ---------------------------------------------------------------------- |
@@ -131,9 +131,6 @@ outcomes for full file/bytes imports.
 
 ```powershell
 uv run pytest tests/domain/test_source.py tests/domain/test_recording.py tests/importers/test_results.py
-uv run mypy src
-npm run typecheck
-npm run test:types
 ```
 
 Pyright contracts exercise literal-tag narrowing, invalid typed
@@ -144,8 +141,7 @@ diagnostic ordering, consistent outcomes and a fresh Qt-free package import.
 The five real recording integrity tests remain unchanged.
 
 Frozen dataclasses alone do not freeze nested inputs, and MappingProxyType is a
-dynamic view unless its backing dictionary is privately owned. These choices were
-checked through Context7 against the official
+dynamic view unless its backing dictionary is privately owned. See the official
 [dataclasses](https://docs.python.org/3.14/library/dataclasses.html) and
 [mapping proxy](https://docs.python.org/3.14/library/types.html#types.MappingProxyType)
 documentation. The decoder enforces [resource limits](STRICT_DECODING.md).

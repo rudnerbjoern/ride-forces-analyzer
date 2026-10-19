@@ -30,7 +30,7 @@ Qt-independent and offline. The raw explorer calls this API through a background
 adapter; no UI dependency is added to the service.
 The caller controls scheduling; no background thread or progress interface is added.
 
-## Pipeline and outcomes — FR-028–030
+## Pipeline and outcomes
 
 The service composes [strict decoding](STRICT_DECODING.md),
 [motion validation](MOTION_PARSING.md) and [optional parsing](OPTIONAL_PARSING.md).
