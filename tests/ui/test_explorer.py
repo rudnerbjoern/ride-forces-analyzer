@@ -1,14 +1,23 @@
 """Native Qt interactions; fixture-wide data contracts live in the pure suites."""
 
+# cspell:words Quelle Verarbeitung Aktueller Messpunkt
+
 from hashlib import sha256
 from pathlib import Path
 from threading import Event
 from tempfile import TemporaryDirectory
 
 from PySide6.QtCore import QPoint, QTimer, Qt
-from PySide6.QtGui import QWheelEvent
+from PySide6.QtGui import QTextDocument, QWheelEvent
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QFileDialog, QStyle, QStyleOptionSlider
+from PySide6.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QLabel,
+    QStyle,
+    QStyleOptionSlider,
+    QStyleOptionSpinBox,
+)
 import pytest
 
 from ride_forces_analyzer.domain import Recording
@@ -17,6 +26,162 @@ from ride_forces_analyzer.ui import loading
 from ride_forces_analyzer.ui.window import ExplorerWindow
 from tests.ui.helpers import resize_workspace, wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
+
+
+@pytest.mark.parametrize("field", ["first", "last"], ids=["from", "to"])
+@pytest.mark.parametrize("direction", [1, -1], ids=["up", "down"])
+def test_selection_arrows_accelerate_while_held_and_reset_on_release(
+    explorer_window: ExplorerWindow,
+    field: str,
+    direction: int,
+) -> None:
+    window = explorer_window
+    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
+    wait_until(window.open_action.isEnabled)
+    resize_workspace(window, 1280, 820)
+    window.first.setValue(3000)
+    window.last.setValue(7000)
+    control = window.first if field == "first" else window.last
+    option = QStyleOptionSpinBox()
+    option.initFrom(control)
+    button = (
+        control.style()
+        .subControlRect(
+            QStyle.ComplexControl.CC_SpinBox,
+            option,
+            QStyle.SubControl.SC_SpinBoxUp if direction > 0 else QStyle.SubControl.SC_SpinBoxDown,
+            control,
+        )
+        .center()
+    )
+    initial = control.value()
+    values = [initial]
+    control.valueChanged.connect(values.append)
+    QTest.mousePress(control, Qt.MouseButton.LeftButton, pos=button)
+    try:
+        QTest.qWait(5500)
+        assert (control.value() - initial) * direction > 1
+        increments = {(last - first) * direction for first, last in zip(values, values[1:])}
+        assert {1, 5, 10, 20, 50} <= increments
+        assert window.selection_band.isVisible()
+        assert window.first.value() <= window.last.value()
+    finally:
+        QTest.mouseRelease(control, Qt.MouseButton.LeftButton, pos=button)
+    released = control.value()
+    QTest.qWait(200)
+    assert control.value() == released
+    QTest.mouseClick(control, Qt.MouseButton.LeftButton, pos=button)
+    assert control.value() == released + direction
+    released = control.value()
+    QTest.keyClick(control, Qt.Key.Key_Up if direction > 0 else Qt.Key.Key_Down)
+    assert control.value() == released + direction
+
+
+@pytest.mark.parametrize("appearance", [0, 1], ids=["dark", "light"])
+def test_selection_highlight_tracks_fields_zoom_and_resize_without_changing_data(
+    explorer_window: ExplorerWindow,
+    appearance: int,
+) -> None:
+    window = explorer_window
+    assert not window.selection_band.isVisible()
+    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
+    wait_until(window.open_action.isEnabled)
+    window.set_appearance(appearance)
+    data = window.data
+    assert data is not None
+    for reference in (False, True):
+        window.reference_toggle.setChecked(reference)
+        points = tuple(window.series[0].points())
+        current = window.position.value()
+        window.last.setValue(data.count - 1)
+        window.first.setValue(4200)
+        window.last.setValue(5100)
+        for first, last, size in (
+            (4000, 5200, (1280, 820)),
+            (4400, 4800, (1600, 1100)),
+            (5200, 5500, (1280, 820)),
+        ):
+            window.axis_x.setRange(data.time_at(first), data.time_at(last))
+            resize_workspace(window, *size)
+            QApplication.processEvents()
+            plot = window.chart.plotArea()
+            band = window.selection_band
+            assert band.isVisible() == (first <= 5100 and last >= 4200)
+            if band.isVisible():
+                rect = band.rect()
+                assert rect.left() == pytest.approx(
+                    plot.left() + (max(first, 4200) - first) / (last - first) * plot.width(),
+                )
+                assert rect.right() == pytest.approx(
+                    plot.left() + (min(last, 5100) - first) / (last - first) * plot.width(),
+                )
+                assert rect.top() == pytest.approx(plot.top())
+                assert rect.bottom() == pytest.approx(plot.bottom())
+            assert tuple(window.series[0].points()) == points
+            assert window.position.value() == current
+            assert band.acceptedMouseButtons() == Qt.MouseButton.NoButton
+            color = window.chart_view.palette().highlight().color()
+            assert band.brush().color().rgb() == color.rgb()
+            assert 0 < band.brush().color().alpha() < 255
+        window.first.setValue(4500)
+        window.last.setValue(4500)
+        window.axis_x.setRange(data.time_at(4400), data.time_at(4600))
+        assert window.selection_band.isVisible()
+        assert window.selection_band.rect().width() >= 2
+
+
+def test_vertical_context_bar_preserves_curve_and_tracks_viewport(
+    explorer_window: ExplorerWindow,
+) -> None:
+    window = explorer_window
+    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
+    wait_until(window.open_action.isEnabled)
+    data = window.data
+    assert data is not None and data.reference_enabled
+    original = data.plotted_channels[0]
+    for appearance in (0, 1):
+        window.set_appearance(appearance)
+        QApplication.processEvents()
+        segments = data.vertical_context_segments
+        assert len(window.vertical_context_bars) == len(segments)
+        assert window.series[0].pen().style() == Qt.PenStyle.SolidLine
+        assert window.series[0].pen().color().name() == window.theme.forces[0]
+        assert tuple(p.y() for p in window.series[0].points()) == original
+        for bar, (label, _, _) in zip(window.vertical_context_bars, segments, strict=True):
+            assert bar.brush().color().name() == window.theme.vertical_context_colors[label]
+        window.axis_x.setRange(data.time_at(4200), data.time_at(4300))
+        window.zoom_wheel(0.5, 2)
+        QApplication.processEvents()
+        plot = window.chart.plotArea()
+        visible = [bar for bar in window.vertical_context_bars if bar.isVisible()]
+        assert visible
+        low, high = window.axis_x.min(), window.axis_x.max()
+        for bar, (_, first, last) in zip(window.vertical_context_bars, segments, strict=True):
+            start = max(low, data.time_at(first))
+            end = min(high, data.time_at(last))
+            assert bar.isVisible() == (end > start)
+            if bar.isVisible():
+                assert bar.rect().left() == pytest.approx(
+                    plot.left() + (start - low) / (high - low) * plot.width(),
+                )
+                assert bar.rect().right() == pytest.approx(
+                    plot.left() + (end - low) / (high - low) * plot.width(),
+                )
+        for bar in visible:
+            assert bar.rect().height() == 10
+            assert bar.rect().bottom() == pytest.approx(plot.bottom())
+            assert bar.rect().left() >= plot.left() - 1e-6
+            assert bar.rect().right() <= plot.right() + 1e-6
+        window.visibility[0].setChecked(False)
+        assert all(not bar.isVisible() for bar in window.vertical_context_bars)
+        window.set_smoothing(5)
+        assert all(not bar.isVisible() for bar in window.vertical_context_bars)
+        window.visibility[0].setChecked(True)
+        assert any(bar.isVisible() for bar in window.vertical_context_bars)
+    window.reference_toggle.setChecked(False)
+    assert not window.vertical_context_bars
+    assert window.series[0].pen().style() == Qt.PenStyle.SolidLine
+    assert tuple(p.y() for p in window.series[0].points()) == data.channels[0]
 
 
 @pytest.mark.parametrize(
@@ -75,7 +240,8 @@ def test_open_chart_navigation_selection_and_integrity(
             data.default_time_range[0] <= data.time_at(index) <= data.default_time_range[1]
         )
     window.position.setValue(12)
-    assert window.slider.value() == 12 and "Sample 12" in window.readout.text()
+    assert window.slider.value() == 12
+    assert window.readout.text() == data.sample_text(12, rich=True)
     assert "0.240 s" in window.readout.text()
     assert window.sample_cursor.points()[0].x() == data.time_at(12)
     assert window.axis_x.titleText() == data.replay_time_label
@@ -103,10 +269,59 @@ def test_open_chart_navigation_selection_and_integrity(
     window.notes_button.click()
     assert window.notes.isVisible()
     if filename.startswith("IronGwazi"):
-        assert "Gravity absent" in window.summary.text() and "GPS absent" in window.summary.text()
+        assert window.summary.text() == data.technical_summary
+        assert "absent" in window.summary.text()
     assert path.read_bytes() == original and path.stat().st_mtime_ns == mtime
     expected_size, expected_hash = REAL_FIXTURES[filename]
     assert len(original) == expected_size and sha256(original).hexdigest() == expected_hash
+
+
+@pytest.mark.parametrize("calibrated", [False, True], ids=["raw", "calibrated"])
+def test_left_click_selects_nearest_sample_in_current_chart_view(
+    explorer_window: ExplorerWindow,
+    calibrated: bool,
+) -> None:
+    window = explorer_window
+    view = window.chart_view
+    QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton, pos=QPoint(1, 1))
+    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
+    wait_until(window.open_action.isEnabled)
+    window.reference_toggle.setChecked(calibrated)
+    data = window.data
+    assert data is not None
+    selection = (window.first.value(), window.last.value())
+    for zoomed in (False, True):
+        if zoomed:
+            window.zoom_wheel(0.5, 6)
+        time_range = (window.axis_x.min(), window.axis_x.max())
+        QApplication.processEvents()
+        plot = window.chart.plotArea()
+        for fraction in (0.0, 0.25, 0.75, 1.0):
+            chart_point = plot.topLeft()
+            chart_point.setX(plot.left() + fraction * plot.width())
+            chart_point.setY(plot.center().y())
+            point = view.mapFromScene(window.chart.mapToScene(chart_point))
+            # Keep rounded edge pixels inside the actual plot rectangle.
+            point.setX(max(int(plot.left()) + 1, min(int(plot.right()), point.x())))
+            actual = window.chart.mapFromScene(view.mapToScene(point))
+            seconds = time_range[0] + ((actual.x() - plot.left()) / plot.width()) * (
+                time_range[1] - time_range[0]
+            )
+            expected = data.sample_at_time(seconds)
+            QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton, pos=point)
+            assert window.position.value() == window.slider.value() == expected
+            assert window.sample_cursor.points()[0].x() == data.time_at(expected)
+            assert (window.axis_x.min(), window.axis_x.max()) == time_range
+            assert (window.first.value(), window.last.value()) == selection
+        previous = window.position.value()
+        QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton, pos=QPoint(1, 1))
+        assert window.position.value() == previous
+        center = view.mapFromScene(window.chart.mapToScene(plot.center()))
+        QTest.mousePress(view.viewport(), Qt.MouseButton.LeftButton, pos=center)
+        QTest.mouseMove(view.viewport(), center + QPoint(2, 0))
+        QTest.mouseRelease(view.viewport(), Qt.MouseButton.LeftButton, pos=center + QPoint(2, 0))
+        assert window.position.value() != previous
+        assert (window.axis_x.min(), window.axis_x.max()) == time_range
 
 
 def test_zoom_out_stops_at_recording_bounds(
@@ -119,6 +334,7 @@ def test_zoom_out_stops_at_recording_bounds(
     assert data is not None
     assert (window.axis_x.min(), window.axis_x.max()) == data.default_time_range
     fixed_range = data.value_range
+    initial_sample = window.position.value()
     assert (window.axis_y.min(), window.axis_y.max()) == fixed_range
     plot = window.chart.plotArea()
     start = plot.topLeft() + (plot.center() - plot.topLeft()) / 2
@@ -135,6 +351,7 @@ def test_zoom_out_stops_at_recording_bounds(
     )
     assert (window.axis_y.min(), window.axis_y.max()) == fixed_range
     assert window.axis_x.max() - window.axis_x.min() < data.duration
+    assert window.position.value() == initial_sample
     window.chart.zoom(4)
     assert (window.axis_y.min(), window.axis_y.max()) == fixed_range
     assert window.axis_x.max() - window.axis_x.min() < data.duration
@@ -416,7 +633,9 @@ def test_app_reference_toggle_for_manta_preserves_raw_values_selection_and_time(
     before = (window.axis_x.min(), window.axis_x.max(), window.first.value(), window.last.value())
     window.reference_toggle.setChecked(False)
     assert [line.name() for line in window.series] == ["x", "y", "z"]
-    assert "braking" not in window.readout.text() and "right" not in window.readout.text()
+    document = QTextDocument()
+    document.setHtml(window.readout.text())
+    assert "braking" not in document.toPlainText() and "right" not in document.toPlainText()
     assert tuple(point.y() for point in window.series[0].points()) == data.channels[0]
     assert (
         window.axis_x.min(),
@@ -427,6 +646,39 @@ def test_app_reference_toggle_for_manta_preserves_raw_values_selection_and_time(
     window.reference_toggle.setChecked(True)
     assert tuple(point.y() for point in window.series[0].points()) == data.reference.channels[0]
     assert window.data is not None and window.data.channels == data.channels
+
+
+@pytest.mark.parametrize(
+    ("language", "headings"),
+    [
+        (0, ("Source", "Processing", "Current sample")),
+        (1, ("Quelle", "Verarbeitung", "Aktueller Messpunkt")),
+    ],
+)
+def test_technical_details_sections_translate_and_update_sample(
+    explorer_window: ExplorerWindow,
+    language: int,
+    headings: tuple[str, str, str],
+) -> None:
+    window = explorer_window
+    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
+    wait_until(window.open_action.isEnabled)
+    window.set_ui_language(language)
+    window.details_button.setChecked(True)
+    captions = [label.text() for label in window.details_body.findChildren(QLabel)]
+    assert all(heading in captions for heading in headings)
+    for index in (1571, 4960):
+        window.position.setValue(index)
+        assert window.data is not None
+        assert window.readout.text() == window.data.sample_text(index, rich=True)
+        assert window.summary.text() == window.data.technical_summary
+        assert window.readout.textFormat() == Qt.TextFormat.RichText
+        assert window.summary.textFormat() == Qt.TextFormat.RichText
+        document = QTextDocument()
+        document.setHtml(window.readout.text())
+        seconds = f"{window.data.time_at(index):.3f} s"
+        assert (seconds.replace(".", ",") if language == 1 else seconds) in document.toPlainText()
+    assert "\n" in window.disclaimer.text()
 
 
 def test_replay_notation_on_chart_cursor_selection_and_markers(
@@ -443,8 +695,8 @@ def test_replay_notation_on_chart_cursor_selection_and_markers(
     assert "00:00.00" in window.axis_x.categoriesLabels()
     assert "ff = sample" in window.axis_x.titleText()
     window.position.setValue(5510)
-    assert "Replay 01:31.47 @ 50 Hz" in window.readout.text()
-    assert "Recording 110.200 s" in window.readout.text()
+    assert "Replay" in window.readout.text() and "01:31.47 @ 50 Hz" in window.readout.text()
+    assert "Recording" in window.readout.text() and "110.200 s" in window.readout.text()
     window.first.setValue(5510)
     window.last.setValue(5511)
     assert "01:31.47–01:31.48" in window.selection_label.text()
@@ -583,9 +835,11 @@ def test_smoothing_slider_preserves_source_time_and_selection(
             == window.data.plotted_channels[0]
         )
         assert f"{window.data.reference.smoothing_window} samples" in window.smoothing_label.text()
+        visible = window.data.select_visible(window.axis_x.min(), window.axis_x.max())
         extrema_context, extrema_rows = window.data.extrema_text(
-            window.first.value(),
-            window.last.value(),
+            visible.first,
+            visible.last,
+            rich=True,
         )
         assert window.extrema_context.text() == extrema_context
         assert tuple(label.text() for label in window.extrema_labels) == extrema_rows
@@ -645,6 +899,55 @@ def test_smoothing_slider_preserves_source_time_and_selection(
     assert window.smoothing_slider.value() == 5 and window.data.reference.smoothing_window == 11
 
 
+@pytest.mark.parametrize("language", [0, 1], ids=["english", "german"])
+@pytest.mark.parametrize("appearance", [0, 1], ids=["dark", "light"])
+def test_chart_shrinks_to_available_height_without_workspace_scrolling(
+    explorer_window: ExplorerWindow,
+    language: int,
+    appearance: int,
+) -> None:
+    window = explorer_window
+    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
+    wait_until(window.open_action.isEnabled)
+    window.set_ui_language(language)
+    window.set_appearance(appearance)
+    window.position.setValue(4960)
+    points = tuple(window.series[0].points())
+    time_range = (window.axis_x.min(), window.axis_x.max())
+    heights: list[int] = []
+    for width, height in ((1600, 1100), (1280, 820), (1280, 720), (1600, 1100)):
+        resize_workspace(window, width, height)
+        QApplication.processEvents()
+        assert window.plot_scroll.verticalScrollBar().maximum() == 0
+        assert not window.plot_scroll.verticalScrollBar().isVisible()
+        viewport = window.plot_scroll.viewport()
+        assert window.airtime_legend.isVisible()
+        assert window.airtime_legend.y() >= window.chart_view.geometry().bottom()
+        assert (
+            window.airtime_legend.mapTo(viewport, QPoint()).y()
+            < window.slider.mapTo(
+                viewport,
+                QPoint(),
+            ).y()
+        )
+        for control in (
+            window.reference_toggle,
+            window.airtime_legend,
+            window.slider,
+            window.position,
+            *window.value_labels,
+        ):
+            bounds = control.rect().translated(control.mapTo(viewport, QPoint(0, 0)))
+            assert viewport.rect().contains(bounds)
+        assert window.chart.plotArea().height() > 100
+        assert tuple(window.series[0].points()) == points
+        assert (window.axis_x.min(), window.axis_x.max()) == time_range
+        assert window.position.value() == 4960
+        heights.append(window.chart_view.height())
+    assert heights[0] > heights[1] > heights[2]
+    assert heights[3] == heights[0]
+
+
 @pytest.mark.parametrize("initial_width", [720, 1280], ids=["compact", "wide"])
 def test_focus_workspace_layout_and_current_value_cards(
     explorer_window: ExplorerWindow,
@@ -678,6 +981,12 @@ def test_focus_workspace_layout_and_current_value_cards(
         assert [label.text() for label in window.value_labels] == [
             card[1] for card in window.data.sample_cards(index)
         ]
+        context = window.data.airtime_context
+        assert context is not None
+        assert window.value_hints[0].text() == window.data.sample_cards(index)[0][2]
+        assert window.theme.vertical_context_colors[context.at(index)] in (
+            window.value_hints[0].styleSheet()
+        )
     window.reference_toggle.setChecked(False)
     assert [label.text() for label in window.value_names] == ["x", "y", "z"]
     assert all("unknown" in label.text() for label in window.value_hints)
@@ -745,7 +1054,7 @@ def test_slider_background_stays_dark(explorer_window: ExplorerWindow) -> None:
             assert max(color.red(), color.green(), color.blue()) < 70
 
 
-def test_selected_extrema_updates_and_remains_independent(
+def test_visible_extrema_follow_zoom_and_ignore_selection_and_cursor(
     explorer_window: ExplorerWindow,
 ) -> None:
     window = explorer_window
@@ -763,20 +1072,44 @@ def test_selected_extrema_updates_and_remains_independent(
             window.smoothing_slider.setValue(position)
             data = window.data
             assert data is not None
-            context, rows = data.extrema_text(10, 100)
+            visible = data.select_visible(*viewport)
+            context, rows = data.extrema_text(visible.first, visible.last, rich=True)
             assert window.extrema_context.text() == context
             assert tuple(label.text() for label in window.extrema_labels) == rows
+            assert all(
+                label.textFormat() == Qt.TextFormat.RichText for label in window.extrema_labels
+            )
             assert (window.axis_x.min(), window.axis_x.max()) == viewport
             assert window.position.value() == 50
     window.visibility[0].setChecked(False)
     assert "Vertical" in window.extrema_labels[0].text()
-    window.first.setValue(100)
-    assert "1 selected" in window.extrema_context.text()
-    assert all("Sample 100" in label.text() for label in window.extrema_labels)
     texts = tuple(label.text() for label in window.extrema_labels)
-    window.position.setValue(75)
-    window.reset_button.click()
+    window.first.setValue(100)
     assert tuple(label.text() for label in window.extrema_labels) == texts
+    window.position.setValue(75)
+    assert tuple(label.text() for label in window.extrema_labels) == texts
+    for change in (window.zoom_selection, lambda: window.zoom_wheel(0.5, -3), window.reset_view):
+        change()
+        visible = data.select_visible(window.axis_x.min(), window.axis_x.max())
+        context, rows = data.extrema_text(visible.first, visible.last, rich=True)
+        assert window.extrema_context.text() == context
+        assert tuple(label.text() for label in window.extrema_labels) == rows
+    window.zoom_selection()
+    assert (
+        "1 selected" in window.extrema_context.text()
+        or "2 selected" in window.extrema_context.text()
+    )
+    assert tuple(label.text() for label in window.extrema_labels) != texts
+    window.reset_button.click()
+    visible = data.select_visible(*data.default_time_range)
+    assert (
+        tuple(label.text() for label in window.extrema_labels)
+        == data.extrema_text(
+            visible.first,
+            visible.last,
+            rich=True,
+        )[1]
+    )
     resize_workspace(window, 720, 480)
     window.inspector_button.setChecked(True)
     QApplication.processEvents()

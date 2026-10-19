@@ -16,6 +16,8 @@ historical acceptance reports are not maintained.
 - [Video export](implementation/VIDEO_EXPORT.md), [saved presets and batches](implementation/EXPORT_BATCHES.md).
 - [All export themes](EXPORT_THEMES.md), [layout extension API](development/EXPORT_LAYOUTS.md),
   [Manta video with the G-Orbit overlay](https://youtu.be/tsRzD416voU).
+- [Provisional airtime context](implementation/AIRTIME.md).
+- [Current screenshots, reference settings and image license](images/README.md).
 - [English/German presentation](development/LOCALIZATION.md).
 - Import APIs: [service](development/IMPORT_SERVICE.md), [models](development/CANONICAL_MODELS.md),
   [decoder](development/STRICT_DECODING.md), [motion](development/MOTION_PARSING.md),
@@ -32,7 +34,8 @@ historical acceptance reports are not maintained.
 - [Dependency inventory](validation/DEPENDENCIES.md),
   [third-party licenses](../THIRD_PARTY_NOTICES.md).
 - [Releases and Windows downloads](development/RELEASE.md).
-- [Desktop, export and Windows-package validation](validation/WINDOWS_PACKAGES.md).
+- [Desktop, export and Windows-package validation](validation/WINDOWS_PACKAGES.md),
+  [airtime context and layout validation](validation/AIRTIME_CONTEXT.md).
 - [Recording catalog and authorization](development/RECORDINGS.md),
   [recording reuse license](../tests/fixtures/real/README.md), [image reuse license](images/README.md).
 

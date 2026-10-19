@@ -292,7 +292,11 @@ non-finite selected values raise ValueError. Filtering is never repeated at sele
 edges. Source arrays/bytes are unchanged.
 
 ExplorerData.selection_extrema delegates calculation; extrema_text formats replay
-notation and processing context. The inspector refreshes on load, mode, smoothing
-and selection changes, including while the slider is held. Cursor/zoom or hiding
-a curve does not change the result. The [analysis contract](../architecture/08_concepts.md#scientific-provenance-and-gates)
+notation and processing context; its optional `rich=True` presentation returns
+per-channel HTML tables with aligned extrema/replay columns and smaller sample
+and recording-time details. Plain text remains the default. The inspector maps
+the visible time range through `select_visible` and refreshes on load, zoom,
+mode and smoothing, including while the slider is held. Cursor movement,
+explicit From/To selection and hiding a curve do not change the result.
+The [analysis contract](../architecture/08_concepts.md#scientific-provenance-and-gates)
 summarizes this scope; it is not a general statistics or physical-calibration API.

@@ -114,7 +114,14 @@ def test_light_text_and_channel_colors_have_readable_contrast() -> None:
             value * weight for value, weight in zip(linear, (0.2126, 0.7152, 0.0722), strict=True)
         )
 
-    for color in (theme.text, theme.muted, *theme.forces, *theme.raw, *theme.markers):
+    for color in (
+        theme.text,
+        theme.muted,
+        *theme.forces,
+        *theme.raw,
+        *theme.markers,
+        *theme.vertical_context_colors.values(),
+    ):
         assert (luminance(theme.panel) + 0.05) / (luminance(color) + 0.05) >= 4.5
 
 
@@ -185,13 +192,13 @@ def test_dialogs_and_gps_follow_light_and_dark(explorer_window: ExplorerWindow) 
         for index in (1, 0):
             window.set_appearance(index)
             QApplication.processEvents()
-            expected = QColor("#ffffff" if index else "#182330")
+            expected = QColor(window.theme.panel)
             assert view.palette().base().color() == expected
-            assert dialog.seconds.palette().base().color() == QColor(
-                "#ffffff" if index else "#111c29",
+            assert (
+                dialog.seconds.palette().base().color() == window.position.palette().base().color()
             )
-            assert batches.table.palette().base().color() == QColor(
-                "#ffffff" if index else "#111c29",
+            assert (
+                batches.table.palette().base().color() == window.position.palette().base().color()
             )
             assert dialog.preview_result is result
             scene = view.scene()

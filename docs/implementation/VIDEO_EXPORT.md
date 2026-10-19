@@ -96,10 +96,10 @@ of the exported template over Onride footage.
   on missing data. Random-access previews and video frames use the same immutable
   source-time envelopes, independent of query order and export fps.
   Peak bars are 4 px wide with dark outlines, using muted cyan/green/orange
-  (#008cac/#24a65e/#ad6c2e). Corresponding arc fills use alpha 65/255, composited
+  (#008cac/#a8974c for vertical/lateral; longitudinal green/red by sign). Corresponding arc fills use alpha 65/255, composited
   over the track; opaque current arcs and white current markers remain on top.
 - Compact panel RGBA is (7,15,25,210), with transparent surroundings and opaque
-  vivid cyan/green/orange data, outlined text/curves and visible -1/0/+1 references.
+  vivid cyan vertical and yellow lateral data, green/red longitudinal data, outlined text/curves and visible -1/0/+1 references.
   Flow Ribbon region is (384,1692,3072,360); Corner Instruments (2808,140,840,1120);
   Capsule (768,108,2304,300); G-Orbit (192,1260,800,800), in x/y/width/height pixels.
   Portrait G-Orbit is (240,2412,1188,1188), retaining circular proportions.
@@ -117,14 +117,16 @@ of the exported template over Onride footage.
   extremes at the bottom/top. Vertical direction remains manually reversible in
   every layout. Saved presets retain their explicit vertical direction.
   Time advances left-to-right on horizontal axes and bottom-to-top on vertical
-  axes: left/bottom is past, right/top is future. Lateral histories use a vertical
+  axes: left/bottom is past, right/top is future. The four-panel column uses
+  horizontal time axes throughout, with lateral forces positive-down by default.
+  Compact lateral histories use a vertical
   time axis advancing upward, with negative
   (left) forces left of the centered zero axis and positive (right) forces right.
   Current-only lateral instruments indicate left/right horizontally; G-Orbit uses
   its upper semicircle, centered at the top. Both
   directions share the larger absolute selected bound, preserving equal scale.
-  This direction is fixed across all themes/aspects/previews. Legacy lateral
-  inversion settings remain readable in presets but do not reverse the display;
+  This direction is fixed across compact themes/aspects/previews. Legacy lateral
+  inversion settings remain readable in presets but only affect the column display;
   the assistant disables lateral inversion. Numeric signs remain unchanged.
   Axis inversion does not negate source values or change right/left/braking signs.
   Longitudinal acceleration (positive) always appears above zero; deceleration /

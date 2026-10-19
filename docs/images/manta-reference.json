@@ -1,0 +1,27 @@
+{
+  "sample": 4782,
+  "replay": "01:11.18",
+  "recording_seconds": 95.64,
+  "replay_seconds": 71.36,
+  "rate": 50.0,
+  "values": [
+    -3.720831192921285,
+    0.057392933698002406,
+    0.33266057025701246
+  ],
+  "source_sha256": "30cf81c360cb28f45ee97234779689bdcdd7ec3aa8fa148645a4b015771be6c6",
+  "smoothing": 11,
+  "first": 1214,
+  "last": 9639,
+  "language": "en",
+  "aspect": "landscape",
+  "fps": 50,
+  "window_seconds": 12.0,
+  "profiles": [
+    "ribbon",
+    "corners",
+    "capsule",
+    "orbit",
+    "column"
+  ]
+}

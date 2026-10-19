@@ -6,6 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
 from typing import Literal
+from ride_forces_analyzer.airtime_colors import VERTICAL_CONTEXT_COLORS
 
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtCore import Qt
@@ -90,6 +91,20 @@ class Theme:
     forces: tuple[str, str, str]
     raw: tuple[str, str, str]
     markers: tuple[str, str, str, str]
+
+    @property
+    def vertical_context_colors(self) -> dict[str, str]:
+        if self.name == "dark":
+            return dict(VERTICAL_CONTEXT_COLORS)
+        return {
+            "Heavy Gs": "#7040a0",
+            "Normal Gs": "#555555",
+            "Light Gs": "#285b91",
+            "Floater Airtime": "#006578",
+            "Airtime": "#756000",
+            "Strong Airtime": "#964500",
+            "Ejector Airtime": "#b1253a",
+        }
 
     @property
     def stylesheet(self) -> str:

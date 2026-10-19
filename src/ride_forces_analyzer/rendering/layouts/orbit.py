@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 from math import cos, sin, radians
 from ..peaks import PeakEnvelope
-from .common import Drawing
+from .common import ACCELERATION_COLOR, BRAKING_COLOR, Drawing
 from .contracts import LayoutPlugin
 
 
@@ -26,7 +26,7 @@ LABEL_FONT_SIZE = 30  # Channel title and unavailable-value size in pixels.
 NUMBER_FONT_SIZE = 54  # Main force readout size in pixels.
 SMALL_FONT_SIZE = 24  # Hints and footer size in pixels.
 TICK_FONT_SIZE = 19  # Scale and time-axis label size in pixels.
-CHANNEL_COLORS = ("#00ceff", "#35f58a", "#ffa044")  # Vertical, lateral and longitudinal colors.
+CHANNEL_COLORS = ("#00ceff", "#ebd36a", "#ffa044")  # Vertical, lateral and longitudinal colors.
 PANEL_CORNER_RADIUS = 36  # Rounded panel corner radius in pixels.
 PANEL_FILL = (7, 15, 25, 210)  # Translucent panel RGBA fill.
 PANEL_OUTLINE = (200, 225, 245, 135)  # Panel border RGBA color.
@@ -45,7 +45,7 @@ FORCE_ARCS = (
 )  # Channel, outer radius, start and end angle per track.
 FORCE_STROKE_WIDTH = 30  # Force track thickness; Pillow grows inward.
 TRACK_COLOR = (210, 230, 245, 75)  # Inactive force track RGBA color.
-PEAK_COLORS = ("#008cac", "#24a65e", "#ad6c2e")  # Muted signed peak colors per force channel.
+PEAK_COLORS = ("#008cac", "#a8974c", "#ad6c2e")  # Muted signed peak colors per force channel.
 PEAK_FILL_ALPHA = 65  # Peak segment overlay opacity from 0 to 255.
 PEAK_HOLD_SECONDS = 1.5  # Source-time hold duration before release.
 PEAK_RELEASE_G_PER_SECOND = 1.0  # Peak return speed toward zero.
@@ -174,15 +174,25 @@ class OrbitRenderer(Drawing):
                 peaks = self.peaks[row].at(position, current)
                 peak_layer = Image.new("RGBA", image.size)
                 peak_draw = ImageDraw.Draw(peak_layer)
-                peak_fill = (*bytes.fromhex(peak_color[1:]), PEAK_FILL_ALPHA)
                 for peak in peaks:
                     if abs(peak) < PEAK_VISIBLE_THRESHOLD:
                         continue
                     a, b = sorted((self.orbit_angle(0, row), self.orbit_angle(peak, row)))
+                    color = (
+                        (ACCELERATION_COLOR if peak >= 0 else BRAKING_COLOR)
+                        if row == 2
+                        else peak_color
+                    )
+                    peak_fill = (*bytes.fromhex(color[1:]), PEAK_FILL_ALPHA)
                     peak_draw.arc(circle, a, b, fill=peak_fill, width=stroke)
                 image.alpha_composite(peak_layer)
                 a, b = sorted((self.orbit_angle(0, row), self.orbit_angle(current, row)))
-                draw.arc(circle, a, b, fill=CHANNEL_COLORS[row], width=stroke)
+                color = (
+                    (ACCELERATION_COLOR if current >= 0 else BRAKING_COLOR)
+                    if row == 2
+                    else CHANNEL_COLORS[row]
+                )
+                draw.arc(circle, a, b, fill=color, width=stroke)
                 for peak in peaks:
                     if abs(peak) < PEAK_VISIBLE_THRESHOLD:
                         continue
@@ -196,7 +206,12 @@ class OrbitRenderer(Drawing):
                         fill=PEAK_MARKER_OUTLINE_COLOR,
                         width=PEAK_MARKER_OUTLINE_WIDTH,
                     )
-                    draw.line(marker, fill=peak_color, width=PEAK_MARKER_WIDTH)
+                    color = (
+                        (ACCELERATION_COLOR if peak >= 0 else BRAKING_COLOR)
+                        if row == 2
+                        else peak_color
+                    )
+                    draw.line(marker, fill=color, width=PEAK_MARKER_WIDTH)
                 marker_angle = self.orbit_angle(current, row)
                 marker = (
                     *point(radius - stroke - CURRENT_MARKER_EXTENSION, marker_angle),

@@ -1,6 +1,6 @@
 """Export clocks, source-bound orientation, real RGBA geometry and offline encoding."""
 
-# cspell:words ffprobe frombytes getcolors getpixel getchannel getextrema hwupload prores qscale rawvideo libx
+# cspell:words ffprobe frombytes getcolor getcolors getrgb getpixel getchannel getextrema hwupload prores qscale rawvideo libx
 
 from dataclasses import replace
 from math import radians, sin, cos
@@ -11,7 +11,7 @@ from threading import Event
 from typing import Literal
 from unittest.mock import patch
 
-from PIL import Image
+from PIL import Image, ImageColor
 import pytest
 
 from ride_forces_analyzer.analysis.orientation import orientation_degrees
@@ -25,8 +25,10 @@ from ride_forces_analyzer.rendering.model import (
     prepare_export,
 )
 from ride_forces_analyzer.rendering.layouts import COLORS, REGIONS, create_renderer, lateral_x
+from ride_forces_analyzer.rendering.layouts import orbit
+from ride_forces_analyzer.rendering.layouts.common import ACCELERATION_COLOR, BRAKING_COLOR
 from ride_forces_analyzer.rendering.layouts.charts import ChartRenderer
-from ride_forces_analyzer.rendering.layouts.column import ColumnRenderer
+from ride_forces_analyzer.rendering.layouts.column import BACKGROUND_COLOR, ColumnRenderer
 from ride_forces_analyzer.rendering.layouts.orbit import OrbitRenderer
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
 
@@ -105,8 +107,8 @@ def test_4k_canvas_has_single_right_column_and_all_panels(manta: ExplorerData, m
     renderer = OverlayRenderer(timeline)
     frame = renderer.render_frame(0)
     assert frame.size == (3840, 2160) and frame.mode == "RGBA"
-    assert frame.getpixel((0, 0)) == (0, 0, 0, 0 if mode == "transparent" else 255)
-    assert frame.getpixel((COLUMN_X, 0)) == (0, 0, 0, 255)
+    assert frame.getchannel("A").getpixel((0, 0)) == (0 if mode == "transparent" else 255)
+    assert frame.getpixel((COLUMN_X, 0)) == BACKGROUND_COLOR
     for row, channel in enumerate(timeline.channels):
         panel = frame.crop((COLUMN_X, row * 540, WIDTH, (row + 1) * 540))
         colors = panel.getcolors(960 * 540)
@@ -301,7 +303,7 @@ def test_compact_profiles_preserve_alpha_color_and_force_scales(
     frame = renderer.render_frame(0)
     x, y, width, height = REGIONS[layout]
     assert region.size == (width, height)
-    assert frame.getpixel((100, 100)) == (0, 0, 0, 0)
+    assert frame.getchannel("A").getpixel((100, 100)) == 0
     assert region.getchannel("A").histogram()[210] > width * height / 3
     assert region.getchannel("A").getextrema() == (0, 255)
     assert frame.crop((x, y, x + width, y + height)).tobytes() == region.tobytes()
@@ -354,7 +356,7 @@ def test_vertical_force_direction_and_manual_override(
 
 
 @pytest.mark.parametrize("layout", [layout for layout, _ in PROFILES])
-def test_lateral_direction_is_horizontal_and_time_advances_up(
+def test_lateral_direction_and_time_follow_layout_axes(
     manta: ExplorerData,
     layout: ExportLayout,
 ) -> None:
@@ -374,11 +376,16 @@ def test_lateral_direction_is_horizontal_and_time_advances_up(
     chart = renderer.renderer
     assert isinstance(chart, (ChartRenderer, ColumnRenderer))
     points = [chart.trace_point(channel, value, 0.5, 1) for value in (-1, 0, 1)]
-    assert points[0][0] < points[1][0] < points[2][0]
-    assert points[0][1] == points[1][1] == points[2][1]
     earlier = chart.trace_point(channel, 0, 0.25, 1)
     later = chart.trace_point(channel, 0, 0.75, 1)
-    assert earlier[0] == later[0] and earlier[1] > later[1]
+    if layout == "column":
+        assert points[0][0] == points[1][0] == points[2][0]
+        assert points[0][1] < points[1][1] < points[2][1]
+        assert earlier[0] < later[0] and earlier[1] == later[1]
+    else:
+        assert points[0][0] < points[1][0] < points[2][0]
+        assert points[0][1] == points[1][1] == points[2][1]
+        assert earlier[0] == later[0] and earlier[1] > later[1]
     for row in (0, 2):
         earlier = chart.trace_point(timeline.channels[row], 0, 0.25, row)
         later = chart.trace_point(timeline.channels[row], 0, 0.75, row)
@@ -408,6 +415,26 @@ def test_longitudinal_acceleration_up_and_braking_down(
         assert sin(radians(renderer.renderer.orbit_angle(-1, 2))) > 0
 
 
+@pytest.mark.parametrize("layout", ["column", "ribbon", "corners", "capsule"])
+def test_longitudinal_trace_changes_color_at_zero(
+    manta: ExplorerData,
+    layout: ExportLayout,
+) -> None:
+    timeline = prepare_export(manta, ExportSettings(layout=layout, window_seconds=2), 3600, 3699)
+    values = tuple((3649.5 - index) / 49.5 for index in range(manta.count))
+    channel = replace(timeline.channels[2], values=values, low=-1.05, high=1.05)
+    timeline = replace(timeline, channels=(*timeline.channels[:2], channel, timeline.channels[3]))
+    renderer = OverlayRenderer(timeline).renderer
+    assert isinstance(renderer, (ChartRenderer, ColumnRenderer))
+    image = renderer.render_position(3650)
+    for index, color in ((3620, ACCELERATION_COLOR), (3679, BRAKING_COLOR)):
+        x, y = renderer.trace_point(channel, values[index], (index - 3600) / 100, 2)
+        pixels = {
+            image.getpixel((round(x) + dx, round(y) + dy)) for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+        }
+        assert ImageColor.getcolor(color, "RGBA") in pixels
+
+
 @pytest.mark.parametrize("row", [0, 1, 2])
 def test_orbit_signed_arcs_paint_physical_directions(manta: ExplorerData, row: int) -> None:
     timeline = prepare_export(manta, ExportSettings(layout="orbit"), 3600, 3601)
@@ -426,7 +453,12 @@ def test_orbit_signed_arcs_paint_physical_directions(manta: ExplorerData, row: i
             angle = radians(renderer.orbit_angle(v, row))
             return round(400 + radius * cos(angle)), round(400 + radius * sin(angle))
 
-        expected = (*bytes.fromhex(COLORS[row][1:]), 255)
+        color = (
+            (ACCELERATION_COLOR if value >= 0 else BRAKING_COLOR)
+            if row == 2
+            else orbit.CHANNEL_COLORS[row]
+        )
+        expected = (*bytes.fromhex(color[1:]), 255)
         assert image.getpixel(pixel(value / 2)) == expected
         assert image.getpixel(pixel(-value / 2)) != expected
         if row == 1:
@@ -448,19 +480,15 @@ def test_orbit_peak_hold_shading_and_markers(manta: ExplorerData) -> None:
     a = radians(-40)
     pixel = (round(400 + 275 * cos(a)), round(400 + 275 * sin(a)))
     expected = Image.alpha_composite(
-        Image.new("RGBA", (1, 1), (210, 230, 245, 75)),
-        Image.new("RGBA", (1, 1), (173, 108, 46, 65)),
+        Image.new("RGBA", (1, 1), orbit.TRACK_COLOR),
+        Image.new("RGBA", (1, 1), (*ImageColor.getrgb(ACCELERATION_COLOR), orbit.PEAK_FILL_ALPHA)),
     ).getpixel((0, 0))
     assert image.getpixel(pixel) == expected
     a = radians(renderer.orbit_angle(0.8, 2))
-    assert image.getpixel((round(400 + 275 * cos(a)), round(400 + 275 * sin(a)))) == (
-        173,
-        108,
-        46,
-        255,
-    )
-    assert image.getpixel((665, 400)) == (255, 255, 255, 255)
-    assert image.getpixel((62, 400)) == (7, 15, 25, 210)  # No unsupported left orientation arc.
+    marker_pixel = (round(400 + 275 * cos(a)), round(400 + 275 * sin(a)))
+    assert image.getpixel(marker_pixel) == ImageColor.getcolor(ACCELERATION_COLOR, "RGBA")
+    assert image.getpixel((665, 400)) == ImageColor.getcolor(orbit.CURRENT_MARKER_COLOR, "RGBA")
+    assert image.getpixel((62, 400)) == orbit.PANEL_FILL  # No unsupported left orientation arc.
 
 
 def test_orbit_lateral_stroke_grows_outward_with_shifted_scale(manta: ExplorerData) -> None:
@@ -470,7 +498,7 @@ def test_orbit_lateral_stroke_grows_outward_with_shifted_scale(manta: ExplorerDa
         replace(timeline, channels=(timeline.channels[0], lateral, *timeline.channels[2:])),
     )
     image = renderer.render_position(3600)
-    expected = (*bytes.fromhex(COLORS[1][1:]), 255)
+    expected = (*bytes.fromhex(orbit.CHANNEL_COLORS[1][1:]), 255)
 
     def pixel(radius: int) -> object:
         a = radians(310)
@@ -481,7 +509,10 @@ def test_orbit_lateral_stroke_grows_outward_with_shifted_scale(manta: ExplorerDa
     assert pixel(178) != expected
     assert pixel(218) != expected
     # Allow the adjacent raster column when cos(270°) falls just below zero.
-    assert any(image.getpixel((x, 179)) == (228, 237, 245, 255) for x in (399, 400))
+    assert any(
+        image.getpixel((x, 179)) == ImageColor.getcolor(orbit.SCALE_COLOR, "RGBA")
+        for x in (399, 400)
+    )
 
 
 @pytest.mark.parametrize("row,angle,inner", [(0, 140, 264), (2, -40, 264)])
@@ -500,7 +531,8 @@ def test_orbit_force_stroke_thickens_inward(
     )
     renderer = OrbitRenderer(replace(timeline, channels=channels))
     image = renderer.render_position(3600)
-    expected = (*bytes.fromhex(COLORS[row][1:]), 255)
+    color = ACCELERATION_COLOR if row == 2 else orbit.CHANNEL_COLORS[row]
+    expected = (*bytes.fromhex(color[1:]), 255)
 
     # Probe within the filled quadrant, away from ticks and the value marker.
     def pixel(radius: int) -> object:
@@ -523,7 +555,9 @@ def test_orbit_orientation_marker_is_omitted_when_unavailable(manta: ExplorerDat
         image = renderer.render_position(3600)
         a = radians(renderer.orientation_angle(45))
         pixel = (round(400 + 344 * cos(a)), round(400 + 344 * sin(a)))
-        assert (image.getpixel(pixel) == (255, 255, 255, 255)) == (value is not None)
+        assert (
+            image.getpixel(pixel) == ImageColor.getcolor(orbit.ORIENTATION_BUG_COLOR, "RGBA")
+        ) == (value is not None)
 
 
 def test_orbit_preserves_negative_forces_and_absent_orientation(manta: ExplorerData) -> None:

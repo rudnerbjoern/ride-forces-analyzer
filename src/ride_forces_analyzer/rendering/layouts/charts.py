@@ -13,8 +13,10 @@ if TYPE_CHECKING:
     from ..model import ExportChannel, ExportTimeline
 
 from math import ceil, floor
+from ride_forces_analyzer.analysis.airtime import AirtimeContext
+from ride_forces_analyzer.airtime_colors import VERTICAL_CONTEXT_COLORS as VERTICAL_CONTEXT_COLORS
 from ride_forces_analyzer.explorer import format_sample_time
-from .common import Drawing, lateral_x
+from .common import ACCELERATION_COLOR, BRAKING_COLOR, Drawing, lateral_x
 
 
 class ChartRenderer(Drawing):
@@ -65,6 +67,7 @@ class ChartRenderer(Drawing):
 
     def __init__(self, timeline: ExportTimeline) -> None:
         super().__init__(timeline, *self.native_size)
+        self.airtime = AirtimeContext.prepare(timeline.channels[0].values, timeline.sample_rate)
         draw = ImageDraw.Draw(self.base)
         if not self.stacked:
             self._panel(draw, (0, 0, self.width - 1, self.height - 1))
@@ -197,7 +200,7 @@ class ChartRenderer(Drawing):
                 self.channel_colors[row],
             )
             hint = (
-                "Vertical force"
+                ("Unavailable" if value is None else self.airtime.at(position))
                 if row == 0
                 else "Unavailable"
                 if value is None
@@ -210,7 +213,7 @@ class ChartRenderer(Drawing):
                 (x + self.text_left, y + self.hint_top),
                 self._tr(hint),
                 self.small,
-                self.hint_color,
+                VERTICAL_CONTEXT_COLORS.get(hint, self.hint_color) if row == 0 else self.hint_color,
             )
             x0, _, x1, bottom = self.plot_box(row)
             points: list[tuple[float, float]] = []
@@ -218,7 +221,20 @@ class ChartRenderer(Drawing):
             def paint() -> None:
                 if len(points) > 1:
                     draw.line(points, fill=self.trace_outline_color, width=self.trace_outline_width)
-                    draw.line(points, fill=self.channel_colors[row], width=self.trace_width)
+                    if row != 2:
+                        draw.line(points, fill=self.channel_colors[row], width=self.trace_width)
+                        return
+                    zero_y = self.value_y(channel, 0, row)
+                    for start, end in zip(points, points[1:]):
+                        start_color = ACCELERATION_COLOR if start[1] <= zero_y else BRAKING_COLOR
+                        end_color = ACCELERATION_COLOR if end[1] <= zero_y else BRAKING_COLOR
+                        if start_color == end_color:
+                            draw.line((start, end), fill=start_color, width=self.trace_width)
+                        else:
+                            fraction = (zero_y - start[1]) / (end[1] - start[1])
+                            zero = (start[0] + fraction * (end[0] - start[0]), zero_y)
+                            draw.line((start, zero), fill=start_color, width=self.trace_width)
+                            draw.line((zero, end), fill=end_color, width=self.trace_width)
 
             for index in range(first, last + 1):
                 sample = channel.values[index]
@@ -239,7 +255,11 @@ class ChartRenderer(Drawing):
                         cx + self.marker_radius,
                         cy + self.marker_radius,
                     ),
-                    fill=self.channel_colors[row],
+                    fill=(
+                        (ACCELERATION_COLOR if value >= 0 else BRAKING_COLOR)
+                        if row == 2
+                        else self.channel_colors[row]
+                    ),
                     outline=self.marker_outline_color,
                     width=self.marker_outline_width,
                 )
