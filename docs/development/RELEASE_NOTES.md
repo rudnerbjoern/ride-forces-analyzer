@@ -3,10 +3,20 @@
 Explore Ride Forces recordings and create G-force overlays for your coaster
 videos. Processing stays local and preserves original recordings.
 
-## Included in version 0.2.0
+## Included in version 0.3.0
 
 - Portable Windows EXE, standard ZIP and complete ZIP with FFmpeg, plus source downloads.
+- A colored airtime context strip that follows chart zoom, with stable vertical-force
+  labels for Floater, Airtime, Strong Airtime and Ejector. These are provisional
+  interpretations, not measured rider sensations.
+- Consistent export colors: yellow lateral forces, green acceleration and red braking.
+  Flow Ribbon, Corner Instruments and Telemetry Capsule also show vertical-force context.
+- Click the chart to select a sample; inspect extrema for the visible chart range.
+  The From/To interval is highlighted, and holding its arrows accelerates sample stepping.
+- A more compact workspace with organized technical details and visible-range extrema.
 - Remembered folders, language and appearance, with Windows defaults for new users.
+- FFmpeg Browse opens the configured encoder directory; invalid preference inputs
+  are rejected before changing saved settings.
 - About information and optional GitHub update notifications.
 - Export filenames based on the recording, estimated output size and remaining time.
 

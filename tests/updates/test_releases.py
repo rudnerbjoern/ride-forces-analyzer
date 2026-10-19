@@ -78,7 +78,7 @@ def test_transport_uses_public_api_and_paginates(monkeypatch: pytest.MonkeyPatch
             assert not request.has_header("Authorization")
             assert 0 < timeout <= updates.REQUEST_TIMEOUT
             requests.append(request.full_url)
-            rows = [release("v0.1.0")] * 100 if len(requests) == 1 else [release("v0.2.0")]
+            rows = [release("v0.1.0")] * 100 if len(requests) == 1 else [release("v0.3.0")]
             return Response(json.dumps(rows).encode())
 
     def opener(*handlers: object) -> Opener:
@@ -86,7 +86,7 @@ def test_transport_uses_public_api_and_paginates(monkeypatch: pytest.MonkeyPatch
 
     monkeypatch.setattr(updates, "build_opener", opener)
     result = updates.check_for_update("0.1.0")
-    assert result is not None and result.tag == "v0.2.0"
+    assert result is not None and result.tag == "v0.3.0"
     assert requests == [f"{updates.RELEASES_API}?per_page=100&page={page}" for page in (1, 2)]
 
 
@@ -126,8 +126,8 @@ def test_update_preferences_opt_in_daily_attempts_and_skipped_version_survive_re
         preferences.remember_automatic_updates(True)
         assert preferences.update_check_due(100000)
         preferences.remember_update_check(100000)
-        preferences.skip_update("v0.2.0")
+        preferences.skip_update("v0.3.0")
         restored = Preferences(path)
-        assert restored.automatic_updates() and restored.skipped_update() == "v0.2.0"
+        assert restored.automatic_updates() and restored.skipped_update() == "v0.3.0"
         assert not restored.update_check_due(186399)
         assert restored.update_check_due(186400)
