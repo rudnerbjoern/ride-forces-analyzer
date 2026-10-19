@@ -7,6 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from contextlib import closing
 from pathlib import Path
 import sqlite3
+from pydantic import FiniteFloat, TypeAdapter
 
 from .exports import default_database_path
 from ride_forces_analyzer.rendering.model import EXPORT_FRAME_RATES, FrameRate
@@ -14,11 +15,31 @@ from ride_forces_analyzer.i18n import Language
 from typing import Literal
 from math import isfinite
 
+Appearance = Literal["dark", "light", "system"]
+DirectoryKey = Literal["recording_directory", "export_directory"]
+PreferenceKey = Literal[
+    DirectoryKey,
+    "language",
+    "appearance",
+    "export_fps",
+    "automatic_updates",
+    "update_checked_at",
+    "skipped_update",
+]
+
+_LANGUAGE = TypeAdapter(Language)
+_APPEARANCE = TypeAdapter(Appearance)
+_BOOLEAN = TypeAdapter(bool)
+_TEXT = TypeAdapter(str)
+_PATH = TypeAdapter(Path)
+_TIMESTAMP = TypeAdapter(FiniteFloat)
+
 
 class Preferences:
     def __init__(self, path: Path | None = None) -> None:
-        self.path = (
-            path if path is not None else default_database_path().with_name("preferences.sqlite3")
+        self.path = _PATH.validate_python(
+            path if path is not None else default_database_path().with_name("preferences.sqlite3"),
+            strict=True,
         )
 
     def recording_directory(self) -> str:
@@ -27,7 +48,7 @@ class Preferences:
     def export_directory(self) -> str:
         return self._directory("export_directory")
 
-    def _directory(self, key: str) -> str:
+    def _directory(self, key: DirectoryKey) -> str:
         value = self._read(key)
         try:
             return value if value and Path(value).is_dir() else ""
@@ -35,18 +56,19 @@ class Preferences:
             return ""
 
     def language(self, default: Language = "en") -> Language:
+        default = _LANGUAGE.validate_python(default, strict=True)
         value = self._read("language")
         return "de" if value == "de" else "en" if value == "en" else default
 
-    def appearance(self) -> Literal["dark", "light", "system"]:
+    def appearance(self) -> Appearance:
         value = self._read("appearance")
         return "light" if value == "light" else "dark" if value == "dark" else "system"
 
     def remember_language(self, value: Language) -> None:
-        self._write("language", value)
+        self._write("language", _LANGUAGE.validate_python(value, strict=True))
 
-    def remember_appearance(self, value: Literal["dark", "light", "system"]) -> None:
-        self._write("appearance", value)
+    def remember_appearance(self, value: Appearance) -> None:
+        self._write("appearance", _APPEARANCE.validate_python(value, strict=True))
 
     def export_fps(self) -> FrameRate:
         value = self._read("export_fps")
@@ -64,9 +86,11 @@ class Preferences:
         return self._read("automatic_updates") == "true"
 
     def remember_automatic_updates(self, enabled: bool) -> None:
+        enabled = _BOOLEAN.validate_python(enabled, strict=True)
         self._write("automatic_updates", "true" if enabled else "false")
 
     def update_check_due(self, now: float) -> bool:
+        now = _TIMESTAMP.validate_python(now, strict=True)
         if not self.automatic_updates():
             return False
         try:
@@ -76,15 +100,15 @@ class Preferences:
         return not isfinite(last) or now < last or now - last >= 86400
 
     def remember_update_check(self, now: float) -> None:
-        self._write("update_checked_at", str(now))
+        self._write("update_checked_at", str(_TIMESTAMP.validate_python(now, strict=True)))
 
     def skipped_update(self) -> str:
         return self._read("skipped_update")
 
     def skip_update(self, tag: str) -> None:
-        self._write("skipped_update", tag)
+        self._write("skipped_update", _TEXT.validate_python(tag, strict=True))
 
-    def _read(self, key: str) -> str:
+    def _read(self, key: PreferenceKey) -> str:
         try:
             if not self.path.is_file():
                 return ""
@@ -103,7 +127,8 @@ class Preferences:
     def remember_export(self, path: Path) -> None:
         self._remember("export_directory", path)
 
-    def _remember(self, key: str, path: Path) -> None:
+    def _remember(self, key: DirectoryKey, path: Path) -> None:
+        path = _PATH.validate_python(path, strict=True)
         try:
             directory = path.resolve().parent
             if not directory.is_dir():
@@ -112,7 +137,7 @@ class Preferences:
         except OSError, ValueError:
             return
 
-    def _write(self, key: str, value: str) -> None:
+    def _write(self, key: PreferenceKey, value: str) -> None:
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with closing(sqlite3.connect(self.path, timeout=0.1)) as connection, connection:
