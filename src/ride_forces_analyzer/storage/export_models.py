@@ -4,11 +4,13 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
+from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Literal, Self
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_serializer, field_validator, model_validator
 
+from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, source_app_configuration
 from ride_forces_analyzer.rendering.model import ExportSettings
 
 RangeMode = Literal["markers", "selection", "entire"]
@@ -20,6 +22,59 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
     settings: ExportSettings
     smoothing_window: int = Field(default=11, ge=1, le=51)
     range_mode: RangeMode = "markers"
+    analysis_configuration: AnalysisConfiguration | None = None
+
+    @property
+    def configuration(self) -> AnalysisConfiguration:
+        """Resolve legacy presets using the version-1 source-app policy and stored window."""
+        if self.analysis_configuration is not None:
+            return self.analysis_configuration
+        configuration = source_app_configuration()
+        return replace(
+            configuration,
+            smoothing=replace(
+                configuration.smoothing,
+                parameters=(("window_samples", self.smoothing_window),),
+            ),
+        )
+
+    @model_validator(mode="after")
+    def matching_window(self) -> Self:
+        if self.analysis_configuration is not None:
+            window = dict(self.analysis_configuration.smoothing.parameters).get(
+                "window_samples",
+                11,
+            )
+            if type(window) is not int or window != self.smoothing_window:
+                raise ValueError("Analysis configuration and smoothing window must match")
+        return self
+
+    @field_serializer("analysis_configuration")
+    def serialize_configuration(
+        self,
+        value: AnalysisConfiguration | None,
+    ) -> dict[str, object] | None:
+        """Serialize only the recipe; frozen profile mappings need an explicit JSON view."""
+        if value is None:
+            return None
+        profile = value.profile
+        return {
+            "profile": {
+                "name": profile.name,
+                "schema_version": profile.schema_version,
+                "configuration": dict(profile.configuration),
+                "policy_references": profile.policy_references,
+                "assumptions": profile.assumptions,
+                "allow_provisional": profile.allow_provisional,
+            },
+            "projection": asdict(value.projection),
+            "smoothing": asdict(value.smoothing),
+            "orientation": asdict(value.orientation),
+            "context": asdict(value.context),
+            "events": asdict(value.events) if value.events is not None else None,
+            "context_input": value.context_input,
+            "events_input": value.events_input,
+        }
 
     @field_validator("name", mode="before")
     @classmethod
@@ -68,10 +123,12 @@ def make_preset(
     settings: ExportSettings,
     smoothing_window: int,
     range_mode: RangeMode,
+    analysis_configuration: AnalysisConfiguration | None = None,
 ) -> SavedPreset:
     return SavedPreset(
         name=name,
         settings=settings,
         smoothing_window=smoothing_window,
         range_mode=range_mode,
+        analysis_configuration=analysis_configuration,
     )

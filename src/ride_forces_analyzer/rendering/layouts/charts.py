@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from ..model import ExportChannel, ExportTimeline
 
 from math import ceil, floor
-from ride_forces_analyzer.analysis.airtime import AirtimeContext
 from ride_forces_analyzer.airtime_colors import VERTICAL_CONTEXT_COLORS as VERTICAL_CONTEXT_COLORS
 from ride_forces_analyzer.explorer import format_sample_time
 from .common import ACCELERATION_COLOR, BRAKING_COLOR, Drawing, lateral_x
@@ -67,7 +66,6 @@ class ChartRenderer(Drawing):
 
     def __init__(self, timeline: ExportTimeline) -> None:
         super().__init__(timeline, *self.native_size)
-        self.airtime = AirtimeContext.prepare(timeline.channels[0].values, timeline.sample_rate)
         draw = ImageDraw.Draw(self.base)
         if not self.stacked:
             self._panel(draw, (0, 0, self.width - 1, self.height - 1))
@@ -200,7 +198,7 @@ class ChartRenderer(Drawing):
                 self.channel_colors[row],
             )
             hint = (
-                ("Unavailable" if value is None else self.airtime.at(position))
+                ("Unavailable" if value is None else self.timeline.context_at(position))
                 if row == 0
                 else "Unavailable"
                 if value is None

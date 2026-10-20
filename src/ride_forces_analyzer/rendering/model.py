@@ -4,12 +4,15 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from fractions import Fraction
 from math import ceil, floor, isfinite
-from typing import Literal
+from typing import Literal, overload
 
-from ride_forces_analyzer.analysis.orientation import orientation_degrees
+from ride_forces_analyzer.analysis.models import SampleValues
+from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, RecordingAnalysis
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.i18n import Language
 
@@ -67,12 +70,47 @@ class ExportSettings:
 
 
 @dataclass(frozen=True, slots=True)
+class ExportValues(Sequence[float | None]):
+    """Read-only scalar view of a shared stage buffer; invalid rows remain None."""
+
+    samples: SampleValues
+
+    def __len__(self) -> int:
+        return len(self.samples.valid_rows)
+
+    @overload
+    def __getitem__(self, index: int) -> float | None: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> tuple[float | None, ...]: ...
+
+    def __getitem__(self, index: int | slice) -> float | None | tuple[float | None, ...]:
+        if isinstance(index, slice):
+            return tuple(self[i] for i in range(*index.indices(len(self))))
+        return float(self.samples.values[index]) if self.samples.valid_rows[index] else None
+
+
+def prepare_export_analysis(
+    analysis: RecordingAnalysis,
+    configuration: AnalysisConfiguration,
+) -> RecordingAnalysis:
+    """Bind matching work or recalculate only changed stages, without changing the source."""
+    if configuration == analysis.configuration:
+        return analysis
+    return analysis.with_configuration(
+        configuration,
+        revision=analysis.revision + 1,
+        calculation_time=datetime.now(UTC),
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class ExportChannel:
     name: str
     unit: str
     color: str
     hint: str
-    values: tuple[float | None, ...]
+    values: Sequence[float | None]
     low: float
     high: float
     inverted: bool
@@ -96,6 +134,14 @@ class ExportTimeline:
     smoothing_window: int
     channels: tuple[ExportChannel, ...]
     settings: ExportSettings
+    analysis: RecordingAnalysis
+
+    def context_at(self, position: float) -> str:
+        """Read the prepared full-history classification at the preceding source sample."""
+        labels = self.analysis.context.labels
+        if not isfinite(position) or not 0 <= position < len(self.analysis.time.source_indices):
+            raise ValueError("Position outside airtime context")
+        return labels[floor(position)].value.replace("_", " ").title() if labels else "Unavailable"
 
     @property
     def frame_count(self) -> int:
@@ -125,22 +171,33 @@ class ExportTimeline:
 
 
 def prepare_export(
-    data: ExplorerData,
+    data: RecordingAnalysis | ExplorerData,
     settings: ExportSettings,
     first: int,
     last: int,
 ) -> ExportTimeline:
-    data.select(first, last)
-    reference = data.reference
-    if reference is None:
-        raise ValueError(data.reference_error or "Calibrated forces are unavailable")
+    # ExplorerData is accepted only as an API boundary adapter, never a calculation source.
+    analysis = data if isinstance(data, RecordingAnalysis) else data.analysis
+    if analysis is None:
+        raise ValueError("Prepared recording analysis is unavailable")
+    count = len(analysis.time.source_indices)
+    if type(first) is not int or type(last) is not int or not 0 <= first <= last < count:
+        raise ValueError("Invalid export sample interval")
+    forces = analysis.forces.smoothed
+    if forces.channels is None:
+        reason = forces.availability.reason
+        raise ValueError(reason.message if reason else "Calibrated forces are unavailable")
+    rate = analysis.time.basis.sample_rate
+    if rate is None:
+        raise ValueError("Export requires a sample rate")
     channels: list[ExportChannel] = []
     names = ("Vertical", "Lateral", "Longitudinal")
     colors = ("#8edce1", "#ebd36a", "#dba8e0")
     hints = ("Vertical force", "+ Right / − Left", "+ Acceleration / − Braking")
-    for index, values in enumerate(reference.channels):
-        selected = values[first : last + 1]
-        low, high = min(-1.0, min(selected)), max(1.0, max(selected))
+    for index, samples in enumerate(forces.channels):
+        values = ExportValues(samples)
+        selected = tuple(value for value in values[first : last + 1] if value is not None)
+        low, high = min(-1.0, min(selected, default=-1.0)), max(1.0, max(selected, default=1.0))
         channels.append(
             ExportChannel(
                 names[index],
@@ -163,19 +220,24 @@ def prepare_export(
             "°",
             "#e9a571",
             "Tilt relative to calibrated vertical",
-            orientation_degrees(data.source.recording),
+            ExportValues(analysis.orientation.values)
+            if analysis.orientation.values is not None
+            else (None,) * count,
             0.0,
             180.0,
             False,
         ),
     )
+    window = dict(analysis.configuration.smoothing.parameters).get("window_samples", 11)
+    assert type(window) is int
     return ExportTimeline(
-        data.source.source_sha256,
-        data.sample_rate,
-        data.source.recording.indices.start,
+        analysis.source.source_sha256,
+        rate.value,
+        analysis.time.replay_origin,
         first,
         last,
-        reference.smoothing_window,
+        window,
         tuple(channels),
         settings,
+        analysis,
     )

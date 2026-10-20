@@ -34,8 +34,23 @@ def _details_table(rows: tuple[tuple[str, str], ...]) -> str:
 
 
 if TYPE_CHECKING:
+    import numpy as np
+    from numpy.typing import NDArray
+
+    type PlotChannel = tuple[float, ...] | NDArray[np.float64]
     from ride_forces_analyzer.analysis.reference import AppReference
     from ride_forces_analyzer.analysis.airtime import AirtimeContext
+    from ride_forces_analyzer.analysis.recording import RecordingAnalysis
+
+
+def _import_notes(source: ImportSuccess, error: str | None) -> str:
+    notes = "\n".join(
+        f"{item.severity.value.upper()} {item.code} {item.json_path}: {item.message}"
+        for item in source.diagnostics
+    ) or tr("No import diagnostics.")
+    if error:
+        notes += tr("\nCALIBRATION_UNAVAILABLE: {0}. Raw recording remains available.", error)
+    return notes
 
 
 def format_sample_time(offset: int, rate: float) -> str:
@@ -72,14 +87,35 @@ class ExplorerData:
     reference: "AppReference | None" = None
     reference_enabled: bool = False
     reference_error: str | None = None
+    analysis: "RecordingAnalysis | None" = None
+    _prepared_channels: "tuple[PlotChannel, PlotChannel, PlotChannel] | None" = field(
+        init=False,
+        repr=False,
+        compare=False,
+    )
     airtime_context: "AirtimeContext | None" = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         context = None
-        if self.reference is not None:
+        prepared = None
+        if self.analysis is not None:
+            from ride_forces_analyzer.analysis.airtime import AirtimeContext
+
+            channels = self.analysis.forces.smoothed.channels
+            if channels is not None:
+                prepared = (channels[0].values, channels[1].values, channels[2].values)
+            if self.analysis.context.labels is not None:
+                context = AirtimeContext(
+                    tuple(
+                        label.value.replace("_", " ").title()
+                        for label in self.analysis.context.labels
+                    ),
+                )
+        elif self.reference is not None:
             from ride_forces_analyzer.analysis.airtime import AirtimeContext
 
             context = AirtimeContext.prepare(self.reference.channels[0], self.sample_rate)
+        object.__setattr__(self, "_prepared_channels", prepared)
         object.__setattr__(self, "airtime_context", context)
 
     @property
@@ -96,7 +132,9 @@ class ExplorerData:
         return "\n".join(lines) or tr("No import diagnostics.")
 
     @property
-    def plotted_channels(self) -> tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]:
+    def plotted_channels(self) -> "tuple[PlotChannel, PlotChannel, PlotChannel]":
+        if self.reference_enabled and self._prepared_channels is not None:
+            return self._prepared_channels
         return (
             self.reference.channels if self.reference_enabled and self.reference else self.channels
         )
@@ -132,10 +170,16 @@ class ExplorerData:
 
     def with_reference(self, enabled: bool) -> "ExplorerData":
         active = enabled and self.reference is not None
-        channels = self.reference.channels if active and self.reference else self.channels
+        channels = (
+            self._prepared_channels
+            if active and self._prepared_channels is not None
+            else self.reference.channels
+            if active and self.reference
+            else self.channels
+        )
         low = min(0.0, min(min(axis) for axis in channels))
         high = max(0.0, max(max(axis) for axis in channels))
-        bounds = (low * 1.05, high * 1.05) if low < high else (-1.0, 1.0)
+        bounds = (float(low * 1.05), float(high * 1.05)) if low < high else (-1.0, 1.0)
         if active:
             bounds = (min(-1.05, bounds[0]), max(1.05, bounds[1]))
         return replace(self, reference_enabled=active, value_range=bounds)
@@ -162,10 +206,33 @@ class ExplorerData:
     def with_smoothing(self, window: int) -> "ExplorerData":
         if self.reference is None:
             return self
+        if self.analysis is not None:
+            return self.with_analysis(
+                self.analysis.with_smoothing(
+                    window,
+                    revision=self.analysis.revision + 1,
+                    calculation_time=datetime.now(UTC),
+                ),
+            )
         from ride_forces_analyzer.analysis.reference import smooth_reference
 
         reference = smooth_reference(self.reference, window, calculation_time=datetime.now(UTC))
         return replace(self, reference=reference).with_reference(self.reference_enabled)
+
+    def with_analysis(self, analysis: "RecordingAnalysis") -> "ExplorerData":
+        """Adapt a matching completed snapshot without repeating numerical analysis."""
+        if analysis.source is not self.source:
+            raise ValueError("Analysis belongs to another import")
+        reference = _analysis_reference(analysis, self.analysis, self.reference)
+        reason = analysis.forces.smoothed.availability.reason
+        error = reason.message if reason is not None else None
+        return replace(
+            self,
+            analysis=analysis,
+            reference=reference,
+            reference_error=error,
+            notes=_import_notes(self.source, error),
+        ).with_reference(self.reference_enabled)
 
     @property
     def metadata_fields(self) -> tuple[tuple[str, str], ...]:
@@ -224,11 +291,10 @@ class ExplorerData:
 
     def sample_cards(self, index: int) -> tuple[tuple[str, str, str], ...]:
         self.select(index, index)
+        values_at_sample = self._sample_values(index)
         cards: list[tuple[str, str, str]] = []
-        for axis, (name, values) in enumerate(
-            zip(self.channel_names, self.plotted_channels, strict=True),
-        ):
-            value = values[index]
+        for axis, name in enumerate(self.channel_names):
+            value = values_at_sample[axis]
             if self.reference_enabled:
                 meanings = (
                     (tr("Vertical force"), tr("Vertical force")),
@@ -412,6 +478,14 @@ class ExplorerData:
         )
         return _details_table(rows)
 
+    def _sample_values(self, index: int) -> tuple[float, float, float]:
+        if self.reference_enabled and self.analysis is not None:
+            force = self.analysis.sample(index).smoothed
+            if force is not None:
+                return force.vertical, force.lateral, force.longitudinal
+        channels = self.plotted_channels
+        return float(channels[0][index]), float(channels[1][index]), float(channels[2][index])
+
     def sample_text(self, index: int, *, rich: bool = False) -> str:
         self.select(index, index)
         if rich:
@@ -420,18 +494,18 @@ class ExplorerData:
                 (tr("Replay"), tr("{0} @ {1:g} Hz", self.replay_text(index), self.sample_rate)),
                 (tr("Recording"), tr("{0:.3f} s", self.time_at(index))),
                 *(
-                    (name, tr("{0:.6g}", axis[index]))
-                    for name, axis in zip(
+                    (name, tr("{0:.6g}", value))
+                    for name, value in zip(
                         self.channel_names,
-                        self.plotted_channels,
+                        self._sample_values(index),
                         strict=True,
                     )
                 ),
             )
             return _details_table(rows)
         values = "   ".join(
-            tr("{0} {1:.6g}", name, axis[index])
-            for name, axis in zip(self.channel_names, self.plotted_channels, strict=True)
+            tr("{0} {1:.6g}", name, value)
+            for name, value in zip(self.channel_names, self._sample_values(index), strict=True)
         )
         return tr(
             "Sample {0:,}   |   Replay {1} @ {2:g} Hz   |   Recording {3:.3f} s   |   {4}",
@@ -443,7 +517,11 @@ class ExplorerData:
         )
 
 
-def present_recording(source: ImportSuccess) -> ExplorerData:
+def present_recording(
+    source: ImportSuccess,
+    *,
+    analysis: "RecordingAnalysis | None" = None,
+) -> ExplorerData:
     recording = source.recording
     motion = recording.motion
     channels = (
@@ -467,10 +545,6 @@ def present_recording(source: ImportSuccess) -> ExplorerData:
         gravity,
         gps,
     )
-    notes = "\n".join(
-        f"{item.severity.value.upper()} {item.code} {item.json_path}: {item.message}"
-        for item in source.diagnostics
-    ) or tr("No import diagnostics.")
     low = min(0.0, min(min(axis) for axis in channels))
     high = max(0.0, max(max(axis) for axis in channels))
     # Pad each signed extremum independently; keep zero visible for one-sided data.
@@ -480,19 +554,29 @@ def present_recording(source: ImportSuccess) -> ExplorerData:
     reference = None
     reference_error = None
     if find_spec("numpy") is not None:
-        from ride_forces_analyzer.analysis.reference import reconstruct_app_reference
+        from ride_forces_analyzer.analysis.recording import source_app_configuration
+        from ride_forces_analyzer.analysis.service import AnalysisService
 
-        try:
-            reference = reconstruct_app_reference(source, calculation_time=datetime.now(UTC))
-        except ValueError as error:
-            reference_error = str(error)
+        if analysis is None:
+            service = AnalysisService()
+            service.request_analysis(
+                source,
+                source_app_configuration(),
+                calculation_time=datetime.now(UTC),
+            )
+            state = service.get_state()
+            analysis = state.snapshot
+            reference_error = state.failure.message if state.failure is not None else None
+            service.close()
+        elif analysis.source is not source:
+            raise ValueError("Analysis belongs to another import")
+        if analysis is not None:
+            reference = _analysis_reference(analysis)
+            reason = analysis.forces.smoothed.availability.reason
+            reference_error = reason.message if reason is not None else None
     else:
         reference_error = tr("The optional NumPy analysis package is not installed")
-    if reference_error:
-        notes += tr(
-            "\nCALIBRATION_UNAVAILABLE: {0}. Raw recording remains available.",
-            reference_error,
-        )
+    notes = _import_notes(source, reference_error)
     return ExplorerData(
         source,
         channels,
@@ -502,7 +586,66 @@ def present_recording(source: ImportSuccess) -> ExplorerData:
         value_range,
         reference=reference,
         reference_error=reference_error,
+        analysis=analysis,
     )
+
+
+def _analysis_reference(
+    analysis: "RecordingAnalysis",
+    previous: "RecordingAnalysis | None" = None,
+    reference: "AppReference | None" = None,
+) -> "AppReference | None":
+    """Bridge prepared arrays to legacy export/extrema consumers without calculation."""
+    from importlib.metadata import version
+    from ride_forces_analyzer.analysis.reference import AppReference, MANTA_SHA256
+
+    projected, smoothed = analysis.forces.projected, analysis.forces.smoothed
+    if previous is not None and reference is not None and previous.forces is analysis.forces:
+        return reference
+    if projected.channels is None or smoothed.channels is None:
+        return None
+    vectors = analysis.source.recording.vectors
+    vertical, lateral, longitudinal = (
+        vectors.vertical_direction,
+        vectors.lateral_direction,
+        vectors.longitudinal_direction,
+    )
+    assert vertical is not None and lateral is not None and longitudinal is not None
+    assert smoothed.provenance is not None
+    raw = (
+        reference.raw_projection
+        if reference is not None and previous is not None and previous.forces.projected is projected
+        else tuple(tuple(float(value) for value in axis.values) for axis in projected.channels)
+    )
+    channels = tuple(tuple(float(value) for value in axis.values) for axis in smoothed.channels)
+    window = dict(smoothed.configuration.parameters).get("window_samples", 11)
+    assert type(window) is int
+    adapted = AppReference(
+        analysis.source.source_sha256,
+        smoothed.provenance.calculation_time,
+        (raw[0], raw[1], raw[2]),
+        (channels[0], channels[1], channels[2]),
+        (vertical, lateral, longitudinal),
+        analysis.source.recording.motion.sample_rate.value,
+        version("numpy"),
+        smoothing_window=window,
+        algorithm=f"source-direction-unit-projection-centered-mean-{window}-v1",
+        capability="VERIFIED"
+        if analysis.source.source_sha256 == MANTA_SHA256 and window == 11
+        else "PROVISIONAL",
+    )
+
+    if window != 11:
+        adapted = replace(
+            adapted,
+            confirmed_contracts=tuple(
+                contract
+                for contract in adapted.confirmed_contracts
+                if not contract.startswith("Centered")
+            )
+            + (f"Centered {window}-sample mean; truncated renormalized recording edges",),
+        )
+    return adapted
 
 
 def load_recording(path: Path) -> ExplorerData | ImportFailure:

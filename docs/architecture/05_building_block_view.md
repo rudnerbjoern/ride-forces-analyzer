@@ -33,6 +33,8 @@ flowchart TB
     Storage["storage: SQLite export definitions"] --> Rendering
     Playback["playback: planned"] -.-> Domain
     Rendering["rendering: 4K frames / encoder"] --> Explorer
+    Rendering --> Recording["analysis.recording: shared snapshots"]
+    Recording --> Analysis
 ```
 
 Arrows express dependencies. Dashed arrows describe future consumers, not
@@ -89,6 +91,30 @@ services are documented only when designed.
 presentation, retaining confirmed normalized-direction contracts, source hash, timestamp,
 library version and raw/filtered channels. It leaves strict frame APIs unchanged.
 
+`analysis.recording` contains the parallel unified recording-analysis model,
+reusing existing contracts. Explicit snapshot validation checks source,
+time, availability, payloads and shared dependencies without numerical calculation.
+Initial preparation reuses existing projection, smoothing, independent orientation
+and context functions. Sample views read the prepared buffers without recalculation.
+Reconfiguration reuses stages with matching configuration and input references;
+smoothing retains the original projection and independent orientation. Snapshots
+retain stages, not prior snapshots or a configuration history.
+`analysis.events` evaluates explicitly configured provisional airtime episodes
+from the selected vertical force stage. Its versioned rules are independent of
+context confirmation/hysteresis, retain missing-data and boundary limits, and
+reuse the existing event containers and partial recalculation dependencies.
+The explorer and export consumers read shared snapshots and stage buffers. The
+legacy compatibility reference remains only for presentation/extrema APIs.
+`analysis.service` manages coherent state, subscriptions with immediate initial
+delivery, partial analysis requests, revision/error handling and cleanup. Numerical
+work and serialized per-subscriber callbacks run outside its state lock. Superseded
+completions cannot replace current state, and old queued deliveries are discarded.
+The service owns no worker, snapshot history or Qt/storage dependency.
+`ui.analysis.AnalysisController` owns worker scheduling and queued UI delivery,
+checking source, revision, terminal state, active binding and UI-intent generation
+when applying results. `ui.loading` carries a load generation so closed/reopened
+windows reject older imports and errors.
+
 `gps_overview` prepares immutable approximate spatial reference segments from
 independent source GPS slots, preserving gaps and source ownership. `ui.gps`
 renders these in a separate offline dialog, enabled only for usable positions.
@@ -106,6 +132,11 @@ Explorer presentation exposes them in the inspector; widgets perform no calculat
 Raw operation avoids importing the NumPy-backed analysis package. This is a small selected-range product, not a generic statistics engine.
 
 ## Video export boundary
+
+Export timelines bind one immutable `RecordingAnalysis`. Read-only channel views
+share prepared buffers, and layouts read prepared orientation/context without
+recalculation. Previews share that snapshot across profiles; running exports never
+adopt later workspace changes. Presets persist recipes, never sample arrays.
 
 The [Manta G-Orbit video example](https://youtu.be/tsRzD416voU) shows the exported
 overlay composed over Onride footage.
@@ -153,7 +184,7 @@ no renderer/encoder logic lives in widgets. See [export contracts](../implementa
 `storage.export_models` owns versioned immutable presets, source-bound jobs and
 batch definitions. `storage.exports` owns SQLite schema/version protection,
 transactional writes and the per-user database path. `rendering.batches` validates
-source identity and applies saved smoothing/ranges before sequential exports;
+source identity and applies complete saved analysis recipes/ranges before sequential exports;
 its run report distinguishes completed, failed, cancelled and skipped jobs.
 `ui.batches` edits saved queues and transports worker results. No recording bytes
 or rendered media enter SQLite; preset changes cannot alter stored job snapshots.

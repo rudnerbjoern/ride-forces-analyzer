@@ -31,6 +31,186 @@ Schema version `1` is the initial contract identifier, not a serialization forma
 Any later persistence/serialization adapter must document compatible schema and
 algorithm changes rather than treating every version string as interoperable.
 
+## Parallel recording analysis
+
+[`analysis.recording`](../../src/ride_forces_analyzer/analysis/recording.py) exposes
+the parallel [unified recording model](../requirements/UNIFIED_ANALYSIS.md).
+Frozen data containers cover configuration, shared force stages, independent
+orientation, sample context, event evaluation, sample views and request/notification
+payloads. They reuse the existing source, time, immutable sample buffers, unit,
+quality and provenance types. Import them explicitly from `analysis.recording`;
+the explorer consumes these snapshots; package exports remain explicit.
+
+Unlike the validated constructors above, these containers store references without
+normalizing or validating them. Call `RecordingAnalysis.validate()` explicitly to
+check types, immutable collections, availability/payload/reason combinations,
+source hashes, calculation provenance, configuration and stage dependencies.
+The full force axis must preserve source indices/order and scalar buffer lengths;
+rate value/provenance and replay origin must match the source. Missing measurements
+remain distinct from valid zero. Validation returns None or raises TypeError for
+incompatible types and ValueError for inconsistent field values/relationships.
+It performs no I/O, copies no arrays and does not certify scientific accuracy.
+`prepare_recording_analysis(source, configuration, revision=..., calculation_time=...)`
+prepares and validates one snapshot. `sample(index)` reads its buffers without
+repeating calculations; it rejects non-integer indices with TypeError, indices
+outside the recording with IndexError and index-only snapshots without a time
+rate with ValueError. Recording/replay seconds retain the existing inferred rate
+and start-relative origin. Raw vectors, metadata, unknown fields and independent
+GPS remain in the original import; no GPS/sample alignment is added.
+
+Preparation reuses `project_directions`, `centered_mean`, `orientation_degrees`
+and `AirtimeContext.prepare`. Supported stage configurations are:
+
+| Stage       | Algorithm (version `1`)            | Parameters                                                         |
+| :---------- | :--------------------------------- | :----------------------------------------------------------------- |
+| Projection  | `source-direction-unit-projection` | None                                                               |
+| Smoothing   | `centered-mean`                    | `window_samples`: odd integer 1–51, default 11                     |
+| Orientation | `source-gravity-tilt`              | None                                                               |
+| Context     | `vertical-context`                 | Existing airtime constants, either omitted or explicitly unchanged |
+
+Unsupported algorithms, versions, parameters, revisions and non-UTC calculation
+times raise ValueError. The context version fixes the current heuristic; custom
+thresholds are not silently accepted. Context can read projection or smoothing,
+as declared by `context_input`, without filtering graph values again.
+`RIDER_CALIBRATED` requires explicit provisional permission, assumptions and policy
+references. Derived results remain PROVISIONAL, with assumed units and stage-specific
+provenance retaining source identity, application/NumPy versions and calculation time.
+The raw profile excludes all derived stages while preserving original samples.
+
+Missing or inadmissible directions and numerical force range failures exclude
+only affected stages with diagnostic reasons. Orientation is independent of
+projection and smoothing; absent gravity/vertical direction excludes it, while
+zero gravity is an explicit invalid row with NaN, False validity and an indexed
+diagnostic. Sample views return None for missing force/orientation rows and
+unavailable stages, retaining stage availability and applicable diagnostics.
+`events=StageConfiguration("airtime-events", "1")` enables the separate
+[airtime event contract](../implementation/AIRTIME_EVENTS.md); parameters are finite
+scalar overrides defined there. Events without configuration, unavailable force input or
+all-missing vertical rows retain NOT_EVALUATED with a reason. Other valid input
+produces EVALUATED with zero or more source-ordered episodes. Missing rows split
+events and are diagnosed; recording/gap boundaries mark incomplete observations.
+Categories summarize the strongest observed portion, not a per-sample display label.
+Event quality is PROVISIONAL, with actual force-stage dependency and calculation
+provenance. Unsupported rules/versions/parameters raise ValueError, producing a
+matching service failure without replacing the last snapshot. Source-app defaults
+keep this optional evaluation disabled.
+
+`with_configuration(configuration, revision=..., calculation_time=...)` returns a
+new validated snapshot. It reuses stages whose configuration and actual input
+objects are unchanged; a profile change invalidates policy-dependent projection
+and orientation. `with_smoothing(window_samples, ...)` retains source, time,
+projection and orientation, then smooths the unfiltered projection. Context/events
+are replaced only if their selected input or configuration changes. Consumers of
+projection therefore survive smoothing changes. An unchanged configuration or
+smoothing window performs no numerical work and still returns a new revision.
+Stage configurations are compared by their stored values, without normalizing
+parameter order or omitted defaults in `with_configuration`; `with_smoothing`
+recognizes an unchanged effective window, including the implicit default.
+
+Reconfiguration requires a strictly increasing integer revision and an explicit
+UTC calculation time. Invalid requests raise TypeError/ValueError without changing
+the previous snapshot. Reused stages retain their original provenance; recalculated
+stages receive the supplied time. Expected numerical range exclusions still produce
+a consistent raw-capable snapshot and can recover with a usable smoothing window.
+
+A snapshot holds its source and stage references, never its predecessor or a map
+of past configurations. Returning to a released window may recompute it. Consumers
+such as exports retain their own snapshot until finished; normal reference lifetime
+releases obsolete snapshots and buffers. Tests check stage identity, calculation
+calls, unchanged export values and absence of new references to prior snapshots.
+The service retains only its current state, active work and current queued deliveries;
+the explorer adapter owns worker scheduling and queued UI delivery.
+
+The single [Taron comparison test](../../tests/analysis/test_taron_analysis_parity.py)
+requires exact equality with the existing processing paths for every source sample:
+metadata, times, raw/projected/smoothed forces, orientation and vertical context.
+It is an ordinary passing migration test, without an expected-failure marker.
+It does not qualify physical interpretation or event-detection rules.
+
+[`analysis.service`](../../src/ride_forces_analyzer/analysis/service.py) implements
+`AnalysisService`: `get_state`, `subscribe`, `unsubscribe`, `request_analysis`,
+`request_configuration`, `request_smoothing` and `close`. It owns an immutable
+`AnalysisState`, selected import, monotonically increasing request revisions and
+service-specific subscription handles. New views immediately receive coherent
+initial state, including an older completed snapshot and pending/failure status.
+Registration and state capture are coordinated; initial delivery precedes later
+notifications even when callbacks start another request.
+
+Requests calculate synchronously in the calling thread, outside the state lock.
+They enter PENDING, then READY with `AnalysisUpdated` or FAILED with `AnalysisFailed`.
+Source/configuration top-level type errors are caller errors; calculation and
+configuration errors terminate their assigned revision with a diagnostic. Expected
+unavailable stages still produce READY raw-capable snapshots. Failed calculations
+retain the last complete snapshot with its original source/configuration/revision.
+New configuration/smoothing requests use the selected source, including after a
+failure, and reuse compatible snapshot stages. No-op requests still advance revision.
+
+Stage interests filter numerical notifications. Initial state and terminal status
+matching observed pending work bypass the filter, also when subsequent requests
+supersede a queued result without changing any interested stage. Dirty stages
+include dependent force/context/event stages. Superseded success/failure cannot
+replace current state; older queued notifications release their references when
+a newer request starts. Detailed pending indications may be coalesced once a
+request has already completed. Per-registration delivery is serialized, including
+reentrant requests, while other registrations can progress concurrently.
+
+Callbacks execute outside the lock. Ordinary callback exceptions are logged and
+remove only the failing registration. Duplicate callbacks have independent handles;
+unsubscribe removes queued work and is idempotent. Handles are accepted by object
+identity when their registration exists, preventing equal numbers from another
+service from removing it. `close` is idempotent, advances revision, clears owned
+source/snapshot/registrations/queues and prevents running work from publishing.
+Independent export snapshots remain readable. No history cache or executor is kept.
+
+[`ui.analysis.AnalysisController`](../../src/ride_forces_analyzer/ui/analysis.py)
+adapts the synchronous service to the explorer. The import worker calls the existing
+lossless importer, then `present_recording` prepares one analysis through the service.
+`AnalysisService(snapshot)` adopts that validated completed result without numerical
+recalculation. Failed imports preserve the displayed source and its service binding.
+Closing/reopening invalidates earlier load generations, including late load errors.
+
+The controller schedules smoothing on a single Qt worker queue; obsolete queued
+requests are skipped. Before applying a queued UI delivery it checks the binding,
+active subscription, UI-intent generation, source hash, service revision and status.
+The extra intent generation rejects old deliveries even before a newer requested
+window has reached the service. Pending indications cannot restore pending state
+after completion. Failure preserves the previous displayed snapshot and resets the
+control; callbacks and widgets are updated only in the UI thread. Close releases
+the service/registration and rejects late work; rebinding explicitly activates a
+new service. No custom event bus or snapshot history is introduced.
+
+`ExplorerData.analysis` owns the snapshot. Calibrated `plotted_channels` are
+read-only NumPy views sharing its immutable buffers; raw channels remain tuples.
+Callers must handle this union rather than assuming tuple comparison or `.index`.
+Sample cards and technical values use `analysis.sample(index)`, and context labels
+come from its prepared categories without reclassification. Navigation, zoom,
+mode, language and appearance changes do not recalculate analysis.
+`with_analysis` preserves the import and checks its identity. The synchronous
+`with_smoothing` helper also delegates to partial snapshot recalculation, while the
+live explorer uses the worker controller. Extrema retain their existing contract.
+
+An AppReference compatibility view still supports existing extrema/presentation
+APIs. Export preparation reads `RecordingAnalysis` directly; accepting `ExplorerData`
+at the public boundary only extracts its snapshot, never its legacy reference.
+`ExportTimeline.analysis` retains the bound snapshot for its full lifetime.
+`ExportValues` exposes shared scalar buffers as a read-only sequence with None for
+invalid rows. Force bounds use the selected interval; orientation and context read
+full-recording preparation. Context lookup floors fractional source positions;
+numerical values keep the existing linear interpolation and missing-data rules.
+
+`prepare_export_analysis` returns the same snapshot for an equal configuration,
+otherwise delegates to partial recalculation. Changing layout, language, frame rate,
+resolution or interval never prepares numerical stages again. All five preview
+layouts share one snapshot, including full-history context outside the export range.
+Running exports retain their snapshot independently of workspace/preset changes.
+Saved presets/jobs retain complete analysis configuration without source bytes or
+arrays; older records resolve the version-1 source-app policy and stored window.
+Batch source hashes are checked before applying the saved recipe and interval.
+Service tests cover initial and terminal states, filtering, reentrant calls, competing
+requests, stale success/failure, shutdown, callback isolation and snapshot ownership.
+The [focused coverage workflow](CODE_QUALITY.md#recording-model-and-service-coverage)
+reports both modules and enforces the configured minimum.
+
 ## Raw values and qualified quantities
 
 `AnalysisProfile()` is raw_device_only, with no processing configuration or

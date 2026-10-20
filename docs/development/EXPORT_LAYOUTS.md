@@ -33,7 +33,10 @@ Renderers draw their own backgrounds, labels and instruments. Frame composition,
 aspect scaling, transparent/opaque canvas handling and placement stay in
 `rendering.frames`; encoding stays in `rendering.encoding`. Renderers must not
 access Qt widgets, start encoders, mutate recordings or depend on previous render
-calls. For time-dependent instruments, derive state from source time, as
+calls. The timeline retains its immutable analysis snapshot; channel values are
+read-only scalar sequences sharing prepared buffers, with None for missing rows.
+Use `timeline.context_at(position)` for prepared context rather than classifying
+force values in a layout. For time-dependent instruments, derive state from source time, as
 `rendering.peaks` does for G-Orbit.
 
 The shared chart base handles trace sampling and axes. Individual chart modules

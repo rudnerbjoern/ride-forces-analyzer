@@ -23,8 +23,10 @@ smoothing windows. Kraken's start mismatch and Voltron's maximum-display differe
 remain in [source comparisons](validation/APP_REFERENCE.md).
 
 GPS supplies coarse spatial context only. Universal physical rider calibration,
-additional filter families, automatic events, threshold durations, broad statistics
-and analysis benchmark research are deferred. They are not reduced-M3 blockers.
+additional filter families, qualified event semantics, broad statistics and analysis
+benchmark research are deferred. Separately configured provisional airtime episodes
+follow the [event contract](implementation/AIRTIME_EVENTS.md); they do not establish
+physical qualification. They are not reduced-M3 blockers.
 Installed libraries do not establish implemented features.
 
 SQLite stores export configuration, not the planned ride library. Exports use

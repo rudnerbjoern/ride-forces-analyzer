@@ -16,6 +16,9 @@ contents or claim that dependencies are latest or vulnerability-free.
 [Setup](SETUP.md) installs locked dependencies. Node is development
 tooling, not an application runtime. Installed optional packages do not establish
 product features; the [roadmap](../ROADMAP.md) owns that status.
+The development-only `coverage.py` and `pytest-cov` dependencies supply the focused
+recording-model/service [coverage measurement and gate](CODE_QUALITY.md#recording-model-and-service-coverage)
+and VS Code's pytest coverage integration.
 
 NumPy/Pint/SciPy support existing analysis boundaries; Pillow supports frame
 rendering and Python's sqlite3 supports export configuration without a server.

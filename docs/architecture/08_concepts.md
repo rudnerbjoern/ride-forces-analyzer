@@ -56,6 +56,14 @@ Source hashes establish provenance, not availability.
 Positive lateral means right; positive longitudinal means acceleration.
 Generic RIDER-frame signs remain a separate contract.
 
+The optional [airtime event rules](../implementation/AIRTIME_EVENTS.md) define
+source-index episodes independently of display labels. Events require explicit
+configuration, retain provisional quality and gap/boundary flags, and never bridge
+missing data. Their minimum duration counts qualifying samples; reported interval
+duration includes permitted interior positive interruptions. Full source history
+precedes export interval selection. These domain events are distinct from service
+change notifications.
+
 ## Explorer state and time
 
 Qt-independent presentation prepares channels, metadata, markers, clocks,

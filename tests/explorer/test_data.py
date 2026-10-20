@@ -264,7 +264,11 @@ def test_calibration_for_new_recordings_and_safe_raw_fallback(defect: str) -> No
     assert source.recording.source.original_bytes == raw
     if defect == "none":
         assert data.reference is not None and data.reference_error is None
-        assert data.with_reference(True).plotted_channels == ((3.0, 3.0), (4.0, 4.0), (2.0, 2.0))
+        assert tuple(tuple(axis) for axis in data.with_reference(True).plotted_channels) == (
+            (3.0, 3.0),
+            (4.0, 4.0),
+            (2.0, 2.0),
+        )
     else:
         assert data.reference is None and data.reference_error
         assert "CALIBRATION_UNAVAILABLE" in data.notes
@@ -357,3 +361,80 @@ def test_vertical_card_uses_shared_stabilized_context(synthetic_recording: Recor
     assert view.with_reference(False).sample_cards(99)[0][2] == tr("Unit unknown")
     smoothed = view.with_smoothing(11)
     assert smoothed.airtime_context is not None and smoothed.airtime_context is not context
+
+
+def test_snapshot_presentation_uses_shared_buffers_and_does_not_repeat_analysis(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import numpy as np
+    from unittest.mock import Mock
+    from ride_forces_analyzer.analysis import recording, airtime
+    from tests.analysis.test_recording_preparation import synthetic_source
+
+    project = Mock(wraps=recording.project_directions)
+    mean = Mock(wraps=recording.centered_mean)
+    context = Mock(wraps=airtime.AirtimeContext.prepare)
+    monkeypatch.setattr(recording, "project_directions", project)
+    monkeypatch.setattr(recording, "centered_mean", mean)
+    monkeypatch.setattr(airtime.AirtimeContext, "prepare", context)
+    view = present_recording(synthetic_source()).with_reference(True)
+    assert view.analysis is not None and view.analysis.forces.smoothed.channels is not None
+    channels = view.analysis.forces.smoothed.channels
+    assert np.shares_memory(np.asarray(view.plotted_channels[0]), channels[0].values)
+    with pytest.raises(ValueError):
+        np.asarray(view.plotted_channels[0]).setflags(write=True)
+    for active in (False, True, False, True):
+        switched = view.with_reference(active)
+        assert switched.analysis is view.analysis
+        switched.sample_cards(2)
+        switched.sample_text(2, rich=True)
+        switched.sample_text(2)
+        switched.select_visible(0.0, switched.duration)
+        switched.selection_extrema(0, 6)
+    assert project.call_count == 1 and mean.call_count == 3 and context.call_count == 1
+    changed = view.with_smoothing(5)
+    assert changed.analysis is not None
+    assert changed.analysis.forces.projected is view.analysis.forces.projected
+    assert changed.reference is not None and view.reference is not None
+    assert all(
+        new is old
+        for new, old in zip(
+            changed.reference.raw_projection,
+            view.reference.raw_projection,
+            strict=True,
+        )
+    )
+    assert not any("Centered 11-sample" in item for item in changed.reference.confirmed_contracts)
+    assert project.call_count == 1 and mean.call_count == 6 and context.call_count == 2
+
+
+def test_snapshot_replacement_checks_source_and_refreshes_raw_fallback_notes() -> None:
+    from ride_forces_analyzer.analysis.models import AnalysisProfile
+    from tests.analysis.test_recording_preparation import synthetic_source
+
+    view = present_recording(synthetic_source()).with_reference(True)
+    assert view.analysis is not None
+    provenance = view.analysis.forces.projected.provenance
+    assert provenance is not None
+    raw = view.analysis.with_configuration(
+        replace(view.analysis.configuration, profile=AnalysisProfile()),
+        revision=2,
+        calculation_time=provenance.calculation_time,
+    )
+    fallback = view.with_analysis(raw)
+    assert fallback.reference is None and not fallback.reference_enabled
+    assert "CALIBRATION_UNAVAILABLE" in fallback.notes
+    recovered = fallback.with_analysis(
+        raw.with_configuration(
+            view.analysis.configuration,
+            revision=3,
+            calculation_time=provenance.calculation_time,
+        ),
+    )
+    assert "CALIBRATION_UNAVAILABLE" not in recovered.notes
+    other = present_recording(synthetic_source(sampleRate=50))
+    assert other.analysis is not None
+    with pytest.raises(ValueError, match="another import"):
+        view.with_analysis(other.analysis)
+    with pytest.raises(ValueError, match="another import"):
+        present_recording(view.source, analysis=other.analysis)

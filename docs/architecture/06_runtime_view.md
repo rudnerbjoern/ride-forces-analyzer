@@ -87,6 +87,46 @@ oversized inputs have no complete-source digest; no partial read is represented
 as complete provenance. Each call owns independent state, so repeated same
 bytes/policy produce equivalent output. See [API contracts](../development/IMPORT_SERVICE.md).
 
+## Explorer analysis delivery
+
+```mermaid
+sequenceDiagram
+    participant UI as Explorer UI
+    participant Loader as Import worker
+    participant Service as Analysis service
+    participant Adapter as UI analysis adapter
+    participant Worker as Smoothing worker
+    UI->>Loader: Open path with load generation
+    Loader->>Loader: Lossless import
+    Loader->>Service: Prepare source with default source-app configuration
+    Service-->>Loader: Consistent immutable snapshot
+    Loader-->>UI: Presentation adapter and load generation
+    UI->>UI: Reject closed or superseded load
+    UI->>Adapter: Bind prepared snapshot
+    Adapter->>Service: Adopt snapshot and subscribe
+    Service-->>Adapter: Initial coherent state
+    UI->>Adapter: Request smoothing with new intent generation
+    Adapter->>Worker: Queue latest intent
+    Worker->>Service: Request partial recalculation
+    Service-->>Adapter: Pending and matching result or failure
+    Adapter->>Adapter: Queue Qt delivery
+    Adapter->>Adapter: Recheck binding, intent, source, revision and status on UI thread
+    Adapter-->>UI: Apply complete snapshot or retain previous result on failure
+```
+
+The pure service calculates synchronously; Qt owns scheduling and transport.
+Projection, time and independent orientation survive smoothing changes. Charts
+read shared prepared buffers, cards/details read sample views and context uses
+prepared labels. Cursor/selection/viewport and appearance remain presentation state.
+The old complete view remains usable during work. New intents invalidate already
+queued old UI callbacks before their service request begins. Close removes
+subscriptions and invalidates load/binding identities; old workers cannot replace
+a newly opened source or its status. Export timelines and all five preview profiles retain the selected shared
+analysis snapshot. Changing export configuration reuses compatible stages; frame
+generation reads prepared orientation/context. Batch workers verify source bytes
+against saved hashes, apply the persisted analysis recipe and then select the
+export interval. Running exports never adopt later workspace updates.
+
 ## Product boundaries
 
 Selected-range extrema update on source/selection/mode/smoothing changes.

@@ -138,7 +138,7 @@ def test_vertical_context_bar_preserves_curve_and_tracks_viewport(
     wait_until(window.open_action.isEnabled)
     data = window.data
     assert data is not None and data.reference_enabled
-    original = data.plotted_channels[0]
+    original = tuple(data.plotted_channels[0])
     for appearance in (0, 1):
         window.set_appearance(appearance)
         QApplication.processEvents()
@@ -225,7 +225,7 @@ def test_open_chart_navigation_selection_and_integrity(
     for series, values in zip(window.series, data.plotted_channels, strict=True):
         assert series.count() == data.count
         assert window.axis_y.min() <= min(values) <= max(values) <= window.axis_y.max()
-        assert tuple(point.y() for point in series.points()) == values
+        assert tuple(point.y() for point in series.points()) == tuple(values)
         assert tuple(point.x() for point in series.points()) == tuple(
             data.time_at(index) for index in range(data.count)
         )
@@ -826,13 +826,17 @@ def test_smoothing_slider_preserves_source_time_and_selection(
     try:
         QTest.mouseMove(window.smoothing_slider, target)
         QTest.qWait(20)
+        wait_until(
+            lambda: (
+                window.analysis_controller is not None and not window.analysis_controller.pending
+            ),
+        )
         assert window.smoothing_slider.isSliderDown()
         assert window.smoothing_slider.value() != 5
         assert window.data is not None and window.data.reference is not None
         assert window.data.reference.smoothing_window == window.smoothing_slider.value() * 2 + 1
-        assert (
-            tuple(point.y() for point in window.series[0].points())
-            == window.data.plotted_channels[0]
+        assert tuple(point.y() for point in window.series[0].points()) == tuple(
+            window.data.plotted_channels[0],
         )
         assert f"{window.data.reference.smoothing_window} samples" in window.smoothing_label.text()
         visible = window.data.select_visible(window.axis_x.min(), window.axis_x.max())
@@ -847,13 +851,23 @@ def test_smoothing_slider_preserves_source_time_and_selection(
         QTest.mouseRelease(window.smoothing_slider, Qt.MouseButton.LeftButton, pos=target)
     window.smoothing_slider.setFocus()
     QTest.keyClick(window.smoothing_slider, Qt.Key.Key_Home)
+    wait_until(
+        lambda: window.analysis_controller is not None and not window.analysis_controller.pending,
+    )
     assert window.data is not None and window.data.reference is not None
     assert window.data.reference.smoothing_window == 1
-    assert window.data.plotted_channels == data.reference.raw_projection
+    assert (
+        tuple(tuple(axis) for axis in window.data.plotted_channels) == data.reference.raw_projection
+    )
     assert "Smoothing off" in window.smoothing_label.text()
     assert window.data.channels == data.channels
     for position in (10, 25, 5):
         window.smoothing_slider.setValue(position)
+        wait_until(
+            lambda: (
+                window.analysis_controller is not None and not window.analysis_controller.pending
+            ),
+        )
         assert window.data.reference.smoothing_window == position * 2 + 1
         assert (
             window.axis_x.min(),
@@ -863,12 +877,17 @@ def test_smoothing_slider_preserves_source_time_and_selection(
             window.slider.value(),
         ) == before
         assert (window.axis_y.min(), window.axis_y.max()) == window.data.value_range
-    assert window.data.plotted_channels == default
+    assert tuple(tuple(axis) for axis in window.data.plotted_channels) == default
     from PySide6.QtCharts import QCategoryAxis
 
     assert isinstance(window.axis_y, QCategoryAxis)
     for position in (0, 2, 5, 25):
         window.smoothing_slider.setValue(position)
+        wait_until(
+            lambda: (
+                window.analysis_controller is not None and not window.analysis_controller.pending
+            ),
+        )
         assert window.axis_y.min() < -1 and window.axis_y.max() > 1
         for value in (-1, 0, 1):
             label = f"{value} g"
@@ -876,10 +895,20 @@ def test_smoothing_slider_preserves_source_time_and_selection(
             assert window.axis_y.endValue(label) == value
     for position in (0, 10, 25):
         window.smoothing_slider.setValue(position)
+        wait_until(
+            lambda: (
+                window.analysis_controller is not None and not window.analysis_controller.pending
+            ),
+        )
         QTest.mouseClick(window.smoothing_slider, Qt.MouseButton.RightButton)
+        wait_until(
+            lambda: (
+                window.analysis_controller is not None and not window.analysis_controller.pending
+            ),
+        )
         assert window.smoothing_slider.value() == 5
         assert window.data.reference.smoothing_window == 11
-        assert window.data.plotted_channels == default
+        assert tuple(tuple(axis) for axis in window.data.plotted_channels) == default
         assert "11 samples" in window.smoothing_label.text()
         assert (
             window.axis_x.min(),
@@ -889,6 +918,9 @@ def test_smoothing_slider_preserves_source_time_and_selection(
             window.slider.value(),
         ) == before
     window.smoothing_slider.setValue(2)
+    wait_until(
+        lambda: window.analysis_controller is not None and not window.analysis_controller.pending,
+    )
     window.reference_toggle.setChecked(False)
     assert not window.smoothing_slider.isEnabled()
     assert window.data.plotted_channels == data.channels
@@ -1070,6 +1102,12 @@ def test_visible_extrema_follow_zoom_and_ignore_selection_and_cursor(
         window.reference_toggle.setChecked(reference)
         for position in (0, 5, 25) if reference else (5,):
             window.smoothing_slider.setValue(position)
+            wait_until(
+                lambda: (
+                    window.analysis_controller is not None
+                    and not window.analysis_controller.pending
+                ),
+            )
             data = window.data
             assert data is not None
             visible = data.select_visible(*viewport)

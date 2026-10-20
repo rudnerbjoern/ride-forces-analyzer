@@ -10,7 +10,10 @@ belongs in the [roadmap](../ROADMAP.md); scientific boundaries belong in
   licenses and external project/source-app links. It supports live English/German
   translation and light/dark appearance, and states independence from Ride Forces.
 - Open local `.forces` without changing their contents, using a background worker.
-  Cancelled/failed imports retain the last usable recording; shutdown drains workers.
+  Cancelled/failed imports retain the last usable recording and service binding.
+  The worker prepares one shared analysis snapshot through the service; UI adoption
+  does not repeat calculations. Shutdown releases subscriptions and rejects late
+  imports/results, including after reopening the window.
   Successful file-dialog imports remember their folder across restarts in the local
   `preferences.sqlite3` database beside the export database. Missing folders or
   unreadable preferences use the dialog's default directory; cancellation and failed
@@ -82,7 +85,11 @@ Use odd centered mean windows 1–51, default 11 on each successful open; 1 disa
 filtering. Always start from the unfiltered projection; edge windows shorten and
 renormalize. Show sample count and ±time support at the actual rate. Update while
 dragging; right-click restores 11. Raw mode disables the control but retains its
-setting until another recording opens. Time, selection, cursor and GPS are unchanged.
+setting until another recording opens. Smoothing runs in a background worker; the
+last complete curves/cards/context remain visible while updating. Only the newest
+matching source/revision/UI intent is applied in the UI thread. Failed requests
+retain the previous values and restore the control. Time, selection, cursor and GPS
+are unchanged.
 Reference provenance retains algorithm/window/calculation time. Strong smoothing
 can suppress short peaks; 5–11 at 50 Hz is an exploration recommendation, not a standard.
 

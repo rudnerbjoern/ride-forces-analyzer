@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from ride_forces_analyzer.explorer import ExplorerData, failure_text, load_recording
 from ride_forces_analyzer.storage.export_models import BatchJob, RangeMode, SavedBatch, SavedPreset
 from .encoding import ExportCancelled, export_video
-from .model import prepare_export
+from .model import prepare_export, prepare_export_analysis
 
 
 def make_job(
@@ -40,7 +40,7 @@ def make_job(
     if first is None or last is None:
         raise ValueError("A selection preset needs explicit bounds for this recording")
     data.select(first, last)
-    if data.reference is None:
+    if data.analysis is None or data.analysis.forces.smoothed.channels is None:
         raise ValueError(data.reference_error or "Calibrated forces are unavailable")
     return BatchJob(
         recording_path=path.resolve(),
@@ -139,9 +139,11 @@ def run_batches(
                         raise ValueError(failure_text(data))
                     if data.source.source_sha256 != job.source_sha256:
                         raise ValueError("Recording bytes changed since this batch was saved")
-                    data = data.with_smoothing(job.preset.smoothing_window)
+                    if data.analysis is None:
+                        raise ValueError("Prepared recording analysis is unavailable")
+                    analysis = prepare_export_analysis(data.analysis, job.preset.configuration)
                     timeline = prepare_export(
-                        data,
+                        analysis,
                         job.preset.settings,
                         job.first_sample,
                         job.last_sample,

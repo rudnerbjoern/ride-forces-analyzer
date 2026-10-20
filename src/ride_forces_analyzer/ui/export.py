@@ -48,6 +48,7 @@ from ride_forces_analyzer.rendering.model import (
     ExportTimeline,
     PROFILES,
     prepare_export,
+    prepare_export_analysis,
 )
 from ride_forces_analyzer.rendering.preview import ExportPreview, build_previews
 from ride_forces_analyzer.rendering.batches import make_job
@@ -499,6 +500,7 @@ class ExportDialog(QDialog):
             self._settings(),
             self.smoothing.currentIndex() * 2 + 1,
             "selection" if mode == "selection" else "entire" if mode == "entire" else "markers",
+            self.data.analysis.configuration if self.data.analysis is not None else None,
         )
 
     @Slot()
@@ -540,6 +542,14 @@ class ExportDialog(QDialog):
             return
         preset = self.saved[index]
         settings = preset.settings
+        if self.data.analysis is not None:
+            try:
+                self.data = self.data.with_analysis(
+                    prepare_export_analysis(self.data.analysis, preset.configuration),
+                )
+            except (TypeError, ValueError) as error:
+                bind(self.status, tr(str(error)), "text")
+                return
         self.overlay_language.setCurrentIndex(1 if settings.language == "de" else 0)
         self.aspect.setCurrentIndex(0 if settings.aspect == "landscape" else 1)
         self.layout_profile.setCurrentIndex(
