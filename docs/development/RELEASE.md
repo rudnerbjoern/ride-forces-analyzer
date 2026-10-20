@@ -3,7 +3,7 @@
 The [release workflow](../../.github/workflows/source-release.yml) handles
 owner-authorized pushes of `v*` tags on native Windows. It validates the tagged
 sources and prepares a standalone Windows x64 EXE and standard/complete ZIPs. Binary publication is
-accompanied by documented missing redistribution material below. Version 0.3.1
+accompanied by documented missing redistribution material below. Version 0.4.0
 provides these portable downloads; no installer is included.
 Local acceptance and owner review still precede tag creation; CI is secondary
 validation. [Windows setup](SETUP.md) owns the required local checks.
@@ -41,7 +41,7 @@ To retry publication of an existing tag after a workflow correction, dispatch th
 current workflow from `main` with the `tag` input, for example:
 
 ```powershell
-gh workflow run source-release.yml --ref main -f tag=v0.3.1
+gh workflow run source-release.yml --ref main -f tag=v0.4.0
 ```
 
 Quality checks use the current workflow definition and check out the resolved
@@ -112,7 +112,7 @@ Publication rechecks all downloaded asset hashes and the live tag, then attaches
 the EXE, both Windows ZIPs and their checksum file. A
 documented missing provider source does not block the workflow. Missing or modified
 files that are explicitly listed in the catalog still fail verification.
-Version 0.3.1 uses this path for all four user-facing download variants.
+Version 0.4.0 uses this path for all four user-facing download variants.
 
 ## Distribution boundaries
 

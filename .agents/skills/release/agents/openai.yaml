@@ -1,4 +1,4 @@
 interface:
   display_name: "Release"
   short_description: "Prepare, publish and verify Windows releases"
-  default_prompt: "Use $release to prepare the requested version, update release notes and affected documentation, run local checks and package builds, and publish and verify downloaded Windows packages within my authorized scope."
+  default_prompt: "Use $release to prepare the requested version, update release notes and affected documentation, run local checks and the shared Windows package builder, smoke-test only the EXE locally, leave ZIP smoke tests to GitHub, and publish and verify downloads within my authorized scope."

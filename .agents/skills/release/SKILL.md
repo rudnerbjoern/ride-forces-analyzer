@@ -41,21 +41,35 @@ Honor existing owner authorization; ask only for missing target version or permi
 - Fix release-scoped failures, rerun affected checks and rebuild affected packages.
   Reuse evidence only under AGENTS.md; do not weaken gates or expand the fix scope.
 
-## 3. Build and execute the actual packages
+## 3. Build candidates and execute the local EXE
 
-Run from the repository root in Windows PowerShell:
+Use the same [Windows builder](../../../scripts/build_windows.py) as the GitHub
+release pipeline, from the repository root in native Windows PowerShell:
 
 ```powershell
-uv build --out-dir .tmp/release-preflight/python
 uv run --locked --group build python -m scripts.build_windows --release --work .tmp/release-preflight/windows
-uv run --locked --group build python -m scripts.check_windows_packages .tmp/release-preflight/windows/assets --recording (Get-ChildItem tests/fixtures/real/Manta-*.forces | Select-Object -First 1).FullName
 ```
 
-Require actual EXE, standard ZIP and complete ZIP checks to pass, including GUI/import,
-rendering and the complete package's real CPU encode. Check versions, filenames,
-checksums and collected notices. Report manifest-listed redistribution gaps accurately;
-a successful build does not close them or establish clean-machine/signing acceptance.
-Keep logs and outputs in `.tmp/`; no routine tracked validation diary.
+The shared builder creates the EXE, Standard ZIP and Complete ZIP with FFmpeg
+together. Keep this single build path; do not split it or create an EXE-only runner.
+Locally, smoke-test only the EXE; no additional ZIP extraction or ZIP smoke tests
+are required.
+
+Run the actual EXE with `--self-test` pointing to a fresh JSON report under `.tmp/`
+and `--recording` pointing to the authorized Manta fixture. Reuse the isolation
+rules from [the package checker](../../../scripts/check_windows_packages.py):
+temporary preferences, no Python/Qt environment overrides and a System32-only
+PATH. Wait for completion and require the expected version, successful GUI/import,
+German/light presentation and 4K rendering in its report.
+
+The GitHub pipeline also runs this builder and owns Python package builds and
+checks of all three Windows artifacts, including the complete package's real CPU
+encode. Do not run `scripts.check_windows_packages` locally as an additional
+release-preparation gate; its ZIP checks belong to the pipeline.
+
+Report manifest-listed redistribution gaps accurately; a successful EXE build
+does not close them or establish clean-machine/signing acceptance. Keep logs and
+outputs in `.tmp/`; no routine tracked validation diary.
 
 ## 4. Deliver the reviewed changes
 
@@ -83,11 +97,13 @@ revision against tested content; changed inputs require affected checks/builds a
   overwrite an existing release or blindly repeat an ambiguous remote mutation.
 - Download the three published Windows assets and `WINDOWS-SHA256SUMS.txt` with
   `gh release download` into a fresh directory under `.tmp/`. Verify release/tag
-  identity and expected versioned asset names, then run `scripts.check_windows_packages`
-  against those downloaded files with the same native Windows command as above.
-  Locally built artifacts are not a substitute for downloaded-asset verification.
+  identity, expected versioned asset names and all three download hashes. Smoke-test
+  the downloaded standalone EXE using the isolation and report checks above.
+  Rely on the successful pipeline checks for both ZIPs; do not extract or repeat
+  their smoke tests locally. Locally built artifacts are not a substitute for
+  downloaded-asset verification.
 - Stop on missing authorization, unavailable required validation or unresolved
   failures/ambiguous publication; report the concrete blocker and actual remote state.
 - Report version/tag/commit, PR/release links, actual local/build/hosted results,
   download hashes/execution results and remaining limits. Claim completion only
-  when the requested publication and downloaded-package checks have passed.
+  when the requested publication and download verification have passed.
