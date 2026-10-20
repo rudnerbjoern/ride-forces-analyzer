@@ -4,7 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-# cspell:words dpiawareness Segoe
+# cspell:words dpiawareness Segoe Pixmap
 
 import argparse
 from collections.abc import Callable
@@ -16,8 +16,9 @@ import sys
 from tempfile import TemporaryDirectory
 from time import monotonic, sleep
 
-from PySide6.QtCore import QThreadPool
-from PySide6.QtGui import QFont
+from PySide6.QtCharts import QCategoryAxis
+from PySide6.QtCore import QPoint, QRect, QThreadPool
+from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
 from PySide6.QtWidgets import QApplication, QWidget
 
 from ride_forces_analyzer.config import AppSettings
@@ -58,7 +59,165 @@ def save_widget(application: QApplication, widget: QWidget, target: Path) -> Non
     print(f"Captured {target.name}: sample {SAMPLE}", flush=True)
 
 
-def capture_reference(output: Path) -> None:
+def capture_details(application: QApplication, window: ExplorerWindow, output: Path) -> None:
+    """Capture real chart/card crops from fixed scenes in three original recordings."""
+    scenes = (
+        ("VoltronNevera", 4960, (4500, 5250)),
+        ("Taron", 3399, (3250, 3500)),
+        ("Manta", 4782, (4650, 4900)),
+    )
+    hashes = {
+        "VoltronNevera": SOURCE_SHA256,
+        "Taron": "cfa03821140aaa76c52e1bb69905db96a775a5d6772741b5d3a90f48a4254564",
+        "Manta": "30cf81c360cb28f45ee97234779689bdcdd7ec3aa8fa148645a4b015771be6c6",
+    }
+    sources = {name: next(SOURCE.parent.glob(name + "-*.forces")) for name, _, _ in scenes}
+    for name, source in sources.items():
+        if sha256(source.read_bytes()).hexdigest() != hashes[name]:
+            raise ValueError("Detail source hash differs from the fixed reference recording")
+    output.mkdir(parents=True, exist_ok=True)
+    window.setMinimumSize(1280, 720)
+    window.resize(1280, 720)
+    window.set_appearance(0)
+    manifest: dict[str, object] = {}
+    try:
+        for name, sample, interval in scenes:
+            window.open_path(sources[name])
+            wait_for(application, window.open_action.isEnabled)
+            if window.data is None or not window.data.calibration_available:
+                raise RuntimeError(f"Cannot load calibrated {name} reference")
+            window.reference_toggle.setChecked(True)
+            window.slider.setValue(sample)
+            # Keep the selection highlight outside the illustrated interval.
+            window.last.setValue(0)
+            window.first.setValue(0)
+            time_range = tuple(window.data.time_at(index) for index in interval)
+            window.axis_x.setRange(*time_range)
+            wait_for(application, lambda: True)
+            # Refresh labels once the compact layout has settled after the zoom.
+            window.axis_x.setRange(time_range[0] + 0.02, time_range[1])
+            window.axis_x.setRange(*time_range)
+            wait_for(application, lambda: True)
+            details: dict[str, object] = {
+                "source_sha256": hashes[name],
+                "sample": sample,
+                "replay": window.data.replay_text(sample),
+                "interval": interval,
+                "smoothing": SMOOTHING,
+            }
+            if name == "VoltronNevera":
+                bounds = window.chart_view.geometry().united(window.airtime_legend.geometry())
+                parent = window.chart_view.parentWidget()
+                if parent is None or not parent.grab(bounds).save(
+                    str(output / "voltron-airtime-detail.png"),
+                ):
+                    raise RuntimeError("Cannot capture airtime chart and legend")
+                details["contexts"] = sorted(
+                    {window.data.vertical_context_label(index) for index in range(*interval)},
+                )
+            elif name == "Taron":
+                bounds = QRect()
+                for label in window.value_labels:
+                    card = label.parentWidget()
+                    if card is None:
+                        raise RuntimeError("Missing force value card")
+                    bounds = bounds.united(QRect(card.mapTo(window, QPoint()), card.size()))
+                if not window.grab(bounds).save(str(output / "taron-force-cards.png")):
+                    raise RuntimeError("Cannot capture force cards")
+                details["cards"] = window.data.sample_cards(sample)
+            else:
+                for checkbox in window.visibility[1:]:
+                    checkbox.setChecked(False)
+                panels: list[QPixmap] = []
+                scales: list[dict[str, object]] = []
+                force_range: tuple[float, float] | None = None
+                force_labels: list[tuple[str, float]] = []
+                for smoothing in (1, 11, 31):
+                    window.smoothing_slider.setValue(smoothing // 2)
+                    wait_for(
+                        application,
+                        lambda: (
+                            window.data is not None and window.data.smoothing_window == smoothing
+                        ),
+                    )
+                    if force_range is None:
+                        force_range = (window.axis_y.min(), window.axis_y.max())
+                        if not isinstance(window.axis_y, QCategoryAxis):
+                            raise RuntimeError("Missing calibrated force axis")
+                        force_labels = [
+                            (label, window.axis_y.endValue(label))
+                            for label in window.axis_y.categoriesLabels()
+                        ]
+                    # Lock the comparison scale, including category labels. The normal
+                    # workspace intentionally rescales after a smoothing change.
+                    axis = window.axis_y
+                    if not isinstance(axis, QCategoryAxis):
+                        raise RuntimeError("Missing calibrated force axis")
+                    axis.blockSignals(True)
+                    try:
+                        for label in axis.categoriesLabels():
+                            axis.remove(label)
+                        axis.setStartValue(force_range[0])
+                        for label, value in force_labels:
+                            axis.append(label, value)
+                        axis.setRange(*force_range)
+                    finally:
+                        axis.blockSignals(False)
+                    window.axis_x.setRange(*time_range)
+                    window.sample_cursor.hide()
+                    wait_for(application, lambda: True)
+                    panels.append(window.chart_view.grab())
+                    scales.append(
+                        {
+                            "smoothing": smoothing,
+                            "force_range": (axis.min(), axis.max()),
+                            "time_range": (window.axis_x.min(), window.axis_x.max()),
+                        },
+                    )
+                width = panels[0].width()
+                heading_height = 32
+                height = sum(panel.height() + heading_height for panel in panels)
+                comparison = QPixmap(width, height)
+                comparison.fill(QColor(window.theme.panel))
+                painter = QPainter(comparison)
+                try:
+                    painter.setFont(QFont("Segoe UI", 11))
+                    painter.setPen(QColor(window.theme.text))
+                    top = 0
+                    for title, panel in zip(
+                        (
+                            "1 sample - no smoothing",
+                            "11 samples - default",
+                            "31 samples - stronger smoothing",
+                        ),
+                        panels,
+                        strict=True,
+                    ):
+                        painter.drawText(16, top + 23, title)
+                        painter.drawPixmap(0, top + heading_height, panel)
+                        top += panel.height() + heading_height
+                finally:
+                    painter.end()
+                if not comparison.save(str(output / "manta-smoothing-comparison.png")):
+                    raise RuntimeError("Cannot capture smoothing comparison")
+                details["smoothing"] = (1, 11, 31)
+                details["force_range"] = force_range
+                details["time_range"] = time_range
+                details["panels"] = scales
+            manifest[name] = details
+            print(f"Captured {name} detail: sample {sample}", flush=True)
+        (output / "readme-reference.json").write_text(
+            json.dumps(manifest, indent=2) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+    finally:
+        for name, source in sources.items():
+            if sha256(source.read_bytes()).hexdigest() != hashes[name]:
+                raise ValueError("Original detail recording changed during capture")
+
+
+def capture_reference(output: Path, *, details: bool = False) -> None:
     if sys.platform != "win32":
         raise RuntimeError("Capture requires native Windows with a desktop session")
     if sha256(SOURCE.read_bytes()).hexdigest() != SOURCE_SHA256:
@@ -86,6 +245,9 @@ def capture_reference(output: Path) -> None:
                 window.show()
                 handle = window.windowHandle()
                 wait_for(application, handle.isExposed)
+                if details:
+                    capture_details(application, window, output)
+                    return
                 window.open_path(SOURCE)
                 wait_for(application, window.open_action.isEnabled)
                 if window.data is None or not window.data.calibration_available:
@@ -180,7 +342,13 @@ def main() -> None:
         default=ROOT / "docs/images",
         help="Destination; replaces the three named screenshots and app-reference.json",
     )
-    capture_reference(parser.parse_args().output)
+    parser.add_argument(
+        "--details",
+        action="store_true",
+        help="Capture the three README detail images instead",
+    )
+    arguments = parser.parse_args()
+    capture_reference(arguments.output, details=arguments.details)
 
 
 if __name__ == "__main__":

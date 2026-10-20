@@ -1,0 +1,19 @@
+---
+layout: default
+---
+{% capture readme %}{% include_relative README.md %}{% endcapture %}
+{% assign source = 'https://github.com/rudnerbjoern/ride-forces-analyzer/blob/main/' %}
+{% assign documents = source | append: 'docs/' | prepend: 'href="' %}
+{% assign fixtures = source | append: 'tests/' | prepend: 'href="' %}
+{% assign license = source | append: 'LICENSE' | prepend: 'href="' %}
+{% assign contributing = source | append: 'CONTRIBUTING.md' | prepend: 'href="' %}
+{% assign security = source | append: 'SECURITY.md' | prepend: 'href="' %}
+{% assign notices = source | append: 'THIRD_PARTY_NOTICES.md' | prepend: 'href="' %}
+{{ readme | remove_first: '# Ride Forces Analyzer' | markdownify
+  | replace: 'href="docs/', documents
+  | replace: 'href="tests/', fixtures
+  | replace: 'href="LICENSE', license
+  | replace: 'href="CONTRIBUTING.md', contributing
+  | replace: 'href="SECURITY.md', security
+  | replace: 'href="THIRD_PARTY_NOTICES.md', notices
+}}

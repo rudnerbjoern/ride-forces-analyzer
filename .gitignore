@@ -25,5 +25,9 @@ build/
 # Documentation development dependencies.
 node_modules/
 
+# Local GitHub Pages output.
+/_site/
+/.jekyll-cache/
+
 # Generated local video exports.
 /exports/

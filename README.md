@@ -1,25 +1,65 @@
 # Ride Forces Analyzer
 
-Explore your coaster rides. See the forces. Bring them into your videos.
+[![CI](https://github.com/rudnerbjoern/ride-forces-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/rudnerbjoern/ride-forces-analyzer/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/rudnerbjoern/ride-forces-analyzer?include_prereleases)](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
+[![Platform: Windows](https://img.shields.io/badge/platform-Windows-blue)](docs/development/SETUP.md)
+[![GitHub issues](https://img.shields.io/github/issues/rudnerbjoern/ride-forces-analyzer)](https://github.com/rudnerbjoern/ride-forces-analyzer/issues)
 
-Ride Forces Analyzer is a Windows desktop application for ride data recorded
-with the [**Ride Forces** app](https://rideforces.com/) on an iPhone or Apple Watch
-and exported as `.forces` files. Open a recording, explore how vertical,
-lateral and longitudinal G-forces change throughout the ride, and turn the data
-into an overlay for your Onride footage.
+**Relive the ride. Explore the forces. Add them to your videos.**
 
-**Independent project:** Ride Forces Analyzer is developed independently of the
-Ride Forces app and its developer. This project is not affiliated with, endorsed
-by or sponsored by them.
+Find the strongest airtime moment, inspect a launch or bring your ride data into
+an Onride video. Ride Forces Analyzer turns `.forces` recordings from the
+[Ride Forces app](https://rideforces.com/) on iPhone or Apple Watch into
+interactive charts and 4K video overlays on Windows.
 
-Your recordings stay on your computer. Processing works offline and never
-changes the original files.
+**[Download for Windows](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)**
+· **[Watch the Manta demo](https://youtu.be/tsRzD416voU)**
+· **[Compare overlay layouts](docs/EXPORT_THEMES.md)**
+
+Free and open source · Offline processing · English and German · Light and dark themes
 
 ![Voltron Nevera in the dark workspace, showing three force curves, a colored airtime context strip, current Ejector Airtime and visible-range extrema](docs/images/workspace-dark.png)
 
-*Explore the ride, follow the airtime context strip and inspect the selected moment.*
+*Follow the curves, zoom into a favorite element and inspect the forces at that moment.*
 
-## What you can do
+## Get started
+
+You need **Windows 10 or 11, 64-bit**, and a recording exported as a `.forces`
+file from the Ride Forces app.
+
+### 1. Download and launch
+
+Open [GitHub Releases](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)
+and choose a Windows download:
+
+| Download           | Best for                                                                                        |
+| :----------------- | :---------------------------------------------------------------------------------------------- |
+| **Complete ZIP**   | Exploring rides and exporting videos, with FFmpeg included. Extract the ZIP and launch the EXE. |
+| **Standard ZIP**   | Using your own FFmpeg installation. Includes the application and license notices.               |
+| **Standalone EXE** | Launching the application directly. Select an existing FFmpeg when you want to export video.    |
+
+These downloads need no Python installation and have no installer.
+The current **0.3.1 preview** is unsigned; code signing and clean-Windows-VM
+qualification remain open. Checksums and third-party notices accompany the release;
+see the [release guide](docs/development/RELEASE.md) for packaging limits.
+
+### 2. Open your ride
+
+Click **Open recording** or press **Ctrl+O** and choose your `.forces` file.
+Click a point in the chart to inspect that sample, move through the ride with the
+slider, or zoom into a section with the mouse wheel or by dragging across the plot.
+
+### 3. Create an overlay
+
+Click **Export 4K…**, choose a layout and check the preview. Export a transparent
+MOV for your video editor or an MP4 with a solid background. Align the overlay
+with your footage in the editor; automatic video synchronization is not available yet.
+
+Your recordings stay on your computer. Opening, analyzing and exporting work
+offline after setup and leave the original files unchanged.
+
+## Explore what happened on the ride
 
 - **Explore three force channels together.** Follow vertical loads, right/left
   forces, acceleration and braking on a shared time axis. Show or hide individual
@@ -45,25 +85,46 @@ Directional forces are shown when the recording contains usable calibration
 directions. Otherwise, you can still inspect the raw x/y/z channels, with an
 explanation of what is unavailable.
 
-## Make overlays for your videos
+### Airtime up close · [Voltron Nevera](https://rcdb.com/7121.htm)
 
-The export assistant shows the current graph sample before you render.
-Compare five layouts, adjust the settings and check the result in the preview.
+![Zoomed Voltron Nevera force curves and airtime strip showing Floater, Strong Airtime and Ejector around replay 01:07.39](docs/images/voltron-airtime-detail.png)
 
-See G-Orbit in action: [watch the Manta demo on YouTube](https://youtu.be/tsRzD416voU),
-with the exported overlay placed over Onride footage.
+*Follow the colored strip through the airtime moments. The cursor marks Voltron's
+−1.60 g sample at replay 01:07.39, with 11-sample smoothing. Labels are provisional
+interpretations of the recording.*
 
-![Export assistant showing five current layout thumbnails and a Flow Ribbon preview with Ejector Airtime, yellow lateral history and green/red longitudinal history](docs/images/export-preview.png)
+### Forces at a glance · [Taron](https://rcdb.com/12723.htm)
 
-*The checkerboard shows transparency; it is not part of the exported video.*
+![Taron value cards at replay 00:22.15: vertical +0.05 g with Airtime context, lateral +0.35 g right and longitudinal +1.08 g acceleration](docs/images/taron-force-cards.png)
 
-Choose **Flow Ribbon** for a strip along the bottom, **Corner Instruments** for
-the upper right, **Telemetry Capsule** for the top, **G-Orbit** for signed force
-gauges, or the **four-panel column** for force and orientation plots.
+*One moment, three force channels: Taron at replay 00:22.15. Read each value
+alongside its direction or current vertical context.*
+
+### Find your smoothing level · [Manta](https://rcdb.com/4190.htm)
+
+![The same five-second Manta vertical-force interval with no smoothing, the default 11-sample mean and a stronger 31-sample mean, all on identical axes](docs/images/manta-smoothing-comparison.png)
+
+*The same Manta interval with **1 sample (off)**, **11 samples (default)** and
+**31 samples (stronger)**. Time and force scales are fixed for this comparison.
+Stronger smoothing reduces short peaks and can change the airtime context;
+the original samples remain unchanged.*
+
+## Bring the ride into your videos
+
+**[Watch G-Orbit over Manta Onride footage](https://youtu.be/tsRzD416voU)**
+to see an exported overlay in use.
 
 ![All five export layouts compared at Manta's strong negative vertical-force peak](docs/images/manta-export-themes.png)
 
-[Compare every layout in detail using the same Manta moment](docs/EXPORT_THEMES.md).
+| Layout                 | Look and placement                                      |
+| :--------------------- | :------------------------------------------------------ |
+| **Flow Ribbon**        | A strip along the bottom with force histories.          |
+| **Corner Instruments** | Compact instruments in the upper right.                 |
+| **Telemetry Capsule**  | A compact panel across the top.                         |
+| **G-Orbit**            | Circular gauges with signed forces and peak indicators. |
+| **Four-panel column**  | Stacked force and orientation plots.                    |
+
+[Compare larger previews of every layout](docs/EXPORT_THEMES.md).
 
 Export themes use yellow for lateral data, green for acceleration and red for
 braking. Flow Ribbon, Corner Instruments and Telemetry Capsule also show the
@@ -72,6 +133,10 @@ current vertical context with the same colors and labels as the workspace.
 Every layout supports **4K landscape** for classic YouTube videos and **portrait**
 for Shorts or TikTok. Export the whole recording, its marker interval or your
 selected section. Choose the overlay language independently of the application.
+
+![Export assistant showing five layout thumbnails and a Flow Ribbon preview with Ejector Airtime, yellow lateral history and green/red longitudinal history](docs/images/export-preview.png)
+
+*Preview the selected chart moment before rendering. The checkerboard indicates transparency and is not part of the video.*
 
 - **Transparent MOV (ProRes 4444):** place it above your footage in a video editor
   such as DaVinci Resolve. These editing files can be large.
@@ -86,67 +151,25 @@ For footage recorded at **59.94 fps**, select the matching export rate
 Use **Settings → Export** to save your preferred frame rate for new exports.
 Saved presets and batches keep their own settings.
 
-Align the exported overlay with your footage in the editor. Automatic video
-synchronization is not available yet.
+Video export needs FFmpeg. The Complete ZIP includes it; other downloads let you
+select an existing `ffmpeg.exe` in the export assistant.
+See the [export guide](docs/implementation/VIDEO_EXPORT.md) for details.
 
-## Choose your workspace
+## Make the workspace yours
 
-Use **Settings → Application** to choose **English or German** and
-**Dark, Light or System** appearance. Save applies your choices; Cancel keeps
-the previous settings.
-Language and appearance choices are remembered. Without a saved choice, German
-Windows selects German and other languages select English; **System** appearance
-follows Windows' current light/dark scheme.
-The chart stays central, with display settings, selection and ride details in
-the inspector. Smaller windows let you switch between the chart and inspector.
-
-The **About…** dialog shows version/license information and offers **Check for
-updates…**. Optional startup checks are off by default and run at most once daily
-when enabled. A newer published GitHub release, including a prerelease, offers
-**Open release**, **Later** or **Skip this version**. Update checks send no
-recordings, GPS data or file paths; downloads and installation remain manual.
-Offline use does not require update checks.
+Choose **English or German** and **Dark, Light or System** appearance in
+**Settings → Application**. Your saved choices are remembered. The chart adapts
+to the available window space; smaller windows let you switch between the chart
+and inspector.
 
 ![The same Voltron Nevera sample in the light workspace, with the airtime context strip, Ejector Airtime value card and selection inspector](docs/images/workspace-light.png)
 
-*The light scheme shows the same sample and selection, with darker context colors for readability.*
+*The same ride and selected moment, in the light theme.*
 
-## Get started
-
-You need **Windows 10 or 11, 64-bit**, and a recording made with the
-[Ride Forces app](https://rideforces.com/) and exported as `.forces`.
-Download version **0.3.1** from
-[GitHub Releases](https://github.com/rudnerbjoern/ride-forces-analyzer/releases/tag/v0.3.1):
-
-- **EXE:** start the application directly, without installing Python.
-- **Standard ZIP:** application and license notices; choose an existing FFmpeg for video export.
-- **Complete ZIP:** application, notices and FFmpeg; extract it and start the EXE.
-- **Source code (zip / tar.gz):** GitHub-generated archives for running from source or development.
-
-There is no installer. To run from source, download or clone this project,
-open PowerShell in its folder and run:
-
-```powershell
-.\setup.ps1
-.\start.ps1
-```
-
-Setup requires internet access to download the environment. After installation,
-you can open and process recordings offline.
-
-1. Click **Open recording** (Ctrl+O) and select your file.
-2. Explore the chart, move the sample slider or select an interval.
-3. Click **Export 4K…**, choose a layout and review the preview before exporting.
-
-Video export also needs FFmpeg. Install the supplied version with
-`setup.ps1 -VideoExport`, or select an existing `ffmpeg.exe` in the assistant.
-See the [setup guide](docs/development/SETUP.md) for detailed installation help.
-
-Release packaging provides a standalone Windows EXE, a standard ZIP without
-FFmpeg and a complete ZIP including FFmpeg. No Python installation is needed
-for these packages. Dependency notices and checksums accompany the files;
-missing third-party source material is recorded in the included license notices.
-Version 0.3.1 is a preview release; clean-VM and code-signing qualification remain open.
+The **About…** dialog offers **Check for updates…**. Optional startup checks are
+off by default. Checks contact GitHub without sending recordings, GPS data or
+file paths; downloads and installation remain manual. Offline processing does
+not require update checks.
 
 ## Understanding the display
 
@@ -169,10 +192,30 @@ Missing sensor data is never invented.
 For current limitations and planned features, see the [roadmap](docs/ROADMAP.md).
 The [documentation index](docs/README.md) links detailed behavior and source comparisons.
 
-## Contributing and security
+## Run from source
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, checks, pull requests and recording
-permissions. Report vulnerabilities privately using [SECURITY.md](SECURITY.md).
+Prefer running the project directly? Clone it or download GitHub's source archive,
+open PowerShell in the project folder, then run:
+
+```powershell
+.\setup.ps1
+.\start.ps1
+```
+
+Setup needs internet access to download the environment. To include the supplied
+FFmpeg version, run `.\setup.ps1 -VideoExport` before starting the application.
+The [Windows setup guide](docs/development/SETUP.md) covers requirements,
+development tools and checks.
+
+## Help and contribute
+
+Have a problem or an idea? [Open an issue](https://github.com/rudnerbjoern/ride-forces-analyzer/issues).
+For development, checks, pull requests and recording permissions, see
+[CONTRIBUTING.md](CONTRIBUTING.md). Report security vulnerabilities privately
+using [SECURITY.md](SECURITY.md).
+
+**Independent project:** Ride Forces Analyzer is not affiliated with, endorsed
+by or sponsored by the Ride Forces app or its developer.
 
 ## License
 

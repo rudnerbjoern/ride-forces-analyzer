@@ -1,5 +1,7 @@
 """Fixed native screenshot scene, repeatability and source/profile preservation."""
 
+# cspell:words getextrema
+
 from hashlib import sha256
 import json
 import os
@@ -11,7 +13,7 @@ from tempfile import TemporaryDirectory
 
 from PIL import Image
 
-from tests.support.recordings import REAL_FIXTURE_DIRECTORY
+from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts/capture_app_reference.py"
@@ -85,3 +87,53 @@ def test_capture_rejects_changed_source_before_writing_images() -> None:
         assert result.returncode != 0
         assert "source hash differs" in result.stderr
         assert not output.exists()
+
+
+def test_detail_capture_uses_three_recordings_and_identical_comparison_scales() -> None:
+    """Real UI crops retain source identities and honest smoothing comparison axes."""
+    with TemporaryDirectory(dir=ROOT / ".tmp") as directory:
+        work = Path(directory)
+        output = work / "details"
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "--details", "--output", str(output)],
+            cwd=work,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=90,
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        manifest = json.loads((output / "readme-reference.json").read_text(encoding="utf-8"))
+        assert set(manifest) == {"VoltronNevera", "Taron", "Manta"}
+        for name, sample in (("VoltronNevera", 4960), ("Taron", 3399), ("Manta", 4782)):
+            source = next(REAL_FIXTURE_DIRECTORY.glob(name + "-*.forces"))
+            assert manifest[name]["sample"] == sample
+            assert manifest[name]["source_sha256"] == REAL_FIXTURES[source.name][1]
+            assert sha256(source.read_bytes()).hexdigest() == REAL_FIXTURES[source.name][1]
+        assert {"Floater Airtime", "Ejector Airtime"} <= set(manifest["VoltronNevera"]["contexts"])
+        assert manifest["Taron"]["cards"][2] == ["Longitudinal", "+1.08 g", "Acceleration"]
+        smoothing = manifest["Manta"]
+        assert smoothing["smoothing"] == [1, 11, 31]
+        assert [panel["smoothing"] for panel in smoothing["panels"]] == [1, 11, 31]
+        for panel in smoothing["panels"]:
+            assert panel["force_range"] == smoothing["force_range"]
+            assert panel["time_range"] == smoothing["time_range"] == [93.0, 98.0]
+        for filename in (
+            "voltron-airtime-detail.png",
+            "taron-force-cards.png",
+            "manta-smoothing-comparison.png",
+        ):
+            with Image.open(output / filename) as image:
+                assert image.width >= 800
+                assert image.height >= 40
+                assert image.convert("RGB").getextrema() != ((0, 0), (0, 0), (0, 0))
+        with Image.open(output / "manta-smoothing-comparison.png") as image:
+            assert image.height % 3 == 0
+            height = image.height // 3
+            # Exclude the headings: each actual curve differs on the same scale.
+            panels = [
+                image.crop((0, row * height + 32, image.width, (row + 1) * height)).tobytes()
+                for row in range(3)
+            ]
+            assert len(set(panels)) == 3
