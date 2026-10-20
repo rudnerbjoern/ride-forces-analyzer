@@ -3,7 +3,7 @@
 [![CI](https://github.com/rudnerbjoern/ride-forces-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/rudnerbjoern/ride-forces-analyzer/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/rudnerbjoern/ride-forces-analyzer?include_prereleases)](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
-[![Platform: Windows](https://img.shields.io/badge/platform-Windows-blue)](docs/development/SETUP.md)
+[![Platforms: Windows, Linux and macOS](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-blue)](docs/development/RELEASE.md)
 [![GitHub issues](https://img.shields.io/github/issues/rudnerbjoern/ride-forces-analyzer)](https://github.com/rudnerbjoern/ride-forces-analyzer/issues)
 
 **Relive the ride. Explore the forces. Add them to your videos.**
@@ -11,9 +11,9 @@
 Find the strongest airtime moment, inspect a launch or bring your ride data into
 an Onride video. Ride Forces Analyzer turns `.forces` recordings from the
 [Ride Forces app](https://rideforces.com/) on iPhone or Apple Watch into
-interactive charts and 4K video overlays on Windows.
+interactive charts and 4K video overlays on Windows, Linux and macOS.
 
-**[Download for Windows](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)**
+**[Download](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)**
 · **[Watch the Manta demo](https://youtu.be/tsRzD416voU)**
 · **[Compare overlay layouts](docs/EXPORT_THEMES.md)**
 
@@ -25,34 +25,39 @@ Free and open source · Offline processing · English and German · Light and da
 
 ## Get started
 
-You need **Windows 10 or 11, 64-bit**, and a recording exported as a `.forces`
-file from the Ride Forces app.
+You need **Windows 10/11 x64, Ubuntu 24.04 x64 or macOS 15+** and a recording
+exported as a `.forces` file from the Ride Forces app. macOS downloads are available
+separately for Apple Silicon and Intel.
 
 ### 1. Download and launch
 
 Open [GitHub Releases](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)
-and choose a Windows download:
+and choose the download for your system:
 
-| Download           | Best for                                                                                        |
-| :----------------- | :---------------------------------------------------------------------------------------------- |
-| **Complete ZIP**   | Exploring rides and exporting videos, with FFmpeg included. Extract the ZIP and launch the EXE. |
-| **Standard ZIP**   | Using your own FFmpeg installation. Includes the application and license notices.               |
-| **Standalone EXE** | Launching the application directly. Select an existing FFmpeg when you want to export video.    |
+| Download                    | Best for                                                                                             |
+| :-------------------------- | :--------------------------------------------------------------------------------------------------- |
+| **Windows Complete ZIP**    | Exploring rides and exporting videos, with FFmpeg included. Extract the ZIP and launch the EXE.      |
+| **Windows Standard ZIP**    | Using your own FFmpeg installation. Includes the application and license notices.                    |
+| **Windows EXE**             | Launching the application directly. Select an existing FFmpeg when you want to export video.         |
+| **Linux x64 tar.gz**        | Extract and run `./Ride-Forces-Analyzer` inside the extracted directory. Keep `_internal` beside it. |
+| **macOS Apple Silicon ZIP** | Extract and move the app to Applications on an Apple Silicon Mac.                                    |
+| **macOS Intel ZIP**         | Extract and move the app to Applications on an Intel Mac.                                            |
 
 These downloads need no Python installation and have no installer.
-The **0.4.0 preview** is unsigned; code signing and clean-Windows-VM
-qualification remain open. Checksums and third-party notices accompany the release;
-see the [release guide](docs/development/RELEASE.md) for packaging limits.
+The **0.5.0 preview** includes all four native targets. Windows binaries are unsigned;
+macOS apps are ad-hoc signed without notarization and may require **Open Anyway**
+in Privacy & Security. Clean-machine qualification remains open. Checksums and
+third-party notices accompany the release.
 
-Linux x64 and macOS Apple Silicon/Intel packages are prepared for a future release;
-the published v0.4.0 downloads above remain Windows-only. See
-[native installation and requirements](docs/development/RELEASE.md#linux-and-macos-packages)
-for the Ubuntu 24.04/macOS 15 targets, separate FFmpeg installation and macOS approval
-requirements. Development continues on Windows.
+Linux and macOS require a separately installed FFmpeg for video export, such as
+`sudo apt install ffmpeg` on Ubuntu or `brew install ffmpeg` on macOS. Choose it
+with **Browse** if it is not found automatically. See the
+[release guide](docs/development/RELEASE.md) for runtime dependencies, verification
+and packaging limits. Development continues on Windows.
 
 ### 2. Open your ride
 
-Click **Open recording** or press **Ctrl+O** and choose your `.forces` file.
+Click **Open recording** or press **Ctrl+O** (**⌘O** on macOS) and choose your `.forces` file.
 Click a point in the chart to inspect that sample, move through the ride with the
 slider, or zoom into a section with the mouse wheel or by dragging across the plot.
 

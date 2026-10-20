@@ -1,14 +1,14 @@
 # Releases
 
-<!-- cspell:words libegl libopengl libxcb libxkbcommon -->
+<!-- cspell:words libegl libopengl libxcb libxkbcommon icccm keysyms -->
 
 The [release workflow](../../.github/workflows/source-release.yml) handles
 owner-authorized pushes of `v*` tags. Windows remains the development environment;
 Linux/macOS packages are built and executed by native target workers in reusable CI.
 The workflow validates tagged sources and prepares a standalone Windows x64 EXE,
 standard/complete ZIPs, a Linux x64 tarball and macOS arm64/x64 app ZIPs. Binary publication is
-accompanied by documented missing redistribution material below. Published version
-0.4.0 provides Windows downloads; the next release can include all native targets.
+accompanied by documented missing redistribution material below. Version 0.5.0
+provides all native targets.
 No installer is included.
 Local acceptance and owner review still precede tag creation; CI is secondary
 validation. [Windows setup](SETUP.md) owns the required local checks.
@@ -46,7 +46,7 @@ To retry publication of an existing tag after a workflow correction, dispatch th
 current workflow from `main` with the `tag` input, for example:
 
 ```powershell
-gh workflow run source-release.yml --ref main -f tag=v0.4.0
+gh workflow run source-release.yml --ref main -f tag=v0.5.0
 ```
 
 Quality checks use the current workflow definition and check out the resolved
@@ -118,13 +118,12 @@ Publication rechecks all downloaded asset hashes and the live tag, then attaches
 the EXE, both Windows ZIPs, Linux/macOS packages and platform checksum files. A
 documented missing provider source does not block the workflow. Missing or modified
 files that are explicitly listed in the catalog still fail verification.
-Version 0.4.0 provides the three Windows application downloads and their checksum file.
+The Windows downloads have their own checksum file.
 
 ## Linux and macOS packages
 
-These targets are prepared for a future release. Published `v0.4.0` remains
-Windows-only; never move its tag or overwrite its assets to add these changes.
-Development and the full local regression suite stay on Windows. Native package
+Version 0.5.0 includes these native targets. Development and the full local
+regression suite stay on Windows. Native package
 builds require their own OS; Windows mocks do not establish macOS acceptance.
 
 | Target              | Download                                        | Minimum target / installation                                                                                            |
@@ -135,11 +134,13 @@ builds require their own OS; Windows mocks do not establish macOS acceptance.
 
 Native packages embed Python, Qt and collected notices, but do not bundle FFmpeg.
 Linux desktop runtime dependencies on Ubuntu are `libegl1`, `libopengl0`,
-`libxcb-cursor0` and `libxkbcommon-x11-0`; a working X11 or Wayland session is required.
+`libxcb-cursor0`, `libxcb-icccm4`, `libxcb-keysyms1`, `libxcb-image0`,
+`libxcb-render-util0` and `libxkbcommon-x11-0`; a working X11 or Wayland session is required.
 Install FFmpeg separately (`sudo apt install ffmpeg` on Ubuntu, or an existing
 compatible macOS installation such as `brew install ffmpeg`). PATH discovery or
 the export assistant's Browse action selects it. CPU H.264 and ProRes 4444 encoding
-are checked; NVIDIA acceleration is optional and capability-probed, not assumed.
+are supported; native package smoke checks exercise CPU H.264. NVIDIA acceleration
+is optional and capability-probed, not assumed.
 
 macOS apps use PyInstaller's ad-hoc signatures. They are not notarized or signed
 with an Apple Developer ID. After checking the download hash, macOS may require
