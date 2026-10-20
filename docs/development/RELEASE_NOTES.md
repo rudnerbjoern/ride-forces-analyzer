@@ -5,6 +5,10 @@ original recordings remain unchanged.
 
 ## Included in {{VERSION}}
 
+- Native Linux x64 tarball and separate macOS Apple Silicon/Intel app ZIPs,
+  with target-native package/encode gates. Development remains on Windows.
+- Native user-data folders, platform-aware FFmpeg discovery and update assets;
+  export works from a read-only launch directory.
 - Shared immutable analysis snapshots for the explorer, previews, exports and
   batches, with source metadata, force values and per-sample airtime context.
 - Partial recalculation reuses unchanged stages when smoothing or analysis
@@ -23,6 +27,9 @@ original recordings remain unchanged.
 
 ## Compatibility and limits
 
+- Linux targets Ubuntu 24.04/glibc 2.39; macOS targets version 15 or newer.
+  These packages require a separately installed FFmpeg. macOS apps are ad-hoc
+  signed, without Developer ID/notarization, and may require explicit OS approval.
 - The former analysis APIs have been removed without compatibility facades.
   Integrations must use the current recording-analysis and service contracts.
 - Saved export presets and batch jobs require the current explicit analysis

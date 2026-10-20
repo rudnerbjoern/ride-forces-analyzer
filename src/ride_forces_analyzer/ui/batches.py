@@ -175,7 +175,7 @@ class BatchDialog(QDialog):
         try:
             bind(self.encoder, str(find_ffmpeg()), "text")
         except ValueError:
-            self.encoder.setPlaceholderText(tr("Choose ffmpeg.exe"))
+            self.encoder.setPlaceholderText(tr("Choose FFmpeg executable"))
         encoder_row.addWidget(self.encoder)
         self.browse = bind(QPushButton(), tr("Browse…"))
         self.browse.clicked.connect(self._browse)
@@ -374,7 +374,7 @@ class BatchDialog(QDialog):
             self,
             tr("FFmpeg executable"),
             "",
-            "FFmpeg (ffmpeg.exe)",
+            tr("All files (*)"),
         )
         if path:
             bind(self.encoder, path, "text")

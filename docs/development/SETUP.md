@@ -3,6 +3,12 @@
 Use native Windows PowerShell and a desktop session. WSL/offscreen tests do not
 verify the supported Qt environment. Run checks from the repository root.
 
+Development remains Windows-only. Linux/macOS are separate native distribution
+and runtime-check targets, using the same lockfile. Their release-worker commands
+and end-user installation requirements are in the
+[release guide](RELEASE.md#linux-and-macos-packages); no Linux/macOS developer
+bootstrap replaces this setup or its Windows acceptance checks.
+
 ## Install and start
 
 ```powershell
@@ -142,7 +148,9 @@ its normal repository-relative links. No Ruby dependency is added to the applica
 
 The [local layout](../../_layouts/default.html) adds section navigation and Windows
 EXE/Complete ZIP buttons. At build time it selects the most recently published
-non-draft release containing both Windows assets, including prereleases. Without
+non-draft release containing both Windows assets, including prereleases, and adds
+Linux/macOS links when their matching assets are present. Unpublished platform
+packages never produce broken buttons. Without
 matching metadata it links to the release list. A newly published release appears
 in these buttons after the next Pages build. The
 [stylesheet](../../assets/css/style.scss) retains Midnight's base styling and widens

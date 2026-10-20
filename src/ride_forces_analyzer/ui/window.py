@@ -275,7 +275,13 @@ class ExplorerWindow(QMainWindow):
         self.heading.setTextFormat(Qt.TextFormat.PlainText)
         self.heading.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         layout.addWidget(self.heading)
-        self.header_summary = bind(QLabel(), tr("Choose Open recording or press Ctrl+O"))
+        self.header_summary = bind(
+            QLabel(),
+            tr(
+                "Choose Open recording or press {0}",
+                self.open_action.shortcut().toString(QKeySequence.SequenceFormat.NativeText),
+            ),
+        )
         self.header_summary.setObjectName("Muted")
         self.header_summary.setTextFormat(Qt.TextFormat.PlainText)
         layout.addWidget(self.header_summary)

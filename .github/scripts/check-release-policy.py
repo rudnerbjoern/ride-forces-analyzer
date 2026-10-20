@@ -88,4 +88,5 @@ if __name__ == "__main__":
     (directory / "release-notes.md").write_text(notes, encoding="utf-8")
     with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
         output.write(f"prerelease={str(preview).lower()}\n")
+        output.write(f"version={version}\n")
     print("Release policy passed: version, tag SHA, main ancestry and merged PR")

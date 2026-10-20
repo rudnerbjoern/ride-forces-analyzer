@@ -22,6 +22,12 @@ boundaries remain in the [import contract](08_concepts.md#source-ownership-and-v
 
 ## Unresolved scientific qualification
 
+Native Linux/macOS package checks do not establish compatibility with every
+distribution, desktop, GPU or a clean machine. macOS ad-hoc signatures are not
+Developer ID signing/notarization. A release requires the native package jobs
+for all prepared targets; Windows-only mocks/static checks cannot replace them.
+These distribution limits are independent of the scientific gates below.
+
 [physical qualification boundary](09_architecture_decisions.md#physical-qualification) links
 actual M2/fixture observations to proposed channel gates. Owner acceptance of
 that policy and independent scientific qualification remain open:

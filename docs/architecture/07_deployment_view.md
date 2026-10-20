@@ -8,7 +8,7 @@
 
 ```mermaid
 flowchart TB
-    subgraph Host["Local Windows workstation"]
+    subgraph Host["Windows development workstation"]
         Python["Managed Python in .venv"]
         GUI["Qt desktop execution mode"]
         Caller["Python importer caller / test mode"]
@@ -21,10 +21,18 @@ flowchart TB
         UV["uv and locked Python dependencies"]
         Node["Node: type / documentation tools"]
         Git["Git and delivery skill"]
-        CI["GitHub PR checks on Windows runners"]
+        CI["Windows PR checks and native package jobs"]
         UV -.-> Python
         Git -.-> CI
     end
+    subgraph Targets["Native release/runtime targets"]
+        Win["Windows x64 EXE / ZIPs"]
+        Linux["Linux x64 portable tar.gz"]
+        Mac["macOS arm64 / x64 app ZIPs"]
+    end
+    CI --> Win
+    CI --> Linux
+    CI --> Mac
 ```
 
 The Python API and raw explorer are local entry points. The explorer invokes
@@ -34,7 +42,7 @@ may require network access; installed runtime and checks work offline.
 
 ## Mapping and environment
 
-The Qt entry point runs in the Windows desktop session; domain/importer APIs run
+The development Qt entry point runs in the Windows desktop session; domain/importer APIs run
 in the caller process without Qt. [Windows setup](../development/SETUP.md) owns
 installation, version checks and invocation: `setup.ps1` creates the locked
 `.venv`, `start.ps1` launches it without dependency synchronization. The optional
@@ -54,9 +62,9 @@ This does not verify ARM64, free-threaded Python, a clean VM or a release instal
 
 [PR CI](../development/CI.md) selects application, documentation and skill jobs on
 Windows after local acceptance. It cannot replace native desktop verification.
-Manual CI runs all three suites, workflow validation and mandatory secret scanning; a separate `v*` tag workflow validates source
-archives and package builds before a narrowly authorized job publishes a source
-and Windows release under the [release policy](../development/RELEASE.md). Neither runs a duplicate
+Manual CI runs all suites, native package jobs, workflow validation and mandatory secret scanning; a separate `v*` tag workflow validates source
+archives and package builds before a narrowly authorized job publishes native
+downloads under the [release policy](../development/RELEASE.md). Neither runs a duplicate
 full check after a push to `main`.
 The partial M6 video export uses offline FFmpeg; standalone installation/uninstallation remains planned for
 M8; the checkout is a development environment, not a released installer.
@@ -69,6 +77,42 @@ source archives before publishing binaries. Missing provider sources are recorde
 in the shipped redistribution catalog and reported without blocking the build;
 local candidates do not establish public binary or clean-VM acceptance. See
 [Windows packages](../development/RELEASE.md#windows-packages).
+
+## Native distribution targets
+
+Development, editor configuration and the full local regression suite remain on
+Windows. Native Linux/macOS workers are release-build and runtime-validation
+targets, not additional developer setups. PyInstaller does not cross-compile
+these packages from Windows.
+
+| Target            | Baseline                                  | Package                                 | Encoder                                            |
+| ----------------- | ----------------------------------------- | --------------------------------------- | -------------------------------------------------- |
+| Windows x64       | Windows 10/11                             | EXE, standard/complete ZIP              | Existing pinned complete bundle or external FFmpeg |
+| Linux x64         | Ubuntu 24.04, glibc 2.39, desktop session | Portable one-directory tar.gz           | External FFmpeg                                    |
+| macOS arm64 / x64 | macOS 15 or newer                         | Separate architecture-specific app ZIPs | External FFmpeg                                    |
+
+The existing Windows builder also owns shared notice collection. The native
+[POSIX builder](../../scripts/build_posix.py) reuses it and the same frozen
+entry point/self-test. Linux archives preserve executable permissions; macOS
+archives preserve framework symlinks and ad-hoc signatures. These signatures
+are not Developer ID signing or notarization. Native checkers extract the actual
+package, isolate preferences, run from `/`, verify notices and exercise the GUI,
+real import, German/light presentation, 4K rendering and external CPU encoding.
+
+The [native workflow](../../.github/workflows/posix-packages.yml) builds on
+Ubuntu 24.04, macOS 15 Apple Silicon and macOS 15 Intel. The required CI gate
+includes all three; release quality reuses those same jobs/artifacts before
+Windows packaging and publication. No target failure is optional. Static Windows
+checks cannot establish a working macOS package; native job success is required.
+See [release installation and limits](../development/RELEASE.md#linux-and-macos-packages).
+
+Local state uses LOCALAPPDATA on Windows, absolute XDG_DATA_HOME (fallback
+`~/.local/share`) on Linux, and `~/Library/Application Support` on macOS.
+Recording files and independent GPS are unchanged. Native Qt chooses the UI font;
+Pillow retains its scalable fallback when Segoe UI is unavailable. Export staging
+uses the chosen destination folder and is removed on completion/failure, so a
+read-only launch directory is supported. External encoders do not inherit frozen
+Linux library paths. Update checks require an asset for the running OS/architecture.
 
 ## Encoder installation
 
@@ -91,8 +135,8 @@ remain large; FFV1 was evaluated but is not an application output. See
 
 ## Local export configuration
 
-Python's built-in sqlite3 stores presets and batch definitions at
-`%LOCALAPPDATA%/Ride Forces Analyzer/exports.sqlite3`. Connections are short-lived,
+Python's built-in sqlite3 stores presets and batch definitions in `exports.sqlite3`
+under the platform data directory described above. Connections are short-lived,
 writes transactional and schema versions explicit; no server/ORM dependency is
 introduced. Recordings remain at their original paths with pinned content hashes.
 The user selects an output root; every batch run creates a unique subdirectory

@@ -44,6 +44,12 @@ The **0.4.0 preview** is unsigned; code signing and clean-Windows-VM
 qualification remain open. Checksums and third-party notices accompany the release;
 see the [release guide](docs/development/RELEASE.md) for packaging limits.
 
+Linux x64 and macOS Apple Silicon/Intel packages are prepared for a future release;
+the published v0.4.0 downloads above remain Windows-only. See
+[native installation and requirements](docs/development/RELEASE.md#linux-and-macos-packages)
+for the Ubuntu 24.04/macOS 15 targets, separate FFmpeg installation and macOS approval
+requirements. Development continues on Windows.
+
 ### 2. Open your ride
 
 Click **Open recording** or press **Ctrl+O** and choose your `.forces` file.

@@ -163,7 +163,10 @@ test("Source releases publish only reviewed tag revisions after quality and pack
   const downloads = release.steps.filter(step => step.uses?.startsWith("actions/download-artifact@"));
   assert.deepEqual(downloads.map(step => step.with.name), ["release-notes.md",
     "${{ needs.windows.outputs.exe }}", "${{ needs.windows.outputs.standard }}", "${{ needs.windows.outputs.complete }}",
-    "WINDOWS-SHA256SUMS.txt"]);
+    "WINDOWS-SHA256SUMS.txt",
+    "Ride-Forces-Analyzer-${{ needs.source.outputs.version }}-linux-x64.tar.gz", "LINUX-X64-SHA256SUMS.txt",
+    "Ride-Forces-Analyzer-${{ needs.source.outputs.version }}-macos-arm64.zip", "MACOS-ARM64-SHA256SUMS.txt",
+    "Ride-Forces-Analyzer-${{ needs.source.outputs.version }}-macos-x64.zip", "MACOS-X64-SHA256SUMS.txt"]);
   assert.ok(!source.includes("corresponding-sources.zip"));
   const windows = workflow.jobs.windows;
   assert.deepEqual(windows.needs, ["quality", "source"]);
@@ -202,7 +205,7 @@ ConvertTo-Json -Compress -InputObject $global:recorded
       const result = spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script], {
         encoding: "utf8", timeout: 30000,
         env: { ...windowsPowerShellEnvironment, RELEASE_TAG: "v0.1.0", RELEASE_SHA: "a".repeat(40),
-          RELEASE_PREVIEW: preview, FAKE_EXIT: String(exit), WINDOWS_EXE: "app.exe",
+          RELEASE_PREVIEW: preview, RELEASE_VERSION: "0.1.0", FAKE_EXIT: String(exit), WINDOWS_EXE: "app.exe",
           WINDOWS_STANDARD: "standard.zip", WINDOWS_COMPLETE: "complete.zip" },
       });
       assert.ifError(result.error);
@@ -215,7 +218,11 @@ ConvertTo-Json -Compress -InputObject $global:recorded
       assert.deepEqual(args.slice(0, 3), ["release", "create", "v0.1.0"]);
       assert.deepEqual(args.filter(arg => arg.startsWith(".tmp/release/")), [
         ".tmp/release/app.exe", ".tmp/release/standard.zip", ".tmp/release/complete.zip",
-        ".tmp/release/WINDOWS-SHA256SUMS.txt", ".tmp/release/release-notes.md",
+        ".tmp/release/WINDOWS-SHA256SUMS.txt",
+        ".tmp/release/Ride-Forces-Analyzer-0.1.0-linux-x64.tar.gz", ".tmp/release/LINUX-X64-SHA256SUMS.txt",
+        ".tmp/release/Ride-Forces-Analyzer-0.1.0-macos-arm64.zip", ".tmp/release/MACOS-ARM64-SHA256SUMS.txt",
+        ".tmp/release/Ride-Forces-Analyzer-0.1.0-macos-x64.zip", ".tmp/release/MACOS-X64-SHA256SUMS.txt",
+        ".tmp/release/release-notes.md",
       ]);
       assert.ok(args.includes("--verify-tag") && args.includes("--generate-notes"));
       for (const asset of ["app.exe", "standard.zip", "complete.zip", "WINDOWS-SHA256SUMS.txt"]) {
@@ -230,7 +237,7 @@ ConvertTo-Json -Compress -InputObject $global:recorded
   }
 });
 
-test("Actual release artifact verifier rejects a modified Windows download", async () => {
+test("Actual release artifact verifier rejects modified downloads on every platform", async () => {
   const workflow = parseDocument(await readFile(new URL("../../.github/workflows/source-release.yml", import.meta.url), "utf8")).toJS();
   const body = workflow.jobs.release.steps.find(step => step.name === "Verify artifacts and current tag before publication").run;
   const directory = await mkdtemp(path.resolve(".tmp/windows-release-verifier-"));
@@ -241,11 +248,18 @@ test("Actual release artifact verifier rejects a modified Windows download", asy
     const names = ["app.exe", "standard.zip", "complete.zip"];
     for (const name of names) await writeFile(path.join(target, name), "synthetic binary");
     await writeFile(path.join(target, "WINDOWS-SHA256SUMS.txt"), names.map(name => `${hash("synthetic binary")}  ${name}\n`).join(""));
+    const nativeNames = [];
+    for (const platform of ["linux-x64", "macos-arm64", "macos-x64"]) {
+      const name = `Ride-Forces-Analyzer-0.1.0-${platform}${platform === "linux-x64" ? ".tar.gz" : ".zip"}`;
+      nativeNames.push(name);
+      await writeFile(path.join(target, name), "synthetic binary");
+      await writeFile(path.join(target, `${platform.toUpperCase()}-SHA256SUMS.txt`), `${hash("synthetic binary")}  ${name}\n`);
+    }
     const script = path.join(directory, "verify.ps1");
     await writeFile(script, `$ErrorActionPreference = 'Stop'\nfunction git {\n $global:LASTEXITCODE = 0\n if ($args[0] -eq 'rev-parse') { $env:RELEASE_SHA }\n}\n${body}\nWrite-Output 'Artifact verification passed'\n`);
     const run = () => spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script], {
       cwd: directory, encoding: "utf8", timeout: 30000,
-      env: { ...windowsPowerShellEnvironment, RELEASE_TAG: "v0.1.0", RELEASE_SHA: "a".repeat(40), RELEASE_PREVIEW: "true",
+      env: { ...windowsPowerShellEnvironment, RELEASE_TAG: "v0.1.0", RELEASE_SHA: "a".repeat(40), RELEASE_PREVIEW: "true", RELEASE_VERSION: "0.1.0",
         WINDOWS_EXE: "app.exe", WINDOWS_STANDARD: "standard.zip", WINDOWS_COMPLETE: "complete.zip" },
     });
     const valid = run();
@@ -257,6 +271,15 @@ test("Actual release artifact verifier rejects a modified Windows download", asy
     assert.ifError(changed.error);
     assert.notEqual(changed.status, 0);
     assert.match(changed.stderr, /Windows artifact checksum mismatch/);
+    await writeFile(path.join(target, "app.exe"), "synthetic binary");
+    for (const name of nativeNames) {
+      await writeFile(path.join(target, name), "tampered");
+      const changedNative = run();
+      assert.ifError(changedNative.error);
+      assert.notEqual(changedNative.status, 0);
+      assert.match(changedNative.stderr, /Native artifact checksum mismatch/);
+      await writeFile(path.join(target, name), "synthetic binary");
+    }
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -269,7 +292,7 @@ test("Dependabot PRs use the existing read-only PR CI, with no automatic merge w
     workflow_call: { inputs: { "full-checks": { type: "boolean", required: true },
       revision: { type: "string", required: false } } } });
   for (const job of Object.values(workflow.jobs)) {
-    for (const step of job.steps.filter(step => step.uses?.startsWith("actions/checkout@"))) {
+    for (const step of (job.steps ?? []).filter(step => step.uses?.startsWith("actions/checkout@"))) {
       assert.equal(step.with.ref, "${{ inputs.revision || github.sha }}");
     }
   }

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "ride-forces-analyzer"
 version = "0.4.0"
-description = "Offline Windows desktop application for Ride Forces measurement analysis and video visualization"
+description = "Offline desktop application for Ride Forces measurement analysis and video visualization"
 authors = [{ name = "Björn Rudner" }]
 readme = "README.md"
 license = "GPL-3.0-or-later"

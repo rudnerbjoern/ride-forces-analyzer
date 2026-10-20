@@ -38,6 +38,9 @@ Honor existing owner authorization; ask only for missing target version or permi
 - Inspect release/build/deployment scripts and validate workflows with the pinned
   actionlint installation/command in [CI](../../../.github/workflows/ci.yml).
   Existing packaging/CI tests cover script contracts; static checks do not prove a build.
+- Development stays on Windows. Require the native Linux/macOS package jobs in
+  [CI](../../../.github/workflows/posix-packages.yml) to pass for the release revision;
+  do not attempt cross-compilation or treat Windows mocks as native acceptance.
 - Fix release-scoped failures, rerun affected checks and rebuild affected packages.
   Reuse evidence only under AGENTS.md; do not weaken gates or expand the fix scope.
 
@@ -95,13 +98,14 @@ revision against tested content; changed inputs require affected checks/builds a
 - Observe `source → quality → windows → release` for that commit. Inspect failures;
   use the documented retry path only when appropriate. Never move a published tag,
   overwrite an existing release or blindly repeat an ambiguous remote mutation.
-- Download the three published Windows assets and `WINDOWS-SHA256SUMS.txt` with
+- Download the six published native packages and four platform checksum files with
   `gh release download` into a fresh directory under `.tmp/`. Verify release/tag
-  identity, expected versioned asset names and all three download hashes. Smoke-test
-  the downloaded standalone EXE using the isolation and report checks above.
-  Rely on the successful pipeline checks for both ZIPs; do not extract or repeat
-  their smoke tests locally. Locally built artifacts are not a substitute for
-  downloaded-asset verification.
+  identity, expected versioned asset names and every checksum. Smoke-test the
+  downloaded standalone Windows EXE using the isolation and report checks above.
+  Rely on the successful pipeline checks for Windows ZIPs, the Linux tarball and
+  both macOS app ZIPs; do not repeat their extraction/execution checks on Windows.
+  Native Linux/macOS execution requires the corresponding target OS. Locally built
+  artifacts are not a substitute for downloaded-asset verification.
 - Stop on missing authorization, unavailable required validation or unresolved
   failures/ambiguous publication; report the concrete blocker and actual remote state.
 - Report version/tag/commit, PR/release links, actual local/build/hosted results,

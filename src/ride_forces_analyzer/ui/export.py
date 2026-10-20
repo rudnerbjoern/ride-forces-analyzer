@@ -339,7 +339,7 @@ class ExportDialog(QDialog):
         try:
             bind(self.encoder, str(find_ffmpeg()), "text")
         except ValueError:
-            self.encoder.setPlaceholderText(tr("Choose installed ffmpeg.exe"))
+            self.encoder.setPlaceholderText(tr("Choose installed FFmpeg executable"))
         browse = bind(QPushButton(), tr("Browse…"))
         browse.clicked.connect(self._browse)
         encoder_row = QHBoxLayout()
@@ -819,7 +819,7 @@ class ExportDialog(QDialog):
             self,
             tr("Choose FFmpeg"),
             directory,
-            tr("FFmpeg (ffmpeg.exe);;All files (*)"),
+            tr("All files (*)"),
         )
         if path:
             bind(self.encoder, path, "text")

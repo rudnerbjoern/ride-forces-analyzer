@@ -162,11 +162,16 @@ test("PR runs cancel only superseded runs of the same workflow and have bounded 
   assert.match(workflow, /group: \$\{\{ github\.workflow \}\}-\$\{\{ github\.event\.pull_request\.number \|\| github\.run_id \}\}/);
   assert.match(workflow, /cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/);
   const jobs = workflow.split(/\r?\n(?=  [a-z][a-z-]*:\r?\n)/).slice(1);
-  const budgets = { gitleaks: 10, "dependency-check": 5, actionlint: 10, code: 15, ui: 10, skills: 10, documentation: 5, check: 5 };
+  const budgets = { gitleaks: 10, "dependency-check": 5, actionlint: 10, code: 15, ui: 10, skills: 10, documentation: 5, posix: null, check: 5 };
   assert.equal(jobs.length, Object.keys(budgets).length);
   for (const job of jobs) {
     const name = job.match(/^  ([a-z-]+):/)?.[1];
     assert.ok(Object.hasOwn(budgets, name));
+    if (name === "posix") {
+      assert.match(job, /uses: \.\/\.github\/workflows\/posix-packages\.yml/);
+      assert.match(job, /needs\.dependency-check\.outputs\.code == 'true'/);
+      continue;
+    }
     assert.match(job, new RegExp(`    timeout-minutes: ${budgets[name]}(?:\\r?\\n)`));
     assert.match(job, /runs-on: windows-latest/);
   }
@@ -195,7 +200,7 @@ test("Python checks retain locked resolution and bounded reports without hiding 
   assert.match(ui, /if: \$\{\{ needs\.dependency-check\.outputs\.code == 'true' \}\}/);
   assert.match(workflow, /UI_REQUIRED: \$\{\{ needs\.dependency-check\.outputs\.code \}\}/);
   assert.match(workflow, /UI_RESULT: \$\{\{ needs\.ui\.result \}\}/);
-  assert.match(workflow, /needs: \[dependency-check, code, ui, documentation, skills, gitleaks, actionlint\]/);
+  assert.match(workflow, /needs: \[dependency-check, code, ui, documentation, skills, gitleaks, actionlint, posix\]/);
 });
 
 test("The actual workflow gate rejects failed, cancelled, missing and inconsistent results", async () => {
@@ -249,6 +254,13 @@ test("The actual workflow gate rejects failed, cancelled, missing and inconsiste
   }
   cases.push(["success", "false", "false", "false", "skipped", "skipped", "skipped", false,
     "success", "false", "skipped", "success"]);
+  for (const example of cases) example.push(example[1] === "true" ? "success" : "skipped");
+  for (const result of ["failure", "cancelled", "skipped", ""]) {
+    cases.push(["success", "true", "false", "false", "success", "skipped", "skipped", false,
+      "success", "false", "skipped", "success", result]);
+  }
+  cases.push(["success", "false", "false", "false", "skipped", "skipped", "skipped", false,
+    "success", "false", "skipped", "skipped", "success"]);
   await mkdir(path.join(root, ".tmp"), { recursive: true });
   const directory = await mkdtemp(path.join(root, ".tmp/ci-gate-"));
   try {
@@ -262,6 +274,7 @@ foreach ($case in $cases) {
     $env:DEPENDENCY_RESULT = $case[0]
     $env:CODE_REQUIRED = $case[1]
     $env:UI_REQUIRED = $case[1]
+    $env:POSIX_REQUIRED = $case[1]
     $env:DOCUMENTATION_REQUIRED = $case[2]
     $env:SKILLS_REQUIRED = $case[3]
     $env:CODE_RESULT = $case[4]
@@ -271,6 +284,7 @@ foreach ($case in $cases) {
     $env:WORKFLOWS_REQUIRED = $case[9]
     $env:WORKFLOWS_RESULT = $case[10]
     $env:UI_RESULT = $case[11]
+    $env:POSIX_RESULT = $case[12]
     $passed = $true
     try { & (Join-Path $PSScriptRoot 'gate.ps1') } catch { $passed = $false }
     if ($passed -ne $case[7]) { throw "Unexpected gate outcome: $case" }
@@ -281,7 +295,7 @@ Write-Output "Verified $($cases.Count) workflow gate cases."
       "-File", runner], { cwd: root, encoding: "utf8", timeout: 30000 });
     assert.ifError(result.error);
     assert.equal(result.status, 0, result.stdout + result.stderr);
-    assert.match(result.stdout, /Verified 48 workflow gate cases/);
+    assert.match(result.stdout, /Verified 53 workflow gate cases/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

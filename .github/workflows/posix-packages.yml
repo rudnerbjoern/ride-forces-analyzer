@@ -1,0 +1,74 @@
+name: Native Linux and macOS packages
+# cspell:words libegl libopengl libxcb icccm keysyms libxkbcommon
+on:
+  workflow_call:
+    inputs:
+      revision:
+        type: string
+        required: true
+permissions:
+  contents: read
+jobs:
+  package:
+    name: Package ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x64
+          - runner: macos-15
+            target: macos-arm64
+          - runner: macos-15-intel
+            target: macos-x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '15.0'
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.revision }}
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: '0.13.0'
+          python-version: '3.14.6'
+      - run: uv sync --locked --all-extras --group dev --group build
+      - name: Install Linux desktop and encoder runtime
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libegl1 libopengl0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-image0 libxcb-render-util0 libxkbcommon-x11-0 xvfb xauth ffmpeg
+      - name: Install macOS encoder runtime
+        if: runner.os == 'macOS'
+        run: command -v ffmpeg || brew install ffmpeg
+      - name: Check native platform contracts
+        run: uv run --locked pytest tests/tooling/test_runtime_paths.py tests/packaging/test_posix_packages.py tests/updates -ra --basetemp=.tmp/native-tests
+      - name: Build native package
+        id: build
+        run: uv run --locked --group build python -m scripts.build_posix --expected-target ${{ matrix.target }}
+      - name: Verify Linux package with a desktop and external encoder
+        if: runner.os == 'Linux'
+        run: |
+          recording=$(find tests/fixtures/real -maxdepth 1 -name 'Manta-*.forces' -print -quit)
+          xvfb-run -a uv run --locked --group build python -m scripts.check_posix_packages .tmp/posix-build/assets --recording "$recording" --expected-target linux-x64
+      - name: Verify macOS app and external encoder
+        if: runner.os == 'macOS'
+        run: |
+          recording=$(find tests/fixtures/real -maxdepth 1 -name 'Manta-*.forces' -print -quit)
+          uv run --locked --group build python -m scripts.check_posix_packages .tmp/posix-build/assets --recording "$recording" --expected-target ${{ matrix.target }}
+      - name: Retain verified package
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          path: .tmp/posix-build/assets/${{ steps.build.outputs.package }}
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+      - name: Retain native checksums
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          path: .tmp/posix-build/assets/${{ steps.build.outputs.checksums }}
+          archive: false
+          if-no-files-found: error
+          retention-days: 14

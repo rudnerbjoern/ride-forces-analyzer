@@ -1,5 +1,12 @@
 # 4K ride overlay export
 
+Windows uses the existing optional bundled encoder. Linux/macOS select an external
+native `ffmpeg` from PATH or the Browse action; frame generation and encoding remain
+separate. Export staging stays beside the chosen output and is cleaned on success,
+cancellation or failure, including when the application launches from a read-only
+directory. Frozen Linux library paths are removed from external encoder processes.
+See [native deployment requirements](../development/RELEASE.md#linux-and-macos-packages).
+
 Current output/interaction contracts. Architecture owns
 [component/API boundaries](../architecture/05_building_block_view.md#video-export-boundary),
 [runtime](../architecture/06_runtime_view.md#4k-export-runtime),

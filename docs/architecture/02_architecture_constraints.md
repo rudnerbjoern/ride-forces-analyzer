@@ -4,8 +4,10 @@
 
 ## Technical constraints
 
-- Native Windows is the validation and application target; Qt operation needs a
-  desktop session. Python 3.14.6, uv and PySide6 are the current toolchain.
+- Native Windows remains the development and local regression environment.
+  Distribution targets also include Linux x64 and macOS x64/arm64; each frozen
+  package must be built and checked on its own target OS. Qt needs a desktop
+  session. Python 3.14.6, uv and PySide6 are the current toolchain.
   Version pins and installation commands are authoritative in
   [project configuration](../../pyproject.toml) and [Windows setup](../development/SETUP.md).
 - Use typed Python, Pydantic for bootstrap settings, Ruff, mypy, Pylance/Pyright

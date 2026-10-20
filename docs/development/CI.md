@@ -3,17 +3,27 @@
 Architecture owns [local/hosted acceptance boundaries](../architecture/07_deployment_view.md#validation-and-release-boundary).
 This guide defines workflow routing and gates; [setup](SETUP.md) owns local commands.
 
-| Control                  | Contract                                                                                                                                                    |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Validation workflow      | [ci.yml](../../.github/workflows/ci.yml): read-only, native Windows; PRs targeting `main`, manual dispatch, reusable release calls                          |
-| Full runs                | Manual dispatch selects all suites/workflow validation without PR SHAs; release calls enable full checks for the resolved commit                            |
-| Mandatory scan           | Independent Gitleaks job on every validation run                                                                                                            |
-| Checkout                 | Event `github.sha` or supplied release `revision`; release jobs use the same validated tag commit                                                           |
-| Concurrency              | New PR pushes cancel older runs for that workflow/PR; manual runs have independent groups                                                                   |
-| Main pushes              | No duplicate validation run                                                                                                                                 |
-| Dependency resolution    | Locked Python commands throughout                                                                                                                           |
-| Scanner/linter downloads | Three retries for all transfer errors; 30 s connection / 120 s per attempt; TLS certificate/revocation and SHA-256 checks mandatory; exhausted retries fail |
-| Time limits              | Non-UI application 15 min; UI/skills/actionlint/Gitleaks 10 min; detection/docs/final gate 5 min                                                            |
+Development checks remain on Windows. The reusable
+[native package workflow](../../.github/workflows/posix-packages.yml) additionally
+builds and executes Linux x64 and macOS arm64/x64 packages on their own runners.
+`posix` follows the `code` selection and is mandatory in the final `check` gate.
+Each target has a 30-minute budget, uses locked dependencies, tests native platform
+contracts and executes the extracted frozen app with a real CPU encode. Linux uses
+Xvfb; macOS verifies app signatures. Verified packages and their checksum files
+are retained for 14 days. They contain neither recordings nor user databases.
+These jobs qualify target packages; they do not add a Linux/macOS developer setup.
+
+| Control                  | Contract                                                                                                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Validation workflow      | [ci.yml](../../.github/workflows/ci.yml): read-only, Windows development checks and native Linux/macOS packages; PRs targeting `main`, manual dispatch, reusable release calls |
+| Full runs                | Manual dispatch selects all suites/workflow validation without PR SHAs; release calls enable full checks for the resolved commit                                               |
+| Mandatory scan           | Independent Gitleaks job on every validation run                                                                                                                               |
+| Checkout                 | Event `github.sha` or supplied release `revision`; release jobs use the same validated tag commit                                                                              |
+| Concurrency              | New PR pushes cancel older runs for that workflow/PR; manual runs have independent groups                                                                                      |
+| Main pushes              | No duplicate validation run                                                                                                                                                    |
+| Dependency resolution    | Locked Python commands throughout                                                                                                                                              |
+| Scanner/linter downloads | Three retries for all transfer errors; 30 s connection / 120 s per attempt; TLS certificate/revocation and SHA-256 checks mandatory; exhausted retries fail                    |
+| Time limits              | Non-UI application 15 min; UI/skills/actionlint/Gitleaks 10 min; detection/docs/final gate 5 min                                                                               |
 
 All three pytest jobs use `-ra --durations=20`. Completed commands, including failures,
 upload separate application/UI/skill JUnit XML artifacts for 14 days.
@@ -35,6 +45,7 @@ outputs fail closed. Hosted runs do not reuse test results.
 | `documentation` | Any Markdown path, including source/tests/skills and deletions/renames; locked Node install, `npm run test:docs`                                                                                                                                      |
 | `code`          | Non-Markdown source/tests/fixtures/scripts; workflows, Python/Node manifests/locks/version files, Git/editor settings, VS Code settings, Dependabot/label rules; application lint/format/types/contracts/dependencies and pytest excluding `tests/ui` |
 | `ui`            | Same selection as `code`; complete `tests/ui` serially on a separate Windows runner                                                                                                                                                                   |
+| `posix`         | Same selection as `code`; native Linux x64 and macOS arm64/x64 builds, platform contracts and frozen-package GUI/encoding checks                                                                                                                      |
 | `skills`        | Non-Markdown skill files, consumed commit policy, Python manifest/lock/version, Git/editor settings, workflows/CI selector/tests; separate skill Ruff/mypy/pytest                                                                                     |
 | `check`         | Always evaluate detection and selected results: selected = success, unselected = skipped                                                                                                                                                              |
 
@@ -102,7 +113,8 @@ it does not guarantee lower total runner minutes.
 ## Source release tags
 
 [Release workflow](../../.github/workflows/source-release.yml): pushed `v*` tags
-and authorized manual retries, all on Windows.
+and authorized manual retries. Source/publication and Windows builds use Windows;
+the reusable quality stage also builds and checks the native Linux/macOS artifacts.
 
 | Stage             | Dependencies / result                                                                                                                                                                        |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -112,6 +124,9 @@ and authorized manual retries, all on Windows.
 | `release`, 10 min | After successful source/quality/windows; verified publication; only job with `contents: write` and `actions: read`                                                                           |
 
 - Failed/skipped/cancelled quality blocks Windows preparation/publication.
+  This includes any missing or failed native package target. Publication downloads
+  all six application artifacts and all four platform checksum files from the
+  same run and verifies each inventory before uploading release assets.
   Missing provider sources are documented/reported; missing/modified catalog-listed
   archives fail verification.
 - Temporary source archive is not uploaded; GitHub supplies source ZIP/tar.gz.

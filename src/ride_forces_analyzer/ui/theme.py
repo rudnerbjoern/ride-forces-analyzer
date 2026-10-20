@@ -18,7 +18,7 @@ from PySide6.QtWidgets import QApplication
 STYLESHEET = """
 QMainWindow, QDialog { background: #101720; color: #e3ebf5; }
 QWidget#InspectorBody { background: #101720; }
-QWidget { font-family: "Segoe UI"; font-size: 9pt; color: #e3ebf5; }
+QWidget { font-size: 9pt; color: #e3ebf5; }
 QToolBar { background: #151f2b; border: 0; border-bottom: 1px solid #2b394a; spacing: 8px; padding: 4px; }
 QToolBar QLabel { font-weight: 600; padding: 0 10px 0 4px; }
 QPushButton, QToolButton { background: #223044; border: 1px solid #35465c; border-radius: 6px; padding: 6px 10px; }
