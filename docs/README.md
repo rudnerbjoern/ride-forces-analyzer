@@ -16,7 +16,8 @@ historical acceptance reports are not maintained.
 - [Video export](implementation/VIDEO_EXPORT.md), [saved presets and batches](implementation/EXPORT_BATCHES.md).
 - [All export themes](EXPORT_THEMES.md), [layout extension API](development/EXPORT_LAYOUTS.md),
   [Manta video with the G-Orbit overlay](https://youtu.be/tsRzD416voU).
-- [Provisional airtime context](implementation/AIRTIME.md).
+- [Provisional airtime context](implementation/AIRTIME.md) and
+  [separate opt-in airtime events](implementation/AIRTIME_EVENTS.md).
 - [Current screenshots, reference settings and image license](images/README.md).
 - [English/German presentation](development/LOCALIZATION.md).
 - Import APIs: [service](development/IMPORT_SERVICE.md), [models](development/CANONICAL_MODELS.md),
@@ -24,12 +25,12 @@ historical acceptance reports are not maintained.
   [metadata/GPS](development/OPTIONAL_PARSING.md).
 - [Analysis APIs](development/ANALYSIS_MODELS.md), [scientific source comparisons](validation/APP_REFERENCE.md).
 
-## Proposed requirements
+## Analysis requirements
 
 - [Unified recording analysis](requirements/UNIFIED_ANALYSIS.md): parallel data model
   with validated containers, stage preparation, sample views, partial recalculation
-  and subscriptions through the explorer worker/UI adapter; shared-snapshot export
-  integration and cache remain planned.
+  and subscriptions through the explorer worker/UI adapter. Exports, previews and
+  batches bind shared snapshots. Separate opt-in airtime events are implemented.
 
 ## Development and publication
 

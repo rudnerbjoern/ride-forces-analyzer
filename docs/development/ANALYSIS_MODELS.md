@@ -83,8 +83,17 @@ projection and smoothing; absent gravity/vertical direction excludes it, while
 zero gravity is an explicit invalid row with NaN, False validity and an indexed
 diagnostic. Sample views return None for missing force/orientation rows and
 unavailable stages, retaining stage availability and applicable diagnostics.
-Domain events remain NOT_EVALUATED with a reason, even if event configuration is
-reserved. Caching and shared-snapshot export integration remain planned.
+`events=StageConfiguration("airtime-events", "1")` enables the separate
+[airtime event contract](../implementation/AIRTIME_EVENTS.md); parameters are finite
+scalar overrides defined there. Events without configuration, unavailable force input or
+all-missing vertical rows retain NOT_EVALUATED with a reason. Other valid input
+produces EVALUATED with zero or more source-ordered episodes. Missing rows split
+events and are diagnosed; recording/gap boundaries mark incomplete observations.
+Categories summarize the strongest observed portion, not a per-sample display label.
+Event quality is PROVISIONAL, with actual force-stage dependency and calculation
+provenance. Unsupported rules/versions/parameters raise ValueError, producing a
+matching service failure without replacing the last snapshot. Source-app defaults
+keep this optional evaluation disabled.
 
 `with_configuration(configuration, revision=..., calculation_time=...)` returns a
 new validated snapshot. It reuses stages whose configuration and actual input
@@ -180,12 +189,23 @@ mode, language and appearance changes do not recalculate analysis.
 `with_smoothing` helper also delegates to partial snapshot recalculation, while the
 live explorer uses the worker controller. Extrema retain their existing contract.
 
-For existing export/extrema APIs, an AppReference compatibility view exposes the
-prepared values as tuples without projection/filter/context calculation. Unchanged
-projected channel tuples are reused on smoothing changes. Source-bound legacy
-capability/provenance and edge/filter rules are retained. Direct export consumption
-of shared snapshots and orientation remains step 6; no encoder/layout contract is
-changed here.
+An AppReference compatibility view still supports existing extrema/presentation
+APIs. Export preparation reads `RecordingAnalysis` directly; accepting `ExplorerData`
+at the public boundary only extracts its snapshot, never its legacy reference.
+`ExportTimeline.analysis` retains the bound snapshot for its full lifetime.
+`ExportValues` exposes shared scalar buffers as a read-only sequence with None for
+invalid rows. Force bounds use the selected interval; orientation and context read
+full-recording preparation. Context lookup floors fractional source positions;
+numerical values keep the existing linear interpolation and missing-data rules.
+
+`prepare_export_analysis` returns the same snapshot for an equal configuration,
+otherwise delegates to partial recalculation. Changing layout, language, frame rate,
+resolution or interval never prepares numerical stages again. All five preview
+layouts share one snapshot, including full-history context outside the export range.
+Running exports retain their snapshot independently of workspace/preset changes.
+Saved presets/jobs retain complete analysis configuration without source bytes or
+arrays; older records resolve the version-1 source-app policy and stored window.
+Batch source hashes are checked before applying the saved recipe and interval.
 Service tests cover initial and terminal states, filtering, reentrant calls, competing
 requests, stale success/failure, shutdown, callback isolation and snapshot ownership.
 The [focused coverage workflow](CODE_QUALITY.md#recording-model-and-service-coverage)

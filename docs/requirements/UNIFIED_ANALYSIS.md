@@ -1,7 +1,8 @@
 # Unified recording analysis requirements
 
-Status: target requirements with implemented immutable containers, explicit
-snapshot validation, stage preparation, sample access and partial recalculation in
+Status: Implemented and locally validated on native Windows. All seven
+implementation areas below are complete. Immutable containers, explicit snapshot
+validation, stage preparation, sample access and partial recalculation are provided by
 [`analysis.recording`](../../src/ride_forces_analyzer/analysis/recording.py).
 Preparation reuses the current source-app projection, centered mean, independent
 gravity tilt and vertical-context heuristic; the [API contract](../development/ANALYSIS_MODELS.md#parallel-recording-analysis)
@@ -9,8 +10,9 @@ defines supported configurations, raw fallback and shared-stage reconfiguration.
 The [`analysis.service`](../../src/ride_forces_analyzer/analysis/service.py) implements
 state, subscriptions, initial delivery and guarded request success/failure.
 The service remains synchronous; the explorer uses a worker/UI-thread adapter
-for import handoff, smoothing and guarded delivery. Event detection, cache and
-shared-snapshot export integration remain planned. See the current
+for import handoff, smoothing and guarded delivery. Exports, previews and batch
+jobs bind shared immutable snapshots. Separately configured airtime event
+detection is implemented. See the current
 [runtime architecture](../architecture/06_runtime_view.md#explorer-analysis-delivery).
 
 ## 1. New data model as a parallel class structure
@@ -120,7 +122,7 @@ source provenance. Index-only time may omit a rate. Gravity/GPS keep their origi
 independent contracts. Missing vertical samples cannot carry valid context or an
 event minimum, and zero gravity cannot produce a valid orientation sample.
 
-The proposed classes share immutable stage results through references:
+The parallel classes share immutable stage results through references:
 
 ```mermaid
 classDiagram
@@ -173,9 +175,9 @@ explicitly rather than equating events with contiguous display colors.
 
 ### Separate domain contract for airtime events
 
-The model may provide `AirtimeEvent` and `EventAnalysis` before event detection
-is implemented. Concrete detection rules require a separate, versioned domain
-contract before evaluation is enabled. That contract must define:
+The implemented [airtime event contract](../implementation/AIRTIME_EVENTS.md)
+defines `airtime-events`, version `1`, independently of sample context. It is
+explicitly configured; default configurations leave events disabled. It specifies:
 
 - The input force stage, validity requirements, thresholds and event categories.
 - Start/end criteria, boundary-index inclusion, duration calculation from the
@@ -195,9 +197,11 @@ boundaries. Do not derive events solely from contiguous context labels/colors.
 Changing only display-label stabilization must not change domain events unless
 the separate domain contract explicitly declares that dependency.
 
-This requirement assigns no new numerical thresholds or event rules. Until a
-complete rule contract is specified and implemented, return NOT_EVALUATED with
-an explicit reason. Continue preparing sample context independently where usable.
+The separate contract assigns provisional numerical rules, inclusive intervals,
+minimum qualifying duration, bounded valid interruptions and gap/boundary flags.
+Disabled or unavailable inputs return NOT_EVALUATED with a reason; completed
+coverage may return EVALUATED with an empty event tuple. Sample context remains
+independent. Unsupported rules fail the assigned analysis request explicitly.
 
 ## 2. Import integration
 
@@ -234,9 +238,7 @@ new forces with old context/events. Reuse matching stages already retained for
 identical inputs and parameters; a context-only parameter change must retain
 the force stages. A previously released result may be calculated again if its
 configuration is requested later.
-Use explicit stage dependencies without introducing a generic cache framework.
-The core workflow requires no persistent analysis cache, new recording format or
-ride database. Optional database caching is specified separately below.
+Use explicit stage dependencies and reuse retained results in memory.
 
 ### Snapshot lifetime and memory ownership
 
@@ -250,40 +252,7 @@ closed or finished; shared upstream stages remain alive while still referenced.
 Do not accumulate historical snapshots in configuration maps, notification
 histories or subscriber lists. Queued deliveries release their references after
 processing or being discarded, and completed/superseded workers release results
-when no longer needed. Normal reference lifetime manages reclamation; no custom
-cache eviction framework or permanent configuration history is required.
-
-### Optional database cache
-
-A later implementation may optionally persist completed analysis stages in a
-local database such as SQLite. This is a disposable performance optimization,
-not a recording library or authoritative source. The application must support
-the same offline analysis with caching disabled or unavailable. The optional
-cache does not change the in-memory lifetime rules above.
-
-Use the SHA-256 of the complete original file bytes as source identity, not its
-path, name or modification time. Source hash alone is insufficient: each stage's
-cache key must also identify its algorithm/version, compatible result schema,
-effective parameters and input-stage identities. Include effective time/unit/
-axis policies where relevant. Use deterministic configuration encoding; exclude
-UI revisions, calculation timestamps and presentation-only settings from keys.
-For example, changing smoothing may reuse cached projection/orientation stages
-while requiring different smoothing/context/event entries.
-
-Read cached results through a storage adapter outside domain models and widgets.
-Reattach them only to a successfully imported matching source and validate their
-schema, source-index correspondence, units, availability and validity before
-constructing the immutable stage models. Preserve original calculation provenance
-separately from the current request revision. Publish restored results through
-the same consistent snapshot and notification flow as newly calculated results.
-
-Missing, incompatible or invalid entries cause recalculation of the affected
-stages. Cache read/write failures must not turn a successful analysis into a
-failure; writes publish complete entries atomically. Cache deletion must leave
-original recordings and export definitions intact. Before implementation, define
-a bounded retention/size policy and a way to clear the cache; do not retain all
-historical configurations indefinitely. Store only derived results and necessary
-provenance, without copying original recording bytes into the cache.
+when no longer needed. Normal reference lifetime manages reclamation.
 
 ### Change notifications and subscriptions
 
@@ -408,25 +377,27 @@ Retain existing selections, time notation, raw-mode fallback and provisional
 [airtime limits](../implementation/AIRTIME.md). Context stabilization must not
 apply an additional filter to numerical graph values.
 
-Potential subscribers for a later implementation are:
+Consumers of analysis updates include:
 
 - The chart and context strip, refreshing changed force/context stages.
 - Current-value cards and technical details, refreshing the selected sample view.
 - The visible-range extrema display, recalculating only when its force inputs
   change; viewport changes remain a separate presentation action.
-- The export preview, refreshing when its selected source and analysis
-  configuration follow the updated workspace snapshot.
+- The export preview, rendering its bound snapshot and adopting a different
+  snapshot only on explicit export-configuration changes.
 - A calculation-status indicator, using optional invalidation notifications to
   show pending work and clearing that state on update or failure only for the
   matching current request.
 
 The explorer refreshes these consumers from one guarded snapshot delivery.
-The export preview still uses its existing independent compatibility path.
+The export assistant binds its opening snapshot. Explicit export-configuration
+changes may prepare a different snapshot for subsequent previews or exports.
+Running exports retain their original snapshot. Neither follows workspace updates.
 
 ## 4. Export integration
 
-Adapt export preparation and layouts to consume the shared analysis model instead
-of deriving their own force/context results from presentation objects. Reuse the
+Export preparation and layouts consume the shared analysis model without deriving
+separate force/context results from presentation objects. Reuse the
 workspace snapshot when source identity and analysis configuration match.
 Otherwise reuse compatible upstream stages and prepare only the affected stages
 for the requested export configuration. An export already using a snapshot must
@@ -445,12 +416,11 @@ Preserve separate RGBA generation and encoding, transparent/opaque outputs, and
 the existing numerical interpolation and context lookup rules. Saved presets and
 batch snapshots must identify the required analysis configuration; batches retain
 source-path/hash verification. Preset and batch definitions do not contain
-recording bytes or analysis arrays. If optional database caching is implemented,
-derived arrays belong to separate disposable cache records under its contract.
+recording bytes or analysis arrays.
 
-## 5. Implementation steps
+## 5. Implementation status
 
-Each step includes focused behavior tests and the configured coverage gate.
+All seven areas are implemented and locally validated.
 
 1. Model validation, availability states and source/time correspondence: implemented
    through explicit snapshot validation. Constructors do not validate automatically.
@@ -462,6 +432,22 @@ Each step includes focused behavior tests and the configured coverage gate.
    implemented with synchronous calculations, guarded completion and callback cleanup.
 5. Import/explorer integration and UI-thread adapter: implemented with shared
    prepared buffers, background smoothing and stale-result/lifetime guards.
-6. Adapt export, previews and batches to consistent shared analysis snapshots.
-7. Define the separate event-rule contract, then implement event detection.
-8. Optionally add the source/configuration-bound database cache and retention policy.
+6. Export, preview and batch integration: implemented with bound shared snapshots,
+   prepared orientation/context and persisted analysis recipes; legacy presets
+   resolve the version-1 source-app policy and their stored smoothing window.
+7. Separate airtime event rules and detection: implemented as opt-in version-1
+   episodes with provisional categories, source intervals, onset and coverage flags.
+
+### Local validation status
+
+Validated scope: the current unified-analysis implementation and complete
+application test suite on native Windows, Python 3.14.6 and Qt 6.12.0.
+`uv run --locked pytest`: **1,836 passed**. All required lock, lint, format, typing,
+type-contract, dependency, CI-selection and documentation checks in the
+[Windows setup](../development/SETUP.md#required-project-checks) pass.
+
+The configured [model/service coverage gate](../development/CODE_QUALITY.md#recording-model-and-service-coverage)
+passes with **202 tests** and **100% statement and branch coverage** for
+`analysis.recording` and `analysis.service`. Scientific interpretation and event
+thresholds retain their documented provisional status; event detection requires
+explicit configuration.

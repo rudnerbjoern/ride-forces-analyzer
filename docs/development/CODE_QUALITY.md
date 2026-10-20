@@ -82,7 +82,7 @@ uv run --locked pytest --cov --cov-report=term-missing `
     tests/analysis/test_recording.py tests/analysis/test_recording_validation.py `
     tests/analysis/test_recording_preparation.py tests/analysis/test_recording_recalculation.py `
     tests/analysis/test_service.py `
-    tests/analysis/test_taron_analysis_parity.py
+    tests/analysis/test_taron_analysis_parity.py tests/analysis/test_airtime_events.py
 uv run --locked coverage html
 uv run --locked coverage json
 ```
@@ -103,7 +103,7 @@ the CLI command above preserves the configured source directory by using `--cov`
 without a value.
 Do not exclude `NotImplementedError` lines to improve results. Current coverage
 measures snapshot validation, numerical preparation, sample access, partial
-recalculation, service state, subscription delivery and revision/error handling.
+recalculation, event-stage integration, service state, subscription delivery and revision/error handling.
 Behavior tests establish these contracts separately from the coverage percentage;
 coverage alone does not qualify physical interpretation or UI integration. As implementation adds
 branches, behavioral tests must cover those paths without weakening the threshold.
