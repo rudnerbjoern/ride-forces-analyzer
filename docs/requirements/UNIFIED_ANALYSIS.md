@@ -1,13 +1,17 @@
 # Unified recording analysis requirements
 
-Status: target requirements with an initial data-model skeleton in
+Status: target requirements with implemented immutable containers, explicit
+snapshot validation, stage preparation, sample access and partial recalculation in
 [`analysis.recording`](../../src/ride_forces_analyzer/analysis/recording.py).
-Typed frozen containers and explicit structural snapshot validation exist.
-Preparation, sample access and reconfiguration raise `NotImplementedError`. The
-[`analysis.service`](../../src/ride_forces_analyzer/analysis/service.py) interface
-also exists as explicit stubs. Operational subscriptions, cache and
-application/export integration remain planned. The skeleton does not
-change the current runtime [architecture](../architecture/README.md).
+Preparation reuses the current source-app projection, centered mean, independent
+gravity tilt and vertical-context heuristic; the [API contract](../development/ANALYSIS_MODELS.md#parallel-recording-analysis)
+defines supported configurations, raw fallback and shared-stage reconfiguration.
+The [`analysis.service`](../../src/ride_forces_analyzer/analysis/service.py) implements
+state, subscriptions, initial delivery and guarded request success/failure.
+The service remains synchronous; the explorer uses a worker/UI-thread adapter
+for import handoff, smoothing and guarded delivery. Event detection, cache and
+shared-snapshot export integration remain planned. See the current
+[runtime architecture](../architecture/06_runtime_view.md#explorer-analysis-delivery).
 
 ## 1. New data model as a parallel class structure
 
@@ -287,19 +291,23 @@ The analysis service owns subscriptions and dirty-stage tracking; immutable
 data models contain no mutable subscriber lists or Qt signals. Keep technical
 change notifications separate from domain events such as `AirtimeEvent`.
 
-`AnalysisService` reserves `get_state`, `subscribe`, `unsubscribe`,
+`AnalysisService` implements `get_state`, `subscribe`, `unsubscribe`,
 `request_analysis`, `request_configuration`, `request_smoothing` and `close`.
 Subscription callbacks accept an initial `AnalysisState` followed by technical
 notifications; `AnalysisSubscription` identifies one registration for removal.
 Optional stage interests filter notifications while preserving matching terminal
-request status. Request methods reserve service-assigned revisions. All these
-methods currently raise `NotImplementedError`; no callbacks or calculations run.
+request status. Request methods assign increasing revisions and calculate
+synchronously outside the state lock. Current per-registration queues serialize
+initial and later callbacks, discard superseded deliveries and preserve terminal
+status for subscribers that observed pending work. Callback exceptions remove
+only the failing registration. Close clears owned references and prevents late
+publication. The explorer adapter supplies worker scheduling and UI-thread delivery.
 
 - `AnalysisUpdated` is emitted after a new consistent snapshot is published.
   It carries source identity, analysis revision, replaced stages and access to
   the new snapshot. Subscribers refresh only when their inputs are affected.
-- `AnalysisInvalidated` is optional for a later implementation that displays
-  pending work or temporarily disables actions. It identifies the requested
+- `AnalysisInvalidated` announces pending work; later views may use it to show
+  progress or temporarily disable actions. It identifies the requested
   revision and dirty stages, including dependent stages. The last completed
   snapshot remains readable; invalidation does not mutate or replace its data.
 - `AnalysisFailed` terminates a failed recalculation and carries source identity,
@@ -339,8 +347,9 @@ switch or closed subscription before changing values, pending state or errors.
 An older initial state must not overwrite a newer applied state; a delayed pending
 notification must not restore pending state after that same revision has completed.
 
-The proposed notification flow keeps subscriptions in the service and UI-thread
-delivery in the adapter. Views represent the chart, context strip, sample cards,
+The target worker/UI notification flow keeps subscriptions in the implemented
+service and UI-thread delivery in the explorer adapter. The adapter invokes the
+synchronous service on a worker for smoothing; the service owns no worker. Views represent the chart, context strip, sample cards,
 technical details, extrema and an optional following export preview:
 
 ```mermaid
@@ -387,7 +396,7 @@ sequenceDiagram
 
 ## 3. Application output
 
-Make `ExplorerData` a presentation adapter over `RecordingAnalysis`. Charts read
+`ExplorerData` is a presentation adapter over `RecordingAnalysis`. Charts read
 the shared arrays; current-value cards and technical details use the sample view.
 The context strip reads prepared categories, and extrema use the same force data
 and visible interval. Keep localized text, colors and view state in presentation.
@@ -411,7 +420,8 @@ Potential subscribers for a later implementation are:
   show pending work and clearing that state on update or failure only for the
   matching current request.
 
-These subscriptions describe planned consumers, not implemented behavior.
+The explorer refreshes these consumers from one guarded snapshot delivery.
+The export preview still uses its existing independent compatibility path.
 
 ## 4. Export integration
 
@@ -444,10 +454,14 @@ Each step includes focused behavior tests and the configured coverage gate.
 
 1. Model validation, availability states and source/time correspondence: implemented
    through explicit snapshot validation. Constructors do not validate automatically.
-2. Prepare projection, independent orientation, smoothing, context and sample views.
-3. Implement partial recalculation with shared stages and bounded snapshot lifetime.
-4. Implement service state, subscriptions, initial delivery and revision/error handling.
-5. Connect import and explorer through the service and UI-thread adapter.
+2. Initial projection, independent orientation, smoothing, context and sample views:
+   implemented using existing numerical functions, with exact per-sample Taron parity.
+3. Partial recalculation and bounded snapshot lifetime: implemented through shared
+   stages, unchanged prior snapshots and no retained snapshot/configuration history.
+4. Service state, subscriptions, initial delivery and revision/error handling:
+   implemented with synchronous calculations, guarded completion and callback cleanup.
+5. Import/explorer integration and UI-thread adapter: implemented with shared
+   prepared buffers, background smoothing and stale-result/lifetime guards.
 6. Adapt export, previews and batches to consistent shared analysis snapshots.
 7. Define the separate event-rule contract, then implement event detection.
 8. Optionally add the source/configuration-bound database cache and retention policy.

@@ -14,14 +14,15 @@ from ride_forces_analyzer.explorer import load_recording
 
 
 class LoadSignals(QObject):
-    completed = Signal(object)
-    failed = Signal(str)
+    completed = Signal(int, object)
+    failed = Signal(int, str)
 
 
 class LoadWorker(QRunnable):
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, generation: int = 0) -> None:
         super().__init__()
         self.path = path
+        self.generation = generation
         self.signals = LoadSignals()
 
     @Slot()
@@ -30,7 +31,8 @@ class LoadWorker(QRunnable):
             outcome = load_recording(self.path)
         except Exception:
             self.signals.failed.emit(
+                self.generation,
                 tr("Unexpected load error. The previous recording is unchanged."),
             )
         else:
-            self.signals.completed.emit(outcome)
+            self.signals.completed.emit(self.generation, outcome)

@@ -9,7 +9,8 @@ from ride_forces_analyzer.i18n import Language, tr
 from .translation import bind, set_ui_language, system_ui_language
 
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
+from importlib.util import find_spec
 
 from PySide6.QtCharts import QCategoryAxis, QChart, QChartView, QLineSeries, QValueAxis
 from PySide6.QtCore import QElapsedTimer, QPointF, Qt, QThreadPool, QTimer, Signal, Slot
@@ -66,6 +67,10 @@ from .updates import UpdateController
 from .gps import gps_dialog
 from .loading import LoadWorker
 from .theme import THEMES, apply_theme, system_theme
+
+
+if TYPE_CHECKING:
+    from .analysis import AnalysisController
 
 
 class SmoothingSlider(QSlider):
@@ -206,6 +211,16 @@ class ExplorerWindow(QMainWindow):
         self.setWindowIcon(app_icon())
         self.resize(settings.window_width, settings.window_height)
         self.data: ExplorerData | None = None
+        self.analysis_controller: AnalysisController | None = None
+        if find_spec("numpy") is not None:
+            from .analysis import AnalysisController
+
+            self.analysis_controller = AnalysisController(self)
+            self.analysis_controller.snapshot_ready.connect(self._analysis_updated)
+            self.analysis_controller.failed.connect(self._analysis_failed)
+            self.analysis_controller.pending_changed.connect(self._analysis_pending)
+        self._accept_results = True
+        self._load_generation = 0
         self._worker: LoadWorker | None = None
         self._chosen_path: Path | None = None
         self.open_action = bind(QAction(self), tr("Open recording…"))
@@ -715,6 +730,11 @@ class ExplorerWindow(QMainWindow):
         if self.gps_window is not None:
             self.gps_window.close()
         self.updates.stopped = True
+        self._accept_results = False
+        self._load_generation += 1
+        self._worker = None
+        if self.analysis_controller is not None:
+            self.analysis_controller.close()
         super().closeEvent(event)
 
     def _set_controls(self, enabled: bool) -> None:
@@ -797,9 +817,10 @@ class ExplorerWindow(QMainWindow):
     def open_path(self, path: Path) -> None:
         if self._worker is not None:
             return
-        worker = LoadWorker(path)
-        worker.signals.completed.connect(self._loaded)
-        worker.signals.failed.connect(self._failed)
+        self._load_generation += 1
+        worker = LoadWorker(path, self._load_generation)
+        worker.signals.completed.connect(self._load_completed)
+        worker.signals.failed.connect(self._load_failed)
         self._worker = worker
         self.open_action.setEnabled(False)
         self.progress.show()
@@ -808,7 +829,23 @@ class ExplorerWindow(QMainWindow):
 
     def showEvent(self, event: QShowEvent) -> None:
         super().showEvent(event)
+        if not self._accept_results:
+            self._accept_results = True
+            if self.analysis_controller is not None:
+                self.analysis_controller.bind_snapshot(
+                    self.data.analysis if self.data is not None else None,
+                )
         style_native_caption(int(self.winId()), dark=self.theme.name == "dark")
+
+    @Slot(int, object)
+    def _load_completed(self, generation: int, outcome: object) -> None:
+        if self._accept_results and generation == self._load_generation:
+            self._loaded(outcome)
+
+    @Slot(int, str)
+    def _load_failed(self, generation: int, message: str) -> None:
+        if self._accept_results and generation == self._load_generation:
+            self._failed(message)
 
     @Slot(object)
     def _loaded(self, outcome: object) -> None:
@@ -819,6 +856,8 @@ class ExplorerWindow(QMainWindow):
             self._failed(tr("Unable to display recording."))
             return
         outcome = outcome.with_reference(outcome.reference is not None)
+        if self.analysis_controller is not None:
+            self.analysis_controller.bind_snapshot(outcome.analysis)
         if self._chosen_path is not None:
             self.preferences.remember_recording(self._chosen_path)
             self._chosen_path = None
@@ -1044,7 +1083,41 @@ class ExplorerWindow(QMainWindow):
     def set_smoothing(self, position: int) -> None:
         if self.data is None or not self.data.reference_enabled:
             return
+        if self.analysis_controller is not None and self.data.analysis is not None:
+            self.analysis_controller.request_smoothing(position * 2 + 1)
+            return
         self.data = self.data.with_smoothing(position * 2 + 1)
+        self._refresh_analysis_view()
+
+    @Slot(object)
+    def _analysis_updated(self, outcome: object) -> None:
+        if self.data is None or self.data.analysis is outcome:
+            return
+        from ride_forces_analyzer.analysis.recording import RecordingAnalysis
+
+        if not isinstance(outcome, RecordingAnalysis):
+            return
+        self.data = self.data.with_analysis(outcome)
+        self._refresh_analysis_view()
+        bind(
+            self.statusBar(),
+            tr("Loaded — drag to zoom, navigate samples or select an interval"),
+            "message",
+        )
+
+    def _refresh_analysis_view(self) -> None:
+        if self.data is None:
+            return
+        self.reference_toggle.blockSignals(True)
+        self.reference_toggle.setEnabled(self.data.reference is not None)
+        self.reference_toggle.setChecked(self.data.reference_enabled)
+        self.reference_toggle.blockSignals(False)
+        bind(
+            self.axis_y,
+            tr("G-force (g)") if self.data.reference_enabled else tr("Source value (unit unknown)"),
+            "titleText",
+        )
+        self._refresh_diagnostics()
         self._draw_channels()
         self.axis_y.setRange(*self.data.value_range)
         self._redraw_value_labels()
@@ -1052,6 +1125,22 @@ class ExplorerWindow(QMainWindow):
         self._redraw_cursor()
         self._refresh_sample(self.slider.value())
         self._refresh_extrema()
+
+    @Slot(bool)
+    def _analysis_pending(self, pending: bool) -> None:
+        if pending:
+            bind(self.statusBar(), tr("Updating analysis…"), "message")
+
+    @Slot(str)
+    def _analysis_failed(self, message: str) -> None:
+        if self.data is None:
+            return
+        self.smoothing_slider.blockSignals(True)
+        self.smoothing_slider.setValue(
+            (self.data.reference.smoothing_window - 1) // 2 if self.data.reference else 5,
+        )
+        self.smoothing_slider.blockSignals(False)
+        bind(self.statusBar(), tr("Analysis failed: {0}", message), "message")
 
     @Slot(bool)
     def set_reference_view(self, enabled: bool) -> None:

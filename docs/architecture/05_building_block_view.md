@@ -89,16 +89,27 @@ services are documented only when designed.
 presentation, retaining confirmed normalized-direction contracts, source hash, timestamp,
 library version and raw/filtered channels. It leaves strict frame APIs unchanged.
 
-`analysis.recording` contains the parallel unified recording-analysis data-model
-skeleton, reusing existing contracts. Explicit snapshot validation checks source,
+`analysis.recording` contains the parallel unified recording-analysis model,
+reusing existing contracts. Explicit snapshot validation checks source,
 time, availability, payloads and shared dependencies without numerical calculation.
-Preparation, sample access and reconfiguration still raise `NotImplementedError`;
-numerical processing, subscriptions, cache and integration remain planned under
+Initial preparation reuses existing projection, smoothing, independent orientation
+and context functions. Sample views read the prepared buffers without recalculation.
+Reconfiguration reuses stages with matching configuration and input references;
+smoothing retains the original projection and independent orientation. Snapshots
+retain stages, not prior snapshots or a configuration history.
+Cache and shared-snapshot export integration remain planned under
 the [requirements](../requirements/UNIFIED_ANALYSIS.md).
-Current explorer and export consumers do not use these containers.
-`analysis.service` adds an explicit `NotImplementedError` API skeleton for state
-queries, subscriber registration/removal, analysis requests and service cleanup.
-It introduces no running workers, callback dispatch or Qt/storage dependency.
+The explorer reads shared buffers/sample views; existing export consumers use a
+compatibility reference containing the prepared values.
+`analysis.service` manages coherent state, subscriptions with immediate initial
+delivery, partial analysis requests, revision/error handling and cleanup. Numerical
+work and serialized per-subscriber callbacks run outside its state lock. Superseded
+completions cannot replace current state, and old queued deliveries are discarded.
+The service owns no worker, snapshot history or Qt/storage dependency.
+`ui.analysis.AnalysisController` owns worker scheduling and queued UI delivery,
+checking source, revision, terminal state, active binding and UI-intent generation
+when applying results. `ui.loading` carries a load generation so closed/reopened
+windows reject older imports and errors.
 
 `gps_overview` prepares immutable approximate spatial reference segments from
 independent source GPS slots, preserving gaps and source ownership. `ui.gps`

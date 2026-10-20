@@ -138,7 +138,7 @@ def test_originals_all_modes_windows_and_selections(filename: str) -> None:
             ):
                 result = current.selection_extrema(first, last)
                 for axis, values in zip(result.channels, current.plotted_channels, strict=True):
-                    selected = values[first : last + 1]
+                    selected = tuple(values[first : last + 1])
                     assert axis.minimum.value == min(selected)
                     assert axis.maximum.value == max(selected)
                     assert axis.minimum.index == first + selected.index(min(selected))

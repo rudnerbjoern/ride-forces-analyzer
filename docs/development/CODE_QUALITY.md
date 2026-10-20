@@ -78,7 +78,11 @@ directory without importing modules to discover them. Run from the repository
 root on native Windows:
 
 ```powershell
-uv run --locked pytest --cov --cov-report=term-missing tests/analysis/test_recording.py tests/analysis/test_recording_validation.py tests/analysis/test_service.py
+uv run --locked pytest --cov --cov-report=term-missing `
+    tests/analysis/test_recording.py tests/analysis/test_recording_validation.py `
+    tests/analysis/test_recording_preparation.py tests/analysis/test_recording_recalculation.py `
+    tests/analysis/test_service.py `
+    tests/analysis/test_taron_analysis_parity.py
 uv run --locked coverage html
 uv run --locked coverage json
 ```
@@ -93,14 +97,15 @@ machine-readable JSON stay under `.tmp/coverage/analysis/`.
 The gate is separate from ordinary pytest and is not yet a hosted CI gate.
 VS Code's **Run Tests with Coverage** requires `pytest-cov`, installed by the
 locked development setup. Its selected interpreter must be `.venv/Scripts/python.exe`.
-Selecting only some tests may miss the threshold; use both focused test modules
+Selecting only some tests may miss the threshold; use all focused test modules in the command above
 for the recording/service gate. The editor may choose its own collection source;
 the CLI command above preserves the configured source directory by using `--cov`
 without a value.
 Do not exclude `NotImplementedError` lines to improve results. Current coverage
-measures implemented snapshot validation plus declarations and explicit placeholder
-paths, not functioning numerical analysis or subscriptions. Strict expected-failure tests remain pending behavior even when
-their executed placeholder lines count toward coverage. As implementation adds
+measures snapshot validation, numerical preparation, sample access, partial
+recalculation, service state, subscription delivery and revision/error handling.
+Behavior tests establish these contracts separately from the coverage percentage;
+coverage alone does not qualify physical interpretation or UI integration. As implementation adds
 branches, behavioral tests must cover those paths without weakening the threshold.
 
 ## Test design

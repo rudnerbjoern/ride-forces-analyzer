@@ -27,8 +27,9 @@ historical acceptance reports are not maintained.
 ## Proposed requirements
 
 - [Unified recording analysis](requirements/UNIFIED_ANALYSIS.md): parallel data model
-  with initial containers/stubs; processing, subscriptions, cache and integration
-  remain planned.
+  with validated containers, stage preparation, sample views, partial recalculation
+  and subscriptions through the explorer worker/UI adapter; shared-snapshot export
+  integration and cache remain planned.
 
 ## Development and publication
 

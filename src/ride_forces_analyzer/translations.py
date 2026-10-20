@@ -9,6 +9,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:disable
 
 GERMAN: dict[str, str] = {
+    "Updating analysis…": "Analyse wird aktualisiert …",
+    "Analysis failed: {0}": "Analyse fehlgeschlagen: {0}",
     "Application": "Anwendung",
     "Settings…": "Einstellungen …",
     "Settings": "Einstellungen",
