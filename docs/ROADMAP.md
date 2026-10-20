@@ -14,6 +14,7 @@ owns system design and scientific boundaries.
 | M6 — Exports               | Partial                 | Five 4K layouts, both aspects, transparent/opaque video, previews, SQLite presets/batches, optional NVIDIA encoding; CSV/JSON/PNG sequences and full acceptance remain                  |
 | M7 — Video synchronization | Planned                 | Local video ingest, offsets, timeline preview, frame-accurate alignment                                                                                                                 |
 | M8 — Windows release       | Partial                 | Portable EXE, standard/complete ZIPs, notice collection and tag pipeline; missing redistribution material, signing, installer/uninstaller and clean-Windows verification remain         |
+| M9 — Linux / macOS         | Feasibility planned     | Assess Linux and macOS feasibility first; then build and validate release packages for either or both platforms where feasible                                                          |
 
 ## Product boundaries
 

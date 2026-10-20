@@ -40,7 +40,7 @@ and choose a Windows download:
 | **Standalone EXE** | Launching the application directly. Select an existing FFmpeg when you want to export video.    |
 
 These downloads need no Python installation and have no installer.
-The current **0.3.1 preview** is unsigned; code signing and clean-Windows-VM
+The **0.4.0 preview** is unsigned; code signing and clean-Windows-VM
 qualification remain open. Checksums and third-party notices accompany the release;
 see the [release guide](docs/development/RELEASE.md) for packaging limits.
 

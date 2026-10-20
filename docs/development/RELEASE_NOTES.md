@@ -5,18 +5,33 @@ original recordings remain unchanged.
 
 ## Included in {{VERSION}}
 
-- Portable Windows EXE, standard ZIP, complete ZIP with FFmpeg and source downloads.
-- Zoom-aware airtime strip with stable Floater, Airtime, Strong Airtime and Ejector
-  labels: provisional interpretations, not measured rider sensations.
-- Yellow lateral forces; green acceleration/red braking. Flow Ribbon, Corner
-  Instruments and Telemetry Capsule also show vertical-force context.
-- Click-to-select samples, visible-range extrema, highlighted From/To selection
-  and accelerating sample-arrow steps.
-- Compact workspace with organized technical details/extrema.
-- Remembered folders, language/appearance and Windows defaults for new users.
-- FFmpeg Browse starts in the configured directory; invalid preferences are rejected before saving.
-- About information and optional GitHub update notifications.
-- Recording-based export filenames, approximate size and remaining-time estimates.
+- Shared immutable analysis snapshots for the explorer, previews, exports and
+  batches, with source metadata, force values and per-sample airtime context.
+- Partial recalculation reuses unchanged stages when smoothing or analysis
+  settings change. Orientation remains independent of force smoothing.
+- Revision-aware analysis subscriptions deliver initial state, updates and
+  failures without publishing stale worker results to the UI.
+- Optional, separately configured airtime event detection. Events and display
+  context remain provisional interpretations, not validated rider sensations.
+- One supported numerical implementation, with explicit availability, quality
+  and provenance. Original samples, metadata and independent GPS remain intact.
+- Updated user documentation, reproducible ride-detail screenshots and a
+  Midnight-themed GitHub Pages site with Windows download links.
+- Portable Windows EXE, standard ZIP and complete ZIP with FFmpeg; GitHub also
+  supplies source downloads. Dependency maintenance includes the nested
+  `markdown-it` security override used by documentation tooling.
+
+## Compatibility and limits
+
+- The former analysis APIs have been removed without compatibility facades.
+  Integrations must use the current recording-analysis and service contracts.
+- Saved export presets and batch jobs require the current explicit analysis
+  recipe. Older or incomplete records are rejected without automatic migration
+  or destructive database cleanup; recreate unsupported presets/jobs.
+- Airtime event detection is opt-in and distinct from the stable display labels.
+  Neither constitutes scientific qualification of arbitrary recordings.
+- Windows packages are unsigned. Clean-Windows-VM qualification and the documented
+  redistribution source/notice gaps remain open.
 
 ## Installation
 
