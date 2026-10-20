@@ -1,0 +1,35 @@
+# cspell:words jekyll
+title: Ride Forces Analyzer
+tagline: Explore your coaster rides and create 4K video overlays
+description: Free Windows app for exploring Ride Forces recordings and creating video overlays. Offline processing, airtime context and five export layouts.
+url: https://rudnerbjoern.github.io
+baseurl: /ride-forces-analyzer
+repository: rudnerbjoern/ride-forces-analyzer
+remote_theme: pages-themes/midnight@v0.2.0
+plugins:
+  - jekyll-remote-theme
+show_downloads: true
+exclude:
+  - README.md
+  - AGENTS.md
+  - CONTRIBUTING.md
+  - SECURITY.md
+  - THIRD_PARTY_NOTICES.md
+  - LICENSE
+  - src
+  - tests
+  - scripts
+  - packaging
+  - node_modules
+  - .venv
+  - .tmp
+  - dist
+  - build
+  - exports
+  - package.json
+  - package-lock.json
+  - pyproject.toml
+  - uv.lock
+  - setup.ps1
+  - start.ps1
+  - ffmpeg.json

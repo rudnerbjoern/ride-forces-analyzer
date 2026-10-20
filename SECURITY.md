@@ -2,50 +2,45 @@
 
 ## Publication boundary
 
-Before publication, review current files and the complete reachable Git history
-for credentials, private files and unintended personal information. Include image
-metadata and separately review hosted content such as release assets and CI logs;
-a repository scan does not cover those automatically. Recheck new content rather
-than treating an earlier scan as a continuing security guarantee.
-
-Björn Rudner authorizes publication of his name and existing personal commit
-email. Authorization for the five complete recordings, including GPS and metadata,
-is maintained in the [recording catalog](docs/development/RECORDINGS.md).
-These permissions do not authorize additional private data or change third-party
-rights. Repository publication requires separate explicit owner authorization.
+- Before publication, review current files and complete reachable Git history for
+  credentials, private files and unintended personal information, including image metadata.
+- Separately review release assets, CI logs and other hosted content; repository
+  scans do not cover them automatically. Recheck new content; past scans give no continuing guarantee.
+- Björn Rudner authorizes publication of his name and existing personal commit email.
+  The [recording catalog](docs/development/RECORDINGS.md) owns permission for the
+  five complete recordings, including GPS/metadata.
+- These permissions cover neither additional private data nor third-party rights.
+  Repository publication requires separate explicit owner authorization.
 
 ## Supported versions
 
-Security fixes target the latest `main` revision on the documented Windows
-platform. The project is in development; its package version is not a promise of
-a maintained release line. Older commits, forks and separate release branches
-receive no promised backports. Update to current `main` and locked dependencies
-when assessing whether an issue is already fixed.
+- Security fixes target latest `main` on the documented
+  [Windows platform](docs/architecture/02_architecture_constraints.md#technical-constraints).
+- The project remains in development; package versions promise no maintained
+  release line or backports for older commits, forks or separate release branches.
+- Check current `main` and locked dependencies when assessing whether an issue is fixed.
 
 ## Report privately
 
-Contact **Björn Rudner** at [rudnerbjoern@hotmail.com](mailto:rudnerbjoern@hotmail.com)
-with the subject **Ride Forces Analyzer security report**.
-If GitHub offers **Report a vulnerability** on the repository's
-[Security Advisories page](https://github.com/rudnerbjoern/ride-forces-analyzer/security/advisories),
-you may use that private channel instead. Its availability depends on repository
-settings; this policy does not assert it is enabled.
-
-Do not disclose vulnerabilities, working exploits, credentials or private
-recordings in public issues, pull requests or discussions. For an initial email,
-provide a concise description without live secrets or sensitive attachments;
-coordinate a suitable transfer method if additional private evidence is needed.
+- Contact **Björn Rudner**: [rudnerbjoern@hotmail.com](mailto:rudnerbjoern@hotmail.com).
+  Subject: **Ride Forces Analyzer security report**.
+- Alternatively, use **Report a vulnerability** on
+  [Security Advisories](https://github.com/rudnerbjoern/ride-forces-analyzer/security/advisories)
+  **if available**; this policy does not assert that repository feature is enabled.
+- Never disclose vulnerabilities, working exploits, credentials or private recordings
+  in public issues, PRs or discussions.
+- Initial email: concise description, no live secrets/sensitive attachments.
+  Coordinate transfer of additional private evidence separately.
 
 Include:
 
-- Affected revision/version, Windows version and relevant dependency or FFmpeg version.
-- Reproduction steps, expected/actual behavior and likely security impact.
-- A minimal synthetic example where possible, and any suggested mitigation.
+- Affected revision/version, Windows version and relevant dependency/FFmpeg version.
+- Reproduction, expected/actual behavior and likely security impact.
+- Minimal synthetic example where possible; suggested mitigation if available.
 
-Relevant examples include unsafe `.forces` parsing, command execution through
-export inputs, unintended file writes or exposure of private recording data.
-For ordinary bugs and feature requests, use the normal issue templates.
+Relevant cases: unsafe `.forces` parsing, command execution through export inputs,
+unintended writes or private recording exposure. Ordinary bugs/features use the
+[issue templates](.github/ISSUE_TEMPLATE/).
 
-Reports are handled on a best-effort basis without guaranteed response or fix
-deadlines. Please coordinate public disclosure with the maintainer while the
-report is assessed and a fix is prepared. Nothing here promises a bug bounty.
+Handling is best effort, without guaranteed response/fix deadlines or a promised
+bug bounty. Coordinate public disclosure with the maintainer during assessment/fix preparation.

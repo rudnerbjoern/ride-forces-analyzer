@@ -1,0 +1,104 @@
+{
+  "VoltronNevera": {
+    "source_sha256": "f48157cadbfeb374eeadf48112b0bbfc1e8b47c580cb303342cf65977054ad04",
+    "sample": 4960,
+    "replay": "01:07.39",
+    "interval": [
+      4500,
+      5250
+    ],
+    "smoothing": 11,
+    "contexts": [
+      "Airtime",
+      "Ejector Airtime",
+      "Floater Airtime",
+      "Heavy Gs",
+      "Light Gs",
+      "Strong Airtime"
+    ]
+  },
+  "Taron": {
+    "source_sha256": "cfa03821140aaa76c52e1bb69905db96a775a5d6772741b5d3a90f48a4254564",
+    "sample": 3399,
+    "replay": "00:22.15",
+    "interval": [
+      3250,
+      3500
+    ],
+    "smoothing": 11,
+    "cards": [
+      [
+        "Vertical",
+        "+0.05 g",
+        "Airtime"
+      ],
+      [
+        "Lateral",
+        "+0.35 g",
+        "Right"
+      ],
+      [
+        "Longitudinal",
+        "+1.08 g",
+        "Acceleration"
+      ]
+    ]
+  },
+  "Manta": {
+    "source_sha256": "30cf81c360cb28f45ee97234779689bdcdd7ec3aa8fa148645a4b015771be6c6",
+    "sample": 4782,
+    "replay": "01:11.18",
+    "interval": [
+      4650,
+      4900
+    ],
+    "smoothing": [
+      1,
+      11,
+      31
+    ],
+    "force_range": [
+      -5.2918715002190515,
+      3.8504211238930854
+    ],
+    "time_range": [
+      93.0,
+      98.0
+    ],
+    "panels": [
+      {
+        "smoothing": 1,
+        "force_range": [
+          -5.2918715002190515,
+          3.8504211238930854
+        ],
+        "time_range": [
+          93.0,
+          98.0
+        ]
+      },
+      {
+        "smoothing": 11,
+        "force_range": [
+          -5.2918715002190515,
+          3.8504211238930854
+        ],
+        "time_range": [
+          93.0,
+          98.0
+        ]
+      },
+      {
+        "smoothing": 31,
+        "force_range": [
+          -5.2918715002190515,
+          3.8504211238930854
+        ],
+        "time_range": [
+          93.0,
+          98.0
+        ]
+      }
+    ]
+  }
+}

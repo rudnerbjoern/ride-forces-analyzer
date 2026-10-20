@@ -1,84 +1,72 @@
 # Optional data parsing
 
 `importers.parse_optional_data(source: SourceEnvelope, *, limits: ImportLimits = DEFAULT_LIMITS)`
-returns `OptionalParseSuccess | ImportFailure`. Supply a supported 2.2.0 envelope
-from the [strict decoder](STRICT_DECODING.md). The function performs no I/O,
-network access, motion validation, resampling, unit conversion or epoch conversion.
-Its success describes only optional accessors, never a complete `Recording`.
-The [motion parser](MOTION_PARSING.md) remains independently callable; the
-[public service](IMPORT_SERVICE.md) composes a complete import.
+returns `OptionalParseSuccess` or `ImportFailure`. Input: supported 2.2.0 envelope
+from the [strict decoder](STRICT_DECODING.md). No I/O, network, Qt, motion validation,
+resampling, unit/epoch conversion or scientific interpretation.
+Success provides optional accessors, never a complete Recording.
+
+Architecture owns [composition](../architecture/05_building_block_view.md#importer-composition-and-interfaces)
+and [source/scientific boundaries](../architecture/08_concepts.md).
+The [motion parser](MOTION_PARSING.md) is independent;
+the [public service](IMPORT_SERVICE.md) composes complete imports.
 
 ## Metadata and source ownership
 
-All bytes and the complete immutable source tree remain owned by the same envelope.
-Unknown root/nested members, original strings, numeric tokens, nulls and absence
-are preserved. No fields are inserted, normalized, trimmed or inferred from GPS.
+The same envelope retains bytes/tree, unknown members, original strings/numbers,
+null/absence and precision. No insertion, normalization, trimming or GPS inference.
+Typed floats are approximate; exact tokens/Decimals preserve underflow and precision
+beyond float range. See [canonical models](CANONICAL_MODELS.md).
 
-- Text accessors: name, UUID, device, timezone, location and weather conditions
-  accept JSON strings verbatim, including empty strings. No UUID/timezone vocabulary
-  is imposed. Missing fields are `None`; wrong types warn and become unavailable.
-- `advancedRecording` accepts JSON booleans only; absent and false remain distinct.
-- Top-level latitude/longitude, temperature and wind direction/speed/gust accept
-  finite JSON numbers only. Numeric strings, booleans, null and float overflow warn
-  and become `None`. Zero, signed zero and finite negative values remain available.
-- `date`, `smoothingFactor`, `maxForce` and `minForce` expose exact `SourceNumber`
-  values. They are not interpreted as timestamps or recalculated physical extrema.
-  The exact Decimal representation may exceed float range; no float is needed.
-- Only **absent** `ridingPosition` produces `RidingPosition("Seated", DEFAULT)`.
-  Any present string containing non-whitespace characters wins unchanged with SOURCE provenance. Invalid or
-  blank presence warns and yields `None`; it never receives the absence default.
-
-Typed numeric floats are approximate accessors. Exact tokens/Decimal values stay
-in the envelope, including underflow and source precision beyond float precision.
-These contracts use the existing [canonical models](CANONICAL_MODELS.md).
+| Accessor                                                        | Rule                                                                                                                                          |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| name, UUID, device, timezone, location, weather conditions      | Verbatim JSON strings, including empty; no UUID/timezone vocabulary; missing = `None`, wrong type = warning/unavailable                       |
+| advancedRecording                                               | JSON boolean only; absent differs from false                                                                                                  |
+| Root latitude/longitude, temperature, wind direction/speed/gust | Finite JSON numbers only; strings/booleans/null/float overflow warn and yield `None`; zero/signed zero/finite negatives retained              |
+| date, smoothingFactor, maxForce, minForce                       | Exact `SourceNumber`, possibly beyond float range; no epoch interpretation or extrema recalculation                                           |
+| Absent ridingPosition                                           | `RidingPosition("Seated", DEFAULT)`                                                                                                           |
+| Present ridingPosition                                          | Any string with non-whitespace content retained verbatim with SOURCE provenance; invalid/blank warns and yields `None`, never absence default |
 
 ## Ordered arbitrary attributes
 
-Absent or defective attribute containers yield `attributes=None`; source presence
-distinguishes the two. A present valid empty array yields `()`. Objects require
-string `id` and `label` plus a present `value`. Empty/duplicate IDs and arbitrary
-labels are preserved; values may be any immutable JSON source value, including
-null, booleans, exact numbers, strings, arrays and objects. There is no fixed count.
+| Container/entry            | Result                                                                                           |
+| -------------------------- | ------------------------------------------------------------------------------------------------ |
+| Absent/defective container | `attributes=None`; source presence distinguishes them                                            |
+| Valid empty array          | `()`                                                                                             |
+| Valid object               | String id/label and present value; empty/duplicate IDs/arbitrary labels retained; no fixed count |
+| Value                      | Any immutable JSON source value: null, boolean, exact number, string, array or object            |
+| Malformed entry            | Warning at original index; no typed Attribute; valid siblings retain order                       |
 
-Malformed entries warn at their original index and have no typed Attribute. Valid
-siblings remain in original order; the complete original array and extensions
-stay in the envelope. Typed attribute offsets after a defect are not source indices.
-Taron's Row=2 then Seat=1 and Iron Gwazi's two entries are verified explicitly.
+Original array/extensions remain in the envelope; typed offsets after defects are
+not source indices. Tests explicitly retain Taron Row=2 then Seat=1 and Iron Gwazi's two entries.
 
 ## Independent GPS
 
-`gps_status` distinguishes ABSENT, PRESENT and INVALID. PRESENT describes a valid
-array container, including empty arrays and arrays whose fixes are all unavailable.
-Each original element has a `GpsEntry(index, fix)`; invalid fixes keep `fix=None`
-without dropping or shifting slots. The GPS count is independent of motion count.
+| Contract              | Rule                                                                                                                                  |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Status                | `ABSENT`, `PRESENT`, `INVALID`; PRESENT means array container, including empty/all-unavailable arrays                                 |
+| Slots                 | Every original element retains `GpsEntry(index, fix)`; invalid fixes use `None`, never dropped/shifted                                |
+| Count                 | Independent of motion count                                                                                                           |
+| Coordinates           | Both latitude/longitude must be present finite JSON numbers; missing/null/boolean/string/object/array/overflow disables only that fix |
+| Other members         | Timestamp, altitude, speed, course, horizontal/vertical/speed/course accuracies: independent optional finite-number accessors         |
+| Member defect         | Warning and `None`; valid coordinates/siblings survive; absent optional members need no warning                                       |
+| Coordinate provenance | Never borrow metadata coordinates                                                                                                     |
 
-Both latitude and longitude must be present finite JSON numbers for a usable fix.
-Missing/null/boolean/string/object/array coordinates or float overflow make only
-that fix unavailable. Other known fields (timestamp, altitude, speed, course and
-all four accuracies) are independent optional finite-number accessors. A defective
-member warns and becomes `None`; valid coordinates and siblings remain available.
-An absent optional member needs no warning. No metadata coordinate is borrowed.
-
-Every finite negative speed, course or accuracy remains available with a warning;
-the policy is not restricted to the observed -1. Exact source signs determine
-negativity, including a tiny negative value subject to float underflow to signed zero.
-Signed zero itself is not negative. Finite large positive accuracies are not rejected
-by an invented threshold. A negative source number beyond float range retains its
-exact token with both negative-value and unavailable-member warnings. Values are
-unverified source readings, not validated physical speeds or interpreted sentinels.
-
-Two nonfatal heuristics produce contextual warnings: latitude outside ±90 or
-longitude outside ±180 (conventional GPS bounds, not verified source units), and
-a timestamp not greater than the previous usable timestamp. Timestamp comparisons
-use exact source Decimals across unavailable/missing-timestamp gaps, considering
-only usable fixes with valid timestamps. They do not sort entries, fill gaps,
-derive elapsed time, convert epochs or align to motion. Suspicious finite fixes
-remain available. Source-app units, precision claims and sentinel meanings remain open.
-
-Missing Apple Watch GPS is normal. Missing iPhone GPS yields info only. Unknown
-device-profile diagnostics belong to the motion parser; optional parsing does not
-invent device capabilities or repeat that warning. Supplied Apple Watch GPS is
-validated normally rather than discarded because the current fixture lacks it.
+- Every finite negative speed/course/accuracy remains available with a warning,
+  not just observed −1. Exact source signs determine negativity, including
+  underflow to signed zero; signed zero itself is not negative.
+- No invented upper accuracy threshold. Negative values beyond float range retain
+  exact tokens with both negative-value/unavailable-member warnings.
+- Context warnings: latitude outside ±90/longitude outside ±180, or timestamp not
+  greater than previous usable timestamp. Bounds are conventional, not verified units.
+- Timestamp comparisons use exact Decimals across unavailable/missing-timestamp
+  gaps, considering only usable fixes with valid timestamps.
+- Suspicious finite fixes remain available. No sorting, gap filling, elapsed-time
+  derivation, epoch conversion or motion alignment. Speeds, units, precision claims
+  and sentinel meanings remain unverified.
+- Absent Watch GPS is normal; absent iPhone GPS gives info only. Motion owns unknown
+  device-profile warnings; optional parsing neither repeats them nor invents capabilities.
+  Supplied Watch GPS is validated even though the current fixture lacks it.
 
 ## Diagnostics and limits
 
@@ -96,37 +84,33 @@ validated normally rather than discarded because the current fixture lacks it.
 | INVALID_SOURCE_ROOT         | error    | Source object unavailable, no subset result                   |
 | RESOURCE_LIMIT_EXCEEDED     | error    | Diagnostic budget exceeded, no subset result                  |
 
-Messages identify fields/defects without source values or GPS traces. Ordering uses
-the existing severity/JSON Pointer/code policy and original sample indices.
-Document syntax, schema and shape budgets remain the decoder's responsibility;
-constructing an arbitrary SourceEnvelope manually does not establish those guards.
-
-Optional parsing enforces `limits.max_diagnostics` locally (default 1,000). Exactly at the
-budget is accepted. The next diagnostic replaces the last slot with a fatal limit
-record and stops parsing; no successful truncated warning set is returned.
-The [full service](IMPORT_SERVICE.md) shares this guard with motion validation;
-decoder failures remain fail-fast single-diagnostic results.
-Invalid caller limit configuration raises `ValueError` as in the decoder API.
+- Messages omit source values/GPS traces; ordering follows severity/escaped JSON
+  Pointer/code with original sample indices.
+- Decoder owns syntax/schema/document-shape guards; a manually constructed
+  SourceEnvelope does not establish them.
+- Local `limits.max_diagnostics` defaults to 1,000; exact budget accepted.
+  Next diagnostic replaces last slot with a fatal limit record and stops parsing;
+  no successful truncated warnings.
+- [Full service](IMPORT_SERVICE.md#shared-diagnostic-budget-and-ordering) shares the
+  guard with motion; decoder failures remain fail-fast single diagnostics.
+  Invalid caller limits raise `ValueError`.
 
 ## Verification and boundaries
 
 ```powershell
-uv run pytest tests/importers/test_optional.py tests/recordings/test_integrity.py
+uv run --locked pytest tests/importers/test_optional.py tests/recordings/test_integrity.py
 ```
 
-Tests compare all optional fields, attributes and all ten fields in all 698 GPS
-fixes across the five recordings. Pinned byte count/SHA-256 and before/after bytes
-and modification times verify integrity. Synthetic cases cover malformed fields,
-independent counts, sparse/unavailable slots, arbitrary ordered attributes,
-ownership, exact precision, negative values, deterministic warnings and budgets.
-See the [import boundary](../architecture/08_concepts.md#source-ownership-and-validation) for source observations and limits.
-
-This subset performs no full import, M3 scientific interpretation or Qt integration.
-The linked service guide describes complete-recording composition.
+Tests compare optional fields/attributes and all ten fields in 698 GPS fixes across
+five originals; pinned byte counts/SHA-256, bytes/modification times protect integrity.
+Synthetic coverage: malformed fields, independent counts, sparse slots, arbitrary
+attributes, ownership/precision, negative values, deterministic warnings and budgets.
+[Source observations/limits](../architecture/08_concepts.md#source-ownership-and-validation)
+remain distinct from complete-import or scientific qualification.
 
 ## Weather fields and source-app evidence
 
-Weather is already included by the full importer in `Recording.metadata`:
+Full imports expose weather in `Recording.metadata`:
 
 | Source key        | Metadata accessor  |
 | ----------------- | ------------------ |
@@ -136,14 +120,9 @@ Weather is already included by the full importer in `Recording.metadata`:
 | windSpeed         | wind_speed         |
 | windGust          | wind_gust          |
 
-The [Voltron weather comparison](../validation/APP_REFERENCE.md#weather-metadata)
-retains the supplied screenshot evidence, exact values and observed conversions;
-it does not establish a guaranteed unit schema for every recording.
-The importer preserves source numeric units/precision and
-weather text; it performs no conversion, compass labeling or network lookup.
-Absent fields remain None; invalid optional values warn without preventing import.
-Exact source tokens remain in SourceEnvelope. Weather display in the explorer
-is separate from this metadata import contract.
-
-The dedicated full-import regression is
-`test_voltron_weather_metadata_matches_source_app` in `tests/importers/test_optional.py`.
+[Voltron weather evidence](../validation/APP_REFERENCE.md#weather-metadata) retains
+screenshots, exact values and observed conversions, without guaranteeing units for
+every recording. Preserve source units/precision/text and exact envelope tokens;
+no conversion, compass labels or network lookup. Absent = `None`; invalid optional
+values warn without blocking otherwise usable import, subject to resource limits.
+Explorer weather display is separate from metadata import.

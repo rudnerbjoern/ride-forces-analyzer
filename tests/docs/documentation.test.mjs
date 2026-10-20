@@ -31,6 +31,25 @@ const documents = [
 
 assert.ok(documents.length > 0, "No documentation files found");
 
+test("Website navigation reaches sections in the shared README", async () => {
+  const readme = await readFile(path.join(root, "README.md"), "utf8");
+  const layout = await readFile(path.join(root, "_layouts/default.html"), "utf8");
+  const tokens = markdown.parse(readme, {});
+  const headings = new Set();
+  for (let index = 0; index < tokens.length; index += 1) {
+    if (tokens[index].type === "heading_open" && tokens[index].tag === "h2") {
+      headings.add(tokens[index + 1].content.toLowerCase().replace(/[^a-z0-9 -]/g, "").replaceAll(" ", "-"));
+    }
+  }
+  const navigation = layout.match(/<nav\b[^>]*>[\s\S]*?<\/nav>/)?.[0];
+  assert.ok(navigation, "Missing main navigation");
+  const targets = [...navigation.matchAll(/href="#([^"]+)"/g)].map(match => match[1]);
+  assert.ok(targets.length > 0, "No section links in navigation");
+  for (const target of targets) {
+    assert.ok(headings.has(target), `Navigation target missing from README: ${target}`);
+  }
+});
+
 for (const filename of documents) {
   test(`local links in ${path.relative(root, filename)}`, async () => {
     const source = await readFile(filename, "utf8");

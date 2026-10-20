@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% seo %}
+    <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+    {% include head-custom.html %}
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header id="header">
+      <nav aria-label="Main navigation">
+        <ul>
+          <li><a href="#get-started">Get started</a></li>
+          <li><a href="#explore-what-happened-on-the-ride">Features</a></li>
+          <li><a href="#bring-the-ride-into-your-videos">Video overlays</a></li>
+          <li><a href="#help-and-contribute">Help</a></li>
+          <li><a href="{{ site.github.repository_url | escape }}">GitHub</a></li>
+        </ul>
+      </nav>
+    </header>
+    <div class="wrapper">
+      <section>
+        <div id="title">
+          <h1>{{ site.title | escape }}</h1>
+          <p>{{ site.tagline | escape }}</p>
+        </div>
+        {% if site.show_downloads %}
+          {% assign download_release = nil %}
+          {% assign releases = site.github.releases | sort: 'published_at' | reverse %}
+          {% for release in releases %}
+            {% unless release.draft %}
+              {% assign executable = nil %}
+              {% assign complete = nil %}
+              {% for asset in release.assets %}
+                {% if asset.name contains '-windows-x64.exe' %}
+                  {% assign executable = asset %}
+                {% elsif asset.name contains '-windows-x64-complete.zip' %}
+                  {% assign complete = asset %}
+                {% endif %}
+              {% endfor %}
+              {% if executable and complete %}
+                {% assign download_release = release %}
+                {% break %}
+              {% endif %}
+            {% endunless %}
+          {% endfor %}
+          <aside class="download-panel" aria-label="Windows downloads">
+            {% if download_release %}
+              <p class="release-label">
+                <strong>{{ download_release.tag_name | escape }}</strong>
+                {% if download_release.prerelease %} · Preview release{% endif %}
+                · Windows 10/11, 64-bit
+              </p>
+              <div class="download-actions">
+                <a class="download-button primary" href="{{ executable.browser_download_url | escape }}">Download Windows EXE</a>
+                <a class="download-button" href="{{ complete.browser_download_url | escape }}">Complete ZIP · includes FFmpeg</a>
+                <a href="{{ download_release.html_url | escape }}">Release notes and checksums</a>
+              </div>
+            {% else %}
+              <p>Find Windows downloads, including preview versions, on GitHub.</p>
+            {% endif %}
+            <a class="all-releases" href="https://github.com/rudnerbjoern/ride-forces-analyzer/releases">All releases</a>
+          </aside>
+        {% endif %}
+        <main id="main-content" tabindex="-1">
+          {{ content }}
+        </main>
+        <footer class="site-footer">
+          <p>Maintained by <a href="https://github.com/rudnerbjoern">Björn Rudner</a>.
+            Hosted on GitHub Pages · <a href="https://github.com/pages-themes/midnight">Midnight theme</a>.</p>
+        </footer>
+      </section>
+    </div>
+  </body>
+</html>

@@ -2,29 +2,26 @@
 
 <!-- cspell:words Flojector -->
 
-Calibrated forces is available by default for every import with usable directions.
-Availability does not imply scientific qualification. [source-app projection decision](../architecture/09_architecture_decisions.md#source-app-projection)
-defines the owner-adopted source-app policy; [explorer contracts](../implementation/RAW_EXPLORER.md)
-define live smoothing and presentation.
+Source-specific observations and independent comparison values for the pinned
+[recordings](../development/RECORDINGS.md). Architecture remains authoritative for
+the [source-app policy](../architecture/09_architecture_decisions.md#source-app-projection),
+[scientific gates](../architecture/08_concepts.md#scientific-provenance-and-gates)
+and [open qualification limits](../architecture/11_technical_risks.md).
+Live display behavior belongs to the [explorer contract](../implementation/RAW_EXPLORER.md).
 
 ## Computation and qualification
 
-Normalize each stored vertical/lateral/longitudinal direction row independently,
-project acceleration directly as source-app g, and apply a centered arithmetic
-mean (odd windows 1–51, default 11). Do not add/subtract gravity, replace rounded directions with orthogonal axes,
-or apply two successive calibration rotations. Retain
-unfiltered projections. Recording-edge windows shorten/renormalize; source-app
-edge handling and endIndex inclusion remain unverified. Compare inclusive marker
-intervals without claiming the source app's exact selection convention.
-
-The exact pinned Manta source at window 11 has owner-confirmed projection, units,
-signs, filtering, replay, Combined and Orientation evidence. Other sources/windows
-remain PROVISIONAL. Unified derived stages retain PROVISIONAL capability and assumed
-units, including for these owner-confirmed source-app comparisons; this evidence
-does not establish qualified physical forces. Generic frame APIs retain their
-stricter independent gates.
-Missing/invalid directions or unavailable numerical support preserve raw operation
-with a calibration diagnostic. Hashes identify provenance, not feature eligibility.
+- Compared calculation: independent direction-row normalization, direct projection
+  and one centered mean. No gravity addition/subtraction, orthogonal replacement or
+  successive calibration rotations. Numerical/edge rules: [adopted policy](../architecture/09_architecture_decisions.md#source-app-projection).
+- Comparisons use inclusive marker intervals. Source-app edge handling and
+  `endIndex` inclusion remain unverified; no exact selection equivalence is claimed.
+- Pinned Manta at window 11: owner-confirmed source-app projection, g scale, signs,
+  filtering, replay, Combined and Orientation. Other sources/windows remain provisional.
+- All unified derived stages retain PROVISIONAL capability and assumed units,
+  including confirmed comparisons. No qualified physical forces are established;
+  [generic frame gates](../architecture/09_architecture_decisions.md#passive-frame-transforms)
+  remain independent. Hashes identify provenance, not feature eligibility.
 
 | Quantity     | Source-app evidence / implementation limit                                                                              |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------- |
@@ -34,9 +31,9 @@ with a calibration diagnostic. Hashes identify provenance, not feature eligibili
 | Orientation  | Angle of normalized current source gravity to stored vertical, clipped cosine before acos; implemented for video export |
 | Time         | Start-relative `MM:SS.ff`, ff is sample counter at integer rate; internal recording seconds remain index/rate           |
 
-At 50 Hz default 11 samples has nominal N/rate 0.22 s, endpoint span 0.20 s and
-±0.10 s support. Means are not cascaded. Manta unfiltered vertical extrema are
-approximately -5.03988/+3.66707, distinct from its smoothed display.
+- At 50 Hz, 11 samples: nominal N/rate 0.22 s, endpoint span 0.20 s, ±0.10 s support.
+- Manta unfiltered vertical extrema: approximately -5.03988/+3.66707, distinct from
+  the smoothed display.
 
 ## Corpus extrema regression
 
@@ -48,14 +45,14 @@ approximately -5.03988/+3.66707, distinct from its smoothed display.
 | Taron          | -0.626344442   | -0.626451405          | 4.345596790    | 4.345766817           |
 | Voltron Nevera | -1.598199964   | -1.598163271          | 4.365312576    | 4.365497903           |
 
-These are vertical extrema at the compared 11-sample policy. The 0.0002 ceiling
-is a corpus regression bound, not physical accuracy or private-algorithm identity.
-Fixture identity/digests are in the [catalog](../development/RECORDINGS.md).
+- Compared vertical extrema use 11-sample smoothing.
+- Regression ceiling: 0.0002; no physical accuracy/private-algorithm identity claim.
+- Source identities/digests: [catalog](../development/RECORDINGS.md).
 
 ## Manta replay reference
 
-Source rate 50 Hz, startIndex 1214 (recording 24.28 s). The following supplied
-snapshots are independent comparison points; no parameters were fitted to them.
+- Source rate: 50 Hz; startIndex 1214, recording offset 24.28 s.
+- Supplied replay snapshots are independent reference points; no parameter fitting.
 
 | Replay   | Sample | Recording seconds | Vertical g | Lateral g | Longitudinal g | Combined g | Orientation |
 | -------- | ------ | ----------------- | ---------- | --------- | -------------- | ---------- | ----------- |
@@ -65,23 +62,21 @@ snapshots are independent comparison points; no parameters were fitted to them.
 | 01:12.00 | 4814   | 96.28             | -3.44      | 0.07      | 0.35           | 3.46       | 120 degrees |
 | 01:26.00 | 5514   | 110.28            | 1.96       | -0.21     | 0.41           | 2.02       | 77 degrees  |
 
-All 15 directional readouts and five Combined/Orientation readouts match at the
-shown precision. At 01:26, directional values are 1.960580571/-0.214940883/
-0.412735885; their norm is 2.015050041 (2.02 displayed). Averaging raw magnitudes
-would give 2.115184090 and fails that reference. Orientation 77.397274 degrees
-matches 77; averaging angles first gives 77.743270 and does not match.
-
-Vertical minimum sample 4782 (recording 95.64 s; replay 71.36 s), maximum sample
-5047 (100.94 s; replay 76.66 s). At gravityIndex 2013 vertical is approximately
-0.9989; at inclineIndex 3370 vertical/longitudinal/lateral is 0.7414/0.6736/-0.0060.
-The overview's initial longitudinal load, lift plateau and final vertical baseline
-are visually consistent. This does not qualify arbitrary mounting or every file.
+- Match: all 15 directional values and all five Combined/Orientation values at shown precision.
+- At 01:26: 1.960580571/-0.214940883/0.412735885; component norm 2.015050041 → 2.02.
+  Averaging raw magnitudes gives 2.115184090 and fails the reference.
+- Orientation: 77.397274 degrees → 77; averaging angles first gives 77.743270 and fails.
+- Vertical min: sample 4782, recording 95.64 s, replay 71.36 s. Max: sample 5047,
+  recording 100.94 s, replay 76.66 s.
+- gravityIndex 2013: vertical ≈0.9989. inclineIndex 3370:
+  vertical/longitudinal/lateral ≈0.7414/0.6736/-0.0060.
+- Initial longitudinal load, lift plateau and final vertical baseline match visually;
+  no qualification of arbitrary mounting or every file.
 
 ## Kraken replay reference and known discrepancy
 
-Source rate 50 Hz, start/end 913/9138; selected span 164.5 s, recording offset
-18.26 s. At `01:31.47`, index is `913 + 91*50 + 47 = 5510`; interpreting .47 as
-hundredths selects a different sample and does not match.
+- Source rate: 50 Hz; start/end 913/9138; selected span 164.5 s; offset 18.26 s.
+- `01:31.47` → index `913 + 91*50 + 47 = 5510`. Reading .47 as hundredths fails.
 
 | App time | Source index | Vertical g | Lateral g | Longitudinal g | Combined g | Orientation | Result             |
 | -------- | ------------ | ---------- | --------- | -------------- | ---------- | ----------- | ------------------ |
@@ -94,22 +89,20 @@ hundredths selects a different sample and does not match.
 | 02:02.03 | 7016         | 1.24       | 0.34      | -0.96          | 1.61       | 136 degrees | All readouts match |
 | 02:08.16 | 7329         | 1.00       | -0.08     | -0.90          | 1.35       | 2 degrees   | All readouts match |
 
-Seven nonzero-time rows match all five readouts at shown precision. All eight
-Orientation values match. At replay zero the computation instead rounds to
-1.00/0.00/-0.10 g, Combined 1.00 g. This start mismatch remains open; neither raw
-projection nor shortened selection-edge averaging establishes an equivalent rule.
-Regression tests preserve the discrepancy without broad tolerances or fitted offsets.
-
-Selected lateral extrema -0.711935869/+0.422388300 and longitudinal
--1.092671545/+0.447732913 agree visually with the overview patterns. At gravityIndex
-1028, vertical/lateral/longitudinal is about 1.002325/-0.002091/0.002562;
-at inclineIndex 2928, 0.932704/-0.006582/0.352202.
+- Match: seven nonzero-time rows, all five readouts; all eight Orientation values.
+- Open start discrepancy: computation 1.00/0.00/-0.10 g, Combined 1.00 g. Raw projection
+  and shortened selection-edge averaging establish no equivalent rule. Tests retain
+  the mismatch without broad tolerances or fitted offsets.
+- Selected extrema: lateral -0.711935869/+0.422388300; longitudinal
+  -1.092671545/+0.447732913; visually consistent with overview patterns.
+- gravityIndex 1028: vertical/lateral/longitudinal ≈1.002325/-0.002091/0.002562;
+  inclineIndex 2928: ≈0.932704/-0.006582/0.352202.
 
 ## Voltron Nevera reference and known discrepancy
 
-Effective 50 Hz is an absence-only project default, not a measured acquisition
-rate. Source start/end 1571/10374 gives recording offset 31.42 s and selected span
-176.06 s. The two peak groups and near-1 g middle interval agree visually.
+- Effective 50 Hz: absence-only project default, not measured acquisition rate.
+- Source start/end 1571/10374; offset 31.42 s; selected span 176.06 s.
+- Two peak groups and near-1 g middle interval agree visually.
 
 | Quantity     | Reconstructed minimum / maximum g | Screenshot comparison                                                  |
 | ------------ | --------------------------------- | ---------------------------------------------------------------------- |
@@ -118,12 +111,13 @@ rate. Source start/end 1571/10374 gives recording offset 31.42 s and selected sp
 | Longitudinal | -1.208233927 / 1.072801471        | -1.21 / +1.07 match                                                    |
 | Combined     | 0.094203046 / 4.436456817         | 0.09 / 4.44 match                                                      |
 
-Stored vertical maximum 4.365312576 also normally rounds to 4.37. The displayed
-4.36 difference remains unresolved; no truncation or retuning is applied.
+- Stored maximum 4.365312576 also normally rounds to 4.37. Displayed 4.36 remains
+  unresolved; no truncation or retuning.
 
-Duration readouts are reference material for planned statistics, not implemented
-algorithms. Threshold inclusion/crossing interpolation is unverified; independently
-rounded bins may not sum exactly to totals:
+Source-app duration statistics below are not reproduced by an implemented algorithm.
+The [provisional event rules](../implementation/AIRTIME_EVENTS.md) are a separate
+contract. Threshold inclusion/crossing interpolation is unverified; independently
+rounded bins may not sum exactly to totals.
 
 | Statistic          | Screenshot seconds / bins                                   |
 | ------------------ | ----------------------------------------------------------- |
@@ -135,26 +129,22 @@ rounded bins may not sum exactly to totals:
 
 ## Weather metadata
 
-Evidence is the owner-provided Voltron Nevera weather screenshot from 2026-10-17,
-compared with the original authorized fixture.
-Voltron's screenshot corroborates Mostly Clear, temperature 17.786710739135742
-(17.8 °C), wind direction 195 degrees (SSW), speed 0.9936420124626161 m/s
-(4 km/h rounded) and gust 3.874126195764542 m/s (14 km/h rounded).
-Multiplying the source wind values by 3.6 matches the displayed integer km/h;
-195 degrees lies in the 16-point SSW sector [191.25, 213.75). Temperature matches
-the one-decimal Celsius display. This is a source-specific comparison, not a
-guaranteed unit schema for every recording.
-The importer retains all five optional fields; absent/invalid values retain
-existing diagnostics. [Parser contract](../development/OPTIONAL_PARSING.md#weather-fields-and-source-app-evidence)
-and the full-import regression cover exact accessors, rounding and original bytes.
-Weather metadata is not currently a dedicated explorer panel.
+- Evidence: owner-provided Voltron screenshot, 2026-10-17, compared with the authorized fixture.
+- Conditions: Mostly Clear. Temperature 17.786710739135742 → 17.8 °C.
+- Wind: 195 degrees, SSW; 0.9936420124626161 m/s → 4 km/h rounded;
+  gust 3.874126195764542 m/s → 14 km/h rounded.
+- Wind values ×3.6 match integer km/h; 195 degrees lies in 16-point SSW sector
+  [191.25, 213.75). Temperature matches one-decimal Celsius.
+- Scope: this source only, not a guaranteed unit schema for every recording.
+  [Parser contract](../development/OPTIONAL_PARSING.md#weather-fields-and-source-app-evidence)
+  owns five-field retention and absence/invalid diagnostics; full-import regression
+  checks exact accessors, rounding and original bytes. No dedicated explorer weather panel.
 
 ## GPS comparison across all originals
 
-GPS is coarse spatial context only. It must not control force calibration,
-sensor timing, ride segmentation or force values. North-up local WGS84 plots
-preserve source order; geographic distances below are approximations assuming
-degrees. They are not measured track length, ride speed or ride elevation.
+- Scope: coarse spatial context; no force calibration, timing, segmentation or force input.
+- Geometry: north-up local WGS84 approximation in source order, assuming degrees.
+  Distances below are not measured track length, speed or elevation.
 
 | Recording      | GPS points | GPS span s | Largest gap s | Approximate extent m E/W × N/S | Horizontal accuracy median / max | Negative speed entries |
 | -------------- | ---------- | ---------- | ------------- | ------------------------------ | -------------------------------- | ---------------------- |
@@ -164,56 +154,49 @@ degrees. They are not measured track length, ride speed or ride elevation.
 | Voltron Nevera | 149        | 225.78     | 11.71         | 298 × 156                      | 25.03 / 199.99                   | 18                     |
 | Iron Gwazi     | absent     | —          | —             | —                              | —                                | —                      |
 
-All four sequences have increasing timestamps, approximately one-second median
-intervals and all ten fields. Kraken has three gaps >2 s, Voltron 15, others none.
-Accuracy units are not independently proved; Taron's maximum exceeds its full
-plotted extent if interpreted as meters. Negative speed/course values remain
-unqualified sentinels, never reverse travel or invented fixes.
-
-Voltron's northeast cluster, southwest excursion and long crossing connections
-visually match the supplied map. Exact point registration, track elements and
-station/launch positions are unverified. Extent is 297.97×156.18 m, endpoint
-separation 36.40 m, connected-point length 1,155.20 m, longest step 68.59 m.
-Its GPS span 225.780630 s exceeds complete sensor span 210.06 s by 15.72 s;
-GPS relative-to-source-date offsets +0.378860…+226.159490 do not establish shared
-acquisition timing. GPS intervals range 0.005958–11.707501 s; nine exceed 5 s.
-Horizontal accuracy source range 6.62–199.99 includes 27 entries >50 and 18 >100;
-altitude 159.12–165.52 is not a qualified elevation profile. Speed/course have
-18/46 negative entries respectively.
-
-Connected-point lengths / endpoint separations (m): Manta 533.40/59.05,
-Kraken 1,790.73/6.27, Taron 883.66/19.42. Crossings, jumps and endpoint clusters
-do not identify ride elements. Iron Gwazi has no GPS and borrows no other route.
-The implemented neutral-blue offline overview disconnects invalid/missing fixes
-and missing/zero or negative/>2 s intervals; it provides no background map or speed colors.
+- All four sequences: increasing timestamps, approximately one-second median
+  intervals, all ten fields. Gaps >2 s: Kraken 3, Voltron 15, others 0.
+- Accuracy units unproved; Taron's maximum exceeds its full extent if treated as
+  meters. Negative speed/course remain unqualified sentinels, not reverse travel or fixes.
+- Voltron northeast cluster, southwest excursion and long crossings match the supplied
+  map visually. Exact registration, track elements and station/launch positions unverified.
+- Voltron approximate geometry: extent 297.97×156.18 m; endpoint separation 36.40 m;
+  connected-point length 1,155.20 m; longest step 68.59 m.
+- Voltron timing: GPS span 225.780630 s versus complete sensor span 210.06 s
+  (difference 15.72 s); source-date offsets +0.378860…+226.159490 establish no shared
+  acquisition clock. Intervals 0.005958–11.707501 s; nine >5 s.
+- Voltron source accuracy 6.62–199.99: 27 entries >50, 18 >100. Altitude
+  159.12–165.52 is not a qualified elevation profile. Negative speed/course: 18/46 entries.
+- Other connected-point lengths / endpoint separations (m): Manta 533.40/59.05,
+  Kraken 1,790.73/6.27, Taron 883.66/19.42. Crossings/jumps/clusters identify no ride elements.
+- Iron Gwazi: no GPS; no borrowed route. Current offline overview: neutral-blue
+  connections, breaks at unavailable fixes and missing/zero/negative/>2 s intervals,
+  no background map or speed colors. Product behavior: [GPS contract](../implementation/RAW_EXPLORER.md).
 
 ### Source-speed color hypothesis
 
-Nonnegative speed maxima are Manta 6.404428, Kraken 14.761415, Taron 13.328056,
-Voltron 14.216463 (23.06/53.14/47.98/51.18 km/h if m/s). A common linear 0–15
-source-unit green-to-red inspection scale gives qualitative Voltron agreement:
-slow northeast points green, faster central return orange/red. Palette, thresholds,
-normalization, interpolation and processed-vs-source speed are unverified. No maps
-for the other three GPS originals are supplied, so cross-recording confirmation
-is unavailable. Course availability does not imply speed availability.
-
-Correlations between nonnegative ending-fix speed and adjacent distance/time are
-Manta 0.318, Kraken 0.099, Taron 0.266, Voltron 0.346, without fitted lag, quality
-selection or smoothing. The weak relationship means geometric step speed cannot
-replace source speed. Speed coloring remains plausible, not a confirmed app contract.
+- Nonnegative speed maxima: Manta 6.404428, Kraken 14.761415, Taron 13.328056,
+  Voltron 14.216463; 23.06/53.14/47.98/51.18 km/h **if** source units are m/s.
+- Linear 0–15 source-unit green/red inspection scale qualitatively matches Voltron:
+  slow northeast points green, faster central return orange/red. Palette, thresholds,
+  normalization, interpolation and processed-versus-source speed remain unverified.
+- No maps supplied for the other three GPS recordings; no cross-recording confirmation.
+  Available course does not establish available speed.
+- Nonnegative ending-fix speed versus adjacent distance/time correlation:
+  Manta 0.318, Kraken 0.099, Taron 0.266, Voltron 0.346. No fitted lag, quality selection
+  or smoothing. This does not justify replacing source speed with geometric step speed;
+  speed coloring remains a hypothesis, not a confirmed app contract.
 
 ## Verification boundary
 
-Source-specific regressions cover these comparisons, weather accessors, smoothing,
-force levels and GPS presentation using the pinned original recordings. Run the
-maintained checks on native Windows from the repository root:
+Relevant regression scope: comparisons, weather accessors, smoothing, force levels
+and GPS presentation against pinned originals. Run from the repository root on native Windows:
 
 ```text
-uv run --locked pytest tests/analysis/test_source_app_evidence.py tests/explorer/test_data.py tests/importers/test_optional.py
+uv run --locked pytest tests/analysis/test_source_app_evidence.py tests/explorer/test_data.py tests/explorer/test_gps.py tests/importers/test_optional.py
 ```
 
-Independent screenshots and rounded numeric comparisons establish the scoped
-contracts above, not pixel identity or private source-algorithm equivalence.
-[explorer contract](../implementation/RAW_EXPLORER.md) and [analysis contract](../architecture/08_concepts.md#scientific-provenance-and-gates) own their
-separate product acceptance. GPS units/epochs/sentinels and general physical
-rider calibration remain unqualified.
+- Comparisons establish scoped agreement, not pixel identity or private-algorithm equivalence.
+- GPS units/epochs/sentinels and general physical rider calibration remain unqualified.
+- Product acceptance: [explorer contract](../implementation/RAW_EXPLORER.md) and
+  [analysis concepts](../architecture/08_concepts.md#scientific-provenance-and-gates).

@@ -1,55 +1,53 @@
 # Ride Forces Analyzer {{VERSION}}
 
-Explore Ride Forces recordings and create G-force overlays for your coaster
-videos. Processing stays local and preserves original recordings.
+Explore Ride Forces recordings and create G-force overlays. Processing stays local;
+original recordings remain unchanged.
 
-## Included in version 0.3.1
+## Included in {{VERSION}}
 
-- Corrected Windows package verification for language and appearance settings.
-
-- Portable Windows EXE, standard ZIP and complete ZIP with FFmpeg, plus source downloads.
-- A colored airtime context strip that follows chart zoom, with stable vertical-force
-  labels for Floater, Airtime, Strong Airtime and Ejector. These are provisional
-  interpretations, not measured rider sensations.
-- Consistent export colors: yellow lateral forces, green acceleration and red braking.
-  Flow Ribbon, Corner Instruments and Telemetry Capsule also show vertical-force context.
-- Click the chart to select a sample; inspect extrema for the visible chart range.
-  The From/To interval is highlighted, and holding its arrows accelerates sample stepping.
-- A more compact workspace with organized technical details and visible-range extrema.
-- Remembered folders, language and appearance, with Windows defaults for new users.
-- FFmpeg Browse opens the configured encoder directory; invalid preference inputs
-  are rejected before changing saved settings.
+- Portable Windows EXE, standard ZIP, complete ZIP with FFmpeg and source downloads.
+- Zoom-aware airtime strip with stable Floater, Airtime, Strong Airtime and Ejector
+  labels: provisional interpretations, not measured rider sensations.
+- Yellow lateral forces; green acceleration/red braking. Flow Ribbon, Corner
+  Instruments and Telemetry Capsule also show vertical-force context.
+- Click-to-select samples, visible-range extrema, highlighted From/To selection
+  and accelerating sample-arrow steps.
+- Compact workspace with organized technical details/extrema.
+- Remembered folders, language/appearance and Windows defaults for new users.
+- FFmpeg Browse starts in the configured directory; invalid preferences are rejected before saving.
 - About information and optional GitHub update notifications.
-- Export filenames based on the recording, estimated output size and remaining time.
+- Recording-based export filenames, approximate size and remaining-time estimates.
 
 ## Installation
 
-For Windows x64, `Ride-Forces-Analyzer-{{VERSION}}-windows-x64.exe` starts without
-installing Python. The `…-standard.zip` contains the application and notices;
-select an existing FFmpeg for video export. The `…-complete.zip` also includes
-FFmpeg, detected automatically after extraction. Start the EXE in the extracted
-folder. There is no installer or automatic installation. Required dependency
-notices accompany the packages. The included `REDISTRIBUTION.json` records
-redistribution details.
-Use `WINDOWS-SHA256SUMS.txt` to verify the download files.
+Windows x64 downloads require no Python installation:
 
-Download GitHub's **Source code (zip)** or **Source code (tar.gz)** from this release. Extract the archive,
-open PowerShell in its directory and run `setup.ps1`, then `start.ps1`.
-Video export additionally needs `setup.ps1 -VideoExport` or a compatible existing
-FFmpeg executable. Setup downloads dependencies; installed processing works offline.
-Source setup is an alternative to the Windows downloads.
+| Download                                           | Use                                                                   |
+| -------------------------------------------------- | --------------------------------------------------------------------- |
+| `Ride-Forces-Analyzer-{{VERSION}}-windows-x64.exe` | Portable application                                                  |
+| `…-standard.zip`                                   | Application/notices; select an existing FFmpeg for export             |
+| `…-complete.zip`                                   | Also includes FFmpeg, automatically detected beside the extracted EXE |
 
-See the [README](https://github.com/{{REPOSITORY}}/blob/{{TAG}}/README.md) for features, screenshots and setup help.
-Known limits and planned features are in the [roadmap](https://github.com/{{REPOSITORY}}/blob/{{TAG}}/docs/ROADMAP.md).
-GPS supplies rough spatial context rather than force or speed measurement.
-Video exports need manual alignment with footage.
+- Extract ZIPs and start their EXE. No installer or automatic installation.
+- Verify downloads with `WINDOWS-SHA256SUMS.txt`.
+- Packages include collected dependency notices. Shipped `REDISTRIBUTION.json`
+  records outstanding redistribution source/notice gaps.
+- Source alternative: GitHub's **Source code (zip)** / **Source code (tar.gz)**.
+  Extract, open PowerShell there, run `setup.ps1`, then `start.ps1`.
+  Export additionally needs `setup.ps1 -VideoExport` or compatible installed FFmpeg.
+  Setup downloads dependencies; installed processing works offline.
+
+[README](https://github.com/{{REPOSITORY}}/blob/{{TAG}}/README.md):
+features, screenshots/setup.
+[Roadmap](https://github.com/{{REPOSITORY}}/blob/{{TAG}}/docs/ROADMAP.md):
+limits/planned scope. GPS is rough spatial context, not force/speed measurement;
+video alignment remains manual.
 
 ## Licenses and support
 
-Program code: GPL-3.0-or-later. The five supplied recordings, including GPS and
-metadata, and the listed documentation images: CC BY-SA 4.0, with attribution
-notices. These grants do not automatically apply to your recordings or exports.
-See [licenses and third-party boundaries](https://github.com/{{REPOSITORY}}/blob/{{TAG}}/README.md#license).
-
-Use GitHub Issues for ordinary bugs and feature requests. Report security problems
-privately through [SECURITY.md](https://github.com/{{REPOSITORY}}/blob/{{TAG}}/SECURITY.md).
+- Code: GPL-3.0-or-later. Five supplied recordings, including GPS/metadata, and
+  explicitly listed documentation images: CC BY-SA 4.0 with attribution notices.
+  These grants do not automatically cover your recordings/exports.
+  See [licenses/third-party boundaries](https://github.com/{{REPOSITORY}}/blob/{{TAG}}/README.md#license).
+- Ordinary bugs/features: GitHub Issues. Security reports:
+  private channels in [SECURITY.md](https://github.com/{{REPOSITORY}}/blob/{{TAG}}/SECURITY.md).

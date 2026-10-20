@@ -131,3 +131,28 @@ after setup, select `.venv/Scripts/python.exe` and refresh test discovery.
 Only shared `.vscode/settings.json` and `extensions.json` are eligible for Git.
 `.editorconfig` and `.gitattributes` define UTF-8/LF text, indentation and CRLF
 Windows command scripts; `.forces` files are excluded from normalization.
+
+## Project website
+
+The repository's [Pages configuration](../../_config.yml) uses Midnight v0.2.0.
+The [start page](../../index.html) renders the README directly, keeping one maintained
+user introduction. Images are served from `docs/images`; documentation, license
+and fixture links open their maintained files on GitHub. The README itself keeps
+its normal repository-relative links. No Ruby dependency is added to the application.
+
+The [local layout](../../_layouts/default.html) adds section navigation and Windows
+EXE/Complete ZIP buttons. At build time it selects the most recently published
+non-draft release containing both Windows assets, including prereleases. Without
+matching metadata it links to the release list. A newly published release appears
+in these buttons after the next Pages build. The
+[stylesheet](../../assets/css/style.scss) retains Midnight's base styling and widens
+the content to 1120 pixels, with wrapping navigation and stacked download buttons
+on small screens.
+
+GitHub Pages is configured to deploy from the `main` branch's **/(root)** directory.
+These settings are under **Settings → Pages → Build and deployment**; no new
+Pages site is needed. Merging website changes into `main` triggers a new build at
+<https://rudnerbjoern.github.io/ride-forces-analyzer/>.
+Publishing requires a successful GitHub Pages build; local Markdown/link checks
+alone do not establish that the site is live. The native application and its CI
+remain independent of the hosted website.

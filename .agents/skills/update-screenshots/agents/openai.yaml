@@ -1,0 +1,4 @@
+interface:
+  display_name: "Update Screenshots"
+  short_description: "Refresh screenshots for README and GitHub Pages"
+  default_prompt: "Use $update-screenshots to refresh all project reference screenshots and verify their README embedding, GitHub Pages presentation, captions and fixed comparison settings; distinguish local checks from deployed-site verification."

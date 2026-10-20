@@ -94,6 +94,39 @@ Keep GUI captures aligned with the current application and refresh README image
 descriptions when visible behavior changes. Capture the actual widgets, preserve
 the original recordings and retain the existing image license and attribution.
 
+## README detail captures
+
+The README also uses three generated native UI details, outside the 14-image
+CC BY-SA grant listed above:
+
+- `voltron-airtime-detail.png`: Voltron Nevera sample 4960, replay `01:07.39`,
+  samples 4500–5250 in view and 11-sample smoothing. The chart and its actual
+  context strip/legend include Floater and Ejector labels.
+- `taron-force-cards.png`: Taron sample 3399, replay `00:22.15`, with 11-sample
+  smoothing. The three native cards show vertical, lateral and longitudinal
+  values with their context/direction labels.
+- `manta-smoothing-comparison.png`: Manta samples 4650–4900, recording seconds
+  93–98, with only the vertical curve visible. Three actual chart captures use
+  1, 11 and 31 samples, respectively. The force limits and category labels are
+  fixed to the unfiltered view for a direct comparison; the normal workspace
+  chooses its force limits for the current smoothing. The sample cursor is hidden.
+  Added headings identify each window; the context strip remains visible and
+  can change with smoothing.
+
+Regenerate only these details and their source hashes/sample/axis manifest:
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\capture_app_reference.py --details
+```
+
+Add `--output .tmp\readme-details` to review without replacing documentation
+images. The same isolated profile, English labels, Segoe UI font and scale factor
+as the main screenshots apply; the workspace is 1280×720 in dark appearance.
+[`readme-reference.json`](readme-reference.json) records the fixed scenes and the
+actual axis limits for each smoothing panel. The original bytes of all three
+recordings are verified before and after capture. The default command continues
+to generate only the three full application screenshots.
+
 ## License limits
 
 The grant covers the owner's rights in these images. It does not grant rights in

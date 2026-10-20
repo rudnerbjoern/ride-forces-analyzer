@@ -2,34 +2,30 @@
 
 <!-- cspell:words Pendrill -->
 
-Airtime context defaults to the smoothed, calibrated vertical channel and effective
-source sample rate. `AnalysisConfiguration.context_input` may explicitly select
-projection instead; the prepared context retains that actual input/configuration.
-Version 1 accepts the documented constants, omitted or explicitly unchanged;
-unsupported algorithms, versions or threshold overrides fail the request.
-Context does not change measurements, filters, axis signs or recordings. Flow Ribbon, Corner
-Instruments and Capsule use these labels in their vertical hint, in both aspects
-and languages. Column and G-Orbit retain their existing labels.
-The explorer shows the same prepared labels and shared palette in a 10-pixel
-context strip at the bottom inside the calibrated plot. The strip clips to the
-visible time range and follows zoom/resize. Dark appearance matches the
-export palette; light appearance uses darker equivalents for readable contrast.
-The graph values, smoothing and numeric readouts remain unchanged. Component
-responsibilities belong to the [building block view](../architecture/05_building_block_view.md#video-export-boundary).
+- **Input:** smoothed calibrated vertical channel and effective source sample rate;
+  `AnalysisConfiguration.context_input` can select projection instead. The prepared
+  stage retains its actual input/configuration.
+- **Version 1:** documented constants may be omitted or explicitly unchanged.
+  Unsupported algorithms, versions or threshold overrides fail the request.
+- **Categories:** language-independent `VerticalContext` identifiers; presentation
+  translates labels/colors without reclassification. Excluded stages carry a coded
+  reason and no labels; invalid rows within an available series use `UNAVAILABLE`.
+- **Raw display:** no context claims; prepared-stage availability is unaffected.
+- **Consumers:** Flow Ribbon, Corner Instruments and Capsule vertical hints, both
+  aspects/languages. Column and G-Orbit retain their existing labels. The explorer
+  uses prepared categories in its vertical card and 10-pixel strip inside the plot's
+  bottom edge; the strip clips to the visible range and follows zoom/resize.
+- **Boundaries:** measurements, filters, axis signs, recordings, graph values and
+  numeric readouts are unchanged. Display confirmation/hysteresis do not define
+  the separate opt-in [airtime events](AIRTIME_EVENTS.md).
 
-Prepared categories are language-independent `VerticalContext` identifiers.
-Presentation translates their labels/colors without reclassification. An excluded
-context stage has a coded reason and no labels; within an available series, invalid
-rows use `UNAVAILABLE`. Raw display makes no context claims and does not change
-the prepared stage's availability.
-
-Domain [airtime events](AIRTIME_EVENTS.md) use separate opt-in rules. Display
-confirmation and hysteresis do not establish their intervals or minimum duration.
+Architecture owns [component responsibilities](../architecture/05_building_block_view.md#video-export-boundary)
+and [stage reuse/lifetime](../architecture/08_concepts.md#snapshot-lifetime-and-reuse).
 
 ## Presentation heuristic
 
-These thresholds are provisional product choices, not a scientific definition or
-validated detection of rider sensations:
+Provisional product thresholds; not scientific definitions or validated detection
+of rider sensations:
 
 | Condition                             | Label           |
 | ------------------------------------- | --------------- |
@@ -41,39 +37,38 @@ validated detection of rider sensations:
 | Below −0.5 g without qualifying onset | Strong Airtime  |
 | Below −0.5 g with qualifying onset    | Ejector Airtime |
 
-Onset is the backward difference over a rounded 0.2-second source window (at
-least one sample), expressed in g/s using the actual window duration. A decline
-of at least 3 g/s qualifies for 0.5 seconds. Entering the strong range while
-qualified starts Ejector; it persists only while the load remains below −0.5 g.
-Light Gs clears onset memory. Missing/non-finite values clear all history
-and show Unavailable; differentiation never crosses a gap.
+Onset and lookup rules:
 
-Preparation uses the complete supplied channel, including available history
-before the export interval, without looking ahead. Fractional preview positions
-use the preceding sample's label; numeric readouts retain interpolation. Seeking
-and export frame rate do not change classifications. Starting a recording within
-negative loading cannot establish an earlier onset. Context text is stabilized separately from graph samples and numeric readouts:
+- Backward difference over `max(1, round(0.2 * sample_rate))` samples, divided by
+  actual window duration; a decline of at least 3 g/s qualifies for 0.5 seconds.
+- Strong loading while qualified starts Ejector, retained throughout the phase
+  below −0.5 g. Light Gs clears onset memory.
+- Missing/non-finite values clear history and show Unavailable; differentiation
+  never crosses gaps. A recording starting in negative loading supplies no earlier onset.
+- Preparation is causal over the complete supplied channel, including history
+  before an export interval. Fractional positions use the preceding sample's label;
+  numeric readouts retain interpolation. Seeking/frame rate do not affect categories.
 
-- Detailed labels require `ceil(0.12 * sample_rate)` consecutive samples. This is
-  a presentation confirmation time, not a scientific minimum event duration.
-- Entering the airtime family immediately displays generic Airtime while its
-  subtype is pending. Return to positive loading clears airtime immediately.
-  Heavy Gs therefore cannot remain displayed during an airtime candidate.
-- Once confirmed, Floater persists within ±0.16 g instead of repeatedly crossing
-  its ±0.1 g entry boundary. Strong/Ejector labels persist below −0.4 g, unless
-  another strong subtype is confirmed. At −0.4 g or above they clear immediately
-  to generic Airtime while the next subtype is pending.
-- Missing values clear the label and all pending confirmation immediately.
+Display stabilization uses source-sample timing, without another force filter:
 
-Only text is stabilized; no extra force-signal filter is applied. Broad transitions
-and generic fallback text can remain brief, intentionally preserving responsiveness.
-Confirmed text can differ from the instantaneous number within the documented
-hysteresis bands or during confirmation. All timing uses source samples.
+| Rule                        | Behavior                                                                                                                         |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Detailed-label confirmation | `max(1, ceil(0.12 * sample_rate))` consecutive samples; not a physical event minimum                                             |
+| Enter airtime family        | Generic Airtime immediately while subtype is pending; Heavy Gs cannot persist                                                    |
+| Leave airtime family        | Non-airtime candidate immediately, subject to Floater hysteresis below                                                           |
+| Confirmed Floater           | Retained within ±0.16 g; entry boundary remains ±0.1 g                                                                           |
+| Confirmed Strong/Ejector    | Retained below −0.4 g unless another strong subtype is confirmed; at −0.4 g or above, generic Airtime while a subtype is pending |
+| Missing value               | Unavailable immediately; pending confirmation cleared                                                                            |
+
+The first available non-airtime candidate appears immediately. Brief broad
+transitions and generic fallback labels preserve responsiveness. Confirmation and
+hysteresis can make the label differ from the instantaneous number.
 
 ## Context text colors
 
-Flow Ribbon, Corner Instruments and Capsule color the vertical hint using the
-stabilized context label, identically for both languages and aspects:
+Compact-theme hints use the stabilized category, identically in both languages
+and aspects. The explorer's dark palette matches export; light appearance uses
+darker equivalents for contrast.
 
 | Context         | Color      | Hex       |
 | --------------- | ---------- | --------- |
@@ -85,23 +80,19 @@ stabilized context label, identically for both languages and aspects:
 | Strong Airtime  | Orange     | `#ffa044` |
 | Ejector Airtime | Red        | `#ff6375` |
 
-Unavailable retains the theme's neutral hint color. Text identifies the context
-independently of color. This palette describes load categories, not safety limits.
-Graph traces and numeric readout colors are independent of this context palette.
+Unavailable uses the theme's neutral hint color. Labels identify categories without
+color. Colors describe load categories, not safety limits; graph traces and numeric
+readout colors are independent.
 
 ## Evidence and limits
 
-[Pendrill and Eager (2020)](https://doi.org/10.1088/1361-6552/aba732)
-support considering acceleration changes and jerk in coaster experience, but do
-not establish these classification thresholds. The
-[ejector glossary](https://park.fan/en/glossary/ejector-airtime) describes strong,
-sudden airtime qualitatively. Neither source validates this implementation.
-
-The backward difference of a smoothed, projected channel is an onset indicator,
-not a fully qualified biomechanical jerk measurement. Calibration, sensor motion,
-filter settings, rider posture and restraints limit sensation inference. Existing
-source-contract limits still apply. Thresholds need owner review against recordings.
-
-Automated behavior checks and reference images do not establish scientific
-qualification. The [image reference scripts](../images/README.md#image-content-and-reproduction)
-provide visual review artifacts; scientific qualification remains open.
+- [Pendrill and Eager (2020)](https://doi.org/10.1088/1361-6552/aba732): supports
+  considering acceleration changes/jerk in coaster experience, not these thresholds.
+- [Ejector glossary](https://park.fan/en/glossary/ejector-airtime): qualitative
+  strong, sudden airtime; neither source validates this implementation.
+- The backward difference is an onset indicator, not qualified biomechanical jerk.
+  Calibration, sensor motion, filtering, posture and restraints limit sensation
+  inference. [Source-contract limits](../architecture/08_concepts.md#scientific-provenance-and-gates)
+  still apply; owner review of thresholds against recordings remains open.
+- Behavior tests and [reference images](../images/README.md#image-content-and-reproduction)
+  support implementation/visual review, not scientific qualification.

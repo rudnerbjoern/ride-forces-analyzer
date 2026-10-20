@@ -1,43 +1,42 @@
 # Roadmap
 
-Milestone status refers to the implemented/remaining scope below, not every
-possible feature. [README](../README.md) explains current use;
-[architecture](architecture/README.md) owns subsystem design.
+Current milestone scope, not a development history or a list of all possible
+features. [README](../README.md) owns usage; [architecture](architecture/README.md)
+owns system design and scientific boundaries.
 
-| Milestone                  | Status                  | Implemented / remaining scope                                                                                                                                                         |
-| :------------------------- | :---------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| M1 — Foundation            | Complete                | Windows setup/start, strict settings, Qt bootstrap, tooling and CI; [bootstrap contract](architecture/06_runtime_view.md#qt-bootstrap)                                                |
-| M2 — Importer              | Complete                | Lossless offline import, metadata/weather, attributes, GPS and diagnostics; [import contract](architecture/08_concepts.md#source-ownership-and-validation)                            |
-| M3 — Analysis              | Complete, reduced scope | Immutable models, explicit device/frame APIs, source-app projection/mean and selected-range extrema; [analysis contract](architecture/08_concepts.md#scientific-provenance-and-gates) |
-| M4 — Explorer              | Partial                 | Raw/calibrated charts, markers, time zoom, selection, extrema, GPS, light/dark and English/German UI; persistent ride library and full acceptance remain                              |
-| M5 — Playback              | Planned                 | Deterministic clock, pause, seek, speed and interpolation                                                                                                                             |
-| M6 — Exports               | Partial                 | Five 4K layouts, portrait/landscape, transparent/opaque video, previews, SQLite presets/batches and optional NVIDIA encoding; CSV/JSON/PNG sequence and full acceptance remain        |
-| M7 — Video synchronization | Planned                 | Local video ingest, offsets, timeline preview and frame-accurate alignment                                                                                                            |
-| M8 — Windows release       | Partial                 | Portable EXE, standard/complete ZIPs and tag release pipeline; redistribution sources/notices, signing and clean-Windows verification remain                                          |
+| Milestone                  | Status                  | Implemented / remaining scope                                                                                                                                                           |
+| -------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M1 — Foundation            | Complete                | Windows setup/start, strict settings, Qt bootstrap, tooling/CI; [bootstrap](architecture/06_runtime_view.md#qt-bootstrap)                                                               |
+| M2 — Importer              | Complete                | Lossless offline import, metadata/weather, attributes, GPS/diagnostics; [import contract](architecture/08_concepts.md#source-ownership-and-validation)                                  |
+| M3 — Analysis              | Complete, reduced scope | Immutable models, device/frame APIs, source-app projection/mean, extrema, shared snapshots/service and provisional context/events; [analysis contracts](development/ANALYSIS_MODELS.md) |
+| M4 — Explorer              | Partial                 | Raw/calibrated charts, markers, time zoom, selection/extrema, GPS, light/dark and English/German UI; persistent library and full acceptance remain                                      |
+| M5 — Playback              | Planned                 | Deterministic clock, pause, seek, speed/interpolation                                                                                                                                   |
+| M6 — Exports               | Partial                 | Five 4K layouts, both aspects, transparent/opaque video, previews, SQLite presets/batches, optional NVIDIA encoding; CSV/JSON/PNG sequences and full acceptance remain                  |
+| M7 — Video synchronization | Planned                 | Local video ingest, offsets, timeline preview, frame-accurate alignment                                                                                                                 |
+| M8 — Windows release       | Partial                 | Portable EXE, standard/complete ZIPs, notice collection and tag pipeline; missing redistribution material, signing, installer/uninstaller and clean-Windows verification remain         |
 
 ## Product boundaries
 
-Calibrated display is available for any usable import; failures retain raw data.
-Source-bound Manta confirmation does not qualify arbitrary recordings or all
-smoothing windows. Kraken's start mismatch and Voltron's maximum-display difference
-remain in [source comparisons](validation/APP_REFERENCE.md).
-
-GPS supplies coarse spatial context only. Universal physical rider calibration,
-additional filter families, qualified event semantics, broad statistics and analysis
-benchmark research are deferred. Separately configured provisional airtime episodes
-follow the [event contract](implementation/AIRTIME_EVENTS.md); they do not establish
-physical qualification. They are not reduced-M3 blockers.
-Installed libraries do not establish implemented features.
-
-SQLite stores export configuration, not the planned ride library. Exports use
-manual Onride alignment; interactive playback and synchronization are separate.
+- [Display/scientific policy](architecture/08_concepts.md#scientific-provenance-and-gates):
+  usable imports support calibrated display with raw fallback. Manta's scoped
+  confirmation does not qualify arbitrary recordings/windows;
+  [source comparisons](validation/APP_REFERENCE.md) retain Kraken/Voltron discrepancies.
+- GPS remains coarse spatial context. Universal rider calibration, additional
+  filter families, qualified event semantics, broad statistics and analysis
+  benchmark research are deferred. [Provisional airtime episodes](implementation/AIRTIME_EVENTS.md)
+  do not establish physical qualification or block reduced M3.
+- Installed libraries do not establish features. SQLite export configuration is
+  separate from the planned ride library; manual Onride alignment is separate
+  from playback/synchronization.
+- [Release obligations](development/RELEASE.md#windows-packages) identify missing
+  redistribution sources/notices and the limits of workstation package checks.
 
 ## Next product work
 
 1. Finish M4's persistent library and remaining explorer acceptance.
-2. Complete M6 beyond the [video](implementation/VIDEO_EXPORT.md) and
-   [batch](implementation/EXPORT_BATCHES.md) contracts.
-3. Scope M5, M7 and M8 independently.
+2. Complete M6 beyond [video](implementation/VIDEO_EXPORT.md) and
+   [batch](implementation/EXPORT_BATCHES.md) export.
+3. Scope M5, M7 and remaining M8 work independently.
 
-Validation scope follows the owner's current instructions. A roadmap entry grants
-no implementation or Git-operation authorization.
+Validation follows owner instructions. Roadmap entries authorize neither
+implementation nor Git operations.

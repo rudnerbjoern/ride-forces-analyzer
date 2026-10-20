@@ -1,63 +1,55 @@
 # Contributing
 
-Small, focused contributions are welcome. Use an issue to discuss substantial
-features before implementation; report vulnerabilities through
-[SECURITY.md](SECURITY.md), not a public issue.
+Keep contributions small and focused. Discuss substantial features in an issue
+before implementation. Report vulnerabilities privately through [SECURITY.md](SECURITY.md).
 
 ## Set up and verify
 
-Use native Windows and the versions pinned in the repository. Install the
-matching Node version, then run PowerShell from the repository root:
+Use native Windows, pinned versions and locked dependencies. Install matching
+Node, then run PowerShell from the repository root:
 
 ```powershell
 .\setup.ps1 -Development
 .\start.ps1
 ```
 
-For video-export work, also run `.\setup.ps1 -VideoExport`.
-The [setup guide](docs/development/SETUP.md) owns tool versions, troubleshooting
-and the complete required check commands. Use locked dependencies; do not install
-ad hoc packages into the environment.
-
-Start with focused tests for changed behavior and add regression coverage for
-bug fixes. Before submitting, run all applicable checks from the setup guide;
-do not substitute non-Windows results for Windows/GUI validation. Run separate
-delivery-skill tests only when their relevant implementation or inputs change.
-For documentation-only changes, run `npm run test:docs`.
+- Video-export work: also run `.\setup.ps1 -VideoExport`.
+- [Windows setup](docs/development/SETUP.md) owns versions, troubleshooting and
+  required checks; do not install ad hoc environment packages.
+- Start with focused behavior tests; add regressions for bug fixes.
+- Before submission, run all applicable setup checks. Non-Windows results do not
+  verify Windows/GUI behavior.
+- Documentation-only changes: `npm run test:docs`.
+- Delivery-skill tests: only when relevant implementation/inputs change.
 
 ## Pull requests
 
-- Create a dedicated branch from current `main` and keep changes scoped.
-- Explain the problem, resulting behavior, actual check commands/results and
-  remaining limits in the PR template. Use a draft while work is incomplete.
-- Follow the [commit format](.github/commit-message-instructions.md). Write code,
-  documentation and commit messages in English; maintain English/German UI text
-  and layout fit when changing user-facing behavior.
-- Match the existing [architecture](docs/architecture/README.md); keep import,
-  analysis, storage and rendering logic outside Qt widgets.
-- Update current behavior/limits in existing documentation. Avoid development
-  diaries, unrelated refactors or weakening checks. Keep temporary artifacts in
-  `.tmp/`; never commit environments, exports, credentials or private logs.
-
-CI must pass before merge. Maintainers review and merge contributions.
-Coding agents must also follow [AGENTS.md](AGENTS.md), including the owner's
-separate authorization requirements for Git operations.
+- Branch from current `main`; keep scope focused, without unrelated refactoring.
+- Use the [PR template](.github/pull_request_template.md): problem, resulting
+  behavior, actual check commands/results and remaining limits. Keep incomplete work
+  in draft. CI must pass; maintainers review/merge.
+- Follow the [commit format](.github/commit-message-instructions.md). Code,
+  documentation and commits use English; user-facing changes maintain English/German
+  UI text and layout fit.
+- Follow [architecture constraints](docs/architecture/02_architecture_constraints.md):
+  import, analysis, storage and rendering logic stay outside Qt widgets.
+- Update existing behavior/limit documentation; no development diaries or weakened checks.
+- Temporary artifacts: `.tmp/`. Never commit environments, exports, credentials or private logs.
+- Coding agents also follow [AGENTS.md](AGENTS.md), including separate owner
+  authorization for Git operations.
 
 ## Recordings and licenses
 
-Every original `.forces` fixture is read-only. Preserve its exact bytes, unknown
-fields, GPS and metadata; do not normalize, redact or replace an existing original.
-Check the [recording catalog](docs/development/RECORDINGS.md) and integrity tests.
-
-Before submitting a new real recording, obtain explicit maintainer approval and
-permission from its rights holder to publish the complete contents, including
-GPS, timestamps and metadata. Agree its license and attribution first; the current
-grant covers only the five listed recordings. Never attach a private recording to
-a public issue or PR to ask whether publication is acceptable. Prefer minimal
-synthetic reproductions when real data is unnecessary.
-
-Contributed code uses GPL-3.0-or-later. Contributions to the licensed documentation
-images and recording adaptations must respect their CC BY-SA 4.0 notices.
-Do not introduce material you lack rights to contribute; identify third-party
-code/assets and retain their notices. See [project licenses](README.md#license)
-and [third-party boundaries](THIRD_PARTY_NOTICES.md).
+- Original `.forces` fixtures are read-only. Preserve bytes, unknown fields, GPS
+  and metadata; never normalize, redact or replace originals.
+  [Recording catalog](docs/development/RECORDINGS.md) and integrity tests define scope.
+- New real recordings require explicit maintainer approval and rights-holder
+  permission to publish complete contents, including GPS, timestamps and metadata. Agree license and
+  attribution before submission; existing permission covers only the five listed originals.
+- Never publish private recordings in issues/PRs to request approval.
+  Prefer minimal synthetic reproductions when real data is unnecessary.
+- Contributed code uses GPL-3.0-or-later; licensed documentation images and recording
+  adaptations retain applicable CC BY-SA 4.0 duties.
+- Contribute only material you have rights to provide; identify third-party
+  code/assets and retain notices. See [project licenses](README.md#license)
+  and [third-party boundaries](THIRD_PARTY_NOTICES.md).
