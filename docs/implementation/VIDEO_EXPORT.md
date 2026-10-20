@@ -106,6 +106,14 @@ of the exported template over Onride footage.
   for GoPro footage recorded at that rate. Source sample time remains
   index/rate; fractional output positions interpolate adjacent values. Inclusive
   source ranges include the final sample interval; duration rounds up to a frame.
+- Export timelines bind the complete immutable analysis snapshot selected by the
+  assistant. Force/orientation channels share prepared buffers; vertical context
+  reads the prepared full-history categories, without per-layout reclassification.
+  Equal analysis configuration reuses the exact snapshot; changed configuration
+  replaces only affected stages. Orientation survives force-smoothing changes.
+  Layout, aspect, language, video rate and seeking do not recalculate analysis.
+  Running exports and preview workers retain their bound snapshot independently
+  of later workspace changes. The assistant does not follow workspace updates.
 - Export calibrated channels at the current centered-mean setting. Force bounds
   use selected extrema plus 5% outward padding and include -1/0/+1 g labels.
   Every layout defaults to vertical positive-down (seat pressure) and negative-up

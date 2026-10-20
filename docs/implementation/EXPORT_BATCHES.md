@@ -23,6 +23,11 @@ scope belongs in the [roadmap](../ROADMAP.md).
   production previews without modifying the explorer's recording/settings.
   Older records without an aspect field retain landscape; a single batch can
   mix portrait and landscape jobs. The job table identifies each job's aspect.
+  Analysis configuration includes the versioned projection, smoothing, independent
+  orientation, context, event settings, input dependencies and source-app policy.
+  Older records without an analysis configuration use the version-1 source-app
+  policy and stored smoothing window. A supplied configuration must agree with
+  that window. SQLite stores only this recipe, never source bytes or stage buffers.
   Older records without an overlay language retain English. Replaying a saved
   batch uses its stored video language independently of the current UI language.
 - Jobs retain an absolute source path, original SHA-256, title, concrete inclusive
@@ -35,8 +40,10 @@ scope belongs in the [roadmap](../ROADMAP.md).
 - Batches are accessible without an open recording. Run selected or Run ALL
   snapshots the requested definitions and executes them sequentially in a worker.
   Missing/invalid/changed sources fail their job and leave other jobs runnable.
-  Every job imports again and checks the original digest, restores smoothing, then
-  uses the existing production renderer/encoder and exclusive publication.
+  Every job imports again and checks the original digest, restores its complete
+  analysis recipe while reusing compatible prepared stages, then binds that
+  snapshot to the production renderer/encoder and exclusive publication. Analysis
+  uses the complete recording history before the stored interval is applied.
 - Each run creates a unique output directory, numbered batch folders and safe,
   numbered recording/preset filenames. Never overwrite previous outputs. Persist
   per-job completed/failed/cancelled/skipped states in run-report.json.

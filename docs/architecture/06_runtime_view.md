@@ -121,7 +121,11 @@ prepared labels. Cursor/selection/viewport and appearance remain presentation st
 The old complete view remains usable during work. New intents invalidate already
 queued old UI callbacks before their service request begins. Close removes
 subscriptions and invalidates load/binding identities; old workers cannot replace
-a newly opened source or its status. Export snapshots remain independent.
+a newly opened source or its status. Export timelines and all five preview profiles retain the selected shared
+analysis snapshot. Changing export configuration reuses compatible stages; frame
+generation reads prepared orientation/context. Batch workers verify source bytes
+against saved hashes, apply the persisted analysis recipe and then select the
+export interval. Running exports never adopt later workspace updates.
 
 ## Product boundaries
 

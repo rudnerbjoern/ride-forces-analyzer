@@ -411,6 +411,7 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     assert saved.jobs[0].preset.settings.layout == "orbit"
     assert saved.jobs[0].preset.settings.fps == "60000/1001"
     assert saved.jobs[0].preset.smoothing_window == 3
+    assert saved.jobs[0].preset.analysis_configuration is not None
     assert saved.jobs[1].preset.settings.layout == "ribbon"
     dialog.fps.setCurrentText("25")
     dialog.update_preset.click()
@@ -518,4 +519,36 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     assert store.batch("Day1").jobs == ()
     dialog.delete.click()
     assert [batch.name for batch in store.batches()] == ["Day2"]
+    dialog.close()
+
+
+def test_loading_analysis_recipe_keeps_workspace_snapshot_and_independent_stages(
+    explorer_window: ExplorerWindow,
+) -> None:
+    from dataclasses import replace
+    from ride_forces_analyzer.analysis.recording import AnalysisStage
+    from ride_forces_analyzer.storage.export_models import make_preset
+    from ride_forces_analyzer.storage.exports import ExportStore
+    from ride_forces_analyzer.ui.export import default_database_path
+    from ride_forces_analyzer.rendering.model import ExportSettings
+
+    window = explorer_window
+    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
+    wait_until(window.open_action.isEnabled)
+    assert window.data is not None and window.data.analysis is not None
+    snapshot = window.data.analysis
+    configuration = replace(snapshot.configuration, context_input=AnalysisStage.PROJECTION)
+    store = ExportStore(default_database_path())
+    store.save_preset(make_preset("Source context", ExportSettings(), 11, "markers", configuration))
+    window.export_button.click()
+    dialog = window.export_window
+    assert isinstance(dialog, ExportDialog) and dialog.data.analysis is snapshot
+    dialog.preset_selector.setCurrentText("Source context")
+    dialog.load_preset.click()
+    changed = dialog.data.analysis
+    assert changed is not None and changed.configuration == configuration
+    assert changed.forces is snapshot.forces and changed.orientation is snapshot.orientation
+    assert changed.context is not snapshot.context
+    assert window.data.analysis is snapshot
+    preview_ready(dialog)
     dialog.close()
