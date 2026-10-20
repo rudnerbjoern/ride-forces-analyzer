@@ -24,6 +24,12 @@ historical acceptance reports are not maintained.
   [metadata/GPS](development/OPTIONAL_PARSING.md).
 - [Analysis APIs](development/ANALYSIS_MODELS.md), [scientific source comparisons](validation/APP_REFERENCE.md).
 
+## Proposed requirements
+
+- [Unified recording analysis](requirements/UNIFIED_ANALYSIS.md): parallel data model
+  with initial containers/stubs; processing, subscriptions, cache and integration
+  remain planned.
+
 ## Development and publication
 
 - [Windows setup and checks](development/SETUP.md), [contributions](../CONTRIBUTING.md),
