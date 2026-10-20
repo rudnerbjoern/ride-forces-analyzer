@@ -2,149 +2,126 @@
 
 <!-- cspell:words shiboken ast flexcache flexparser librt iniconfig pluggy dateutil tzdata libx264 libx265 nonfree Aileron GyanD WTFPL CMU QtCharts buildconf Segoe -->
 
-Project copyright © 2026 Björn Rudner. The program code is
-[GPL-3.0-or-later](LICENSE). External components retain their
-own licenses. This inventory identifies notice/source duties; it is not a complete
-notice bundle or clearance for a future installer. Versions/hashes remain in
-[uv.lock](uv.lock), [package-lock.json](package-lock.json) and [ffmpeg.json](ffmpeg.json).
+Copyright © 2026 Björn Rudner. Program code: [GPL-3.0-or-later](LICENSE).
+External components retain their licenses. This inventory records notice/source
+duties, not a complete notice bundle or installer clearance.
+Versions/hashes: [uv.lock](uv.lock), [package-lock.json](package-lock.json),
+[ffmpeg.json](ffmpeg.json). Architecture owns
+[deployment](docs/architecture/07_deployment_view.md);
+[release documentation](docs/development/RELEASE.md#windows-packages) owns package checks.
 
 ## Python application components
 
-The inspected Windows environment contains 36 third-party distributions plus this
-project. Top-level declarations do not replace bundled-component notices.
+Top-level metadata does not replace bundled-component notices.
 
-| Component                                                   | Observed license                                                           | Handling when redistributed                                                                                 |
-| :---------------------------------------------------------- | :------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------- |
-| PySide6, Essentials, Addons, Pdf, WebEngine; shiboken6      | Metadata: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only; Qt modules differ | Preserve binding, Qt and third-party notices; satisfy the actual selected module licenses                   |
-| Qt Core, Gui, Widgets                                       | Qt LGPLv3/GPLv3 options                                                    | Retain terms, source access and replacement/reverse-engineering rights when using LGPL                      |
-| **Qt Charts**                                               | **GPLv3 or commercial**, not general LGPL                                  | Application imports QtCharts; the GPL route requires corresponding source for a distributed combined binary |
-| pydantic, pydantic_core, annotated-types, typing-inspection | MIT                                                                        | Retain copyright and permission notices                                                                     |
-| typing_extensions                                           | PSF-2.0                                                                    | Retain license and notices                                                                                  |
-| NumPy                                                       | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 in metadata             | Retain the complete wheel license collection and native-component notices                                   |
-| SciPy, Pandas, Pint, flexcache, flexparser                  | BSD-3-Clause in inspected texts                                            | Retain copyright, conditions and disclaimers; no endorsement using contributor names                        |
-| pyqtgraph, six                                              | MIT                                                                        | Retain supplied notices, including bundled material                                                         |
-| Pillow                                                      | MIT-CMU plus bundled component licenses                                    | Retain the full installed LICENSE, not only the top-level grant                                             |
-| python-dateutil                                             | Apache-2.0 / BSD notices                                                   | Retain the supplied combined license text and attribution                                                   |
-| tzdata                                                      | Apache-2.0; bundled time-zone data has a separate public-domain notice     | Retain both installed notice files                                                                          |
+| Component                                                   | Observed license                                                             | Redistribution duty                                                                                |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| PySide6, Essentials, Addons, Pdf, WebEngine; shiboken6      | LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only in metadata; Qt modules differ | Retain binding/Qt/third-party notices; satisfy selected module terms                               |
+| Qt Core, Gui, Widgets                                       | LGPLv3/GPLv3 options                                                         | Retain terms/source access and LGPL replacement/reverse-engineering rights where applicable        |
+| **Qt Charts**                                               | **GPLv3 or commercial**, not general LGPL                                    | Imported by the application; GPL distribution of the combined binary requires corresponding source |
+| pydantic, pydantic_core, annotated-types, typing-inspection | MIT                                                                          | Retain copyright/permission notices                                                                |
+| typing_extensions                                           | PSF-2.0                                                                      | Retain license/notices                                                                             |
+| NumPy                                                       | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 in metadata               | Retain complete wheel/native-component notices                                                     |
+| SciPy, Pandas, Pint, flexcache, flexparser                  | BSD-3-Clause in inspected texts                                              | Retain copyright/conditions/disclaimers; no contributor-name endorsement                           |
+| pyqtgraph, six                                              | MIT                                                                          | Retain supplied/bundled notices                                                                    |
+| Pillow                                                      | MIT-CMU plus bundled licenses                                                | Retain full installed LICENSE                                                                      |
+| python-dateutil                                             | Apache-2.0 / BSD notices                                                     | Retain combined license/attribution                                                                |
+| tzdata                                                      | Apache-2.0 plus public-domain time-zone data notice                          | Retain both notice files                                                                           |
 
-[Qt licensing](https://doc.qt.io/qt-6/licensing.html) and the
-[Qt Charts license](https://doc.qt.io/qt-6/qtcharts-index.html#licenses) distinguish
-module terms. The project's or-later grant does not relicense GPL-3.0-only
-dependencies or guarantee that the combined application can select a future GPL
-version while retaining the same dependencies.
-
-Installed PySide6 metadata does not supply the full Qt notice collection.
-[QT-NOTICES.txt](packaging/QT-NOTICES.txt) supplies original license and attribution
-texts from the official Qt/PySide 6.12.0 source archives for the relevant modules.
-The existing packager includes that text in the EXE and both ZIPs. The source
-archives are pinned in `packaging/redistribution.json` for source delivery.
-Qt PDF/Chromium is not covered by those archives: PyInstaller collects a PDF
-plugin even without a direct application import. Its sources/notices remain open.
-
-NumPy has 20 license-related files. SciPy's main notice covers OpenBLAS, LAPACK
-and GCC runtime components, including
-`GPL-3.0-or-later WITH GCC-exception-3.1`; retain the exception. Do not describe all
-numerical binaries as merely BSD. Pillow's installed notice includes image,
-compression and font libraries such as FreeType; retain the complete notice and
-required credits under the licensing route used by the actual binary.
+- [Qt licensing](https://doc.qt.io/qt-6/licensing.html) and
+  [Qt Charts terms](https://doc.qt.io/qt-6/qtcharts-index.html#licenses) distinguish
+  modules. The project's or-later grant neither relicenses GPL-3.0-only dependencies
+  nor guarantees future-GPL compatibility of the combined application.
+- [QT-NOTICES.txt](packaging/QT-NOTICES.txt) contains original Qt/PySide 6.12.0
+  source-archive license/attribution texts and is included in EXE/both ZIPs.
+  Installed binding metadata alone is insufficient. Source archives are pinned in
+  [redistribution.json](packaging/redistribution.json).
+- **Open:** those archives exclude Qt PDF/Chromium. PyInstaller collects a PDF
+  plugin without a direct application import; matching sources/notices remain missing.
+- Numerical wheels include native components: SciPy notices cover OpenBLAS, LAPACK
+  and GCC runtime, including `GPL-3.0-or-later WITH GCC-exception-3.1`.
+  Preserve that exception and NumPy's complete license collection; “BSD” alone is insufficient.
+- Pillow includes image/compression/font components such as FreeType; retain full
+  notices/credits for the actual binary and chosen licensing route.
 
 ## FFmpeg build
 
-Setup downloads GyanD's **9.0.2 full static Windows build** from the
-[pinned release](https://github.com/GyanD/codexffmpeg/releases/tag/9.0.2).
-The local archive matches SHA-256
-`f0e46253c70dfe902bac915dfb4224f0cf1b7c6eeab9da2ccc9a5581f9a71b13`.
-The installed ffmpeg.exe matches the extracted encoder byte-for-byte by SHA-256.
-The encoder reports **GPL version 3 or later** through `-L`.
-`-buildconf` includes `--enable-gpl`, `--enable-version3`, `--enable-static`,
-`--enable-libx264` and `--enable-libx265`, without `--enable-nonfree`.
-This is not an LGPL-only build.
+| Item               | Contract/evidence                                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Publisher          | GyanD [9.0.2 full static Windows build](https://github.com/GyanD/codexffmpeg/releases/tag/9.0.2); archive SHA-256 pinned/checked against `ffmpeg.json` |
+| License            | Encoder `-L`: GPL version 3 or later; not LGPL-only                                                                                                    |
+| Build flags        | `--enable-gpl`, `--enable-version3`, `--enable-static`, `--enable-libx264`, `--enable-libx265`; no `--enable-nonfree`                                  |
+| Publisher material | LICENSE and README.txt; README references source commit `946fcce07b`                                                                                   |
+| Invocation         | Separate executable, no FFmpeg DLL linking in application code; binary/archive not tracked                                                             |
+| Setup              | Publisher download or user-selected encoder; setup retains LICENSE/README beside `bin/`                                                                |
+| Complete ZIP       | Exact pinned encoder plus publisher LICENSE/README and executable license/build output                                                                 |
 
-The archive contains LICENSE and README.txt; its README names source commit
-`946fcce07b`. This upstream reference is not a verified complete corresponding-source
-bundle for all statically linked libraries. The local extracted encoder directory
-currently lacks the archive's LICENSE/README; this audit does not repair downloads.
-
-The program invokes a separate executable; application code links no FFmpeg DLL.
-Neither encoder nor archive is tracked. Setup downloads from the publisher, or
-users select their own encoder. An installer that bundles FFmpeg must retain its
-license/readme, inventory every linked library and provide corresponding source,
-build information and notices for the exact binary. A generic source URL alone
-does not establish compliance. [FFmpeg legal guidance](https://www.ffmpeg.org/legal.html)
-explains build-dependent licensing. Codec patent permissions are separate;
-this inventory does not establish patent clearance.
+Redistributing FFmpeg requires exact corresponding sources/build information and
+notices for linked libraries. The README commit/generic upstream URL is not a
+verified complete static-library source bundle; that gap remains open.
+[FFmpeg legal guidance](https://ffmpeg.org/legal.html) describes build-dependent
+licensing. Codec patent permissions are separate and not established here.
 
 ## Development and build tools
 
-These are not application imports. Preserve their terms when redistributing a
-development environment rather than only project source.
+Development tools are not application imports; their notices apply when shipping
+a development environment. PyInstaller's bootloader exception is relevant to binaries.
 
-PyInstaller 6.22.3 is an optional locked build-group tool (GPLv2-or-later with its
-special distribution/bootloader exception). Its full COPYING text is collected
-in Windows candidates. It does not change the project's GPL-3.0-or-later grant.
+| Tool                                                                                                              | Observed license / duty                                                                                                                                   |
+| ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PyInstaller                                                                                                       | Locked optional build group; GPLv2-or-later with distribution/bootloader exception; full COPYING collected in Windows packages; project license unchanged |
+| ast_serialize, librt, mypy, mypy_extensions, iniconfig, platformdirs, pluggy, pytest, pytest-cov, pytest-qt, ruff | MIT; retain bundled notices, especially mypy                                                                                                              |
+| coverage.py                                                                                                       | Apache-2.0; retain license/NOTICE                                                                                                                         |
+| colorama                                                                                                          | BSD-3-Clause                                                                                                                                              |
+| Pygments                                                                                                          | BSD-2-Clause                                                                                                                                              |
+| packaging                                                                                                         | Apache-2.0 OR BSD-2-Clause                                                                                                                                |
+| pathspec                                                                                                          | MPL-2.0; preserve notices/source availability for covered files                                                                                           |
 
-| Installed Python tools                                                                                | Observed license                                                    |
-| :---------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------ |
-| ast_serialize, librt, mypy, mypy_extensions, iniconfig, platformdirs, pluggy, pytest, pytest-qt, ruff | MIT; retain additional bundled notices, especially mypy             |
-| colorama                                                                                              | BSD-3-Clause                                                        |
-| Pygments                                                                                              | BSD-2-Clause                                                        |
-| packaging                                                                                             | Apache-2.0 OR BSD-2-Clause                                          |
-| pathspec                                                                                              | MPL-2.0; preserve notices and source availability for covered files |
+Node lock entries declare MIT, ISC, BSD-2-Clause, BSD-3-Clause, WTFPL,
+CC BY-SA 4.0, PSF-2.0 or Python-2.0. Entries are not unique upstream projects.
 
-All 196 non-root Node lock entries declare a license: 183 MIT, six ISC, two
-BSD-2-Clause, one BSD-3-Clause, one WTFPL, one CC BY-SA 4.0, one PSF-2.0 and one
-Python-2.0. These are lock entries, not unique upstream projects.
-`@cspell/dict-en-common-misspellings` is CC BY-SA 4.0: retain attribution/license,
-mark changes and respect share-alike for adaptations. `@cspell/dict-django` declares
-WTFPL. The two argparse entries declare PSF-2.0 and Python-2.0. Tooling/dictionary
-licenses do not relicense program code or user exports. Preserve actual package
-texts/attribution when redistributing tools; lock labels are not notice texts.
-
-Hatchling is an isolated build backend, outside the 36 installed distributions.
-uv, Node, managed CPython, Git and hosted Actions are external tools/services;
-their complete assembled/transitive notices were not audited here. Shipping a
-Python runtime requires its PSF and bundled-library notices; shipping other tools
-requires their actual distribution notices. No such binaries are tracked or
-included by the current application wheel.
+- `@cspell/dict-en-common-misspellings`: CC BY-SA 4.0; attribution/license, change
+  indications and ShareAlike for adaptations.
+- `@cspell/dict-django`: WTFPL. The two argparse entries declare PSF-2.0 and Python-2.0.
+- Preserve actual package notices/attribution, not merely lock labels.
+  Tool/dictionary licenses do not relicense program code or user exports.
+- Hatchling runs as an isolated build backend. Complete assembled/transitive notices
+  for uv, Node, managed CPython, Git and hosted Actions are not audited here.
+  Redistributed Python needs PSF/bundled-library notices; other tools need their
+  distribution notices. These binaries are not tracked or included in the application wheel.
 
 ## Fonts, graphics and recordings
 
-| Material                                                      | Verified use and remaining boundary                                                                                                                                                                                                |
-| :------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Windows Segoe UI, including bold                              | Loaded from the user's Windows Fonts directory; no tracked font files or font embedding in video. Raster output is permitted; copying fonts into an installer is not thereby authorized                                            |
-| Pillow fallback                                               | Installed ImageFont embeds an Aileron Regular subset; the font publisher declares No Rights Reserved and permits redistribution/modification. Preserve provenance and verify exact bundled font/native-library notices for release |
-| App icon                                                      | Drawn by project code in `ui/chrome.py`; no external icon asset found                                                                                                                                                              |
-| Eleven Manta theme PNGs                                       | Generated by the fixed-sample reference script; licensed under CC BY-SA 4.0, with attribution and ShareAlike. See docs/images/README.md                                                                                            |
-| workspace-dark.png, workspace-light.png, export-preview.png   | Project application screenshots, licensed under CC BY-SA 4.0. See docs/images/README.md for attribution, scope and third-party rights                                                                                              |
-| Five .forces recordings                                       | CC BY-SA 4.0 covers all five originals including GPS/metadata; retain attribution, license and change notices, and ShareAlike for shared adaptations. See the recording catalog                                                    |
-| Ride Forces / Apple Maps screenshots supplied in conversation | Not tracked as repository image files; supplying them does not establish permission to redistribute third-party app/map imagery                                                                                                    |
+| Material                                                    | Use / license boundary                                                                                                                                                                                        |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Windows Segoe UI, including bold                            | Loaded from Windows Fonts; no tracked fonts or font embedding in video. Raster output permission does not authorize copying fonts into an installer                                                           |
+| Pillow fallback                                             | ImageFont embeds an Aileron Regular subset; publisher declares No Rights Reserved, permitting modification/redistribution. Preserve provenance and verify exact bundled font/native-library notices           |
+| App icon                                                    | Drawn by project code in `ui/chrome.py`; no external icon asset                                                                                                                                               |
+| Eleven Manta theme PNGs                                     | Generated references; CC BY-SA 4.0 with attribution/ShareAlike under the [image notice](docs/images/README.md)                                                                                                |
+| workspace-dark.png, workspace-light.png, export-preview.png | CC BY-SA 4.0 under the same image notice, including scope/third-party limits                                                                                                                                  |
+| Three README detail PNGs                                    | Outside that 14-image grant; see [detail captures](docs/images/README.md#readme-detail-captures)                                                                                                              |
+| Five .forces recordings                                     | CC BY-SA 4.0 includes GPS/metadata; retain attribution/license/change notices and ShareAlike for adaptations; [catalog](docs/development/RECORDINGS.md) and [recording notice](tests/fixtures/real/README.md) |
+| External Ride Forces / Apple Maps screenshots               | Not tracked; supplying screenshots does not authorize redistribution of third-party app/map imagery                                                                                                           |
 
-The tracked asset inventory has 14 PNGs, no font files and no external SVG/JPEG/icon
-files. GPS draws positions without map tiles; no Apple Maps background is shipped.
-Product/park names do not imply endorsement or grant trademark rights.
-The [Microsoft font FAQ](https://learn.microsoft.com/en-us/typography/fonts/font-faq)
-distinguishes raster image/video output from font redistribution.
-The [Aileron publisher](https://dotcolon.net/fonts/aileron/) provides the font's
-separate reuse statement; it is not a Windows Segoe UI redistribution permission.
+- No tracked font files or external SVG/JPEG/icon assets. GPS uses no map tiles;
+  no Apple Maps background is shipped. Product/park names grant no endorsement or trademarks.
+- [Microsoft font FAQ](https://learn.microsoft.com/en-us/typography/fonts/font-faq):
+  raster images/video and font redistribution are distinct.
+- [Aileron publisher](https://dotcolon.net/fonts/aileron/): separate reuse statement,
+  not permission to redistribute Segoe UI.
 
 ## Evidence and release limits
 
-The inventory covers installed METADATA/RECORD/license texts, Node lock declarations,
-tracked assets, the pinned encoder archive and actual encoder license/build output.
-Version 0.3.1 retains the locked runtime versions. The
-[Windows package guide](docs/development/RELEASE.md#windows-packages) defines
-package checks and their verification limits.
-The five supplied recordings and 14 documentation PNGs
-are CC BY-SA 4.0 under their separate attribution/scope notices. This is
-not installer acceptance, a security scan or a complete embedded-library audit.
-
-The Windows builder collects installed runtime notice files, the Python
-license and the PyInstaller bootloader license/exception into each package.
-The complete package additionally retains the exact pinned FFmpeg publisher's
-LICENSE/README and executable build information, plus the static Qt notice text.
-Qt PDF/Chromium and FFmpeg's complete static-library corresponding sources remain
-open; generic upstream links do not supply the missing corresponding sources.
-`packaging/redistribution.json` records these gaps and is shipped with the binaries;
-the package builder reports them without blocking publication. This does not
-resolve or waive the external license/source obligations;
-see [package boundaries](docs/development/RELEASE.md#windows-packages).
+- Evidence: installed METADATA/RECORD/license texts, Node lock declarations, tracked
+  assets, pinned encoder archive and encoder license/build output. This is not
+  installer acceptance, security scanning or a complete embedded-library audit.
+- Windows packages collect runtime notices, Python license, PyInstaller
+  bootloader license/exception, static Qt notices and the redistribution catalog.
+  The complete ZIP additionally contains FFmpeg publisher/license/build material.
+- **Open:** Qt PDF/Chromium sources/notices and complete FFmpeg static-library
+  corresponding sources/build instructions. [redistribution.json](packaging/redistribution.json)
+  records these gaps; the builder reports them without blocking publication.
+  This does not resolve or waive the obligations.
+- Dependency source archives are verified as release-build inputs, not attached
+  as a separate release download. [Package boundaries](docs/development/RELEASE.md#windows-packages)
+  define checks/remaining limits; this inventory does not establish full release acceptance.

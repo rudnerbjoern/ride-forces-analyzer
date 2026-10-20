@@ -1,59 +1,55 @@
 # Saved export presets and batches
 
-<!-- cspell:words LOCALAPPDATA -->
-
 ## Scope
 
-Persist named export presets and reusable batch definitions in local SQLite.
-One recording can have multiple presets; a batch can include multiple recordings,
-and selected or all saved batches run as one sequential queue. Each recording /
-preset combination produces its own video, not a concatenation of different rides.
-Saved export configuration does not manage a ride/media library; planned product
-scope belongs in the [roadmap](../ROADMAP.md).
+Local SQLite presets and reusable batches; multiple presets per recording and
+multiple recordings per batch. Selected/all batches form one sequential queue.
+Each recording × preset produces a separate video, never concatenated rides.
+The ride/media library remains outside this scope; see the [roadmap](../ROADMAP.md).
+
+Architecture owns [storage/component boundaries](../architecture/05_building_block_view.md#video-export-boundary),
+[database location](../architecture/07_deployment_view.md#local-export-configuration)
+and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
 
 ## Contracts
 
-- Saved configuration is local, with transactional preset/batch writes. The
-  [deployment view](../architecture/07_deployment_view.md#local-export-configuration)
-  owns the database path and storage boundary. Unsupported or damaged databases
-  are reported, never silently replaced. Preset and batch names are unique.
-- Presets retain layout, landscape/portrait aspect, overlay language, output mode, fps, time context, axis inversion, GPU
-  preference, odd 1–51 sample smoothing and range policy. Save as creates a new
-  preset; Update selected replaces only that named preset. Loading refreshes
-  production previews without modifying the explorer's recording/settings.
-  A single batch can mix portrait and landscape jobs; the job table identifies
-  each job's aspect.
-  Analysis configuration includes the versioned projection, smoothing, independent
-  orientation, context, event settings, input dependencies and source-app policy.
-  Every preset/job requires an explicit complete analysis configuration, matching
-  its stored smoothing window. Stored settings include every video field, including
-  aspect and language. Missing fields or unsupported records are rejected, without
-  fallback recipes, format migration or destructive database cleanup. Defaults for
-  creating new `ExportSettings` do not fill incomplete stored records.
-  SQLite stores only the recipe, never source bytes or stage buffers. Replaying a
-  saved batch uses its stored video language independently of the current UI language.
-- Jobs retain an absolute source path, original SHA-256, title, concrete inclusive
-  source range and a complete preset snapshot. Editing/deleting a library preset
-  does not change saved jobs. Original recordings remain read-only and external.
-- Add this export to batch in the assistant captures the current recording and
-  settings, including a custom selection. The batch editor adds every selected
-  recording × every selected preset; its marker/entire range choice is explicit
-  and resolved separately for each recording. Row removal is saved immediately.
-- Batches are accessible without an open recording. Run selected or Run ALL
-  snapshots the requested definitions and executes them sequentially in a worker.
-  Missing/invalid/changed sources fail their job and leave other jobs runnable.
-  Every job imports directly through the lossless import service and checks the
-  original digest before analysis. The analysis service prepares the saved complete
-  recipe once; the resulting snapshot binds the production renderer/encoder and
-  exclusive publication. Batch preparation/execution uses source and analysis
-  contracts independently of explorer presentation. Analysis
-  uses the complete recording history before the stored interval is applied.
+| Saved object    | Required contents                                                                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Preset          | Layout, landscape/portrait aspect, overlay language, output mode, fps, time context, axis inversion, GPU preference, odd 1–51 sample smoothing and range policy |
+| Analysis recipe | Explicit versioned projection, smoothing, independent orientation, context/events, input dependencies and source-app policy; smoothing matches preset window    |
+| Job             | Absolute source path, original SHA-256, title, concrete inclusive source range and complete preset snapshot                                                     |
+| Storage         | Recipes/definitions only; no source bytes or stage buffers; originals remain external/read-only                                                                 |
+
+- Writes are transactional; preset/batch names are unique. Damaged/unsupported
+  databases are reported, never silently replaced.
+- Every preset/job requires complete analysis/video settings, including aspect and
+  language. Missing/unsupported fields are rejected without fallback recipes,
+  format migration or destructive cleanup. New-object `ExportSettings` defaults
+  do not fill incomplete stored records.
+- Save as creates a preset; Update selected replaces only that named preset.
+  Loading refreshes production previews without changing explorer recording/settings.
+- Editing/deleting a preset does not change saved job snapshots.
+  Jobs replay their saved overlay language independently of UI language.
+- Mixed portrait/landscape jobs are supported; the job table identifies aspect.
+
+| Queue interaction        | Contract                                                                                                         |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Add this export to batch | Capture assistant recording/settings, including custom selection                                                 |
+| Batch-editor addition    | Every selected recording × every selected preset; explicit marker/entire range resolved separately per recording |
+| Remove rows              | Save immediately                                                                                                 |
+| Open/run                 | Available without an open recording; Run selected / Run ALL snapshot definitions for sequential worker execution |
+
+- Each job losslessly imports its source, checks the original digest **before**
+  analysis, then prepares its complete saved recipe once. Analyze full recording
+  history before applying the stored interval; bind that snapshot to production
+  rendering/encoding and exclusive publication, independently of explorer presentation.
+- Missing, invalid or changed sources fail their job; remaining jobs can run.
 - Each run creates a unique output directory, numbered batch folders and safe,
-  numbered recording/preset filenames. Never overwrite previous outputs. Persist
-  per-job completed/failed/cancelled/skipped states in run-report.json.
-- Cancellation stops the current encode and remaining queue, removes incomplete
-  output and preserves completed videos. Parent close/Escape cannot abandon an
-  active export. Progress distinguishes the current job and final result counts.
-- Saved definitions survive restart; they do not embed sensor bytes or discover
-  relocated files automatically. Moving/changing a source requires a new job.
-  Automatic resume and a persistent execution-history UI are outside this scope.
+  numbered recording/preset filenames. Never overwrite earlier outputs.
+- Incrementally persist completed/failed/cancelled/skipped job states in `run-report.json`.
+  Progress distinguishes current job and final result counts.
+- Cancellation stops the active encode and skips remaining jobs; remove incomplete
+  output, preserve completed videos. Parent close/Escape cannot abandon an active export.
+- Definitions survive restart, without embedded sensor data or automatic relocated-file
+  discovery. Moving/changing a source requires a new job. Automatic resume and a
+  persistent execution-history UI remain outside scope.

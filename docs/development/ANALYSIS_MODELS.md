@@ -1,52 +1,46 @@
 # Analysis contracts and device primitives
 
-The [analysis package](../../src/ride_forces_analyzer/analysis/) exposes executable
-model contracts. `analysis.device` provides opt-in qualified DEVICE vectors/norms
-and Pint conversion; explicit provisional frames and source-app calibrated
-projection are implemented as separate contracts below.
-Use the already locked NumPy from the `analysis` extra. The regular bootstrap
-and M2 importer do not import this package. The
-[analysis library decision](../architecture/09_architecture_decisions.md#analysis-models-and-libraries)
-records library roles, adoption gates and immutable API boundaries;
-[physical qualification boundary](../architecture/09_architecture_decisions.md#physical-qualification) remains
-the proposed scientific qualification policy.
+- Package: [`ride_forces_analyzer.analysis`](../../src/ride_forces_analyzer/analysis/).
+- Dependencies: locked `analysis` extra; NumPy for models/preparation, Pint for
+  device-unit conversion, SciPy for passive frame rotation. Importing models does
+  not import Pint, SciPy or GeographicLib. Importers do not load analysis; the
+  explorer initializes `AnalysisController` when NumPy is available.
+- Separate contracts: source-app projection, qualified DEVICE quantities and
+  explicitly provisional rider-frame calculations.
+- Decisions: [libraries and API boundaries](../architecture/09_architecture_decisions.md#analysis-models-and-libraries),
+  [proposed physical qualification policy](../architecture/09_architecture_decisions.md#physical-qualification).
+- Planned features and milestone status: [roadmap](../ROADMAP.md).
 
 ## Public model shape
 
-| Model / label      | Contract                                                                                                                  |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| AnalysisProfile    | Profile name/schema, frozen scalar configuration, policy/assumption references, explicit provisional permission           |
-| AnalysisResult     | Full M2 ImportSuccess, profile, provenance, tuple channels, ordered diagnostics, result schema                            |
-| AnalysisChannel    | Identifier, quantity/unit/frame, capability, source sequence/indices, time basis, processing, samples or exclusion reason |
-| SampleValues       | Owned float64 byte snapshot, immutable shape/row-validity, fresh read-only NumPy view                                     |
-| UnitAssignment     | Canonical unit label, UNKNOWN/ASSUMED/VERIFIED state and references                                                       |
-| TimeBasis          | Index/inferred/unverified/verified-seconds label, optional M2 rate/origin, epoch only when verified                       |
-| AnalysisProvenance | Retained M2 provenance, engine/algorithm identity, explicit UTC calculation time                                          |
-| AnalysisDiagnostic | Stable code, reused M2 severity, message, optional channel and source index                                               |
+| Model                | Contract                                                                                                                  |
+| :------------------- | :------------------------------------------------------------------------------------------------------------------------ |
+| `AnalysisProfile`    | Name/schema, frozen scalar configuration, policy/assumption references, explicit provisional permission                   |
+| `AnalysisResult`     | Full `ImportSuccess`, profile, provenance, tuple channels, ordered diagnostics, result schema                             |
+| `AnalysisChannel`    | Identifier, quantity/unit/frame, capability, source sequence/indices, time basis, processing, samples or exclusion reason |
+| `SampleValues`       | Owned float64 bytes, immutable shape/row-validity, fresh read-only NumPy view                                             |
+| `UnitAssignment`     | Canonical unit, UNKNOWN/ASSUMED/VERIFIED evidence state and references                                                    |
+| `TimeBasis`          | SAMPLE_INDEX/INFERRED_UNIFORM/SOURCE_UNVERIFIED/VERIFIED_SECONDS, optional source rate/origin; epoch only when verified   |
+| `AnalysisProvenance` | Original source provenance, engine/algorithm identity, explicit aware UTC calculation time                                |
+| `AnalysisDiagnostic` | Stable code, importer severity, message, optional channel/source index                                                    |
 
-Every constructor performs runtime validation. Model collections own tuples or
-read-only scalar mappings. Supply tuple collections to the typed public API;
-runtime ownership also protects against mutable collections passed around typing.
-Schema version `1` is the initial contract identifier, not a serialization format.
-Any later persistence/serialization adapter must document compatible schema and
-algorithm changes rather than treating every version string as interoperable.
+- These constructors validate at runtime and own tuple/read-only scalar mappings,
+  including when callers pass mutable collections. Typed collection inputs are tuples.
+- Schema `1` identifies the API contract; it does not define a serialization format
+  or imply interoperability across schema/algorithm versions.
 
 ## Unified recording analysis
 
-[`analysis.recording`](../../src/ride_forces_analyzer/analysis/recording.py) exposes
-the unified recording model consumed by explorer and export services.
-Frozen data containers cover configuration, shared force stages, independent
-orientation, sample context, event evaluation, sample views and request/notification
-payloads. They reuse the existing source, time, immutable sample buffers, unit,
-quality and provenance types. Import them explicitly from `analysis.recording`;
-the explorer consumes these snapshots; package exports remain explicit.
+Module: [`analysis.recording`](../../src/ride_forces_analyzer/analysis/recording.py).
+Import its classes explicitly; package exports remain explicit.
 
-The snapshot combines the lossless `ImportSuccess`, `AnalysisConfiguration`,
-`AnalysisTime`, `ForceSeries`, independent `OrientationSeries`, `SampleContext`,
-`EventAnalysis` and `AnalysisQuality`. Metadata (including ride/location, seating
-attributes and weather), original marker indices, independent GPS and unknown
-source fields remain accessible through `analysis.source.recording`; no metadata
-copy or GPS-to-force alignment is created.
+- `RecordingAnalysis` is a frozen snapshot: original import, configuration, time,
+  force stages, independent orientation, context, events, quality and revision.
+- Metadata, ride/location, seating attributes, weather, original marker indices,
+  independent GPS and unknown fields remain in `analysis.source.recording`.
+  No metadata copy or GPS-to-force alignment is created.
+- Stages reuse existing time, unit, immutable-buffer, quality and provenance types.
+  Context and events each select exactly one force input: projection or smoothing.
 
 ```mermaid
 classDiagram
@@ -100,276 +94,207 @@ classDiagram
     AnalysisQuality --> AnalysisResult : compatible existing results
 ```
 
-Context and events each reference exactly one configured force input, either
-projection or smoothing; the diagram's paired arrows denote alternatives.
-Different snapshots can share the same `ProjectedForces` instance while holding
-different smoothing, context and event results. Orientation depends on source
-gravity/vertical direction and its configuration, independently of force stages.
-`sample(index)` assembles immutable scalar values, times, context, availability and
-quality on demand; `AnalyzedSample` does not retain a back-reference to its parent
-snapshot or duplicate the full channel arrays.
+- Paired context/event arrows denote alternative inputs, not simultaneous inputs.
+- Snapshots can share projection while holding different smoothing/context/events.
+- Orientation depends on source gravity/vertical direction and its own configuration.
+- `sample(index)` assembles immutable scalar values on demand without recalculation,
+  a row cache, duplicate arrays or a parent-snapshot reference.
 
-AVAILABLE requires a calculated payload; UNAVAILABLE requires a stable coded
-reason and no payload. Missing prerequisites propagate to dependent stages without
-empty arrays, zero fills or fabricated normal-load labels. Row validity is separate
-from whole-stage availability. `EventAnalysis` distinguishes NOT_EVALUATED (None
-collection and a reason) from EVALUATED (an event tuple, possibly empty); an empty
-result describes only the valid observed coverage. Technical dirty/pending status
-belongs to the service, separately from these immutable result states.
+### Availability and validation
 
-`AnalysisQuality` aggregates capabilities, diagnostics and compatible existing
-results; available payloads may remain provisional, and INVALID capabilities are
-not promoted by composition. Calculated stages retain attributable quality and
-provenance; smoothed forces inherit the projection's unit assignment, while
-orientation carries its own. Source-app outputs are never relabeled as qualified
-physical rider-frame results.
+| State / operation    | Contract                                                                                                            |
+| :------------------- | :------------------------------------------------------------------------------------------------------------------ |
+| AVAILABLE            | Calculated payload required; no exclusion reason                                                                    |
+| UNAVAILABLE          | Coded reason required; no payload; prerequisites propagate to dependents                                            |
+| Row validity         | Separate from stage availability; missing values are not valid zero                                                 |
+| NOT_EVALUATED events | `events=None` and reason required                                                                                   |
+| EVALUATED events     | Tuple, possibly empty; describes valid observed coverage only                                                       |
+| Dirty/pending        | Service status; not a mutable result state                                                                          |
+| `AnalysisQuality`    | Aggregated capabilities, diagnostics and compatible results; composition never promotes INVALID or provisional data |
+| Stage provenance     | Attributable quality/provenance; smoothing inherits projection units, orientation retains its own units             |
 
-Unlike the validated constructors above, these containers store references without
-normalizing or validating them. Call `RecordingAnalysis.validate()` explicitly to
-check types, immutable collections, availability/payload/reason combinations,
-source hashes, calculation provenance, configuration and stage dependencies.
-The full force axis must preserve source indices/order and scalar buffer lengths;
-rate value/provenance and replay origin must match the source. Missing measurements
-remain distinct from valid zero. Validation returns None or raises TypeError for
-incompatible types and ValueError for inconsistent field values/relationships.
-It performs no I/O, copies no arrays and does not certify scientific accuracy.
-`prepare_recording_analysis(source, configuration, revision=..., calculation_time=...)`
-prepares and validates one snapshot. `sample(index)` reads its buffers without
-repeating calculations; it rejects non-integer indices with TypeError, indices
-outside the recording with IndexError and index-only snapshots without a time
-rate with ValueError. Recording/replay seconds retain the existing inferred rate
-and start-relative origin. Raw vectors, metadata, unknown fields and independent
-GPS remain in the original import; no GPS/sample alignment is added.
+- Unified containers store references without constructor normalization/validation.
+  Call `RecordingAnalysis.validate()` for manually assembled snapshots.
+- Validation checks types, immutable collections, payload/reason combinations,
+  source hashes, calculation provenance, configuration, dependencies, full-length
+  buffers and original index/order correspondence. Rate value/provenance and
+  replay origin must match the source.
+- Validation returns `None`; incompatible types raise `TypeError`, inconsistent
+  values/relationships raise `ValueError`. No I/O, buffer copies or scientific certification.
+- `prepare_recording_analysis(source, configuration, revision=..., calculation_time=...)`
+  prepares and validates a snapshot. Revision is a nonnegative integer; time is aware UTC.
+- `sample(index)` returns raw/projected/smoothed values, orientation, prepared context,
+  recording/replay seconds, stage availability and applicable diagnostics. Missing
+  force/orientation rows or stages return `None`; source data remains unchanged.
+- Sample errors: `TypeError` for non-integer indices (including bool), `IndexError`
+  outside the recording, `ValueError` for a manually assembled index-only snapshot
+  without a rate. Time uses the source's inferred rate and start-relative replay origin.
 
-`RecordingAnalysis` preparation and reconfiguration use one numerical implementation
-per stage: `analysis.projection.project_directions`,
-`analysis.smoothing.centered_mean`, `analysis.orientation.orientation_degrees`,
-`analysis.airtime.AirtimeContext.prepare` and `analysis.events.evaluate_events`.
-The analysis service delegates numerical requests to that preparation path.
-Projection preserves the supplied vertical/lateral/longitudinal row order and
-signs. It admits the documented rounded basis (Gram-matrix deviation at most
-0.003, positive determinant), normalizes each row and dot-projects without
-making the rows orthogonal or repairing their rotation. This source-app policy does not establish
-qualified physical rider/world frames.
+### Numerical stages
 
-Smoothing accepts odd windows 1–51 and always starts from the unfiltered projection.
-Recording edges use only available neighbors and renormalize their weights,
-including recordings shorter than the window. Neither primitive changes source
-samples or time; non-finite numerical results raise ValueError instead of being
-filled or clamped. Preparation represents excluded stages with availability reasons
-and stores valid results in immutable `SampleValues` buffers. Orientation remains
-independent of force smoothing; context stabilization and opt-in event rules remain
-separate calculations. Supported stage configurations are:
+One implementation per stage; the service delegates to the same preparation path.
+All listed algorithms use version `1`.
 
-| Stage       | Algorithm (version `1`)            | Parameters                                                         |
-| :---------- | :--------------------------------- | :----------------------------------------------------------------- |
-| Projection  | `source-direction-unit-projection` | None                                                               |
-| Smoothing   | `centered-mean`                    | `window_samples`: odd integer 1–51, default 11                     |
-| Orientation | `source-gravity-tilt`              | None                                                               |
-| Context     | `vertical-context`                 | Existing airtime constants, either omitted or explicitly unchanged |
+| Stage       | Implementation                             | Algorithm                          | Parameters                                                                                |
+| :---------- | :----------------------------------------- | :--------------------------------- | :---------------------------------------------------------------------------------------- |
+| Projection  | `analysis.projection.project_directions`   | `source-direction-unit-projection` | None                                                                                      |
+| Smoothing   | `analysis.smoothing.centered_mean`         | `centered-mean`                    | Odd `window_samples` 1–51; default 11                                                     |
+| Orientation | `analysis.orientation.orientation_degrees` | `source-gravity-tilt`              | None                                                                                      |
+| Context     | `analysis.airtime.AirtimeContext.prepare`  | `vertical-context`                 | Existing constants omitted or explicitly unchanged                                        |
+| Events      | `analysis.events.evaluate_events`          | `airtime-events`                   | Optional; finite overrides from the [event contract](../implementation/AIRTIME_EVENTS.md) |
 
-Unsupported algorithms, versions, parameters, revisions and non-UTC calculation
-times raise ValueError. The context version fixes the current heuristic; custom
-thresholds are not silently accepted. Context can read projection or smoothing,
-as declared by `context_input`, without filtering graph values again.
-`RIDER_CALIBRATED` requires explicit provisional permission, assumptions and policy
-references. Derived results remain PROVISIONAL, with assumed units and stage-specific
-provenance retaining source identity, application/NumPy versions and calculation time.
-The raw profile excludes all derived stages while preserving original samples.
+- Projection preserves supplied vertical/lateral/longitudinal order and signs.
+  Admission: Gram-matrix deviation at most `0.003`, positive determinant. Rows are
+  normalized and dot-projected, never made orthogonal or repaired into a rotation.
+- Smoothing always reads unfiltered projection. Edges shorten and renormalize,
+  including recordings shorter than the window. Neither primitive changes time or
+  source samples; non-finite numerical results raise `ValueError`, not fills/clamps.
+- Missing/inadmissible directions or numerical force-range failures exclude affected
+  stages with diagnostics. A usable window can recover a smoothing-range exclusion.
+- Orientation is independent of force smoothing/projection. Missing gravity/vertical
+  direction excludes it; zero gravity produces NaN, false validity and an indexed diagnostic.
+- Context reads `context_input` without filtering graph values again. Its version fixes
+  the [presentation heuristic](../implementation/AIRTIME.md); custom thresholds are rejected.
+- `events=StageConfiguration("airtime-events", "1")` enables detection. Source-app
+  defaults disable it. No configuration, unavailable force input or all-missing
+  vertical rows means NOT_EVALUATED; usable input yields ordered, non-overlapping
+  episodes, possibly none. Gaps split events and produce diagnostics; recording/gap
+  boundaries mark incomplete observations. Categories summarize the strongest
+  observed portion, independently of per-sample display labels.
+- Unsupported algorithms/versions/parameters, invalid revisions or non-UTC times
+  fail with `ValueError`. Unsupported event rules produce a matching service failure.
+- Raw profile: all derived stages excluded; originals retained. `RIDER_CALIBRATED`
+  requires provisional permission, assumptions and policy references. Source-app
+  results retain PROVISIONAL quality, assumed units and source/application/NumPy/time
+  provenance; they are not qualified physical RIDER/WORLD_GRAVITY results.
 
-Missing or inadmissible directions and numerical force range failures exclude
-only affected stages with diagnostic reasons. Orientation is independent of
-projection and smoothing; absent gravity/vertical direction excludes it, while
-zero gravity is an explicit invalid row with NaN, False validity and an indexed
-diagnostic. Sample views return None for missing force/orientation rows and
-unavailable stages, retaining stage availability and applicable diagnostics.
-`events=StageConfiguration("airtime-events", "1")` enables the separate
-[airtime event contract](../implementation/AIRTIME_EVENTS.md); parameters are finite
-scalar overrides defined there. Events without configuration, unavailable force input or
-all-missing vertical rows retain NOT_EVALUATED with a reason. Other valid input
-produces EVALUATED with zero or more source-ordered episodes. Missing rows split
-events and are diagnosed; recording/gap boundaries mark incomplete observations.
-Categories summarize the strongest observed portion, not a per-sample display label.
-Event quality is PROVISIONAL, with actual force-stage dependency and calculation
-provenance. Unsupported rules/versions/parameters raise ValueError, producing a
-matching service failure without replacing the last snapshot. Source-app defaults
-keep this optional evaluation disabled.
+### Recalculation and lifetime
 
-`with_configuration(configuration, revision=..., calculation_time=...)` returns a
-new validated snapshot. It reuses stages whose configuration and actual input
-objects are unchanged; a profile change invalidates policy-dependent projection
-and orientation. `with_smoothing(window_samples, ...)` retains source, time,
-projection and orientation, then smooths the unfiltered projection. Context/events
-are replaced only if their selected input or configuration changes. Consumers of
-projection therefore survive smoothing changes. An unchanged configuration or
-smoothing window performs no numerical work and still returns a new revision.
-Stage configurations are compared by their stored values, without normalizing
-parameter order or omitted defaults in `with_configuration`; `with_smoothing`
-recognizes an unchanged effective window, including the implicit default.
+| Operation / change                                                      | Reuse / replacement                                                                                              |
+| :---------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------- |
+| `with_configuration(configuration, revision=..., calculation_time=...)` | New validated snapshot; reuse requires equal stage configuration and identical actual input objects              |
+| `with_smoothing(window_samples, revision=..., calculation_time=...)`    | Retains source, time, projection and orientation; smooths unfiltered projection                                  |
+| Context/events                                                          | Replaced only when their selected input or configuration changes; projection consumers survive smoothing changes |
+| Profile change                                                          | Invalidates policy-dependent projection and orientation                                                          |
+| Unchanged configuration/window                                          | No numerical work; new revision still returned                                                                   |
+| Provenance                                                              | Reused stages retain original calculation time; recalculated stages use the supplied time                        |
+| Lifetime                                                                | No predecessor reference/configuration history; consumers retain snapshots only as needed                        |
 
-Reconfiguration requires a strictly increasing integer revision and an explicit
-UTC calculation time. Invalid requests raise TypeError/ValueError without changing
-the previous snapshot. Reused stages retain their original provenance; recalculated
-stages receive the supplied time. Expected numerical range exclusions still produce
-a consistent raw-capable snapshot and can recover with a usable smoothing window.
+- Reconfiguration requires a strictly increasing integer revision and explicit aware
+  UTC time. Invalid requests raise `TypeError`/`ValueError`; previous snapshots remain unchanged.
+- `with_configuration` compares stored parameters without normalizing their order
+  or omitted defaults. `with_smoothing` recognizes the effective window, including default 11.
+- Released configurations may be recomputed. Exports retain their bound snapshots;
+  normal reference lifetime releases obsolete buffers. The service owns current
+  state, active work and current queued deliveries, not a history cache or executor.
+- [Snapshot ownership](../architecture/08_concepts.md#snapshot-lifetime-and-reuse)
+  is defined in the architecture.
 
-A snapshot holds its source and stage references, never its predecessor or a map
-of past configurations. Returning to a released window may recompute it. Consumers
-such as exports retain their own snapshot until finished; normal reference lifetime
-releases obsolete snapshots and buffers. Tests check stage identity, calculation
-calls, unchanged export values and absence of new references to prior snapshots.
-The service retains only its current state, active work and current queued deliveries;
-the explorer adapter owns worker scheduling and queued UI delivery.
+### Analysis service
 
-The [source-app evidence tests](../../tests/analysis/test_source_app_evidence.py)
-exercise unified snapshots against original-file extrema and independently supplied
-replay screenshots, including the documented Kraken/Voltron differences. Tests of
-projection, smoothing, preparation, sample views and partial recalculation cover
-current numerical contracts. These comparisons do not qualify physical
-interpretation or event-detection rules.
+Module: [`analysis.service`](../../src/ride_forces_analyzer/analysis/service.py).
+The Qt-independent `AnalysisService` owns immutable state, selected import,
+monotonic request revisions and service-specific subscription handles.
 
-[`analysis.service`](../../src/ride_forces_analyzer/analysis/service.py) implements
-`AnalysisService`: `get_state`, `subscribe`, `unsubscribe`, `request_analysis`,
-`request_configuration`, `request_smoothing` and `close`. It owns an immutable
-`AnalysisState`, selected import, monotonically increasing request revisions and
-service-specific subscription handles. New views immediately receive coherent
-initial state, including an older completed snapshot and pending/failure status.
-Registration and state capture are coordinated; initial delivery precedes later
-notifications even when callbacks start another request.
+| API / behavior                                | Contract                                                                                                                                                              |
+| :-------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get_state`                                   | Coherent current state, retained snapshot and pending/failure status                                                                                                  |
+| `subscribe`                                   | Coordinated registration/state capture; immediate initial delivery precedes later notifications, including reentrant requests                                         |
+| `unsubscribe`                                 | Idempotent; removes queued work; an executing callback may finish; handle identity prevents cross-service removal                                                     |
+| `request_analysis`                            | Synchronous calculation in caller thread, outside state lock                                                                                                          |
+| `request_configuration` / `request_smoothing` | Use selected source, including after failure; reuse compatible stages; no-op advances revision                                                                        |
+| Request completion                            | PENDING/`AnalysisInvalidated` → READY/`AnalysisUpdated` or FAILED/`AnalysisFailed`                                                                                    |
+| Failure                                       | Retains last complete snapshot with its original source/configuration/revision                                                                                        |
+| Expected unavailable stages                   | READY raw-capable snapshot, not request failure                                                                                                                       |
+| Caller errors                                 | Wrong top-level source/configuration types raise `TypeError`; calculation/configuration failures terminate the assigned revision with a diagnostic                    |
+| `close`                                       | Idempotent; advances revision, clears owned source/snapshot/subscriptions/queues; prevents running work from publishing; independent export snapshots remain readable |
 
-Requests calculate synchronously in the calling thread, outside the state lock.
-They enter PENDING, then READY with `AnalysisUpdated` or FAILED with `AnalysisFailed`.
-Source/configuration top-level type errors are caller errors; calculation and
-configuration errors terminate their assigned revision with a diagnostic. Expected
-unavailable stages still produce READY raw-capable snapshots. Failed calculations
-retain the last complete snapshot with its original source/configuration/revision.
-New configuration/smoothing requests use the selected source, including after a
-failure, and reuse compatible snapshot stages. No-op requests still advance revision.
+- Stage interests filter numerical notifications. Initial state and terminal status
+  matching observed pending work bypass the filter, including superseded queued
+  results without interested-stage changes. Dirty stages include dependent forces/context/events.
+- Superseded success/failure cannot replace current state. New requests release older
+  queued notifications; completed requests may coalesce detailed pending indications.
+- Delivery is serialized per registration; different registrations may progress
+  concurrently. Callbacks run outside the lock; ordinary callback exceptions are
+  logged and remove only that registration. Duplicate callbacks have independent handles.
+- [`AnalysisController`](../../src/ride_forces_analyzer/ui/analysis.py) owns workers
+  and guarded UI delivery. The [runtime sequence](../architecture/06_runtime_view.md#explorer-analysis-delivery)
+  defines initial state, stale/failure handling and subscription cleanup.
 
-Stage interests filter numerical notifications. Initial state and terminal status
-matching observed pending work bypass the filter, also when subsequent requests
-supersede a queued result without changing any interested stage. Dirty stages
-include dependent force/context/event stages. Superseded success/failure cannot
-replace current state; older queued notifications release their references when
-a newer request starts. Detailed pending indications may be coalesced once a
-request has already completed. Per-registration delivery is serialized, including
-reentrant requests, while other registrations can progress concurrently.
+### Explorer, exports and storage
 
-Callbacks execute outside the lock. Ordinary callback exceptions are logged and
-remove only the failing registration. Duplicate callbacks have independent handles;
-unsubscribe removes queued work and is idempotent. Handles are accepted by object
-identity when their registration exists, preventing equal numbers from another
-service from removing it. `close` is idempotent, advances revision, clears owned
-source/snapshot/registrations/queues and prevents running work from publishing.
-Independent export snapshots remain readable. No history cache or executor is kept.
+| Consumer / API                                 | Contract                                                                                                                                      |
+| :--------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ExplorerData`                                 | Presentation state plus bound `analysis`; calibrated channels are read-only NumPy views sharing snapshot buffers, raw channels are tuples     |
+| `calibration_available` / `calibrated_enabled` | Prepared force availability / selected presentation mode                                                                                      |
+| `with_analysis`                                | Preserves import; checks source object identity                                                                                               |
+| `with_calibration`                             | Switches raw/calibrated presentation without numerical work                                                                                   |
+| `smoothing_window` / `with_smoothing`          | Read recipe / delegate synchronous partial recalculation; live UI uses controller workers                                                     |
+| Sample cards/technical values                  | `analysis.sample(index)`; unavailable calibrated rows never fall back to raw values                                                           |
+| Context label/strip                            | Format prepared categories without reclassification                                                                                           |
+| Extrema                                        | Read shared smoothed buffers with retained quality/provenance                                                                                 |
+| `prepare_export` / `build_previews`            | Require `RecordingAnalysis`, not explorer objects; UI captures snapshot before scheduling work                                                |
+| `ExportTimeline` / `ExportValues`              | Retain bound snapshot / expose shared scalar buffers as read-only sequences, with `None` for invalid rows                                     |
+| `prepare_export_analysis`                      | Equal configuration returns the identical snapshot; otherwise partial recalculation                                                           |
+| Presets/jobs                                   | Require full versioned `analysis_configuration`, matching window and all serialized aspect/language/dependency fields; no source bytes/arrays |
+| `make_job` / batches                           | Snapshot input / direct import, source-hash check, saved full-history recipe prepared through service before interval binding                 |
 
-The Qt-independent service owns no worker or mutable lists inside snapshots.
-[`AnalysisController`](../../src/ride_forces_analyzer/ui/analysis.py) supplies worker
-scheduling and guarded UI delivery. The [runtime view](../architecture/06_runtime_view.md#explorer-analysis-delivery)
-owns the notification sequence, initial state, failure/stale-delivery behavior and
-subscription cleanup. [Cross-cutting concepts](../architecture/08_concepts.md#snapshot-lifetime-and-reuse)
-own snapshot lifetime and shared-stage ownership.
-
-`ExplorerData.analysis` owns the snapshot. Calibrated `plotted_channels` are
-read-only NumPy views sharing its immutable buffers; raw channels remain tuples.
-Callers must handle this union rather than assuming tuple comparison or `.index`.
-Sample cards and technical values use `analysis.sample(index)`, and context labels
-come from its prepared categories without reclassification. Navigation, zoom,
-mode, language and appearance changes do not recalculate analysis.
-`with_analysis` preserves the import and checks its identity. The synchronous
-`with_smoothing` helper also delegates to partial snapshot recalculation, while the
-live explorer uses the worker controller. Extrema retain their existing contract.
-
-`ExplorerData` retains presentation state and a bound snapshot. `calibration_available`
-reads the prepared force stage; `calibrated_enabled` and `with_calibration` select
-calibrated or raw display without numerical work. `smoothing_window` reads the
-snapshot configuration. Cards and technical sample values use its sample views;
-`vertical_context_label` and strip segments format prepared context categories.
-Missing calibrated samples remain unavailable rather than displaying raw values.
-Extrema read the same smoothed buffers and preserve their quality/provenance.
-`prepare_export` and `build_previews` require `RecordingAnalysis` directly.
-They accept no explorer/presentation input; the UI captures its snapshot before
-scheduling preview/export work. Layouts consume the resulting `ExportTimeline`.
-`ExportTimeline.analysis` retains the bound snapshot for its full lifetime.
-`ExportValues` exposes shared scalar buffers as a read-only sequence with None for
-invalid rows. Force bounds use the selected interval; orientation and context read
-full-recording preparation. Context lookup floors fractional source positions;
-numerical values keep the existing linear interpolation and missing-data rules.
-
-`prepare_export_analysis` returns the same snapshot for an equal configuration,
-otherwise delegates to partial recalculation. Changing layout, language, frame rate,
-resolution or interval never prepares numerical stages again. All five preview
-layouts share one snapshot, including full-history context outside the export range.
-Running exports retain their snapshot independently of workspace/preset changes.
-Saved presets/jobs require `analysis_configuration`, the complete versioned recipe,
-without source bytes or arrays. The stored window must agree with that recipe.
-All serialized fields, including aspect/language and configuration dependencies,
-are required; incomplete records are rejected without migration or data removal.
-`make_job` accepts a snapshot. Batches import directly, check source hashes before
-calculation and use the analysis service to prepare the saved full-history recipe
-before binding the concrete export interval.
-Service tests cover initial and terminal states, filtering, reentrant calls, competing
-requests, stale success/failure, shutdown, callback isolation and snapshot ownership.
-The [focused coverage workflow](CODE_QUALITY.md#recording-model-and-service-coverage)
-reports both modules and enforces the configured minimum.
+- Channel consumers must handle tuple/NumPy-view union; tuple equality and `.index`
+  are not shared APIs. Navigation, zoom, display mode, language and appearance do
+  not recalculate analysis.
+- Layouts consume `ExportTimeline`. Layout, language, frame rate, resolution and
+  interval changes do not prepare numerical stages again. All five previews share
+  one snapshot; exports retain it independently of workspace/preset changes.
+- Bounds use the selected interval; orientation/context use full source history.
+  Fractional context lookup floors the source position; numerical values use linear
+  interpolation with existing missing-data rules.
+- Incomplete stored records are rejected; no format migration or destructive cleanup.
 
 ## Raw values and qualified quantities
 
-`AnalysisProfile()` is raw_device_only, with no processing configuration or
-assumptions. It permits SOURCE_VALUES/RAW channels with UNKNOWN units. A VERIFIED
-raw channel says its data contract is established; it does not certify physical
-axes, source acquisition semantics or rider G. Keep canonical originals through
-`result.source.recording.source`; import warnings remain in `result.source.diagnostics`.
-
-SPECIFIC_FORCE, GRAVITY, KINEMATIC_ACCELERATION and DEVICE_VECTOR_MAGNITUDE use
-explicit canonical `m/s^2`; LOAD_FACTOR is dimensionless; DISTANCE/ALTITUDE,
-SPEED and ANGLE require `m`, `m/s` and `deg`. Available physical values cannot
-use UNKNOWN units. VERIFIED physical values require VERIFIED unit references;
-ASSUMED assignments require a PROVISIONAL channel and a separately approved
-opt-in profile with named assumptions. Reference strings are caller attestations,
-not automatic qualification of a source. No current real fixture is assigned these
-units or projected into RIDER/WORLD_GRAVITY by the implemented models.
-
-Interpreted frames require references. The right-handed/passive numerical convention
-is implemented; physical yaw/pose mapping remains unqualified. Ordinary DEVICE labels retain
-source x/y/z, not known Earth or rider directions. Pint's `g` symbol is gram,
-not the project's dimensionless loading ratio; future conversion must use the
-explicit standard-gravity normalization policy, never an ambiguous symbol.
-
-Unavailable/invalid channels have `samples=None`, no source indices and a reason.
-Within available arrays, missing rows require explicit NaN and `valid_rows=False`;
-valid zero requires a finite sample and `True`. No hidden finite placeholder,
-infinity or inferred missingness is accepted. Partial missing rows must stay
-explicit in future algorithm diagnostics; this stage implements no recovery math.
-
-Source indices and indexed diagnostics are bounded against their own acceleration,
-gravity or GPS sequence, not a common length. Iron Gwazi's missing gravity/GPS
-cannot be referenced by available channels. This validation neither aligns clocks
-nor normalizes/changes M2 marker indices.
+- `AnalysisProfile()` defaults to `raw_device_only`, with no processing configuration
+  or assumptions. SOURCE_VALUES/RAW permits UNKNOWN units. VERIFIED raw means an
+  established data contract, not qualified acquisition semantics, physical axes or rider G.
+- Original source: `result.source.recording.source`; importer warnings:
+  `result.source.diagnostics`. DEVICE labels retain source x/y/z, not Earth/rider axes.
+- Canonical units: SPECIFIC_FORCE/GRAVITY/KINEMATIC_ACCELERATION/DEVICE_VECTOR_MAGNITUDE
+  → `m/s^2`; LOAD_FACTOR → dimensionless; DISTANCE/ALTITUDE → `m`; SPEED → `m/s`;
+  ANGLE → `deg`. Available physical quantities cannot use UNKNOWN units.
+- VERIFIED physical values require VERIFIED unit references. ASSUMED units require
+  PROVISIONAL channels, explicit opt-in profile and named assumptions. Reference
+  strings are caller attestations, not automatic source qualification.
+- Interpreted frames require references. Numerical convention is right-handed/passive;
+  physical yaw/pose mapping remains unqualified. No real fixture is assigned qualified
+  physical units or a qualified RIDER/WORLD_GRAVITY mapping.
+- Pint `g` means gram. Loading ratio is dimensionless; acceleration conversion uses
+  explicit standard-gravity normalization, never ambiguous `g`.
+- UNAVAILABLE/INVALID channels have no samples/indices and require a reason.
+  Available missing rows require NaN and false validity; valid zero requires a finite
+  sample and true validity. No finite placeholder, infinity, inferred missingness or
+  recovery math. Diagnostics must keep partial missingness explicit.
+- Indices and indexed diagnostics are bounded against their own acceleration,
+  gravity or GPS sequence. Missing Iron Gwazi gravity/GPS cannot be referenced by
+  available channels. Validation neither aligns clocks nor changes original markers.
 
 ## Immutability and determinism
 
-SampleValues copies numeric input into little-endian float64 bytes. It does not
-retain a writable ndarray alias. `samples.values` is a fresh ndarray view over
-immutable bytes: its WRITEABLE flag cannot be enabled. Caller view metadata cannot
-change the model's shape, dtype or next accessor. `values.copy()` is a mutable,
-independent work array. Source precision/types remain in the immutable M2 envelope;
-the float64 snapshot is an explicit canonical numerical representation.
-
-Diagnostics sort ERROR, WARNING, INFO, then channel ID, source index (rows without an index
-first) and code. Exact-key ties preserve supplied order. Messages should describe
-defects without raw GPS/source payloads. Result validity is INVALID for error
-diagnostics/invalid channels, RESTRICTED for provisional/unavailable channels,
-otherwise VALID. That describes the supplied result contract, not blanket
-scientific accuracy. Timestamp generation is absent;
-callers must supply the UTC calculation time explicitly for reproducible results.
+- `SampleValues` copies numeric input into little-endian float64 bytes; no writable
+  ndarray alias survives. Source precision/types remain in the immutable import.
+- `samples.values` returns a fresh read-only view; WRITEABLE cannot be enabled.
+  Caller metadata changes cannot affect stored shape/dtype or later accessors.
+  `values.copy()` is independent and mutable.
+- Diagnostics sort ERROR/WARNING/INFO, channel ID, source index (rows without an index first),
+  then code. Exact-key ties preserve emission order. Messages exclude raw GPS/payloads.
+- Result validity: INVALID for error diagnostics/invalid channels; RESTRICTED for
+  provisional/unavailable channels; otherwise VALID. Structural validity is not
+  scientific accuracy. Model/preparation callers supply explicit UTC calculation time.
 
 ## Model-only construction example
 
-This example copies a typed M2 component; it performs no physical calculation:
+Copies a typed source component; no physical calculation. `calculation_time` is
+an explicit caller-supplied aware UTC time, not the recording epoch.
 
 ```python
-from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -407,68 +332,61 @@ if isinstance(source, ImportSuccess):
             source.recording.source.provenance,
             "example-model-caller",
             "source-component-copy",
-            datetime(2026, 10, 14, tzinfo=UTC),
+            calculation_time,
         ),
         (channel,),
     )
 ```
 
-The example time identifies this illustrative caller operation, not the recording
-epoch. Production callers choose their own explicit calculation time.
-
 ## Verification and scope
 
 ```powershell
-uv run --locked pytest -o cache_dir=.tmp/pytest-cache tests/analysis/test_models.py
+uv run --locked pytest tests/analysis/test_models.py
 ```
 
-Tests cover caller aliases/read-only views, explicit missing versus zero,
-configuration/tuple ownership, unit/frame/profile gates, provenance/time rejection,
-deterministic diagnostic order, independent indices and all five read-only fixtures.
-A fresh-process check denies file/network access during construction, verifies
-no Qt import and requires no SciPy/Pint/GeographicLib import. Synthetic qualified
-descriptors test structural gates, not the actual files' scientific semantics.
-
-Source-app projection and centered mean live in `analysis.projection` and
-`analysis.smoothing`, separately from the physical-frame APIs.
-Selected-range extrema have their own contract below. Planned analysis features
-and milestone status belong in the [roadmap](../ROADMAP.md); model construction
-does not perform GPS analytics or qualify physical calibration.
+- Model tests: alias/ownership, immutable views, missing versus zero, unit/frame/profile
+  gates, provenance/time, deterministic diagnostics, independent indices and all five originals.
+- Fresh-process construction: no file/network access, Qt or optional SciPy/Pint/GeographicLib import.
+- Preparation/recalculation: numerical primitives, sample views, shared-stage identity,
+  calculation calls, unchanged retained export values and snapshot lifetime.
+- Service: initial/terminal state, filters, reentrant calls, competing requests, stale
+  success/failure, shutdown, callback isolation and ownership. [Coverage](CODE_QUALITY.md#recording-model-and-service-coverage)
+  reports model/service modules and enforces the configured minimum.
+- [Source-app evidence tests](../../tests/analysis/test_source_app_evidence.py):
+  original-file extrema and independent replay screenshots, including Kraken/Voltron
+  differences. Synthetic contracts and these comparisons do not qualify real physical
+  semantics or event rules. [Source evidence](../validation/APP_REFERENCE.md) remains separate.
+- No GPS analytics, clock alignment or physical calibration qualification is performed.
 
 ## Device-only vectors and units
 
-Public opt-in API: `ride_forces_analyzer.analysis.device` (NumPy and Pint analysis
-extra required). Importing just `analysis` models does not import Pint.
+Opt-in module: [`analysis.device`](../../src/ride_forces_analyzer/analysis/device.py);
+requires NumPy and Pint from the locked `analysis` extra.
 
 - `MotionUnitContract(source_sha256, source_sequence, unit, quantity, unit_evidence, quantity_evidence)`:
-  immutable source-specific caller attestations. Unit and physical meaning require
-  separate nonempty references; strings alone do not prove source-app semantics.
-  Supported DeviceAccelerationUnit members: SI, CENTIMETERS, FEET, STANDARD_GRAVITY.
-  QuantityKind must identify SPECIFIC_FORCE, GRAVITY or KINEMATIC_ACCELERATION.
-- `convert_device_vectors(samples, contract) -> SampleValues`: common-unit x/y/z
-  rows into SI, preserving owned bytes and explicit invalid rows. This primitive
-  validates the contract and shape; its caller must enforce source binding.
-- `device_vector_norm(channel) -> AnalysisChannel`: verified raw DEVICE SI x/y/z
-  into a separately identified DEVICE_VECTOR_MAGNITUDE channel. Stable NumPy
-  Euclidean norm; no frame transformation or source relationship.
+  immutable source-specific attestations; separate nonempty unit/meaning references.
+  Units: SI, CENTIMETERS, FEET, STANDARD_GRAVITY. Quantities: SPECIFIC_FORCE, GRAVITY,
+  KINEMATIC_ACCELERATION.
+- `convert_device_vectors(samples, contract) -> SampleValues`: common-unit x/y/z to
+  SI; owned bytes/validity retained. Validates contract/shape, not source binding;
+  caller must enforce binding.
+- `device_vector_norm(channel) -> AnalysisChannel`: VERIFIED raw DEVICE SI x/y/z
+  to separate DEVICE_VECTOR_MAGNITUDE; stable Euclidean NumPy norm, no frame transform
+  or acceleration/gravity relationship.
 - `analyze_device_vectors(source, *, calculation_time, acceleration_contract=None, gravity_contract=None) -> AnalysisResult`:
-  full M2 input only, source/sequence binding enforced, separate vector and norm
-  channels for each motion sequence. Caller supplies aware UTC calculation time.
-  `device_vectors` profile records original units, meanings and library versions;
-  channel evidence, source indices and complete M2 provenance are retained.
+  complete `ImportSuccess`, source/sequence binding, independent vector/norm channels,
+  aware UTC time. `device_vectors` profile retains original units/meanings and library
+  versions; channels retain evidence/indices and complete source provenance.
+- Missing data/units → UNAVAILABLE, `SOURCE_SEQUENCE_ABSENT`/`SOURCE_UNIT_UNKNOWN`.
+  Contract/hash/type defects → `ValueError`/`TypeError`. Finite-range defects → INVALID,
+  `UNIT_CONVERSION_RANGE`/`DEVICE_NORM_RANGE`; usable vectors survive norm overflow.
+- Source diagnostics, GPS, unknown fields, numeric strings and extrema remain intact.
+  Float64 rounding/underflow does not replace exact source bytes.
 
-Absent data or undeclared units yield UNAVAILABLE products with no samples and
-SOURCE_SEQUENCE_ABSENT / SOURCE_UNIT_UNKNOWN warnings. Hash/type/contract defects
-raise ValueError/TypeError; finite-range defects yield INVALID products and
-UNIT_CONVERSION_RANGE / DEVICE_NORM_RANGE errors. Usable vectors survive norm
-overflow. Diagnostics retain deterministic model ordering. Source data/diagnostics,
-GPS, unknown fields, numeric strings and extrema are untouched.
-
-Example for an imported synthetic source whose independent test protocol explicitly
-specifies common SI components and specific-force meaning:
+Synthetic example: common SI components and specific-force meaning are established
+independently for that source; `calculation_time` is caller-supplied aware UTC.
 
 ```python
-from datetime import UTC, datetime
 from ride_forces_analyzer.analysis import QuantityKind, SourceSequence
 from ride_forces_analyzer.analysis.device import (
     DeviceAccelerationUnit,
@@ -476,7 +394,7 @@ from ride_forces_analyzer.analysis.device import (
     analyze_device_vectors,
 )
 
-# imported is full M2 ImportSuccess; these references must concern that exact source.
+# imported is full ImportSuccess; these references must concern that exact source.
 contract = MotionUnitContract(
     imported.source_sha256,
     SourceSequence.ACCELERATION,
@@ -487,47 +405,43 @@ contract = MotionUnitContract(
 )
 result = analyze_device_vectors(
     imported,
-    calculation_time=datetime(2026, 10, 14, tzinfo=UTC),
+    calculation_time=calculation_time,
     acceleration_contract=contract,
 )
 ```
 
-Stationarity tests declare synthetic specific force +g0 z and independent gravity
--g0 z; each magnitude is g0. Zero specific force remains zero. Neither test establishes
-real recording conventions. Bare `g` is rejected (Pint gram); standard_gravity is
-an explicit acceleration conversion, not an assigned 1 g source value. No rider G,
-axis mapping, gravity compensation, frame rotation, filtering, GPS units, timeline
-or epoch is calculated. All five originals remain unit-unqualified; Watch gravity
-and GPS remain absent. NumPy float64 rounding/underflow does not replace source
-precision; exact source bytes remain in the retained ImportSuccess.
+- Synthetic stationary specific force `+g0 z` and independent gravity `−g0 z` each
+  have magnitude `g0`; zero specific force stays zero. This establishes no real-app convention.
+- Bare `g` is rejected; `standard_gravity` is an acceleration conversion, not an
+  assigned 1 g source value. No rider G, axis mapping, gravity compensation, rotation,
+  filtering, GPS units, timeline or epoch is calculated. All five originals remain
+  unit-unqualified; Watch gravity/GPS remain absent.
 
 ## Passive frame math and provisional rider vectors
 
-Opt-in `analysis.frames` requires the locked SciPy analysis extra:
+Opt-in module: [`analysis.frames`](../../src/ride_forces_analyzer/analysis/frames.py);
+requires the locked SciPy analysis extra.
 
-- `OrthonormalFrame(rows)`: three immutable Vector3 target axes expressed in DEVICE
-  coordinates. Rejects non-unit/skew/parallel/reflected bases without normalization;
-  numerical admission is absolute `1e-10`, relative zero, on orthogonality/determinant.
+- `OrthonormalFrame(rows)`: three immutable Vector3 target axes in DEVICE coordinates.
+  Rejects non-unit/skew/parallel/reflected bases without repair; orthogonality and
+  determinant tolerance absolute `1e-10`, relative zero. Matrix access returns an independent array.
 - `rotate_vectors(samples, frame, *, inverse=False) -> SampleValues`: passive
-  `v_target = R @ v_device`, or its inverse. Rows of sample arrays multiply `R.T`.
-  This is unit-neutral math; missing rows remain explicit and finite range is checked.
+  `v_target = R @ v_device`; array rows multiply `R.T`; inverse uses inverse rotation.
+  Unit-neutral; missingness retained, finite range checked.
 - `RiderCalibration(source_sha256, basis, references)`: explicit source-bound
-  exploratory mapping. No constructor infers mounting, yaw or a pose from source vectors.
-- `analyze_rider_frame(source, *, calculation_time, calibration=None, profile=None,
-  acceleration_contract=None, gravity_contract=None) -> AnalysisResult`: complete M2
-  input only. Available vectors require a rider_calibrated profile, `allow_provisional=True`,
+  exploratory mapping; no inferred mounting, yaw or pose.
+- `analyze_rider_frame(source, *, calculation_time, calibration=None, profile=None, acceleration_contract=None, gravity_contract=None) -> AnalysisResult`:
+  complete import. Available vectors require `rider_calibrated`, `allow_provisional=True`,
   named assumptions, policy references, calibration and independent motion contracts.
+- Columns: longitudinal/lateral/vertical = X forward/Y left/Z rider-up. Available
+  rider results remain PROVISIONAL. Missing prerequisites → UNAVAILABLE with reasons;
+  wrong source/profile/opt-in → `TypeError`/`ValueError`; numerical range defects →
+  INVALID with `FRAME_TRANSFORM_RANGE`.
+- Retain raw unfiltered quantity/unit/time/indices and complete import. Configuration
+  records source unit/quantity, NumPy/Pint/SciPy versions and matrix/tolerance;
+  references remain channel evidence. Diagnostics retain deterministic ordering.
 
-Longitudinal/lateral/vertical columns follow the explicit project convention
-X forward/Y left/Z rider-up. Every available rider result remains PROVISIONAL;
-no API in this stage certifies real rider loading. Without calibration/qualified
-units/data, channels are UNAVAILABLE with reasons. Wrong source/profile/opt-in
-raises TypeError/ValueError; range defects yield INVALID with FRAME_TRANSFORM_RANGE.
-Diagnostics remain deterministic; raw unfiltered quantity/unit/time/source indices
-and complete M2 input survive. Profile configuration records source unit/quantity,
-NumPy/Pint/SciPy versions and the frame matrix/tolerance; references remain channel evidence.
-
-Example with a separately constructed synthetic basis and source-matching unit contract:
+Synthetic example with explicit caller-provided basis, matching unit contract and time:
 
 ```python
 from ride_forces_analyzer.analysis import AnalysisProfile, ProfileName
@@ -550,39 +464,34 @@ result = analyze_rider_frame(
 )
 ```
 
-All five real fixtures remain unit/frame-unqualified; absent Watch gravity stays
-absent. See [passive frame decision](../architecture/09_architecture_decisions.md#passive-frame-transforms),
-[analysis contract](../architecture/08_concepts.md#scientific-provenance-and-gates) and `tests/analysis/test_frames.py`. Source-app
-references remain required for generic physical calibration. Existing app-reference
-projection/mean has separate [source-bound evidence](../validation/APP_REFERENCE.md).
+All five originals remain unit/frame-unqualified; missing Watch gravity stays absent.
+See [passive-frame decision](../architecture/09_architecture_decisions.md#passive-frame-transforms),
+[scientific gates](../architecture/08_concepts.md#scientific-provenance-and-gates)
+and [frame tests](../../tests/analysis/test_frames.py). Generic physical calibration
+still requires independent source-app evidence; source-app projection/mean remains
+a separate contract.
 
 ## Selected-range extrema
 
-`ride_forces_analyzer.force_extrema.calculate_extrema(source, first, last, *, forces=None, calculation_time=None)`
-is a pure typed API with no Qt or optional NumPy requirement for raw use. The module
-sits outside the NumPy-backed analysis package so raw fallback remains available.
-Pass the snapshot's `SmoothedForces` for calibrated values. Its projection must
-retain the same import, source-index correspondence and rate; the stage must be
-available with provenance and full-length channels/validity masks. Raw mode reads
-original x/y/z; no source
-minForce/maxForce is substituted. Intervals are inclusive and must be valid.
+API: `ride_forces_analyzer.force_extrema.calculate_extrema(source, first, last, *, forces=None, calculation_time=None)`.
+Pure typed API outside the analysis package; raw use needs neither Qt nor NumPy.
 
-Frozen SelectionExtrema/ChannelExtrema/Extremum results retain source identity,
-algorithm, aware calculation time, mode/unit/window/capability, effective rate/origin,
-interval endpoints/count and each min/max value/index/recording second. Calibrated
-results retain the actual stage's `quality` and `provenance` by reference, with its
-provisional capability; source-app comparison evidence does not promote them to
-qualified physical values. Raw results have no derived stage quality/provenance.
-Ties use the earliest source sample. Empty/invalid intervals, mismatched or
-unavailable stages and missing/non-finite selected values raise ValueError. Filtering is never repeated at selection
-edges. Source arrays/bytes are unchanged.
+| Input / result          | Contract                                                                                                                                                                                    |
+| :---------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `forces=None`           | Original raw x/y/z; never source `minForce`/`maxForce` metadata                                                                                                                             |
+| `forces=SmoothedForces` | Available full-length channels/validity/provenance; same import, original indices and rate                                                                                                  |
+| Interval                | Inclusive, bounded, ordered; ties select earliest source index; no filtering at selection edges                                                                                             |
+| Calculation time        | Aware caller time; defaults to current UTC time                                                                                                                                             |
+| Errors                  | `ValueError` for invalid/empty intervals/time, mismatched/unavailable stages, incomplete buffers or missing/non-finite selected values                                                      |
+| Results                 | Frozen `SelectionExtrema`/`ChannelExtrema`/`Extremum`: source, algorithm, calculation time, mode/unit/window/capability, rate/origin, interval/count, min/max value/index/recording seconds |
+| Quality/provenance      | Calibrated results retain actual stage objects and provisional capability; raw results have neither derived object                                                                          |
 
-ExplorerData.selection_extrema delegates calculation; extrema_text formats replay
-notation and processing context; its optional `rich=True` presentation returns
-per-channel HTML tables with aligned extrema/replay columns and smaller sample
-and recording-time details. Plain text remains the default. The inspector maps
-the visible time range through `select_visible` and refreshes on load, zoom,
-mode and smoothing, including while the slider is held. Cursor movement,
-explicit From/To selection and hiding a curve do not change the result.
-The [analysis contract](../architecture/08_concepts.md#scientific-provenance-and-gates)
-summarizes this scope; it is not a general statistics or physical-calibration API.
+- Source arrays/bytes remain unchanged. Source-app agreement does not promote
+  calibrated extrema to qualified physical values.
+- `ExplorerData.selection_extrema` delegates calculation; `extrema_text` formats
+  replay/processing context. Default plain text; `rich=True` adds aligned per-channel
+  HTML tables with replay, sample and recording-time details.
+- Inspector maps visible time through `select_visible`; refreshes on load, zoom,
+  mode and smoothing, including held slider changes. Cursor, From/To selection and
+  curve visibility do not change extrema.
+- Scope: selected-range extrema, not general statistics or physical calibration.

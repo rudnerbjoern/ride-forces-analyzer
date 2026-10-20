@@ -1,16 +1,9 @@
 # Motion parsing
 
-A shared diagnostic guard composes this subset through the
-[public import service](IMPORT_SERVICE.md). The independently callable
-`parse_motion(source, *, limits=DEFAULT_LIMITS)` still returns a motion-only result.
-Its `limits.max_diagnostics` cap is checked during generation; source shape/byte
-budgets require prior decoding.
-
-This API validates motion fields in an existing immutable source tree. It is a pure motion
-validation boundary, not a complete file importer. Decoding/resource guards,
-optional GPS/metadata and full service composition are separate boundaries.
-See [import decision](../architecture/09_architecture_decisions.md#source-ownership-and-import) and
-[import contract](../architecture/08_concepts.md#source-ownership-and-validation).
+Motion-only validation of an immutable source tree; no complete file import.
+Architecture owns [composition](../architecture/05_building_block_view.md#importer-composition-and-interfaces)
+and [source/scientific boundaries](../architecture/08_concepts.md).
+The [public service](IMPORT_SERVICE.md) composes decoding, motion and optional data.
 
 ## API and caller obligations
 
@@ -26,90 +19,79 @@ def inspect_motion(source: SourceEnvelope) -> int | None:
     return None
 ```
 
-Supply a SourceEnvelope whose root represents supported schema 2.2.0. Source
-numbers must be SourceNumber values; source strings remain strings and arrays
-are immutable tuples. The [strict decoder](STRICT_DECODING.md) establishes bytes/tree
-correspondence, version support and document limits. The full service composes
-this parser after successful decoding. This subset performs no
-file I/O, version dispatch, decoding, network, Qt or scientific transformation here.
+| Contract      | Requirement                                                                                                                                        |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Entry point   | `parse_motion(source, *, limits=DEFAULT_LIMITS)`                                                                                                   |
+| Input         | `SourceEnvelope` for supported schema 2.2.0; `SourceNumber` numbers, unchanged strings, tuple arrays                                               |
+| Preconditions | [Strict decoder](STRICT_DECODING.md) establishes bytes/tree correspondence, version and document budgets                                           |
+| Success       | `MotionParseSuccess`: same source, `MotionSequence`, `RecordingIndices`, `RecordingVectors`, ordered diagnostics; no complete Recording/GPS status |
+| Failure       | `ImportFailure`: no recording, at least one error, retained source and known nonempty version string                                               |
+| Execution     | No I/O, decoding, dispatch, network, Qt or scientific transformation; immutable source/outcomes                                                    |
 
-MotionParseResult is MotionParseSuccess | ImportFailure. Success carries the
-same source envelope, MotionSequence, RecordingIndices, RecordingVectors and
-ordered diagnostics. It deliberately exposes no complete Recording or GPS status.
-Failure carries no recording, at least one error, retained source and any known
-nonempty version string. A success of this subset is not complete import success
-or permission to calculate rider-axis forces. Outcomes and source data are immutable.
+Subset success is neither full-import success nor rider-axis force qualification.
+`limits.max_diagnostics` applies during generation; shape/byte guards require decoding.
 
 ## Conversion and preservation
 
-Accept finite SourceNumber values and ASCII decimal strings: optional sign,
-integer or decimal fraction, optional exponent. Leading zeros, `.5` and `1.`
-are accepted for strings; JSON number tokens retain their stricter SourceNumber
-grammar. Reject whitespace, empty strings, booleans, null, containers, underscores,
-hexadecimal, nonnumeric tokens and results overflowing to infinity.
+| Input               | Conversion                                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Motion component    | Finite `SourceNumber` or ASCII decimal string: optional sign, integer/fraction, optional exponent             |
+| String-only grammar | Leading zeros, `.5`, `1.` accepted; JSON numbers retain stricter token grammar                                |
+| Rejected            | Whitespace, empty strings, booleans, null, containers, underscores, hex, nonnumeric tokens, infinity overflow |
+| Float precision     | Normal Python rounding; tiny magnitudes can underflow to signed zero                                          |
+| Present sampleRate  | Same conversion, positive/finite, `ValueOrigin.SOURCE`; non-50 rates take precedence                          |
+| Absent sampleRate   | 50, `ValueOrigin.DEFAULT`; null/zero/negative/malformed/overflow/underflow-to-zero fail instead               |
 
-Typed accessors use normal Python float rounding; tiny magnitudes can underflow
-to signed zero. Exact tokens, original strings, number/string distinctions and
-all unknown fields remain in the unchanged source envelope and original bytes.
-The parser never inserts defaults into source data, re-encodes bytes or normalizes
-vectors. Unknown vector members survive without becoming extra coordinates.
-
-A present sampleRate uses the same numeric conversion and must be positive and
-finite. Valid non-50 rates win, with ValueOrigin.SOURCE. Only a missing property
-uses 50 with ValueOrigin.DEFAULT. Null, zero, negative, malformed, overflowed or
-rates that underflow to zero fail; they never receive the absence default.
+Exact tokens/strings, number/string distinctions, unknown fields and original bytes
+remain unchanged. No defaults enter source data; no re-encoding or normalization.
+Unknown vector members survive without becoming coordinates.
 
 ## Motion, profiles, vectors and indices
 
-Acceleration must be a nonempty array. Every original slot must contain an
-object with valid x/y/z components; validation visits the final sample too.
-Supplied gravity must validate completely and match acceleration length.
-Missing/invalid samples, empty arrays and unequal lengths fail the subset;
-no partial success, silent dropping, padding or truncation occurs.
+| Field/profile                              | Rule                                                                                                               |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Acceleration                               | Nonempty array; every original slot, including final sample, is an object with valid x/y/z                         |
+| Supplied gravity                           | Complete validation and acceleration-matching length, even for Watch or `advancedRecording=false`                  |
+| Invalid motion                             | Missing/invalid samples, empty arrays or unequal lengths fail; no partial success, dropping, padding or truncation |
+| Absent Watch gravity                       | Normal, retained as `None`                                                                                         |
+| Absent iPhone gravity                      | `GRAVITY_UNAVAILABLE` warning                                                                                      |
+| Unknown/missing device                     | `UNKNOWN_DEVICE_PROFILE` warning                                                                                   |
+| Profile effect                             | Availability expectations only; usable acceleration retained, no invented gravity/changed values                   |
+| Six optional direction/calibration vectors | Missing = `None`; defective = targeted warning and whole-vector `None`; valid siblings/extensions retained         |
 
-Absent Apple Watch gravity is normal and remains None. Absent iPhone gravity
-emits GRAVITY_UNAVAILABLE; unknown/missing device emits UNKNOWN_DEVICE_PROFILE.
-Both warnings permit usable acceleration without inventing gravity. Actual
-supplied gravity is always validated, including Apple Watch or advancedRecording=false.
-The profile changes availability expectations only, not measured values.
-
-All six direction/calibration vectors are optional. Missing vectors expose None.
-Defective supplied vectors emit targeted warnings and expose None for that whole
-vector, while valid sibling vectors remain usable. Extension fields are retained.
 No rotation, normalization, polarity, units or rider G forces are inferred.
 
-All supplied indices must be integer-valued JSON numbers, excluding booleans
-and numeric strings. Integral fraction/exponent spellings are accepted without
-rewriting source tokens; fractional values fail. Each is independently bounded
-by the original acceleration array length, from zero through N-1.
-Absent startIndex/endIndex use effective 0/N-1 bounds with INDEX_DEFAULTED
-warnings, preserving source absence. Supplied invalid values still fail, and
-effective start must not exceed end. Optional gravityIndex
-and inclineIndex need no relation to each other or the start/end interval.
-Taron retains gravityIndex=1513 before startIndex=2284. Iron Gwazi retains its
-gravity marker even though no gravity array exists. No slicing or time coordinate
-is produced; the end-index convention and GPS/time semantics remain unverified.
+- Supplied indices require integer-valued JSON numbers, excluding booleans/strings.
+  Integral fraction/exponent spellings retain tokens; fractional values fail.
+- Each index is independently bounded to original acceleration 0…N−1.
+  Absent start/end use effective 0/N−1 with `INDEX_DEFAULTED` warnings; invalid
+  supplied values fail. Effective start ≤ end.
+- Optional gravity/incline indices need no mutual/start-end relationship.
+  Taron retains gravityIndex=1513 before startIndex=2284; Iron Gwazi retains
+  its gravity marker without a gravity array.
+- No slicing/time coordinate is produced. End-index convention and GPS/time
+  semantics remain unverified.
 
 ## Diagnostics and tests
 
-Errors: MISSING_REQUIRED_FIELD, INVALID_SOURCE_ROOT, INVALID_MOTION_SEQUENCE,
-INVALID_VECTOR, MISSING_VECTOR_COMPONENT, INVALID_NUMERIC_COMPONENT,
-MOTION_LENGTH_MISMATCH, INVALID_SAMPLE_RATE, INVALID_INDEX, INDEX_OUT_OF_RANGE,
-INVALID_INDEX_ORDER. Invalid optional vectors use warning severity for the same
-vector/component codes. Device/gravity availability warnings are named above.
+Errors: `MISSING_REQUIRED_FIELD`, `INVALID_SOURCE_ROOT`, `INVALID_MOTION_SEQUENCE`,
+`INVALID_VECTOR`, `MISSING_VECTOR_COMPONENT`, `INVALID_NUMERIC_COMPONENT`,
+`MOTION_LENGTH_MISMATCH`, `INVALID_SAMPLE_RATE`, `INVALID_INDEX`,
+`INDEX_OUT_OF_RANGE`, `INVALID_INDEX_ORDER`. Optional vector defects use the same
+vector/component codes at warning severity; availability/default warnings are above.
+Diagnostic-budget exhaustion returns `RESOURCE_LIMIT_EXCEEDED`, without subset success.
 
-Each diagnostic uses an escaped JSON Pointer and, for a motion sample, its
-original index. Messages identify defects without reproducing source values.
-Ordering follows existing severity/pointer/code rules, including stable ties.
-The decoder enforces document limits; the public service shares one aggregate
-diagnostic budget across motion and optional parsing.
+Diagnostics use escaped JSON Pointers/original sample indices without source values.
+Severity/pointer/code ordering has stable ties. Decoder document limits and
+[shared service budgets](IMPORT_SERVICE.md#shared-diagnostic-budget-and-ordering)
+remain distinct; standalone calls have independent budgets.
+Invalid caller limits raise `ValueError`.
 
 ```powershell
-uv run pytest tests/importers/test_motion.py
+uv run --locked pytest tests/importers/test_motion.py
 ```
 
-Parametric tests examine every component of all five recordings, retain their
-bytes and modification times, and cover synthetic malformed containers, components,
-rates, independent markers, optional vectors, device profiles, signed zero,
-late-sample errors and deterministic outcomes. The shared Pyright contract suite
-also checks narrowing of the motion-specific result union.
+Tests cover all components in five originals, bytes/modification-time integrity,
+malformed containers/components/rates, independent markers, optional vectors,
+profiles, signed zero, final-sample errors and determinism.
+Shared Pyright contracts check motion-result union narrowing.

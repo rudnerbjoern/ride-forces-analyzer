@@ -1,114 +1,97 @@
 # Canonical models and diagnostics
 
-The domain and result layers provide immutable representations. Construction
-performs no decoding, schema dispatch, raw-field diagnostics, force calculation,
-time inference or Qt integration.
-[import decision](../architecture/09_architecture_decisions.md#source-ownership-and-import) defines the larger contract;
-the [architecture](../architecture/08_concepts.md#source-ownership-and-validation) summarizes source ownership and corpus observations.
+API reference for immutable domain values and import outcomes. Architecture remains
+authoritative for [subsystem boundaries](../architecture/05_building_block_view.md#importer-composition-and-interfaces),
+[source ownership/defaults/diagnostics](../architecture/08_concepts.md#source-ownership-and-validation),
+[import decisions](../architecture/09_architecture_decisions.md#source-ownership-and-import)
+and [scientific/resource limits](../architecture/11_technical_risks.md).
 
 ## Public boundaries
 
-Import data concepts from `ride_forces_analyzer.domain` and diagnostics/outcomes
-from `ride_forces_analyzer.importers`. Domain modules have no importer/UI dependency.
-Both packages use standard-library dataclasses with `frozen=True, slots=True`.
-Bootstrap settings have a separate [strict runtime contract](CODE_QUALITY.md#runtime-and-static-contracts).
+- Domain imports: `ride_forces_analyzer.domain`; diagnostics/results:
+  `ride_forces_analyzer.importers`.
+- Models use standard-library `dataclasses` with `frozen=True, slots=True`.
+- Constructors validate supplied canonical values; no decoding, schema dispatch,
+  raw-field diagnostics, time inference, force calculation or Qt integration.
+- Settings use a [separate runtime contract](CODE_QUALITY.md#runtime-and-static-contracts).
 
-| Concept              | Implemented representation                                             |
-| -------------------- | ---------------------------------------------------------------------- |
-| Source ownership     | SourceEnvelope, SourceProvenance, SourceNumber, recursive SourceValue  |
-| Motion               | Vector3, MotionSequence, SampleRate                                    |
-| Indices and vectors  | RecordingIndices, RecordingVectors                                     |
-| Optional metadata    | RecordingMetadata, RidingPosition, ValueOrigin                         |
-| Ordered attributes   | Attribute; Recording.attributes is a tuple                             |
-| Independent GPS      | GpsFix, GpsEntry, GpsSequence, GpsStatus                               |
-| Complete domain view | Recording                                                              |
-| Structured outcome   | ImportDiagnostic, Severity, ImportSuccess, ImportFailure, ImportResult |
+| Concept                     | Types                                                                            |
+| :-------------------------- | :------------------------------------------------------------------------------- |
+| Original source             | `SourceEnvelope`, `SourceProvenance`, `SourceNumber`, recursive `SourceValue`    |
+| Motion                      | `Vector3`, `MotionSequence`, `SampleRate`                                        |
+| Markers and vectors         | `RecordingIndices`, `RecordingVectors`                                           |
+| Metadata/default provenance | `RecordingMetadata`, `RidingPosition`, `ValueOrigin`                             |
+| Ordered attributes          | `Attribute`; `Recording.attributes` is a tuple                                   |
+| Independent GPS             | `GpsFix`, `GpsEntry`, `GpsSequence`, `GpsStatus`                                 |
+| Complete recording          | `Recording`                                                                      |
+| Diagnostics/outcomes        | `ImportDiagnostic`, `Severity`, `ImportSuccess`, `ImportFailure`, `ImportResult` |
 
 ## Original bytes and the source tree
 
-`SourceEnvelope(original_bytes, root=None, *, source_path=None)` owns immutable bytes.
-Passing a bytearray makes a copy before hashing; count and SHA-256 always describe
-the retained bytes. The optional Path is provenance only: construction never
-reads, checks or writes that path. `original_bytes` is the exact round-trip API,
-including whitespace, BOM if supplied, key order and numeric spelling. A failed
-later decode may retain bytes with `root=None`.
-
-Supply a preconstructed object mapping for `root`. Every dictionary is copied
-into an owned read-only mapping; every list/tuple becomes an owned tuple, including
-unknown nested fields. Null, booleans, strings and explicit `SourceNumber` values
-remain distinct. A missing property stays missing. Mutable input changes cannot
-affect the envelope. Cycles, non-string object keys, native int/float scalars and
-unsupported objects are rejected to prevent lossy/mutable source representations.
-
-Construct `SourceNumber("1.00")` for a JSON number, and ordinary `"1.00"` for a
-JSON string. Number tokens retain exact spelling plus a Decimal value, including
-precision, exponent and signed zero. Equality distinguishes `1` from `1.0`.
-The [decoder](STRICT_DECODING.md) captures tokens before float conversion and
-enforces document/resource policies.
-
-The model intentionally does not verify that supplied bytes and supplied tree
-correspond. The decoder constructs both from the same retained input; see
-[strict decoding](STRICT_DECODING.md). SourceEnvelope/Recording
-equality is supported; objects containing mappings are not promised to be hashable
-or serializable with `dataclasses.asdict`. Ordinary mutation is blocked; Python's
-reflective `object.__setattr__` is not a security boundary.
+- `SourceEnvelope(original_bytes, root=None, *, source_path=None)` accepts bytes or
+  bytearray; copies mutable bytes and calculates count/SHA-256 from retained input.
+  The optional `Path` is provenance only: no file read, check or write.
+- `original_bytes` is the exact round-trip API, retaining whitespace, supplied BOM,
+  key order and number spelling. `root=None` permits retained bytes without a decoded tree.
+- `root` accepts a preconstructed object mapping. Each mapping owns a copied,
+  read-only dictionary; lists/tuples become owned tuples, including unknown fields.
+  Null, bool, str, `SourceNumber` and missing properties remain distinct.
+- Cycles, non-string keys, native int/float scalars and unsupported objects are
+  rejected. Changes to caller-owned input cannot change the envelope.
+- `SourceNumber("1.00")` represents a JSON number; `"1.00"` remains a string.
+  Tokens retain spelling and Decimal value, including exponent, precision and
+  signed zero. Equality distinguishes number tokens `1` and `1.0`.
+- Bytes/tree correspondence is not checked by model construction. The
+  [decoder](STRICT_DECODING.md) builds both from the same bytes, captures tokens
+  before float conversion and enforces document/resource policies.
+- Envelope/recording equality is supported. Mapping-containing objects have no
+  promised hashability or `dataclasses.asdict` serialization. Ordinary mutation is
+  blocked; reflective `object.__setattr__` is not a security boundary.
 
 ## Canonical values and absence
 
-Vector3/GpsFix accessors hold finite floats. Boolean, string and non-finite numeric
-inputs cannot masquerade as measured numbers. No normalization, unit conversion,
-projection, geographical rejection or epoch conversion occurs. Exact source values
-remain separately available through the source envelope.
+| API                              | Value/absence contract                                                                                                                                                                                 |
+| :------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Vector3` / `GpsFix`             | Finite float accessors; bool, strings and non-finite numbers rejected. No normalization, unit conversion, projection, geographical rejection or epoch conversion; exact tokens remain in the envelope  |
+| `MotionSequence`                 | Owns tuple sequences; acceleration nonempty; provided gravity contains typed `Vector3` values and has equal length. Absent gravity is `None`, with `paired_motion_available=False`, never zero vectors |
+| `RecordingIndices` / `Recording` | Nonnegative indices; `start <= end`; `Recording` checks every marker against acceleration length. Gravity/incline may precede start or each other; no slicing                                          |
+| `SampleRate`                     | Default `(50.0, ValueOrigin.DEFAULT)`; valid explicit source rate uses SOURCE; invalid rate is not a default                                                                                           |
+| `RidingPosition`                 | Default `("Seated", ValueOrigin.DEFAULT)`; valid explicit source value uses SOURCE; invalid optional source position becomes `None` with parser warning                                                |
+| `RecordingMetadata`              | Optional values use `None`, not fabricated zero/false; date is `SourceNumber`                                                                                                                          |
+| Source extrema/smoothing         | `Recording.min_force`, `max_force`, `smoothing_factor` retain `SourceNumber`, without reinterpretation                                                                                                 |
+| `Attribute`                      | Arbitrary labels/order retained; nested source-valued payloads copied and frozen                                                                                                                       |
+| `RecordingVectors`               | Independent optional `vertical_direction`, `lateral_direction`, `longitudinal_direction`, `x_calibration`, `y_calibration`, `z_calibration` accessors                                                  |
+| `GpsSequence`                    | Every original sequential slot retained as `GpsEntry`; unavailable fix is `fix=None`; count independent of motion                                                                                      |
+| `GpsStatus`                      | ABSENT, PRESENT (including empty sequence), INVALID (no usable container) remain distinct; PRESENT requires a sequence                                                                                 |
 
-MotionSequence copies caller sequences into tuples. Acceleration is nonempty;
-provided gravity must have equal length and valid Vector3 values. Absent gravity
-is `None` and `paired_motion_available=False`, never zero vectors. Indices are
-nonnegative, bounded by acceleration length, and start does not exceed end.
-Start/end are effective bounds: missing source fields default to 0/N-1 with
-INDEX_DEFAULTED warnings; source absence remains visible in the source envelope.
-Gravity/incline markers may precede start or each other; no slicing occurs.
-Constructors protect canonical consistency; the motion parser validates raw fields
-and produces structured diagnostics.
-
-SampleRate defaults to `(50.0, ValueOrigin.DEFAULT)` and RidingPosition to
-`("Seated", ValueOrigin.DEFAULT)`, implementing the owner's absence policies.
-Explicitly supplied valid source values use `ValueOrigin.SOURCE`; equal numeric
-values with different origins remain distinguishable. Invalid source rate cannot
-become a default; invalid optional riding position is represented by `None` and
-a later parser warning. Constructors do not insert either default into source data
-or infer presence by inspecting a source mapping.
-
-Optional metadata uses `None`, not zero or false. Date, extrema and smoothing use
-SourceNumber without scientific reinterpretation. Attributes preserve arbitrary
-labels and order, and copy their source-valued nested payloads. All six optional
-direction/calibration vectors have independent typed accessors.
-
-GpsSequence preserves every original indexed slot as GpsEntry, including
-`fix=None` for an unavailable fix. GPS count is independent of acceleration count.
-Recording distinguishes ABSENT, PRESENT (including an empty sequence), and INVALID
-(no usable container). Negative speed/course/accuracy and finite suspicious
-coordinates remain represented. [Optional parsing](OPTIONAL_PARSING.md)
-generates GPS/metadata warnings and accessors independently of full import.
-The [motion parser](MOTION_PARSING.md) handles device-based gravity availability;
-model constructors perform no profile inference.
+- Start/end are effective bounds. The [motion parser](MOTION_PARSING.md) supplies
+  absent boundaries as 0/N−1 with `INDEX_DEFAULTED`; source absence remains visible.
+  It also handles device-dependent gravity availability; constructors infer no profile.
+- Origins distinguish equal effective values. Constructors neither insert defaults
+  into source data nor infer field presence from the source mapping.
+- Negative GPS speed/course/accuracy and suspicious finite coordinates remain
+  represented. Models assign no verified physical meaning, units, epoch or shared
+  motion/GPS clock. [Optional parsing](OPTIONAL_PARSING.md) owns metadata/GPS warnings
+  and subset accessors; [scientific gates](../architecture/08_concepts.md#scientific-provenance-and-gates)
+  remain authoritative for interpretation.
 
 ## Diagnostics and results
 
-ImportDiagnostic carries uppercase code, Severity, RFC 6901 JSON Pointer, nonempty
-message and optional nonnegative source sample index. The empty pointer denotes
-the root; `json_pointer` escapes arbitrary keys and indices. `ordered_diagnostics`
-copies input and orders error/warning/info, then escaped pointer lexicographically,
-then code. Exact ties retain emission order. Index 10 therefore sorts before index
-2 in pointer text; this is the explicit ADR policy, not sample reordering.
+- `ImportDiagnostic`: uppercase code, `Severity`, RFC 6901 JSON Pointer, nonempty
+  message and optional nonnegative sample index. Empty pointer means root;
+  `json_pointer` escapes arbitrary keys/indices.
+- `ordered_diagnostics` owns a tuple and sorts ERROR/WARNING/INFO, escaped pointer
+  lexicographically, then code; exact ties retain emission order. Pointer index 10
+  sorts before 2; samples are not reordered.
+- `ImportResult = ImportSuccess | ImportFailure`; both constructors copy and order diagnostics.
 
-ImportResult is the union of frozen ImportSuccess and ImportFailure. Success
-requires a complete Recording and excludes error diagnostics. Failure requires at
-least one error, always exposes `recording=None`, and can retain original bytes.
-Unknown failure version, byte count and digest remain `None`. Known empty retained
-bytes have count zero and a real digest, distinct from unreadable input.
-Successful count/hash/version accessors expose the Recording's source provenance.
+| Result             | Invariants/accessors                                                                                                           |
+| :----------------- | :----------------------------------------------------------------------------------------------------------------------------- |
+| `ImportSuccess`    | `success=True`; complete `Recording`; no error diagnostics; count/hash/version from recording/source provenance                |
+| `ImportFailure`    | `success=False`; at least one error; `recording=None`; may retain original source bytes; unknown version/count/hash are `None` |
+| Known empty source | Byte count 0 and actual digest; distinct from unreadable input                                                                 |
 
-Use the literal tag or the result class for typed control flow:
+Typed control flow supports the literal tag or result class:
 
 ```python
 from ride_forces_analyzer.importers import ImportResult
@@ -120,30 +103,26 @@ def inspect_result(result: ImportResult) -> int | None:
     return None
 ```
 
-Both result constructors copy and order diagnostic lists. Standard representations
-omit source bytes/tree, GPS coordinates, sequences and recording metadata to avoid
-accidental trace dumps. Caller-supplied diagnostic messages still require safe,
-field-oriented text; no automatic sensitive-content classifier is implemented.
-Constructors perform no parsing; the [service](IMPORT_SERVICE.md) returns these
-outcomes for full file/bytes imports.
+- Standard representations omit bytes/tree, GPS coordinates, sequences and metadata.
+  Caller messages still require safe field-oriented text; no sensitive-content classifier.
+- Constructors perform no parsing. The [import service](IMPORT_SERVICE.md) produces
+  these outcomes for full Path/bytes imports.
 
 ## Validation
 
 ```powershell
-uv run pytest tests/domain/test_source.py tests/domain/test_recording.py tests/importers/test_results.py
+uv run --locked pytest tests/domain/test_source.py tests/domain/test_recording.py tests/importers/test_results.py
+npm run test:types
 ```
 
-Pyright contracts exercise literal-tag narrowing, invalid typed
-construction, frozen-field assignment and source-mapping mutation. Existing
-Pydantic contracts remain in the same npm suite. Synthetic runtime tests cover
-owned byte/tree/sequence inputs, exact source tokens, defaults and absence,
-diagnostic ordering, consistent outcomes and a fresh Qt-free package import.
-The five real recording integrity tests remain unchanged.
-
-Frozen dataclasses alone do not freeze nested inputs, and MappingProxyType is a
-dynamic view unless its backing dictionary is privately owned. See the official
-[dataclasses](https://docs.python.org/3.14/library/dataclasses.html) and
-[mapping proxy](https://docs.python.org/3.14/library/types.html#types.MappingProxyType)
-documentation. The decoder enforces [resource limits](STRICT_DECODING.md).
-The [import boundary](../architecture/08_concepts.md#source-ownership-and-validation) summarizes implemented guarantees.
-Total process/native peak RAM remains unverified.
+- Runtime coverage: owned bytes/tree/sequences, exact tokens, defaults/absence,
+  diagnostics, result invariants and fresh Qt-free package import.
+- Static coverage: literal-tag narrowing, invalid construction, frozen assignment
+  and source-mapping mutation. Shared suite details: [code quality](CODE_QUALITY.md).
+- Ownership detail: frozen dataclasses do not freeze nested inputs;
+  `MappingProxyType` is a dynamic view unless its backing dictionary is privately owned.
+  References: [dataclasses](https://docs.python.org/3.14/library/dataclasses.html),
+  [mapping proxy](https://docs.python.org/3.14/library/types.html#types.MappingProxyType).
+- Decoder [resource budgets](STRICT_DECODING.md) do not establish total process/native
+  peak RAM. This remains an [architectural limit](../architecture/11_technical_risks.md).
+  Original fixture identities/authorization: [recording catalog](RECORDINGS.md).

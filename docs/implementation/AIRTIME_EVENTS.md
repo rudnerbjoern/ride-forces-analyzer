@@ -1,17 +1,16 @@
 # Provisional airtime event rules
 
-This is the separate domain contract for `airtime-events`, version `1`.
-These are provisional product rules, not validated physical definitions or rider
-sensation measurements. [Sample context](AIRTIME.md) has separate presentation
-confirmation and hysteresis; neither is an event detector input.
+`airtime-events`, version `1`: provisional domain rules, not validated physical
+definitions or rider-sensation measurements. [Sample-context](AIRTIME.md)
+confirmation/hysteresis are separate and never detector inputs.
 
 ## Configuration and input
 
-Enable detection with `AnalysisConfiguration.events = StageConfiguration("airtime-events", "1")`.
-None leaves events NOT_EVALUATED with a reason. Existing default configurations
-remain disabled. Explicit recipes retain their rules in presets and batch jobs.
-Unknown algorithms, versions or parameters fail the calculation, not silently fall
-back to disabled evaluation. Parameters may override the following defaults:
+- Enable with `AnalysisConfiguration.events = StageConfiguration("airtime-events", "1")`.
+  Default `None` means `NOT_EVALUATED` with a reason.
+- Presets and batch recipes retain explicit rules. Unsupported algorithms,
+  versions or parameters fail calculation; no silent disabling.
+- Parameters may override these defaults:
 
 | Parameter                      | Default | Constraint                           |
 | :----------------------------- | :------ | :----------------------------------- |
@@ -23,67 +22,65 @@ back to disabled evaluation. Parameters may override the following defaults:
 | `ejector_onset_g_per_second`   | -3.0    | Finite, negative                     |
 | `onset_memory_seconds`         | 0.50    | Finite, nonnegative                  |
 
-Read the configured projected or smoothed vertical stage, its validity mask and
-inferred uniform source rate. No additional smoothing, gravity substitution or GPS
-alignment is introduced. Whole-stage unavailability or no valid vertical samples
-means NOT_EVALUATED. Otherwise EVALUATED may legitimately contain zero events;
-missing rows are explicitly reported as incomplete input coverage.
+- Input: configured projected/smoothed vertical stage, validity mask and inferred
+  uniform source rate. No extra smoothing, gravity substitution or GPS alignment.
+- Unavailable input or no valid vertical rows: `NOT_EVALUATED`. Otherwise
+  `EVALUATED`, possibly empty; missing rows produce incomplete-coverage diagnostics.
 
 ## Intervals, minimum duration and interruptions
 
-A qualifying sample is valid vertical load at or below `floater_bound_g`.
-An episode begins at its first qualifying sample. It ends at its last qualifying
-sample when a valid positive interruption exceeds the allowed length, a gap occurs
-or the recording ends. Original source indices are inclusive and never renumbered.
+| Rule               | Contract                                                                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Qualifying sample  | Valid vertical load ≤ `floater_bound_g`                                                                                                           |
+| Interval           | First through last qualifying sample; inclusive original indices, never renumbered                                                                |
+| End trigger        | Above-threshold interruption exceeds allowance, data gap or recording end                                                                         |
+| Minimum            | At least `max(1, ceil(minimum_duration_seconds * rate))` qualifying samples; bridged samples do not count                                         |
+| Bridging           | At most `floor(maximum_interruption_seconds * rate)` consecutive valid above-threshold samples between qualifying portions; zero forbids bridging |
+| Duration           | `(last - first + 1) / rate`, including interior bridges, excluding trailing above-threshold samples                                               |
+| Short candidates   | Omitted even when truncated                                                                                                                       |
+| Data gap           | Always splits episodes and resets onset; never bridged                                                                                            |
+| `start_incomplete` | Episode begins at recording start or immediately after a gap                                                                                      |
+| `end_incomplete`   | Episode remains active at recording end/gap, including an unresolved short interruption                                                           |
+| Complete end       | Observed above-threshold interruption exceeds allowance                                                                                           |
 
-Require at least `ceil(minimum_duration_seconds * rate)` qualifying samples.
-Short positive interruptions do not contribute to that minimum. Up to
-`floor(maximum_interruption_seconds * rate)` consecutive valid samples above the threshold may bridge two qualifying portions. Interior bridged samples contribute
-to the reported interval duration `(last - first + 1) / rate`; trailing positive
-samples do not. Zero interruption permits no bridging. Brief candidates failing
-the minimum are omitted, including truncated candidates.
-
-Missing/invalid rows always split episodes and reset onset history; never bridge
-a data gap. An episode beginning at the recording start or immediately after a
-gap has `start_incomplete=True`. An episode still active at recording end or a
-gap has `end_incomplete=True`, including an unresolved short positive interruption.
-A sufficiently long observed positive interruption establishes a complete end.
-Flags describe observation limits, not proof that airtime continued beyond them.
-
-Analyze complete supplied history before any export selection. Selection, zoom,
-frame rate, seeking and language do not clip, split or recalculate domain events.
+Incomplete flags describe observation limits, not continued airtime outside them.
+Analysis uses complete supplied history before export selection; selection, zoom,
+frame rate, seeking and language neither clip nor split nor recalculate events.
 
 ## Minimum, onset and category
 
-Report the lowest qualifying vertical value, with the earliest original index
-for ties. Category summarizes the strongest observed portion of the episode,
-not a claim that its entire duration had that category:
+Minimum: lowest qualifying vertical value; earliest original index breaks ties.
+Category describes the strongest observed portion, not the entire duration:
 
-- Floater Airtime when the minimum is at least `-floater_bound_g`.
-- Airtime below that bound, through `strong_bound_g` inclusive.
-- Strong Airtime strictly below `strong_bound_g` without qualifying onset.
-- Ejector Airtime when a strong sample has qualifying recent onset.
+| Category        | Condition                                            |
+| --------------- | ---------------------------------------------------- |
+| Floater Airtime | Minimum ≥ `-floater_bound_g`                         |
+| Airtime         | `strong_bound_g` ≤ minimum < `-floater_bound_g`      |
+| Strong Airtime  | Minimum < `strong_bound_g`, without qualifying onset |
+| Ejector Airtime | A strong sample has qualifying recent onset          |
 
-Onset is the backward difference over `max(1, round(onset_window_seconds * rate))`
-samples divided by that actual window duration. Only contiguous valid history
-contributes; preceding samples outside the event can establish onset. A decline
-at or below `ejector_onset_g_per_second` qualifies for `onset_memory_seconds`.
-Valid loads above the threshold clear that memory. A strong sample while qualified marks
-the episode Ejector. Report the minimum available signed window difference among
-qualifying samples as `onset_g_per_second`, or None without sufficient history.
-Non-finite differences cannot establish onset and are diagnosed explicitly.
-This indicator is not a qualified biomechanical jerk measurement.
+- Onset: backward difference over `max(1, round(onset_window_seconds * rate))`
+  samples, divided by actual window duration; contiguous valid history only.
+  Preceding samples outside the episode may establish onset.
+- Difference ≤ `ejector_onset_g_per_second` qualifies for `onset_memory_seconds`.
+  Valid loads above `floater_bound_g` clear memory. A qualified strong sample
+  marks the episode Ejector.
+- `onset_g_per_second`: minimum available signed window difference among qualifying
+  samples; `None` without sufficient history. Non-finite differences clear onset
+  memory, cannot qualify and produce diagnostics.
+- This indicator is not qualified biomechanical jerk.
 
 ## Results and reuse
 
-Events are immutable `AirtimeEvent` values ordered by source index without overlap,
-inside `EventAnalysis`, carrying the actual force-stage reference, rule configuration,
-calculation provenance and PROVISIONAL capability. The input reference retains
-its own quality and provenance. No display-label subscription is involved.
-Changing rules rebuilds only events; changing context confirmation does not.
-Smoothing rebuilds events only when they consume smoothing. Snapshots retained by
-exports preserve their original event results. Service change notifications remain
-technical payloads, separate from these domain events. Unsupported rules terminate
-that request with `AnalysisFailed`; no partial event/snapshot result replaces the
-previous configuration. Context categories, event boundaries and service status
-remain distinct contracts.
+- Immutable `AirtimeEvent` values, source-index ordered without overlap, inside
+  `EventAnalysis`: actual force-stage reference, rules, calculation provenance and
+  `PROVISIONAL` capability. Input retains its own quality/provenance.
+- Rule changes rebuild events only; context-confirmation changes do not. Smoothing
+  rebuilds events only if selected as their input. Exports retain bound results.
+- No display-label subscription; technical service notifications are distinct.
+  Unsupported rules end the request with `AnalysisFailed`, preserving the previous
+  result without partial replacement.
+
+Architecture owns [stage responsibilities](../architecture/05_building_block_view.md),
+[reuse and snapshot lifetime](../architecture/08_concepts.md#snapshot-lifetime-and-reuse)
+and [service delivery/error handling](../architecture/06_runtime_view.md#explorer-analysis-delivery).

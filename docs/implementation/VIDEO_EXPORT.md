@@ -1,171 +1,152 @@
 # 4K ride overlay export
 
-This document defines export behavior and output contracts. Component boundaries
-belong to the [building block view](../architecture/05_building_block_view.md#video-export-boundary);
-layout styling and extension belong to the [layout API](../development/EXPORT_LAYOUTS.md).
+Current output/interaction contracts. Architecture owns
+[component/API boundaries](../architecture/05_building_block_view.md#video-export-boundary),
+[runtime](../architecture/06_runtime_view.md#4k-export-runtime),
+[snapshot reuse/lifetime](../architecture/08_concepts.md#snapshot-lifetime-and-reuse)
+and [encoder qualification limits](../architecture/07_deployment_view.md#encoder-installation).
+The [layout API](../development/EXPORT_LAYOUTS.md) owns styling/extensions;
+the [roadmap](../ROADMAP.md) owns planned scope.
 
 <!-- cspell:words qscale -->
 
 ## Supported output
 
-One video per recording in a landscape 3840×2160 or portrait 2160×3840 canvas.
-Select Flow Ribbon (opening default),
-Corner Instruments, Telemetry Capsule, G-Orbit or the four-panel column.
-Onride alignment is manual in DaVinci Resolve; source-video ingestion and
-synchronization are outside this export. Planned product scope belongs in the
-[roadmap](../ROADMAP.md).
-Transparent ProRes 4444 MOV and opaque H.264 MP4 are supported outputs. The
-[deployment view](../architecture/07_deployment_view.md#encoder-installation)
-records the concise full-recording/editor compatibility boundary.
+| Setting            | Contract                                                                                                   |
+| ------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Output             | One video per recording; transparent ProRes 4444 MOV (default) or independent opaque H.264 MP4             |
+| Canvas             | Landscape 16:9, 3840×2160; portrait 9:16, 2160×3840                                                        |
+| Profiles           | Flow Ribbon (assistant opening default), Corner Instruments, Telemetry Capsule, G-Orbit, four-panel column |
+| Frame-rate choices | 24/25/30/50/59.94/60 fps; default 50 without a valid saved preference                                      |
+| Context window     | 1–60 s, default 12; shared source position and centered cursor in time plots                               |
+| Alignment          | Manual in DaVinci Resolve; source-video ingestion/synchronization excluded                                 |
 
-See the [Manta G-Orbit demo on YouTube](https://youtu.be/tsRzD416voU) for an example
-of the exported template over Onride footage.
+[Manta G-Orbit demo](https://youtu.be/tsRzD416voU): exported overlay over Onride footage.
 
 ## Contracts
 
-- Settings → Export stores a default video frame rate in `preferences.sqlite3`.
-  New export assistants use this rate; without a valid preference they use 50 fps.
-  Save changes the persistent default; Cancel leaves it unchanged. Temporary
-  assistant changes never update the default. Loaded presets and saved batches
-  keep their own rates, including the exact `60000/1001` ratio.
+### Defaults, destinations and saved settings
 
-- The save dialog suggests the original `.forces` filename stem with `.mov` or
-  `.mp4` for the selected output. Successfully completed exports remember their
-  destination folder across restarts in `preferences.sqlite3`, independently of
-  the recording folder. A missing folder falls back to the dialog default;
-  cancellation and failed exports preserve the previous folder.
-- Video format selects 16:9 landscape or 9:16 portrait. All five profiles fit
-  completely inside the selected canvas. Portrait Ribbon/Capsule use vertical
-  force cards; Corner Instruments, G-Orbit and the four-panel column retain their
-  complete instruments with proportional scaling and margins. Preview thumbnails
-  and review preserve the full canvas aspect ratio without cropping/stretching.
-  Frame composition and encoder padding share the same region geometry.
-  Presets and immutable batch jobs explicitly persist the aspect.
-  Mixed-format batches are supported.
-- Overlay language selects English/German independently of application language;
-  a new assistant initially follows the UI. Presets/jobs explicitly snapshot the
-  choice; incomplete saved settings are rejected. Production previews and
-  encoded frames use identical localized labels/number formatting. Replay clocks,
-  source values, layout geometry, signs and units stay unchanged. German glyph
-  bounds are checked in every profile/aspect. Known layout names are translated;
-  Flow Ribbon and G-Orbit retain their profile identities.
-  The assistant uses a scrollable content area with pinned navigation/export
-  actions so translated settings remain reachable on smaller/high-DPI desktops.
+- Settings → Export persists the default frame rate in `preferences.sqlite3`.
+  Save changes it; Cancel and temporary assistant edits do not. Presets/batches
+  retain their own rates, including exact `60000/1001`.
+- Save dialog suggests the source `.forces` stem plus `.mov`/`.mp4`.
+  Successful exports remember the destination folder across restarts, separately
+  from the recording folder. Missing folders use dialog defaults; cancellation or
+  failure preserves the previous folder.
+- Presets/immutable batch jobs explicitly retain aspect, overlay language, vertical
+  direction and analysis recipe; incomplete saved settings are rejected.
+  Mixed-aspect batches are supported.
+- Overlay language is English/German, initially following UI language but independently
+  selectable. Production previews/frames share localized labels/numbers.
+  Replay clocks, source values, geometry, signs and units remain unchanged.
+  German glyph bounds are checked in every profile/aspect. Known layout names
+  translate; Flow Ribbon and G-Orbit retain their identities.
 
-- Preparation reuses the workspace snapshot when source and configuration match;
-  otherwise `prepare_export_analysis` reuses matching upstream stages and replaces
-  only affected stages. Complete available source history is analyzed before the
-  selected interval is applied. Orientation reads the independent prepared tilt
-  stage and is not recalculated by force smoothing.
-- `prepare_export` and `build_previews` accept a prepared `RecordingAnalysis`,
-  settings and concrete source indices. They do not extract snapshots from explorer
-  presentation objects. Layouts consume only the bound `ExportTimeline`; frame
-  generation and encoding keep their existing separate APIs.
-- The two-step export assistant snapshots the graph cursor and current smoothing
-  on opening. All five thumbnails and the large preview use the production RGBA
-  renderer at that exact source sample, independent of video fps quantization.
-  Settings/background changes refresh previews in a debounced worker; only the
-  latest revision is applied. No FFmpeg or video encode is needed for a preview.
-  Checkerboard/light/dark backgrounds are preview-only. Out-of-interval cursors
-  remain unchanged and show an explicit full-recording-context warning. Review
-  summarizes the actual export interval/settings; destination selection and full
-  rendering require the final Export video action. The modal assistant preserves
-  the source sample while open. Escape/close respects active encoding cancellation.
-- Transparent ProRes 4444 MOV is the default; opaque H.264 MP4 is independent.
-  RGBA Pillow frame generation and external FFmpeg encoding remain separate.
-  Settings and review show a live approximate file-size range in MiB, using the
-  rounded frame count, canvas/overlay area and output codec. This is an uncalibrated
-  planning heuristic, not a measured bitrate or guaranteed bound. Motion, detail,
-  filtering and CPU/GPU encoding may put the actual size outside that range.
-  Estimation needs no FFmpeg and never renders a trial clip.
-  During a single-video export, a two-second timer estimates remaining frame time
-  from elapsed monotonic time per submitted frame and pending frame count, displayed
-  as minutes:seconds. Startup overhead is included. Before the first frame it shows
-  an estimating state; after the last frame it shows finalization,
-  whose duration is not predicted. Cancellation, failure and completion clear the ETA.
-- One shared source position and centered cursor in each time plot; configurable
-  1–60 s context, default 12. Compact time plots show three forces plus numeric tilt;
-  the column includes a fourth orientation plot. G-Orbit uses independent
-  signed concentric force arcs instead of time plots: vertical left, longitudinal
-  right and lateral on the upper inner semicircle. A separate right orientation
-  semicircle carries a marker at the measured angle (0° top, 90° right, 180° bottom),
-  without stretching the source's 0–180° range or reconstructing attitude from
-  forces. Missing tilt has no marker. G-Orbit has no replay footer. Its square
-  region uses a circular translucent background with fully transparent corners.
-  Scale numbers are bold; white current-value bars cross the tracks with dark
-  outlines. Portrait output scales all dimensions proportionally. Numeric
-  readouts sit inside the arcs.
-- G-Orbit holds positive and negative peaks independently for 1.5 source-time
-  seconds, then releases toward zero at 1 g/s, never below the current magnitude.
-  Reaching the held value again restarts its hold; a new larger peak replaces it
-  immediately. Peak tracks start at the prepared interval's first sample and reset
-  on missing data. Random-access previews and video frames use the same immutable
-  source-time envelopes, independent of query order and export fps.
-  Peak bars have dark outlines and muted channel colors, with longitudinal
-  green/red by sign. Translucent arc fills are composited
-  over the track; opaque current arcs and white current markers remain on top.
-- Compact panels are translucent, with transparent surroundings and opaque
-  cyan vertical and yellow lateral data, green/red longitudinal data, outlined
-  text/curves and visible -1/0/+1 references. Exact placement, dimensions and
-  drawing styles are defined by the [layout design constants](../development/EXPORT_LAYOUTS.md#design-constants).
-  Rounded corners retain transparency. Opaque output composites panels over black.
-- Configurable 24/25/30/50/59.94/60 video fps, default 50. The 59.94 option uses
-  the exact `60000/1001` ratio for timing, frame counts and FFmpeg, retained as
-  that ratio in saved presets/batches. Select a matching 59.94 editing timeline
-  for GoPro footage recorded at that rate. Source sample time remains
-  index/rate; fractional output positions interpolate adjacent values. Inclusive
-  source ranges include the final sample interval; duration rounds up to a frame.
-- Export timelines bind the complete immutable analysis snapshot selected by the
-  assistant. Force/orientation channels share prepared buffers; vertical context
-  reads the prepared full-history categories, without per-layout reclassification.
-  Equal analysis configuration reuses the exact snapshot; changed configuration
-  replaces only affected stages. Orientation survives force-smoothing changes.
-  Layout, aspect, language, video rate and seeking do not recalculate analysis.
-  Running exports and preview workers retain their bound snapshot independently
-  of later workspace changes. The assistant does not follow workspace updates.
-- Export calibrated channels at the current centered-mean setting. Force bounds
-  use selected extrema plus 5% outward padding and include -1/0/+1 g labels.
-  Every layout defaults to vertical positive-down (seat pressure) and negative-up
-  (lifting). G-Orbit uses a left semicircle with zero at its equator and signed
-  extremes at the bottom/top. Vertical direction remains manually reversible in
-  every layout. Saved presets retain their explicit vertical direction.
-  Time advances left-to-right on horizontal axes and bottom-to-top on vertical
-  axes: left/bottom is past, right/top is future. The four-panel column uses
-  horizontal time axes throughout, with lateral forces positive-down by default.
-  Compact lateral histories use a vertical
-  time axis advancing upward, with negative
-  (left) forces left of the centered zero axis and positive (right) forces right.
-  Current-only lateral instruments indicate left/right horizontally; G-Orbit uses
-  its upper semicircle, centered at the top. Both
-  directions share the larger absolute selected bound, preserving equal scale.
-  This direction is fixed across compact themes/aspects/previews. Explicit lateral
-  inversion settings affect only the column display; the assistant disables
-  lateral inversion. Numeric signs remain unchanged.
-  Axis inversion does not negate source values or change right/left/braking signs.
-  Longitudinal acceleration (positive) always appears above zero; deceleration /
-  braking (negative) always appears below zero, in histories and current-only
-  instruments across all themes/aspects. Longitudinal direction is not invertible.
-- Replay labels retain source sample-counter notation. Theme graphics omit sample
-  rate (Hz) and export frame rate (fps); neither describes the underlying POV
-  video's frame rate. Technical rates remain in settings/metadata and encoding.
-  Default range uses effective start/end markers; selection and entire
-  recording are selectable. Context outside the exported interval stays blank.
-- Orientation is the angle of current normalized source gravity to normalized
-  stored vertical (0–180°), with clipped cosine. It is not yaw or GPS heading.
-  Missing/zero gravity is unavailable and breaks the curve; no forces-derived substitute.
-- Probe real NVIDIA encoding: Vulkan ProRes with alpha, NVENC for opaque H.264;
-  otherwise use the CPU encoder and display the backend. GPU ProRes must not
-  receive the CPU qscale option. Only the selected layout region crosses the raw-frame pipe;
-  the encoder pads the remaining transparent/opaque canvas to the selected dimensions.
+### Assistant and previews
+
+| Interaction            | Contract                                                                                                                      |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Opening                | Two-step modal assistant binds current analysis, graph cursor and smoothing; does not follow workspace changes                |
+| Preview sample         | All five thumbnails and large preview use production RGBA at the exact source sample, independent of video-frame quantization |
+| Refresh                | Settings/background changes use a debounced worker; only latest revision applies                                              |
+| Background             | Checkerboard/light/dark are preview-only; preview needs neither FFmpeg nor encoding                                           |
+| Out-of-interval cursor | Retained unchanged; explicit full-recording-context warning                                                                   |
+| Review                 | Actual interval/settings; destination selection and full rendering require final Export video action                          |
+| Navigation             | Scrollable content, pinned navigation/export actions for smaller/high-DPI desktops and translated settings                    |
+| Close/Escape           | Preserve source sample while open; respect active-encoding cancellation                                                       |
+
+### Analysis and time mapping
+
+- Preparation reuses an identical source/configuration snapshot; otherwise
+  `prepare_export_analysis` reuses matching upstream stages and rebuilds affected ones.
+  Complete available history precedes interval selection.
+- `prepare_export`/`build_previews` accept `RecordingAnalysis`, settings and concrete
+  source indices; layouts consume a bound `ExportTimeline`.
+  Force/orientation views share prepared buffers; context uses full-history labels
+  without per-layout reclassification.
+- Orientation is independent of force smoothing. Layout, aspect, language, video
+  rate and seeking do not recalculate analysis. Running exports/preview workers
+  retain bound snapshots independently of later workspace changes.
+- Source time is index/rate; fractional output positions interpolate adjacent values.
+  Inclusive ranges include the final sample interval; duration rounds up to a frame.
+- 59.94 uses exact `60000/1001` in timing, frame counts, FFmpeg and saved settings.
+  Use a matching 59.94 editing timeline for GoPro footage recorded at that rate.
+- Default interval uses effective start/end markers; current selection and entire
+  recording are alternatives. Plot context outside the exported interval is blank.
+- Replay labels retain sample-counter notation. Graphics omit Hz/fps; neither
+  identifies the POV video's rate. Technical rates remain in settings/metadata/encoding.
+
+### Geometry, directions and colors
+
+- All profiles fit the full canvas. Portrait Ribbon/Capsule stack force cards;
+  Corners, G-Orbit and Column preserve complete instruments with proportional
+  scaling/margins. Previews retain aspect without cropping/stretching.
+  Frame composition and encoder padding share region geometry.
+- Compact time plots show three forces plus numeric tilt; Column adds an
+  orientation plot. Export uses calibrated channels at the selected centered-mean
+  setting. Bounds use selected extrema plus 5% outward padding and −1/0/+1 g labels.
+- Compact panels are translucent with transparent surroundings/rounded corners;
+  data are opaque: cyan vertical, yellow lateral, green/red longitudinal.
+  Text/curves are outlined; opaque output composites over black.
+  Exact geometry/styles belong to [design constants](../development/EXPORT_LAYOUTS.md#design-constants).
+
+| Channel/axis              | Contract                                                                                                                                                                         |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vertical                  | Default positive-down (seat pressure), negative-up (lifting); manually reversible in every layout, persisted explicitly                                                          |
+| Time                      | Horizontal left-to-right; vertical bottom-to-top: left/bottom past, right/top future                                                                                             |
+| Column                    | Horizontal time axes throughout; lateral positive-down by default                                                                                                                |
+| Compact lateral histories | Vertical time axis advances upward; negative/left forces left of zero, positive/right forces right                                                                               |
+| Current-only lateral      | Horizontal left/right; G-Orbit upper semicircle centered at top                                                                                                                  |
+| Lateral scale             | Equal scale in both directions using larger absolute selected bound; fixed direction across compact layouts/aspects/previews                                                     |
+| Lateral inversion         | Explicit setting affects Column only; disabled in assistant                                                                                                                      |
+| Longitudinal              | Positive acceleration above zero; negative braking below zero in histories/current-only instruments, all layouts/aspects; not invertible                                         |
+| Numeric signs             | Axis inversion never negates source values or changes right/left/braking signs                                                                                                   |
+| Orientation               | Angle between normalized current source gravity and stored vertical, clipped cosine, 0–180°; not yaw/GPS heading; missing/zero gravity breaks curve, no force-derived substitute |
+
+### G-Orbit
+
+- Independent signed concentric force arcs: vertical left, longitudinal right,
+  lateral upper inner semicircle. Vertical zero is at the left equator, signed
+  extremes bottom/top; numeric values sit inside arcs.
+- Separate right orientation semicircle: measured-angle marker at 0° top, 90° right,
+  180° bottom. No stretching/reconstructed attitude; missing tilt has no marker.
+- No replay footer. Square region with circular translucent background and fully
+  transparent corners; portrait scales all dimensions proportionally.
+- Bold scale numbers; white current-value bars with dark outlines cross tracks.
+  Translucent fills composite over tracks; opaque current arcs/white markers stay on top.
+- Positive/negative peaks held independently for 1.5 source-time seconds, then
+  released toward zero at 1 g/s without falling below current magnitude.
+  Reaching held value restarts hold; larger peaks replace it immediately.
+- Envelopes start at prepared interval's first sample and reset on gaps.
+  Immutable source-time envelopes give identical random-access preview/frame
+  behavior independently of query order/fps.
+- Peak bars use dark outlines and muted channel colors; longitudinal green/red by sign.
+
+### Estimates and progress
+
+| Estimate             | Contract and limits                                                                                                                      |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| File size            | Live approximate MiB range in settings/review, using rounded frame count, canvas/overlay area and codec; no FFmpeg or trial rendering    |
+| Size uncertainty     | Uncalibrated planning heuristic, not measured bitrate/guaranteed bounds; motion, detail, filtering and CPU/GPU encoding can exceed range |
+| Remaining frame time | Single-video export, 2 s timer; elapsed monotonic time per submitted frame × pending count; min:sec, including startup overhead          |
+| ETA states           | Estimating before first frame; finalization after last frame has no predicted duration; cancel/failure/completion clears ETA             |
+
+### Encoding and FFmpeg
+
 - Background export provides progress/cancellation; window close requests cancel.
-  Existing files are never overwritten. Publish the completed encoder output
-  exclusively. Use same-volume hard links to avoid doubling
-  large videos; cross-volume publication copies exclusively and removes partial output.
-- Processing remains offline after installation. Existing Pillow dependency is
-  reused; FFmpeg full build is external and checksum-pinned in ffmpeg.json.
-  setup.ps1 -VideoExport installs it; the dialog also accepts an installed executable.
-  FFmpeg Browse opens the folder of the current path, including relative paths
-  and paths whose executable is missing. A directory entered directly opens
-  that directory; an empty field uses the native dialog default. Cancelling
-  preserves the current path, and choosing a file updates it.
-  Original recording bytes, metadata, GPS and source values remain unchanged.
+  Pillow RGBA generation remains separate from external FFmpeg encoding.
+- Probe actual NVIDIA Vulkan ProRes with alpha / NVENC H.264; otherwise CPU fallback.
+  Display selected backend. GPU ProRes never receives CPU `qscale`.
+- Pipe only the selected layout region; encoder pads remaining transparent/opaque
+  canvas to selected dimensions.
+- Never overwrite existing files. Publish completed output exclusively; use
+  same-volume hard links to avoid duplicate large files. Cross-volume or unsupported
+  links fall back to exclusive copying; failed/cancelled copies remove partial output.
+- Processing stays offline after installation, reusing Pillow. External full FFmpeg
+  build/version/checksum is pinned in `ffmpeg.json`; `setup.ps1 -VideoExport` installs it.
+  The assistant also accepts an installed executable.
+- FFmpeg Browse opens the configured executable's folder, including relative paths
+  or missing executables. A directory input opens itself; empty uses native defaults.
+  Cancel retains path; choosing a file replaces it.
+- Recording bytes, metadata, GPS and source values remain unchanged.
