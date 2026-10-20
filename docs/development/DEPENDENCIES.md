@@ -89,6 +89,10 @@ and scoped KaTeX 0.19.0 for
 The KaTeX override crosses the consumer's declared range; real-consumer regression
 tests cover compatibility within this project.
 
+The scoped `markdownlint-cli2` override also requires markdown-it 15.0.2 for the
+[smart quote processing fix](https://github.com/markdown-it/markdown-it/security/advisories/GHSA-r7fv-28h4-cvq7).
+The direct documentation-parser dependency remains pinned to the same version.
+
 Deeply nested glob patterns can exhaust the braces parser stack
 ([advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)). Project globs are
 small configured patterns; no application API accepts arbitrary glob input.
