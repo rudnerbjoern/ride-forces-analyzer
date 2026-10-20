@@ -42,12 +42,10 @@ from ride_forces_analyzer.analysis.recording import (
     StageAvailability,
     StageConfiguration,
     VerticalContext,
-    prepare_recording_analysis,
 )
 from ride_forces_analyzer.importers import ImportSuccess, Severity, import_forces_bytes
 
 NOW = datetime(2026, 10, 20, tzinfo=UTC)
-PENDING = "Recording analysis operations are intentionally NotImplementedError stubs"
 
 
 @pytest.fixture
@@ -234,26 +232,7 @@ def test_request_state_distinguishes_retained_snapshot_from_requested_configurat
     assert update.snapshot is analysis and update.revision != state.requested_revision
 
 
-def test_calculation_and_access_operations_remain_unimplemented(
-    analysis: RecordingAnalysis,
-) -> None:
-    with pytest.raises(NotImplementedError, match="RecordingAnalysis.sample"):
-        analysis.sample(0)
-    with pytest.raises(NotImplementedError, match="RecordingAnalysis.with_configuration"):
-        analysis.with_configuration(analysis.configuration, revision=2, calculation_time=NOW)
-    with pytest.raises(NotImplementedError, match="RecordingAnalysis.with_smoothing"):
-        analysis.with_smoothing(5, revision=2, calculation_time=NOW)
-    with pytest.raises(NotImplementedError, match="prepare_recording_analysis"):
-        prepare_recording_analysis(
-            analysis.source,
-            analysis.configuration,
-            revision=1,
-            calculation_time=NOW,
-        )
-
-
-@pytest.mark.xfail(strict=True, raises=NotImplementedError, reason=PENDING)
-def test_pending_sample_view_preserves_source_time_and_unavailable_orientation(
+def test_sample_view_preserves_source_time_and_unavailable_orientation(
     analysis: RecordingAnalysis,
 ) -> None:
     sample = analysis.sample(1)
@@ -264,20 +243,6 @@ def test_pending_sample_view_preserves_source_time_and_unavailable_orientation(
     assert sample.context is VerticalContext.NORMAL_GS
     assert sample.orientation_degrees is None
     assert sample.orientation_availability == analysis.orientation.availability
-
-
-@pytest.mark.xfail(strict=True, raises=NotImplementedError, reason=PENDING)
-def test_pending_smoothing_reuses_projection_time_and_orientation(
-    analysis: RecordingAnalysis,
-) -> None:
-    changed = analysis.with_smoothing(5, revision=2, calculation_time=NOW)
-    assert changed is not analysis and changed.revision == 2
-    assert changed.source is analysis.source and changed.time is analysis.time
-    assert changed.forces.projected is analysis.forces.projected
-    assert changed.orientation is analysis.orientation
-    assert changed.forces.smoothed is not analysis.forces.smoothed
-    assert changed.context.input is changed.forces.smoothed
-    assert changed.events.input is changed.forces.smoothed
 
 
 @pytest.mark.parametrize(

@@ -5,34 +5,43 @@ Constructors store references without validation or calculation. Call
 source/time correspondence, availability, payloads and stage dependencies, not
 scientific correctness. Supply immutable tuples/frozen sets; inputs are never
 copied or normalized. Assigning frozen fields raises ``FrozenInstanceError``.
-Preparation, sample access and recalculation still raise ``NotImplementedError``.
+Preparation and sample access reuse the existing source-app calculations.
+Reconfiguration shares compatible stages without retaining snapshot history.
 
 Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from enum import StrEnum
 from math import isfinite
 
+import numpy as np
+
+from ride_forces_analyzer import __version__
 from ride_forces_analyzer.domain import Vector3
 from ride_forces_analyzer.domain._validation import has_type
-from ride_forces_analyzer.importers import ImportSuccess
+from ride_forces_analyzer.importers import ImportSuccess, Severity
 
+from . import airtime
 from .models import (
     AnalysisDiagnostic,
     AnalysisProfile,
     AnalysisProvenance,
     AnalysisResult,
     CapabilityState,
+    EvidenceState,
     ParameterValue,
+    ProfileName,
     SampleValues,
     TimeBasis,
     TimeBasisKind,
     UnitAssignment,
     UnitLabel,
 )
+from .orientation import orientation_degrees
+from .reference import centered_mean, project_directions
 
 
 class AnalysisStage(StrEnum):
@@ -407,8 +416,8 @@ class RecordingAnalysis:
     """Assemble one consistent immutable snapshot from shared analysis stages.
 
     Constructors store references only. Explicit validate checks the assembled
-    graph without changing values or copying buffers. Numerical processing and
-    sample access remain unimplemented.
+    graph without changing values or copying buffers. Preparation uses the
+    existing numerical functions; reconfiguration replaces only affected stages.
 
     Attributes:
         source: Complete original import retained without modification.
@@ -573,20 +582,56 @@ class RecordingAnalysis:
         _events(events, self.configuration.events, self.source, count)
 
     def sample(self, index: int) -> AnalyzedSample:
-        """Reserve access to one source sample with explicit missing derived values.
+        """Read one source sample without recalculating or retaining a row cache.
 
         Args:
             index: Original source sample index to inspect.
 
         Returns:
-            Planned: AnalyzedSample with source values, time, forces, orientation,
-            context and quality. Currently no sample is returned.
+            AnalyzedSample with raw values, inferred times, prepared stage values
+            and applicable diagnostics. Missing stage/row values remain None.
 
         Raises:
-            NotImplementedError: Always, including for invalid indices; sample
-                access and index validation are not implemented.
+            TypeError: Index is not an integer (booleans are not indices).
+            IndexError: Index is outside the original recording.
+            ValueError: A manually assembled snapshot has no time rate. Call
+                validate before reading snapshots not produced by preparation.
         """
-        raise NotImplementedError("RecordingAnalysis.sample is not implemented")
+        if type(index) is not int:
+            raise TypeError("Sample index must be an integer")
+        if not 0 <= index < len(self.time.source_indices):
+            raise IndexError("Sample index outside recording")
+        rate = self.time.basis.sample_rate
+        if rate is None:
+            raise ValueError("Sample times require a sample rate")
+        orientation = self.orientation.values
+        angle = (
+            float(orientation.values[index])
+            if orientation is not None and orientation.valid_rows[index]
+            else None
+        )
+        return AnalyzedSample(
+            index=index,
+            recording_seconds=index / rate.value,
+            replay_seconds=(index - self.time.replay_origin) / rate.value,
+            raw=self.source.recording.motion.acceleration[index],
+            projected=_force_sample(self.forces.projected.channels, index),
+            smoothed=_force_sample(self.forces.smoothed.channels, index),
+            orientation_degrees=angle,
+            context=self.context.labels[index] if self.context.labels is not None else None,
+            projection_availability=self.forces.projected.availability,
+            smoothing_availability=self.forces.smoothed.availability,
+            orientation_availability=self.orientation.availability,
+            context_availability=self.context.availability,
+            quality=replace(
+                self.quality,
+                diagnostics=tuple(
+                    item
+                    for item in self.quality.diagnostics
+                    if item.source_index is None or item.source_index == index
+                ),
+            ),
+        )
 
     def with_configuration(
         self,
@@ -595,22 +640,34 @@ class RecordingAnalysis:
         revision: int,
         calculation_time: datetime,
     ) -> RecordingAnalysis:
-        """Reserve reconfiguration with reuse of compatible retained upstream stages.
+        """Reconfigure this snapshot, reusing compatible immutable stages.
 
         Args:
             configuration: Requested effective analysis configuration.
-            revision: New service request revision, distinct from this snapshot's.
-            calculation_time: Caller-supplied timezone-aware UTC calculation time.
+            revision: Request revision, strictly greater than this snapshot's.
+            calculation_time: Timezone-aware UTC time for recalculated stages.
 
         Returns:
-            Planned: Consistent RecordingAnalysis sharing unchanged stage objects.
-            Currently no result is calculated or returned.
+            New validated snapshot sharing unchanged stages and their provenance.
+            The previous snapshot remains unchanged; no history is retained.
 
         Raises:
-            NotImplementedError: Always; no dependency comparison, parameter
-                validation or recalculation is implemented.
+            TypeError: Snapshot or configuration has incompatible field types.
+            ValueError: Snapshot, configuration, revision or calculation time is
+                invalid. Failed requests leave this snapshot unchanged.
         """
-        raise NotImplementedError("RecordingAnalysis.with_configuration is not implemented")
+        self.validate()
+        _require(
+            type(revision) is int and revision > self.revision,
+            "Reconfiguration revision must increase",
+        )
+        return _prepare_analysis(
+            self.source,
+            configuration,
+            revision=revision,
+            calculation_time=calculation_time,
+            previous=self,
+        )
 
     def with_smoothing(
         self,
@@ -619,23 +676,38 @@ class RecordingAnalysis:
         revision: int,
         calculation_time: datetime,
     ) -> RecordingAnalysis:
-        """Reserve a smoothing change that retains projection, time and orientation.
+        """Change smoothing while retaining source, projection, time and orientation.
 
         Args:
-            window_samples: Requested filter window in source samples; the
-                intended centered-mean contract accepts odd integers from 1 to 51.
-            revision: New service request revision for the changed configuration.
-            calculation_time: Caller-supplied timezone-aware UTC calculation time.
+            window_samples: Requested odd centered-mean window, 1 through 51.
+            revision: Request revision, strictly greater than this snapshot's.
+            calculation_time: Timezone-aware UTC time for recalculated stages.
 
         Returns:
-            Planned: RecordingAnalysis with replaced smoothing/dependent stages
-            and shared upstream objects. Currently no result is returned.
+            New consistent snapshot. Smoothing always starts from the retained
+            unfiltered projection; only consumers of changed stages are replaced.
 
         Raises:
-            NotImplementedError: Always; filtering and window validation are not
-                implemented, including for invalid window values.
+            TypeError: Snapshot fields have incompatible types.
+            ValueError: Snapshot, window, revision or UTC time is invalid.
         """
-        raise NotImplementedError("RecordingAnalysis.with_smoothing is not implemented")
+        parameters = dict(self.configuration.smoothing.parameters)
+        if type(window_samples) is int and window_samples == parameters.get("window_samples", 11):
+            configuration = self.configuration
+        else:
+            parameters["window_samples"] = window_samples
+            configuration = replace(
+                self.configuration,
+                smoothing=replace(
+                    self.configuration.smoothing,
+                    parameters=tuple(parameters.items()),
+                ),
+            )
+        return self.with_configuration(
+            configuration,
+            revision=revision,
+            calculation_time=calculation_time,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -715,6 +787,28 @@ class AnalysisFailed:
 type AnalysisNotification = AnalysisUpdated | AnalysisInvalidated | AnalysisFailed
 
 
+def source_app_configuration() -> AnalysisConfiguration:
+    """Return the existing owner-adopted source-app policy and default window.
+
+    Returns:
+        Versioned source-direction projection, centered mean (11 samples),
+        independent gravity tilt and current provisional context rules.
+        This opt-in policy does not qualify universal physical rider loading.
+    """
+    return AnalysisConfiguration(
+        AnalysisProfile(
+            ProfileName.RIDER_CALIBRATED,
+            policy_references=("ADR-0006: source-app projection and centered mean",),
+            assumptions=("Source acceleration interpreted as g under the owner-adopted policy",),
+            allow_provisional=True,
+        ),
+        StageConfiguration("source-direction-unit-projection", "1"),
+        StageConfiguration("centered-mean", "1", (("window_samples", 11),)),
+        StageConfiguration("source-gravity-tilt", "1"),
+        StageConfiguration("vertical-context", "1"),
+    )
+
+
 def prepare_recording_analysis(
     source: ImportSuccess,
     configuration: AnalysisConfiguration,
@@ -722,7 +816,7 @@ def prepare_recording_analysis(
     revision: int,
     calculation_time: datetime,
 ) -> RecordingAnalysis:
-    """Reserve initial snapshot preparation independently of presentation and storage.
+    """Prepare a validated immutable snapshot using the existing source-app policy.
 
     Args:
         source: Successful lossless import retaining original bytes and metadata.
@@ -731,13 +825,360 @@ def prepare_recording_analysis(
         calculation_time: Caller-supplied timezone-aware UTC calculation time.
 
     Returns:
-        Planned: Consistent RecordingAnalysis with prepared or explicitly
-        unavailable stages. Currently no analysis is calculated or returned.
+        RecordingAnalysis retaining the complete source, inferred time axis,
+        independent orientation, projected/smoothed forces and prepared context.
+        Missing prerequisites retain raw values and explicit exclusion reasons.
+        Events remain NOT_EVALUATED until separate event rules are implemented.
 
     Raises:
-        NotImplementedError: Always; initial preparation is not implemented.
+        TypeError: Source/configuration has an incompatible type.
+        ValueError: Configuration, revision or UTC calculation time is invalid.
+            Only version 1 of the documented algorithms/default context rules
+            is supported. Numerical force range failures exclude affected stages.
     """
-    raise NotImplementedError("prepare_recording_analysis is not implemented")
+    return _prepare_analysis(
+        source,
+        configuration,
+        revision=revision,
+        calculation_time=calculation_time,
+    )
+
+
+def _prepare_analysis(
+    source: ImportSuccess,
+    configuration: AnalysisConfiguration,
+    *,
+    revision: int,
+    calculation_time: datetime,
+    previous: RecordingAnalysis | None = None,
+) -> RecordingAnalysis:
+    """Prepare changed stages; retain compatible dependencies, never old snapshots."""
+    _typed(source, ImportSuccess)
+    _typed(configuration, AnalysisConfiguration)
+    _require(type(revision) is int and revision >= 0, "Invalid snapshot revision")
+    _configuration(configuration)
+    window = _preparation_window(configuration)
+    provenance = AnalysisProvenance(
+        source.recording.source.provenance,
+        f"{__version__}; numpy={np.__version__}",
+        "recording-analysis",
+        calculation_time,
+    )
+    motion, vectors = source.recording.motion, source.recording.vectors
+    time = (
+        previous.time
+        if previous is not None
+        else AnalysisTime(
+            TimeBasis(TimeBasisKind.INFERRED_UNIFORM, motion.sample_rate),
+            tuple(range(len(motion.acceleration))),
+            source.recording.indices.start,
+        )
+    )
+    raw_mode = configuration.profile.name is ProfileName.RAW_DEVICE_ONLY
+    evidence = configuration.profile.policy_references + configuration.profile.assumptions
+    vertical, lateral, longitudinal = (
+        vectors.vertical_direction,
+        vectors.lateral_direction,
+        vectors.longitudinal_direction,
+    )
+    same_policy = previous is not None and configuration.profile == previous.configuration.profile
+    if (
+        previous is not None
+        and same_policy
+        and configuration.projection == previous.configuration.projection
+    ):
+        projected = previous.forces.projected
+    else:
+        raw = None
+        projection_availability = StageAvailability(AvailabilityState.AVAILABLE)
+        if raw_mode:
+            projection_availability = _unavailable(
+                "RAW_PROFILE",
+                "Raw profile excludes derived forces",
+            )
+        elif vertical is None or lateral is None or longitudinal is None:
+            projection_availability = _unavailable(
+                "PROJECTION_UNAVAILABLE",
+                "Source directions are incomplete",
+            )
+        else:
+            try:
+                raw = project_directions(motion.acceleration, (vertical, lateral, longitudinal))
+            except ValueError as error:
+                projection_availability = _unavailable("PROJECTION_UNAVAILABLE", str(error))
+        projected = ProjectedForces(
+            source,
+            time,
+            configuration.projection,
+            projection_availability,
+            _force_channels(raw) if raw is not None else None,
+            UnitAssignment(UnitLabel.DIMENSIONLESS, EvidenceState.ASSUMED, evidence)
+            if not raw_mode
+            else UnitAssignment(),
+            _prepared_quality("projection", projection_availability),
+            replace(provenance, algorithm=configuration.projection.algorithm)
+            if raw is not None
+            else None,
+        )
+    if (
+        previous is not None
+        and projected is previous.forces.projected
+        and configuration.smoothing == previous.configuration.smoothing
+    ):
+        smoothed = previous.forces.smoothed
+    else:
+        filtered = None
+        smoothing_availability = StageAvailability(AvailabilityState.AVAILABLE)
+        channels = projected.channels
+        if channels is None:
+            smoothing_availability = _unavailable(
+                "SMOOTHING_UNAVAILABLE",
+                "Projection is unavailable",
+            )
+        else:
+            try:
+                filtered = tuple(
+                    centered_mean(tuple(float(value) for value in axis.values), window)
+                    for axis in channels
+                )
+            except ValueError as error:
+                smoothing_availability = _unavailable("SMOOTHING_UNAVAILABLE", str(error))
+        smoothed = SmoothedForces(
+            projected,
+            configuration.smoothing,
+            smoothing_availability,
+            _force_channels(filtered) if filtered is not None else None,
+            _prepared_quality("smoothing", smoothing_availability),
+            replace(provenance, algorithm=configuration.smoothing.algorithm)
+            if filtered is not None
+            else None,
+        )
+    if (
+        previous is not None
+        and same_policy
+        and configuration.orientation == previous.configuration.orientation
+    ):
+        orientation = previous.orientation
+    else:
+        orientation_availability = StageAvailability(AvailabilityState.AVAILABLE)
+        orientation_values = None
+        orientation_diagnostics: tuple[AnalysisDiagnostic, ...] = ()
+        if (
+            raw_mode
+            or motion.gravity is None
+            or vertical is None
+            or (vertical.x, vertical.y, vertical.z) == (0.0, 0.0, 0.0)
+        ):
+            orientation_availability = _unavailable(
+                "ORIENTATION_UNAVAILABLE",
+                "Orientation requires gravity, a vertical direction and an opt-in profile",
+            )
+        else:
+            angles = orientation_degrees(source.recording)
+            orientation_values = SampleValues(
+                np.array([np.nan if value is None else value for value in angles]),
+                valid_rows=tuple(value is not None for value in angles),
+            )
+            orientation_diagnostics = tuple(
+                AnalysisDiagnostic(
+                    "ORIENTATION_SAMPLE_UNAVAILABLE",
+                    Severity.WARNING,
+                    "Zero gravity has no orientation",
+                    "orientation",
+                    index,
+                )
+                for index, value in enumerate(angles)
+                if value is None
+            )
+        orientation_quality = _prepared_quality("orientation", orientation_availability)
+        orientation = OrientationSeries(
+            source,
+            time,
+            configuration.orientation,
+            orientation_availability,
+            orientation_values,
+            UnitAssignment(UnitLabel.DEGREES, EvidenceState.ASSUMED, evidence)
+            if not raw_mode
+            else UnitAssignment(),
+            replace(
+                orientation_quality,
+                diagnostics=orientation_quality.diagnostics + orientation_diagnostics,
+            ),
+            replace(provenance, algorithm=configuration.orientation.algorithm)
+            if orientation_values is not None
+            else None,
+        )
+    context_input = (
+        projected if configuration.context_input is AnalysisStage.PROJECTION else smoothed
+    )
+    if (
+        previous is not None
+        and context_input is previous.context.input
+        and configuration.context == previous.configuration.context
+    ):
+        context = previous.context
+    else:
+        context_availability = StageAvailability(AvailabilityState.AVAILABLE)
+        labels = None
+        channels = context_input.channels
+        if channels is None:
+            context_availability = _unavailable(
+                "CONTEXT_UNAVAILABLE",
+                "Selected force input is unavailable",
+            )
+        else:
+            values = tuple(float(value) for value in channels[0].values)
+            labels = tuple(
+                VerticalContext(label.lower().replace(" ", "_"))
+                for label in airtime.AirtimeContext.prepare(values, motion.sample_rate.value).labels
+            )
+        context = SampleContext(
+            context_input,
+            configuration.context,
+            context_availability,
+            labels,
+            _prepared_quality("context", context_availability),
+            replace(provenance, algorithm=configuration.context.algorithm)
+            if labels is not None
+            else None,
+        )
+    events_input = projected if configuration.events_input is AnalysisStage.PROJECTION else smoothed
+    if (
+        previous is not None
+        and events_input is previous.events.input
+        and configuration.events == previous.configuration.events
+    ):
+        events = previous.events
+    else:
+        event_reason = AnalysisDiagnostic(
+            "EVENT_RULES_UNIMPLEMENTED",
+            Severity.INFO,
+            "Domain event detection is not implemented",
+        )
+        events = EventAnalysis(
+            events_input,
+            configuration.events,
+            EventEvaluationState.NOT_EVALUATED,
+            None,
+            event_reason,
+            AnalysisQuality(diagnostics=(event_reason,)),
+            None,
+        )
+    qualities = (
+        projected.quality,
+        smoothed.quality,
+        orientation.quality,
+        context.quality,
+        events.quality,
+    )
+    result = RecordingAnalysis(
+        source,
+        configuration,
+        time,
+        previous.forces
+        if previous is not None
+        and projected is previous.forces.projected
+        and smoothed is previous.forces.smoothed
+        else ForceSeries(projected, smoothed),
+        orientation,
+        context,
+        events,
+        AnalysisQuality(
+            capabilities=tuple(item for quality in qualities for item in quality.capabilities),
+            diagnostics=tuple(item for quality in qualities for item in quality.diagnostics),
+        ),
+        revision,
+    )
+    result.validate()
+    return result
+
+
+def _preparation_window(configuration: AnalysisConfiguration) -> int:
+    """Admit supported algorithms/parameters and return the centered-mean window."""
+    for stage, algorithm in (
+        (configuration.projection, "source-direction-unit-projection"),
+        (configuration.smoothing, "centered-mean"),
+        (configuration.orientation, "source-gravity-tilt"),
+        (configuration.context, "vertical-context"),
+    ):
+        _require(
+            stage.algorithm == algorithm and stage.version == "1",
+            "Unsupported stage algorithm/version",
+        )
+    _require(
+        not configuration.projection.parameters and not configuration.orientation.parameters,
+        "Projection/orientation parameters are unsupported",
+    )
+    smoothing = dict(configuration.smoothing.parameters)
+    _require(smoothing.keys() <= {"window_samples"}, "Unsupported smoothing parameters")
+    window = smoothing.get("window_samples", 11)
+    _require(
+        type(window) is int and 1 <= window <= 51 and window % 2 == 1,
+        "Smoothing window must be an odd integer from 1 through 51",
+    )
+    defaults = {
+        "floater_bound_g": airtime.FLOATER_BOUND_G,
+        "strong_bound_g": airtime.STRONG_BOUND_G,
+        "onset_window_seconds": airtime.ONSET_WINDOW_SECONDS,
+        "ejector_onset_g_per_second": airtime.EJECTOR_ONSET_G_PER_SECOND,
+        "onset_memory_seconds": airtime.ONSET_MEMORY_SECONDS,
+        "context_confirm_seconds": airtime.CONTEXT_CONFIRM_SECONDS,
+        "floater_exit_bound_g": airtime.FLOATER_EXIT_BOUND_G,
+        "strong_exit_bound_g": airtime.STRONG_EXIT_BOUND_G,
+    }
+    for key, value in configuration.context.parameters:
+        _require(
+            key in defaults and type(value) in (int, float) and value == defaults[key],
+            "Unsupported context parameters; version 1 uses the existing default rules",
+        )
+    profile = configuration.profile
+    _require(
+        profile.name in (ProfileName.RAW_DEVICE_ONLY, ProfileName.RIDER_CALIBRATED),
+        "Unsupported recording analysis profile",
+    )
+    if profile.name is ProfileName.RIDER_CALIBRATED:
+        _require(profile.allow_provisional, "Source-app analysis requires provisional permission")
+    assert isinstance(window, int)
+    return window
+
+
+def _unavailable(code: str, message: str) -> StageAvailability:
+    """Retain an explicit whole-stage exclusion without manufacturing payloads."""
+    return StageAvailability(
+        AvailabilityState.UNAVAILABLE,
+        AnalysisDiagnostic(code, Severity.WARNING, message),
+    )
+
+
+def _prepared_quality(identifier: str, availability: StageAvailability) -> AnalysisQuality:
+    """Keep source-app derivations provisional, independently of payload presence."""
+    return AnalysisQuality(
+        capabilities=(
+            (
+                identifier,
+                CapabilityState.PROVISIONAL
+                if availability.state is AvailabilityState.AVAILABLE
+                else CapabilityState.UNAVAILABLE,
+            ),
+        ),
+        diagnostics=(availability.reason,) if availability.reason is not None else (),
+    )
+
+
+def _force_channels(values: tuple[tuple[float, ...], ...]) -> ForceChannels:
+    """Own immutable scalar buffers without changing existing float64 results."""
+    return (
+        SampleValues(np.array(values[0])),
+        SampleValues(np.array(values[1])),
+        SampleValues(np.array(values[2])),
+    )
+
+
+def _force_sample(channels: ForceChannels | None, index: int) -> ForceSample | None:
+    """Read one force row; absent or invalid rows remain absent."""
+    if channels is None or not all(axis.valid_rows[index] for axis in channels):
+        return None
+    return ForceSample(*(float(axis.values[index]) for axis in channels))
 
 
 def _require(condition: bool, message: str) -> None:
