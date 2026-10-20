@@ -2,12 +2,11 @@
 
 from ride_forces_analyzer.analysis.recording import source_app_configuration
 
-# cspell:words getpixel autouse
+# cspell:words getpixel
 
 from pathlib import Path
 from threading import Event
 from tempfile import TemporaryDirectory
-from collections.abc import Iterator
 
 from PySide6.QtCore import QThreadPool
 from PySide6.QtWidgets import QFileDialog, QInputDialog, QPushButton
@@ -23,20 +22,6 @@ from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 pytestmark = pytest.mark.usefixtures("small_preview_frames")
 
 
-@pytest.fixture(autouse=True)
-def isolated_export_database(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    from ride_forces_analyzer.ui import export as ui_export
-    from ride_forces_analyzer.storage import exports as storage
-    from ride_forces_analyzer.storage import preferences
-
-    with TemporaryDirectory(dir=".tmp") as directory:
-        path = Path(directory).resolve() / "exports.sqlite3"
-        monkeypatch.setattr(ui_export, "default_database_path", lambda: path)
-        monkeypatch.setattr(storage, "default_database_path", lambda: path)
-        monkeypatch.setattr(preferences, "default_database_path", lambda: path)
-        yield
-
-
 def preview_ready(dialog: ExportDialog) -> ExportPreview:
     wait_until(lambda: dialog.preview_result is not None)
     result = dialog.preview_result
@@ -44,11 +29,9 @@ def preview_ready(dialog: ExportDialog) -> ExportPreview:
     return result
 
 
-@pytest.mark.parametrize("configured", ["absolute", "relative", "directory", "missing", "empty"])
 def test_ffmpeg_browse_starts_in_configured_folder_and_preserves_cancelled_path(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
-    configured: str,
 ) -> None:
     window = explorer_window
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
@@ -60,42 +43,43 @@ def test_ffmpeg_browse_starts_in_configured_folder_and_preserves_cancelled_path(
     browse = next(
         button for button in dialog.findChildren(QPushButton) if button.text() == "Browse…"
     )
-    with TemporaryDirectory(dir=".tmp") as temporary:
-        folder = Path(temporary).resolve() / "encoder folder"
-        folder.mkdir()
-        executable = folder / "ffmpeg.exe"
-        if configured != "missing":
-            executable.write_bytes(b"reference executable")
-        original = (
-            ""
-            if configured == "empty"
-            else str(folder)
-            if configured == "directory"
-            else str(executable.relative_to(Path.cwd()))
-            if configured == "relative"
-            else str(executable)
-        )
-        dialog.encoder.setText(original)
-        starts: list[str] = []
-        answer = [""]
+    for configured in ("absolute", "relative", "directory", "missing", "empty"):
+        with TemporaryDirectory(dir=".tmp") as temporary:
+            folder = Path(temporary).resolve() / f"{configured} encoder folder"
+            folder.mkdir()
+            executable = folder / "ffmpeg.exe"
+            if configured != "missing":
+                executable.write_bytes(b"reference executable")
+            original = (
+                ""
+                if configured == "empty"
+                else str(folder)
+                if configured == "directory"
+                else str(executable.relative_to(Path.cwd()))
+                if configured == "relative"
+                else str(executable)
+            )
+            dialog.encoder.setText(original)
+            starts: list[str] = []
+            answer = [""]
 
-        def choose(*args: object, **kwargs: object) -> tuple[str, str]:
-            starts.append(str(args[2]))
-            return answer[0], ""
+            def choose(*args: object, **kwargs: object) -> tuple[str, str]:
+                starts.append(str(args[2]))
+                return answer[0], ""
 
-        monkeypatch.setattr(QFileDialog, "getOpenFileName", choose)
-        browse.click()
-        assert starts[-1] == ("" if configured == "empty" else str(folder))
-        assert dialog.encoder.text() == original
-        other = folder / "other"
-        other.mkdir()
-        answer[0] = str(other / "ffmpeg.exe")
-        browse.click()
-        assert dialog.encoder.text() == answer[0]
-        answer[0] = ""
-        browse.click()
-        assert starts[-1] == str(other)
-        assert dialog.encoder.text() == str(other / "ffmpeg.exe")
+            monkeypatch.setattr(QFileDialog, "getOpenFileName", choose)
+            browse.click()
+            assert starts[-1] == ("" if configured == "empty" else str(folder))
+            assert dialog.encoder.text() == original
+            other = folder / "other"
+            other.mkdir()
+            answer[0] = str(other / "ffmpeg.exe")
+            browse.click()
+            assert dialog.encoder.text() == answer[0]
+            answer[0] = ""
+            browse.click()
+            assert starts[-1] == str(other)
+            assert dialog.encoder.text() == str(other / "ffmpeg.exe")
 
 
 def test_save_dialog_suggests_source_name_and_restores_successful_export_folder(

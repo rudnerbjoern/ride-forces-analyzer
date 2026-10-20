@@ -120,7 +120,10 @@ def inspect_bytes(raw: bytes) -> FixtureSummary:
     def visit(value: JsonValue, path: str, depth: int) -> None:
         nonlocal node_count, max_depth
         node_count += 1
-        observations = paths.setdefault(path, Observations())
+        observations = paths.get(path)
+        if observations is None:
+            observations = Observations()
+            paths[path] = observations
         if isinstance(value, dict):
             observations.types["object"] += 1
             observations.members.update(value.keys())

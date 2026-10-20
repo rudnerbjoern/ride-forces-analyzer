@@ -12,7 +12,7 @@ from typing import Any, Literal
 from PIL import ImageDraw
 import pytest
 
-from ride_forces_analyzer.explorer import ExplorerData, format_sample_time
+from ride_forces_analyzer.explorer import ExplorerData, format_sample_time, load_recording
 from ride_forces_analyzer.i18n import get_language, set_language, tr
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.model import (
@@ -25,9 +25,18 @@ from ride_forces_analyzer.translations import DIAGNOSTIC_GERMAN, GERMAN
 from ride_forces_analyzer.storage.export_models import SavedPreset, SavedBatch
 from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.rendering.batches import make_job
+from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from pathlib import Path
 import ast
 import re
+
+
+@pytest.fixture(scope="module", name="manta")
+def localized_recording() -> ExplorerData:
+    """Share immutable recording data; language and patches remain isolated per test."""
+    data = load_recording(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
+    assert isinstance(data, ExplorerData)
+    return data
 
 
 @pytest.fixture(autouse=True)
@@ -162,7 +171,8 @@ def test_german_overlay_labels_fit_and_language_is_reproducible(
     first = OverlayRenderer(timeline).render_sample(3600)
     set_language("de")
     second = OverlayRenderer(timeline).render_sample(3600)
-    assert first.tobytes() == second.tobytes()
+    first_pixels = first.tobytes()
+    assert first_pixels == second.tobytes()
     assert calls and any("Neigung" in text for text, _, _ in calls)
     assert not any("Hz" in text or "fps" in text for text, _, _ in calls)
     assert not any("G-ORBIT" in text for text, _, _ in calls)
@@ -191,4 +201,4 @@ def test_german_overlay_labels_fit_and_language_is_reproducible(
     english = OverlayRenderer(
         replace(timeline, settings=replace(settings, language="en")),
     ).render_sample(3600)
-    assert first.tobytes() != english.tobytes()
+    assert first_pixels != english.tobytes()

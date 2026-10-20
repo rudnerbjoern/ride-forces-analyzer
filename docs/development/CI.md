@@ -2,7 +2,7 @@
 
 CI is secondary validation after local acceptance. The read-only validation
 workflow runs on pull requests targeting `main` and on manual dispatch; all jobs
-use native Windows. Manual dispatch selects all three suites without PR SHAs.
+use native Windows. Manual dispatch selects all suites without PR SHAs.
 The same workflow is reusable by source-release validation with all suites enabled.
 Every run additionally requires the independent secret-scanning job.
 Pinned tool downloads retry all transfer errors three times, with 30-second
@@ -16,14 +16,14 @@ There is no duplicate CI run on pushes to `main`.
 
 New PR pushes cancel older runs of the same workflow and PR. Manual runs have
 independent concurrency groups and are not cancelled by another run. Job time limits are
-15 minutes for application checks, 10 for delivery skills, workflow validation and secret scanning, and 5 each for change
+15 minutes for non-UI application checks, 10 for UI tests, delivery skills, workflow validation and secret scanning, and 5 each for change
 selection, documentation and the final gate. Python commands use locked dependency
 resolution throughout.
 
-Both pytest jobs print skip/failure reasons and their 20 slowest test phases.
+All three pytest jobs print skip/failure reasons and their 20 slowest test phases.
 Completed test commands, including failures, upload only their JUnit XML report
 for 14 days; skipped or cancelled test jobs do not upload reports. Application and
-skill artifacts are separate. Missing expected reports fail the upload; test failures
+UI and skill artifacts are separate. Missing expected reports fail the upload; test failures
 remain failures. Full logs, recordings, databases and screenshots are not uploaded.
 
 ## Routing and required gate
@@ -35,20 +35,28 @@ and disabled rename detection cover cumulative changes, deletions and both renam
 paths. Missing revisions/Git failures/invalid outputs fail closed. No result cache
 or reuse across hosted runs is introduced.
 
-| Job             | Inputs / checks                                                                                                                                                                                                                   |
-| :-------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gitleaks`      | Every PR, manual and reusable run; checksum-pinned scanner validates itself and scans complete fetched Git history                                                                                                                |
-| `actionlint`    | Workflow/script/CI-test and dependency-test changes, plus manual/reusable full runs; validate all workflows with checksum-pinned actionlint                                                                                       |
-| `documentation` | Any `.md` path, including deletion/rename, source/test Markdown and skill docs; installs Node tools and runs `npm run test:docs`                                                                                                  |
-| `code`          | Non-Markdown source/tests/fixtures/scripts, workflows, Python/Node manifests/locks/version files, Git/editor settings, VS Code settings, Dependabot/label rules; runs application lint/format/types/contracts/dependencies/pytest |
-| `skills`        | Non-Markdown skill files, consumed commit policy, Python manifest/lock/version, Git/editor settings and workflow/CI selector/tests; runs the skill's separate Ruff/mypy/pytest suite                                              |
-| `check`         | Always evaluates detection and all selected results; selected jobs must succeed, unselected jobs must be skipped                                                                                                                  |
+| Job             | Inputs / checks                                                                                                                                                                                                                                            |
+| :-------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gitleaks`      | Every PR, manual and reusable run; checksum-pinned scanner validates itself and scans complete fetched Git history                                                                                                                                         |
+| `actionlint`    | Workflow/script/CI-test and dependency-test changes, plus manual/reusable full runs; validate all workflows with checksum-pinned actionlint                                                                                                                |
+| `documentation` | Any `.md` path, including deletion/rename, source/test Markdown and skill docs; installs Node tools and runs `npm run test:docs`                                                                                                                           |
+| `code`          | Non-Markdown source/tests/fixtures/scripts, workflows, Python/Node manifests/locks/version files, Git/editor settings, VS Code settings, Dependabot/label rules; runs application lint/format/types/contracts/dependencies and pytest excluding `tests/ui` |
+| `ui`            | Same selection as `code`; runs all `tests/ui` serially on an independent Windows runner                                                                                                                                                                    |
+| `skills`        | Non-Markdown skill files, consumed commit policy, Python manifest/lock/version, Git/editor settings and workflow/CI selector/tests; runs the skill's separate Ruff/mypy/pytest suite                                                                       |
+| `check`         | Always evaluates detection and all selected results; selected jobs must succeed, unselected jobs must be skipped                                                                                                                                           |
 
 Markdown-only changes skip application tests. Skill-only implementation skips
 application tests; ordinary application/Node-only changes skip skill tests. Mixed
 changes select every affected suite. Commit-policy Markdown selects both docs and
 skills. Code-only/skill-only jobs also run CSpell; mixed PRs get it from docs.
 The current PR diff remains authoritative after later documentation-only commits.
+
+The `code` and `ui` jobs run concurrently after selection. Their pytest commands
+partition the existing application suite by directory; no test is dropped or
+selected by timing. GUI tests remain serial within one desktop session. Both jobs
+are required whenever code checks are selected, including manual and release runs.
+This reduces wall-clock waiting when runners are available, at the cost of a
+second Windows environment setup; it does not promise lower total runner minutes.
 
 Per owner policy, Markdown/CSpell configuration alone does not select docs;
 affected local checks are still required. Documentation-test helpers under `tests/`

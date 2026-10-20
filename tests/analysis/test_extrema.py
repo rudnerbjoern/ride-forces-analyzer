@@ -147,9 +147,10 @@ def test_originals_all_modes_windows_and_selections(filename: str) -> None:
     source = import_forces(path)
     assert isinstance(source, ImportSuccess)
     view = present_recording(source)
-    for active in (False, True):
-        for window in (1, 11, 51):
-            current = view.with_calibration(active).with_smoothing(window)
+    for window in (1, 11, 51):
+        smoothed = view.with_smoothing(window)
+        for active in (False, True):
+            current = smoothed.with_calibration(active)
             for first, last in (
                 (0, current.count - 1),
                 (current.count // 2, current.count // 2 + 7),

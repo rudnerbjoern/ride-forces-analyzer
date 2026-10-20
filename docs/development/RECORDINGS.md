@@ -74,6 +74,9 @@ original byte lengths/SHA-256 pinned in `tests/support/recordings.py`.
 `tests/recordings/test_inventory.py` compares
 the complete [recursive snapshot](../../tests/fixtures/schema-inventory.json);
 see [source observations](../architecture/08_concepts.md#source-ownership-and-validation).
+The same complete inventory pass verifies every fixture's pinned identity and
+unchanged bytes/modification time; synthetic cases separately exercise traversal
+and invalid-input behavior.
 
 ```powershell
 uv run --locked pytest tests/recordings/test_inventory.py tests/recordings/test_integrity.py

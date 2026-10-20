@@ -14,24 +14,23 @@ SNAPSHOT = Path(__file__).resolve().parents[1] / "fixtures" / "schema-inventory.
 
 
 def test_complete_recursive_fixture_snapshot() -> None:
-    """FR-004/FR-030: all nodes, fields, types, optionality and sequence lengths."""
+    """Complete schema observations preserve all pinned bytes and modification times."""
+    originals = {
+        name: (path.read_bytes(), path.stat().st_mtime_ns)
+        for name in REAL_FIXTURES
+        for path in (REAL_FIXTURE_DIRECTORY / name,)
+    }
     actual = inventory()
     assert set(actual["fixtures"]) == set(REAL_FIXTURES)
+    for name, (before, modified) in originals.items():
+        result = actual["fixtures"][name]
+        assert (result["byte_count"], result["sha256"]) == REAL_FIXTURES[name]
+        path = REAL_FIXTURE_DIRECTORY / name
+        assert path.read_bytes() == before
+        assert path.stat().st_mtime_ns == modified
+        assert sha256(before).hexdigest() == REAL_FIXTURES[name][1]
     # Compare aggregate statistics, never dump raw GPS values on failure.
     assert snapshot_bytes(actual) == SNAPSHOT.read_bytes()
-
-
-@pytest.mark.parametrize("filename", REAL_FIXTURES, ids=lambda name: name.split("-", 1)[0])
-def test_inventory_retains_original_bytes_and_mtime(filename: str) -> None:
-    """FR-004, AC-02: inspecting a fixture preserves its pinned bytes and mtime."""
-    path = REAL_FIXTURE_DIRECTORY / filename
-    before = path.read_bytes()
-    modified = path.stat().st_mtime_ns
-    result = inspect_bytes(before)
-    assert (result["byte_count"], result["sha256"]) == REAL_FIXTURES[filename]
-    assert path.read_bytes() == before
-    assert path.stat().st_mtime_ns == modified
-    assert sha256(before).hexdigest() == REAL_FIXTURES[filename][1]
 
 
 def test_inventory_sees_late_nested_extensions_and_presence() -> None:

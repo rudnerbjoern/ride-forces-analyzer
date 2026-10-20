@@ -60,10 +60,13 @@ override rationale and security limits. These Node tests are development tooling
 Run a subsystem directly, for example `uv run --locked pytest tests/importers`
 or `uv run --locked pytest tests/ui/test_export.py`. Names describe behavior;
 folders identify the responsible subsystem. No additional marker matrix is needed.
-Shared data fixtures live in `tests/conftest.py`; GUI-only fixtures and preference
-isolation live in `tests/ui/conftest.py`. Reusable waits and workspace sizing
+Shared synthetic data fixtures live in `tests/conftest.py`; GUI-only fixtures and
+preference isolation live in `tests/ui/conftest.py`. Rendering reference data lives
+in `tests/rendering/conftest.py`. Reusable waits and workspace sizing
 are in `tests/ui/helpers.py`; original recording constants are in
 `tests/support/recordings.py`. Original `.forces` files remain under `tests/fixtures/`.
+Each UI test isolates `LOCALAPPDATA`, including its production preference/export
+database paths and subprocesses; export tests need no second database-path override.
 
 Developer-tool regressions under `.agents/skills/` remain outside application
 discovery; their [skill instructions](../../.agents/skills/github-delivery/SKILL.md)
@@ -73,6 +76,11 @@ Scientific source-app comparisons live in
 [`test_source_app_evidence.py`](../../tests/analysis/test_source_app_evidence.py),
 using unified snapshots and independent source-file/screenshot expectations.
 Projection/filter contract tests remain separate from model/service integration.
+Each source-app screenshot test prepares its recording once, then checks every
+independent replay reference. Extrema matrices prepare each smoothing window once
+for both raw and calibrated presentation; all recordings, windows and selections
+remain covered. Cheap synthetic validation and independent import/offline guards
+retain separate cases and setup.
 The reference tools are exercised through their actual entry points:
 
 ```powershell
@@ -129,12 +137,24 @@ parser errors, numerical edges, source preservation and translation placeholders
 Check layout geometry, glyph bounds and alpha directly in rendered frames for
 every supported layout/aspect. Test video-rate mapping independently of repeated
 full-frame rendering.
+Localization tests share one module-scoped immutable Manta recording while
+isolating language and patches per test. Every layout/aspect still uses real 4K
+frames for glyph bounds, explicit language and pixel reproducibility checks.
+Rendering tests likewise share immutable Manta data once per module. Each test
+retains its own renderer, settings, derived snapshots, patches and output files;
+independent original-import and real encoder checks remain separate.
 
 GUI loading covers Manta with gravity/GPS and Iron Gwazi without those sensors.
+The GPS dialog checks replacement between Voltron/Manta and removal for Iron Gwazi;
+the pure GPS suite retains the complete five-recording matrix.
 Shared zoom, wheel and selection interactions run once with Manta; fixture-wide
 import and scientific contracts remain in their dedicated suites. Full imports
 check all five originals once; adapter equivalence, repeatability and concurrent
 ownership use one recording rather than repeating the complete fixture matrix.
+Decoder, motion and optional-stage corpus tests verify every original value once.
+The complete-service Path/bytes repeatability test checks deterministic decoding
+and parsing together; stage corpus tests do not repeat those same large parses
+solely for equality. Dedicated concurrent and fresh-process guards stay separate.
 Export-dialog, palette and language interaction tests use 8 × 8 renderer test
 frames while keeping actual preview workers, compositing and UI updates. Dedicated
 rendering/preview tests and the two native 4K scaling checks retain real frames.
@@ -149,6 +169,19 @@ with different rides/formats; pure queue tests own the full ride/preset cross-pr
 Run shared GUI progress/cancellation once; test layout-specific controls in the
 existing interaction checks. Add variants only for distinct risks, not to multiply
 every independent option across an expensive end-to-end workflow.
+
+Variants that operate on the same loaded scene share one test window: FFmpeg
+browse paths, raw/calibrated click navigation, raw/calibrated theme switching and
+the language/appearance layout combinations. Every variant retains its assertions;
+viewport and layout dimensions are reset where required. Independent worker/error
+scenarios and native DPI/startup subprocesses retain separate setup and isolation.
+
+Selection-arrow tests drive the hold clock immediately before and at each
+acceleration threshold. They retain native mouse press, auto-repeat, release and
+keyboard interaction for both fields and directions without holding every arrow
+for five real seconds. CI runs the complete UI directory serially on its own
+Windows runner, concurrently with the remaining application checks; see
+[CI routing](CI.md).
 
 GUI layout references use a 3840 × 2160 editing desktop at 150% and 200%
 scaling: logical working areas of 2560 × 1400 and 1920 × 1040 reserve taskbar

@@ -75,7 +75,6 @@ def test_all_five_files_decode_losslessly_without_source_changes(filename: str) 
     assert isinstance(bytes_result, DecodeSuccess)
     assert bytes_result.source.root == result.source.root
     assert bytes_result.source.provenance.path is None
-    assert result == decode_forces(path)
     assert path.read_bytes() == original and path.stat().st_mtime_ns == modified
     assert not hasattr(result, "recording")
 

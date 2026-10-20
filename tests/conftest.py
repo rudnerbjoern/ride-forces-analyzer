@@ -5,9 +5,6 @@ from collections.abc import Iterator
 from tempfile import TemporaryDirectory
 from pathlib import Path
 
-from ride_forces_analyzer.explorer import ExplorerData, load_recording
-from tests.support.recordings import REAL_FIXTURE_DIRECTORY
-
 from ride_forces_analyzer.domain import (
     MotionSequence,
     Recording,
@@ -50,10 +47,3 @@ def synthetic_recording() -> Recording:
 def export_directory() -> Iterator[Path]:
     with TemporaryDirectory(dir=".tmp") as directory:
         yield Path(directory)
-
-
-@pytest.fixture
-def manta() -> ExplorerData:
-    data = load_recording(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
-    assert isinstance(data, ExplorerData)
-    return data

@@ -125,50 +125,54 @@ def test_light_text_and_channel_colors_have_readable_contrast() -> None:
         assert (luminance(theme.panel) + 0.05) / (luminance(color) + 0.05) >= 4.5
 
 
-@pytest.mark.parametrize("calibrated", [True, False])
 def test_theme_switch_preserves_recording_and_chart_state(
     explorer_window: ExplorerWindow,
-    calibrated: bool,
 ) -> None:
     window = explorer_window
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
     wait_until(window.open_action.isEnabled)
-    window.reference_toggle.setChecked(calibrated)
-    window.slider.setValue(3600)
-    window.first.setValue(3500)
-    window.last.setValue(3700)
-    window.zoom_button.click()
-    window.visibility[1].setChecked(False)
-    data = window.data
-    points = tuple(tuple(line.points()) for line in window.series)
-    viewport = (window.axis_x.min(), window.axis_x.max(), window.axis_y.min(), window.axis_y.max())
-    for index, name in ((1, "light"), (0, "dark")):
-        window.set_appearance(index)
-        QApplication.processEvents()
-        theme = THEMES["light" if name == "light" else "dark"]
-        assert window.data is data
-        assert tuple(tuple(line.points()) for line in window.series) == points
-        assert not window.series[1].isVisible()
-        assert (window.first.value(), window.last.value(), window.slider.value()) == (
-            3500,
-            3700,
-            3600,
-        )
-        assert viewport == (
+    for calibrated in (True, False):
+        window.reference_toggle.setChecked(calibrated)
+        window.slider.setValue(3600)
+        window.first.setValue(3500)
+        window.last.setValue(3700)
+        window.zoom_button.click()
+        window.visibility[1].setChecked(False)
+        data = window.data
+        points = tuple(tuple(line.points()) for line in window.series)
+        viewport = (
             window.axis_x.min(),
             window.axis_x.max(),
             window.axis_y.min(),
             window.axis_y.max(),
         )
-        assert window.chart.backgroundBrush().color() == QColor(theme.panel)
-        assert window.axis_x.labelsBrush().color() == QColor(theme.muted)
-        assert [line.pen().color().name() for line in window.series] == list(
-            theme.forces if calibrated else theme.raw,
-        )
-        assert window.palette().color(QPalette.ColorRole.WindowText) == QColor(theme.text)
-        assert [
-            label.brush().color().name() for label in window.source_marker_labels.values()
-        ] == list(theme.markers)
+        for index, name in ((1, "light"), (0, "dark")):
+            window.set_appearance(index)
+            QApplication.processEvents()
+            theme = THEMES["light" if name == "light" else "dark"]
+            assert window.data is data
+            assert tuple(tuple(line.points()) for line in window.series) == points
+            assert not window.series[1].isVisible()
+            assert (window.first.value(), window.last.value(), window.slider.value()) == (
+                3500,
+                3700,
+                3600,
+            )
+            assert viewport == (
+                window.axis_x.min(),
+                window.axis_x.max(),
+                window.axis_y.min(),
+                window.axis_y.max(),
+            )
+            assert window.chart.backgroundBrush().color() == QColor(theme.panel)
+            assert window.axis_x.labelsBrush().color() == QColor(theme.muted)
+            assert [line.pen().color().name() for line in window.series] == list(
+                theme.forces if calibrated else theme.raw,
+            )
+            assert window.palette().color(QPalette.ColorRole.WindowText) == QColor(theme.text)
+            assert [
+                label.brush().color().name() for label in window.source_marker_labels.values()
+            ] == list(theme.markers)
 
 
 @pytest.mark.usefixtures("small_preview_frames")
