@@ -7,7 +7,7 @@ from pathlib import Path
 from threading import Event
 from tempfile import TemporaryDirectory
 
-from PySide6.QtCore import QPoint, QTimer, Qt
+from PySide6.QtCore import QElapsedTimer, QPoint, QTimer, Qt
 from PySide6.QtGui import QTextDocument, QWheelEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
@@ -32,6 +32,7 @@ from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
 @pytest.mark.parametrize("direction", [1, -1], ids=["up", "down"])
 def test_selection_arrows_accelerate_while_held_and_reset_on_release(
     explorer_window: ExplorerWindow,
+    monkeypatch: pytest.MonkeyPatch,
     field: str,
     direction: int,
 ) -> None:
@@ -57,10 +58,34 @@ def test_selection_arrows_accelerate_while_held_and_reset_on_release(
     initial = control.value()
     values = [initial]
     control.valueChanged.connect(values.append)
+    elapsed_ms = 0
+
+    def elapsed(_: QElapsedTimer) -> int:
+        return elapsed_ms
+
+    monkeypatch.setattr(QElapsedTimer, "elapsed", elapsed)
     QTest.mousePress(control, Qt.MouseButton.LeftButton, pos=button)
     try:
-        QTest.qWait(5500)
-        assert (control.value() - initial) * direction > 1
+        assert control.value() == initial + direction
+        # Drive the clock at each boundary without waiting five real seconds.
+        # Native stepping still updates the real selection controls and chart.
+        for elapsed_ms, stride in (
+            (999, 1),
+            (1000, 5),
+            (1999, 5),
+            (2000, 10),
+            (2999, 10),
+            (3000, 20),
+            (4999, 20),
+            (5000, 50),
+        ):
+            previous = control.value()
+            control.stepBy(direction)
+            assert control.value() == previous + direction * stride
+        # Retain a real native auto-repeat: range updates must not stop its timer.
+        previous = control.value()
+        wait_until(lambda: control.value() != previous)
+        assert (control.value() - previous) * direction >= 50
         increments = {(last - first) * direction for first, last in zip(values, values[1:])}
         assert {1, 5, 10, 20, 50} <= increments
         assert window.selection_band.isVisible()
@@ -70,10 +95,12 @@ def test_selection_arrows_accelerate_while_held_and_reset_on_release(
     released = control.value()
     QTest.qWait(200)
     assert control.value() == released
-    QTest.mouseClick(control, Qt.MouseButton.LeftButton, pos=button)
+    # The released hold must not accelerate keyboard steps even at the old time.
+    QTest.keyClick(control, Qt.Key.Key_Up if direction > 0 else Qt.Key.Key_Down)
     assert control.value() == released + direction
     released = control.value()
-    QTest.keyClick(control, Qt.Key.Key_Up if direction > 0 else Qt.Key.Key_Down)
+    elapsed_ms = 0
+    QTest.mouseClick(control, Qt.MouseButton.LeftButton, pos=button)
     assert control.value() == released + direction
 
 
@@ -276,52 +303,56 @@ def test_open_chart_navigation_selection_and_integrity(
     assert len(original) == expected_size and sha256(original).hexdigest() == expected_hash
 
 
-@pytest.mark.parametrize("calibrated", [False, True], ids=["raw", "calibrated"])
 def test_left_click_selects_nearest_sample_in_current_chart_view(
     explorer_window: ExplorerWindow,
-    calibrated: bool,
 ) -> None:
     window = explorer_window
     view = window.chart_view
     QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton, pos=QPoint(1, 1))
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
     wait_until(window.open_action.isEnabled)
-    window.reference_toggle.setChecked(calibrated)
-    data = window.data
-    assert data is not None
-    selection = (window.first.value(), window.last.value())
-    for zoomed in (False, True):
-        if zoomed:
-            window.zoom_wheel(0.5, 6)
-        time_range = (window.axis_x.min(), window.axis_x.max())
-        QApplication.processEvents()
-        plot = window.chart.plotArea()
-        for fraction in (0.0, 0.25, 0.75, 1.0):
-            chart_point = plot.topLeft()
-            chart_point.setX(plot.left() + fraction * plot.width())
-            chart_point.setY(plot.center().y())
-            point = view.mapFromScene(window.chart.mapToScene(chart_point))
-            # Keep rounded edge pixels inside the actual plot rectangle.
-            point.setX(max(int(plot.left()) + 1, min(int(plot.right()), point.x())))
-            actual = window.chart.mapFromScene(view.mapToScene(point))
-            seconds = time_range[0] + ((actual.x() - plot.left()) / plot.width()) * (
-                time_range[1] - time_range[0]
+    for calibrated in (False, True):
+        window.reset_view()
+        window.reference_toggle.setChecked(calibrated)
+        data = window.data
+        assert data is not None
+        selection = (window.first.value(), window.last.value())
+        for zoomed in (False, True):
+            if zoomed:
+                window.zoom_wheel(0.5, 6)
+            time_range = (window.axis_x.min(), window.axis_x.max())
+            QApplication.processEvents()
+            plot = window.chart.plotArea()
+            for fraction in (0.0, 0.25, 0.75, 1.0):
+                chart_point = plot.topLeft()
+                chart_point.setX(plot.left() + fraction * plot.width())
+                chart_point.setY(plot.center().y())
+                point = view.mapFromScene(window.chart.mapToScene(chart_point))
+                # Keep rounded edge pixels inside the actual plot rectangle.
+                point.setX(max(int(plot.left()) + 1, min(int(plot.right()), point.x())))
+                actual = window.chart.mapFromScene(view.mapToScene(point))
+                seconds = time_range[0] + ((actual.x() - plot.left()) / plot.width()) * (
+                    time_range[1] - time_range[0]
+                )
+                expected = data.sample_at_time(seconds)
+                QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton, pos=point)
+                assert window.position.value() == window.slider.value() == expected
+                assert window.sample_cursor.points()[0].x() == data.time_at(expected)
+                assert (window.axis_x.min(), window.axis_x.max()) == time_range
+                assert (window.first.value(), window.last.value()) == selection
+            previous = window.position.value()
+            QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton, pos=QPoint(1, 1))
+            assert window.position.value() == previous
+            center = view.mapFromScene(window.chart.mapToScene(plot.center()))
+            QTest.mousePress(view.viewport(), Qt.MouseButton.LeftButton, pos=center)
+            QTest.mouseMove(view.viewport(), center + QPoint(2, 0))
+            QTest.mouseRelease(
+                view.viewport(),
+                Qt.MouseButton.LeftButton,
+                pos=center + QPoint(2, 0),
             )
-            expected = data.sample_at_time(seconds)
-            QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton, pos=point)
-            assert window.position.value() == window.slider.value() == expected
-            assert window.sample_cursor.points()[0].x() == data.time_at(expected)
+            assert window.position.value() != previous
             assert (window.axis_x.min(), window.axis_x.max()) == time_range
-            assert (window.first.value(), window.last.value()) == selection
-        previous = window.position.value()
-        QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton, pos=QPoint(1, 1))
-        assert window.position.value() == previous
-        center = view.mapFromScene(window.chart.mapToScene(plot.center()))
-        QTest.mousePress(view.viewport(), Qt.MouseButton.LeftButton, pos=center)
-        QTest.mouseMove(view.viewport(), center + QPoint(2, 0))
-        QTest.mouseRelease(view.viewport(), Qt.MouseButton.LeftButton, pos=center + QPoint(2, 0))
-        assert window.position.value() != previous
-        assert (window.axis_x.min(), window.axis_x.max()) == time_range
 
 
 def test_zoom_out_stops_at_recording_bounds(
@@ -755,11 +786,11 @@ def test_gps_dialog_is_independent_and_replaced_with_recording(
 ) -> None:
     window = explorer_window
     assert not window.gps_button.isEnabled()
+    # Two GPS sources cover replacement; Watch covers removal/disabled controls.
+    # Per-recording geometry and source preservation belong to test_gps.py.
     for pattern in (
         "VoltronNevera-*.forces",
         "Manta-*.forces",
-        "Kraken-*.forces",
-        "Taron-*.forces",
         "IronGwazi-*.forces",
     ):
         window.open_path(next(REAL_FIXTURE_DIRECTORY.glob(pattern)))
@@ -934,53 +965,51 @@ def test_smoothing_slider_preserves_source_time_and_selection(
     assert window.smoothing_slider.value() == 5 and window.data.smoothing_window == 11
 
 
-@pytest.mark.parametrize("language", [0, 1], ids=["english", "german"])
-@pytest.mark.parametrize("appearance", [0, 1], ids=["dark", "light"])
 def test_chart_shrinks_to_available_height_without_workspace_scrolling(
     explorer_window: ExplorerWindow,
-    language: int,
-    appearance: int,
 ) -> None:
     window = explorer_window
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
     wait_until(window.open_action.isEnabled)
-    window.set_ui_language(language)
-    window.set_appearance(appearance)
-    window.position.setValue(4960)
-    points = tuple(window.series[0].points())
-    time_range = (window.axis_x.min(), window.axis_x.max())
-    heights: list[int] = []
-    for width, height in ((1600, 1100), (1280, 820), (1280, 720), (1600, 1100)):
-        resize_workspace(window, width, height)
-        QApplication.processEvents()
-        assert window.plot_scroll.verticalScrollBar().maximum() == 0
-        assert not window.plot_scroll.verticalScrollBar().isVisible()
-        viewport = window.plot_scroll.viewport()
-        assert window.airtime_legend.isVisible()
-        assert window.airtime_legend.y() >= window.chart_view.geometry().bottom()
-        assert (
-            window.airtime_legend.mapTo(viewport, QPoint()).y()
-            < window.slider.mapTo(
-                viewport,
-                QPoint(),
-            ).y()
-        )
-        for control in (
-            window.reference_toggle,
-            window.airtime_legend,
-            window.slider,
-            window.position,
-            *window.value_labels,
-        ):
-            bounds = control.rect().translated(control.mapTo(viewport, QPoint(0, 0)))
-            assert viewport.rect().contains(bounds)
-        assert window.chart.plotArea().height() > 100
-        assert tuple(window.series[0].points()) == points
-        assert (window.axis_x.min(), window.axis_x.max()) == time_range
-        assert window.position.value() == 4960
-        heights.append(window.chart_view.height())
-    assert heights[0] > heights[1] > heights[2]
-    assert heights[3] == heights[0]
+    for language, appearance in ((0, 0), (1, 0), (0, 1), (1, 1)):
+        resize_workspace(window, 1920, 1040)
+        window.set_ui_language(language)
+        window.set_appearance(appearance)
+        window.position.setValue(4960)
+        points = tuple(window.series[0].points())
+        time_range = (window.axis_x.min(), window.axis_x.max())
+        heights: list[int] = []
+        for width, height in ((1600, 1100), (1280, 820), (1280, 720), (1600, 1100)):
+            resize_workspace(window, width, height)
+            QApplication.processEvents()
+            assert window.plot_scroll.verticalScrollBar().maximum() == 0
+            assert not window.plot_scroll.verticalScrollBar().isVisible()
+            viewport = window.plot_scroll.viewport()
+            assert window.airtime_legend.isVisible()
+            assert window.airtime_legend.y() >= window.chart_view.geometry().bottom()
+            assert (
+                window.airtime_legend.mapTo(viewport, QPoint()).y()
+                < window.slider.mapTo(
+                    viewport,
+                    QPoint(),
+                ).y()
+            )
+            for control in (
+                window.reference_toggle,
+                window.airtime_legend,
+                window.slider,
+                window.position,
+                *window.value_labels,
+            ):
+                bounds = control.rect().translated(control.mapTo(viewport, QPoint(0, 0)))
+                assert viewport.rect().contains(bounds)
+            assert window.chart.plotArea().height() > 100
+            assert tuple(window.series[0].points()) == points
+            assert (window.axis_x.min(), window.axis_x.max()) == time_range
+            assert window.position.value() == 4960
+            heights.append(window.chart_view.height())
+        assert heights[0] > heights[1] > heights[2]
+        assert heights[3] == heights[0]
 
 
 @pytest.mark.parametrize("initial_width", [720, 1280], ids=["compact", "wide"])

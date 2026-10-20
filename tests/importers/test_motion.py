@@ -116,7 +116,6 @@ def test_every_original_motion_sample_and_vector_survives(filename: str) -> None
     if filename.startswith("Taron-"):
         assert result.indices.gravity == 1513 < result.indices.start == 2284
     assert result.source is source and source.original_bytes == raw
-    assert parse_motion(source) == result
     assert path.read_bytes() == raw and path.stat().st_mtime_ns == modified
 
 

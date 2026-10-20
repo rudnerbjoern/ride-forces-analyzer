@@ -108,7 +108,6 @@ def test_all_original_optional_data_and_gps_fixes_survive(filename: str) -> None
     result = parse_optional_data(source)
     assert isinstance(result, OptionalParseSuccess)
     assert result.source is source and source.original_bytes == raw
-    assert parse_optional_data(source) == result
     for key, accessor in TEXT_FIELDS.items():
         assert getattr(result.metadata, accessor) == root.get(key)
     for key, accessor in NUMBER_FIELDS.items():

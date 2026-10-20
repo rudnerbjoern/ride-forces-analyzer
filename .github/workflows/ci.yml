@@ -126,13 +126,40 @@ jobs:
         run: npm run spellcheck
       - name: Application tests
         id: pytest
-        run: uv run --locked pytest -ra --durations=20 --junitxml=.tmp/test-results/application.xml
+        run: uv run --locked pytest --ignore=tests/ui -ra --durations=20 --junitxml=.tmp/test-results/application.xml
       - name: Retain application test report
         if: ${{ !cancelled() && (steps.pytest.outcome == 'success' || steps.pytest.outcome == 'failure') }}
         uses: actions/upload-artifact@v7.0.2
         with:
           name: application-test-results
           path: .tmp/test-results/application.xml
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
+  ui:
+    needs: dependency-check
+    if: ${{ needs.dependency-check.outputs.code == 'true' }}
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.revision || github.sha }}
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: '0.13.0'
+          python-version: '3.14.6'
+      - run: uv sync --locked --all-extras --group dev
+      - name: Native UI tests
+        id: pytest
+        run: uv run --locked pytest tests/ui -ra --durations=20 --junitxml=.tmp/test-results/ui.xml
+      - name: Retain UI test report
+        if: ${{ !cancelled() && (steps.pytest.outcome == 'success' || steps.pytest.outcome == 'failure') }}
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: ui-test-results
+          path: .tmp/test-results/ui.xml
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
@@ -197,7 +224,7 @@ jobs:
       - run: npm run test:docs
 
   check:
-    needs: [dependency-check, code, documentation, skills, gitleaks, actionlint]
+    needs: [dependency-check, code, ui, documentation, skills, gitleaks, actionlint]
     if: ${{ always() }}
     runs-on: windows-latest
     timeout-minutes: 5
@@ -207,10 +234,12 @@ jobs:
           DEPENDENCY_RESULT: ${{ needs.dependency-check.result }}
           GITLEAKS_RESULT: ${{ needs.gitleaks.result }}
           CODE_REQUIRED: ${{ needs.dependency-check.outputs.code }}
+          UI_REQUIRED: ${{ needs.dependency-check.outputs.code }}
           DOCUMENTATION_REQUIRED: ${{ needs.dependency-check.outputs.documentation }}
           SKILLS_REQUIRED: ${{ needs.dependency-check.outputs.skills }}
           WORKFLOWS_REQUIRED: ${{ needs.dependency-check.outputs.workflows }}
           CODE_RESULT: ${{ needs.code.result }}
+          UI_RESULT: ${{ needs.ui.result }}
           DOCUMENTATION_RESULT: ${{ needs.documentation.result }}
           SKILLS_RESULT: ${{ needs.skills.result }}
           WORKFLOWS_RESULT: ${{ needs.actionlint.result }}
@@ -221,7 +250,7 @@ jobs:
           if ($env:DEPENDENCY_RESULT -ne 'success') {
             throw 'Change detection failed; test selection is not verified.'
           }
-          foreach ($suite in @('CODE', 'DOCUMENTATION', 'SKILLS', 'WORKFLOWS')) {
+          foreach ($suite in @('CODE', 'UI', 'DOCUMENTATION', 'SKILLS', 'WORKFLOWS')) {
             $required = [Environment]::GetEnvironmentVariable("${suite}_REQUIRED")
             $result = [Environment]::GetEnvironmentVariable("${suite}_RESULT")
             if ($required -ne 'true' -and $required -ne 'false') {

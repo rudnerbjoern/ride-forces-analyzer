@@ -74,40 +74,35 @@ def test_source_app_policy_is_available_for_an_unrecognized_source_hash() -> Non
     )
 
 
-@pytest.mark.parametrize(
-    "seconds,forces,combined,orientation",
-    [
+def test_independent_owner_replay_snapshots() -> None:
+    from math import sqrt
+
+    snapshot = prepared(MANTA)
+    recording = snapshot.source.recording
+    for seconds, forces, combined, orientation in (
         (0, ("-0.04", "-0.01", "0.99"), "0.99", 92),
         (10, ("1.00", "0.01", "-0.01"), "1.00", 0),
         (67, ("0.52", "-0.02", "-0.08"), "0.52", 47),
         (72, ("-3.44", "0.07", "0.35"), "3.46", 120),
         (86, ("1.96", "-0.21", "0.41"), "2.02", 77),
-    ],
-)
-def test_independent_owner_replay_snapshots(
-    seconds: int,
-    forces: tuple[str, str, str],
-    combined: str,
-    orientation: int,
-) -> None:
+    ):
+        index = recording.indices.start + round(seconds * recording.motion.sample_rate.value)
+        sample = snapshot.sample(index)
+        assert sample.smoothed is not None
+        values = (sample.smoothed.vertical, sample.smoothed.lateral, sample.smoothed.longitudinal)
+        # Screenshots supply two decimal places, not full-precision measurements.
+        assert tuple(f"{value:.2f}" for value in values) == forces
+        assert f"{sqrt(sum(value * value for value in values)):.2f}" == combined
+        assert sample.orientation_degrees is not None
+        assert round(sample.orientation_degrees) == orientation
+
+
+def test_kraken_replay_sample_counter_and_documented_start_discrepancy() -> None:
     from math import sqrt
 
-    snapshot = prepared(MANTA)
+    snapshot = prepared(KRAKEN)
     recording = snapshot.source.recording
-    index = recording.indices.start + round(seconds * recording.motion.sample_rate.value)
-    sample = snapshot.sample(index)
-    assert sample.smoothed is not None
-    values = (sample.smoothed.vertical, sample.smoothed.lateral, sample.smoothed.longitudinal)
-    # Screenshots supply two decimal places, not full-precision measurements.
-    assert tuple(f"{value:.2f}" for value in values) == forces
-    assert f"{sqrt(sum(value * value for value in values)):.2f}" == combined
-    assert sample.orientation_degrees is not None
-    assert round(sample.orientation_degrees) == orientation
-
-
-@pytest.mark.parametrize(
-    "seconds,frame,forces,combined,orientation",
-    [
+    for seconds, frame, forces, combined, orientation in (
         (0, 0, (0.98, -0.01, -0.10), 0.99, 6),
         (54, 25, (0.93, 0.00, 0.35), 0.99, 20),
         (76, 28, (2.21, -0.08, -0.36), 2.24, 72),
@@ -116,35 +111,23 @@ def test_independent_owner_replay_snapshots(
         (112, 4, (3.43, 0.05, -0.05), 3.43, 0),
         (122, 3, (1.24, 0.34, -0.96), 1.61, 136),
         (128, 16, (1.00, -0.08, -0.90), 1.35, 2),
-    ],
-)
-def test_kraken_replay_sample_counter_and_documented_start_discrepancy(
-    seconds: int,
-    frame: int,
-    forces: tuple[float, float, float],
-    combined: float,
-    orientation: int,
-) -> None:
-    from math import sqrt
-
-    snapshot = prepared(KRAKEN)
-    recording = snapshot.source.recording
-    # Replay suffix is a sample counter at 50 Hz, not hundredths of a second.
-    index = recording.indices.start + seconds * 50 + frame
-    sample = snapshot.sample(index)
-    assert sample.smoothed is not None
-    values = (sample.smoothed.vertical, sample.smoothed.lateral, sample.smoothed.longitudinal)
-    assert sample.replay_seconds == seconds + frame / 50
-    actual = tuple(round(value, 2) for value in values)
-    magnitude = round(sqrt(sum(value * value for value in values)), 2)
-    if seconds == 0 and frame == 0:
-        # Preserve the observed mismatch; do not fit an unverified edge rule.
-        assert forces == (0.98, -0.01, -0.10) and combined == 0.99
-        assert actual == (1.00, 0.00, -0.10) and magnitude == 1.00
-    else:
-        assert actual == forces and magnitude == combined
-    assert sample.orientation_degrees is not None
-    assert round(sample.orientation_degrees) == orientation
+    ):
+        # Replay suffix is a sample counter at 50 Hz, not hundredths of a second.
+        index = recording.indices.start + seconds * 50 + frame
+        sample = snapshot.sample(index)
+        assert sample.smoothed is not None
+        values = (sample.smoothed.vertical, sample.smoothed.lateral, sample.smoothed.longitudinal)
+        assert sample.replay_seconds == seconds + frame / 50
+        actual = tuple(round(value, 2) for value in values)
+        magnitude = round(sqrt(sum(value * value for value in values)), 2)
+        if seconds == 0 and frame == 0:
+            # Preserve the observed mismatch; do not fit an unverified edge rule.
+            assert forces == (0.98, -0.01, -0.10) and combined == 0.99
+            assert actual == (1.00, 0.00, -0.10) and magnitude == 1.00
+        else:
+            assert actual == forces and magnitude == combined
+        assert sample.orientation_degrees is not None
+        assert round(sample.orientation_degrees) == orientation
 
 
 def test_voltron_screenshot_extrema_and_display_rounding_difference() -> None:
