@@ -27,7 +27,14 @@ render = ["Pillow>=12.3.0"]
 build = [
     "pyinstaller==6.22.3",
 ]
-dev = ["pytest>=9.1.1", "ruff>=0.17.0", "mypy>=2.4.0", "pytest-qt>=4.5.0"]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.17.0",
+    "mypy>=2.4.0",
+    "pytest-qt>=4.5.0",
+    "coverage>=7.16.2",
+    "pytest-cov>=7.1.0",
+]
 
 [project.scripts]
 ride-forces-analyzer = "ride_forces_analyzer.__main__:main"
@@ -38,6 +45,26 @@ packages = ["src/ride_forces_analyzer"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["src/ride_forces_analyzer/analysis"]
+data_file = ".tmp/coverage/analysis/.coverage"
+
+[tool.coverage.report]
+include = [
+    "src/ride_forces_analyzer/analysis/recording.py",
+    "src/ride_forces_analyzer/analysis/service.py",
+]
+fail_under = 100
+show_missing = true
+precision = 2
+
+[tool.coverage.html]
+directory = ".tmp/coverage/analysis/html"
+
+[tool.coverage.json]
+output = ".tmp/coverage/analysis/coverage.json"
 
 [tool.ruff]
 target-version = "py314"
