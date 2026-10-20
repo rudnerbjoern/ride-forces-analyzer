@@ -167,13 +167,13 @@ def test_default_window_and_context_input_are_explicit(
             configuration,
             context_input=AnalysisStage.PROJECTION,
             events_input=AnalysisStage.PROJECTION,
-            events=StageConfiguration("pending-domain-rules", "1"),
+            events=StageConfiguration("airtime-events", "1"),
         ),
     )
     assert projected.context.input is projected.forces.projected
     assert projected.events.input is projected.forces.projected
     assert projected.events.configuration is projected.configuration.events
-    assert projected.events.status is EventEvaluationState.NOT_EVALUATED
+    assert projected.events.status is EventEvaluationState.EVALUATED
     channels = projected.forces.projected.channels
     assert channels is not None and projected.context.labels is not None
     expected = airtime.AirtimeContext.prepare(tuple(channels[0].values), 25).labels

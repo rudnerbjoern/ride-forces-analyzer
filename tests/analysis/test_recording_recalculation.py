@@ -133,7 +133,7 @@ def test_event_rules_change_keeps_numerical_stages(
     original = prepare_snapshot(configuration)
     calls = _spies(monkeypatch)
     changed = original.with_configuration(
-        replace(configuration, events=StageConfiguration("reserved-domain-rules", "1")),
+        replace(configuration, events=StageConfiguration("airtime-events", "1")),
         revision=4,
         calculation_time=LATER,
     )
@@ -142,7 +142,7 @@ def test_event_rules_change_keeps_numerical_stages(
     assert changed.context is original.context
     assert changed.events is not original.events
     assert changed.events.input is changed.forces.smoothed
-    assert changed.events.status is EventEvaluationState.NOT_EVALUATED
+    assert changed.events.status is EventEvaluationState.EVALUATED
 
 
 @pytest.mark.parametrize("selector", ("context_input", "events_input"))

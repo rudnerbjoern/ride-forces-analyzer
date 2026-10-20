@@ -310,8 +310,8 @@ class SampleContext:
 class AirtimeEvent:
     """Describe a provisional domain event under separately defined detection rules.
 
-    This container defines no thresholds, minimum duration or boundary policy.
-    Display-label confirmation times do not establish domain-event duration.
+    The separate airtime-events version-1 contract defines detection and inclusive
+    boundaries. Display-label confirmation does not establish event duration.
 
     Attributes:
         first_sample: Event start in original source indices.
@@ -828,7 +828,8 @@ def prepare_recording_analysis(
         RecordingAnalysis retaining the complete source, inferred time axis,
         independent orientation, projected/smoothed forces and prepared context.
         Missing prerequisites retain raw values and explicit exclusion reasons.
-        Events remain NOT_EVALUATED until separate event rules are implemented.
+        Configured airtime-events version 1 evaluates separate domain episodes.
+        Disabled/unavailable event stages retain NOT_EVALUATED with a reason.
 
     Raises:
         TypeError: Source/configuration has an incompatible type.
@@ -858,6 +859,10 @@ def _prepare_analysis(
     _require(type(revision) is int and revision >= 0, "Invalid snapshot revision")
     _configuration(configuration)
     window = _preparation_window(configuration)
+    if configuration.events is not None:
+        from .events import event_rules
+
+        event_rules(configuration.events)
     provenance = AnalysisProvenance(
         source.recording.source.provenance,
         f"{__version__}; numpy={np.__version__}",
@@ -1050,19 +1055,13 @@ def _prepare_analysis(
     ):
         events = previous.events
     else:
-        event_reason = AnalysisDiagnostic(
-            "EVENT_RULES_UNIMPLEMENTED",
-            Severity.INFO,
-            "Domain event detection is not implemented",
-        )
-        events = EventAnalysis(
+        from .events import evaluate_events
+
+        events = evaluate_events(
             events_input,
             configuration.events,
-            EventEvaluationState.NOT_EVALUATED,
-            None,
-            event_reason,
-            AnalysisQuality(diagnostics=(event_reason,)),
-            None,
+            motion.sample_rate.value,
+            provenance,
         )
     qualities = (
         projected.quality,

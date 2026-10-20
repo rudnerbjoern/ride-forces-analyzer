@@ -14,6 +14,9 @@ export palette; light appearance uses darker equivalents for readable contrast.
 The graph values, smoothing and numeric readouts remain unchanged. Component
 responsibilities belong to the [building block view](../architecture/05_building_block_view.md#video-export-boundary).
 
+Domain [airtime events](AIRTIME_EVENTS.md) use separate opt-in rules. Display
+confirmation and hysteresis do not establish their intervals or minimum duration.
+
 ## Presentation heuristic
 
 These thresholds are provisional product choices, not a scientific definition or
