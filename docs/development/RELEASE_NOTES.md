@@ -5,33 +5,25 @@ original recordings remain unchanged.
 
 ## Included in {{VERSION}}
 
-- Native Linux x64 tarball and separate macOS Apple Silicon/Intel app ZIPs,
-  with target-native package/encode gates. Development remains on Windows.
+- Windows x64, Linux x64 and separate macOS Apple Silicon/Intel downloads,
+  with native GUI/import/rendering/encoding checks for each target.
+  Development remains on Windows.
 - Native user-data folders, platform-aware FFmpeg discovery and update assets;
   export works from a read-only launch directory.
-- Shared immutable analysis snapshots for the explorer, previews, exports and
-  batches, with source metadata, force values and per-sample airtime context.
-- Partial recalculation reuses unchanged stages when smoothing or analysis
-  settings change. Orientation remains independent of force smoothing.
-- Revision-aware analysis subscriptions deliver initial state, updates and
-  failures without publishing stale worker results to the UI.
-- Optional, separately configured airtime event detection. Events and display
-  context remain provisional interpretations, not validated rider sensations.
-- One supported numerical implementation, with explicit availability, quality
-  and provenance. Original samples, metadata and independent GPS remain intact.
+- Interactive force charts, per-sample airtime context, optional airtime events,
+  shared immutable analysis snapshots and 4K exports. Original samples, metadata
+  and independent GPS remain intact.
 - Updated user documentation, reproducible ride-detail screenshots and a
-  Midnight-themed GitHub Pages site with Windows download links.
+  Midnight-themed GitHub Pages site with platform-specific download links.
 - Portable Windows EXE, standard ZIP and complete ZIP with FFmpeg; GitHub also
-  supplies source downloads. Dependency maintenance includes the nested
-  `markdown-it` security override used by documentation tooling.
+  supplies source downloads.
 
 ## Compatibility and limits
 
 - Linux targets Ubuntu 24.04/glibc 2.39; macOS targets version 15 or newer.
   These packages require a separately installed FFmpeg. macOS apps are ad-hoc
   signed, without Developer ID/notarization, and may require explicit OS approval.
-- The former analysis APIs have been removed without compatibility facades.
-  Integrations must use the current recording-analysis and service contracts.
+- Integrations use the recording-analysis and service contracts.
 - Saved export presets and batch jobs require the current explicit analysis
   recipe. Older or incomplete records are rejected without automatic migration
   or destructive database cleanup; recreate unsupported presets/jobs.
@@ -42,16 +34,26 @@ original recordings remain unchanged.
 
 ## Installation
 
-Windows x64 downloads require no Python installation:
+Native downloads require no Python installation:
 
-| Download                                           | Use                                                                   |
-| -------------------------------------------------- | --------------------------------------------------------------------- |
-| `Ride-Forces-Analyzer-{{VERSION}}-windows-x64.exe` | Portable application                                                  |
-| `…-standard.zip`                                   | Application/notices; select an existing FFmpeg for export             |
-| `…-complete.zip`                                   | Also includes FFmpeg, automatically detected beside the extracted EXE |
+| Download                                           | Use                                                                             |
+| -------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `Ride-Forces-Analyzer-{{VERSION}}-windows-x64.exe` | Portable Windows application                                                    |
+| `…-windows-x64-standard.zip`                       | Windows application/notices; select an existing FFmpeg for export               |
+| `…-windows-x64-complete.zip`                       | Also includes FFmpeg, detected beside the extracted EXE                         |
+| `…-linux-x64.tar.gz`                               | Ubuntu 24.04 x64; extract and run `./Ride-Forces-Analyzer` inside its directory |
+| `…-macos-arm64.zip`                                | macOS 15+ Apple Silicon; extract and move the app to Applications               |
+| `…-macos-x64.zip`                                  | macOS 15+ Intel; extract and move the app to Applications                       |
 
-- Extract ZIPs and start their EXE. No installer or automatic installation.
-- Verify downloads with `WINDOWS-SHA256SUMS.txt`.
+- Windows: extract ZIPs and start their EXE. No installer or automatic installation.
+- Linux: keep `_internal` beside the executable. Install the desktop libraries in
+  the [release guide](https://github.com/{{REPOSITORY}}/blob/{{TAG}}/docs/development/RELEASE.md#linux-and-macos-packages).
+- Linux/macOS: install compatible FFmpeg separately, for example with
+  `sudo apt install ffmpeg` or `brew install ffmpeg`; select it with Browse if needed.
+- macOS: after checking the hash, use **Open Anyway** in Privacy & Security if
+  required for the trusted download. Do not disable Gatekeeper globally.
+- Verify downloads with `WINDOWS-SHA256SUMS.txt`, `LINUX-X64-SHA256SUMS.txt`,
+  `MACOS-ARM64-SHA256SUMS.txt` or `MACOS-X64-SHA256SUMS.txt`.
 - Packages include collected dependency notices. Shipped `REDISTRIBUTION.json`
   records outstanding redistribution source/notice gaps.
 - Source alternative: GitHub's **Source code (zip)** / **Source code (tar.gz)**.

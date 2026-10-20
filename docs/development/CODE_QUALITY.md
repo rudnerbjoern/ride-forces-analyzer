@@ -42,7 +42,7 @@ folders identify scope; no additional marker matrix is required.
 | updates                          | Release discovery, transport and update preferences                               |
 | recordings                       | Original fixture hashes and recursive schema inventory                            |
 | fixtures                         | Data only: original recordings and recursive schema inventory                     |
-| packaging                        | Release policy, source archives and Windows packages                              |
+| packaging                        | Release policy, source archives and native Windows/Linux/macOS packages           |
 | tooling                          | Application settings/version and Ruff contracts                                   |
 | support                          | Fixture paths, pinned identities and inventory helper                             |
 | types / dependencies / ci / docs | Separate Node type, dependency, CI and documentation checks                       |
