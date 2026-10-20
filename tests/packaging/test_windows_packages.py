@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+import subprocess
 from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 
@@ -10,6 +11,61 @@ import pytest
 from scripts import build_windows
 from scripts.check_windows_packages import validate_zip
 from ride_forces_analyzer.rendering import encoding
+
+
+@pytest.mark.parametrize("previous_archive", [False, True])
+def test_release_build_outputs_only_windows_downloads_and_checksums(
+    monkeypatch: pytest.MonkeyPatch,
+    previous_archive: bool,
+) -> None:
+    with TemporaryDirectory(dir=".tmp") as directory:
+        root = Path(directory).resolve()
+        work = root / ".tmp/build"
+        assets = work / "assets"
+        assets.mkdir(parents=True)
+        if previous_archive:
+            (assets / "corresponding-sources.zip").write_bytes(b"previous build")
+        (root / "packaging").mkdir()
+        (root / "packaging/redistribution.json").write_text(
+            '{"status":"verified","source_archives":[]}',
+            encoding="utf-8",
+        )
+        (root / "pyproject.toml").write_text('[project]\nversion = "1.2.3"\n', encoding="utf-8")
+        for name in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
+            (root / name).write_text("synthetic notices", encoding="utf-8")
+        distribution = root / ".tmp/encoder"
+        (distribution / "bin").mkdir(parents=True)
+        encoder = distribution / "bin/ffmpeg.exe"
+        encoder.write_bytes(b"synthetic encoder")
+        for name in ("LICENSE", "README.txt"):
+            (distribution / name).write_text("synthetic notices", encoding="utf-8")
+
+        def notices(destination: Path) -> None:
+            destination.mkdir()
+
+        def acquire_encoder(destination: Path) -> Path:
+            return encoder
+
+        def run(arguments: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+            if "PyInstaller" in arguments:
+                destination = Path(arguments[arguments.index("--distpath") + 1])
+                destination.mkdir()
+                (destination / f"{build_windows.APP_NAME}.exe").write_bytes(b"synthetic app")
+            return subprocess.CompletedProcess(arguments, 0, "synthetic encoder notices", "")
+
+        monkeypatch.setattr(build_windows, "ROOT", root)
+        monkeypatch.setattr(build_windows, "collect_notices", notices)
+        monkeypatch.setattr(build_windows, "acquire_ffmpeg", acquire_encoder)
+        monkeypatch.setattr(subprocess, "run", run)
+        result = build_windows.build(work, release=True)
+        prefix = f"{build_windows.APP_NAME}-1.2.3-windows-x64"
+        downloads = {f"{prefix}.exe", f"{prefix}-standard.zip", f"{prefix}-complete.zip"}
+        assert {path.name for path in result.iterdir()} == downloads | {"WINDOWS-SHA256SUMS.txt"}
+        checksum_names = {
+            line.split("  ", 1)[1]
+            for line in (result / "WINDOWS-SHA256SUMS.txt").read_text(encoding="utf-8").splitlines()
+        }
+        assert checksum_names == downloads
 
 
 @pytest.mark.parametrize(

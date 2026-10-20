@@ -141,7 +141,10 @@ test("Source releases publish only reviewed tag revisions after quality and pack
   assert.match(source, /check-source-release\.py/);
   assert.match(source, /uv build --out-dir/);
   const uploads = workflow.jobs.source.steps.filter(step => step.uses?.startsWith("actions/upload-artifact@"));
-  assert.deepEqual(uploads.map(step => step.with.path), [".tmp/release/source.zip", ".tmp/release/SHA256SUMS.txt", ".tmp/release/release-notes.md"]);
+  assert.deepEqual(uploads.map(step => step.with.path), [".tmp/release/release-notes.md"]);
+  const validation = workflow.jobs.source.steps.find(step => step.name === "Validate temporary source archive").run;
+  assert.match(validation, /git archive --format=zip --output=\.tmp\/source-validation\/source\.zip HEAD/);
+  assert.match(validation, /check-source-release\.py \.tmp\/source-validation\/source\.zip/);
   for (const upload of uploads) {
     assert.equal(upload.with.archive, false);
     assert.equal(upload.with["retention-days"], 14);
@@ -158,9 +161,10 @@ test("Source releases publish only reviewed tag revisions after quality and pack
   assert.equal(workflow.jobs.source.steps[0].with["fetch-depth"], 0);
   assert.match(source, /check-release-policy\.py/);
   const downloads = release.steps.filter(step => step.uses?.startsWith("actions/download-artifact@"));
-  assert.deepEqual(downloads.map(step => step.with.name), ["source.zip", "SHA256SUMS.txt", "release-notes.md",
+  assert.deepEqual(downloads.map(step => step.with.name), ["release-notes.md",
     "${{ needs.windows.outputs.exe }}", "${{ needs.windows.outputs.standard }}", "${{ needs.windows.outputs.complete }}",
-    "WINDOWS-SHA256SUMS.txt", "corresponding-sources.zip"]);
+    "WINDOWS-SHA256SUMS.txt"]);
+  assert.ok(!source.includes("corresponding-sources.zip"));
   const windows = workflow.jobs.windows;
   assert.deepEqual(windows.needs, ["quality", "source"]);
   assert.equal(windows["timeout-minutes"], 30);
@@ -208,11 +212,16 @@ ConvertTo-Json -Compress -InputObject $global:recorded
       }
       assert.equal(result.status, 0, result.stderr);
       const args = JSON.parse(result.stdout.trim());
-      assert.deepEqual(args.slice(0, 5), ["release", "create", "v0.1.0", ".tmp/release/source.zip", ".tmp/release/SHA256SUMS.txt"]);
+      assert.deepEqual(args.slice(0, 3), ["release", "create", "v0.1.0"]);
+      assert.deepEqual(args.filter(arg => arg.startsWith(".tmp/release/")), [
+        ".tmp/release/app.exe", ".tmp/release/standard.zip", ".tmp/release/complete.zip",
+        ".tmp/release/WINDOWS-SHA256SUMS.txt", ".tmp/release/release-notes.md",
+      ]);
       assert.ok(args.includes("--verify-tag") && args.includes("--generate-notes"));
-      for (const asset of ["app.exe", "standard.zip", "complete.zip", "WINDOWS-SHA256SUMS.txt", "corresponding-sources.zip"]) {
+      for (const asset of ["app.exe", "standard.zip", "complete.zip", "WINDOWS-SHA256SUMS.txt"]) {
         assert.ok(args.includes(`.tmp/release/${asset}`));
       }
+      assert.ok(!args.includes(".tmp/release/corresponding-sources.zip"));
       assert.equal(args.includes("--prerelease"), preview === "true");
       assert.equal(args.includes("--latest=false"), preview === "true");
     }
@@ -229,9 +238,7 @@ test("Actual release artifact verifier rejects a modified Windows download", asy
   const hash = data => createHash("sha256").update(data).digest("hex");
   try {
     await mkdir(target, { recursive: true });
-    await writeFile(path.join(target, "source.zip"), "synthetic source");
-    await writeFile(path.join(target, "SHA256SUMS.txt"), `${hash("synthetic source")}  source.zip\n`);
-    const names = ["app.exe", "standard.zip", "complete.zip", "corresponding-sources.zip"];
+    const names = ["app.exe", "standard.zip", "complete.zip"];
     for (const name of names) await writeFile(path.join(target, name), "synthetic binary");
     await writeFile(path.join(target, "WINDOWS-SHA256SUMS.txt"), names.map(name => `${hash("synthetic binary")}  ${name}\n`).join(""));
     const script = path.join(directory, "verify.ps1");
