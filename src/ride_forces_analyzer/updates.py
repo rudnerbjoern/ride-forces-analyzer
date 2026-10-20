@@ -15,6 +15,7 @@ from urllib.parse import quote, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from http.client import HTTPMessage
 from typing import IO, cast
+from .runtime_paths import runtime_target
 
 REPOSITORY_URL = "https://github.com/rudnerbjoern/ride-forces-analyzer"
 RELEASES_API = "https://api.github.com/repos/rudnerbjoern/ride-forces-analyzer/releases"
@@ -50,10 +51,20 @@ def version_key(value: str) -> tuple[int, int, int, int, int] | None:
 
 
 def select_release(releases: object, current: str) -> AvailableRelease | None:
-    """Choose the highest newer published version with an uploaded download."""
+    """Choose the highest newer published version with a native application asset."""
     installed = version_key(current)
     if installed is None or not isinstance(releases, list):
         raise UpdateCheckError("Invalid version or releases response")
+    target = runtime_target()
+    if target is None:
+        return None
+    suffixes = (
+        ("-windows-x64.exe", "-windows-x64-standard.zip", "-windows-x64-complete.zip")
+        if target == "windows-x64"
+        else (f"-{target}.tar.gz",)
+        if target == "linux-x64"
+        else (f"-{target}.zip",)
+    )
     candidates: list[tuple[tuple[int, int, int, int, int], AvailableRelease]] = []
     for raw_item in cast(list[object], releases):
         if not isinstance(raw_item, dict):
@@ -83,6 +94,8 @@ def select_release(releases: object, current: str) -> AvailableRelease | None:
                 and size > 0
                 and isinstance(url, str)
                 and url.startswith(prefix)
+                and url[len(prefix) :]
+                in {f"Ride-Forces-Analyzer-{tag.removeprefix('v')}{suffix}" for suffix in suffixes}
             ):
                 candidates.append(
                     (

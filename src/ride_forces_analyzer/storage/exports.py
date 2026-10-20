@@ -8,19 +8,17 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from collections.abc import Generator
 from contextlib import contextmanager
-import os
 from pathlib import Path
 import sqlite3
 
 from pydantic import ValidationError
 
 from .export_models import SavedBatch, SavedPreset, BatchJob
+from ride_forces_analyzer.runtime_paths import data_directory
 
 
 def default_database_path() -> Path:
-    local = os.environ.get("LOCALAPPDATA")
-    root = Path(local) if local else Path.home() / "AppData" / "Local"
-    return root / "Ride Forces Analyzer" / "exports.sqlite3"
+    return data_directory() / "exports.sqlite3"
 
 
 class ExportStoreError(Exception):

@@ -5,6 +5,9 @@
 Copyright © 2026 Björn Rudner. Program code: [GPL-3.0-or-later](LICENSE).
 External components retain their licenses. This inventory records notice/source
 duties, not a complete notice bundle or installer clearance.
+Linux/macOS packages reuse the collected Python/Qt notices and do not bundle FFmpeg.
+An externally installed encoder retains its provider's licenses; the Windows
+complete-package FFmpeg obligations do not imply a Linux/macOS encoder bundle.
 Versions/hashes: [uv.lock](uv.lock), [package-lock.json](package-lock.json),
 [ffmpeg.json](ffmpeg.json). Architecture owns
 [deployment](docs/architecture/07_deployment_view.md);

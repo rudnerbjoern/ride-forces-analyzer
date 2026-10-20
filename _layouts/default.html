@@ -3,7 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    {% seo %}
+    <title>{{ site.title | escape }}{% if page.title and page.title != site.title %} · {{ page.title | escape }}{% endif %}</title>
+    {% seo title=false %}
     <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
     {% include head-custom.html %}
   </head>
@@ -33,11 +34,20 @@
             {% unless release.draft %}
               {% assign executable = nil %}
               {% assign complete = nil %}
+              {% assign linux = nil %}
+              {% assign mac_arm64 = nil %}
+              {% assign mac_x64 = nil %}
               {% for asset in release.assets %}
                 {% if asset.name contains '-windows-x64.exe' %}
                   {% assign executable = asset %}
                 {% elsif asset.name contains '-windows-x64-complete.zip' %}
                   {% assign complete = asset %}
+                {% elsif asset.name contains '-linux-x64.tar.gz' %}
+                  {% assign linux = asset %}
+                {% elsif asset.name contains '-macos-arm64.zip' %}
+                  {% assign mac_arm64 = asset %}
+                {% elsif asset.name contains '-macos-x64.zip' %}
+                  {% assign mac_x64 = asset %}
                 {% endif %}
               {% endfor %}
               {% if executable and complete %}
@@ -46,16 +56,19 @@
               {% endif %}
             {% endunless %}
           {% endfor %}
-          <aside class="download-panel" aria-label="Windows downloads">
+          <aside class="download-panel" aria-label="Desktop downloads">
             {% if download_release %}
               <p class="release-label">
                 <strong>{{ download_release.tag_name | escape }}</strong>
                 {% if download_release.prerelease %} · Preview release{% endif %}
-                · Windows 10/11, 64-bit
+                · Portable desktop downloads
               </p>
               <div class="download-actions">
                 <a class="download-button primary" href="{{ executable.browser_download_url | escape }}">Download Windows EXE</a>
                 <a class="download-button" href="{{ complete.browser_download_url | escape }}">Complete ZIP · includes FFmpeg</a>
+                {% if linux %}<a class="download-button" href="{{ linux.browser_download_url | escape }}">Linux x64 · tar.gz</a>{% endif %}
+                {% if mac_arm64 %}<a class="download-button" href="{{ mac_arm64.browser_download_url | escape }}">macOS · Apple Silicon</a>{% endif %}
+                {% if mac_x64 %}<a class="download-button" href="{{ mac_x64.browser_download_url | escape }}">macOS · Intel</a>{% endif %}
                 <a href="{{ download_release.html_url | escape }}">Release notes and checksums</a>
               </div>
             {% else %}

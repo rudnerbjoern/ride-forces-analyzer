@@ -22,7 +22,12 @@ from ride_forces_analyzer.rendering.model import ExportSettings, prepare_export
 from ride_forces_analyzer.ui.window import ExplorerWindow
 
 
-def smoke_test(report: Path, recording: Path | None, with_ffmpeg: bool) -> None:
+def smoke_test(
+    report: Path,
+    recording: Path | None,
+    with_ffmpeg: bool,
+    ffmpeg: Path | None = None,
+) -> None:
     report = report.resolve()
     report.parent.mkdir(parents=True, exist_ok=True)
     application = QApplication([])
@@ -31,7 +36,10 @@ def smoke_test(report: Path, recording: Path | None, with_ffmpeg: bool) -> None:
     try:
         window = ExplorerWindow(AppSettings(language="en"))
         window.show()
-        application.processEvents()
+        deadline = monotonic() + 10
+        while not window.windowHandle().isExposed() and monotonic() < deadline:
+            application.processEvents()
+            sleep(0.001)
         assert window.isVisible() and window.windowHandle().isExposed()
         result["gui"] = True
         window.set_ui_language(1)
@@ -64,8 +72,10 @@ def smoke_test(report: Path, recording: Path | None, with_ffmpeg: bool) -> None:
             assert image.size == (3840, 2160)
             result["render"] = True
             if with_ffmpeg:
-                encoder = find_ffmpeg()
-                result["bundled_encoder"] = str(encoder.name)
+                encoder = find_ffmpeg(ffmpeg)
+                result["encoder"] = str(encoder.name)
+                if ffmpeg is None:
+                    result["bundled_encoder"] = str(encoder.name)
                 output = report.with_suffix(".mp4")
                 export_video(timeline, output, ffmpeg=encoder)
                 assert output.is_file() and output.stat().st_size > 0

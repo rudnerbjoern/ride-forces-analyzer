@@ -20,6 +20,7 @@ from uuid import uuid4
 from .frames import OverlayRenderer
 from .layouts import export_region
 from .model import ExportTimeline
+from ride_forces_analyzer.runtime_paths import ffmpeg_name
 
 
 class ExportCancelled(Exception):
@@ -32,16 +33,28 @@ def find_ffmpeg(explicit: Path | None = None) -> Path:
             raise ValueError("Choose an existing FFmpeg executable")
         return explicit.resolve()
     if getattr(sys, "frozen", False):
-        bundled = Path(sys.executable).resolve().parent / "ffmpeg.exe"
+        bundled = Path(sys.executable).resolve().parent / ffmpeg_name()
         if bundled.is_file():
             return bundled
     executable = shutil.which("ffmpeg")
     if executable:
         return Path(executable)
-    local = Path.cwd() / ".tmp/ffmpeg/bin/ffmpeg.exe"
+    local = Path.cwd() / ".tmp/ffmpeg/bin" / ffmpeg_name()
     if local.is_file():
         return local.resolve()
-    raise ValueError("FFmpeg was not found. Choose ffmpeg.exe in the export dialog.")
+    raise ValueError("FFmpeg was not found. Choose an FFmpeg executable in the export dialog.")
+
+
+def encoder_environment() -> dict[str, str]:
+    """Keep frozen Linux library paths out of an external system encoder."""
+    environment = dict(os.environ)
+    if sys.platform == "linux" and getattr(sys, "frozen", False):
+        original = environment.get("LD_LIBRARY_PATH_ORIG")
+        if original is None:
+            environment.pop("LD_LIBRARY_PATH", None)
+        else:
+            environment["LD_LIBRARY_PATH"] = original
+    return environment
 
 
 def encoder_command(
@@ -184,6 +197,7 @@ def supports_nvidia(ffmpeg: Path, timeline: ExportTimeline) -> bool:
                 "-",
             ],
             capture_output=True,
+            env=encoder_environment(),
             timeout=30,
             check=False,
             creationflags=subprocess.CREATE_NO_WINDOW
@@ -224,7 +238,7 @@ def export_video(
         )
     if cancellation.is_set():
         raise ExportCancelled()
-    staging = Path.cwd() / ".tmp" / f"video-export-{uuid4().hex}"
+    staging = destination.parent / f".ride-forces-export-{uuid4().hex}"
     staging.mkdir(parents=True)
     process: subprocess.Popen[bytes] | None = None
     published = False
@@ -238,6 +252,7 @@ def export_video(
                 stdin=subprocess.PIPE,
                 stdout=subprocess.DEVNULL,
                 stderr=log,
+                env=encoder_environment(),
                 creationflags=subprocess.CREATE_NO_WINDOW
                 if hasattr(subprocess, "CREATE_NO_WINDOW")
                 else 0,

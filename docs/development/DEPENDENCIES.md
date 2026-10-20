@@ -3,6 +3,13 @@
 Configuration is authoritative. This guide neither duplicates lock contents nor
 claims dependencies are latest or vulnerability-free.
 
+Windows remains the development host. The same Python lock supplies Linux x64
+and macOS x64/arm64 native release workers; no additional Python runtime dependency
+is introduced. Linux desktop shared libraries and an external FFmpeg are target
+OS requirements, not bundled GyanD downloads. The
+[release guide](RELEASE.md#linux-and-macos-packages) owns installation commands,
+platform baselines and native validation.
+
 | Scope                       | Source of truth                                                                  |
 | --------------------------- | -------------------------------------------------------------------------------- |
 | Python runtime              | [.python-version](../../.python-version), [pyproject.toml](../../pyproject.toml) |

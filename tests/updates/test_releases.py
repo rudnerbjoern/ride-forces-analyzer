@@ -1,5 +1,7 @@
 """Release selection and bounded public transport without live network access."""
 
+# cspell:words autouse
+
 from io import BytesIO
 import json
 from pathlib import Path
@@ -13,6 +15,11 @@ from ride_forces_analyzer import updates
 from ride_forces_analyzer.storage.preferences import Preferences
 
 
+@pytest.fixture(autouse=True)
+def windows_release_target(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(updates, "runtime_target", lambda: "windows-x64")
+
+
 def release(tag: str, **fields: object) -> dict[str, object]:
     return {
         "tag_name": tag,
@@ -22,7 +29,7 @@ def release(tag: str, **fields: object) -> dict[str, object]:
             {
                 "state": "uploaded",
                 "size": 123,
-                "browser_download_url": f"{updates.REPOSITORY_URL}/releases/download/{tag}/source.zip",
+                "browser_download_url": f"{updates.REPOSITORY_URL}/releases/download/{tag}/Ride-Forces-Analyzer-{tag.removeprefix('v')}-windows-x64.exe",
             },
         ],
         **fields,
@@ -38,6 +45,52 @@ def test_release_selection_uses_numeric_and_prerelease_order_not_api_order() -> 
     result = updates.select_release([release("v0.10.0rc10"), release("v0.10.0")], "0.10.0rc2")
     assert result is not None and result.tag == "v0.10.0"
     assert updates.select_release([release("v0.1.0"), release("v0.1.0rc1")], "0.1.0") is None
+
+
+@pytest.mark.parametrize(
+    "target,suffix",
+    [
+        ("windows-x64", "windows-x64.exe"),
+        ("linux-x64", "linux-x64.tar.gz"),
+        ("macos-arm64", "macos-arm64.zip"),
+        ("macos-x64", "macos-x64.zip"),
+    ],
+)
+def test_update_requires_a_download_for_the_native_platform(
+    monkeypatch: pytest.MonkeyPatch,
+    target: str,
+    suffix: str,
+) -> None:
+    monkeypatch.setattr(updates, "runtime_target", lambda: target)
+    row = release(
+        "v0.5.0",
+        assets=[
+            {
+                "state": "uploaded",
+                "size": 123,
+                "browser_download_url": f"{updates.REPOSITORY_URL}/releases/download/v0.5.0/Ride-Forces-Analyzer-0.5.0-{suffix}",
+            },
+        ],
+    )
+    selected = updates.select_release([row], "0.4.0")
+    assert selected is not None and selected.tag == "v0.5.0"
+    row["assets"] = [
+        {
+            "state": "uploaded",
+            "size": 123,
+            "browser_download_url": f"{updates.REPOSITORY_URL}/releases/download/v0.5.0/source.zip",
+        },
+    ]
+    assert updates.select_release([row], "0.4.0") is None
+    if target != "windows-x64":
+        assert updates.select_release([release("v0.5.0")], "0.4.0") is None
+
+
+def test_unsupported_platform_does_not_advertise_other_platform_downloads(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(updates, "runtime_target", lambda: None)
+    assert updates.select_release([release("v0.5.0")], "0.4.0") is None
 
 
 def test_unpublished_invalid_or_unavailable_releases_are_not_advertised() -> None:

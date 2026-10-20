@@ -45,7 +45,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 
 ## Platform and architecture
 
-- MUST use native Windows, uv, PySide6, Pydantic, typed Python, Ruff, Pylance, mypy and pytest. Runtime/tool versions and compatibility constraints come from repository configuration and the [Windows setup](docs/development/SETUP.md); NEVER duplicate version pins here.
+- MUST keep development and local regression checks on native Windows with uv, PySide6, Pydantic, typed Python, Ruff, Pylance, mypy and pytest. Linux/macOS are native distribution-build and runtime-validation targets, not additional developer setups. Runtime/tool versions and compatibility constraints come from repository configuration and the [Windows setup](docs/development/SETUP.md); NEVER duplicate version pins here.
 - MUST use locked dependencies. Before adding dependencies: check requirements and explain purpose.
 - MUST maintain architecture exclusively in the twelve arc42 chapters under `docs/architecture/`; navigate via their README index and read task-relevant chapters. MUST use Mermaid for suitable diagrams. NEVER introduce a parallel architecture overview; link existing ADRs from chapter 09.
 - NEVER put domain/import/analysis/storage/playback/rendering logic or validation in Qt widgets. MUST follow documented subsystem boundaries.
@@ -63,7 +63,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 
 ## Validation and evidence
 
-- MUST complete milestone acceptance entirely on native Windows locally: verify ALL criteria, finalize the validation report and completion status, then run checks affected by final documentation BEFORE staging/commit/push.
+- MUST complete local Windows development acceptance before staging/commit/push: verify applicable criteria, finalize any explicitly required report/status and run checks affected by final documentation. Linux/macOS distribution acceptance additionally requires native target package builds and execution checks; NEVER infer it from Windows/static results.
 - MUST treat PR CI as secondary validation and a merge gate, NEVER as a prerequisite for local milestone acceptance. Local completion NEVER authorizes Git operations or another stage.
 - MUST include explicitly required final acceptance documentation in the initial delivery; this NEVER requires a report for routine changes without an applicable requirement. NEVER add a completion-only commit solely because CI became green; record hosted outcomes in PR metadata. CI failures MUST block merge and be investigated; acceptance evidence invalidated by a defect MUST be corrected in place.
 - MUST read instructions/task docs once per working context. Re-read ONLY changed content, unresolved relevant sections or lost context.

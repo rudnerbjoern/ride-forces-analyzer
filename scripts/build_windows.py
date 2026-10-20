@@ -92,6 +92,13 @@ def collect_notices(destination: Path) -> None:
         inventory.append({"name": name, "version": distribution.version, "notice_files": notices})
     python_license = Path(sys.base_prefix) / "LICENSE.txt"
     if not python_license.is_file():
+        python_license = (
+            Path(sys.base_prefix)
+            / "lib"
+            / f"python{sys.version_info.major}.{sys.version_info.minor}"
+            / "LICENSE.txt"
+        )
+    if not python_license.is_file():
         raise ValueError("Python runtime license is missing")
     shutil.copyfile(python_license, destination / "PYTHON-LICENSE.txt")
     shutil.copyfile(ROOT / "packaging/QT-NOTICES.txt", destination / "QT-NOTICES.txt")

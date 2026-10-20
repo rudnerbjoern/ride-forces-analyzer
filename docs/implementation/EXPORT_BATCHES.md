@@ -2,6 +2,12 @@
 
 ## Scope
 
+User databases retain their Windows LOCALAPPDATA location. Linux uses absolute
+XDG_DATA_HOME or `~/.local/share/ride-forces-analyzer`; macOS uses
+`~/Library/Application Support/Ride Forces Analyzer`. Presets and preferences stay
+outside the frozen application. Package formats and external FFmpeg requirements
+are defined in the [release guide](../development/RELEASE.md#linux-and-macos-packages).
+
 Local SQLite presets and reusable batches; multiple presets per recording and
 multiple recordings per batch. Selected/all batches form one sequential queue.
 Each recording × preset produces a separate video, never concatenated rides.

@@ -1,10 +1,15 @@
 # Releases
 
+<!-- cspell:words libegl libopengl libxcb libxkbcommon -->
+
 The [release workflow](../../.github/workflows/source-release.yml) handles
-owner-authorized pushes of `v*` tags on native Windows. It validates the tagged
-sources and prepares a standalone Windows x64 EXE and standard/complete ZIPs. Binary publication is
-accompanied by documented missing redistribution material below. Version 0.4.0
-provides these portable downloads; no installer is included.
+owner-authorized pushes of `v*` tags. Windows remains the development environment;
+Linux/macOS packages are built and executed by native target workers in reusable CI.
+The workflow validates tagged sources and prepares a standalone Windows x64 EXE,
+standard/complete ZIPs, a Linux x64 tarball and macOS arm64/x64 app ZIPs. Binary publication is
+accompanied by documented missing redistribution material below. Published version
+0.4.0 provides Windows downloads; the next release can include all native targets.
+No installer is included.
 Local acceptance and owner review still precede tag creation; CI is secondary
 validation. [Windows setup](SETUP.md) owns the required local checks.
 
@@ -22,9 +27,9 @@ validation. [Windows setup](SETUP.md) owns the required local checks.
   and verifies all original recording bytes against the fixture inventory.
   Wheel and source-distribution builds must also succeed.
 - Only the publication job receives `contents: write`. It downloads this run's
-  verified Windows packages, checksum file and notes, verifies the package hashes,
+  verified native packages, platform checksum files and notes, verifies all package hashes,
   and rechecks the remote tag target immediately before publication.
-- Publication uses `gh release create --verify-tag`, attaches the Windows downloads and checksum file, and
+- Publication uses `gh release create --verify-tag`, attaches all native downloads and checksum files, and
   combines the maintained [release text](RELEASE_NOTES.md) with generated change
   notes. Existing releases are not edited or overwritten; failed or ambiguous
   publication requires remote-state inspection before retrying.
@@ -45,10 +50,10 @@ gh workflow run source-release.yml --ref main -f tag=v0.4.0
 ```
 
 Quality checks use the current workflow definition and check out the resolved
-tagged commit. Source validation and Windows builds use that same commit,
+tagged commit. Source validation and all native builds use that same commit,
 with the same ancestry, merged-PR,
 version and checksum gates. Concurrent runs for the same tag are serialized.
-Windows ZIP artifacts are downloaded without automatic decompression so their
+Native package artifacts are downloaded without automatic decompression so their
 original filenames, bytes and checksums remain intact. Existing releases are
 never overwritten by this retry path.
 
@@ -58,7 +63,8 @@ The About dialog offers a manual release check and an opt-in startup check
 (disabled by default). Startup checks run in a worker at most once per 24 hours;
 attempts, including failures, are recorded in `preferences.sqlite3`. It also stores
 the opt-in and one skipped tag. Manual checks bypass the interval and skipped tag.
-Only published releases with an uploaded repository download qualify. The highest
+Only published releases with an uploaded application download for the running
+OS/architecture qualify; source archives and checksums alone do not. The highest
 newer supported version is selected numerically, including `0.x` and `a`/`b`/`rc`
 prereleases; bare tags, drafts and releases without downloads do not qualify.
 
@@ -109,10 +115,65 @@ SHA-256 values. It downloads configured HTTPS sources only into
 `.tmp/`; those dependency archives are not bundled as a release download. The Windows
 job and package execution checks must succeed before the publication job can run.
 Publication rechecks all downloaded asset hashes and the live tag, then attaches
-the EXE, both Windows ZIPs and their checksum file. A
+the EXE, both Windows ZIPs, Linux/macOS packages and platform checksum files. A
 documented missing provider source does not block the workflow. Missing or modified
 files that are explicitly listed in the catalog still fail verification.
-Version 0.4.0 uses this path for all four user-facing download variants.
+Version 0.4.0 provides the three Windows application downloads and their checksum file.
+
+## Linux and macOS packages
+
+These targets are prepared for a future release. Published `v0.4.0` remains
+Windows-only; never move its tag or overwrite its assets to add these changes.
+Development and the full local regression suite stay on Windows. Native package
+builds require their own OS; Windows mocks do not establish macOS acceptance.
+
+| Target              | Download                                        | Minimum target / installation                                                                                            |
+| ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Linux x64           | `Ride-Forces-Analyzer-VERSION-linux-x64.tar.gz` | Ubuntu 24.04 / glibc 2.39; extract and execute `./Ride-Forces-Analyzer` inside its directory; keep `_internal` beside it |
+| macOS Apple Silicon | `Ride-Forces-Analyzer-VERSION-macos-arm64.zip`  | macOS 15+; extract and move `Ride-Forces-Analyzer.app` to Applications                                                   |
+| macOS Intel         | `Ride-Forces-Analyzer-VERSION-macos-x64.zip`    | macOS 15+; extract and move `Ride-Forces-Analyzer.app` to Applications                                                   |
+
+Native packages embed Python, Qt and collected notices, but do not bundle FFmpeg.
+Linux desktop runtime dependencies on Ubuntu are `libegl1`, `libopengl0`,
+`libxcb-cursor0` and `libxkbcommon-x11-0`; a working X11 or Wayland session is required.
+Install FFmpeg separately (`sudo apt install ffmpeg` on Ubuntu, or an existing
+compatible macOS installation such as `brew install ffmpeg`). PATH discovery or
+the export assistant's Browse action selects it. CPU H.264 and ProRes 4444 encoding
+are checked; NVIDIA acceleration is optional and capability-probed, not assumed.
+
+macOS apps use PyInstaller's ad-hoc signatures. They are not notarized or signed
+with an Apple Developer ID. After checking the download hash, macOS may require
+an explicit **Open Anyway** approval in Privacy & Security for a trusted download.
+Do not disable Gatekeeper globally. Each architecture is built separately from
+its matching locked wheels; a universal app is not claimed.
+
+Native build workers run these existing entry points:
+
+```sh
+uv sync --locked --all-extras --group dev --group build
+uv run --locked --group build python -m scripts.build_posix
+uv run --locked --group build python -m scripts.check_posix_packages .tmp/posix-build/assets --recording /absolute/path/to/authorized/Manta.forces
+```
+
+The actual recording path is supplied by the workflow from the unchanged fixture
+catalog. Linux CI uses Xvfb; macOS uses the hosted desktop. Both execute the
+extracted frozen package with isolated user state, a read-only launch directory,
+real import, German/light UI, 4K rendering and an external CPU encode. The macOS
+checker additionally verifies the extracted app signature. No offscreen result
+substitutes for these native gates.
+
+Each target emits its own `LINUX-X64-SHA256SUMS.txt`,
+`MACOS-ARM64-SHA256SUMS.txt` or `MACOS-X64-SHA256SUMS.txt`. Publication downloads
+verified artifacts from the same run without unpacking them, validates every
+platform's complete checksum inventory and publishes only after the required
+native CI gate and Windows package checks succeed.
+
+Preferences/export databases use `~/.local/share/ride-forces-analyzer` on Linux
+(or absolute XDG_DATA_HOME) and `~/Library/Application Support/Ride Forces Analyzer`
+on macOS. No recording or user data is installed in the app bundle. Rendering
+uses Pillow's scalable font fallback when Segoe UI is absent; glyph metrics need
+not be pixel-identical to Windows. Existing redistribution gaps remain documented
+in the shipped catalog; no static Windows FFmpeg binary is added to these packages.
 
 ## Distribution boundaries
 

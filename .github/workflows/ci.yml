@@ -223,8 +223,15 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run test:docs
 
+  posix:
+    needs: dependency-check
+    if: ${{ needs.dependency-check.outputs.code == 'true' }}
+    uses: ./.github/workflows/posix-packages.yml
+    with:
+      revision: ${{ inputs.revision || github.sha }}
+
   check:
-    needs: [dependency-check, code, ui, documentation, skills, gitleaks, actionlint]
+    needs: [dependency-check, code, ui, documentation, skills, gitleaks, actionlint, posix]
     if: ${{ always() }}
     runs-on: windows-latest
     timeout-minutes: 5
@@ -235,11 +242,13 @@ jobs:
           GITLEAKS_RESULT: ${{ needs.gitleaks.result }}
           CODE_REQUIRED: ${{ needs.dependency-check.outputs.code }}
           UI_REQUIRED: ${{ needs.dependency-check.outputs.code }}
+          POSIX_REQUIRED: ${{ needs.dependency-check.outputs.code }}
           DOCUMENTATION_REQUIRED: ${{ needs.dependency-check.outputs.documentation }}
           SKILLS_REQUIRED: ${{ needs.dependency-check.outputs.skills }}
           WORKFLOWS_REQUIRED: ${{ needs.dependency-check.outputs.workflows }}
           CODE_RESULT: ${{ needs.code.result }}
           UI_RESULT: ${{ needs.ui.result }}
+          POSIX_RESULT: ${{ needs.posix.result }}
           DOCUMENTATION_RESULT: ${{ needs.documentation.result }}
           SKILLS_RESULT: ${{ needs.skills.result }}
           WORKFLOWS_RESULT: ${{ needs.actionlint.result }}
@@ -250,7 +259,7 @@ jobs:
           if ($env:DEPENDENCY_RESULT -ne 'success') {
             throw 'Change detection failed; test selection is not verified.'
           }
-          foreach ($suite in @('CODE', 'UI', 'DOCUMENTATION', 'SKILLS', 'WORKFLOWS')) {
+          foreach ($suite in @('CODE', 'UI', 'DOCUMENTATION', 'SKILLS', 'WORKFLOWS', 'POSIX')) {
             $required = [Environment]::GetEnvironmentVariable("${suite}_REQUIRED")
             $result = [Environment]::GetEnvironmentVariable("${suite}_RESULT")
             if ($required -ne 'true' -and $required -ne 'false') {
