@@ -45,7 +45,8 @@ def test_compositor_accepts_a_registered_renderer_without_layout_branches(
     manta: ExplorerData,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    timeline = prepare_export(manta, ExportSettings(layout="orbit"), 3600, 3601)
+    assert manta.analysis is not None
+    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3601)
     positions: list[float] = []
 
     class CustomRenderer:
@@ -78,6 +79,7 @@ def test_individual_chart_style_applies_in_both_aspects_without_leaking(
     manta: ExplorerData,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    assert manta.analysis is not None
     palette = ("#ff00ff", "#00ffff", "#ffff00")
     monkeypatch.setattr(RibbonRenderer, "channel_colors", palette)
     monkeypatch.setattr(RibbonRenderer, "label_size", 42)
@@ -86,7 +88,7 @@ def test_individual_chart_style_applies_in_both_aspects_without_leaking(
             layout="ribbon",
             aspect=aspect,
         )
-        timeline = prepare_export(manta, settings, 3600, 3601)
+        timeline = prepare_export(manta.analysis, settings, 3600, 3601)
         renderer = registry.create_renderer(timeline)
         assert isinstance(renderer, ChartRenderer)
         assert renderer.channel_colors == palette

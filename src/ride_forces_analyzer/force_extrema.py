@@ -8,12 +8,17 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from math import isfinite
 from typing import TYPE_CHECKING
+from collections.abc import Sequence
 
 from ride_forces_analyzer.domain import ValueOrigin
 from ride_forces_analyzer.importers import ImportSuccess
 
 if TYPE_CHECKING:
-    from ride_forces_analyzer.analysis.reference import AppReference
+    import numpy as np
+    from numpy.typing import NDArray
+
+    from ride_forces_analyzer.analysis.models import AnalysisProvenance
+    from ride_forces_analyzer.analysis.recording import AnalysisQuality, SmoothedForces
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +52,9 @@ class SelectionExtrema:
     algorithm: str = "inclusive-three-channel-extrema-v1"
     time_basis: str = "INFERRED_UNIFORM"
 
+    quality: "AnalysisQuality | None" = None
+    provenance: "AnalysisProvenance | None" = None
+
     @property
     def count(self) -> int:
         return self.last - self.first + 1
@@ -57,10 +65,26 @@ def calculate_extrema(
     first: int,
     last: int,
     *,
-    reference: "AppReference | None" = None,
+    forces: "SmoothedForces | None" = None,
     calculation_time: datetime | None = None,
 ) -> SelectionExtrema:
-    """Use existing full channels, inclusive endpoints and earliest tied indices."""
+    """Read full source/stage buffers with inclusive bounds and earliest tied indices.
+
+    Args:
+        source: Original lossless import, also retained by the optional force stage.
+        first: First included source sample index.
+        last: Last included source sample index.
+        forces: Prepared smoothed stage for calibrated mode; None selects raw axes.
+        calculation_time: Aware result time, defaulting to the current UTC time.
+
+    Returns:
+        Immutable extrema with source/time identity and the force stage's quality
+        and calculation provenance. No numerical preparation is performed.
+
+    Raises:
+        ValueError: Invalid interval/time, mismatched or unavailable stage,
+            incomplete channels or missing/non-finite selected samples.
+    """
     calculated = calculation_time if calculation_time is not None else datetime.now(UTC)
     if calculated.utcoffset() is None:
         raise ValueError("Extrema calculation time must be timezone-aware")
@@ -69,10 +93,22 @@ def calculate_extrema(
     if type(first) is not int or type(last) is not int or not 0 <= first <= last < count:
         raise ValueError("Extrema require bounded, ordered sample indices")
     rate = recording.motion.sample_rate
-    if reference is not None:
-        if reference.source_sha256 != source.source_sha256 or reference.sample_rate != rate.value:
-            raise ValueError("Reference must match the source and sample rate")
-        channels = reference.channels
+    channels: "tuple[Sequence[float] | NDArray[np.float64], ...]"
+    if forces is not None:
+        projection = forces.projection
+        if projection.source is not source or projection.time.basis.sample_rate != rate:
+            raise ValueError("Force stage must match the source and sample rate")
+        if projection.time.source_indices != tuple(range(count)):
+            raise ValueError("Force stage must preserve source sample correspondence")
+        if forces.availability.state.value != "available" or forces.channels is None:
+            raise ValueError("Calibrated force stage is unavailable")
+        if forces.provenance is None:
+            raise ValueError("Calibrated force stage requires provenance")
+        if any(len(axis.valid_rows) != count for axis in forces.channels):
+            raise ValueError("Extrema require source-length validity masks")
+        if any(not all(axis.valid_rows[first : last + 1]) for axis in forces.channels):
+            raise ValueError("Extrema require valid selected samples")
+        channels = (forces.channels[0].values, forces.channels[1].values, forces.channels[2].values)
         names = ("Vertical", "Lateral", "Longitudinal")
     else:
         samples = recording.motion.acceleration
@@ -82,10 +118,11 @@ def calculate_extrema(
             tuple(v.z for v in samples),
         )
         names = ("x", "y", "z")
-    if len(channels) != 3 or any(len(values) != count for values in channels):
+    if any(len(values) != count for values in channels):
         raise ValueError("Extrema require three complete source-length channels")
     results: list[ChannelExtrema] = []
-    for name, values in zip(names, channels, strict=True):
+    for axis, name in enumerate(names):
+        values = channels[axis]
         if not all(isfinite(value) for value in values[first : last + 1]):
             raise ValueError("Extrema require finite selected samples")
         minimum = min(range(first, last + 1), key=values.__getitem__)
@@ -93,21 +130,36 @@ def calculate_extrema(
         results.append(
             ChannelExtrema(
                 name,
-                Extremum(values[minimum], minimum, minimum / rate.value),
-                Extremum(values[maximum], maximum, maximum / rate.value),
+                Extremum(float(values[minimum]), minimum, minimum / rate.value),
+                Extremum(float(values[maximum]), maximum, maximum / rate.value),
             ),
         )
+    window = dict(forces.configuration.parameters).get("window_samples", 11) if forces else 1
+    assert type(window) is int
     return SelectionExtrema(
         source.source_sha256,
         first,
         last,
         rate.value,
         rate.origin,
-        "calibrated" if reference is not None else "raw",
-        reference.unit if reference is not None else "unknown",
-        reference.smoothing_window if reference is not None else 1,
-        reference.algorithm if reference is not None else "source-acceleration-v1",
-        reference.capability if reference is not None else "VERIFIED",
+        "calibrated" if forces is not None else "raw",
+        "g" if forces is not None else "unknown",
+        window,
+        f"{forces.projection.configuration.algorithm}-{forces.configuration.algorithm}-{window}-v{forces.configuration.version}"
+        if forces is not None
+        else "source-acceleration-v1",
+        next(
+            (
+                state.value.upper()
+                for name, state in forces.quality.capabilities
+                if name == "smoothing"
+            ),
+            "UNAVAILABLE",
+        )
+        if forces is not None
+        else "VERIFIED",
         tuple(results),
         calculated,
+        quality=forces.quality if forces is not None else None,
+        provenance=forces.provenance if forces is not None else None,
     )

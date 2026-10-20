@@ -1,5 +1,7 @@
 """Native export-dialog interaction and background worker lifecycle."""
 
+from ride_forces_analyzer.analysis.recording import source_app_configuration
+
 # cspell:words getpixel autouse
 
 from pathlib import Path
@@ -321,7 +323,7 @@ def test_stale_preview_is_discarded_after_fast_profile_changes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from ride_forces_analyzer.ui import export as ui_export
-    from ride_forces_analyzer.explorer import ExplorerData
+    from ride_forces_analyzer.analysis.recording import RecordingAnalysis
     from ride_forces_analyzer.rendering.model import ExportSettings
 
     original = ui_export.build_previews
@@ -329,7 +331,7 @@ def test_stale_preview_is_discarded_after_fast_profile_changes(
     calls: list[tuple[str, int | str]] = []
 
     def delayed(
-        data: ExplorerData,
+        data: RecordingAnalysis,
         settings: ExportSettings,
         first: int,
         last: int,
@@ -428,8 +430,8 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     assert reopened.fps.currentText() == "59.94" and reopened.seconds.value() == 12.5
     assert reopened.smoothing.currentIndex() == 1 and reopened.interval.currentIndex() == 2
     assert "3 samples" in reopened.preview_caption.text()
-    assert window.data is not None and window.data.reference is not None
-    assert window.data.reference.smoothing_window == 11
+    assert window.data is not None and window.data.calibration_available
+    assert window.data.smoothing_window == 11
     reopened.manage_batches.click()
     assert isinstance(reopened.batch_window, BatchDialog)
     assert reopened.batch_window.table.rowCount() == 2
@@ -447,8 +449,26 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     from ride_forces_analyzer.rendering.batches import BatchReport, JobResult
 
     store = ExportStore(default_database_path())
-    store.save_preset(SavedPreset(name="Ribbon", settings=ExportSettings(layout="ribbon")))
-    store.save_preset(SavedPreset(name="Orbit", settings=ExportSettings(layout="orbit")))
+    store.save_preset(
+        SavedPreset(
+            name="Ribbon",
+            settings=ExportSettings(layout="ribbon"),
+            analysis_configuration=source_app_configuration(),
+            schema_version=1,
+            smoothing_window=11,
+            range_mode="markers",
+        ),
+    )
+    store.save_preset(
+        SavedPreset(
+            name="Orbit",
+            settings=ExportSettings(layout="orbit"),
+            analysis_configuration=source_app_configuration(),
+            schema_version=1,
+            smoothing_window=11,
+            range_mode="markers",
+        ),
+    )
     store.create_batch("Day1")
     window = explorer_window
     assert window.data is None and window.batches_button.isEnabled()
@@ -468,7 +488,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     wait_until(lambda: dialog.builder is None)
     assert dialog.table.rowCount() == 4
     assert len(store.batch("Day1").jobs) == 4
-    store.save_batch(SavedBatch(name="Day2", jobs=store.batch("Day1").jobs[:1]))
+    store.save_batch(SavedBatch(name="Day2", jobs=store.batch("Day1").jobs[:1], schema_version=1))
     dialog.refresh("Day1")
     started = Event()
     names: list[str] = []

@@ -121,7 +121,7 @@ class ExportStore:
             db.execute("DELETE FROM presets WHERE name=?", (name,))
 
     def create_batch(self, name: str) -> SavedBatch:
-        batch = SavedBatch(name=name)
+        batch = SavedBatch(name=name, schema_version=1, jobs=())
         self.save_batch(batch)
         return batch
 
@@ -138,7 +138,7 @@ class ExportStore:
             if row is None:
                 raise ExportStoreError("Choose or create a batch first")
             batch = SavedBatch.model_validate_json(row[0])
-            updated = SavedBatch(name=batch.name, jobs=(*batch.jobs, *jobs))
+            updated = SavedBatch(name=batch.name, jobs=(*batch.jobs, *jobs), schema_version=1)
             db.execute(
                 "UPDATE batches SET payload=? WHERE name=?",
                 (updated.model_dump_json(), name),

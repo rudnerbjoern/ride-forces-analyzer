@@ -69,6 +69,21 @@ Developer-tool regressions under `.agents/skills/` remain outside application
 discovery; their [skill instructions](../../.agents/skills/github-delivery/SKILL.md)
 define when to run them. [CI selection](CI.md) describes the corresponding jobs.
 
+Scientific source-app comparisons live in
+[`test_source_app_evidence.py`](../../tests/analysis/test_source_app_evidence.py),
+using unified snapshots and independent source-file/screenshot expectations.
+Projection/filter contract tests remain separate from model/service integration.
+The reference tools are exercised through their actual entry points:
+
+```powershell
+uv run --locked pytest tests/rendering/test_reference_script.py tests/ui/test_reference_screenshots.py tests/packaging/test_windows_smoke.py
+```
+
+These checks generate temporary images/reports under `.tmp/`, preserve the
+original fixtures and isolate personal preferences. The entry-point smoke test
+runs from source; it does not replace frozen-package qualification in the
+[release workflow](RELEASE.md#windows-packages).
+
 ## Recording model and service coverage
 
 The locked development tools `coverage.py` and `pytest-cov` report coverage only for
@@ -81,8 +96,7 @@ root on native Windows:
 uv run --locked pytest --cov --cov-report=term-missing `
     tests/analysis/test_recording.py tests/analysis/test_recording_validation.py `
     tests/analysis/test_recording_preparation.py tests/analysis/test_recording_recalculation.py `
-    tests/analysis/test_service.py `
-    tests/analysis/test_taron_analysis_parity.py tests/analysis/test_airtime_events.py
+    tests/analysis/test_service.py tests/analysis/test_airtime_events.py
 uv run --locked coverage html
 uv run --locked coverage json
 ```

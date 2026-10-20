@@ -751,12 +751,12 @@ class ExplorerWindow(QMainWindow):
         ):
             control.setEnabled(enabled)
         self.export_button.setEnabled(
-            enabled and self.data is not None and self.data.reference is not None,
+            enabled and self.data is not None and self.data.calibration_available,
         )
 
     @Slot()
     def show_export(self) -> None:
-        if self.data is None or self.data.reference is None:
+        if self.data is None or not self.data.calibration_available:
             return
         if self.export_window is not None and self.export_window.isVisible():
             self.export_window.raise_()
@@ -855,7 +855,7 @@ class ExplorerWindow(QMainWindow):
         if not isinstance(outcome, ExplorerData):
             self._failed(tr("Unable to display recording."))
             return
-        outcome = outcome.with_reference(outcome.reference is not None)
+        outcome = outcome.with_calibration(outcome.calibration_available)
         if self.analysis_controller is not None:
             self.analysis_controller.bind_snapshot(outcome.analysis)
         if self._chosen_path is not None:
@@ -868,20 +868,20 @@ class ExplorerWindow(QMainWindow):
         self.gps_button.setEnabled(prepare_gps_overview(outcome.source.recording) is not None)
         self.data = outcome
         self.smoothing_slider.blockSignals(True)
-        self.smoothing_slider.setValue(5)
+        self.smoothing_slider.setValue((outcome.smoothing_window - 1) // 2)
         self.smoothing_slider.blockSignals(False)
         self.reference_toggle.blockSignals(True)
-        self.reference_toggle.setEnabled(outcome.reference is not None)
+        self.reference_toggle.setEnabled(outcome.calibration_available)
         bind(
             self.reference_toggle,
             tr("App reference available for {0}", outcome.title)
-            if outcome.reference is not None
-            else tr(outcome.reference_error)
-            if outcome.reference_error
+            if outcome.calibration_available
+            else tr(outcome.calibration_error)
+            if outcome.calibration_error
             else tr("Calibration unavailable for this recording"),
             "toolTip",
         )
-        self.reference_toggle.setChecked(outcome.reference_enabled)
+        self.reference_toggle.setChecked(outcome.calibrated_enabled)
         self.reference_toggle.blockSignals(False)
         bind(self, f"{outcome.title} · {self._application_title}", "windowTitle")
         bind(self.heading, outcome.title, "text")
@@ -896,7 +896,7 @@ class ExplorerWindow(QMainWindow):
             self.notes_button,
             tr(
                 "Import notes ({0})",
-                len(outcome.source.diagnostics) + bool(outcome.reference_error),
+                len(outcome.source.diagnostics) + bool(outcome.calibration_error),
             ),
             "text",
         )
@@ -944,7 +944,7 @@ class ExplorerWindow(QMainWindow):
         self.axis_x.setRange(*outcome.default_time_range)
         bind(
             self.axis_y,
-            tr("G-force (g)") if outcome.reference_enabled else tr("Source value (unit unknown)"),
+            tr("G-force (g)") if outcome.calibrated_enabled else tr("Source value (unit unknown)"),
             "titleText",
         )
         self.axis_y.rangeChanged.connect(self._fix_value_view)
@@ -961,7 +961,7 @@ class ExplorerWindow(QMainWindow):
         bind(
             self.statusBar(),
             tr("Loaded — calibration unavailable; see Import notes")
-            if outcome.reference_error
+            if outcome.calibration_error
             else tr("Loaded — drag to zoom, navigate samples or select an interval"),
             "message",
         )
@@ -981,7 +981,7 @@ class ExplorerWindow(QMainWindow):
     def _draw_channels(self) -> None:
         if self.data is None:
             return
-        active = self.data.reference_enabled
+        active = self.data.calibrated_enabled
         bind(self.summary, self.data.technical_summary, "text")
         bind(
             self.disclaimer,
@@ -1030,7 +1030,7 @@ class ExplorerWindow(QMainWindow):
         self.vertical_context_bars.clear()
         self.vertical_context_ranges = ()
         self.airtime_legend.hide()
-        if self.data is None or not self.data.reference_enabled:
+        if self.data is None or not self.data.calibrated_enabled:
             return
         colors = self.theme.vertical_context_colors
         self.vertical_context_ranges = self.data.vertical_context_segments
@@ -1064,7 +1064,7 @@ class ExplorerWindow(QMainWindow):
             return
         plot = self.chart.plotArea()
         low, high = self.axis_x.min(), self.axis_x.max()
-        enabled = self.data.reference_enabled and self.visibility[0].isChecked()
+        enabled = self.data.calibrated_enabled and self.visibility[0].isChecked()
         for bar, (_, first, last) in zip(
             self.vertical_context_bars,
             self.vertical_context_ranges,
@@ -1081,7 +1081,7 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(int)
     def set_smoothing(self, position: int) -> None:
-        if self.data is None or not self.data.reference_enabled:
+        if self.data is None or not self.data.calibrated_enabled:
             return
         if self.analysis_controller is not None and self.data.analysis is not None:
             self.analysis_controller.request_smoothing(position * 2 + 1)
@@ -1109,12 +1109,14 @@ class ExplorerWindow(QMainWindow):
         if self.data is None:
             return
         self.reference_toggle.blockSignals(True)
-        self.reference_toggle.setEnabled(self.data.reference is not None)
-        self.reference_toggle.setChecked(self.data.reference_enabled)
+        self.reference_toggle.setEnabled(self.data.calibration_available)
+        self.reference_toggle.setChecked(self.data.calibrated_enabled)
         self.reference_toggle.blockSignals(False)
         bind(
             self.axis_y,
-            tr("G-force (g)") if self.data.reference_enabled else tr("Source value (unit unknown)"),
+            tr("G-force (g)")
+            if self.data.calibrated_enabled
+            else tr("Source value (unit unknown)"),
             "titleText",
         )
         self._refresh_diagnostics()
@@ -1137,7 +1139,7 @@ class ExplorerWindow(QMainWindow):
             return
         self.smoothing_slider.blockSignals(True)
         self.smoothing_slider.setValue(
-            (self.data.reference.smoothing_window - 1) // 2 if self.data.reference else 5,
+            (self.data.smoothing_window - 1) // 2,
         )
         self.smoothing_slider.blockSignals(False)
         bind(self.statusBar(), tr("Analysis failed: {0}", message), "message")
@@ -1146,11 +1148,13 @@ class ExplorerWindow(QMainWindow):
     def set_reference_view(self, enabled: bool) -> None:
         if self.data is None:
             return
-        self.data = self.data.with_reference(enabled)
+        self.data = self.data.with_calibration(enabled)
         self._draw_channels()
         bind(
             self.axis_y,
-            tr("G-force (g)") if self.data.reference_enabled else tr("Source value (unit unknown)"),
+            tr("G-force (g)")
+            if self.data.calibrated_enabled
+            else tr("Source value (unit unknown)"),
             "titleText",
         )
         self.axis_y.setRange(*self.data.value_range)
@@ -1190,10 +1194,10 @@ class ExplorerWindow(QMainWindow):
             bind(value, number, "text")
             bind(hint, meaning, "text")
             bind(value, meaning, "toolTip")
-        context = self.data.airtime_context
+        context = self.data.vertical_context_label(index)
         color = (
-            self.theme.vertical_context_colors.get(context.at(index), self.theme.muted)
-            if self.data.reference_enabled and context is not None
+            self.theme.vertical_context_colors.get(context, self.theme.muted)
+            if context
             else self.theme.muted
         )
         self.value_hints[0].setStyleSheet(f"color: {color};")
@@ -1271,7 +1275,7 @@ class ExplorerWindow(QMainWindow):
             self.axis_y.remove(label)
         self.axis_y.setStartValue(low - max(1, abs(low)) * 1e-6)
         for value in self.data.value_ticks:
-            label = str(tr("{0:.3g}", value)) + (" g" if self.data.reference_enabled else "")
+            label = str(tr("{0:.3g}", value)) + (" g" if self.data.calibrated_enabled else "")
             self.axis_y.append(label, value)
         self.axis_y.setRange(low, high)
         self.axis_y.blockSignals(False)

@@ -47,8 +47,9 @@ def smoke_test(report: Path, recording: Path | None, with_ffmpeg: bool) -> None:
                 sleep(0.001)
             assert window.data is not None, window.statusBar().currentMessage()
             result["samples"] = window.data.count
+            assert window.data.analysis is not None
             timeline = prepare_export(
-                window.data,
+                window.data.analysis,
                 ExportSettings(
                     layout="orbit",
                     language="de",

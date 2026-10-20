@@ -41,6 +41,15 @@ belongs in the [roadmap](../ROADMAP.md); scientific boundaries belong in
   sample, smoothing, calibration, language and appearance changes. Raw mode
   retains Unit unknown without a context classification.
 - Preserve original bytes, unknown fields, absent sensors and all source arrays.
+- One guarded snapshot delivery refreshes the chart, context strip, sample cards,
+  technical details and visible-range extrema consistently. Smoothing recomputes
+  only dependent stages in the worker, retaining source/time, projection and
+  independent orientation. Pending work retains the previous complete view;
+  matching failure clears pending state, reports the error and restores the
+  previous smoothing control. Values keep the configuration of that retained
+  result. Late or superseded updates/failures cannot alter the current view.
+  [Runtime architecture](../architecture/06_runtime_view.md#explorer-analysis-delivery)
+  defines initial delivery, revision checks and close/rebind handling.
 
 ## Time, zoom and selection
 
@@ -151,6 +160,12 @@ close closes its GPS dialog. GPS never controls force values, timing or selectio
 No base map, network, invented fixes or confirmed speed-color contract is provided.
 
 ## Visible-range extrema
+
+Charts, cards, context and technical values share the current analysis snapshot.
+Changing display mode, selection, sample or viewport does not prepare analysis
+again. Missing calibrated sample values remain unavailable; raw x/y/z are shown
+only in raw mode. Smoothing follows the analysis service and its guarded worker/UI
+delivery, retaining the prior completed snapshot after a failed request.
 
 The inspector's Visible range extrema panel shows all three channels' min/max for
 the visible time range, even when a curve is hidden. Sample boundaries follow

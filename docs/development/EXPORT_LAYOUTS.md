@@ -64,6 +64,11 @@ They are developer templates, not live user settings. Source channel identity,
 sample timing, translated catalog keys and mathematical coordinate calculations
 remain behavior contracts rather than arbitrary design values.
 
+Export preparation and previews require `RecordingAnalysis`; layouts receive the
+bound `ExportTimeline`, never an explorer/presentation object. Render settings
+change composition without changing the bound analysis, full-history context,
+force interpolation or independent orientation buffers.
+
 ## Add or change a layout
 
 1. Edit its module for geometry or drawing changes. Shared primitives belong in

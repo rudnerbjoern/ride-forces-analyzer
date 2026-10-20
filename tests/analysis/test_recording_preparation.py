@@ -26,7 +26,8 @@ from ride_forces_analyzer.analysis.recording import (
     VerticalContext,
     prepare_recording_analysis,
 )
-from ride_forces_analyzer.analysis.reference import centered_mean, project_directions
+from ride_forces_analyzer.analysis.projection import project_directions
+from ride_forces_analyzer.analysis.smoothing import centered_mean
 from ride_forces_analyzer.importers import ImportSuccess, import_forces_bytes
 
 NOW = datetime(2026, 10, 20, tzinfo=UTC)

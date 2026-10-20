@@ -64,10 +64,45 @@ duration includes permitted interior positive interruptions. Full source history
 precedes export interval selection. These domain events are distinct from service
 change notifications.
 
+## Snapshot lifetime and reuse
+
+A `RecordingAnalysis` shares immutable stages and retains its complete lossless
+import. Matching retained stages are reused for identical configuration and actual
+inputs; reuse does not mean retaining every configuration ever requested. A
+smoothing change keeps source, time, projection and independent orientation,
+then rebuilds smoothing and only consumers of that changed input. Context/events
+using projection remain reusable. Filters never consume already smoothed values.
+
+The service owns its current completed snapshot, including the retained result
+during pending/failed work, plus references required by active calculations and
+current deliveries. New snapshots never retain their predecessor or a historical
+configuration map. Views release old snapshots on replacement/close; running
+exports keep their bound snapshots until finished. Superseded/completed work and
+processed/discarded notifications release their references. Shared upstream buffers
+remain alive while a current consumer needs them; a released configuration may
+be calculated again. Normal reference lifetime manages reclamation.
+
+Force arrays, labels and validity masks preserve every original acceleration
+index in order. Time retains the source rate and its source/default provenance;
+replay zero is the source start marker, not an acquisition epoch. Manually assembled
+index-only snapshots may omit a rate, but sample-time reads require one. Gravity
+and GPS retain their own sequence/index contracts; neither is silently resampled
+or aligned to force samples. Zero gravity remains an invalid tilt row.
+
+Whole-stage availability is distinct from per-row missingness, scientific
+capability and service request state. Unavailable stages carry a reason without
+fabricated values; raw source data stays readable. EVALUATED with an empty event
+tuple describes valid coverage with no detected episodes, while NOT_EVALUATED
+carries a reason and no collection. Neither establishes absence of events in gaps.
+See the [model API](../development/ANALYSIS_MODELS.md#unified-recording-analysis)
+for validation and the [runtime view](06_runtime_view.md#explorer-analysis-delivery)
+for subscription/error/delivery rules.
+
 ## Explorer state and time
 
-Qt-independent presentation prepares channels, metadata, markers, clocks,
-selection validation and extrema; widgets own interactions and view state.
+Qt-independent presentation formats shared analysis channels, metadata, markers,
+clocks and extrema; widgets own interactions and view state. Numerical preparation
+and validation remain in their import/analysis services.
 Failed loads retain the previous view. All metadata is plain source text.
 
 Recording time is inferred `index / effective_rate`, not an acquisition epoch.

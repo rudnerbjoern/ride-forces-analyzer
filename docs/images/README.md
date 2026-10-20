@@ -84,6 +84,12 @@ Regenerate all eleven Manta reference PNGs and their sample manifest:
 .\.venv\Scripts\python.exe .\scripts\render_export_reference.py
 ```
 
+The Manta generator imports the pinned source directly, prepares one unified
+snapshot with the fixed smoothing recipe and passes it to the production export
+API. Workspace/export-assistant captures use the actual application widgets and
+their bound analysis snapshots. Reference checks use the supported APIs and
+independent manifest/image expectations; no retained old runtime is an oracle.
+
 Keep GUI captures aligned with the current application and refresh README image
 descriptions when visible behavior changes. Capture the actual widgets, preserve
 the original recordings and retain the existing image license and attribution.

@@ -75,8 +75,8 @@ def test_worker_keeps_ui_responsive_and_applies_snapshot_on_ui_thread(
         release.set()
     wait_until(lambda: not controller.pending)
     data = window.data
-    assert data is not None and data.analysis is not None and data.reference is not None
-    assert data.reference.smoothing_window == 5
+    assert data is not None and data.analysis is not None and data.calibration_available
+    assert data.smoothing_window == 5
     assert data.analysis.forces.projected is old.analysis.forces.projected
     assert data.analysis.orientation is old.analysis.orientation
     assert (window.first.value(), window.last.value(), window.position.value()) == (1, 5, 3)
@@ -110,8 +110,8 @@ def test_latest_ui_intent_rejects_already_queued_success(
     controller.request_smoothing(7)
     wait_until(lambda: not controller.pending)
     assert observed == [7]
-    assert window.data is not None and window.data.reference is not None
-    assert window.data.reference.smoothing_window == 7
+    assert window.data is not None and window.data.calibration_available
+    assert window.data.smoothing_window == 7
 
 
 @pytest.mark.parametrize("rate", (25, 50))
@@ -153,8 +153,8 @@ def test_analysis_failure_keeps_previous_values_and_recovers(
     controller.request_smoothing(5)
     wait_until(lambda: not controller.pending)
     assert window.data is not old
-    assert window.data is not None and window.data.reference is not None
-    assert window.data.reference.smoothing_window == 5
+    assert window.data is not None and window.data.calibration_available
+    assert window.data.smoothing_window == 5
 
 
 def test_unexpected_worker_failure_clears_pending_and_preserves_view(
@@ -211,3 +211,22 @@ def test_late_import_cannot_replace_reopened_window_source_or_error_status(
     assert window.data is not None and window.data.analysis is current.analysis
     assert window.data.analysis is not late.analysis
     assert window.statusBar().currentMessage() == message
+
+
+def test_loaded_snapshot_restores_its_smoothing_window(
+    explorer_window: ExplorerWindow,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    data = present_recording(synthetic_source()).with_smoothing(3)
+
+    def loaded(path: Path) -> ExplorerData:
+        return data
+
+    monkeypatch.setattr(loading, "load_recording", loaded)
+    explorer_window.open_path(Path("prepared.forces"))
+    wait_until(explorer_window.open_action.isEnabled)
+    assert explorer_window.data is not None
+    assert explorer_window.data.analysis is data.analysis
+    assert explorer_window.data.smoothing_window == 3
+    assert explorer_window.smoothing_slider.value() == 1
+    assert "3 samples" in explorer_window.smoothing_label.text()

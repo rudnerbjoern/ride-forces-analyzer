@@ -89,47 +89,98 @@ bytes/policy produce equivalent output. See [API contracts](../development/IMPOR
 
 ## Explorer analysis delivery
 
+The import worker calls the lossless importer, then `present_recording` prepares
+one snapshot through `AnalysisService`. Parsing itself does not calculate analysis.
+An expected unavailable stage still yields a READY raw-capable snapshot; an import
+failure preserves the displayed source and service binding. UI adoption creates
+an active service from the validated snapshot without repeating numerical work.
+
 ```mermaid
 sequenceDiagram
-    participant UI as Explorer UI
+    participant UI as Explorer views
     participant Loader as Import worker
-    participant Service as Analysis service
-    participant Adapter as UI analysis adapter
+    participant Adapter as AnalysisController
     participant Worker as Smoothing worker
+    participant Service as AnalysisService
     UI->>Loader: Open path with load generation
     Loader->>Loader: Lossless import
-    Loader->>Service: Prepare source with default source-app configuration
+    Loader->>Service: Prepare complete source snapshot
     Service-->>Loader: Consistent immutable snapshot
-    Loader-->>UI: Presentation adapter and load generation
+    Loader-->>UI: Presentation and load generation
     UI->>UI: Reject closed or superseded load
     UI->>Adapter: Bind prepared snapshot
     Adapter->>Service: Adopt snapshot and subscribe
-    Service-->>Adapter: Initial coherent state
-    UI->>Adapter: Request smoothing with new intent generation
+    Service-->>Adapter: Initial AnalysisState with snapshot and request status
+    Adapter->>Adapter: Queue Qt delivery and check active binding on UI thread
+    Adapter-->>UI: Initialize matching READY snapshot
+    UI->>Adapter: Change smoothing and advance UI intent
     Adapter->>Worker: Queue latest intent
-    Worker->>Service: Request partial recalculation
-    Service-->>Adapter: Pending and matching result or failure
-    Adapter->>Adapter: Queue Qt delivery
-    Adapter->>Adapter: Recheck binding, intent, source, revision and status on UI thread
-    Adapter-->>UI: Apply complete snapshot or retain previous result on failure
+    Worker->>Worker: Skip obsolete or closed binding
+    Worker->>Service: Request smoothing synchronously
+    Service->>Service: Advance revision and mark dependent stages dirty
+    Service-->>Adapter: AnalysisInvalidated(source, revision, dirty stages)
+    Adapter->>Adapter: Queue Qt delivery and recheck current request status
+    Adapter-->>UI: Show pending only for matching active request
+    Service->>Service: Reuse upstream stages and calculate outside state lock
+    alt Completion superseded or service closed
+        Service->>Service: Discard completion without changing current state
+    else Current calculation succeeds
+        Service->>Service: Publish complete snapshot and READY state
+        Service-->>Adapter: AnalysisUpdated(source, revision, replaced stages, snapshot)
+        Adapter->>Adapter: Recheck source intent revision binding and status on UI thread
+        Adapter-->>UI: Apply matching snapshot or discard stale delivery
+    else Current calculation fails
+        Service->>Service: Retain previous snapshot and publish FAILED state
+        Service-->>Adapter: AnalysisFailed(source, revision, affected stages, failure)
+        Adapter->>Adapter: Recheck source intent revision binding and status on UI thread
+        Adapter-->>UI: Clear matching pending status and present failure
+        Note over Service,UI: Retained values keep their original configuration and revision
+    end
+    Note over Service,UI: Running exports retain their previously bound snapshot
+    UI->>Adapter: Close or bind another source
+    Adapter->>Service: Unsubscribe and close previous service
+    Adapter->>Adapter: Reject late queued callbacks and worker results
 ```
 
-The pure service calculates synchronously; Qt owns scheduling and transport.
-Projection, time and independent orientation survive smoothing changes. Charts
-read shared prepared buffers, cards/details read sample views and context uses
-prepared labels. Cursor/selection/viewport and appearance remain presentation state.
-The old complete view remains usable during work. New intents invalidate already
-queued old UI callbacks before their service request begins. Close removes
-subscriptions and invalidates load/binding identities; old workers cannot replace
-a newly opened source or its status. Export timelines and all five preview profiles retain the selected shared
-analysis snapshot. Changing export configuration reuses compatible stages; frame
-generation reads prepared orientation/context. Batch workers verify source bytes
-against saved hashes, apply the persisted analysis recipe and then select the
-export interval. Running exports never adopt later workspace updates.
+The service calculates synchronously in its caller's thread and owns subscriptions,
+not workers or Qt signals. Initial registration/state capture is coordinated:
+`AnalysisState` immediately includes source identity, the last completed snapshot
+(or None), requested revision/status, dirty stages and failure. Per-registration
+queues deliver initial state before later notifications, outside the state lock.
+Stage interests filter numerical changes while retaining terminal status for
+subscribers that observed pending work. Callback exceptions remove only that
+registration. Detailed pending indications may be coalesced after completion.
+Technical notifications are distinct from domain `AirtimeEvent` values.
+
+Current requests finish with an update or failure. Failed work publishes no partial
+snapshot; the previous snapshot remains identified by its own configuration and
+revision. Superseded success/failure cannot replace the current state or clear a
+newer request's pending status. The adapter's single worker queue skips obsolete
+intents; an intent generation invalidates already queued UI callbacks even before
+the newer request reaches the service.
+
+Every queued initial/pending/update/failure delivery is checked again on the UI
+thread: active binding/subscription, UI-intent generation, source hash, service
+revision and terminal status must still match. A delayed pending message cannot
+restore pending after completion; an older initial state cannot overwrite a newer
+result. Failure retains displayed values and resets the smoothing control to their
+configuration. Close/reopen invalidates load generations and bindings, releases
+subscriptions and prevents late imports, errors or results from affecting a new
+source. The adapter and service do not accumulate snapshot histories.
+
+Projection, source/time and independent orientation survive smoothing changes.
+The explorer refreshes charts, context strip, selected-sample cards, technical
+details and visible-range extrema from one guarded delivery. Cursor, selection,
+viewport, language and appearance remain presentation state and do not trigger
+numerical preparation. Export assistants/previews bind their opening snapshot;
+explicit export configuration may prepare a different one using shared stages.
+Running exports never follow workspace updates. Snapshot ownership and release
+follow the [lifetime concepts](08_concepts.md#snapshot-lifetime-and-reuse).
 
 ## Product boundaries
 
-Selected-range extrema update on source/selection/mode/smoothing changes.
+Visible-range extrema update on source/viewport/mode/smoothing changes; the
+explicit From/To selection is separate from the viewport.
 Persistent ride library, interactive playback and POV synchronization remain
 planned. Frame rendering and encoding are implemented for the 4K overlay slice. Universal physical
 rider qualification and analytical GPS are outside current M3 acceptance. This view introduces
@@ -247,7 +298,7 @@ sequenceDiagram
     Store-->>UI: Source paths, hashes, ranges and preset snapshots
     UI->>Queue: Queue snapshot and unique output root
     loop Each recording/preset job
-        Queue->>Queue: Reimport, check hash, restore smoothing/range
+        Queue->>Queue: Reimport, check hash, prepare saved recipe/range
         Queue->>Encoder: Render and encode one video
         Encoder-->>Queue: Complete output or failure/cancellation
         Queue-->>UI: Progress and per-job result

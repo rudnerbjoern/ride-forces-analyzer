@@ -213,7 +213,7 @@ explorer.find_spec = lambda name: None
 source = import_forces(next(Path('tests/fixtures/real').glob('Manta-*.forces')))
 assert isinstance(source, ImportSuccess)
 view = explorer.present_recording(source)
-assert view.reference is None and len(view.channels[0]) == 9640
+assert not view.calibration_available and len(view.channels[0]) == 9640
 assert view.selection_extrema(0, 100).count == 101
 assert 'numpy' not in sys.modules
 print('Raw explorer remains independent of optional NumPy')
@@ -263,21 +263,19 @@ def test_calibration_for_new_recordings_and_safe_raw_fallback(defect: str) -> No
     data = present_recording(source)
     assert source.recording.source.original_bytes == raw
     if defect == "none":
-        assert data.reference is not None and data.reference_error is None
-        assert tuple(tuple(axis) for axis in data.with_reference(True).plotted_channels) == (
+        assert data.calibration_available and data.calibration_error is None
+        assert tuple(tuple(axis) for axis in data.with_calibration(True).plotted_channels) == (
             (3.0, 3.0),
             (4.0, 4.0),
             (2.0, 2.0),
         )
     else:
-        assert data.reference is None and data.reference_error
+        assert not data.calibration_available and data.calibration_error
         assert "CALIBRATION_UNAVAILABLE" in data.notes
         assert data.channels == ((2.0, 2.0), (3.0, 3.0), (4.0, 4.0))
 
 
 def test_calibrated_axis_includes_reference_levels(synthetic_recording: Recording) -> None:
-    from ride_forces_analyzer.analysis.reference import reconstruct_app_reference
-    from datetime import UTC, datetime
     from ride_forces_analyzer.domain import RecordingVectors
 
     recording = replace(
@@ -290,11 +288,10 @@ def test_calibrated_axis_includes_reference_levels(synthetic_recording: Recordin
         ),
     )
     source = ImportSuccess(recording)
-    reference = reconstruct_app_reference(source, calculation_time=datetime.now(UTC))
-    view = replace(present_recording(source), reference=reference).with_reference(True)
+    view = present_recording(source).with_calibration(True)
     assert view.value_range == (-1.05, 1.05)
     assert view.value_ticks == (-1, 0, 1)
-    assert view.with_reference(False).value_range == (-1, 1)
+    assert view.with_calibration(False).value_range == (-1, 1)
 
 
 def test_focus_metadata_rows_and_sample_cards(synthetic_recording: Recording) -> None:
@@ -334,7 +331,7 @@ def test_current_value_card_direction_signs(
             longitudinal_direction=Vector3(0, 0, 1),
         ),
     )
-    view = present_recording(ImportSuccess(recording)).with_reference(True)
+    view = present_recording(ImportSuccess(recording)).with_calibration(True)
     cards = view.sample_cards(0)
     assert (cards[1][2], cards[2][2]) == meanings
     assert (cards[1][1], cards[2][1]) == (f"{lateral:+.2f} g", f"{longitudinal:+.2f} g")
@@ -353,14 +350,17 @@ def test_vertical_card_uses_shared_stabilized_context(synthetic_recording: Recor
             longitudinal_direction=Vector3(0, 0, 1),
         ),
     )
-    view = present_recording(ImportSuccess(recording)).with_reference(True).with_smoothing(1)
-    context = view.airtime_context
-    assert context is not None
+    view = present_recording(ImportSuccess(recording)).with_calibration(True).with_smoothing(1)
+    assert view.analysis is not None
+    context = view.analysis.context
+    assert context.labels is not None
     for index in (99, 50, 49, 75):
-        assert view.sample_cards(index)[0][2] == tr(context.at(index))
-    assert view.with_reference(False).sample_cards(99)[0][2] == tr("Unit unknown")
+        label = context.labels[index].value.replace("_", " ").title()
+        assert view.vertical_context_label(index) == label
+        assert view.sample_cards(index)[0][2] == tr(label)
+    assert view.with_calibration(False).sample_cards(99)[0][2] == tr("Unit unknown")
     smoothed = view.with_smoothing(11)
-    assert smoothed.airtime_context is not None and smoothed.airtime_context is not context
+    assert smoothed.analysis is not None and smoothed.analysis.context is not context
 
 
 def test_snapshot_presentation_uses_shared_buffers_and_does_not_repeat_analysis(
@@ -377,14 +377,14 @@ def test_snapshot_presentation_uses_shared_buffers_and_does_not_repeat_analysis(
     monkeypatch.setattr(recording, "project_directions", project)
     monkeypatch.setattr(recording, "centered_mean", mean)
     monkeypatch.setattr(airtime.AirtimeContext, "prepare", context)
-    view = present_recording(synthetic_source()).with_reference(True)
+    view = present_recording(synthetic_source()).with_calibration(True)
     assert view.analysis is not None and view.analysis.forces.smoothed.channels is not None
     channels = view.analysis.forces.smoothed.channels
     assert np.shares_memory(np.asarray(view.plotted_channels[0]), channels[0].values)
     with pytest.raises(ValueError):
         np.asarray(view.plotted_channels[0]).setflags(write=True)
     for active in (False, True, False, True):
-        switched = view.with_reference(active)
+        switched = view.with_calibration(active)
         assert switched.analysis is view.analysis
         switched.sample_cards(2)
         switched.sample_text(2, rich=True)
@@ -395,16 +395,9 @@ def test_snapshot_presentation_uses_shared_buffers_and_does_not_repeat_analysis(
     changed = view.with_smoothing(5)
     assert changed.analysis is not None
     assert changed.analysis.forces.projected is view.analysis.forces.projected
-    assert changed.reference is not None and view.reference is not None
-    assert all(
-        new is old
-        for new, old in zip(
-            changed.reference.raw_projection,
-            view.reference.raw_projection,
-            strict=True,
-        )
-    )
-    assert not any("Centered 11-sample" in item for item in changed.reference.confirmed_contracts)
+    assert changed.smoothing_window == 5
+    assert view.smoothing_window == 11
+    assert changed.analysis.forces.projected.channels is view.analysis.forces.projected.channels
     assert project.call_count == 1 and mean.call_count == 6 and context.call_count == 2
 
 
@@ -412,7 +405,7 @@ def test_snapshot_replacement_checks_source_and_refreshes_raw_fallback_notes() -
     from ride_forces_analyzer.analysis.models import AnalysisProfile
     from tests.analysis.test_recording_preparation import synthetic_source
 
-    view = present_recording(synthetic_source()).with_reference(True)
+    view = present_recording(synthetic_source()).with_calibration(True)
     assert view.analysis is not None
     provenance = view.analysis.forces.projected.provenance
     assert provenance is not None
@@ -422,7 +415,7 @@ def test_snapshot_replacement_checks_source_and_refreshes_raw_fallback_notes() -
         calculation_time=provenance.calculation_time,
     )
     fallback = view.with_analysis(raw)
-    assert fallback.reference is None and not fallback.reference_enabled
+    assert not fallback.calibration_available and not fallback.calibrated_enabled
     assert "CALIBRATION_UNAVAILABLE" in fallback.notes
     recovered = fallback.with_analysis(
         raw.with_configuration(
@@ -438,3 +431,45 @@ def test_snapshot_replacement_checks_source_and_refreshes_raw_fallback_notes() -
         view.with_analysis(other.analysis)
     with pytest.raises(ValueError, match="another import"):
         present_recording(view.source, analysis=other.analysis)
+
+
+def test_missing_calibrated_sample_stays_unavailable_in_cards_and_details() -> None:
+    import numpy as np
+
+    from ride_forces_analyzer.analysis.models import SampleValues
+    from ride_forces_analyzer.analysis.recording import VerticalContext
+    from tests.analysis.test_recording_preparation import synthetic_source
+
+    view = present_recording(synthetic_source()).with_calibration(True)
+    snapshot = view.analysis
+    assert snapshot is not None and snapshot.forces.smoothed.channels is not None
+    assert snapshot.context.labels is not None
+    buffers: list[SampleValues] = []
+    for channel in snapshot.forces.smoothed.channels:
+        values = channel.values.copy()
+        values[2] = np.nan
+        buffers.append(SampleValues(values, valid_rows=(True, True, False, True, True, True, True)))
+    stage = replace(snapshot.forces.smoothed, channels=(buffers[0], buffers[1], buffers[2]))
+    categories = list(snapshot.context.labels)
+    categories[2] = VerticalContext.UNAVAILABLE
+    snapshot = replace(
+        snapshot,
+        forces=replace(snapshot.forces, smoothed=stage),
+        context=replace(snapshot.context, input=stage, labels=tuple(categories)),
+        events=replace(snapshot.events, input=stage),
+    )
+    snapshot.validate()
+    current = view.with_analysis(snapshot)
+    assert current.calibrated_enabled and current.calibration_available
+    assert all(np.isnan(axis[2]) for axis in current.plotted_channels)
+    assert all(card[1:] == ("—", "Unavailable") for card in current.sample_cards(2))
+    assert "Unavailable" in current.sample_text(2)
+    assert "Unavailable" in current.sample_text(2, rich=True)
+    assert current.vertical_context_label(2) == "Unavailable"
+    assert all(np.isfinite(bound) for bound in current.value_range)
+    with pytest.raises(ValueError, match="valid selected samples"):
+        current.selection_extrema(0, 3)
+    assert current.selection_extrema(3, 6).mode == "calibrated"
+    raw = current.with_calibration(False)
+    assert all(card[2] == "Unit unknown" for card in raw.sample_cards(2))
+    assert raw.selection_extrema(0, 3).mode == "raw"

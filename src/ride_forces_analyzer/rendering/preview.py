@@ -12,7 +12,6 @@ from typing import Literal
 from PIL import Image, ImageDraw
 
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
-from ride_forces_analyzer.explorer import ExplorerData
 from .frames import OverlayRenderer
 from .model import ExportLayout, ExportSettings, PROFILES, prepare_export
 
@@ -32,16 +31,13 @@ class ExportPreview:
 
 
 def build_previews(
-    data: RecordingAnalysis | ExplorerData,
+    analysis: RecordingAnalysis,
     settings: ExportSettings,
     first: int,
     last: int,
     sample: int,
     background: Literal["checker", "light", "dark"] = "checker",
 ) -> ExportPreview:
-    analysis = data if isinstance(data, RecordingAnalysis) else data.analysis
-    if analysis is None:
-        raise ValueError("Prepared recording analysis is unavailable")
     count = len(analysis.time.source_indices)
     if not 0 <= sample < count:
         raise ValueError("Preview sample outside recording")

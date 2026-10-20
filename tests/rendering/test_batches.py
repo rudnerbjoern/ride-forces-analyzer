@@ -1,8 +1,11 @@
 """SQLite persistence, immutable queue snapshots and real sequential export contracts."""
 
+from ride_forces_analyzer.analysis.recording import source_app_configuration
+
 # cspell:words Xnotes
 
 from dataclasses import replace
+from contextlib import closing
 from pathlib import Path
 import json
 import sqlite3
@@ -20,18 +23,34 @@ from ride_forces_analyzer.storage.exports import ExportStore, ExportStoreError
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
 
-def preset(name: str = "Ribbon") -> SavedPreset:
-    return SavedPreset(name=name, settings=ExportSettings(layout="ribbon", prefer_gpu=False))
+def preset(name: str = "Ribbon", window: int = 11) -> SavedPreset:
+    configuration = source_app_configuration()
+    configuration = replace(
+        configuration,
+        smoothing=replace(configuration.smoothing, parameters=(("window_samples", window),)),
+    )
+    return SavedPreset(
+        name=name,
+        settings=ExportSettings(layout="ribbon", prefer_gpu=False),
+        smoothing_window=window,
+        analysis_configuration=configuration,
+        schema_version=1,
+        range_mode="markers",
+    )
 
 
-def test_portrait_persistence_and_legacy_landscape_default(
+def test_portrait_and_landscape_persistence(
     export_directory: Path,
     manta: ExplorerData,
 ) -> None:
-    chosen = SavedPreset(name="Portrait", settings=ExportSettings(aspect="portrait"))
-    legacy = json.loads(chosen.model_dump_json())
-    del legacy["settings"]["aspect"]
-    assert SavedPreset.model_validate_json(json.dumps(legacy)).settings.aspect == "landscape"
+    chosen = SavedPreset(
+        name="Portrait",
+        settings=ExportSettings(aspect="portrait"),
+        analysis_configuration=source_app_configuration(),
+        schema_version=1,
+        smoothing_window=11,
+        range_mode="markers",
+    )
     path = export_directory / "aspect.sqlite3"
     store = ExportStore(path)
     store.save_preset(chosen)
@@ -46,8 +65,15 @@ def test_portrait_persistence_and_legacy_landscape_default(
 
 
 def short_job(data: ExplorerData, chosen: SavedPreset | None = None) -> BatchJob:
+    assert data.analysis is not None
     first = data.source.recording.indices.start
-    return make_job(data, chosen or preset(), range_mode="selection", first=first, last=first + 1)
+    return make_job(
+        data.analysis,
+        chosen or preset(),
+        range_mode="selection",
+        first=first,
+        last=first + 1,
+    )
 
 
 def test_sqlite_survives_reopen_with_snapshots_and_transaction_rollback(
@@ -56,7 +82,14 @@ def test_sqlite_survives_reopen_with_snapshots_and_transaction_rollback(
 ) -> None:
     path = export_directory / "exports.sqlite3"
     store = ExportStore(path)
-    chosen = SavedPreset(name="Ribbon", settings=ExportSettings(fps="60000/1001"))
+    chosen = SavedPreset(
+        name="Ribbon",
+        settings=ExportSettings(fps="60000/1001"),
+        analysis_configuration=source_app_configuration(),
+        schema_version=1,
+        smoothing_window=11,
+        range_mode="markers",
+    )
     store.save_preset(chosen)
     store.create_batch("Weekend")
     store.append_jobs("Weekend", (short_job(manta, chosen),))
@@ -108,6 +141,7 @@ def test_unrecognized_database_is_not_replaced(export_directory: Path, kind: str
 
 
 def test_multiple_rides_cross_multiple_presets_and_custom_bounds(manta: ExplorerData) -> None:
+    assert manta.analysis is not None
     paths = tuple(
         next(REAL_FIXTURE_DIRECTORY.glob(f"{ride}-*.forces")) for ride in ("Manta", "Kraken")
     )
@@ -126,11 +160,25 @@ def test_multiple_rides_cross_multiple_presets_and_custom_bounds(manta: Explorer
     assert all(job.first_sample == 0 and job.last_sample > 9000 for job in jobs)
     assert short_job(manta).last_sample - short_job(manta).first_sample == 1
     with pytest.raises(ValueError, match="explicit bounds"):
-        make_job(manta, preset().model_copy(update={"range_mode": "selection"}))
+        make_job(manta.analysis, preset().model_copy(update={"range_mode": "selection"}))
     with pytest.raises(ValueError):
-        SavedPreset(name="", settings=ExportSettings())
+        SavedPreset(
+            name="",
+            settings=ExportSettings(),
+            analysis_configuration=source_app_configuration(),
+            schema_version=1,
+            smoothing_window=11,
+            range_mode="markers",
+        )
     with pytest.raises(ValueError, match="odd"):
-        SavedPreset(name="bad", settings=ExportSettings(), smoothing_window=2)
+        SavedPreset(
+            name="bad",
+            settings=ExportSettings(),
+            smoothing_window=2,
+            analysis_configuration=source_app_configuration(),
+            schema_version=1,
+            range_mode="markers",
+        )
 
 
 def test_batch_continues_after_changed_recording_and_preserves_outputs(
@@ -149,12 +197,15 @@ def test_batch_continues_after_changed_recording_and_preserves_outputs(
         return target
 
     monkeypatch.setattr(batches, "export_video", fake_export)
-    job = short_job(manta, preset().model_copy(update={"smoothing_window": 3}))
+    job = short_job(manta, preset(window=3))
     changed = job.model_copy(update={"source_sha256": "0" * 64})
     missing = job.model_copy(
         update={"recording_path": (export_directory / "missing.forces").resolve()},
     )
-    saved = (SavedBatch(name="A", jobs=(job, changed, missing)), SavedBatch(name="B", jobs=(job,)))
+    saved = (
+        SavedBatch(name="A", jobs=(job, changed, missing), schema_version=1),
+        SavedBatch(name="B", jobs=(job,), schema_version=1),
+    )
     result = run_batches(saved, export_directory)
     assert [item.status for item in result.results] == [
         "completed",
@@ -193,7 +244,7 @@ def test_cancel_stops_remaining_jobs_and_keeps_completed_files(
     monkeypatch.setattr(batches, "export_video", fake_export)
     job = short_job(manta)
     result = run_batches(
-        (SavedBatch(name="Cancel", jobs=(job, job, job)),),
+        (SavedBatch(name="Cancel", jobs=(job, job, job), schema_version=1),),
         export_directory,
         cancelled=cancel,
     )
@@ -202,7 +253,7 @@ def test_cancel_stops_remaining_jobs_and_keeps_completed_files(
     output = result.results[0].output
     assert output is not None and output.read_bytes() == b"complete"
     with pytest.raises(ValueError, match="no export jobs"):
-        run_batches((SavedBatch(name="Empty"),), export_directory)
+        run_batches((SavedBatch(name="Empty", schema_version=1, jobs=()),), export_directory)
 
 
 def test_saved_batch_reopens_and_exports_different_rides_and_formats(
@@ -215,19 +266,30 @@ def test_saved_batch_reopens_and_exports_different_rides_and_formats(
     sources: list[tuple[Path, bytes]] = []
     jobs: list[BatchJob] = []
     presets = (
-        SavedPreset(name="Ribbon", settings=ExportSettings(layout="ribbon", prefer_gpu=False)),
+        SavedPreset(
+            name="Ribbon",
+            settings=ExportSettings(layout="ribbon", prefer_gpu=False),
+            analysis_configuration=source_app_configuration(),
+            schema_version=1,
+            smoothing_window=11,
+            range_mode="markers",
+        ),
         SavedPreset(
             name="Orbit opaque",
             settings=ExportSettings(layout="orbit", output="opaque", prefer_gpu=False),
+            analysis_configuration=source_app_configuration(),
+            schema_version=1,
+            smoothing_window=11,
+            range_mode="markers",
         ),
     )
     for ride, chosen in zip(("Manta", "Kraken"), presets, strict=True):
         path = next(REAL_FIXTURE_DIRECTORY.glob(f"{ride}-*.forces"))
         sources.append((path, path.read_bytes()))
         data = load_recording(path)
-        assert isinstance(data, ExplorerData)
+        assert isinstance(data, ExplorerData) and data.analysis is not None
         jobs.append(short_job(data, chosen))
-    store.save_batch(SavedBatch(name="Real", jobs=tuple(jobs)))
+    store.save_batch(SavedBatch(name="Real", jobs=tuple(jobs), schema_version=1))
     result = run_batches(ExportStore(store.path).batches(), export_directory, ffmpeg=ffmpeg)
     assert len(result.results) == 2
     assert all(
@@ -239,3 +301,41 @@ def test_saved_batch_reopens_and_exports_different_rides_and_formats(
         ".mp4",
     ]
     assert all(path.read_bytes() == original for path, original in sources)
+
+
+@pytest.mark.parametrize("table", ("presets", "batches"))
+@pytest.mark.parametrize(
+    "field",
+    (
+        ("analysis_configuration",),
+        ("settings", "aspect"),
+        ("settings", "language"),
+        ("analysis_configuration", "events_input"),
+        ("analysis_configuration", "smoothing", "parameters"),
+        ("analysis_configuration", "profile", "assumptions"),
+        ("range_mode",),
+        ("schema_version",),
+    ),
+)
+def test_incomplete_stored_configuration_is_rejected_without_rewriting_database(
+    export_directory: Path,
+    manta: ExplorerData,
+    table: str,
+    field: tuple[str, ...],
+) -> None:
+    path = export_directory / "incomplete.sqlite3"
+    store = ExportStore(path)
+    chosen = preset()
+    store.save_preset(chosen)
+    store.save_batch(SavedBatch(name="Batch", jobs=(short_job(manta, chosen),), schema_version=1))
+    with closing(sqlite3.connect(path)) as db, db:
+        payload = json.loads(db.execute(f"SELECT payload FROM {table}").fetchone()[0])
+        item = payload if table == "presets" else payload["jobs"][0]["preset"]
+        for name in field[:-1]:
+            item = item[name]
+        del item[field[-1]]
+        db.execute(f"UPDATE {table} SET payload=?", (json.dumps(payload),))
+    before = path.read_bytes()
+    with pytest.raises(ExportStoreError, match="incomplete|Field required"):
+        store.presets() if table == "presets" else store.batches()
+    assert path.read_bytes() == before

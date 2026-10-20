@@ -83,4 +83,7 @@ its own quality and provenance. No display-label subscription is involved.
 Changing rules rebuilds only events; changing context confirmation does not.
 Smoothing rebuilds events only when they consume smoothing. Snapshots retained by
 exports preserve their original event results. Service change notifications remain
-technical payloads, separate from these domain events.
+technical payloads, separate from these domain events. Unsupported rules terminate
+that request with `AnalysisFailed`; no partial event/snapshot result replaces the
+previous configuration. Context categories, event boundaries and service status
+remain distinct contracts.

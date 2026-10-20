@@ -14,38 +14,75 @@ from typing import TypedDict
 
 from pydantic import BaseModel
 
-from ride_forces_analyzer.explorer import ExplorerData, failure_text, load_recording
+from ride_forces_analyzer.analysis.recording import (
+    AnalysisConfiguration,
+    RecordingAnalysis,
+    source_app_configuration,
+)
+from ride_forces_analyzer.analysis.service import AnalysisService
+from ride_forces_analyzer.importers import ImportSuccess, import_forces
 from ride_forces_analyzer.storage.export_models import BatchJob, RangeMode, SavedBatch, SavedPreset
 from .encoding import ExportCancelled, export_video
-from .model import prepare_export, prepare_export_analysis
+from .model import prepare_export
+
+
+def _load_analysis(
+    path: Path,
+    configuration: AnalysisConfiguration,
+    *,
+    expected_sha256: str | None = None,
+) -> RecordingAnalysis:
+    """Import losslessly, verify identity before analysis, then prepare the full recipe."""
+    source = import_forces(path)
+    if not isinstance(source, ImportSuccess):
+        details = "; ".join(f"{item.code}: {item.message}" for item in source.diagnostics[:5])
+        raise ValueError(f"{path.name}: {details}")
+    if expected_sha256 is not None and source.source_sha256 != expected_sha256:
+        raise ValueError("Recording bytes changed since this batch was saved")
+    service = AnalysisService()
+    try:
+        service.request_analysis(source, configuration, calculation_time=datetime.now(UTC))
+        state = service.get_state()
+        if state.snapshot is None:
+            raise ValueError(
+                state.failure.message
+                if state.failure
+                else "Prepared recording analysis is unavailable",
+            )
+        return state.snapshot
+    finally:
+        service.close()
 
 
 def make_job(
-    data: ExplorerData,
+    analysis: RecordingAnalysis,
     preset: SavedPreset,
     *,
     range_mode: RangeMode | None = None,
     first: int | None = None,
     last: int | None = None,
 ) -> BatchJob:
-    path = data.source.recording.source.provenance.path
+    path = analysis.source.recording.source.provenance.path
     if path is None:
         raise ValueError("Only file-backed recordings can be queued")
     mode = range_mode or preset.range_mode
-    indices = data.source.recording.indices
+    indices = analysis.source.recording.indices
     if mode == "markers":
         first, last = indices.start, indices.end
     elif mode == "entire":
-        first, last = 0, data.count - 1
+        first, last = 0, len(analysis.time.source_indices) - 1
     if first is None or last is None:
         raise ValueError("A selection preset needs explicit bounds for this recording")
-    data.select(first, last)
-    if data.analysis is None or data.analysis.forces.smoothed.channels is None:
-        raise ValueError(data.reference_error or "Calibrated forces are unavailable")
+    count = len(analysis.time.source_indices)
+    if type(first) is not int or type(last) is not int or not 0 <= first <= last < count:
+        raise ValueError("Invalid export sample interval")
+    if analysis.forces.smoothed.channels is None:
+        reason = analysis.forces.smoothed.availability.reason
+        raise ValueError(reason.message if reason else "Calibrated forces are unavailable")
     return BatchJob(
         recording_path=path.resolve(),
-        source_sha256=data.source.source_sha256,
-        ride=data.title,
+        source_sha256=analysis.source.source_sha256,
+        ride=analysis.source.recording.metadata.name or path.stem,
         preset=preset,
         range_mode=mode,
         first_sample=first,
@@ -62,10 +99,8 @@ def build_jobs(
         raise ValueError("Choose at least one recording and one preset")
     jobs: list[BatchJob] = []
     for path in paths:
-        data = load_recording(path)
-        if not isinstance(data, ExplorerData):
-            raise ValueError(f"{path.name}: {failure_text(data)}")
-        jobs.extend(make_job(data, preset, range_mode=range_mode) for preset in presets)
+        analysis = _load_analysis(path, source_app_configuration())
+        jobs.extend(make_job(analysis, preset, range_mode=range_mode) for preset in presets)
     return tuple(jobs)
 
 
@@ -134,14 +169,11 @@ def run_batches(
                 try:
                     if status:
                         status(f"Job {ordinal}/{total}: {label}")
-                    data = load_recording(job.recording_path)
-                    if not isinstance(data, ExplorerData):
-                        raise ValueError(failure_text(data))
-                    if data.source.source_sha256 != job.source_sha256:
-                        raise ValueError("Recording bytes changed since this batch was saved")
-                    if data.analysis is None:
-                        raise ValueError("Prepared recording analysis is unavailable")
-                    analysis = prepare_export_analysis(data.analysis, job.preset.configuration)
+                    analysis = _load_analysis(
+                        job.recording_path,
+                        job.preset.analysis_configuration,
+                        expected_sha256=job.source_sha256,
+                    )
                     timeline = prepare_export(
                         analysis,
                         job.preset.settings,
