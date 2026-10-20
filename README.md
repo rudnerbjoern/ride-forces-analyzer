@@ -121,7 +121,7 @@ Download version **0.3.1** from
 - **EXE:** start the application directly, without installing Python.
 - **Standard ZIP:** application and license notices; choose an existing FFmpeg for video export.
 - **Complete ZIP:** application, notices and FFmpeg; extract it and start the EXE.
-- **Source ZIP:** for running from source or development.
+- **Source code (zip / tar.gz):** GitHub-generated archives for running from source or development.
 
 There is no installer. To run from source, download or clone this project,
 open PowerShell in its folder and run:
@@ -144,7 +144,7 @@ See the [setup guide](docs/development/SETUP.md) for detailed installation help.
 
 Release packaging provides a standalone Windows EXE, a standard ZIP without
 FFmpeg and a complete ZIP including FFmpeg. No Python installation is needed
-for these packages. Available upstream sources and checksums accompany the files;
+for these packages. Dependency notices and checksums accompany the files;
 missing third-party source material is recorded in the included license notices.
 Version 0.3.1 is a preview release; clean-VM and code-signing qualification remain open.
 

@@ -54,33 +54,17 @@ jobs:
           RELEASE_SHA: ${{ steps.revision.outputs.commit }}
           RELEASE_REPOSITORY: ${{ github.repository }}
         run: uv run --locked python .github/scripts/check-release-policy.py --tag "$env:RELEASE_TAG" --sha "$env:RELEASE_SHA" --repository "$env:RELEASE_REPOSITORY"
-      - name: Validate source archive
+      - name: Validate temporary source archive
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          New-Item -ItemType Directory -Force .tmp/release | Out-Null
-          git archive --format=zip --output=.tmp/release/source.zip HEAD
+          New-Item -ItemType Directory -Force .tmp/source-validation | Out-Null
+          git archive --format=zip --output=.tmp/source-validation/source.zip HEAD
           if ($LASTEXITCODE -ne 0) { throw 'Source archive creation failed.' }
-          uv run --locked python .github/scripts/check-source-release.py .tmp/release/source.zip --tag "$env:RELEASE_TAG"
+          uv run --locked python .github/scripts/check-source-release.py .tmp/source-validation/source.zip --tag "$env:RELEASE_TAG"
           if ($LASTEXITCODE -ne 0) { throw 'Source archive validation failed.' }
       - name: Build Python packages
         run: uv build --out-dir .tmp/release/packages
-      - name: Retain verified source archive
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          path: .tmp/release/source.zip
-          archive: false
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 14
-      - name: Retain source checksum
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          path: .tmp/release/SHA256SUMS.txt
-          archive: false
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 14
       - name: Retain prepared release notes
         uses: actions/upload-artifact@v7.0.2
         with:
@@ -144,13 +128,6 @@ jobs:
           archive: false
           if-no-files-found: error
           retention-days: 14
-      - name: Retain corresponding sources
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          path: .tmp/windows-build/assets/corresponding-sources.zip
-          archive: false
-          if-no-files-found: error
-          retention-days: 14
 
   release:
     name: Publish verified release
@@ -175,18 +152,6 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ needs.source.outputs.commit }}
-      - name: Download verified source from this run
-        uses: actions/download-artifact@v8.0.2
-        with:
-          name: source.zip
-          path: .tmp/release
-          skip-decompress: true
-      - name: Download source checksum from this run
-        uses: actions/download-artifact@v8.0.2
-        with:
-          name: SHA256SUMS.txt
-          path: .tmp/release
-          skip-decompress: true
       - name: Download prepared notes from this run
         uses: actions/download-artifact@v8.0.2
         with:
@@ -217,18 +182,9 @@ jobs:
           name: WINDOWS-SHA256SUMS.txt
           path: .tmp/release
           skip-decompress: true
-      - name: Download corresponding sources
-        uses: actions/download-artifact@v8.0.2
-        with:
-          name: corresponding-sources.zip
-          path: .tmp/release
-          skip-decompress: true
       - name: Verify artifacts and current tag before publication
         run: |
-          $checksum = (Get-Content .tmp/release/SHA256SUMS.txt -Raw).Trim()
-          $actual = (Get-FileHash .tmp/release/source.zip -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($checksum -ne "$actual  source.zip") { throw 'Downloaded source checksum mismatch.' }
-          $expected = @($env:WINDOWS_EXE, $env:WINDOWS_STANDARD, $env:WINDOWS_COMPLETE, 'corresponding-sources.zip')
+          $expected = @($env:WINDOWS_EXE, $env:WINDOWS_STANDARD, $env:WINDOWS_COMPLETE)
           $entries = @{}
           foreach ($line in Get-Content .tmp/release/WINDOWS-SHA256SUMS.txt) {
             if ($line -notmatch '^([a-f0-9]{64})  ([A-Za-z0-9][A-Za-z0-9._-]*)$') { throw 'Invalid Windows checksum entry.' }
@@ -249,11 +205,10 @@ jobs:
       - name: Publish GitHub Release
         run: |
           $arguments = @('release', 'create', $env:RELEASE_TAG,
-            '.tmp/release/source.zip', '.tmp/release/SHA256SUMS.txt',
             ('.tmp/release/' + $env:WINDOWS_EXE),
             ('.tmp/release/' + $env:WINDOWS_STANDARD),
             ('.tmp/release/' + $env:WINDOWS_COMPLETE),
-            '.tmp/release/WINDOWS-SHA256SUMS.txt', '.tmp/release/corresponding-sources.zip',
+            '.tmp/release/WINDOWS-SHA256SUMS.txt',
             '--verify-tag', '--target', $env:RELEASE_SHA, '--title', $env:RELEASE_TAG,
             '--notes-file', '.tmp/release/release-notes.md', '--generate-notes')
           if ($env:RELEASE_PREVIEW -eq 'true') { $arguments += @('--prerelease', '--latest=false') }

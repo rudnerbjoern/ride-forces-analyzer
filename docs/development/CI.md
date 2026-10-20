@@ -122,11 +122,12 @@ runs for pushed `v*` tags and authorized manual retries. It calls full CI for th
 resolved tag revision; a failed, skipped or cancelled quality run blocks release
 preparation. Source validation has a ten-minute limit and verifies the source
 archive, recording integrity, Python package builds and release-policy gates.
+The temporary archive is not uploaded; GitHub provides the source ZIP/tar.gz downloads.
 
 A separate read-only Windows job (30-minute limit) installs the locked build group,
 checks binary redistribution inputs, builds the standalone EXE and standard/complete
 ZIPs, and executes all three with isolated preferences and a restricted PATH. Its
-outputs include checksums and corresponding sources. Publication depends on this
+outputs include the three Windows downloads and their checksums. Publication depends on this
 job as well as full quality/source checks. Missing provider sources are documented
 and reported; missing or modified catalog-listed archives fail verification.
 

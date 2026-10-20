@@ -1,8 +1,8 @@
 # Releases
 
 The [release workflow](../../.github/workflows/source-release.yml) handles
-owner-authorized pushes of `v*` tags on native Windows. It prepares source, a
-standalone Windows x64 EXE and standard/complete ZIPs. Binary publication is
+owner-authorized pushes of `v*` tags on native Windows. It validates the tagged
+sources and prepares a standalone Windows x64 EXE and standard/complete ZIPs. Binary publication is
 accompanied by documented missing redistribution material below. Version 0.3.1
 provides these portable downloads; no installer is included.
 Local acceptance and owner review still precede tag creation; CI is secondary
@@ -22,12 +22,17 @@ validation. [Windows setup](SETUP.md) owns the required local checks.
   and verifies all original recording bytes against the fixture inventory.
   Wheel and source-distribution builds must also succeed.
 - Only the publication job receives `contents: write`. It downloads this run's
-  verified source ZIP, checksum and notes, checks the ZIP checksum, and rechecks
-  the remote tag target immediately before publication.
-- Publication uses `gh release create --verify-tag`, attaches the ZIP/checksum and
+  verified Windows packages, checksum file and notes, verifies the package hashes,
+  and rechecks the remote tag target immediately before publication.
+- Publication uses `gh release create --verify-tag`, attaches the Windows downloads and checksum file, and
   combines the maintained [release text](RELEASE_NOTES.md) with generated change
   notes. Existing releases are not edited or overwritten; failed or ambiguous
   publication requires remote-state inspection before retrying.
+
+GitHub supplies the release's **Source code (zip)** and **Source code (tar.gz)**
+downloads automatically; see [GitHub's release documentation](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases).
+The workflow's temporary source archive is used only for validation and is not
+uploaded or attached to the release.
 
 The tag target is rechecked before publication; this is not an atomic lock against
 concurrent remote tag changes. Do not move published version tags.
@@ -40,10 +45,10 @@ gh workflow run source-release.yml --ref main -f tag=v0.3.1
 ```
 
 Quality checks use the current workflow definition and check out the resolved
-tagged commit. Source and Windows downloads are rebuilt from that same commit,
+tagged commit. Source validation and Windows builds use that same commit,
 with the same ancestry, merged-PR,
 version and checksum gates. Concurrent runs for the same tag are serialized.
-Release ZIP artifacts are downloaded without automatic decompression so their
+Windows ZIP artifacts are downloaded without automatic decompression so their
 original filenames, bytes and checksums remain intact. Existing releases are
 never overwritten by this retry path.
 
@@ -101,10 +106,10 @@ block package construction; they remain unresolved license/source obligations.
 
 `--release` reports the documented gaps and verifies the supplied source archives'
 SHA-256 values. It downloads configured HTTPS sources only into
-`.tmp/`, and assembles `corresponding-sources.zip` for the same release. The Windows
+`.tmp/`; those dependency archives are not bundled as a release download. The Windows
 job and package execution checks must succeed before the publication job can run.
 Publication rechecks all downloaded asset hashes and the live tag, then attaches
-the source ZIP, EXE, both Windows ZIPs, checksums and corresponding sources. A
+the EXE, both Windows ZIPs and their checksum file. A
 documented missing provider source does not block the workflow. Missing or modified
 files that are explicitly listed in the catalog still fail verification.
 Version 0.3.1 uses this path for all four user-facing download variants.

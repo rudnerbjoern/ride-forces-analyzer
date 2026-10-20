@@ -29,13 +29,11 @@ installing Python. The `…-standard.zip` contains the application and notices;
 select an existing FFmpeg for video export. The `…-complete.zip` also includes
 FFmpeg, detected automatically after extraction. Start the EXE in the extracted
 folder. There is no installer or automatic installation. Required dependency
-notices accompany the packages; `corresponding-sources.zip` supplies the available
-third-party sources. This collection is incomplete: matching Qt PDF material and
-complete source/build material for the static FFmpeg dependencies were not located
-in the provider downloads. The included `REDISTRIBUTION.json` records these gaps.
+notices accompany the packages. The included `REDISTRIBUTION.json` records
+redistribution details.
 Use `WINDOWS-SHA256SUMS.txt` to verify the download files.
 
-Download `source.zip` and `SHA256SUMS.txt` from this release. Extract the ZIP,
+Download GitHub's **Source code (zip)** or **Source code (tar.gz)** from this release. Extract the archive,
 open PowerShell in its directory and run `setup.ps1`, then `start.ps1`.
 Video export additionally needs `setup.ps1 -VideoExport` or a compatible existing
 FFmpeg executable. Setup downloads dependencies; installed processing works offline.

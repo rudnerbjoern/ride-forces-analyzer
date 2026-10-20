@@ -203,6 +203,7 @@ def build(work: Path, *, release: bool = False) -> Path:
     encoder = acquire_ffmpeg(work)
     assets = work / "assets"
     assets.mkdir(exist_ok=True)
+    (assets / "corresponding-sources.zip").unlink(missing_ok=True)
     prefix = f"{APP_NAME}-{version}-windows-x64"
     shutil.copyfile(executable, assets / f"{prefix}.exe")
     standard = work / "standard"
@@ -246,23 +247,6 @@ def build(work: Path, *, release: bool = False) -> Path:
     if "--enable-nonfree" in (encoder_notices / "buildconf.txt").read_text(encoding="utf-8"):
         raise ValueError("Non-redistributable FFmpeg build")
     write_zip(complete, assets / f"{prefix}-complete.zip")
-    if release:
-        catalog = json.loads((ROOT / "packaging/redistribution.json").read_text(encoding="utf-8"))
-        with ZipFile(
-            assets / "corresponding-sources.zip",
-            "w",
-            compression=ZIP_DEFLATED,
-        ) as archive:
-            archive.write(ROOT / "packaging/redistribution.json", "redistribution.json")
-            archive.writestr(
-                "README.txt",
-                "This archive contains the available upstream sources.\n"
-                "It is not a complete corresponding-source collection.\n"
-                "See redistribution.json for documented missing provider material.\n",
-            )
-            for entry in catalog["source_archives"]:
-                source = ROOT / entry["path"]
-                archive.write(source, source.name)
     (assets / "WINDOWS-SHA256SUMS.txt").write_text(
         "".join(
             f"{digest(path)}  {path.name}\n"
