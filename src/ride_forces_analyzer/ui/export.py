@@ -38,6 +38,7 @@ from PySide6.QtWidgets import (
 )
 from PIL import Image
 
+from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering.encoding import ExportCancelled, export_video, find_ffmpeg
 from ride_forces_analyzer.rendering.progress import remaining_seconds
@@ -69,7 +70,7 @@ class PreviewWorker(QRunnable):
     def __init__(
         self,
         revision: int,
-        data: ExplorerData,
+        analysis: RecordingAnalysis,
         settings: ExportSettings,
         first: int,
         last: int,
@@ -77,7 +78,7 @@ class PreviewWorker(QRunnable):
         background: str,
     ) -> None:
         super().__init__()
-        self.revision, self.data, self.settings = revision, data, settings
+        self.revision, self.analysis, self.settings = revision, analysis, settings
         self.first, self.last, self.sample, self.background = first, last, sample, background
         self.signals = PreviewSignals()
 
@@ -85,7 +86,7 @@ class PreviewWorker(QRunnable):
     def run(self) -> None:
         try:
             result = build_previews(
-                self.data,
+                self.analysis,
                 self.settings,
                 self.first,
                 self.last,
@@ -188,6 +189,9 @@ class ExportDialog(QDialog):
         bind(self, tr("Export assistant · {0}", data.title), "windowTitle")
         self.resize(1240, 820)
         self.setWindowModality(Qt.WindowModality.WindowModal)
+        if data.analysis is None:
+            raise ValueError("Prepared recording analysis is unavailable")
+        self.analysis = data.analysis
         self.data, self.first, self.last = data, first, last
         self.preferences = Preferences()
         self.store = store if store is not None else ExportStore(default_database_path())
@@ -304,7 +308,7 @@ class ExportDialog(QDialog):
         self.smoothing = QComboBox()
         items(self.smoothing, [tr("{0} samples", count) for count in range(1, 52, 2)])
         self.smoothing.setCurrentIndex(
-            (data.reference.smoothing_window if data.reference else 11) // 2,
+            data.smoothing_window // 2,
         )
         form.addRow(bind(QLabel(), tr("Smoothing")), self.smoothing)
         self.flip_vertical = bind(
@@ -500,7 +504,7 @@ class ExportDialog(QDialog):
             self._settings(),
             self.smoothing.currentIndex() * 2 + 1,
             "selection" if mode == "selection" else "entire" if mode == "entire" else "markers",
-            self.data.analysis.configuration if self.data.analysis is not None else None,
+            self.analysis.configuration,
         )
 
     @Slot()
@@ -542,14 +546,12 @@ class ExportDialog(QDialog):
             return
         preset = self.saved[index]
         settings = preset.settings
-        if self.data.analysis is not None:
-            try:
-                self.data = self.data.with_analysis(
-                    prepare_export_analysis(self.data.analysis, preset.configuration),
-                )
-            except (TypeError, ValueError) as error:
-                bind(self.status, tr(str(error)), "text")
-                return
+        try:
+            self.analysis = prepare_export_analysis(self.analysis, preset.analysis_configuration)
+            self.data = self.data.with_analysis(self.analysis)
+        except (TypeError, ValueError) as error:
+            bind(self.status, tr(str(error)), "text")
+            return
         self.overlay_language.setCurrentIndex(1 if settings.language == "de" else 0)
         self.aspect.setCurrentIndex(0 if settings.aspect == "landscape" else 1)
         self.layout_profile.setCurrentIndex(
@@ -571,6 +573,8 @@ class ExportDialog(QDialog):
     @Slot(int)
     def _smoothing_changed(self, index: int) -> None:
         self.data = self.data.with_smoothing(index * 2 + 1)
+        assert self.data.analysis is not None
+        self.analysis = self.data.analysis
         bind(
             self.context,
             tr(
@@ -601,7 +605,7 @@ class ExportDialog(QDialog):
                 else self.layout_profile.currentText()
             )
             first, last = self._bounds()
-            job = make_job(self.data, self._preset(preset_name), first=first, last=last)
+            job = make_job(self.analysis, self._preset(preset_name), first=first, last=last)
             if name.strip() not in names:
                 name = self.store.create_batch(name).name
             self.store.append_jobs(name, (job,))
@@ -669,7 +673,7 @@ class ExportDialog(QDialog):
         first, last = self._bounds()
         worker = PreviewWorker(
             self.preview_revision,
-            self.data,
+            self.analysis,
             self._settings(),
             first,
             last,
@@ -827,7 +831,7 @@ class ExportDialog(QDialog):
         try:
             settings = self._settings()
             first, last = self._bounds()
-            timeline = prepare_export(self.data, settings, first, last)
+            timeline = prepare_export(self.analysis, settings, first, last)
             encoder = find_ffmpeg(Path(self.encoder.text()) if self.encoder.text() else None)
         except (ValueError, OSError) as error:
             bind(self.status, tr(str(error)), "text")

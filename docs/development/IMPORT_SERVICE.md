@@ -30,6 +30,22 @@ Qt-independent and offline. The raw explorer calls this API through a background
 adapter; no UI dependency is added to the service.
 The caller controls scheduling; no background thread or progress interface is added.
 
+## Application analysis handoff
+
+Import success remains lossless parsing, not a calculated analysis result. The
+application's import worker passes a successful `ImportSuccess` to the analysis
+service with an explicit source-app configuration. It establishes source/time
+correspondence, projection, smoothing, context and optional domain events, plus
+independent gravity tilt, then publishes one consistent immutable snapshot.
+The importer itself remains usable without NumPy or Qt and preserves original
+bytes, metadata, unknown fields and independent GPS.
+
+Expected missing analysis prerequisites retain a raw-capable snapshot with coded
+stage reasons; failed imports retain the previous displayed recording. The
+[model API](ANALYSIS_MODELS.md#unified-recording-analysis) defines configuration,
+availability, quality and shared-stage reuse; [runtime architecture](../architecture/06_runtime_view.md#explorer-analysis-delivery)
+defines worker scheduling, success/failure, initial subscriptions and UI delivery.
+
 ## Pipeline and outcomes
 
 The service composes [strict decoding](STRICT_DECODING.md),

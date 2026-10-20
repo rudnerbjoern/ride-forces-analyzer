@@ -52,6 +52,6 @@ the language from ExportSettings rather than read the current UI locale.
 Add regression coverage for placeholder compatibility, source preservation and
 new visible behavior. Inspect German layouts on native Windows, including compact
 windows and both export aspects. Production glyph bounds, preview consistency,
-saved language/default compatibility and representative real encodes are covered
+explicit saved-language round trips and representative real encodes are covered
 by the localization and rendering regression suites. No source-app scientific
 semantics or milestone status changes are implied by localization.

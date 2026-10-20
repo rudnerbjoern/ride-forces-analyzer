@@ -7,6 +7,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words segoeui LANCZOS getchannel getextrema WINDIR
 
 import argparse
+from dataclasses import replace
+from datetime import UTC, datetime
 from hashlib import sha256
 import json
 import os
@@ -14,7 +16,13 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from ride_forces_analyzer.explorer import ExplorerData, format_sample_time, load_recording
+from ride_forces_analyzer.analysis.recording import (
+    RecordingAnalysis,
+    prepare_recording_analysis,
+    source_app_configuration,
+)
+from ride_forces_analyzer.explorer import format_sample_time
+from ride_forces_analyzer.importers import ImportSuccess, import_forces
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts import export_region
 from ride_forces_analyzer.rendering.model import ExportSettings, PROFILES, prepare_export
@@ -26,26 +34,39 @@ SAMPLE = 4782  # Zero-based source index: never search for a new peak.
 SMOOTHING = 11
 
 
-def load_reference(source: Path = SOURCE) -> ExplorerData:
+def load_reference(source: Path = SOURCE) -> RecordingAnalysis:
     if sha256(source.read_bytes()).hexdigest() != SOURCE_SHA256:
         raise ValueError("Manta source hash differs from the fixed reference recording")
-    data = load_recording(source)
-    if not isinstance(data, ExplorerData):
+    imported = import_forces(source)
+    if not isinstance(imported, ImportSuccess):
         raise ValueError("Cannot import the Manta reference recording")
-    data = data.with_smoothing(SMOOTHING)
-    if data.reference is None:
-        raise ValueError(data.reference_error or "Manta calibration unavailable")
-    return data
+    configuration = source_app_configuration()
+    configuration = replace(
+        configuration,
+        smoothing=replace(configuration.smoothing, parameters=(("window_samples", SMOOTHING),)),
+    )
+    analysis = prepare_recording_analysis(
+        imported,
+        configuration,
+        revision=1,
+        calculation_time=datetime.now(UTC),
+    )
+    if analysis.forces.smoothed.channels is None:
+        reason = analysis.forces.smoothed.availability.reason
+        raise ValueError(reason.message if reason else "Manta calibration unavailable")
+    return analysis
 
 
 def render_reference(output: Path) -> None:
-    data = load_reference()
-    reference = data.reference
-    if reference is None:
-        raise ValueError("Manta calibration unavailable")
-    first, last = data.source.recording.indices.start, data.source.recording.indices.end
-    replay = format_sample_time(SAMPLE - first, data.sample_rate)
-    values = tuple(channel[SAMPLE] for channel in reference.channels)
+    analysis = load_reference()
+    first, last = analysis.source.recording.indices.start, analysis.source.recording.indices.end
+    rate = analysis.time.basis.sample_rate
+    assert rate is not None
+    replay = format_sample_time(SAMPLE - first, rate.value)
+    sample = analysis.sample(SAMPLE).smoothed
+    if sample is None:
+        raise ValueError("Manta reference sample unavailable")
+    values = (sample.vertical, sample.lateral, sample.longitudinal)
     output.mkdir(parents=True, exist_ok=True)
     background = Image.new("RGBA", (3840, 2160), "#22313e")
     draw = ImageDraw.Draw(background)
@@ -69,7 +90,7 @@ def render_reference(output: Path) -> None:
             invert_vertical=True,
             invert_lateral=layout == "column",
         )
-        timeline = prepare_export(data, settings, first, last)
+        timeline = prepare_export(analysis, settings, first, last)
         frame = OverlayRenderer(timeline).render_sample(SAMPLE)
         if frame.size != settings.dimensions or frame.getchannel("A").getextrema()[0] != 0:
             raise ValueError(f"Invalid reference canvas/transparency: {title}")
@@ -95,7 +116,7 @@ def render_reference(output: Path) -> None:
     sheet_draw.text((1300, 485), "ONE SAMPLE. FIVE LAYOUTS.", font=font, fill="#eff6ff")
     for line, text in enumerate(
         (
-            f"Replay {replay} at {data.sample_rate:g} Hz",
+            f"Replay {replay} at {rate.value:g} Hz",
             f"Vertical {values[0]:+.2f} g",
             f"Lateral {values[1]:+.2f} g",
             f"Longitudinal {values[2]:+.2f} g",
@@ -108,9 +129,9 @@ def render_reference(output: Path) -> None:
     manifest = {
         "sample": SAMPLE,
         "replay": replay,
-        "recording_seconds": SAMPLE / data.sample_rate,
-        "replay_seconds": (SAMPLE - first) / data.sample_rate,
-        "rate": data.sample_rate,
+        "recording_seconds": SAMPLE / rate.value,
+        "replay_seconds": (SAMPLE - first) / rate.value,
+        "rate": rate.value,
         "values": values,
         "source_sha256": SOURCE_SHA256,
         "smoothing": SMOOTHING,

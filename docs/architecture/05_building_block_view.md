@@ -32,9 +32,17 @@ flowchart TB
     Frames --> SciPy["SciPy: passive frame rotation"]
     Storage["storage: SQLite export definitions"] --> Rendering
     Playback["playback: planned"] -.-> Domain
-    Rendering["rendering: 4K frames / encoder"] --> Explorer
-    Rendering --> Recording["analysis.recording: shared snapshots"]
+    Rendering["rendering: 4K frames / encoder / batches"] --> Recording["analysis.recording: shared snapshots"]
+    Rendering --> Service
+    Rendering --> AnalysisService["analysis.service: state and subscriptions"]
+    Presentation --> Recording
+    Presentation --> AnalysisService
+    Qt --> Adapter["ui.analysis: worker and UI delivery"]
+    Adapter --> AnalysisService
+    AnalysisService --> Recording
     Recording --> Analysis
+    Recording --> Numerical["source projection / mean / tilt / context / events"]
+    Numerical --> NumPy
 ```
 
 Arrows express dependencies. Dashed arrows describe future consumers, not
@@ -87,15 +95,19 @@ The boundary stays independent of widgets, storage and encoding. All five fixtur
 participate in capability tests, including absent Watch gravity/GPS. Deeper future
 services are documented only when designed.
 
-`analysis.reference` supplies calibrated source-direction channels for any usable import to explorer
-presentation, retaining confirmed normalized-direction contracts, source hash, timestamp,
-library version and raw/filtered channels. It leaves strict frame APIs unchanged.
+`analysis.projection` owns source-app direction normalization and dot projection;
+`analysis.smoothing` owns the centered mean and recording-edge policy. These are
+separate from the qualified physical-frame APIs. `analysis.orientation` owns
+independent source-gravity tilt; `analysis.airtime` owns display-context rules.
+Projection and smoothing have one implementation each, consumed through unified
+snapshots. Scientific comparison tests exercise these snapshots against the
+retained original-file and screenshot evidence.
 
 `analysis.recording` contains the parallel unified recording-analysis model,
 reusing existing contracts. Explicit snapshot validation checks source,
 time, availability, payloads and shared dependencies without numerical calculation.
-Initial preparation reuses existing projection, smoothing, independent orientation
-and context functions. Sample views read the prepared buffers without recalculation.
+Initial preparation uses these shared projection, smoothing, independent orientation
+and context functions, plus configured event detection. Sample views read the prepared buffers without recalculation.
 Reconfiguration reuses stages with matching configuration and input references;
 smoothing retains the original projection and independent orientation. Snapshots
 retain stages, not prior snapshots or a configuration history.
@@ -103,8 +115,12 @@ retain stages, not prior snapshots or a configuration history.
 from the selected vertical force stage. Its versioned rules are independent of
 context confirmation/hysteresis, retain missing-data and boundary limits, and
 reuse the existing event containers and partial recalculation dependencies.
-The explorer and export consumers read shared snapshots and stage buffers. The
-legacy compatibility reference remains only for presentation/extrema APIs.
+The explorer and export consumers read shared snapshots and stage buffers.
+`ExplorerData` owns view state, formatting and read-only chart views; cards and
+technical sample values read snapshot sample views. Context labels/strip segments
+format prepared categories without a second context calculation. Extrema consume
+`SmoothedForces` directly, retaining quality, provenance and source/time identity.
+Raw display remains available without derived forces or an optional NumPy runtime.
 `analysis.service` manages coherent state, subscriptions with immediate initial
 delivery, partial analysis requests, revision/error handling and cleanup. Numerical
 work and serialized per-subscriber callbacks run outside its state lock. Superseded
@@ -132,6 +148,11 @@ Explorer presentation exposes them in the inspector; widgets perform no calculat
 Raw operation avoids importing the NumPy-backed analysis package. This is a small selected-range product, not a generic statistics engine.
 
 ## Video export boundary
+
+Export preparation/previews accept `RecordingAnalysis`; layouts consume a bound
+`ExportTimeline`. Batches depend on import/analysis services and persisted recipes,
+not explorer presentation. Stored recipes and video settings are complete and
+explicit; unsupported records are rejected while preserving database contents.
 
 Export timelines bind one immutable `RecordingAnalysis`. Read-only channel views
 share prepared buffers, and layouts read prepared orientation/context without
@@ -167,7 +188,8 @@ seeks and video-rate changes do not depend on prior render calls.
 `ExportSettings` owns landscape/portrait dimensions. Shared region geometry drives
 frame composition and encoder padding; portrait force cards reflow vertically.
 Previews downsample the complete canvas proportionally. SQLite preset/job snapshots
-retain the aspect, with landscape as the backward-compatible default.
+retain the explicit aspect and complete analysis recipe. Incomplete stored formats
+are rejected without migration or destructive cleanup.
 The compact ribbon, corners, capsule and orbit preserve translucent panels and
 opaque data. `rendering.encoding` probes NVIDIA Vulkan/NVENC, streams the selected
 bounded region to FFmpeg and publishes one

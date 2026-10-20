@@ -1,5 +1,7 @@
 """Catalog integrity, safe formatting and reproducible localized overlay labels."""
 
+from ride_forces_analyzer.analysis.recording import source_app_configuration
+
 # cspell:words Messpunkte Fahrtzeit Vorgabe Deutsch Neigung geladen autouse textbbox Rechts Beschleunigung Bremsen
 
 from dataclasses import replace
@@ -24,7 +26,6 @@ from ride_forces_analyzer.storage.export_models import SavedPreset, SavedBatch
 from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.rendering.batches import make_job
 from pathlib import Path
-import json
 import ast
 import re
 
@@ -109,17 +110,24 @@ def test_diagnostic_translation_keeps_original_messages(manta: ExplorerData) -> 
     assert manta.localized_notes == original
 
 
-def test_saved_language_roundtrip_and_old_presets_default_to_english(
+def test_saved_language_roundtrip_is_explicit(
     manta: ExplorerData,
     export_directory: Path,
 ) -> None:
-    chosen = SavedPreset(name="Deutsch", settings=ExportSettings(language="de", layout="orbit"))
-    payload = json.loads(chosen.model_dump_json())
-    del payload["settings"]["language"]
-    assert SavedPreset.model_validate_json(json.dumps(payload)).settings.language == "en"
+    assert manta.analysis is not None
+    chosen = SavedPreset(
+        name="Deutsch",
+        settings=ExportSettings(language="de", layout="orbit"),
+        analysis_configuration=source_app_configuration(),
+        schema_version=1,
+        smoothing_window=11,
+        range_mode="markers",
+    )
     store = ExportStore(export_directory / "languages.sqlite3")
     store.save_preset(chosen)
-    store.save_batch(SavedBatch(name="Mixed", jobs=(make_job(manta, chosen),)))
+    store.save_batch(
+        SavedBatch(name="Mixed", jobs=(make_job(manta.analysis, chosen),), schema_version=1),
+    )
     assert ExportStore(store.path).presets()[0].settings.language == "de"
     assert ExportStore(store.path).batch("Mixed").jobs[0].preset.settings.language == "de"
 
@@ -132,6 +140,7 @@ def test_german_overlay_labels_fit_and_language_is_reproducible(
     aspect: Literal["landscape", "portrait"],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    assert manta.analysis is not None
     settings = ExportSettings(layout=layout, aspect=aspect, language="de")
     calls: list[tuple[str, tuple[int, int], tuple[float, float, float, float]]] = []
     original = ImageDraw.ImageDraw.text
@@ -148,7 +157,7 @@ def test_german_overlay_labels_fit_and_language_is_reproducible(
         original(self, xy, text, **kwargs)
 
     monkeypatch.setattr(ImageDraw.ImageDraw, "text", checked_text)
-    timeline = prepare_export(manta, settings, 3500, 3700)
+    timeline = prepare_export(manta.analysis, settings, 3500, 3700)
     set_language("en")
     first = OverlayRenderer(timeline).render_sample(3600)
     set_language("de")

@@ -2,9 +2,12 @@
 
 <!-- cspell:words Pendrill -->
 
-Airtime context uses the existing smoothed, calibrated vertical channel and
-effective source sample rate. It does
-not change measurements, filters, axis signs or recordings. Flow Ribbon, Corner
+Airtime context defaults to the smoothed, calibrated vertical channel and effective
+source sample rate. `AnalysisConfiguration.context_input` may explicitly select
+projection instead; the prepared context retains that actual input/configuration.
+Version 1 accepts the documented constants, omitted or explicitly unchanged;
+unsupported algorithms, versions or threshold overrides fail the request.
+Context does not change measurements, filters, axis signs or recordings. Flow Ribbon, Corner
 Instruments and Capsule use these labels in their vertical hint, in both aspects
 and languages. Column and G-Orbit retain their existing labels.
 The explorer shows the same prepared labels and shared palette in a 10-pixel
@@ -13,6 +16,12 @@ visible time range and follows zoom/resize. Dark appearance matches the
 export palette; light appearance uses darker equivalents for readable contrast.
 The graph values, smoothing and numeric readouts remain unchanged. Component
 responsibilities belong to the [building block view](../architecture/05_building_block_view.md#video-export-boundary).
+
+Prepared categories are language-independent `VerticalContext` identifiers.
+Presentation translates their labels/colors without reclassification. An excluded
+context stage has a coded reason and no labels; within an available series, invalid
+rows use `UNAVAILABLE`. Raw display makes no context claims and does not change
+the prepared stage's availability.
 
 Domain [airtime events](AIRTIME_EVENTS.md) use separate opt-in rules. Display
 confirmation and hysteresis do not establish their intervals or minimum duration.

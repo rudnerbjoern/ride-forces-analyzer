@@ -21,15 +21,17 @@ scope belongs in the [roadmap](../ROADMAP.md).
   preference, odd 1–51 sample smoothing and range policy. Save as creates a new
   preset; Update selected replaces only that named preset. Loading refreshes
   production previews without modifying the explorer's recording/settings.
-  Older records without an aspect field retain landscape; a single batch can
-  mix portrait and landscape jobs. The job table identifies each job's aspect.
+  A single batch can mix portrait and landscape jobs; the job table identifies
+  each job's aspect.
   Analysis configuration includes the versioned projection, smoothing, independent
   orientation, context, event settings, input dependencies and source-app policy.
-  Older records without an analysis configuration use the version-1 source-app
-  policy and stored smoothing window. A supplied configuration must agree with
-  that window. SQLite stores only this recipe, never source bytes or stage buffers.
-  Older records without an overlay language retain English. Replaying a saved
-  batch uses its stored video language independently of the current UI language.
+  Every preset/job requires an explicit complete analysis configuration, matching
+  its stored smoothing window. Stored settings include every video field, including
+  aspect and language. Missing fields or unsupported records are rejected, without
+  fallback recipes, format migration or destructive database cleanup. Defaults for
+  creating new `ExportSettings` do not fill incomplete stored records.
+  SQLite stores only the recipe, never source bytes or stage buffers. Replaying a
+  saved batch uses its stored video language independently of the current UI language.
 - Jobs retain an absolute source path, original SHA-256, title, concrete inclusive
   source range and a complete preset snapshot. Editing/deleting a library preset
   does not change saved jobs. Original recordings remain read-only and external.
@@ -40,9 +42,11 @@ scope belongs in the [roadmap](../ROADMAP.md).
 - Batches are accessible without an open recording. Run selected or Run ALL
   snapshots the requested definitions and executes them sequentially in a worker.
   Missing/invalid/changed sources fail their job and leave other jobs runnable.
-  Every job imports again and checks the original digest, restores its complete
-  analysis recipe while reusing compatible prepared stages, then binds that
-  snapshot to the production renderer/encoder and exclusive publication. Analysis
+  Every job imports directly through the lossless import service and checks the
+  original digest before analysis. The analysis service prepares the saved complete
+  recipe once; the resulting snapshot binds the production renderer/encoder and
+  exclusive publication. Batch preparation/execution uses source and analysis
+  contracts independently of explorer presentation. Analysis
   uses the complete recording history before the stored interval is applied.
 - Each run creates a unique output directory, numbered batch folders and safe,
   numbered recording/preset filenames. Never overwrite previous outputs. Persist

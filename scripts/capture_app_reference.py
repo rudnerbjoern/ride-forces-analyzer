@@ -88,7 +88,7 @@ def capture_reference(output: Path) -> None:
                 wait_for(application, handle.isExposed)
                 window.open_path(SOURCE)
                 wait_for(application, window.open_action.isEnabled)
-                if window.data is None or window.data.reference is None:
+                if window.data is None or not window.data.calibration_available:
                     raise RuntimeError("Cannot load calibrated Voltron reference")
                 window.reference_toggle.setChecked(True)
                 window.smoothing_slider.setValue(SMOOTHING // 2)

@@ -41,7 +41,8 @@ from .models import (
     UnitLabel,
 )
 from .orientation import orientation_degrees
-from .reference import centered_mean, project_directions
+from .projection import project_directions
+from .smoothing import centered_mean
 
 
 class AnalysisStage(StrEnum):

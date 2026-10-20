@@ -58,19 +58,21 @@ def test_missing_gravity_remains_unavailable(manta: ExplorerData) -> None:
 
 @pytest.mark.parametrize("fps", [24, 25, 30, 50, 60])
 def test_export_uses_real_duration_at_independent_video_rate(manta: ExplorerData, fps: int) -> None:
-    timeline = prepare_export(manta, ExportSettings(fps=fps), 100, 149)
+    assert manta.analysis is not None
+    timeline = prepare_export(manta.analysis, ExportSettings(fps=fps), 100, 149)
     assert timeline.frame_count == fps  # 50 complete source sample intervals = one second.
     assert timeline.sample_position(0) == 100
     assert timeline.sample_position(fps - 1) <= 149
     assert timeline.settings.fps == fps
     with pytest.raises(ValueError):
         timeline.sample_position(fps)
-    single = prepare_export(manta, ExportSettings(fps=fps), 100, 100)
+    single = prepare_export(manta.analysis, ExportSettings(fps=fps), 100, 100)
     assert single.frame_count >= 1 and single.sample_position(0) == 100
 
 
 def test_interpolation_preserves_exact_samples_and_gaps(manta: ExplorerData) -> None:
-    timeline = prepare_export(manta, ExportSettings(fps=60), 100, 149)
+    assert manta.analysis is not None
+    timeline = prepare_export(manta.analysis, ExportSettings(fps=60), 100, 149)
     channel = replace(timeline.channels[0], values=tuple(float(i) for i in range(manta.count)))
     assert timeline.value_at(channel, 100.5) == 100.5
     assert timeline.value_at(channel, 149) == 149
@@ -84,8 +86,8 @@ def test_all_originals_prepare_four_panels_without_source_writes(filename: str) 
     path = REAL_FIXTURE_DIRECTORY / filename
     original, modified = path.read_bytes(), path.stat().st_mtime_ns
     data = load_recording(path)
-    assert isinstance(data, ExplorerData)
-    timeline = prepare_export(data, ExportSettings(), 0, data.count - 1)
+    assert isinstance(data, ExplorerData) and data.analysis is not None
+    timeline = prepare_export(data.analysis, ExportSettings(), 0, data.count - 1)
     assert [channel.name for channel in timeline.channels] == [
         "Vertical",
         "Lateral",
@@ -102,8 +104,9 @@ def test_all_originals_prepare_four_panels_without_source_writes(filename: str) 
 
 @pytest.mark.parametrize("mode", ["transparent", "opaque"])
 def test_4k_canvas_has_single_right_column_and_all_panels(manta: ExplorerData, mode: str) -> None:
+    assert manta.analysis is not None
     settings = ExportSettings(output="transparent" if mode == "transparent" else "opaque")
-    timeline = prepare_export(manta, settings, 3600, 3649)
+    timeline = prepare_export(manta.analysis, settings, 3600, 3649)
     renderer = OverlayRenderer(timeline)
     frame = renderer.render_frame(0)
     assert frame.size == (3840, 2160) and frame.mode == "RGBA"
@@ -133,7 +136,8 @@ def test_cancel_and_existing_destination_preserve_files(
     manta: ExplorerData,
     export_directory: Path,
 ) -> None:
-    timeline = prepare_export(manta, ExportSettings(), 0, 1)
+    assert manta.analysis is not None
+    timeline = prepare_export(manta.analysis, ExportSettings(), 0, 1)
     destination = export_directory / "existing.mov"
     destination.write_bytes(b"owner data")
     with pytest.raises(ValueError, match="already exists"):
@@ -175,6 +179,7 @@ def test_native_encoder_produces_4k_video_with_verified_alpha(
 ) -> None:
     # Cover codec × aspect × backend preference once; pure tests own layout/language geometry.
     # Local integration is explicit; clean CI without FFmpeg still runs all pure contracts.
+    assert manta.analysis is not None
     ffmpeg = Path(".tmp/ffmpeg/bin/ffmpeg.exe").resolve()
     if not ffmpeg.is_file():
         pytest.skip("Native FFmpeg integration requires installed export tools")
@@ -186,7 +191,7 @@ def test_native_encoder_produces_4k_video_with_verified_alpha(
         aspect=aspect,
         language=language,
     )
-    timeline = prepare_export(manta, settings, 3600, 3603)
+    timeline = prepare_export(manta.analysis, settings, 3600, 3603)
     output = export_directory / ("overlay.mov" if mode == "transparent" else "opaque.mp4")
     progress: list[tuple[int, int]] = []
     with patch(
@@ -248,8 +253,9 @@ def test_native_encoder_produces_4k_video_with_verified_alpha(
 
 @pytest.mark.parametrize("mode", ["transparent", "opaque"])
 def test_encoder_commands_preserve_codec_specific_options(manta: ExplorerData, mode: str) -> None:
+    assert manta.analysis is not None
     settings = ExportSettings(output="transparent" if mode == "transparent" else "opaque")
-    timeline = prepare_export(manta, settings, 3600, 3603)
+    timeline = prepare_export(manta.analysis, settings, 3600, 3603)
     cpu = encoder_command(Path("ffmpeg.exe"), timeline, Path("output"))
     gpu = encoder_command(Path("ffmpeg.exe"), timeline, Path("output"), use_gpu=True)
     for command in (cpu, gpu):
@@ -266,10 +272,11 @@ def test_cancel_during_real_encoding_leaves_no_output(
     manta: ExplorerData,
     export_directory: Path,
 ) -> None:
+    assert manta.analysis is not None
     ffmpeg = Path(".tmp/ffmpeg/bin/ffmpeg.exe").resolve()
     if not ffmpeg.is_file():
         pytest.skip("Native FFmpeg integration requires installed export tools")
-    timeline = prepare_export(manta, ExportSettings(prefer_gpu=False), 3600, 3699)
+    timeline = prepare_export(manta.analysis, ExportSettings(prefer_gpu=False), 3600, 3699)
     cancelled = Event()
 
     def cancel_after_frame(current: int, total: int) -> None:
@@ -292,8 +299,9 @@ def test_compact_profiles_preserve_alpha_color_and_force_scales(
     manta: ExplorerData,
     layout: Literal["ribbon", "corners", "capsule"],
 ) -> None:
+    assert manta.analysis is not None
     timeline = prepare_export(
-        manta,
+        manta.analysis,
         ExportSettings(layout=layout, invert_vertical=False, invert_lateral=False),
         3600,
         3699,
@@ -330,9 +338,10 @@ def test_vertical_force_direction_and_manual_override(
     manta: ExplorerData,
     layout: ExportLayout,
 ) -> None:
-    default = prepare_export(manta, ExportSettings(layout=layout), 3600, 3699)
+    assert manta.analysis is not None
+    default = prepare_export(manta.analysis, ExportSettings(layout=layout), 3600, 3699)
     reversed_direction = prepare_export(
-        manta,
+        manta.analysis,
         replace(default.settings, invert_vertical=False),
         3600,
         3699,
@@ -360,7 +369,8 @@ def test_lateral_direction_and_time_follow_layout_axes(
     manta: ExplorerData,
     layout: ExportLayout,
 ) -> None:
-    timeline = prepare_export(manta, ExportSettings(layout=layout), 3600, 3699)
+    assert manta.analysis is not None
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=layout), 3600, 3699)
     channel = timeline.channels[1]
     # Unequal source bounds must still give equal distances from the centered zero.
     channel = replace(channel, low=-2.1, high=1.05)
@@ -397,7 +407,8 @@ def test_longitudinal_acceleration_up_and_braking_down(
     manta: ExplorerData,
     layout: ExportLayout,
 ) -> None:
-    timeline = prepare_export(manta, ExportSettings(layout=layout), 3600, 3601)
+    assert manta.analysis is not None
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=layout), 3600, 3601)
     channel = timeline.channels[2]
     assert not channel.inverted
     renderer = OverlayRenderer(timeline)
@@ -420,7 +431,13 @@ def test_longitudinal_trace_changes_color_at_zero(
     manta: ExplorerData,
     layout: ExportLayout,
 ) -> None:
-    timeline = prepare_export(manta, ExportSettings(layout=layout, window_seconds=2), 3600, 3699)
+    assert manta.analysis is not None
+    timeline = prepare_export(
+        manta.analysis,
+        ExportSettings(layout=layout, window_seconds=2),
+        3600,
+        3699,
+    )
     values = tuple((3649.5 - index) / 49.5 for index in range(manta.count))
     channel = replace(timeline.channels[2], values=values, low=-1.05, high=1.05)
     timeline = replace(timeline, channels=(*timeline.channels[:2], channel, timeline.channels[3]))
@@ -437,7 +454,8 @@ def test_longitudinal_trace_changes_color_at_zero(
 
 @pytest.mark.parametrize("row", [0, 1, 2])
 def test_orbit_signed_arcs_paint_physical_directions(manta: ExplorerData, row: int) -> None:
-    timeline = prepare_export(manta, ExportSettings(layout="orbit"), 3600, 3601)
+    assert manta.analysis is not None
+    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3601)
     for value in (-1.0, 1.0):
         channels = tuple(
             replace(channel, values=(value,) * manta.count, low=-1.05, high=1.05)
@@ -470,7 +488,8 @@ def test_orbit_orientation_keeps_real_degrees() -> None:
 
 
 def test_orbit_peak_hold_shading_and_markers(manta: ExplorerData) -> None:
-    timeline = prepare_export(manta, ExportSettings(layout="orbit"), 3600, 3700)
+    assert manta.analysis is not None
+    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3700)
     values = tuple(0.8 if index == 3600 else 0.0 for index in range(manta.count))
     longitudinal = replace(timeline.channels[2], values=values, low=-1.05, high=1.05)
     renderer = OrbitRenderer(
@@ -492,7 +511,8 @@ def test_orbit_peak_hold_shading_and_markers(manta: ExplorerData) -> None:
 
 
 def test_orbit_lateral_stroke_grows_outward_with_shifted_scale(manta: ExplorerData) -> None:
-    timeline = prepare_export(manta, ExportSettings(layout="orbit"), 3600, 3601)
+    assert manta.analysis is not None
+    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3601)
     lateral = replace(timeline.channels[1], values=(1.0,) * manta.count, low=-1.05, high=1.05)
     renderer = OrbitRenderer(
         replace(timeline, channels=(timeline.channels[0], lateral, *timeline.channels[2:])),
@@ -522,7 +542,8 @@ def test_orbit_force_stroke_thickens_inward(
     angle: int,
     inner: int,
 ) -> None:
-    timeline = prepare_export(manta, ExportSettings(layout="orbit"), 3600, 3601)
+    assert manta.analysis is not None
+    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3601)
     channels = tuple(
         replace(channel, values=(1.0,) * manta.count, low=-1.05, high=1.05)
         if index == row
@@ -546,7 +567,8 @@ def test_orbit_force_stroke_thickens_inward(
 
 
 def test_orbit_orientation_marker_is_omitted_when_unavailable(manta: ExplorerData) -> None:
-    timeline = prepare_export(manta, ExportSettings(layout="orbit"), 3600, 3601)
+    assert manta.analysis is not None
+    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3601)
     for value in (45.0, None):
         orientation = replace(timeline.channels[3], values=(value,) * manta.count)
         renderer = OrbitRenderer(
@@ -561,8 +583,9 @@ def test_orbit_orientation_marker_is_omitted_when_unavailable(manta: ExplorerDat
 
 
 def test_orbit_preserves_negative_forces_and_absent_orientation(manta: ExplorerData) -> None:
+    assert manta.analysis is not None
     start = manta.source.recording.indices.start + 72 * 50
-    timeline = prepare_export(manta, ExportSettings(layout="orbit"), start, start + 1)
+    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), start, start + 1)
     assert timeline.value_at(timeline.channels[0], start) == pytest.approx(-3.44, abs=0.01)
     orientation = replace(timeline.channels[3], values=(None,) * manta.count)
     timeline = replace(timeline, channels=(*timeline.channels[:3], orientation))
@@ -584,8 +607,9 @@ def test_orbit_preserves_negative_forces_and_absent_orientation(manta: ExplorerD
 def test_fractional_frame_rate_keeps_exact_duration_and_source_positions(
     manta: ExplorerData,
 ) -> None:
+    assert manta.analysis is not None
     settings = ExportSettings(fps="60000/1001")
-    timeline = prepare_export(manta, settings, 100, 149)
+    timeline = prepare_export(manta.analysis, settings, 100, 149)
     assert settings.fps_label == "59.94"
     assert timeline.frame_count == 60
     assert timeline.sample_position(1) == pytest.approx(100 + 50 * 1001 / 60000)

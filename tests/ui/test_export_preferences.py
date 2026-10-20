@@ -1,5 +1,7 @@
 """Explicit export defaults persist independently of temporary settings and presets."""
 
+from ride_forces_analyzer.analysis.recording import source_app_configuration
+
 # cspell:words Einstellungen
 
 from pathlib import Path
@@ -59,7 +61,16 @@ def test_settings_save_cancel_and_new_exports_keep_independent_frame_rates(
     assert window.data is not None
     with TemporaryDirectory(dir=".tmp") as temporary:
         store = ExportStore(Path(temporary) / "exports.sqlite3")
-        store.save_preset(SavedPreset(name="Film", settings=ExportSettings(fps=25)))
+        store.save_preset(
+            SavedPreset(
+                name="Film",
+                settings=ExportSettings(fps=25),
+                analysis_configuration=source_app_configuration(),
+                schema_version=1,
+                smoothing_window=11,
+                range_mode="markers",
+            ),
+        )
         export = ExportDialog(window.data, 0, 10, window, store=store)
         assert export.fps.currentText() == "59.94"
         export.fps.setCurrentText("60")

@@ -13,7 +13,6 @@ from typing import Literal, overload
 
 from ride_forces_analyzer.analysis.models import SampleValues
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, RecordingAnalysis
-from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.i18n import Language
 
 FrameRate = int | Literal["60000/1001"]
@@ -171,15 +170,11 @@ class ExportTimeline:
 
 
 def prepare_export(
-    data: RecordingAnalysis | ExplorerData,
+    analysis: RecordingAnalysis,
     settings: ExportSettings,
     first: int,
     last: int,
 ) -> ExportTimeline:
-    # ExplorerData is accepted only as an API boundary adapter, never a calculation source.
-    analysis = data if isinstance(data, RecordingAnalysis) else data.analysis
-    if analysis is None:
-        raise ValueError("Prepared recording analysis is unavailable")
     count = len(analysis.time.source_indices)
     if type(first) is not int or type(last) is not int or not 0 <= first <= last < count:
         raise ValueError("Invalid export sample interval")

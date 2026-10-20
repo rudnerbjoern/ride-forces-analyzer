@@ -6,7 +6,8 @@ import json
 
 import pytest
 
-from ride_forces_analyzer.analysis.reference import reconstruct_app_reference
+from ride_forces_analyzer.analysis.models import SampleValues
+from ride_forces_analyzer.analysis.recording import AvailabilityState, StageAvailability
 from ride_forces_analyzer.explorer import present_recording
 from ride_forces_analyzer.force_extrema import calculate_extrema
 from ride_forces_analyzer.importers import ImportSuccess, import_forces, import_forces_bytes
@@ -69,24 +70,41 @@ def test_invalid_selection_is_rejected(first: int, last: int) -> None:
         calculate_extrema(sample_source(), first, last)
 
 
-def test_reference_binding_shape_finite_and_timestamp_guards() -> None:
+def test_stage_binding_shape_missingness_and_timestamp_guards() -> None:
+    import numpy as np
+
     source = sample_source()
-    reference = reconstruct_app_reference(source, calculation_time=NOW)
-    assert reference is not None
+    view = present_recording(source)
+    assert view.analysis is not None
+    stage = view.analysis.forces.smoothed
+    assert stage.channels is not None
     for bad in (
-        replace(reference, source_sha256="0" * 64),
-        replace(reference, sample_rate=50),
-        replace(reference, channels=((0.0,),) * 3),
-        replace(reference, channels=((float("nan"),) * 5,) * 3),
+        replace(stage, projection=replace(stage.projection, source=sample_source())),
+        replace(
+            stage,
+            projection=replace(
+                stage.projection,
+                time=replace(stage.projection.time, source_indices=(0,)),
+            ),
+        ),
+        replace(stage, availability=StageAvailability(AvailabilityState.UNAVAILABLE)),
+        replace(stage, channels=None),
+        replace(stage, provenance=None),
+        replace(stage, channels=(SampleValues(np.zeros(1)),) * 3),
+        replace(stage, channels=(SampleValues(np.full(5, np.nan), valid_rows=(False,) * 5),) * 3),
     ):
         with pytest.raises(ValueError):
-            calculate_extrema(source, 0, 4, reference=bad)
+            calculate_extrema(source, 0, 4, forces=bad)
     with pytest.raises(ValueError, match="timezone-aware"):
         calculate_extrema(source, 0, 1, calculation_time=datetime(2026, 10, 17))
+    result = calculate_extrema(source, 0, 4, forces=stage, calculation_time=NOW)
+    assert result.quality is stage.quality and result.provenance is stage.provenance
+    assert result.capability == "PROVISIONAL"
+    assert result.source_algorithm == "source-direction-unit-projection-centered-mean-11-v1"
 
 
 def test_rich_extrema_keep_values_times_and_source_details() -> None:
-    view = present_recording(sample_source()).with_reference(True)
+    view = present_recording(sample_source()).with_calibration(True)
     context, rows = view.extrema_text(1, 1, rich=True)
     assert context == view.extrema_text(1, 1)[0]
     result = view.selection_extrema(1, 1)
@@ -99,17 +117,17 @@ def test_rich_extrema_keep_values_times_and_source_details() -> None:
             assert view.replay_text(point.index) in row
             assert f"Sample {point.index}" in row
             assert f"Recording {point.recording_seconds:.3f} s" in row
-    raw_rows = view.with_reference(False).extrema_text(1, 1, rich=True)[1]
+    raw_rows = view.with_calibration(False).extrema_text(1, 1, rich=True)[1]
     assert all(" g" not in row for row in raw_rows)
 
 
 def test_selection_does_not_filter_again_at_edges() -> None:
     source = sample_source()
-    view = present_recording(source).with_reference(True)
-    assert view.reference is not None
+    view = present_recording(source).with_calibration(True)
+    assert view.analysis is not None and view.analysis.forces.smoothed.channels is not None
     result = view.selection_extrema(1, 1)
     assert tuple(axis.minimum.value for axis in result.channels) == tuple(
-        axis[1] for axis in view.reference.channels
+        axis.values[1] for axis in view.analysis.forces.smoothed.channels
     )
     assert result.smoothing_window == 11
     context, rows = view.extrema_text(1, 1)
@@ -117,7 +135,7 @@ def test_selection_does_not_filter_again_at_edges() -> None:
     assert all(" g" in row and "Sample 1" in row and "Recording 0.040 s" in row for row in rows)
     unfiltered = view.with_smoothing(1).selection_extrema(1, 1)
     assert unfiltered.channels != result.channels
-    raw = view.with_reference(False)
+    raw = view.with_calibration(False)
     assert raw.selection_extrema(1, 1).unit == "unknown"
     assert "Unit unknown" in raw.extrema_text(1, 1)[0]
 
@@ -131,7 +149,7 @@ def test_originals_all_modes_windows_and_selections(filename: str) -> None:
     view = present_recording(source)
     for active in (False, True):
         for window in (1, 11, 51):
-            current = view.with_reference(active).with_smoothing(window)
+            current = view.with_calibration(active).with_smoothing(window)
             for first, last in (
                 (0, current.count - 1),
                 (current.count // 2, current.count // 2 + 7),

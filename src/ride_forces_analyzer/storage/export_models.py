@@ -4,59 +4,92 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-from dataclasses import asdict, replace
+from dataclasses import asdict, fields
 from pathlib import Path
-from typing import Literal, Self
+import json
+from typing import Literal, Self, cast
 
-from pydantic import BaseModel, Field, field_serializer, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    ValidationInfo,
+    TypeAdapter,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
-from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, source_app_configuration
+from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, StageConfiguration
+from ride_forces_analyzer.analysis.models import AnalysisProfile
 from ride_forces_analyzer.rendering.model import ExportSettings
 
 RangeMode = Literal["markers", "selection", "entire"]
 
 
+def _require_fields(value: object, required: set[str], label: str) -> None:
+    """Reject incomplete stored objects; typed objects may use new-object defaults."""
+    if isinstance(value, dict):
+        missing = required - cast(dict[str, object], value).keys()
+        if missing:
+            raise ValueError(f"{label} is incomplete; missing fields: {', '.join(sorted(missing))}")
+
+
 class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1]
     name: str = Field(min_length=1, max_length=120)
     settings: ExportSettings
-    smoothing_window: int = Field(default=11, ge=1, le=51)
-    range_mode: RangeMode = "markers"
-    analysis_configuration: AnalysisConfiguration | None = None
+    smoothing_window: int = Field(ge=1, le=51)
+    range_mode: RangeMode
+    analysis_configuration: AnalysisConfiguration
 
-    @property
-    def configuration(self) -> AnalysisConfiguration:
-        """Resolve legacy presets using the version-1 source-app policy and stored window."""
-        if self.analysis_configuration is not None:
-            return self.analysis_configuration
-        configuration = source_app_configuration()
-        return replace(
-            configuration,
-            smoothing=replace(
-                configuration.smoothing,
-                parameters=(("window_samples", self.smoothing_window),),
-            ),
+    @field_validator("settings", mode="before")
+    @classmethod
+    def complete_settings(cls, value: object) -> object:
+        _require_fields(value, {item.name for item in fields(ExportSettings)}, "Export settings")
+        return value
+
+    @field_validator("analysis_configuration", mode="before")
+    @classmethod
+    def complete_configuration(cls, value: object, info: ValidationInfo) -> object:
+        _require_fields(
+            value,
+            {item.name for item in fields(AnalysisConfiguration)},
+            "Analysis recipe",
         )
+        if isinstance(value, dict):
+            recipe = cast(dict[str, object], value)
+            _require_fields(
+                recipe.get("profile"),
+                {item.name for item in fields(AnalysisProfile)},
+                "Analysis profile",
+            )
+            for name in ("projection", "smoothing", "orientation", "context", "events"):
+                _require_fields(
+                    recipe.get(name),
+                    {item.name for item in fields(StageConfiguration)},
+                    "Analysis stage",
+                )
+            if info.mode == "json":
+                return TypeAdapter(AnalysisConfiguration).validate_json(
+                    json.dumps(recipe),
+                    strict=True,
+                )
+            return recipe
+        return value
 
     @model_validator(mode="after")
     def matching_window(self) -> Self:
-        if self.analysis_configuration is not None:
-            window = dict(self.analysis_configuration.smoothing.parameters).get(
-                "window_samples",
-                11,
-            )
-            if type(window) is not int or window != self.smoothing_window:
-                raise ValueError("Analysis configuration and smoothing window must match")
+        window = dict(self.analysis_configuration.smoothing.parameters).get("window_samples", 11)
+        if type(window) is not int or window != self.smoothing_window:
+            raise ValueError("Analysis configuration and smoothing window must match")
         return self
 
     @field_serializer("analysis_configuration")
     def serialize_configuration(
         self,
-        value: AnalysisConfiguration | None,
-    ) -> dict[str, object] | None:
+        value: AnalysisConfiguration,
+    ) -> dict[str, object]:
         """Serialize only the recipe; frozen profile mappings need an explicit JSON view."""
-        if value is None:
-            return None
         profile = value.profile
         return {
             "profile": {
@@ -108,9 +141,9 @@ class BatchJob(BaseModel, frozen=True, strict=True, extra="forbid"):
 
 
 class SavedBatch(BaseModel, frozen=True, strict=True, extra="forbid"):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1]
     name: str = Field(min_length=1, max_length=120)
-    jobs: tuple[BatchJob, ...] = ()
+    jobs: tuple[BatchJob, ...]
 
     @field_validator("name", mode="before")
     @classmethod
@@ -123,9 +156,10 @@ def make_preset(
     settings: ExportSettings,
     smoothing_window: int,
     range_mode: RangeMode,
-    analysis_configuration: AnalysisConfiguration | None = None,
+    analysis_configuration: AnalysisConfiguration,
 ) -> SavedPreset:
     return SavedPreset(
+        schema_version=1,
         name=name,
         settings=settings,
         smoothing_window=smoothing_window,

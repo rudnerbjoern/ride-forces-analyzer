@@ -40,11 +40,11 @@ of the exported template over Onride footage.
   complete instruments with proportional scaling and margins. Preview thumbnails
   and review preserve the full canvas aspect ratio without cropping/stretching.
   Frame composition and encoder padding share the same region geometry.
-  Presets and immutable batch jobs persist the aspect; older version-1 records
-  without the field default to landscape. Mixed-format batches are supported.
+  Presets and immutable batch jobs explicitly persist the aspect.
+  Mixed-format batches are supported.
 - Overlay language selects English/German independently of application language;
-  a new assistant initially follows the UI. Presets/jobs snapshot the choice,
-  with English as the default for older saved records. Production previews and
+  a new assistant initially follows the UI. Presets/jobs explicitly snapshot the
+  choice; incomplete saved settings are rejected. Production previews and
   encoded frames use identical localized labels/number formatting. Replay clocks,
   source values, layout geometry, signs and units stay unchanged. German glyph
   bounds are checked in every profile/aspect. Known layout names are translated;
@@ -52,6 +52,15 @@ of the exported template over Onride footage.
   The assistant uses a scrollable content area with pinned navigation/export
   actions so translated settings remain reachable on smaller/high-DPI desktops.
 
+- Preparation reuses the workspace snapshot when source and configuration match;
+  otherwise `prepare_export_analysis` reuses matching upstream stages and replaces
+  only affected stages. Complete available source history is analyzed before the
+  selected interval is applied. Orientation reads the independent prepared tilt
+  stage and is not recalculated by force smoothing.
+- `prepare_export` and `build_previews` accept a prepared `RecordingAnalysis`,
+  settings and concrete source indices. They do not extract snapshots from explorer
+  presentation objects. Layouts consume only the bound `ExportTimeline`; frame
+  generation and encoding keep their existing separate APIs.
 - The two-step export assistant snapshots the graph cursor and current smoothing
   on opening. All five thumbnails and the large preview use the production RGBA
   renderer at that exact source sample, independent of video fps quantization.
@@ -129,9 +138,9 @@ of the exported template over Onride footage.
   Current-only lateral instruments indicate left/right horizontally; G-Orbit uses
   its upper semicircle, centered at the top. Both
   directions share the larger absolute selected bound, preserving equal scale.
-  This direction is fixed across compact themes/aspects/previews. Legacy lateral
-  inversion settings remain readable in presets but only affect the column display;
-  the assistant disables lateral inversion. Numeric signs remain unchanged.
+  This direction is fixed across compact themes/aspects/previews. Explicit lateral
+  inversion settings affect only the column display; the assistant disables
+  lateral inversion. Numeric signs remain unchanged.
   Axis inversion does not negate source values or change right/left/braking signs.
   Longitudinal acceleration (positive) always appears above zero; deceleration /
   braking (negative) always appears below zero, in histories and current-only

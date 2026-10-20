@@ -19,7 +19,10 @@ intervals without claiming the source app's exact selection convention.
 
 The exact pinned Manta source at window 11 has owner-confirmed projection, units,
 signs, filtering, replay, Combined and Orientation evidence. Other sources/windows
-remain PROVISIONAL. Generic frame APIs retain their stricter independent gates.
+remain PROVISIONAL. Unified derived stages retain PROVISIONAL capability and assumed
+units, including for these owner-confirmed source-app comparisons; this evidence
+does not establish qualified physical forces. Generic frame APIs retain their
+stricter independent gates.
 Missing/invalid directions or unavailable numerical support preserve raw operation
 with a calibration diagnostic. Hashes identify provenance, not feature eligibility.
 
@@ -206,7 +209,7 @@ force levels and GPS presentation using the pinned original recordings. Run the
 maintained checks on native Windows from the repository root:
 
 ```text
-uv run --locked pytest tests/analysis/test_reference.py tests/explorer/test_data.py tests/importers/test_optional.py
+uv run --locked pytest tests/analysis/test_source_app_evidence.py tests/explorer/test_data.py tests/importers/test_optional.py
 ```
 
 Independent screenshots and rounded numeric comparisons establish the scoped

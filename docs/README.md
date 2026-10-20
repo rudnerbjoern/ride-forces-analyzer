@@ -23,14 +23,14 @@ historical acceptance reports are not maintained.
 - Import APIs: [service](development/IMPORT_SERVICE.md), [models](development/CANONICAL_MODELS.md),
   [decoder](development/STRICT_DECODING.md), [motion](development/MOTION_PARSING.md),
   [metadata/GPS](development/OPTIONAL_PARSING.md).
-- [Analysis APIs](development/ANALYSIS_MODELS.md), [scientific source comparisons](validation/APP_REFERENCE.md).
+- [Scientific source comparisons](validation/APP_REFERENCE.md).
 
-## Analysis requirements
+## Unified analysis
 
-- [Unified recording analysis](requirements/UNIFIED_ANALYSIS.md): parallel data model
-  with validated containers, stage preparation, sample views, partial recalculation
-  and subscriptions through the explorer worker/UI adapter. Exports, previews and
-  batches bind shared snapshots. Separate opt-in airtime events are implemented.
+- [Unified recording analysis API](development/ANALYSIS_MODELS.md#unified-recording-analysis):
+  immutable snapshots, shared stages, sample views and the class diagram.
+- [Analysis runtime](architecture/06_runtime_view.md#explorer-analysis-delivery):
+  service subscriptions, worker/UI delivery and the notification sequence.
 
 ## Development and publication
 

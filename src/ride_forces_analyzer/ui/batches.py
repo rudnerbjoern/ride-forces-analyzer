@@ -63,6 +63,7 @@ class BuildWorker(QRunnable):
             result = SavedBatch(
                 name=self.name,
                 jobs=build_jobs(self.paths, self.presets, self.mode),
+                schema_version=1,
             )
         except Exception as error:
             self.signals.failed.emit(str(error))

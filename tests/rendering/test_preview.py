@@ -16,12 +16,13 @@ from ride_forces_analyzer.rendering.preview import build_previews
 
 @pytest.mark.parametrize("layout", [profile[0] for profile in PROFILES])
 def test_portrait_contains_complete_region(manta: ExplorerData, layout: str) -> None:
+    assert manta.analysis is not None
     from typing import cast
     from ride_forces_analyzer.rendering.model import ExportLayout
     from ride_forces_analyzer.rendering.layouts import export_region
 
     settings = ExportSettings(layout=cast(ExportLayout, layout), aspect="portrait")
-    renderer = OverlayRenderer(prepare_export(manta, settings, 3500, 3700))
+    renderer = OverlayRenderer(prepare_export(manta.analysis, settings, 3500, 3700))
     frame = renderer.render_sample(3600)
     x, y, width, height = export_region(settings)
     assert x > 0 and y > 0 and x + width < frame.width and y + height < frame.height
@@ -53,6 +54,7 @@ def test_previews_match_production_at_exact_graph_sample(
     manta: ExplorerData,
     aspect: Literal["landscape", "portrait"],
 ) -> None:
+    assert manta.analysis is not None
     sample = manta.source.recording.indices.start + 72 * 50 + 1
     settings = ExportSettings(
         layout="orbit",
@@ -62,10 +64,10 @@ def test_previews_match_production_at_exact_graph_sample(
         invert_lateral=False,
     )
     first, last = sample - 101, sample + 100
-    result = build_previews(manta, settings, first, last, sample, "dark")
+    result = build_previews(manta.analysis, settings, first, last, sample, "dark")
     assert result.sample == sample and not result.outside_range
     assert tuple((p.layout, p.title) for p in result.profiles) == PROFILES
-    timeline = prepare_export(manta, settings, first, last)
+    timeline = prepare_export(manta.analysis, settings, first, last)
     for profile in result.profiles:
         chosen = (
             settings
@@ -77,7 +79,9 @@ def test_previews_match_production_at_exact_graph_sample(
                 invert_lateral=profile.layout == "column",
             )
         )
-        actual = OverlayRenderer(prepare_export(manta, chosen, first, last)).render_sample(sample)
+        actual = OverlayRenderer(prepare_export(manta.analysis, chosen, first, last)).render_sample(
+            sample,
+        )
         expected = (
             Image.alpha_composite(Image.new("RGBA", actual.size, "#162533"), actual)
             .resize((540, 960) if aspect == "portrait" else (960, 540), Image.Resampling.LANCZOS)
@@ -94,6 +98,7 @@ def test_preview_sample_is_independent_of_video_rate(
     fps: int | Literal["60000/1001"],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    assert manta.analysis is not None
     positions: list[float] = []
 
     def record_position(self: OverlayRenderer, position: float) -> Image.Image:
@@ -102,7 +107,13 @@ def test_preview_sample_is_independent_of_video_rate(
 
     monkeypatch.setattr(OverlayRenderer, "render_sample", record_position)
     sample = manta.source.recording.indices.start + 72 * 50 + 1
-    result = build_previews(manta, ExportSettings(fps=fps), sample - 101, sample + 100, sample)
+    result = build_previews(
+        manta.analysis,
+        ExportSettings(fps=fps),
+        sample - 101,
+        sample + 100,
+        sample,
+    )
     assert result.sample == sample
     assert positions == [sample] * len(PROFILES)
 
@@ -113,16 +124,17 @@ def test_outside_range_keeps_graph_sample_and_smoothing(
     mode: Literal["transparent", "opaque"],
 ) -> None:
     data = manta.with_smoothing(3)
+    assert data.analysis is not None
     sample = data.source.recording.indices.start + 72 * 50
     settings = ExportSettings(output=mode)
     original = data.source.source_sha256
-    result = build_previews(data, settings, 0, 100, sample, "light")
+    result = build_previews(data.analysis, settings, 0, 100, sample, "light")
     assert result.outside_range and result.sample == sample
-    assert data.source.source_sha256 == original and data.reference is not None
-    assert data.reference.smoothing_window == 3
+    assert data.source.source_sha256 == original and data.calibration_available
+    assert data.smoothing_window == 3
     assert all(
         p.image.getpixel((0, 0)) == ((0, 0, 0) if mode == "opaque" else (228, 234, 240))
         for p in result.profiles
     )
     with pytest.raises(ValueError, match="outside"):
-        build_previews(data, settings, 0, 100, -1)
+        build_previews(data.analysis, settings, 0, 100, -1)

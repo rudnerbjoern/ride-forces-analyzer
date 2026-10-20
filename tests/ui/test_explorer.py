@@ -137,7 +137,7 @@ def test_vertical_context_bar_preserves_curve_and_tracks_viewport(
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
     wait_until(window.open_action.isEnabled)
     data = window.data
-    assert data is not None and data.reference_enabled
+    assert data is not None and data.calibrated_enabled
     original = tuple(data.plotted_channels[0])
     for appearance in (0, 1):
         window.set_appearance(appearance)
@@ -220,7 +220,7 @@ def test_open_chart_navigation_selection_and_integrity(
     assert "Train:" not in window.ride_metadata.text()
     assert "Row:" in window.ride_metadata.text()
     assert window.reference_toggle.isEnabled() and window.reference_toggle.isChecked()
-    assert data.reference_enabled
+    assert data.calibrated_enabled
     assert data.count == len(data.source.recording.motion.acceleration)
     for series, values in zip(window.series, data.plotted_channels, strict=True):
         assert series.count() == data.count
@@ -265,7 +265,7 @@ def test_open_chart_navigation_selection_and_integrity(
     assert not window.series[1].isVisible()
     window.reset_button.click()
     assert (window.axis_x.min(), window.axis_x.max()) == data.default_time_range
-    assert ("G-force (g)" if data.reference_enabled else "unknown") in window.axis_y.titleText()
+    assert ("G-force (g)" if data.calibrated_enabled else "unknown") in window.axis_y.titleText()
     window.notes_button.click()
     assert window.notes.isVisible()
     if filename.startswith("IronGwazi"):
@@ -614,7 +614,7 @@ def test_app_reference_toggle_for_manta_preserves_raw_values_selection_and_time(
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
     wait_until(window.open_action.isEnabled)
     data = window.data
-    assert data is not None and data.reference is not None and data.reference_enabled
+    assert data is not None and data.calibration_available and data.calibrated_enabled
     assert [line.name() for line in window.series] == [
         "Vertical",
         "Lateral (+ right / − left)",
@@ -644,7 +644,9 @@ def test_app_reference_toggle_for_manta_preserves_raw_values_selection_and_time(
         window.last.value(),
     ) == before
     window.reference_toggle.setChecked(True)
-    assert tuple(point.y() for point in window.series[0].points()) == data.reference.channels[0]
+    assert tuple(point.y() for point in window.series[0].points()) == tuple(
+        data.plotted_channels[0],
+    )
     assert window.data is not None and window.data.channels == data.channels
 
 
@@ -799,8 +801,8 @@ def test_smoothing_slider_preserves_source_time_and_selection(
     window.open_path(path)
     wait_until(window.open_action.isEnabled)
     data = window.data
-    assert data is not None and data.reference is not None
-    default = data.reference.channels
+    assert data is not None and data.calibration_available
+    default = tuple(tuple(axis) for axis in data.plotted_channels)
     before = (
         window.axis_x.min(),
         window.axis_x.max(),
@@ -833,12 +835,12 @@ def test_smoothing_slider_preserves_source_time_and_selection(
         )
         assert window.smoothing_slider.isSliderDown()
         assert window.smoothing_slider.value() != 5
-        assert window.data is not None and window.data.reference is not None
-        assert window.data.reference.smoothing_window == window.smoothing_slider.value() * 2 + 1
+        assert window.data is not None and window.data.calibration_available
+        assert window.data.smoothing_window == window.smoothing_slider.value() * 2 + 1
         assert tuple(point.y() for point in window.series[0].points()) == tuple(
             window.data.plotted_channels[0],
         )
-        assert f"{window.data.reference.smoothing_window} samples" in window.smoothing_label.text()
+        assert f"{window.data.smoothing_window} samples" in window.smoothing_label.text()
         visible = window.data.select_visible(window.axis_x.min(), window.axis_x.max())
         extrema_context, extrema_rows = window.data.extrema_text(
             visible.first,
@@ -854,10 +856,11 @@ def test_smoothing_slider_preserves_source_time_and_selection(
     wait_until(
         lambda: window.analysis_controller is not None and not window.analysis_controller.pending,
     )
-    assert window.data is not None and window.data.reference is not None
-    assert window.data.reference.smoothing_window == 1
-    assert (
-        tuple(tuple(axis) for axis in window.data.plotted_channels) == data.reference.raw_projection
+    assert window.data is not None and window.data.calibration_available
+    assert window.data.smoothing_window == 1
+    assert data.analysis is not None and data.analysis.forces.projected.channels is not None
+    assert tuple(tuple(axis) for axis in window.data.plotted_channels) == tuple(
+        tuple(axis.values) for axis in data.analysis.forces.projected.channels
     )
     assert "Smoothing off" in window.smoothing_label.text()
     assert window.data.channels == data.channels
@@ -868,7 +871,7 @@ def test_smoothing_slider_preserves_source_time_and_selection(
                 window.analysis_controller is not None and not window.analysis_controller.pending
             ),
         )
-        assert window.data.reference.smoothing_window == position * 2 + 1
+        assert window.data.smoothing_window == position * 2 + 1
         assert (
             window.axis_x.min(),
             window.axis_x.max(),
@@ -907,7 +910,7 @@ def test_smoothing_slider_preserves_source_time_and_selection(
             ),
         )
         assert window.smoothing_slider.value() == 5
-        assert window.data.reference.smoothing_window == 11
+        assert window.data.smoothing_window == 11
         assert tuple(tuple(axis) for axis in window.data.plotted_channels) == default
         assert "11 samples" in window.smoothing_label.text()
         assert (
@@ -925,10 +928,10 @@ def test_smoothing_slider_preserves_source_time_and_selection(
     assert not window.smoothing_slider.isEnabled()
     assert window.data.plotted_channels == data.channels
     window.reference_toggle.setChecked(True)
-    assert window.smoothing_slider.isEnabled() and window.data.reference.smoothing_window == 5
+    assert window.smoothing_slider.isEnabled() and window.data.smoothing_window == 5
     window.open_path(path)
     wait_until(window.open_action.isEnabled)
-    assert window.smoothing_slider.value() == 5 and window.data.reference.smoothing_window == 11
+    assert window.smoothing_slider.value() == 5 and window.data.smoothing_window == 11
 
 
 @pytest.mark.parametrize("language", [0, 1], ids=["english", "german"])
@@ -1013,12 +1016,10 @@ def test_focus_workspace_layout_and_current_value_cards(
         assert [label.text() for label in window.value_labels] == [
             card[1] for card in window.data.sample_cards(index)
         ]
-        context = window.data.airtime_context
+        context = window.data.vertical_context_label(index)
         assert context is not None
         assert window.value_hints[0].text() == window.data.sample_cards(index)[0][2]
-        assert window.theme.vertical_context_colors[context.at(index)] in (
-            window.value_hints[0].styleSheet()
-        )
+        assert window.theme.vertical_context_colors[context] in (window.value_hints[0].styleSheet())
     window.reference_toggle.setChecked(False)
     assert [label.text() for label in window.value_names] == ["x", "y", "z"]
     assert all("unknown" in label.text() for label in window.value_hints)
