@@ -89,6 +89,17 @@ services are documented only when designed.
 presentation, retaining confirmed normalized-direction contracts, source hash, timestamp,
 library version and raw/filtered channels. It leaves strict frame APIs unchanged.
 
+`analysis.recording` contains the parallel unified recording-analysis data-model
+skeleton, reusing existing contracts. Explicit snapshot validation checks source,
+time, availability, payloads and shared dependencies without numerical calculation.
+Preparation, sample access and reconfiguration still raise `NotImplementedError`;
+numerical processing, subscriptions, cache and integration remain planned under
+the [requirements](../requirements/UNIFIED_ANALYSIS.md).
+Current explorer and export consumers do not use these containers.
+`analysis.service` adds an explicit `NotImplementedError` API skeleton for state
+queries, subscriber registration/removal, analysis requests and service cleanup.
+It introduces no running workers, callback dispatch or Qt/storage dependency.
+
 `gps_overview` prepares immutable approximate spatial reference segments from
 independent source GPS slots, preserving gaps and source ownership. `ui.gps`
 renders these in a separate offline dialog, enabled only for usable positions.

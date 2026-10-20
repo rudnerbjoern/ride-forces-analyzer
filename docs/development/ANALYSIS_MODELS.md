@@ -31,6 +31,55 @@ Schema version `1` is the initial contract identifier, not a serialization forma
 Any later persistence/serialization adapter must document compatible schema and
 algorithm changes rather than treating every version string as interoperable.
 
+## Proposed recording-analysis containers
+
+[`analysis.recording`](../../src/ride_forces_analyzer/analysis/recording.py) exposes
+the parallel [unified recording model](../requirements/UNIFIED_ANALYSIS.md).
+Frozen data containers cover configuration, shared force stages, independent
+orientation, sample context, event evaluation, sample views and request/notification
+payloads. They reuse the existing source, time, immutable sample buffers, unit,
+quality and provenance types. Import them explicitly from `analysis.recording`;
+the existing package exports and runtime consumers remain unchanged.
+
+Unlike the validated constructors above, these containers store references without
+normalizing or validating them. Call `RecordingAnalysis.validate()` explicitly to
+check types, immutable collections, availability/payload/reason combinations,
+source hashes, calculation provenance, configuration and stage dependencies.
+The full force axis must preserve source indices/order and scalar buffer lengths;
+rate value/provenance and replay origin must match the source. Missing measurements
+remain distinct from valid zero. Validation returns None or raises TypeError for
+incompatible types and ValueError for inconsistent field values/relationships.
+It performs no I/O, copies no arrays and does not certify scientific accuracy.
+`sample`, `with_configuration`, `with_smoothing` and
+`prepare_recording_analysis` still raise `NotImplementedError`.
+No calculation, subscription service, database cache or UI/export integration is
+implemented. Focused tests cover container contracts and explicit stubs; future
+sample and recalculation tests are strict expected failures restricted
+to `NotImplementedError` until those operations are implemented.
+
+[`test_taron_matches_current_analysis_for_every_sample`](../../tests/analysis/test_taron_analysis_parity.py)
+is one migration-parity test over the complete pinned Taron recording. It compares source metadata,
+sample/time correspondence, raw and projected forces, smoothed forces, orientation
+and vertical context against the existing processing paths, using exact equality.
+New results must come from the new preparation/sample APIs, not reference-data
+injection. The test is a strict expected failure only for `NotImplementedError`;
+assertion failures remain failures. Remove its marker once the implementation
+passes. This comparison neither adds GPS/sample alignment nor qualifies new
+physical or event-detection semantics.
+
+[`analysis.service`](../../src/ride_forces_analyzer/analysis/service.py) supplies
+the `AnalysisService` API skeleton: `get_state`, `subscribe`, `unsubscribe`,
+`request_analysis`, `request_configuration`, `request_smoothing` and `close`.
+Every method raises `NotImplementedError`. Typed `AnalysisSubscriber` callbacks
+accept `AnalysisDelivery` (initial state or later notification), and
+`AnalysisSubscription` is the immutable registration handle. There is no actual
+registration, state management or background work. Service tests cover these
+explicit stubs; idle-state and initial-delivery behavior remain strict expected
+failures until implemented.
+The [focused coverage workflow](CODE_QUALITY.md#recording-model-and-service-coverage)
+reports both modules and enforces a minimum; placeholder execution does not
+establish implemented behavior.
+
 ## Raw values and qualified quantities
 
 `AnalysisProfile()` is raw_device_only, with no processing configuration or
