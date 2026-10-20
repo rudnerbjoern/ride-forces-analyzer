@@ -31,8 +31,6 @@ historical acceptance reports are not maintained.
   immutable snapshots, shared stages, sample views and the class diagram.
 - [Analysis runtime](architecture/06_runtime_view.md#explorer-analysis-delivery):
   service subscriptions, worker/UI delivery and the notification sequence.
-- [Cleanup requirements](requirements/UNIFIED_ANALYSIS.md): final validation and
-  removal of the requirements document after its maintained destinations are verified.
 
 ## Development and publication
 
