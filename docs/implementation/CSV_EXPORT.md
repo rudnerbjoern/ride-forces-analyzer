@@ -1,11 +1,11 @@
 # CSV sample export
 
 [User guide](../user/CSV_EXPORT.md). Component ownership belongs to
-[arc42 chapter 05](../architecture/05_building_block_view.md#csv-export-boundary).
+[arc42 chapter 05](../architecture/05_building_block_view.md#sample-data-export-boundary).
 
 ## API and lifecycle
 
-`ride_forces_analyzer.csv_export.export_csv(analysis, path, first, last, *, cancelled, progress)`
+`ride_forces_analyzer.csv_export.export_csv(analysis, path, first, last, *, overwrite=False, cancelled, progress)`
 accepts a bound `RecordingAnalysis`, a `.csv` destination and inclusive source indices.
 It returns the number of written data rows. The serializer validates the snapshot,
 reads `analysis.sample(index)` and never prepares or interpolates measurements.
@@ -16,15 +16,20 @@ snapshot's existing configuration, regardless of workspace display mode or later
   English headers/identifiers. Output is independent of UI language.
 - Raw-capable snapshots are supported. Missing derived stages/rows produce empty
   fields; valid zero is retained. No artificial values, GPS alignment or unit qualification.
-- Exclusive destination creation; existing files are never overwritten. Cancellation
-  and writing/callback failures remove only the new incomplete file.
+- Exclusive destination creation by default. Explicit `overwrite=True` writes to a
+  temporary sibling directory and atomically replaces the destination only after
+  successful writing/close. Cancellation and writing/callback/replacement failures
+  remove temporary output and preserve the existing destination.
 - Progress reports written row counts every 250 samples and at the final row.
   Cancellation is checked before writing, between samples and before completion.
 - Invalid indices/suffix/snapshots raise `TypeError` or `ValueError`; existing
-  destinations raise `FileExistsError`; filesystem errors propagate as `OSError`.
+  destinations without overwrite permission raise `FileExistsError`; filesystem
+  errors propagate as `OSError`.
   `CsvExportCancelled` identifies cooperative cancellation.
 - The explorer captures its snapshot and From/To interval before the save dialog,
-  pauses playback and starts a Qt worker. Progress/cancellation and completion/errors
+  pauses playback and asks for replacement confirmation after completing the suffix.
+  Declining/closing the question starts no worker; No is the default answer.
+  A confirmed export starts a Qt worker. Progress/cancellation and completion/errors
   return on the UI thread. Closing the main window requests cancellation.
 - Successful completion remembers the existing shared export directory. Failure
   or cancellation preserves it. No preset/batch format changes or new dependencies.

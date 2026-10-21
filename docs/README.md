@@ -22,6 +22,8 @@ historical acceptance reports are not maintained.
   preview, save a video and place it above your footage.
 - [Export sample data as CSV](user/CSV_EXPORT.md): save a selected interval for
   spreadsheets or other analysis tools.
+- [Export sample data as JSON](user/JSON_EXPORT.md): app-shaped arrays with
+  additional analysis data, or structured Analyzer JSON with shared time/quality.
 - [Choose an export layout](user/EXPORT_LAYOUTS.md): compare placement, read the
   instruments and check landscape/portrait previews.
 - [Presets and batches](user/EXPORT_BATCHES.md): reuse settings, queue recordings
@@ -32,6 +34,7 @@ historical acceptance reports are not maintained.
 - [Explorer and GPS](implementation/RAW_EXPLORER.md).
 - [Video export contract](implementation/VIDEO_EXPORT.md), [saved presets and batches](implementation/EXPORT_BATCHES.md).
 - [CSV sample export contract](implementation/CSV_EXPORT.md).
+- [JSON sample export contract](implementation/JSON_EXPORT.md).
 - [All export themes](EXPORT_THEMES.md), [layout extension API](development/EXPORT_LAYOUTS.md),
   [Manta video with the G-Orbit overlay](https://youtu.be/tsRzD416voU).
 - [Provisional airtime context](implementation/AIRTIME.md) and

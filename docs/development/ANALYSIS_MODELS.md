@@ -242,7 +242,7 @@ monotonic request revisions and service-specific subscription handles.
 | Context label/strip                            | Format prepared categories without reclassification                                                                                           |
 | Extrema                                        | Read shared smoothed buffers with retained quality/provenance                                                                                 |
 | `prepare_export` / `build_previews`            | Require `RecordingAnalysis`, not explorer objects; UI captures snapshot before scheduling work                                                |
-| `csv_export.export_csv`                        | Require bound `RecordingAnalysis`; serialize sample views, missingness and quality over an inclusive range                                    |
+| `csv_export` / `json_export`                   | Require bound `RecordingAnalysis`; serialize sample views, missingness and quality over an inclusive range                                    |
 | `ExportTimeline` / `ExportValues`              | Retain bound snapshot / expose shared scalar buffers as read-only sequences, with `None` for invalid rows                                     |
 | `prepare_export_analysis`                      | Equal configuration returns the identical snapshot; otherwise partial recalculation                                                           |
 | Presets/jobs                                   | Require full versioned `analysis_configuration`, matching window and all serialized aspect/language/dependency fields; no source bytes/arrays |

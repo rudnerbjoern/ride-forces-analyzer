@@ -9,6 +9,16 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:disable
 
 GERMAN: dict[str, str] = {
+    "Export Analyzer JSON…": "Analyzer-JSON exportieren…",
+    "Export Analyzer JSON": "Analyzer-JSON exportieren",
+    "Replace existing file?": "Vorhandene Datei ersetzen?",
+    "The file already exists:\n{0}\n\nDo you want to replace it?": "Die Datei existiert bereits:\n{0}\n\nMöchtest du sie ersetzen?",
+    "Export JSON…": "JSON exportieren…",
+    "Data export": "Datenexport",
+    "Export JSON": "JSON exportieren",
+    "JSON files (*.json)": "JSON-Dateien (*.json)",
+    "JSON export failed": "JSON-Export fehlgeschlagen",
+    "JSON saved to {0}": "JSON gespeichert unter {0}",
     "Export CSV…": "CSV exportieren…",
     "Export CSV": "CSV exportieren",
     "CSV files (*.csv)": "CSV-Dateien (*.csv)",
