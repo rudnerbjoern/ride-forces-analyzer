@@ -15,7 +15,7 @@
     "test:dependencies": "node --test tests/dependencies/security.test.mjs tests/dependencies/dependabot.test.mjs tests/dependencies/labels.test.mjs"
   },
   "devDependencies": {
-    "markdown-it": "15.0.2",
+    "markdown-it": "15.0.3",
     "markdownlint-cli2": "0.23.3",
     "pyright": "1.1.414",
     "cspell": "10.3.6"
