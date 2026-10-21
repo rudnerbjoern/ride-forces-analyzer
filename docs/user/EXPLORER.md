@@ -1,0 +1,91 @@
+# Explore a recording
+
+Open a `.forces` file with **Open recording**, or **Ctrl+O** (**⌘O** on macOS).
+The application reads the recording without changing the original file.
+The instructions below use the English interface labels.
+
+![Recording explorer with force curves, airtime strip and inspector](../images/workspace-dark.png)
+
+## Find a moment
+
+- Left-click inside the chart to select the nearest sample. The cursor, sample
+  control and value cards move to that moment.
+- Use the slider or **Sample** number below the chart to move through the recording.
+- Drag across the chart to zoom into a time interval. The mouse wheel zooms
+  around the pointer. **Reset view** returns to the recording's start/end markers,
+  or the available recording boundaries when markers are absent.
+- Show or hide individual force curves using their controls.
+
+Zoom changes the visible time interval; the force scale stays fixed. A click
+selects a moment, while a drag changes the view.
+
+## Choose an interval
+
+The inspector's **SELECTION** section contains **From sample** and **To sample**.
+Both endpoints are included. Editing them highlights that interval in the chart.
+Holding an up/down arrow repeats the change and gradually increases the step;
+releasing it returns to single-sample steps.
+
+- **Zoom to selection** makes the selected interval visible.
+- **Select visible range** copies the current chart interval into the selection.
+- Exporting **Current selection** uses these sample fields.
+
+The selected sample, selection interval and visible chart interval are separate.
+Zooming alone does not change the export selection.
+
+## Read the inspector
+
+**VISIBLE RANGE EXTREMA** shows each channel's minimum and maximum within the
+currently visible chart interval, including hidden curves. Zooming changes these
+results; moving only the cursor or editing From/To does not. Results use the
+active display mode and smoothing.
+
+**RECORDING** shows available ride, park, train, row and seat information. Missing
+information is omitted. **Technical details** provides source information,
+processing settings and current-sample details; **Import notes** opens diagnostic
+information when you need to understand unavailable data.
+
+Replay time is relative to the recording's start marker. At an integer sample
+rate, `MM:SS.ff` ends with a sample counter, not hundredths: at 50 samples per
+second, `01:31.47` means 91.94 seconds. Recording time counts from the file's
+first sample, so it can differ from replay time.
+
+## Adjust smoothing and display
+
+**Smoothing** averages nearby samples to reduce fluctuations. **1 sample** turns
+it off; the default is **11 samples**. Larger settings can reduce short peaks
+and change the airtime context. Right-click the slider to restore the default.
+Your original measurements remain unchanged.
+
+**Calibrated forces** shows directional forces when usable calibration directions
+exist. Otherwise, raw x/y/z values remain available, with unknown units and no
+left/right or airtime interpretation. See [forces and airtime](FORCES_AND_AIRTIME.md).
+
+Use **Inspector** to access the side panel; in narrow windows it switches between
+the chart and inspector views. Under **Settings → Application**, choose English
+or German and Dark, Light or System appearance. **Save** applies and remembers
+the choices; **Cancel** keeps the previous settings. Changing appearance or
+language preserves your current recording, selection, zoom and smoothing.
+
+## Open the GPS overview
+
+When usable positions exist, open **GPS overview** for an offline route view. It has
+no background map. Gaps in the coordinates can break the route into sections.
+GPS is independent of force samples and does not move the chart selection.
+It provides approximate location context, not a force or speed measurement.
+
+## Common questions
+
+- **Why are calibration or export unavailable?** The file may lack usable
+  calibration directions. Check **Import notes**; raw values can still be viewed.
+- **Why do extrema stay unchanged?** Change the visible chart interval. Selecting
+  another sample or changing From/To alone does not change the extrema interval.
+- **Why is the airtime strip hidden?** It requires calibrated vertical data and
+  follows vertical-channel visibility. See the [airtime guide](FORCES_AND_AIRTIME.md).
+- **Why is GPS unavailable?** The recording needs usable coordinates. Positions
+  are not reconstructed from forces or filenames.
+- **Opening failed:** check the message and import notes. The last usable
+  recording remains available; an error does not overwrite the original file.
+
+[Installation](INSTALLATION.md) · [Video export](VIDEO_EXPORT.md) ·
+[Technical explorer reference](../implementation/RAW_EXPLORER.md)

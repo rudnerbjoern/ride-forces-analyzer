@@ -3,7 +3,7 @@
 [![CI](https://github.com/rudnerbjoern/ride-forces-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/rudnerbjoern/ride-forces-analyzer/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/rudnerbjoern/ride-forces-analyzer?include_prereleases)](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
-[![Platforms: Windows, Linux and macOS](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-blue)](docs/development/RELEASE.md)
+[![Platforms: Windows, Linux and macOS](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-blue)](docs/user/INSTALLATION.md)
 [![GitHub issues](https://img.shields.io/github/issues/rudnerbjoern/ride-forces-analyzer)](https://github.com/rudnerbjoern/ride-forces-analyzer/issues)
 
 **Relive the ride. Explore the forces. Add them to your videos.**
@@ -15,7 +15,7 @@ interactive charts and 4K video overlays on Windows, Linux and macOS.
 
 **[Download](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)**
 · **[Watch the Manta demo](https://youtu.be/tsRzD416voU)**
-· **[Compare overlay layouts](docs/EXPORT_THEMES.md)**
+· **[User guides](docs/README.md#for-users)**
 
 Free and open source · Offline processing · English and German · Light and dark themes
 
@@ -34,38 +34,35 @@ separately for Apple Silicon and Intel.
 Open [GitHub Releases](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)
 and choose the download for your system:
 
-| Download                    | Best for                                                                                             |
-| :-------------------------- | :--------------------------------------------------------------------------------------------------- |
-| **Windows Complete ZIP**    | Exploring rides and exporting videos, with FFmpeg included. Extract the ZIP and launch the EXE.      |
-| **Windows Standard ZIP**    | Using your own FFmpeg installation. Includes the application and license notices.                    |
-| **Windows EXE**             | Launching the application directly. Select an existing FFmpeg when you want to export video.         |
-| **Linux x64 tar.gz**        | Extract and run `./Ride-Forces-Analyzer` inside the extracted directory. Keep `_internal` beside it. |
-| **macOS Apple Silicon ZIP** | Extract and move the app to Applications on an Apple Silicon Mac.                                    |
-| **macOS Intel ZIP**         | Extract and move the app to Applications on an Intel Mac.                                            |
+| Download                    | How to start                                             |
+| :-------------------------- | :------------------------------------------------------- |
+| **Windows Complete ZIP**    | Recommended for Windows: extract and launch the EXE.     |
+| **Linux x64 tar.gz**        | Follow the Linux setup steps, then extract and launch.   |
+| **macOS Apple Silicon ZIP** | Extract and move the app to Applications.                |
+| **macOS Intel ZIP**         | Extract and move the app to Applications.                |
 
-These downloads need no Python installation and have no installer.
-The **0.5.0 preview** includes all four native targets. Windows binaries are unsigned;
-macOS apps are ad-hoc signed without notarization and may require **Open Anyway**
-in Privacy & Security. Clean-machine qualification remains open. Checksums and
-third-party notices accompany the release.
+No Python installation is needed. The Windows Complete ZIP includes FFmpeg for
+video export; Linux and macOS need it installed separately. Windows EXE and
+Standard ZIP downloads are also available if you prefer to use your own FFmpeg.
 
-Linux and macOS require a separately installed FFmpeg for video export, such as
-`sudo apt install ffmpeg` on Ubuntu or `brew install ffmpeg` on macOS. Choose it
-with **Browse** if it is not found automatically. See the
-[release guide](docs/development/RELEASE.md) for runtime dependencies, verification
-and packaging limits. Development continues on Windows.
+This is a preview release. Windows and macOS may display a security warning
+when you first open the app.
+Follow the [installation guide](docs/user/INSTALLATION.md) for download
+verification, Linux prerequisites and first-launch instructions.
 
 ### 2. Open your ride
 
 Click **Open recording** or press **Ctrl+O** (**⌘O** on macOS) and choose your `.forces` file.
 Click a point in the chart to inspect that sample, move through the ride with the
 slider, or zoom into a section with the mouse wheel or by dragging across the plot.
+See [Explore a recording](docs/user/EXPLORER.md) for navigation and selection.
 
 ### 3. Create an overlay
 
 Click **Export 4K…**, choose a layout and check the preview. Export a transparent
 MOV for your video editor or an MP4 with a solid background. Align the overlay
 with your footage in the editor; automatic video synchronization is not available yet.
+The [video export guide](docs/user/VIDEO_EXPORT.md) takes you through each step.
 
 Your recordings stay on your computer. Opening, analyzing and exporting work
 offline after setup and leave the original files unchanged.
@@ -135,7 +132,8 @@ to see an exported overlay in use.
 | **G-Orbit**            | Circular gauges with signed forces and peak indicators. |
 | **Four-panel column**  | Stacked force and orientation plots.                    |
 
-[Compare larger previews of every layout](docs/EXPORT_THEMES.md).
+[Choose a layout](docs/user/EXPORT_LAYOUTS.md) or
+[compare larger previews](docs/EXPORT_THEMES.md).
 
 Export themes use yellow for lateral data, green for acceleration and red for
 braking. Flow Ribbon, Corner Instruments and Telemetry Capsule also show the
@@ -157,14 +155,15 @@ selected section. Choose the overlay language independently of the application.
 - **Saved presets and batches:** reuse settings or run several ride/preset
   combinations sequentially. Completed videos survive cancellation of the queue.
 
-For footage recorded at **59.94 fps**, select the matching export rate
-(`60000/1001`) and use the same frame rate in your editing timeline.
+Match the export frame rate to your footage and editing timeline, including
+**59.94 fps** when that is how your footage was recorded.
 Use **Settings → Export** to save your preferred frame rate for new exports.
 Saved presets and batches keep their own settings.
 
-Video export needs FFmpeg. The Complete ZIP includes it; other downloads let you
-select an existing `ffmpeg.exe` in the export assistant.
-See the [export guide](docs/implementation/VIDEO_EXPORT.md) for details.
+Video export needs FFmpeg. The Windows Complete ZIP includes it; other downloads
+let you select an installed FFmpeg in the export assistant.
+Follow the [step-by-step export guide](docs/user/VIDEO_EXPORT.md) to create an
+overlay and place it above your footage.
 
 ## Make the workspace yours
 
@@ -189,41 +188,25 @@ than hundredths. At 50 Hz, `01:31.47` means 91.94 seconds.
 Positive lateral values mean right; positive longitudinal values mean acceleration.
 Negative values mean left and braking respectively.
 
-The airtime strip follows the chart's time zoom. Its context uses vertical load
-and recent changes, with short confirmation times and separate entry/exit bounds
-to stabilize the labels. Curve values and numeric readouts keep their existing
-smoothing. Floater/Ejector boundaries are provisional and depend on calibration
-and filtering; see the [airtime context and limits](docs/implementation/AIRTIME.md).
-
-Results depend on the recording, calibration and smoothing. The display follows
-documented source-app conventions; exact agreement with every recording is not
-guaranteed. GPS is a rough location reference, not a force or speed measurement.
-Missing sensor data is never invented.
-
-For current limitations and planned features, see the [roadmap](docs/ROADMAP.md).
-The [documentation index](docs/README.md) links detailed behavior and source comparisons.
-
-## Run from source
-
-Prefer running the project directly? Clone it or download GitHub's source archive,
-open PowerShell in the project folder, then run:
-
-```powershell
-.\setup.ps1
-.\start.ps1
-```
-
-Setup needs internet access to download the environment. To include the supplied
-FFmpeg version, run `.\setup.ps1 -VideoExport` before starting the application.
-The [Windows setup guide](docs/development/SETUP.md) covers requirements,
-development tools and checks.
+The airtime strip follows your chart zoom. Floater and Ejector labels are
+provisional: calibration and smoothing affect their interpretation. They do not
+measure a rider's sensations. Results may differ from the original app.
+GPS provides an approximate route, not force or speed measurements.
+Missing sensor data is never invented. See the
+[forces and airtime guide](docs/user/FORCES_AND_AIRTIME.md) for details.
 
 ## Help and contribute
 
+Start with the [installation guide](docs/user/INSTALLATION.md),
+[video export guide](docs/user/VIDEO_EXPORT.md) or
+[layout guide](docs/user/EXPORT_LAYOUTS.md).
 Have a problem or an idea? [Open an issue](https://github.com/rudnerbjoern/ride-forces-analyzer/issues).
-For development, checks, pull requests and recording permissions, see
-[CONTRIBUTING.md](CONTRIBUTING.md). Report security vulnerabilities privately
-using [SECURITY.md](SECURITY.md).
+Report security vulnerabilities privately using [SECURITY.md](SECURITY.md).
+
+For planned features and known limits, see the [roadmap](docs/ROADMAP.md).
+To contribute or run from source, see [CONTRIBUTING.md](CONTRIBUTING.md) and the
+[Windows developer setup](docs/development/SETUP.md). Technical references are
+listed in the [documentation index](docs/README.md).
 
 **Independent project:** Ride Forces Analyzer is not affiliated with, endorsed
 by or sponsored by the Ride Forces app or its developer.
@@ -232,20 +215,12 @@ by or sponsored by the Ride Forces app or its developer.
 
 Copyright © 2026 Björn Rudner.
 
-The program source code is licensed under the **GNU General Public License,
-version 3 or (at your option) any later version** (`GPL-3.0-or-later`).
-You may use, modify and redistribute it under those terms, including commercially.
-The program is provided without any warranty; see [LICENSE](LICENSE) for the full terms.
+The application is free and open source under **GPL-3.0-or-later**, including
+commercial use under its terms, without warranty. See [LICENSE](LICENSE).
 
-The five supplied test recordings, including their GPS data and metadata, are
-separately licensed under **CC BY-SA 4.0**. Shared adaptations must follow its
-ShareAlike terms. See their
-[license and attribution](tests/fixtures/real/README.md) and the
-[recording catalog](docs/development/RECORDINGS.md).
-The 14 supplied documentation images are also licensed under **CC BY-SA 4.0**;
-see their [image license and attribution](docs/images/README.md).
-These grants do not automatically apply to your own recordings or exports.
-Third-party components retain their own licenses. The project license does not
-replace the applicable Qt/PySide6, FFmpeg or other dependency obligations.
-See [third-party licenses and materials](THIRD_PARTY_NOTICES.md) for the inventory
-and remaining redistribution requirements.
+Supplied [recordings](tests/fixtures/real/README.md) and
+[documentation images](docs/images/README.md) have separate **CC BY-SA 4.0**
+licenses, including attribution and ShareAlike requirements. These grants do not
+automatically apply to your own recordings or exports. Dependencies retain their
+own licenses; see [third-party notices](THIRD_PARTY_NOTICES.md) for their terms
+and unresolved redistribution requirements.

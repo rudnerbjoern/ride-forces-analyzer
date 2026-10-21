@@ -17,12 +17,16 @@ Honor existing owner authorization; ask only for missing target version or permi
   existing tags/releases and related PRs; preserve unrelated owner changes.
 - Update `project.version` in `pyproject.toml` and refresh the root project entry
   with `uv lock`. Review the lock diff; do not upgrade unrelated dependencies.
-- Update affected version assertions, user documentation and
-  [release text](../../../docs/development/RELEASE_NOTES.md). Keep its `{{VERSION}}`,
-  `{{REPOSITORY}}` and `{{TAG}}` placeholders; preview their substitution for the target.
-  Do not blindly replace dependency versions or synthetic/historical test values.
-- Describe shipped behavior and known limits, not internal test history. Follow
-  current prerelease classification and redistribution policy in the release guide.
+- Update affected version assertions and user documentation. Do not blindly
+  replace dependency versions or synthetic/historical test values.
+- GitHub generates the change list from merged PRs using
+  [release categories](../../../.github/release.yml). Review user-readable PR titles
+  and labels; do not maintain a second manual feature/change list.
+- Keep the [release introduction](../../../docs/development/RELEASE_NOTES.md) short
+  and reusable. Preserve its `{{VERSION}}`, `{{REPOSITORY}}` and `{{TAG}}`
+  placeholders and preview their substitution. Add a concise Upgrade notes section
+  only when this release needs specific user action; remove obsolete upgrade notes
+  when preparing the next release. Follow prerelease and redistribution policy.
 - Refresh screenshots affected by visible/version changes through
   [update-screenshots](../update-screenshots/SKILL.md); do not introduce a new capture tool.
 
@@ -95,6 +99,11 @@ revision against tested content; changed inputs require affected checks/builds a
 - Only with authorization covering tag creation/push and publication: verify the
   release commit belongs to remote `main`, has its merged PR and green CI, and its
   version matches the new tag. Follow the existing tag-triggered release workflow.
+- Review the generated notes against the intended previous release before
+  publication, using GitHub's generate-notes API with the target and previous tags.
+  Confirm the categorized PR list, comparison link and introduction. Read-only
+  preview does not authorize creating a tag or release; use the same previous tag
+  for preview and publication if an explicit baseline is required.
 - Observe `source → quality → windows → release` for that commit. Inspect failures;
   use the documented retry path only when appropriate. Never move a published tag,
   overwrite an existing release or blindly repeat an ambiguous remote mutation.

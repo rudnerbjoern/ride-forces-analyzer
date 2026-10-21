@@ -1,7 +1,5 @@
 # Releases
 
-<!-- cspell:words libegl libopengl libxcb libxkbcommon icccm keysyms -->
-
 The [release workflow](../../.github/workflows/source-release.yml) handles
 owner-authorized pushes of `v*` tags. Windows remains the development environment;
 Linux/macOS packages are built and executed by native target workers in reusable CI.
@@ -12,6 +10,10 @@ provides all native targets.
 No installer is included.
 Local acceptance and owner review still precede tag creation; CI is secondary
 validation. [Windows setup](SETUP.md) owns the required local checks.
+
+For downloads, first launch and FFmpeg setup, see the
+[user installation guide](../user/INSTALLATION.md). This document covers release
+policy, package construction and publication.
 
 ## Release policy
 
@@ -30,7 +32,7 @@ validation. [Windows setup](SETUP.md) owns the required local checks.
   verified native packages, platform checksum files and notes, verifies all package hashes,
   and rechecks the remote tag target immediately before publication.
 - Publication uses `gh release create --verify-tag`, attaches all native downloads and checksum files, and
-  combines the maintained [release text](RELEASE_NOTES.md) with generated change
+  prepends the short [release introduction](RELEASE_NOTES.md) to GitHub-generated
   notes. Existing releases are not edited or overwritten; failed or ambiguous
   publication requires remote-state inspection before retrying.
 
@@ -56,6 +58,23 @@ version and checksum gates. Concurrent runs for the same tag are serialized.
 Native package artifacts are downloaded without automatic decompression so their
 original filenames, bytes and checksums remain intact. Existing releases are
 never overwritten by this retry path.
+
+## Automatic release notes
+
+GitHub generates merged PR entries, contributors and a full comparison link.
+[Release categories](../../.github/release.yml) group entries by PR labels, in
+order: `bug`, `enhancement`, `dependencies`, `documentation`, `ci`, then a catch-all
+for other changes. No authors or labels are excluded. Use clear, user-readable PR
+titles and assign `bug` or `enhancement` where applicable; issue labels do not
+automatically transfer to PRs. Existing path-based PR labels remain additive.
+
+The introduction contains links to installation, user guides and maintained
+limitations at the release tag. It needs no per-version feature list. Add an
+Upgrade notes section only for required user actions, such as recreating
+incompatible presets; remove obsolete instructions for the next release.
+Review generated notes and their previous-release comparison before publication.
+The version number and release authorization remain explicit decisions.
+See [GitHub's automatic release notes](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes).
 
 ## In-application update discovery
 
@@ -133,20 +152,10 @@ builds require their own OS; Windows mocks do not establish macOS acceptance.
 | macOS Intel         | `Ride-Forces-Analyzer-VERSION-macos-x64.zip`    | macOS 15+; extract and move `Ride-Forces-Analyzer.app` to Applications                                                   |
 
 Native packages embed Python, Qt and collected notices, but do not bundle FFmpeg.
-Linux desktop runtime dependencies on Ubuntu are `libegl1`, `libopengl0`,
-`libxcb-cursor0`, `libxcb-icccm4`, `libxcb-keysyms1`, `libxcb-image0`,
-`libxcb-render-util0` and `libxkbcommon-x11-0`; a working X11 or Wayland session is required.
-Install FFmpeg separately (`sudo apt install ffmpeg` on Ubuntu, or an existing
-compatible macOS installation such as `brew install ffmpeg`). PATH discovery or
-the export assistant's Browse action selects it. CPU H.264 and ProRes 4444 encoding
-are supported; native package smoke checks exercise CPU H.264. NVIDIA acceleration
-is optional and capability-probed, not assumed.
-
-macOS apps use PyInstaller's ad-hoc signatures. They are not notarized or signed
-with an Apple Developer ID. After checking the download hash, macOS may require
-an explicit **Open Anyway** approval in Privacy & Security for a trusted download.
-Do not disable Gatekeeper globally. Each architecture is built separately from
-its matching locked wheels; a universal app is not claimed.
+The [installation instructions](../user/INSTALLATION.md) own desktop dependencies,
+FFmpeg setup and per-application OS approvals. Native package smoke checks exercise
+CPU H.264; NVIDIA acceleration is optional and capability-probed. Each architecture
+is built separately from its matching locked wheels; a universal app is not claimed.
 
 Native build workers run these existing entry points:
 
