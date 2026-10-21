@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
@@ -13,6 +14,19 @@ const mathDependencies = createRequire(mathModule);
 const katex = mathDependencies("katex");
 const { micromark } = await import(pathToFileURL(markdown.resolve("micromark")));
 const { math, mathHtml } = await import(pathToFileURL(mathModule));
+
+test("Documentation and lint consumers share the declared Markdown parser release", async () => {
+  const manifest = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8"));
+  const expected = manifest.devDependencies["markdown-it"];
+  assert.equal(manifest.overrides["markdownlint-cli2"]["markdown-it"], expected);
+  for (const consumer of [project, markdownCli, markdown]) {
+    const metadata = JSON.parse(await readFile(consumer.resolve("markdown-it/package.json"), "utf8"));
+    assert.equal(metadata.version, expected, consumer.resolve("markdown-it"));
+    const { default: MarkdownIt } = await import(pathToFileURL(consumer.resolve("markdown-it")));
+    const html = new MarkdownIt("commonmark").render("[ride][ref]\n\n[ref]: https://example.com\n");
+    assert.equal(html, '<p><a href="https://example.com">ride</a></p>\n');
+  }
+});
 
 for (const [name, consumer] of [["markdownlint", markdownCli], ["CSpell", spellConfig]]) {
   test(`${name} TOML parser preserves flat keys and nested configuration`, () => {

@@ -80,10 +80,13 @@ Weekly Monday schedule, Europe/Berlin; requested start times, not execution guar
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `smol-toml` 1.9.1                                                          | [Quadratic TOML parsing](https://github.com/squirrelchat/smol-toml/security/advisories/GHSA-r4xh-jqrq-34v2)                                                                      |
 | `micromark-extension-math` → KaTeX 0.19.0                                  | [Inherited trust handling](https://github.com/KaTeX/KaTeX/security/advisories/GHSA-238p-pmpm-9mq7); crosses consumer's declared range, covered by real-consumer regression tests |
-| `markdownlint-cli2` → markdown-it 15.0.2; direct parser pinned identically | [Smart-quote processing](https://github.com/markdown-it/markdown-it/security/advisories/GHSA-r7fv-28h4-cvq7)                                                                     |
+| `markdownlint-cli2` → markdown-it 15.0.3; direct parser pinned identically | [Smart-quote processing](https://github.com/markdown-it/markdown-it/security/advisories/GHSA-r7fv-28h4-cvq7)                                                                     |
 
 - Manifest/lock retain these pins. Real-consumer tests cover project compatibility,
   not all possible consumers.
+- markdown-it 15.0.3 also fixes
+  [quadratic reference parsing](https://github.com/markdown-it/markdown-it/security/advisories/GHSA-gfr2-rv44-r23c).
+  Both the direct parser and markdownlint's parser must use the patched release.
 - Deep glob nesting can exhaust the [braces parser stack](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm).
   Project globs are small configured patterns; no application API accepts arbitrary globs.
 - Current advisories/fix availability require a fresh audit, including before release.
