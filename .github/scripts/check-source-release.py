@@ -45,7 +45,8 @@ def validate_archive(archive: Path, tag: str) -> None:
             if (
                 name.startswith("/")
                 or ".." in parts
-                or any(part in {".venv", "node_modules", ".git", "exports"} for part in parts)
+                or any(part in {".venv", "node_modules", ".git"} for part in parts)
+                or parts[0] == "exports"
                 or (name.startswith(".tmp/") and name != ".tmp/.gitkeep")
                 or name.endswith((".exe", ".dll", ".sqlite3", ".mov", ".mp4"))
             ):

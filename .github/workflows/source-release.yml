@@ -59,11 +59,14 @@ jobs:
       - name: Validate temporary source archive
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+          RELEASE_WORKFLOW_SHA: ${{ github.workflow_sha }}
         run: |
           New-Item -ItemType Directory -Force .tmp/source-validation | Out-Null
+          git show "$($env:RELEASE_WORKFLOW_SHA):.github/scripts/check-source-release.py" | Set-Content .tmp/source-validation/check-source-release.py -Encoding utf8
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot load source validator from workflow revision.' }
           git archive --format=zip --output=.tmp/source-validation/source.zip HEAD
           if ($LASTEXITCODE -ne 0) { throw 'Source archive creation failed.' }
-          uv run --locked python .github/scripts/check-source-release.py .tmp/source-validation/source.zip --tag "$env:RELEASE_TAG"
+          uv run --locked python .tmp/source-validation/check-source-release.py .tmp/source-validation/source.zip --tag "$env:RELEASE_TAG"
           if ($LASTEXITCODE -ne 0) { throw 'Source archive validation failed.' }
       - name: Build Python packages
         run: uv build --out-dir .tmp/release/packages

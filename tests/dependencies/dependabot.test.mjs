@@ -142,7 +142,11 @@ test("Source releases publish only reviewed tag revisions after quality and pack
   assert.match(source, /uv build --out-dir/);
   const uploads = workflow.jobs.source.steps.filter(step => step.uses?.startsWith("actions/upload-artifact@"));
   assert.deepEqual(uploads.map(step => step.with.path), [".tmp/release/release-notes.md"]);
-  const validation = workflow.jobs.source.steps.find(step => step.name === "Validate temporary source archive").run;
+  const validationStep = workflow.jobs.source.steps.find(step => step.name === "Validate temporary source archive");
+  assert.equal(validationStep.env.RELEASE_WORKFLOW_SHA, "${{ github.workflow_sha }}");
+  const validation = validationStep.run;
+  assert.ok(validation.includes('git show "$($env:RELEASE_WORKFLOW_SHA):.github/scripts/check-source-release.py"'));
+  assert.match(validation, /uv run --locked python \.tmp\/source-validation\/check-source-release\.py/);
   assert.match(validation, /git archive --format=zip --output=\.tmp\/source-validation\/source\.zip HEAD/);
   assert.match(validation, /check-source-release\.py \.tmp\/source-validation\/source\.zip/);
   for (const upload of uploads) {

@@ -51,7 +51,9 @@ gh workflow run source-release.yml --ref main -f tag=v0.6.0
 ```
 
 Quality checks use the current workflow definition and check out the resolved
-tagged commit. Source validation and all native builds use that same commit,
+tagged commit. The source validator is loaded from the immutable workflow revision,
+so validation-policy corrections can be used without moving an existing tag.
+The archive being validated and all native builds use the tagged commit,
 with the same ancestry, merged-PR,
 version and checksum gates. Concurrent runs for the same tag are serialized.
 Native package artifacts are downloaded without automatic decompression so their
