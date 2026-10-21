@@ -21,7 +21,7 @@ analysis = [
     "pyqtgraph>=0.14.0",
     "scipy==1.18.1",
 ]
-render = ["Pillow>=12.3.0"]
+render = ["Pillow>=13.0.0"]
 
 [dependency-groups]
 build = [
