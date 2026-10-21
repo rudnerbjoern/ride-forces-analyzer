@@ -130,7 +130,7 @@ test("Source releases publish only reviewed tag revisions after quality and pack
   assert.equal(workflow.concurrency["cancel-in-progress"], false);
   assert.equal(workflow.jobs.source["timeout-minutes"], 10);
   assert.deepEqual(workflow.jobs.quality, { needs: "source", uses: "./.github/workflows/ci.yml",
-    with: { "full-checks": true, revision: "${{ needs.source.outputs.commit }}" } });
+    with: { "full-checks": true, "upload-packages": true, revision: "${{ needs.source.outputs.commit }}" } });
   assert.equal(workflow.jobs.source.needs, undefined);
   assert.equal(workflow.jobs.source.steps[0].with.ref, "${{ inputs.tag || github.sha }}");
   assert.equal(workflow.jobs.source.outputs.commit, "${{ steps.revision.outputs.commit }}");
@@ -290,6 +290,7 @@ test("Dependabot PRs use the existing read-only PR CI, with no automatic merge w
   const workflow = parseDocument(workflowSource).toJS();
   assert.deepEqual(workflow.on, { pull_request: { branches: ["main"] }, workflow_dispatch: null,
     workflow_call: { inputs: { "full-checks": { type: "boolean", required: true },
+      "upload-packages": { type: "boolean", required: false, default: false },
       revision: { type: "string", required: false } } } });
   for (const job of Object.values(workflow.jobs)) {
     for (const step of (job.steps ?? []).filter(step => step.uses?.startsWith("actions/checkout@"))) {

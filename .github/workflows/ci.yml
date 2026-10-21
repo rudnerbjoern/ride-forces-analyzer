@@ -11,6 +11,10 @@ on:
       revision:
         type: string
         required: false
+      upload-packages:
+        type: boolean
+        required: false
+        default: false
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -53,6 +57,8 @@ jobs:
       documentation: ${{ steps.changes.outputs.documentation }}
       skills: ${{ steps.changes.outputs.skills }}
       workflows: ${{ steps.changes.outputs.workflows }}
+      dependencies: ${{ steps.changes.outputs.dependencies }}
+      posix: ${{ steps.changes.outputs.posix }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -69,6 +75,12 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           CI_FULL_CHECKS: ${{ inputs.full-checks || false }}
         run: node .github/scripts/ci-changes.mjs
+      - if: ${{ steps.changes.outputs.dependencies == 'true' }}
+        run: npm ci --no-audit --no-fund
+      - if: ${{ steps.changes.outputs.dependencies == 'true' }}
+        run: npm run test:dependencies
+      - if: ${{ steps.changes.outputs.dependencies == 'true' && steps.changes.outputs.code != 'true' && steps.changes.outputs.documentation != 'true' && steps.changes.outputs.skills != 'true' }}
+        run: npm run spellcheck
 
   actionlint:
     name: Workflow validation
@@ -121,7 +133,6 @@ jobs:
       - run: uv run --locked mypy src
       - run: npm run typecheck
       - run: npm run test:types
-      - run: npm run test:dependencies
       - if: ${{ needs.dependency-check.outputs.documentation != 'true' }}
         run: npm run spellcheck
       - name: Application tests
@@ -225,10 +236,11 @@ jobs:
 
   posix:
     needs: dependency-check
-    if: ${{ needs.dependency-check.outputs.code == 'true' }}
+    if: ${{ needs.dependency-check.outputs.posix == 'true' }}
     uses: ./.github/workflows/posix-packages.yml
     with:
       revision: ${{ inputs.revision || github.sha }}
+      upload-packages: ${{ inputs.upload-packages || false }}
 
   check:
     needs: [dependency-check, code, ui, documentation, skills, gitleaks, actionlint, posix]
@@ -239,10 +251,11 @@ jobs:
       - name: Require successful applicable checks
         env:
           DEPENDENCY_RESULT: ${{ needs.dependency-check.result }}
+          CONTRACTS_REQUIRED: ${{ needs.dependency-check.outputs.dependencies }}
           GITLEAKS_RESULT: ${{ needs.gitleaks.result }}
           CODE_REQUIRED: ${{ needs.dependency-check.outputs.code }}
           UI_REQUIRED: ${{ needs.dependency-check.outputs.code }}
-          POSIX_REQUIRED: ${{ needs.dependency-check.outputs.code }}
+          POSIX_REQUIRED: ${{ needs.dependency-check.outputs.posix }}
           DOCUMENTATION_REQUIRED: ${{ needs.dependency-check.outputs.documentation }}
           SKILLS_REQUIRED: ${{ needs.dependency-check.outputs.skills }}
           WORKFLOWS_REQUIRED: ${{ needs.dependency-check.outputs.workflows }}
@@ -258,6 +271,9 @@ jobs:
           }
           if ($env:DEPENDENCY_RESULT -ne 'success') {
             throw 'Change detection failed; test selection is not verified.'
+          }
+          if ($env:CONTRACTS_REQUIRED -ne 'true' -and $env:CONTRACTS_REQUIRED -ne 'false') {
+            throw 'Missing or invalid contract-test selection.'
           }
           foreach ($suite in @('CODE', 'UI', 'DOCUMENTATION', 'SKILLS', 'WORKFLOWS', 'POSIX')) {
             $required = [Environment]::GetEnvironmentVariable("${suite}_REQUIRED")

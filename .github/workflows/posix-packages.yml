@@ -6,6 +6,10 @@ on:
       revision:
         type: string
         required: true
+      upload-packages:
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
 jobs:
@@ -59,6 +63,7 @@ jobs:
           recording=$(find tests/fixtures/real -maxdepth 1 -name 'Manta-*.forces' -print -quit)
           uv run --locked --group build python -m scripts.check_posix_packages .tmp/posix-build/assets --recording "$recording" --expected-target ${{ matrix.target }}
       - name: Retain verified package
+        if: ${{ inputs.upload-packages }}
         uses: actions/upload-artifact@v7.0.2
         with:
           path: .tmp/posix-build/assets/${{ steps.build.outputs.package }}
@@ -66,6 +71,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Retain native checksums
+        if: ${{ inputs.upload-packages }}
         uses: actions/upload-artifact@v7.0.2
         with:
           path: .tmp/posix-build/assets/${{ steps.build.outputs.checksums }}
