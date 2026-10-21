@@ -1,5 +1,8 @@
 # 4K ride overlay export
 
+For instructions on creating an overlay and using it in a video editor, see the
+[user guide](../user/VIDEO_EXPORT.md). This page defines the technical contracts.
+
 Windows uses the existing optional bundled encoder. Linux/macOS select an external
 native `ffmpeg` from PATH or the Browse action; frame generation and encoding remain
 separate. Export staging stays beside the chosen output and is cleaned on success,

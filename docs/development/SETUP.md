@@ -1,15 +1,18 @@
 # Windows development setup
 
+This guide is for developers working on a Windows source checkout.
+To use a downloaded application without development tools, follow the
+[Windows, Linux and macOS installation guide](../user/INSTALLATION.md).
+
 Use native Windows PowerShell and a desktop session. WSL/offscreen tests do not
 verify the supported Qt environment. Run checks from the repository root.
 
 Development remains Windows-only. Linux/macOS are separate native distribution
 and runtime-check targets, using the same lockfile. Their release-worker commands
-and end-user installation requirements are in the
-[release guide](RELEASE.md#linux-and-macos-packages); no Linux/macOS developer
+are in the [release guide](RELEASE.md#linux-and-macos-packages); no Linux/macOS developer
 bootstrap replaces this setup or its Windows acceptance checks.
 
-## Install and start
+## Set up and run the source checkout
 
 ```powershell
 .\setup.ps1
@@ -50,7 +53,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 The scripts target Windows x64; other architectures are unverified. Source
 recordings are never installation inputs and remain read-only.
 
-## Video export tools
+## Development encoder setup
 
 Run `.\setup.ps1 -VideoExport` to install the FFmpeg full build pinned by
 [ffmpeg.json](../../ffmpeg.json), including its SHA-256 checksum. Native curl/tar
@@ -60,7 +63,8 @@ The export dialog can also use an existing ffmpeg.exe without downloading anythi
 Installed export processing is offline. Pillow is already a locked render extra;
 no new Python dependency is introduced. The full build supports Vulkan ProRes
 and NVIDIA NVENC when the actual GPU probe succeeds; CPU encoding remains usable.
-See [export usage](../../README.md) and [contracts](../implementation/VIDEO_EXPORT.md).
+See the [user export guide](../user/VIDEO_EXPORT.md) for operation and
+[export contracts](../implementation/VIDEO_EXPORT.md) for supported behavior.
 
 ## Manual equivalent
 

@@ -1,5 +1,8 @@
 # Recording explorer
 
+For chart navigation, selection, settings and GPS, see the
+[user explorer guide](../user/EXPLORER.md).
+
 Current interaction/display contracts. Architecture owns
 [component responsibilities](../architecture/05_building_block_view.md#analysis-boundary),
 [service delivery/revisions/lifetime](../architecture/06_runtime_view.md#explorer-analysis-delivery),

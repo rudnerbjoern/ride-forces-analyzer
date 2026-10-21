@@ -1,5 +1,8 @@
 # Saved export presets and batches
 
+For saving presets, preparing a queue and finding its results, see the
+[user presets and batches guide](../user/EXPORT_BATCHES.md).
+
 ## Scope
 
 User databases retain their Windows LOCALAPPDATA location. Linux uses absolute

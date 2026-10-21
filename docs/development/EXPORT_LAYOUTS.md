@@ -1,5 +1,9 @@
 # Export layout extensions
 
+For choosing and reading the available layouts, see the
+[user layout guide](../user/EXPORT_LAYOUTS.md). This page covers implementation
+and extension of the renderers.
+
 Layouts are internal, explicitly registered plugins. No package discovery,
 installation, network access or third-party code loading is involved.
 The public selection and saved-preset keys remain unchanged.
