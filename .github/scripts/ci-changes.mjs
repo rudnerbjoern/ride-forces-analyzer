@@ -9,6 +9,7 @@ const codeInputs = new Set([
   ".vscode/settings.json",
   ".github/dependabot.yml",
   ".github/labeler.yml",
+  ".github/release.yml",
 ]);
 
 const skillInputs = new Set([

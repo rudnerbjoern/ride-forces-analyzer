@@ -32,7 +32,7 @@ policy, package construction and publication.
   verified native packages, platform checksum files and notes, verifies all package hashes,
   and rechecks the remote tag target immediately before publication.
 - Publication uses `gh release create --verify-tag`, attaches all native downloads and checksum files, and
-  combines the maintained [release text](RELEASE_NOTES.md) with generated change
+  prepends the short [release introduction](RELEASE_NOTES.md) to GitHub-generated
   notes. Existing releases are not edited or overwritten; failed or ambiguous
   publication requires remote-state inspection before retrying.
 
@@ -58,6 +58,23 @@ version and checksum gates. Concurrent runs for the same tag are serialized.
 Native package artifacts are downloaded without automatic decompression so their
 original filenames, bytes and checksums remain intact. Existing releases are
 never overwritten by this retry path.
+
+## Automatic release notes
+
+GitHub generates merged PR entries, contributors and a full comparison link.
+[Release categories](../../.github/release.yml) group entries by PR labels, in
+order: `bug`, `enhancement`, `dependencies`, `documentation`, `ci`, then a catch-all
+for other changes. No authors or labels are excluded. Use clear, user-readable PR
+titles and assign `bug` or `enhancement` where applicable; issue labels do not
+automatically transfer to PRs. Existing path-based PR labels remain additive.
+
+The introduction contains links to installation, user guides and maintained
+limitations at the release tag. It needs no per-version feature list. Add an
+Upgrade notes section only for required user actions, such as recreating
+incompatible presets; remove obsolete instructions for the next release.
+Review generated notes and their previous-release comparison before publication.
+The version number and release authorization remain explicit decisions.
+See [GitHub's automatic release notes](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes).
 
 ## In-application update discovery
 

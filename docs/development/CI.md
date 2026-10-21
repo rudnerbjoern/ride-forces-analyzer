@@ -102,7 +102,7 @@ it does not guarantee lower total runner minutes.
   without rewriting existing issues/PRs.
 - [Label rules](../../.github/labeler.yml): `documentation` for Markdown,
   `dependencies` for manifests/locks/Dependabot, `ci` for workflows/CI scripts/tests
-  or label rules. Priority/scientific review remains manual.
+  or label/release-category rules. Priority/scientific review remains manual.
 - [Labeler workflow](../../.github/workflows/labeler.yml): trusted base configuration;
   `pull_request_target` opened/synchronize/reopened to `main`, including drafts/forks/Dependabot.
   No checkout, PR-code execution or custom secrets.
@@ -130,6 +130,9 @@ the reusable quality stage also builds and checks the native Linux/macOS artifac
   Missing provider sources are documented/reported; missing/modified catalog-listed
   archives fail verification.
 - Temporary source archive is not uploaded; GitHub supplies source ZIP/tar.gz.
+- GitHub generates categorized release changes from merged PRs using
+  [release labels](../../.github/release.yml), preceded by a short reusable
+  introduction. See [release notes policy](RELEASE.md#automatic-release-notes).
 - No job creates tags or changes repository visibility.
   [Release guide](RELEASE.md) owns tag/version/ancestry policy, retries, artifact
   handling, download verification and outstanding redistribution limits.
