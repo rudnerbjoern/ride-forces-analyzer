@@ -5,8 +5,7 @@ owner-authorized pushes of `v*` tags. Windows remains the development environmen
 Linux/macOS packages are built and executed by native target workers in reusable CI.
 The workflow validates tagged sources and prepares a standalone Windows x64 EXE,
 standard/complete ZIPs, a Linux x64 tarball and macOS arm64/x64 app ZIPs. Binary publication is
-accompanied by documented missing redistribution material below. Version 0.5.0
-provides all native targets.
+accompanied by documented missing redistribution material below.
 No installer is included.
 Local acceptance and owner review still precede tag creation; CI is secondary
 validation. [Windows setup](SETUP.md) owns the required local checks.
@@ -48,7 +47,7 @@ To retry publication of an existing tag after a workflow correction, dispatch th
 current workflow from `main` with the `tag` input, for example:
 
 ```powershell
-gh workflow run source-release.yml --ref main -f tag=v0.5.0
+gh workflow run source-release.yml --ref main -f tag=v0.6.0
 ```
 
 Quality checks use the current workflow definition and check out the resolved
@@ -141,7 +140,7 @@ The Windows downloads have their own checksum file.
 
 ## Linux and macOS packages
 
-Version 0.5.0 includes these native targets. Development and the full local
+Releases include these native targets. Development and the full local
 regression suite stay on Windows. Native package
 builds require their own OS; Windows mocks do not establish macOS acceptance.
 
