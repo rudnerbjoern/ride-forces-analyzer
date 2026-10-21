@@ -82,6 +82,12 @@ not a physical accuracy or private-algorithm identity guarantee. The
 Kraken/Voltron discrepancies; [concepts](08_concepts.md) and
 [explorer contracts](../implementation/RAW_EXPLORER.md) define live behavior.
 
+Combined is prepared alongside smoothing from the norm of the centered-mean
+device x/y/z axes, using the same full-history window and shortened recording
+edges. Rounded direction rows do not form an exact orthonormal basis, so the norm
+of projected channels is not substituted. Combined shares the smoothing stage's
+availability and provisional g interpretation; it does not qualify physical units.
+
 ## Export and remaining scope
 
 Implemented outputs are transparent ProRes 4444 MOV and independent opaque H.264

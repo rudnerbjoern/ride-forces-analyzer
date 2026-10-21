@@ -278,6 +278,16 @@ after layout. Card values and clock text refresh from explorer presentation when
 sample, calibration or smoothing changes. Technical expansion is independent of
 analysis state. All raw/calibrated, failure and worker shutdown paths above remain.
 
+## CSV export runtime
+
+The explorer pauses playback and captures the current analysis snapshot and From/To
+interval before destination selection. A Qt worker streams prepared sample views to
+CSV; no analysis or encoding runs in the widget. Queued progress and terminal signals
+update the modal progress window on the UI thread. Cancellation/main-window close
+sets a worker event; incomplete output is removed. Success remembers the existing
+export directory and reports the saved path. The bound snapshot stays alive until
+worker completion, independently of later workspace updates.
+
 ## 4K export runtime
 
 Export snapshots the loaded immutable recording, current smoothing and selected

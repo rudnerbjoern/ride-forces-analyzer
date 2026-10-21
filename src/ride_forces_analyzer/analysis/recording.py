@@ -42,7 +42,7 @@ from .models import (
 )
 from .orientation import orientation_degrees
 from .projection import project_directions
-from .smoothing import centered_mean
+from .smoothing import centered_mean, combined_force
 
 
 class AnalysisStage(StrEnum):
@@ -234,6 +234,7 @@ class SmoothedForces:
         channels: Filtered buffers in projection order/units, or None if unavailable.
         quality: Filter-specific capability and validity information.
         provenance: This filter calculation's provenance, or None if not calculated.
+        combined: Norm of smoothed device axes, or None when smoothing is unavailable.
     """
 
     projection: ProjectedForces
@@ -242,6 +243,7 @@ class SmoothedForces:
     channels: ForceChannels | None
     quality: AnalysisQuality
     provenance: AnalysisProvenance | None
+    combined: SampleValues | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -388,6 +390,7 @@ class AnalyzedSample:
         raw: Original typed source acceleration vector, without inferred semantics.
         projected: Unfiltered force values, or None when unavailable/invalid.
         smoothed: Filtered force values, or None when unavailable/invalid.
+        combined_g: Norm of smoothed device axes, or None when unavailable/invalid.
         orientation_degrees: Tilt with valid source correspondence, otherwise None.
         context: Prepared category, or None when the context stage is unavailable.
         projection_availability: Whole-stage availability for projected forces.
@@ -403,6 +406,7 @@ class AnalyzedSample:
     raw: Vector3
     projected: ForceSample | None
     smoothed: ForceSample | None
+    combined_g: float | None
     orientation_degrees: float | None
     context: VerticalContext | None
     projection_availability: StageAvailability
@@ -518,6 +522,22 @@ class RecordingAnalysis:
         if smoothing_available:
             _require(projection_available, "Smoothing requires an available projection")
             _channels(smoothed.channels, count)
+            _samples(smoothed.combined, count)
+            assert smoothed.combined is not None
+            _require(
+                all(
+                    value >= 0
+                    for value, valid in zip(
+                        smoothed.combined.values,
+                        smoothed.combined.valid_rows,
+                        strict=True,
+                    )
+                    if valid
+                ),
+                "Combined force magnitude must be nonnegative",
+            )
+        else:
+            _require(smoothed.combined is None, "Unavailable smoothing has no Combined values")
         orientation_available = _stage(
             orientation.availability,
             orientation.values,
@@ -606,6 +626,7 @@ class RecordingAnalysis:
         if rate is None:
             raise ValueError("Sample times require a sample rate")
         orientation = self.orientation.values
+        combined = self.forces.smoothed.combined
         angle = (
             float(orientation.values[index])
             if orientation is not None and orientation.valid_rows[index]
@@ -618,6 +639,11 @@ class RecordingAnalysis:
             raw=self.source.recording.motion.acceleration[index],
             projected=_force_sample(self.forces.projected.channels, index),
             smoothed=_force_sample(self.forces.smoothed.channels, index),
+            combined_g=(
+                float(combined.values[index])
+                if combined is not None and combined.valid_rows[index]
+                else None
+            ),
             orientation_degrees=angle,
             context=self.context.labels[index] if self.context.labels is not None else None,
             projection_availability=self.forces.projected.availability,
@@ -934,6 +960,7 @@ def _prepare_analysis(
         smoothed = previous.forces.smoothed
     else:
         filtered = None
+        combined_values = None
         smoothing_availability = StageAvailability(AvailabilityState.AVAILABLE)
         channels = projected.channels
         if channels is None:
@@ -948,15 +975,42 @@ def _prepare_analysis(
                     for axis in channels
                 )
             except ValueError as error:
+                filtered = None
                 smoothing_availability = _unavailable("SMOOTHING_UNAVAILABLE", str(error))
+        if filtered is not None:
+            try:
+                combined_values = combined_force(motion.acceleration, window)
+            except ValueError:
+                combined_values = (None,) * len(motion.acceleration)
+        combined_diagnostics = tuple(
+            AnalysisDiagnostic(
+                "COMBINED_SAMPLE_UNAVAILABLE",
+                Severity.WARNING,
+                "Device-axis smoothing or magnitude exceeds finite display range",
+                "combined",
+                index,
+            )
+            for index, value in enumerate(combined_values or ())
+            if value is None
+        )
+        smoothing_quality = _prepared_quality("smoothing", smoothing_availability)
         smoothed = SmoothedForces(
             projected,
             configuration.smoothing,
             smoothing_availability,
             _force_channels(filtered) if filtered is not None else None,
-            _prepared_quality("smoothing", smoothing_availability),
+            replace(
+                smoothing_quality,
+                diagnostics=smoothing_quality.diagnostics + combined_diagnostics,
+            ),
             replace(provenance, algorithm=configuration.smoothing.algorithm)
             if filtered is not None
+            else None,
+            SampleValues(
+                np.array([np.nan if value is None else value for value in combined_values]),
+                valid_rows=tuple(value is not None for value in combined_values),
+            )
+            if combined_values is not None
             else None,
         )
     if (

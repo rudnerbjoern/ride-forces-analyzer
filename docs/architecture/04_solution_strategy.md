@@ -17,6 +17,7 @@ flowchart LR
     Canonical --> Analysis["Source-app projection and mean"]
     Canonical --> Explorer["Raw/calibrated explorer and GPS overview"]
     Analysis --> Explorer
+    Analysis --> CSV["CSV sample table"]
     Explorer --> Playback["M5: sample playback"]
     Analysis --> Frames["4K RGBA frame generation"]
     Frames --> Encoder["Offline FFmpeg encoding"]

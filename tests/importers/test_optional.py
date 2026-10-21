@@ -1,5 +1,7 @@
 """FR-009–010, FR-017–022, FR-025: five originals and optional defects."""
 
+# cspell:words Seaworld
+
 from collections.abc import Mapping
 from dataclasses import FrozenInstanceError
 from hashlib import sha256
@@ -66,7 +68,7 @@ NEGATIVE_FIELDS = [
     "speedAccuracy",
     "courseAccuracy",
 ]
-EXPECTED_GPS = {"IronGwazi": None, "Kraken": 174, "Manta": 193, "Taron": 182, "VoltronNevera": 149}
+EXPECTED_GPS = {"IronGwazi": None, "Kraken": 174, "Manta": 145, "Taron": 182, "VoltronNevera": 149}
 
 
 def _root() -> dict[str, object]:
@@ -140,16 +142,11 @@ def test_all_original_optional_data_and_gps_fixes_survive(filename: str) -> None
         )
     recording = filename.split("-", 1)[0]
     if recording == "Manta":
-        assert result.metadata.location is None and "location" not in root
+        assert result.metadata.location == "Seaworld Orlando"
         for key in ("temperature", "weatherConditions", "windDirection", "windSpeed", "windGust"):
-            assert key not in root
-        assert result.metadata.temperature is None and result.metadata.weather_conditions is None
-        assert (
-            result.metadata.wind_direction
-            is result.metadata.wind_speed
-            is result.metadata.wind_gust
-            is None
-        )
+            assert key in root
+        assert result.metadata.temperature == pytest.approx(27.68781089782715)
+        assert result.metadata.weather_conditions == "Clear"
     if recording in ("Taron", "VoltronNevera"):
         assert not present and position.origin is ValueOrigin.DEFAULT
     if recording == "Taron":

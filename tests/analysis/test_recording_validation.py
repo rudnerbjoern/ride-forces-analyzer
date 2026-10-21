@@ -353,6 +353,17 @@ def test_availability_payload_and_reason_are_consistent(
         _linked(analysis, smoothing=stage).validate()
 
 
+@pytest.mark.parametrize("values", [None, (1.0, 2.0), (-1.0, 0.0, 1.0)])
+def test_combined_requires_nonnegative_scalar_samples_matching_the_source(
+    analysis: RecordingAnalysis,
+    values: tuple[float, ...] | None,
+) -> None:
+    combined = SampleValues(np.array(values)) if values is not None else None
+    snapshot = _linked(analysis, smoothing=replace(analysis.forces.smoothed, combined=combined))
+    with pytest.raises(TypeError if values is None else ValueError):
+        snapshot.validate()
+
+
 def test_raw_fallback_and_unavailable_dependencies(analysis: RecordingAnalysis) -> None:
     reason = AnalysisDiagnostic("UNAVAILABLE_INPUT", Severity.INFO, "Missing calibration")
     unavailable = StageAvailability(AvailabilityState.UNAVAILABLE, reason)
@@ -366,6 +377,7 @@ def test_raw_fallback_and_unavailable_dependencies(analysis: RecordingAnalysis) 
         analysis.forces.smoothed,
         availability=unavailable,
         channels=None,
+        combined=None,
         provenance=None,
     )
     raw = _linked(analysis, projection=projection, smoothing=smoothing)
@@ -503,6 +515,7 @@ def test_event_states_require_matching_rules_input_and_reason(evaluated: Recordi
             evaluated.forces.smoothed,
             availability=unavailable,
             channels=None,
+            combined=None,
             provenance=None,
         ),
     )

@@ -42,4 +42,4 @@ def test_windows_entry_self_test_imports_and_renders_with_german_light_settings(
         result = json.loads(diagnostics)
         assert result["version"] == __version__
         assert result["passed"] and result["gui"] and result["german_light"]
-        assert result["samples"] == 9640 and result["render"]
+        assert result["samples"] == 9638 and result["render"]

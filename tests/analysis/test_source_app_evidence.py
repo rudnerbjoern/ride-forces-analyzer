@@ -1,6 +1,7 @@
 """Source-app evidence for unified snapshots, retaining documented scientific limits."""
 
 from datetime import UTC, datetime
+import csv
 
 import numpy as np
 import pytest
@@ -49,10 +50,8 @@ def test_same_projection_cross_checks_all_source_extrema(filename: str) -> None:
     assert smoothed.provenance is not None and smoothed.provenance.calculation_time == NOW
     assert smoothed.quality.capabilities == (("smoothing", CapabilityState.PROVISIONAL),)
     if filename == MANTA:
-        assert min(vertical) == pytest.approx(-3.7208311929212843, abs=1e-12)
-        assert max(vertical) == pytest.approx(2.614460771187888, abs=1e-12)
-        assert vertical[2013] == pytest.approx(0.9989, abs=0.0001)
-        assert smoothed.channels[2].values[3370] == pytest.approx(0.6736, abs=0.0001)
+        assert min(vertical) == pytest.approx(-3.5571391829748977, abs=1e-12)
+        assert max(vertical) == pytest.approx(2.6382813183644176, abs=1e-12)
         assert not np.allclose(projected.channels[0].values, vertical)
 
 
@@ -74,27 +73,46 @@ def test_source_app_policy_is_available_for_an_unrecognized_source_hash() -> Non
     )
 
 
-def test_independent_owner_replay_snapshots() -> None:
-    from math import sqrt
-
+def test_independent_owner_csv_replay_samples() -> None:
     snapshot = prepared(MANTA)
     recording = snapshot.source.recording
-    for seconds, forces, combined, orientation in (
-        (0, ("-0.04", "-0.01", "0.99"), "0.99", 92),
-        (10, ("1.00", "0.01", "-0.01"), "1.00", 0),
-        (67, ("0.52", "-0.02", "-0.08"), "0.52", 47),
-        (72, ("-3.44", "0.07", "0.35"), "3.46", 120),
-        (86, ("1.96", "-0.21", "0.41"), "2.02", 77),
-    ):
-        index = recording.indices.start + round(seconds * recording.motion.sample_rate.value)
+    reference = (REAL_FIXTURE_DIRECTORY / MANTA).with_suffix(".csv")
+    with reference.open(encoding="utf-8-sig", newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    assert len(rows) == recording.indices.end - recording.indices.start + 1 == 6888
+    for offset in (500, 2000, 2032, 3600, 6887):
+        row = rows[offset]
+        index = recording.indices.start + offset
         sample = snapshot.sample(index)
         assert sample.smoothed is not None
         values = (sample.smoothed.vertical, sample.smoothed.lateral, sample.smoothed.longitudinal)
-        # Screenshots supply two decimal places, not full-precision measurements.
-        assert tuple(f"{value:.2f}" for value in values) == forces
-        assert f"{sqrt(sum(value * value for value in values)):.2f}" == combined
+        # The source app exports rounded values; it does not establish physical accuracy.
+        expected = tuple(
+            float(row[f"{channel} Forces (g)"])
+            for channel in (
+                "Vertical",
+                "Lateral",
+                "Longitudinal",
+            )
+        )
+        assert tuple(round(value, 2) for value in values) == expected
+        assert sample.combined_g is not None
+        assert round(sample.combined_g, 2) == float(
+            row["Combined Forces (g)"],
+        )
+        seconds, frame = divmod(offset, 50)
+        minutes, seconds = divmod(seconds, 60)
+        assert row["Timestamp"] == f"{minutes:02d}:{seconds:02d}.{frame:02d}"
+        assert sample.replay_seconds == offset / 50
         assert sample.orientation_degrees is not None
-        assert round(sample.orientation_degrees) == orientation
+        assert round(sample.orientation_degrees, 2) == float(
+            row["Tilt Angle Orientation (degrees)"],
+        )
+    # The app's first exported force differs; keep the discrepancy rather than fitting an edge rule.
+    first = snapshot.sample(recording.indices.start).smoothed
+    assert first is not None
+    assert float(rows[0]["Vertical Forces (g)"]) == 1.00
+    assert round(first.vertical, 2) == 1.01
 
 
 def test_kraken_replay_sample_counter_and_documented_start_discrepancy() -> None:

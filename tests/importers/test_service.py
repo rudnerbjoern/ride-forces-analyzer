@@ -1,6 +1,6 @@
 """FR-028–030; AC-01–09: full offline imports, integrity and bounded diagnostics."""
 
-# cspell:words WRONLY RDWR CREAT
+# cspell:words WRONLY RDWR CREAT Seaworld
 
 from collections.abc import Iterator, Mapping
 from concurrent.futures import ThreadPoolExecutor
@@ -153,12 +153,9 @@ def test_full_import_keeps_every_original_field_and_provenance(
         assert recording.indices.gravity == 1513 < recording.indices.start == 2284
         assert [(a.label, a.value) for a in recording.attributes] == [("Row", "2"), ("Seat", "1")]
     if name == "Manta":
-        assert (
-            recording.metadata.location
-            is recording.metadata.temperature
-            is recording.metadata.weather_conditions
-            is None
-        )
+        assert recording.metadata.location == "Seaworld Orlando"
+        assert recording.metadata.temperature == pytest.approx(27.68781089782715)
+        assert recording.metadata.weather_conditions == "Clear"
     assert result.diagnostics == ordered_diagnostics(result.diagnostics)
     assert all(d.severity is not Severity.ERROR for d in result.diagnostics)
     assert path.read_bytes() == original and path.stat().st_mtime_ns == modified

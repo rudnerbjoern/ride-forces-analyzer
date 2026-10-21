@@ -89,6 +89,9 @@ offline after setup and leave the original files unchanged.
   present in the recording.
 - **Prepare several exports at once.** Save your preferred settings, reuse them
   for another ride, and queue multiple recordings and layouts for one batch run.
+- **Export sample data as CSV.** Save a selected interval with original values,
+  prepared forces and airtime context for your own analysis. See the
+  [CSV guide](docs/user/CSV_EXPORT.md).
 
 Directional forces are shown when the recording contains usable calibration
 directions. Otherwise, you can still inspect the raw x/y/z channels, with an

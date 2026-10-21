@@ -2,7 +2,18 @@
 
 import pytest
 
-from ride_forces_analyzer.analysis.smoothing import centered_mean
+from ride_forces_analyzer.analysis.smoothing import centered_mean, combined_force
+from ride_forces_analyzer.domain import Vector3
+
+
+def test_combined_smooths_device_axes_before_taking_the_norm() -> None:
+    samples = (Vector3(3, 4, 0), Vector3(-3, -4, 0), Vector3(0, 0, 12))
+    assert combined_force(samples, 1) == (5.0, 5.0, 12.0)
+    assert combined_force(samples, 3) == (0.0, 4.0, 6.5)
+    assert combined_force((Vector3(1e200, 0, 0),), 1) == (1e200,)
+    with pytest.raises(ValueError, match="requires samples"):
+        combined_force((), 3)
+    assert combined_force((Vector3(1.7e308, 1.7e308, 1.7e308),), 1) == (None,)
 
 
 def test_centered_mean_constant_impulse_and_explicit_edge_policy() -> None:

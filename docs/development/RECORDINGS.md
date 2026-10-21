@@ -1,40 +1,32 @@
 # Real recording fixtures
 
+<!-- cspell:words zforces -->
+
 ## Authorization and use
 
-Copyright © 2026 Björn Rudner. All five complete recordings in this catalog are
-licensed by Björn Rudner under
-**CC BY-SA 4.0**, expressly approved on 2026-10-18, including embedded GPS positions,
-timestamps, sensor values, metadata and unknown fields. The
+Copyright © 2026 Björn Rudner. All owner-supplied test and reference data in this
+project are licensed under **CC BY-SA 4.0**, including complete recordings and
+app exports in any format. This includes
+embedded GPS positions, timestamps, sensor values, metadata and unknown fields.
+The owner approved this license for all test and reference data on 2026-10-21. The
 [license scope and attribution](../../tests/fixtures/real/README.md) identify the
 licensor and reuse conditions; the [complete legal text](../../tests/fixtures/real/LICENSE-CC-BY-SA-4.0.txt)
 is supplied alongside the files. Recipients may share and adapt the recordings,
 including commercially, with attribution, a license link and change indications.
 Shared adaptations must use the same or an officially compatible license under
 the ShareAlike terms.
-This grant does not license program code, documentation images or future recordings.
+Program code and documentation images retain their separate licenses.
 
-The owner expressly authorizes using and publishing all four complete Ride Forces
-recordings below in this project for testing and development, including all
-embedded data such as authentic GPS positions and metadata. Manta was authorized
-with the original M1 fixture; Kraken, Taron and Voltron Nevera were added and
-expressly authorized on 2026-10-13.
-
-This publication authorization covers the original quartet. The owner additionally
-supplied Iron Gwazi on 2026-10-13 for inspection and confirmed
-its Apple Watch availability profile. The owner subsequently explicitly authorized
-committing and pushing the complete fifth fixture on
-2026-10-13. PR creation and merge require separate authorization.
-Additional recordings require their
-own authorization before inclusion or publication. Keep every `.forces` file
-read-only and preserve its original bytes, unknown fields and metadata. Neither
-Git nor editor tooling may normalize or reformat these recordings.
+The owner authorizes using and publishing these complete data for project testing,
+development and reference comparisons. This data authorization does not authorize
+Git operations. Preserve original reference files byte-for-byte, including unknown
+fields and metadata; neither Git nor editor tooling may normalize or reformat them.
 
 ## Fixture catalog
 
 The sizes and SHA-256 digests below were computed by reading the original bytes.
-They are pinned in `tests/support/recordings.py`; intentionally replacing a recording
-requires reviewing its authorization, tests and this catalog together.
+Recording identities are pinned in `tests/support/recordings.py`; changes require
+updating the tests and this catalog together.
 
 ### Iron Gwazi
 
@@ -51,9 +43,10 @@ requires reviewing its authorization, tests and this catalog together.
 
 ### Manta
 
-- File: [Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces](../../tests/fixtures/real/Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces)
-- Size: 801293 bytes.
-- SHA-256: `30cf81c360cb28f45ee97234779689bdcdd7ec3aa8fa148645a4b015771be6c6`.
+- File: [Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces](../../tests/fixtures/real/Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces)
+- Size: 783028 bytes.
+- SHA-256: `1d06e636b0cd26c7634503bf3f5f93e1906791ce47028c129af1c1828c7b268c`.
+- 9638 acceleration and gravity samples and 145 GPS points.
 
 ### Taron
 
@@ -66,6 +59,36 @@ requires reviewing its authorization, tests and this catalog together.
 - File: [VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces](../../tests/fixtures/real/VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces)
 - Size: 862820 bytes.
 - SHA-256: `f48157cadbfeb374eeadf48112b0bbfc1e8b47c580cb303342cf65977054ad04`.
+
+## Source-app CSV reference
+
+- File: [Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.csv](../../tests/fixtures/real/Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.csv).
+- Owner-supplied Ride Forces app export, covered by the common CC BY-SA 4.0 grant.
+- Size: 248028 bytes.
+- SHA-256: `99cb644c8e5fb6cb6d4a0bd4c231f198215ff6f8bb90dc58f5d1baa20a79107b`.
+- Preserve original bytes, including CRLF line endings. The recording ID matches
+  the Manta `.forces` fixture; selected source-app comparisons are documented in
+  [comparison evidence](../validation/APP_REFERENCE.md#manta-replay-reference).
+
+## Source-app JSON reference
+
+- File: [Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.json](../../tests/fixtures/real/Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.json).
+- Owner-supplied Ride Forces app export, covered by the common CC BY-SA 4.0 grant.
+- Size: 179174 bytes.
+- SHA-256: `f76e04a71a339ec619b6b764847510f8a8c1a5d4989d3d447fb61f3b275d7379`.
+- Preserve original bytes. This export shares its recording ID with the Manta
+  `.forces`, CSV and zforces references; sample correspondence is not established
+  by the identifier alone.
+
+## Source-app zforces reference
+
+- File: [Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.zforces](../../tests/fixtures/real/Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.zforces).
+- Owner-supplied Ride Forces app export, covered by the common CC BY-SA 4.0 grant.
+- Size: 91361 bytes.
+- SHA-256: `005ce708ec946bcf4dbe0163fc2fb23c629b65c1ed11706000c130855c4ba1e5`.
+- Preserve original bytes. This export shares its recording ID with the Manta
+  `.forces`, CSV and JSON references; sample correspondence is not established
+  by the identifier alone.
 
 ## Validation and scientific limits
 

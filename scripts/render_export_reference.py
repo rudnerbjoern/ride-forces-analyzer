@@ -28,8 +28,8 @@ from ride_forces_analyzer.rendering.layouts import export_region
 from ride_forces_analyzer.rendering.model import ExportSettings, PROFILES, prepare_export
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "tests/fixtures/real/Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
-SOURCE_SHA256 = "30cf81c360cb28f45ee97234779689bdcdd7ec3aa8fa148645a4b015771be6c6"
+SOURCE = ROOT / "tests/fixtures/real/Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces"
+SOURCE_SHA256 = "1d06e636b0cd26c7634503bf3f5f93e1906791ce47028c129af1c1828c7b268c"
 SAMPLE = 4782  # Zero-based source index: never search for a new peak.
 SMOOTHING = 11
 

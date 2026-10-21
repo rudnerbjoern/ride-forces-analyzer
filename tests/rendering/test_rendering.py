@@ -33,16 +33,19 @@ from ride_forces_analyzer.rendering.layouts.orbit import OrbitRenderer
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
 
 
-@pytest.mark.parametrize("seconds,expected", [(0, 92), (10, 0), (67, 47), (72, 120), (86, 77)])
-def test_orientation_matches_independent_app_snapshots(
+@pytest.mark.parametrize(
+    "offset,expected",
+    [(0, 1.45), (500, 42.16), (2000, 145.85), (2032, 177.92), (3600, 48.06)],
+)
+def test_orientation_matches_independent_app_export(
     manta: ExplorerData,
-    seconds: int,
-    expected: int,
+    offset: int,
+    expected: float,
 ) -> None:
     recording = manta.source.recording
-    angle = orientation_degrees(recording)[recording.indices.start + seconds * 50]
+    angle = orientation_degrees(recording)[recording.indices.start + offset]
     assert angle is not None
-    assert round(angle) == expected
+    assert round(angle, 2) == expected
 
 
 def test_missing_gravity_remains_unavailable(manta: ExplorerData) -> None:
@@ -584,9 +587,9 @@ def test_orbit_orientation_marker_is_omitted_when_unavailable(manta: ExplorerDat
 
 def test_orbit_preserves_negative_forces_and_absent_orientation(manta: ExplorerData) -> None:
     assert manta.analysis is not None
-    start = manta.source.recording.indices.start + 72 * 50
+    start = 4782  # Original app CSV: replay 00:40.32, negative vertical load.
     timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), start, start + 1)
-    assert timeline.value_at(timeline.channels[0], start) == pytest.approx(-3.44, abs=0.01)
+    assert timeline.value_at(timeline.channels[0], start) == pytest.approx(-3.55, abs=0.01)
     orientation = replace(timeline.channels[3], values=(None,) * manta.count)
     timeline = replace(timeline, channels=(*timeline.channels[:3], orientation))
     image = OverlayRenderer(timeline).render_region(0)

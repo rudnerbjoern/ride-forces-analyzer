@@ -3,14 +3,14 @@
 For help choosing a layout and reading its instruments, see the
 [user layout guide](user/EXPORT_LAYOUTS.md).
 
-All five layouts show the same Manta moment: **01:11.18** at 50 Hz
-(71.36 replay seconds), the strongest absolute force in the marker interval
+All five layouts show the same Manta moment: **00:40.32** at 50 Hz
+(40.64 replay seconds), source sample 4782 within the marker interval
 with the default **11-sample smoothing**.
 
-- Vertical: **−3.72 g**.
-- Lateral: **+0.06 g**, right.
-- Longitudinal: **+0.33 g**, acceleration.
-- Tilt: **164.4°**.
+- Vertical: **−3.55 g**.
+- Lateral: **+0.11 g**, right.
+- Longitudinal: **+0.09 g**, acceleration.
+- Tilt: **177.9°**.
 
 ![Five Manta export layouts at the same strong negative vertical-force peak, showing their positions within a landscape video](images/manta-export-themes.png)
 
@@ -43,7 +43,7 @@ recent onset, independently of axis inversion. Missing values show Unavailable.
 A wide strip along the bottom keeps the three force traces together while
 leaving most of the footage visible. The assistant's default layout.
 
-![Flow Ribbon detail with three force traces and −3.72 g vertical readout](images/manta-ribbon-detail.png)
+![Flow Ribbon detail with three force traces and −3.55 g vertical readout](images/manta-ribbon-detail.png)
 
 [Open the complete 4K placement view](images/manta-ribbon.png).
 

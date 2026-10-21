@@ -5,5 +5,9 @@
 *.bat text eol=crlf
 *.cmd text eol=crlf
 
-# Preserve original recording bytes without line-ending conversion.
-*.forces -text
+# Preserve all original reference formats without line-ending conversion.
+tests/fixtures/real/** -text
+
+# Reference documentation and license texts use normal text handling.
+tests/fixtures/real/**/*.md text eol=lf
+tests/fixtures/real/**/*.txt text eol=lf
