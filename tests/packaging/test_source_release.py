@@ -22,6 +22,8 @@ REQUIRED_FILES = cast(tuple[str, ...], MODULE["REQUIRED_FILES"])
     "change,tag,error",
     [
         ("none", "v0.1.0", None),
+        ("export-tests", "v0.1.0", None),
+        ("local-exports", "v0.1.0", "unexpected"),
         ("none", "v0.3.1", "project.version"),
         ("recording", "v0.1.0", "integrity"),
         ("extra-recording", "v0.1.0", "inventory"),
@@ -45,7 +47,11 @@ def test_source_archive_contract(change: str, tag: str, error: str | None) -> No
         },
     ).encode()
     files["tests/fixtures/real/example.forces"] = recording
-    if change == "recording":
+    if change == "export-tests":
+        files["tests/exports/test_csv_export.py"] = b"# Supported source tests\n"
+    elif change == "local-exports":
+        files["exports/private.csv"] = b"private output"
+    elif change == "recording":
         files["tests/fixtures/real/example.forces"] = b"changed"
     elif change == "extra-recording":
         files["tests/fixtures/real/additional.forces"] = recording
