@@ -20,6 +20,20 @@ function parse(source) {
 const rules = parse(await readFile(new URL("../../.github/labeler.yml", import.meta.url), "utf8"));
 const workflow = parse(await readFile(new URL("../../.github/workflows/labeler.yml", import.meta.url), "utf8"));
 
+// Exercise only the path and branch conditions used by this repository's policy.
+// Hosted action/API behavior is verified separately on GitHub.
+function labelsFor(filenames, headBranch = "") {
+  return Object.entries(rules).filter(([, configs]) => configs.some(config => {
+    if (config["head-branch"]) {
+      return [config["head-branch"]].flat().some(pattern => new RegExp(pattern).test(headBranch));
+    }
+    return config["changed-files"].some(rule => {
+      const globs = [rule["any-glob-to-any-file"]].flat();
+      return filenames.some(filename => globs.some(glob => picomatch.isMatch(filename, glob, { dot: true })));
+    });
+  })).map(([label]) => label).sort();
+}
+
 test("Issue templates assign their intended type without requiring additional labels", async () => {
   for (const [filename, label] of [["bug_report", "bug"], ["feature_request", "enhancement"]]) {
     const source = await readFile(new URL(`../../.github/ISSUE_TEMPLATE/${filename}.md`, import.meta.url), "utf8");
@@ -31,18 +45,11 @@ test("Issue templates assign their intended type without requiring additional la
   }
 });
 
-test("PR labels cover nested Markdown, dependency locks and CI without labeling ordinary source", () => {
-  // Test the intentionally simple path-glob policy locally, not the hosted action/API.
-  function labelsFor(filenames) {
-    return Object.entries(rules).filter(([, configs]) => configs.some(config =>
-      config["changed-files"].some(rule => {
-        const globs = [rule["any-glob-to-any-file"]].flat();
-        return filenames.some(filename => globs.some(glob => picomatch.isMatch(filename, glob, { dot: true })));
-      }))).map(([label]) => label).sort();
-  }
+test("PR file labels cover documentation images, dependency locks and CI", () => {
   const cases = [
     [["README.md"], ["documentation"]],
     [["docs/architecture/08_concepts.md"], ["documentation"]],
+    [["docs/images/workspace-light.png"], ["documentation"]],
     [[".github/ISSUE_TEMPLATE/bug_report.md"], ["documentation"]],
     [["uv.lock", "package-lock.json"], ["dependencies"]],
     [[".github/dependabot.yml"], ["dependencies"]],
@@ -55,9 +62,25 @@ test("PR labels cover nested Markdown, dependency locks and CI without labeling 
     [["tests/fixtures/real/example.forces", "docs/chart.svg"], []],
     [[], []],
   ];
-  assert.deepEqual(Object.keys(rules).sort(), ["ci", "dependencies", "documentation"]);
+  assert.deepEqual(Object.keys(rules).sort(), ["bug", "ci", "dependencies", "documentation", "enhancement"]);
   for (const [files, expected] of cases) {
     assert.deepEqual(labelsFor(files), expected, JSON.stringify(files));
+  }
+});
+
+test("PR type labels use anchored feature/fix branches and combine with file labels", () => {
+  const source = ["src/ride_forces_analyzer/json_export.py", "tests/exports/test_json_export.py"];
+  for (const [branch, files, expected] of [
+    ["feat/json-export", source, ["enhancement"]],
+    ["feat/json-export", [...source, "docs/user/JSON_EXPORT.md"], ["documentation", "enhancement"]],
+    ["fix/json-export", source, ["bug"]],
+    ["fix/json-export", [...source, "README.md"], ["bug", "documentation"]],
+    ["chore/feat/json-export", source, []],
+    ["defeat/json-export", source, []],
+    ["refactor/json-export", source, []],
+    ["dependabot/uv/python-security", ["uv.lock"], ["dependencies"]],
+  ]) {
+    assert.deepEqual(labelsFor(files, branch), expected, branch);
   }
 });
 

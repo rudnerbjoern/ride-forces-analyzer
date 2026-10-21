@@ -177,6 +177,38 @@ test("PR runs cancel only superseded runs of the same workflow and have bounded 
   }
 });
 
+test("Native package uploads require release opt-in while PRs still build and verify", async () => {
+  const [ci, packages, release] = await Promise.all([
+    readFile(path.join(root, ".github/workflows/ci.yml"), "utf8"),
+    readFile(path.join(root, ".github/workflows/posix-packages.yml"), "utf8"),
+    readFile(path.join(root, ".github/workflows/source-release.yml"), "utf8"),
+  ]);
+  for (const workflow of [ci, packages]) {
+    assert.match(workflow, /      upload-packages:\r?\n        type: boolean\r?\n        required: false\r?\n        default: false/);
+  }
+  const caller = ci.split("\n  posix:")[1].split("\n  check:")[0];
+  assert.match(caller, /needs\.dependency-check\.outputs\.code == 'true'/);
+  assert.match(caller, /upload-packages: \$\{\{ inputs\.upload-packages \|\| false \}\}/);
+  const quality = release.split("\n  quality:")[1].split("\n  source:")[0];
+  assert.match(quality, /uses: \.\/\.github\/workflows\/ci\.yml/);
+  assert.match(quality, /full-checks: true/);
+  assert.match(quality, /upload-packages: true/);
+  const steps = packages.split(/\r?\n      - /).slice(1);
+  const uploads = steps.filter(step => /uses: actions\/upload-artifact@/.test(step));
+  assert.equal(uploads.length, 2, "Release retains both package and checksums");
+  for (const upload of uploads) {
+    assert.match(upload, /if: \$\{\{ inputs\.upload-packages \}\}/);
+    assert.match(upload, /if-no-files-found: error/);
+  }
+  for (const command of ["scripts.build_posix", "scripts.check_posix_packages"]) {
+    const checks = steps.filter(step => step.includes(command));
+    assert.ok(checks.length > 0, `Missing native build/verification: ${command}`);
+    for (const check of checks) {
+      assert.doesNotMatch(check, /inputs\.upload-packages/, "Native validation also runs without uploads");
+    }
+  }
+});
+
 test("Python checks retain locked resolution and bounded reports without hiding test failures", async () => {
   const workflow = await readFile(path.join(root, ".github/workflows/ci.yml"), "utf8");
   const commands = [...workflow.matchAll(/run: (uv run .+)/g)].map(match => match[1]);

@@ -19,6 +19,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
     with:
       full-checks: true
+      upload-packages: true
       revision: ${{ needs.source.outputs.commit }}
   source:
     permissions:

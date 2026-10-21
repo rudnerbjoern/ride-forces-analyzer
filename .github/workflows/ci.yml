@@ -11,6 +11,10 @@ on:
       revision:
         type: string
         required: false
+      upload-packages:
+        type: boolean
+        required: false
+        default: false
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -229,6 +233,7 @@ jobs:
     uses: ./.github/workflows/posix-packages.yml
     with:
       revision: ${{ inputs.revision || github.sha }}
+      upload-packages: ${{ inputs.upload-packages || false }}
 
   check:
     needs: [dependency-check, code, ui, documentation, skills, gitleaks, actionlint, posix]

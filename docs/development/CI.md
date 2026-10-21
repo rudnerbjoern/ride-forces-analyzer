@@ -9,8 +9,10 @@ builds and executes Linux x64 and macOS arm64/x64 packages on their own runners.
 `posix` follows the `code` selection and is mandatory in the final `check` gate.
 Each target has a 30-minute budget, uses locked dependencies, tests native platform
 contracts and executes the extracted frozen app with a real CPU encode. Linux uses
-Xvfb; macOS verifies app signatures. Verified packages and their checksum files
-are retained for 14 days. They contain neither recordings nor user databases.
+Xvfb; macOS verifies app signatures. PR and manual CI runs build and verify packages
+without uploading them. Only release calls enable `upload-packages`; verified
+packages and their checksum files are then retained for 14 days for publication.
+They contain neither recordings nor user databases.
 These jobs qualify target packages; they do not add a Linux/macOS developer setup.
 
 | Control                  | Contract                                                                                                                                                                       |
@@ -100,12 +102,17 @@ it does not guarantee lower total runner minutes.
   templates assign `bug`/`enhancement`; [PR template](../../.github/pull_request_template.md)
   requests scope, actual local validation and review. Templates activate on `main`,
   without rewriting existing issues/PRs.
-- [Label rules](../../.github/labeler.yml): `documentation` for Markdown,
+- [Label rules](../../.github/labeler.yml): `enhancement` for `feat/` head branches,
+  `bug` for `fix/` head branches; type labels are additive with file labels.
+  `documentation` covers Markdown and `docs/images/`,
   `dependencies` for manifests/locks/Dependabot, `ci` for workflows/CI scripts/tests
   or label/release-category rules. Priority/scientific review remains manual.
+  Unclassified source changes receive no guessed type. Other existing issue
+  labels remain manual.
 - [Labeler workflow](../../.github/workflows/labeler.yml): trusted base configuration;
   `pull_request_target` opened/synchronize/reopened to `main`, including drafts/forks/Dependabot.
   No checkout, PR-code execution or custom secrets.
+  Updated rules take effect after reaching `main`, on the next matching PR event.
 - Permissions: `contents: read`, `pull-requests: write`; labels must exist.
   `sync-labels: false` preserves existing/manual labels. Labels neither approve nor merge.
   Validation stays read-only; no scheduled workflow or runtime dependency is added.
