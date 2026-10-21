@@ -14,8 +14,8 @@ import pytest
 
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
-SOURCE = REAL_FIXTURE_DIRECTORY / "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
-SOURCE_SHA256 = "30cf81c360cb28f45ee97234779689bdcdd7ec3aa8fa148645a4b015771be6c6"
+SOURCE = REAL_FIXTURE_DIRECTORY / "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces"
+SOURCE_SHA256 = "1d06e636b0cd26c7634503bf3f5f93e1906791ce47028c129af1c1828c7b268c"
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts/render_export_reference.py"
 
 
@@ -60,15 +60,15 @@ def test_reference_cli_uses_fixed_sample_from_another_directory(reference_direct
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert result.stdout.count("sample 4782, replay 01:11.18") == 5
+    assert result.stdout.count("sample 4782, replay 00:40.32") == 5
     manifest = json.loads((output / "manta-reference.json").read_text(encoding="utf-8"))
     assert manifest["sample"] == 4782
     assert manifest["smoothing"] == 11
-    assert manifest["replay"] == "01:11.18"
+    assert manifest["replay"] == "00:40.32"
     assert manifest["recording_seconds"] == 95.64
     assert manifest["source_sha256"] == SOURCE_SHA256
     assert manifest["language"] == "en" and manifest["aspect"] == "landscape"
-    assert manifest["values"][0] == pytest.approx(-3.720831192921285)
+    assert manifest["values"][0] == pytest.approx(-3.5516046708080875)
     assert len(list(output.glob("*.png"))) == 11
     for layout in ("ribbon", "corners", "capsule", "orbit", "column"):
         with Image.open(output / f"manta-{layout}.png") as image:

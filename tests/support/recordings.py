@@ -13,9 +13,9 @@ REAL_FIXTURES: dict[str, tuple[int, str]] = {
         837779,
         "f418e8323beeba1ab81da93705b18b0baee3622c2b702ef34b72cd550d45984d",
     ),
-    "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces": (
-        801293,
-        "30cf81c360cb28f45ee97234779689bdcdd7ec3aa8fa148645a4b015771be6c6",
+    "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces": (
+        783028,
+        "1d06e636b0cd26c7634503bf3f5f93e1906791ce47028c129af1c1828c7b268c",
     ),
     "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces": (
         782329,

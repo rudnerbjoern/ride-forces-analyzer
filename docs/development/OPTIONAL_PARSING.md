@@ -101,7 +101,7 @@ not source indices. Tests explicitly retain Taron Row=2 then Seat=1 and Iron Gwa
 uv run --locked pytest tests/importers/test_optional.py tests/recordings/test_integrity.py
 ```
 
-Tests compare optional fields/attributes and all ten fields in 698 GPS fixes across
+Tests compare optional fields/attributes and all ten fields in 650 GPS fixes across
 five originals; pinned byte counts/SHA-256, bytes/modification times protect integrity.
 Synthetic coverage: malformed fields, independent counts, sparse slots, arbitrary
 attributes, ownership/precision, negative values, deterministic warnings and budgets.

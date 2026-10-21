@@ -213,7 +213,7 @@ explorer.find_spec = lambda name: None
 source = import_forces(next(Path('tests/fixtures/real').glob('Manta-*.forces')))
 assert isinstance(source, ImportSuccess)
 view = explorer.present_recording(source)
-assert not view.calibration_available and len(view.channels[0]) == 9640
+assert not view.calibration_available and len(view.channels[0]) == 9638
 assert view.selection_extrema(0, 100).count == 101
 assert 'numpy' not in sys.modules
 print('Raw explorer remains independent of optional NumPy')

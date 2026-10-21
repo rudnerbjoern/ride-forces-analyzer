@@ -43,6 +43,8 @@ releasing it returns to single-sample steps.
 - **Zoom to selection** makes the selected interval visible.
 - **Select visible range** copies the current chart interval into the selection.
 - Exporting **Current selection** uses these sample fields.
+- **Export CSV…** saves these samples as a data table; see the
+  [CSV guide](CSV_EXPORT.md).
 
 The selected sample, selection interval and visible chart interval are separate.
 Zooming alone does not change the export selection.

@@ -16,8 +16,9 @@ Live display behavior belongs to the [explorer contract](../implementation/RAW_E
   successive calibration rotations. Numerical/edge rules: [adopted policy](../architecture/09_architecture_decisions.md#source-app-projection).
 - Comparisons use inclusive marker intervals. Source-app edge handling and
   `endIndex` inclusion remain unverified; no exact selection equivalence is claimed.
-- Pinned Manta at window 11: owner-confirmed source-app projection, g scale, signs,
-  filtering, replay, Combined and Orientation. Other sources/windows remain provisional.
+- Pinned Manta at window 11: selected original CSV rows cross-check source-app
+  projection, signs, filtering, replay, Combined and Orientation. The first exported
+  force differs; other samples/windows and physical g units remain provisional.
 - All unified derived stages retain PROVISIONAL capability and assumed units,
   including confirmed comparisons. No qualified physical forces are established;
   [generic frame gates](../architecture/09_architecture_decisions.md#passive-frame-transforms)
@@ -27,19 +28,19 @@ Live display behavior belongs to the [explorer contract](../implementation/RAW_E
 | ------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | Lateral      | Positive right, negative left                                                                                           |
 | Longitudinal | Positive acceleration, negative braking                                                                                 |
-| Combined     | Norm of filtered directional components; evidence tests only, no production Combined chart                              |
+| Combined     | Manta CSV: norm of smoothed device axes; prepared sample/CSV value, no production Combined chart                        |
 | Orientation  | Angle of normalized current source gravity to stored vertical, clipped cosine before acos; implemented for video export |
 | Time         | Start-relative `MM:SS.ff`, ff is sample counter at integer rate; internal recording seconds remain index/rate           |
 
 - At 50 Hz, 11 samples: nominal N/rate 0.22 s, endpoint span 0.20 s, ±0.10 s support.
-- Manta unfiltered vertical extrema: approximately -5.03988/+3.66707, distinct from
+- Manta unfiltered vertical extrema: approximately -4.43665/+3.13443, distinct from
   the smoothed display.
 
 ## Corpus extrema regression
 
 | Recording      | Source minimum | Reconstructed minimum | Source maximum | Reconstructed maximum |
 | -------------- | -------------- | --------------------- | -------------- | --------------------- |
-| Manta          | -3.720832109   | -3.720831193          | 2.614470243    | 2.614460771           |
+| Manta          | -3.557118177   | -3.557139183          | 2.638292313    | 2.638281318           |
 | Iron Gwazi     | -1.333528161   | -1.333624797          | 3.784377098    | 3.784489785           |
 | Kraken         | -0.220217317   | -0.220226569          | 4.076864719    | 4.076822294           |
 | Taron          | -0.626344442   | -0.626451405          | 4.345596790    | 4.345766817           |
@@ -51,27 +52,26 @@ Live display behavior belongs to the [explorer contract](../implementation/RAW_E
 
 ## Manta replay reference
 
-- Source rate: 50 Hz; startIndex 1214, recording offset 24.28 s.
-- Supplied replay snapshots are independent reference points; no parameter fitting.
+- Source rate: 50 Hz; startIndex 2750, recording offset 55.00 s.
+- The original [CSV export](../../tests/fixtures/real/Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.csv)
+  contains 6888 rows, matching the inclusive marker count. Selected rows below are
+  independent rounded references; no parameter fitting or general sample mapping
+  from filenames alone.
 
-| Replay   | Sample | Recording seconds | Vertical g | Lateral g | Longitudinal g | Combined g | Orientation |
-| -------- | ------ | ----------------- | ---------- | --------- | -------------- | ---------- | ----------- |
-| 00:00.00 | 1214   | 24.28             | -0.04      | -0.01     | 0.99           | 0.99       | 92 degrees  |
-| 00:10.00 | 1714   | 34.28             | 1.00       | 0.01      | -0.01          | 1.00       | 0 degrees   |
-| 01:07.00 | 4564   | 91.28             | 0.52       | -0.02     | -0.08          | 0.52       | 47 degrees  |
-| 01:12.00 | 4814   | 96.28             | -3.44      | 0.07      | 0.35           | 3.46       | 120 degrees |
-| 01:26.00 | 5514   | 110.28            | 1.96       | -0.21     | 0.41           | 2.02       | 77 degrees  |
+| Replay   | Sample | Recording seconds | Vertical g | Lateral g | Longitudinal g | Combined g | Orientation    |
+| -------- | ------ | ----------------- | ---------- | --------- | -------------- | ---------- | -------------- |
+| 00:10.00 | 3250   | 65.00             | 0.74       | 0.01      | 0.68           | 1.00       | 42.16 degrees  |
+| 00:40.00 | 4750   | 95.00             | -3.08      | 0.00      | 0.13           | 3.08       | 145.85 degrees |
+| 00:40.32 | 4782   | 95.64             | -3.55      | 0.11      | 0.09           | 3.55       | 177.92 degrees |
+| 01:12.00 | 6350   | 127.00            | 2.23       | 0.18      | 0.32           | 2.26       | 48.06 degrees  |
+| 02:17.37 | 9637   | 192.74            | 1.00       | 0.01      | 0.06           | 1.00       | 3.68 degrees   |
 
-- Match: all 15 directional values and all five Combined/Orientation values at shown precision.
-- At 01:26: 1.960580571/-0.214940883/0.412735885; component norm 2.015050041 → 2.02.
-  Averaging raw magnitudes gives 2.115184090 and fails the reference.
-- Orientation: 77.397274 degrees → 77; averaging angles first gives 77.743270 and fails.
-- Vertical min: sample 4782, recording 95.64 s, replay 71.36 s. Max: sample 5047,
-  recording 100.94 s, replay 76.66 s.
-- gravityIndex 2013: vertical ≈0.9989. inclineIndex 3370:
-  vertical/longitudinal/lateral ≈0.7414/0.6736/-0.0060.
-- Initial longitudinal load, lift plateau and final vertical baseline match visually;
-  no qualification of arbitrary mounting or every file.
+- Selected rows match all directional forces, device-axis Combined and
+  independent Orientation at two decimal places. No claim covers every CSV row.
+- First CSV vertical value: 1.00 g versus full-history 11-sample mean 1.01 g.
+  Source-app selection-edge behavior remains unverified; no fitted edge rule.
+- gravityIndex 2238 and inclineIndex 3416 remain source markers; they do not
+  qualify arbitrary mounting or physical rider forces.
 
 ## Kraken replay reference and known discrepancy
 
@@ -148,14 +148,14 @@ rounded bins may not sum exactly to totals.
 
 | Recording      | GPS points | GPS span s | Largest gap s | Approximate extent m E/W × N/S | Horizontal accuracy median / max | Negative speed entries |
 | -------------- | ---------- | ---------- | ------------- | ------------------------------ | -------------------------------- | ---------------------- |
-| Manta          | 193        | 192.00     | 1.00          | 118 × 170                      | 11.52 / 46.12                    | 36                     |
+| Manta          | 145        | 177.68     | 15.01         | 96 × 118                       | 14.25 / 56.17                    | 46                     |
 | Kraken         | 174        | 196.06     | 12.00         | 206 × 396                      | 22.09 / 199.99                   | 11                     |
 | Taron          | 182        | 180.74     | 1.00          | 125 × 109                      | 42.11 / 380.26                   | 0                      |
 | Voltron Nevera | 149        | 225.78     | 11.71         | 298 × 156                      | 25.03 / 199.99                   | 18                     |
 | Iron Gwazi     | absent     | —          | —             | —                              | —                                | —                      |
 
 - All four sequences: increasing timestamps, approximately one-second median
-  intervals, all ten fields. Gaps >2 s: Kraken 3, Voltron 15, others 0.
+  intervals, all ten fields. Gaps >2 s: Manta 6, Kraken 3, Voltron 15, Taron 0.
 - Accuracy units unproved; Taron's maximum exceeds its full extent if treated as
   meters. Negative speed/course remain unqualified sentinels, not reverse travel or fixes.
 - Voltron northeast cluster, southwest excursion and long crossings match the supplied
@@ -167,7 +167,7 @@ rounded bins may not sum exactly to totals.
   acquisition clock. Intervals 0.005958–11.707501 s; nine >5 s.
 - Voltron source accuracy 6.62–199.99: 27 entries >50, 18 >100. Altitude
   159.12–165.52 is not a qualified elevation profile. Negative speed/course: 18/46 entries.
-- Other connected-point lengths / endpoint separations (m): Manta 533.40/59.05,
+- Other connected-point lengths / endpoint separations (m): Manta 769.59/24.54,
   Kraken 1,790.73/6.27, Taron 883.66/19.42. Crossings/jumps/clusters identify no ride elements.
 - Iron Gwazi: no GPS; no borrowed route. Current offline overview: neutral-blue
   connections, breaks at unavailable fixes and missing/zero/negative/>2 s intervals,
@@ -175,15 +175,15 @@ rounded bins may not sum exactly to totals.
 
 ### Source-speed color hypothesis
 
-- Nonnegative speed maxima: Manta 6.404428, Kraken 14.761415, Taron 13.328056,
-  Voltron 14.216463; 23.06/53.14/47.98/51.18 km/h **if** source units are m/s.
+- Nonnegative speed maxima: Manta 11.275048, Kraken 14.761415, Taron 13.328056,
+  Voltron 14.216463; 40.59/53.14/47.98/51.18 km/h **if** source units are m/s.
 - Linear 0–15 source-unit green/red inspection scale qualitatively matches Voltron:
   slow northeast points green, faster central return orange/red. Palette, thresholds,
   normalization, interpolation and processed-versus-source speed remain unverified.
 - No maps supplied for the other three GPS recordings; no cross-recording confirmation.
   Available course does not establish available speed.
 - Nonnegative ending-fix speed versus adjacent distance/time correlation:
-  Manta 0.318, Kraken 0.099, Taron 0.266, Voltron 0.346. No fitted lag, quality selection
+  Manta 0.161, Kraken 0.099, Taron 0.266, Voltron 0.346. No fitted lag, quality selection
   or smoothing. This does not justify replacing source speed with geometric step speed;
   speed coloring remains a hypothesis, not a confirmed app contract.
 

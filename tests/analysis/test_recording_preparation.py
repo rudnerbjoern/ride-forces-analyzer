@@ -3,6 +3,8 @@
 from dataclasses import replace
 from datetime import UTC, datetime
 import json
+from math import sqrt
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
@@ -29,6 +31,49 @@ from ride_forces_analyzer.analysis.recording import (
 from ride_forces_analyzer.analysis.projection import project_directions
 from ride_forces_analyzer.analysis.smoothing import centered_mean
 from ride_forces_analyzer.importers import ImportSuccess, import_forces_bytes
+
+
+def test_combined_uses_device_axes_and_is_prepared_with_the_smoothing_snapshot(
+    configuration: AnalysisConfiguration,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = synthetic_source(
+        accelerationSequence=[
+            {"x": 3, "y": 4, "z": 0},
+            {"x": -3, "y": -4, "z": 0},
+            {"x": 0, "y": 0, "z": 12},
+        ],
+        gravitySequence=[{"x": 0, "y": 0, "z": 1}] * 3,
+        endIndex=2,
+        verticalDirectionVector={"x": 0.001, "y": 0, "z": 1},
+    )
+    configuration = replace(
+        configuration,
+        smoothing=replace(configuration.smoothing, parameters=(("window_samples", 3),)),
+    )
+    snapshot = prepare_snapshot(configuration, source)
+    assert snapshot.forces.smoothed.combined is not None
+    assert tuple(snapshot.forces.smoothed.combined.values) == (0, 4, 6.5)
+    assert snapshot.sample(2).combined_g == 6.5
+    forces = snapshot.sample(2).smoothed
+    assert forces is not None
+    assert snapshot.sample(2).combined_g != sqrt(
+        forces.vertical**2 + forces.lateral**2 + forces.longitudinal**2,
+    )
+    changed = snapshot.with_smoothing(1, revision=4, calculation_time=NOW)
+    assert changed.forces.projected is snapshot.forces.projected
+    assert changed.forces.smoothed.combined is not snapshot.forces.smoothed.combined
+    assert changed.sample(2).combined_g == 12
+    assert snapshot.sample(2).combined_g == 6.5
+    with pytest.raises(ValueError):
+        snapshot.forces.smoothed.combined.values.setflags(write=True)
+    monkeypatch.setattr(
+        recording,
+        "combined_force",
+        Mock(side_effect=AssertionError("Repeated Combined")),
+    )
+    assert snapshot.sample(2).combined_g == 6.5
+
 
 NOW = datetime(2026, 10, 20, tzinfo=UTC)
 

@@ -76,7 +76,7 @@ classDiagram
     ProjectedForces --> ImportSuccess : source
     ProjectedForces --> AnalysisTime : correspondence
     ProjectedForces --> SampleValues : immutable channels and validity
-    SmoothedForces --> SampleValues : immutable channels and validity
+    SmoothedForces --> SampleValues : immutable channels, Combined and validity
     ProjectedForces --> StageAvailability : availability
     SmoothedForces --> StageAvailability : availability
     OrientationSeries --> StageAvailability : availability
@@ -126,6 +126,9 @@ classDiagram
 - `sample(index)` returns raw/projected/smoothed values, orientation, prepared context,
   recording/replay seconds, stage availability and applicable diagnostics. Missing
   force/orientation rows or stages return `None`; source data remains unchanged.
+- `forces.smoothed.combined` is an immutable scalar buffer; `sample(index).combined_g`
+  reads its prepared value or `None` for unavailable/invalid rows. It shares the
+  smoothing stage's availability, provisional units, provenance and lifetime.
 - Sample errors: `TypeError` for non-integer indices (including bool), `IndexError`
   outside the recording, `ValueError` for a manually assembled index-only snapshot
   without a rate. Time uses the source's inferred rate and start-relative replay origin.
@@ -149,6 +152,11 @@ All listed algorithms use version `1`.
 - Smoothing always reads unfiltered projection. Edges shorten and renormalize,
   including recordings shorter than the window. Neither primitive changes time or
   source samples; non-finite numerical results raise `ValueError`, not fills/clamps.
+- Combined uses `analysis.smoothing.combined_force`: smooth each original device
+  x/y/z axis with the same window, then compute `hypot(mean(x), mean(y), mean(z))`.
+  It is prepared with the smoothing stage, reused on sample/export reads and
+  recalculated when smoothing changes. It is neither a mean of magnitudes nor
+  the norm of projected channels; no selection-edge holding is introduced.
 - Missing/inadmissible directions or numerical force-range failures exclude affected
   stages with diagnostics. A usable window can recover a smoothing-range exclusion.
 - Orientation is independent of force smoothing/projection. Missing gravity/vertical
@@ -234,6 +242,7 @@ monotonic request revisions and service-specific subscription handles.
 | Context label/strip                            | Format prepared categories without reclassification                                                                                           |
 | Extrema                                        | Read shared smoothed buffers with retained quality/provenance                                                                                 |
 | `prepare_export` / `build_previews`            | Require `RecordingAnalysis`, not explorer objects; UI captures snapshot before scheduling work                                                |
+| `csv_export.export_csv`                        | Require bound `RecordingAnalysis`; serialize sample views, missingness and quality over an inclusive range                                    |
 | `ExportTimeline` / `ExportValues`              | Retain bound snapshot / expose shared scalar buffers as read-only sequences, with `None` for invalid rows                                     |
 | `prepare_export_analysis`                      | Equal configuration returns the identical snapshot; otherwise partial recalculation                                                           |
 | Presets/jobs                                   | Require full versioned `analysis_configuration`, matching window and all serialized aspect/language/dependency fields; no source bytes/arrays |

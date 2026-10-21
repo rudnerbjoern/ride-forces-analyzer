@@ -256,7 +256,12 @@ class ExplorerWindow(QMainWindow):
         self.export_button.setEnabled(False)
         self.export_button.clicked.connect(self.show_export)
         toolbar.addWidget(self.export_button)
+        self.csv_button = bind(QPushButton(), tr("Export CSV…"))
+        self.csv_button.setEnabled(False)
+        self.csv_button.clicked.connect(self.show_csv_export)
+        toolbar.addWidget(self.csv_button)
         self.export_window: QDialog | None = None
+        self.csv_window: QDialog | None = None
         self.batch_window: QDialog | None = None
         self.batches_button = bind(QPushButton(), tr("Batches…"))
         self.batches_button.clicked.connect(self.show_batches)
@@ -768,6 +773,8 @@ class ExplorerWindow(QMainWindow):
                 return
         if self.gps_window is not None:
             self.gps_window.close()
+        if self.csv_window is not None:
+            self.csv_window.close()
         self.updates.stopped = True
         self._accept_results = False
         self._load_generation += 1
@@ -795,6 +802,54 @@ class ExplorerWindow(QMainWindow):
             enabled and self.data is not None and self.data.calibration_available,
         )
         self.play_button.setEnabled(enabled and self.data is not None and self.data.count > 1)
+        self.csv_button.setEnabled(
+            enabled and self.data is not None and self.data.analysis is not None,
+        )
+
+    @Slot()
+    def show_csv_export(self) -> None:
+        if self.data is None or self.data.analysis is None:
+            return
+        if self.csv_window is not None and self.csv_window.isVisible():
+            self.csv_window.raise_()
+            return
+        self._pause_playback()
+        analysis = self.data.analysis
+        first, last = self.first.value(), self.last.value()
+        source_path = analysis.source.recording.source.provenance.path
+        name = f"{source_path.stem if source_path else 'recording'}.csv"
+        directory = self.preferences.export_directory()
+        suggested = (
+            Path(directory) / name
+            if directory
+            else source_path.with_suffix(".csv")
+            if source_path
+            else Path(name)
+        )
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            tr("Export CSV"),
+            str(suggested),
+            tr("CSV files (*.csv)"),
+            options=QFileDialog.Option.DontConfirmOverwrite,
+        )
+        if not filename:
+            return
+        path = Path(filename)
+        if path.suffix.lower() != ".csv":
+            path = path.with_name(path.name + ".csv")
+        if self.csv_window is not None:
+            self.csv_window.deleteLater()
+        from .csv_export import CsvExportDialog
+
+        dialog = CsvExportDialog(analysis, path, first, last, self.preferences, self)
+        dialog.saved.connect(self._csv_saved)
+        self.csv_window = dialog
+        dialog.show()
+
+    @Slot(str)
+    def _csv_saved(self, path: str) -> None:
+        bind(self.statusBar(), tr("CSV saved to {0}", path), "message")
 
     @Slot()
     def show_export(self) -> None:

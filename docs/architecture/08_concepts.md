@@ -17,8 +17,8 @@ a complete Recording; ImportFailure has none. Diagnostics sort by severity,
 escaped JSON pointer and code with stable ties. Caller misuse raises.
 [Importer contracts](../development/IMPORT_SERVICE.md) own exact API details.
 
-The five original fixtures contain 48,029 acceleration vectors, 39,317 available
-gravity vectors and 698 GPS fixes. iPhone recordings have paired gravity/GPS;
+The five original fixtures contain 48,027 acceleration vectors, 39,315 available
+gravity vectors and 650 GPS fixes. iPhone recordings have paired gravity/GPS;
 the Apple Watch fixture lacks both. Taron/Voltron omit sampleRate, so the explicit
 50 Hz absence policy applies. Motion components are decimal strings; GPS fields
 are JSON numbers. These corpus observations are not a manufacturer specification.

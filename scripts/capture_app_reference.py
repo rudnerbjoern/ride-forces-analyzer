@@ -69,7 +69,7 @@ def capture_details(application: QApplication, window: ExplorerWindow, output: P
     hashes = {
         "VoltronNevera": SOURCE_SHA256,
         "Taron": "cfa03821140aaa76c52e1bb69905db96a775a5d6772741b5d3a90f48a4254564",
-        "Manta": "30cf81c360cb28f45ee97234779689bdcdd7ec3aa8fa148645a4b015771be6c6",
+        "Manta": "1d06e636b0cd26c7634503bf3f5f93e1906791ce47028c129af1c1828c7b268c",
     }
     sources = {name: next(SOURCE.parent.glob(name + "-*.forces")) for name, _, _ in scenes}
     for name, source in sources.items():

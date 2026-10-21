@@ -110,6 +110,7 @@ def analysis() -> RecordingAnalysis:
         projected.channels,
         quality,
         replace(provenance, algorithm=configuration.smoothing.algorithm),
+        SampleValues(np.array([1.0, 1.0, 1.0])),
     )
     missing_gravity = AnalysisDiagnostic("MISSING_GRAVITY", Severity.INFO, "No source gravity")
     orientation = OrientationSeries(

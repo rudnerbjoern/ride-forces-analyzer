@@ -1175,11 +1175,11 @@
       },
       "sha256": "f418e8323beeba1ab81da93705b18b0baee3622c2b702ef34b72cd550d45984d"
     },
-    "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces": {
-      "byte_count": 801293,
+    "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces": {
+      "byte_count": 783028,
       "max_container_depth": 3,
-      "max_number_token_length": 21,
-      "node_count": 79294,
+      "max_number_token_length": 19,
+      "node_count": 78760,
       "paths": {
         "$": {
           "members": {
@@ -1194,6 +1194,7 @@
             "inclineIndex": 1,
             "lateralDirectionVector": 1,
             "latitude": 1,
+            "location": 1,
             "locationSequence": 1,
             "longitude": 1,
             "longitudinalDirectionVector": 1,
@@ -1205,9 +1206,14 @@
             "schemaVersion": 1,
             "smoothingFactor": 1,
             "startIndex": 1,
+            "temperature": 1,
             "timezone": 1,
             "uuid": 1,
             "verticalDirectionVector": 1,
+            "weatherConditions": 1,
+            "windDirection": 1,
+            "windGust": 1,
+            "windSpeed": 1,
             "xCalibrationVector": 1,
             "yCalibrationVector": 1,
             "zCalibrationVector": 1
@@ -1218,7 +1224,7 @@
         },
         "$[\"accelerationSequence\"]": {
           "array_lengths": {
-            "9640": 1
+            "9638": 1
           },
           "types": {
             "array": 1
@@ -1226,36 +1232,36 @@
         },
         "$[\"accelerationSequence\"][*]": {
           "members": {
-            "x": 9640,
-            "y": 9640,
-            "z": 9640
+            "x": 9638,
+            "y": 9638,
+            "z": 9638
           },
           "types": {
-            "object": 9640
+            "object": 9638
           }
         },
         "$[\"accelerationSequence\"][*][\"x\"]": {
-          "finite_decimal_strings": 9640,
+          "finite_decimal_strings": 9638,
           "string_length_max": 6,
           "string_length_min": 5,
           "types": {
-            "string": 9640
+            "string": 9638
           }
         },
         "$[\"accelerationSequence\"][*][\"y\"]": {
-          "finite_decimal_strings": 9640,
+          "finite_decimal_strings": 9638,
           "string_length_max": 6,
           "string_length_min": 5,
           "types": {
-            "string": 9640
+            "string": 9638
           }
         },
         "$[\"accelerationSequence\"][*][\"z\"]": {
-          "finite_decimal_strings": 9640,
+          "finite_decimal_strings": 9638,
           "string_length_max": 6,
           "string_length_min": 5,
           "types": {
-            "string": 9640
+            "string": 9638
           }
         },
         "$[\"advancedRecording\"]": {
@@ -1265,7 +1271,7 @@
         },
         "$[\"attributes\"]": {
           "array_lengths": {
-            "1": 1
+            "2": 1
           },
           "types": {
             "array": 1
@@ -1273,12 +1279,12 @@
         },
         "$[\"attributes\"][*]": {
           "members": {
-            "id": 1,
-            "label": 1,
-            "value": 1
+            "id": 2,
+            "label": 2,
+            "value": 2
           },
           "types": {
-            "object": 1
+            "object": 2
           }
         },
         "$[\"attributes\"][*][\"id\"]": {
@@ -1286,23 +1292,23 @@
           "string_length_max": 36,
           "string_length_min": 36,
           "types": {
-            "string": 1
+            "string": 2
           }
         },
         "$[\"attributes\"][*][\"label\"]": {
           "finite_decimal_strings": 0,
-          "string_length_max": 3,
+          "string_length_max": 4,
           "string_length_min": 3,
           "types": {
-            "string": 1
+            "string": 2
           }
         },
         "$[\"attributes\"][*][\"value\"]": {
-          "finite_decimal_strings": 1,
+          "finite_decimal_strings": 2,
           "string_length_max": 1,
           "string_length_min": 1,
           "types": {
-            "string": 1
+            "string": 2
           }
         },
         "$[\"date\"]": {
@@ -1342,7 +1348,7 @@
         },
         "$[\"gravitySequence\"]": {
           "array_lengths": {
-            "9640": 1
+            "9638": 1
           },
           "types": {
             "array": 1
@@ -1350,36 +1356,36 @@
         },
         "$[\"gravitySequence\"][*]": {
           "members": {
-            "x": 9640,
-            "y": 9640,
-            "z": 9640
+            "x": 9638,
+            "y": 9638,
+            "z": 9638
           },
           "types": {
-            "object": 9640
+            "object": 9638
           }
         },
         "$[\"gravitySequence\"][*][\"x\"]": {
-          "finite_decimal_strings": 9640,
+          "finite_decimal_strings": 9638,
           "string_length_max": 6,
           "string_length_min": 5,
           "types": {
-            "string": 9640
+            "string": 9638
           }
         },
         "$[\"gravitySequence\"][*][\"y\"]": {
-          "finite_decimal_strings": 9640,
+          "finite_decimal_strings": 9638,
           "string_length_max": 6,
           "string_length_min": 5,
           "types": {
-            "string": 9640
+            "string": 9638
           }
         },
         "$[\"gravitySequence\"][*][\"z\"]": {
-          "finite_decimal_strings": 9640,
+          "finite_decimal_strings": 9638,
           "string_length_max": 6,
           "string_length_min": 5,
           "types": {
-            "string": 9640
+            "string": 9638
           }
         },
         "$[\"inclineIndex\"]": {
@@ -1411,8 +1417,8 @@
         },
         "$[\"lateralDirectionVector\"][\"y\"]": {
           "finite_decimal_strings": 1,
-          "string_length_max": 6,
-          "string_length_min": 6,
+          "string_length_max": 5,
+          "string_length_min": 5,
           "types": {
             "string": 1
           }
@@ -1434,9 +1440,17 @@
             "number": 1
           }
         },
+        "$[\"location\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 16,
+          "string_length_min": 16,
+          "types": {
+            "string": 1
+          }
+        },
         "$[\"locationSequence\"]": {
           "array_lengths": {
-            "193": 1
+            "145": 1
           },
           "types": {
             "array": 1
@@ -1444,114 +1458,114 @@
         },
         "$[\"locationSequence\"][*]": {
           "members": {
-            "altitude": 193,
-            "course": 193,
-            "courseAccuracy": 193,
-            "horizontalAccuracy": 193,
-            "latitude": 193,
-            "longitude": 193,
-            "speed": 193,
-            "speedAccuracy": 193,
-            "timestamp": 193,
-            "verticalAccuracy": 193
+            "altitude": 145,
+            "course": 145,
+            "courseAccuracy": 145,
+            "horizontalAccuracy": 145,
+            "latitude": 145,
+            "longitude": 145,
+            "speed": 145,
+            "speedAccuracy": 145,
+            "timestamp": 145,
+            "verticalAccuracy": 145
           },
           "types": {
-            "object": 193
+            "object": 145
           }
         },
         "$[\"locationSequence\"][*][\"altitude\"]": {
           "negative_numbers": 0,
           "number_encodings": {
-            "decimal_or_exponent": 193
+            "decimal_or_exponent": 145
           },
           "types": {
-            "number": 193
+            "number": 145
           }
         },
         "$[\"locationSequence\"][*][\"course\"]": {
-          "negative_numbers": 36,
+          "negative_numbers": 106,
           "number_encodings": {
-            "decimal_or_exponent": 157,
-            "integer": 36
+            "decimal_or_exponent": 39,
+            "integer": 106
           },
           "types": {
-            "number": 193
+            "number": 145
           }
         },
         "$[\"locationSequence\"][*][\"courseAccuracy\"]": {
-          "negative_numbers": 36,
+          "negative_numbers": 106,
           "number_encodings": {
-            "decimal_or_exponent": 98,
-            "integer": 95
+            "decimal_or_exponent": 39,
+            "integer": 106
           },
           "types": {
-            "number": 193
+            "number": 145
           }
         },
         "$[\"locationSequence\"][*][\"horizontalAccuracy\"]": {
           "negative_numbers": 0,
           "number_encodings": {
-            "decimal_or_exponent": 193
+            "decimal_or_exponent": 145
           },
           "types": {
-            "number": 193
+            "number": 145
           }
         },
         "$[\"locationSequence\"][*][\"latitude\"]": {
           "negative_numbers": 0,
           "number_encodings": {
-            "decimal_or_exponent": 193
+            "decimal_or_exponent": 145
           },
           "types": {
-            "number": 193
+            "number": 145
           }
         },
         "$[\"locationSequence\"][*][\"longitude\"]": {
-          "negative_numbers": 193,
+          "negative_numbers": 145,
           "number_encodings": {
-            "decimal_or_exponent": 193
+            "decimal_or_exponent": 145
           },
           "types": {
-            "number": 193
+            "number": 145
           }
         },
         "$[\"locationSequence\"][*][\"speed\"]": {
-          "negative_numbers": 36,
+          "negative_numbers": 46,
           "number_encodings": {
-            "decimal_or_exponent": 115,
-            "integer": 78
+            "decimal_or_exponent": 89,
+            "integer": 56
           },
           "types": {
-            "number": 193
+            "number": 145
           }
         },
         "$[\"locationSequence\"][*][\"speedAccuracy\"]": {
-          "negative_numbers": 36,
+          "negative_numbers": 46,
           "number_encodings": {
-            "decimal_or_exponent": 157,
-            "integer": 36
+            "decimal_or_exponent": 99,
+            "integer": 46
           },
           "types": {
-            "number": 193
+            "number": 145
           }
         },
         "$[\"locationSequence\"][*][\"timestamp\"]": {
           "negative_numbers": 0,
           "number_encodings": {
-            "decimal_or_exponent": 193
+            "decimal_or_exponent": 145
           },
           "types": {
-            "number": 193
+            "number": 145
           }
         },
         "$[\"locationSequence\"][*][\"verticalAccuracy\"]": {
           "negative_numbers": 0,
           "number_encodings": {
-            "decimal_or_exponent": 164,
-            "integer": 29
+            "decimal_or_exponent": 55,
+            "integer": 90
           },
           "types": {
-            "number": 193
+            "number": 145
           }
         },
         "$[\"longitude\"]": {
@@ -1583,8 +1597,8 @@
         },
         "$[\"longitudinalDirectionVector\"][\"y\"]": {
           "finite_decimal_strings": 1,
-          "string_length_max": 5,
-          "string_length_min": 5,
+          "string_length_max": 6,
+          "string_length_min": 6,
           "types": {
             "string": 1
           }
@@ -1666,6 +1680,15 @@
             "number": 1
           }
         },
+        "$[\"temperature\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
         "$[\"timezone\"]": {
           "finite_decimal_strings": 0,
           "string_length_max": 16,
@@ -1694,8 +1717,8 @@
         },
         "$[\"verticalDirectionVector\"][\"x\"]": {
           "finite_decimal_strings": 1,
-          "string_length_max": 6,
-          "string_length_min": 6,
+          "string_length_max": 5,
+          "string_length_min": 5,
           "types": {
             "string": 1
           }
@@ -1714,6 +1737,41 @@
           "string_length_min": 5,
           "types": {
             "string": 1
+          }
+        },
+        "$[\"weatherConditions\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"windDirection\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"windGust\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"windSpeed\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
           }
         },
         "$[\"xCalibrationVector\"]": {
@@ -1736,8 +1794,8 @@
         },
         "$[\"xCalibrationVector\"][\"y\"]": {
           "finite_decimal_strings": 1,
-          "string_length_max": 6,
-          "string_length_min": 6,
+          "string_length_max": 5,
+          "string_length_min": 5,
           "types": {
             "string": 1
           }
@@ -1762,8 +1820,8 @@
         },
         "$[\"yCalibrationVector\"][\"x\"]": {
           "finite_decimal_strings": 1,
-          "string_length_max": 6,
-          "string_length_min": 6,
+          "string_length_max": 5,
+          "string_length_min": 5,
           "types": {
             "string": 1
           }
@@ -1804,8 +1862,8 @@
         },
         "$[\"zCalibrationVector\"][\"y\"]": {
           "finite_decimal_strings": 1,
-          "string_length_max": 5,
-          "string_length_min": 5,
+          "string_length_max": 6,
+          "string_length_min": 6,
           "types": {
             "string": 1
           }
@@ -1819,7 +1877,7 @@
           }
         }
       },
-      "sha256": "30cf81c360cb28f45ee97234779689bdcdd7ec3aa8fa148645a4b015771be6c6"
+      "sha256": "1d06e636b0cd26c7634503bf3f5f93e1906791ce47028c129af1c1828c7b268c"
     },
     "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces": {
       "byte_count": 782329,
@@ -3198,7 +3256,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3208,7 +3266,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3218,7 +3276,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3228,7 +3286,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3238,7 +3296,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3248,7 +3306,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3258,7 +3316,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3269,7 +3327,7 @@
       ],
       "present_in": [
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3279,7 +3337,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3289,7 +3347,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3300,18 +3358,17 @@
       ],
       "present_in": [
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
     },
     "location": {
-      "absent_in": [
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
-      ],
+      "absent_in": [],
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3322,7 +3379,7 @@
       ],
       "present_in": [
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3333,7 +3390,7 @@
       ],
       "present_in": [
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3343,7 +3400,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3353,7 +3410,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3363,7 +3420,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3373,7 +3430,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3386,7 +3443,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces"
       ]
     },
     "sampleRate": {
@@ -3397,7 +3454,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces"
       ]
     },
     "schemaVersion": {
@@ -3405,7 +3462,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3415,7 +3472,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3425,18 +3482,18 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
     },
     "temperature": {
       "absent_in": [
-        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces"
       ],
       "present_in": [
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3446,7 +3503,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3456,7 +3513,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3466,51 +3523,51 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
     },
     "weatherConditions": {
       "absent_in": [
-        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces"
       ],
       "present_in": [
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
     },
     "windDirection": {
       "absent_in": [
-        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces"
       ],
       "present_in": [
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
     },
     "windGust": {
       "absent_in": [
-        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces"
       ],
       "present_in": [
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
     },
     "windSpeed": {
       "absent_in": [
-        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces"
+        "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces"
       ],
       "present_in": [
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3520,7 +3577,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3530,7 +3587,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]
@@ -3540,7 +3597,7 @@
       "present_in": [
         "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces",
         "Kraken-1537D9CF-418B-4F13-AA1A-F303F9DE2311.forces",
-        "Manta-017E20DC-422C-4844-9CE8-0CFCDDFE64F4.forces",
+        "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces",
         "Taron-E929A20E-9E53-4C09-81F0-E2D3AED1E626.forces",
         "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
       ]

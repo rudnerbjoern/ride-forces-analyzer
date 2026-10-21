@@ -9,6 +9,13 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:disable
 
 GERMAN: dict[str, str] = {
+    "Export CSV…": "CSV exportieren…",
+    "Export CSV": "CSV exportieren",
+    "CSV files (*.csv)": "CSV-Dateien (*.csv)",
+    "Exporting {0:,} samples…": "{0:,} Samples werden exportiert…",
+    "CSV export failed": "CSV-Export fehlgeschlagen",
+    "CSV saved to {0}": "CSV gespeichert unter {0}",
+    "Cancel": "Abbrechen",
     "Play": "Wiedergabe",
     "Pause": "Pause",
     "Play recording": "Aufnahme wiedergeben",

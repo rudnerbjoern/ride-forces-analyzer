@@ -36,7 +36,7 @@ VECTORS = (
 EXPECTED = {
     "IronGwazi": (8712, None, 1720, 8179, 7382, 3121, ValueOrigin.SOURCE),
     "Kraken": (10084, 10084, 913, 9138, 1028, 2928, ValueOrigin.SOURCE),
-    "Manta": (9640, 9640, 1214, 9639, 2013, 3370, ValueOrigin.SOURCE),
+    "Manta": (9638, 9638, 2750, 9637, 2238, 3416, ValueOrigin.SOURCE),
     "Taron": (9089, 9089, 2284, 6639, 1513, 2852, ValueOrigin.DEFAULT),
     "VoltronNevera": (10504, 10504, 1571, 10374, 6894, 7368, ValueOrigin.DEFAULT),
 }

@@ -267,6 +267,11 @@ def test_partial_range_failure_and_recovery_keep_upstream_stages(
     assert excluded.orientation is original.orientation
     assert excluded.sample(0).smoothed is None and excluded.sample(0).context is None
     assert original.sample(0).smoothed is not None
+    assert original.sample(0).combined_g is None
+    assert any(
+        item.code == "COMBINED_SAMPLE_UNAVAILABLE"
+        for item in original.sample(0).quality.diagnostics
+    )
     restored = excluded.with_smoothing(1, revision=5, calculation_time=LATER)
     assert restored.forces.projected is original.forces.projected
     assert restored.forces.smoothed.channels == original.forces.smoothed.channels
