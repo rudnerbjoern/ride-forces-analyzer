@@ -4,7 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-# cspell:words fstat
+# cspell:words fstat decompressobj wbits
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -14,6 +14,7 @@ import os
 from pathlib import Path, PureWindowsPath
 import stat
 from typing import Literal, cast
+import zlib
 
 from ride_forces_analyzer.domain import SourceEnvelope, SourceNumber, SourceValue
 from ride_forces_analyzer.domain._validation import has_type
@@ -134,8 +135,19 @@ def _decode(data: bytes, limits: ImportLimits, path: Path | None = None) -> Deco
     source = SourceEnvelope(data, source_path=path)
     if not data:
         return _failure("EMPTY_INPUT", "Source input is empty", source=source)
+    document = data
+    if path is not None and path.suffix.lower() == ".zforces":
+        try:
+            stream = zlib.decompressobj(wbits=-15)
+            document = stream.decompress(data, limits.max_bytes + 1)
+        except zlib.error:
+            return _failure("INVALID_COMPRESSION", "Invalid compressed recording", source=source)
+        if len(document) > limits.max_bytes:
+            return _failure("RESOURCE_LIMIT_EXCEEDED", "Resource budget exceeded: max_bytes")
+        if not stream.eof or stream.unused_data:
+            return _failure("INVALID_COMPRESSION", "Invalid compressed recording", source=source)
     try:
-        text = data.decode("utf-8-sig", errors="strict")
+        text = document.decode("utf-8-sig", errors="strict")
     except UnicodeDecodeError:
         return _failure("INVALID_UTF8", "Source must use valid UTF-8", source=source)
     if not text.strip(" \t\r\n"):

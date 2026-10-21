@@ -462,9 +462,10 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     dialog.presets.selectAll()
 
     def files(*args: object, **kwargs: object) -> tuple[list[str], str]:
+        assert args[3] == "Ride Forces (*.forces *.zforces)"
         return [
-            str(next(REAL_FIXTURE_DIRECTORY.glob(f"{ride}-*.forces")))
-            for ride in ("Manta", "Kraken")
+            str(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.zforces"))),
+            str(next(REAL_FIXTURE_DIRECTORY.glob("Kraken-*.forces"))),
         ], ""
 
     monkeypatch.setattr(QFileDialog, "getOpenFileNames", files)

@@ -76,7 +76,7 @@ processing and video export work offline.
 
 ## Open your first recording
 
-Click **Open recording** and choose a `.forces` file exported from the Ride Forces
+Click **Open recording** and choose a `.forces` or `.zforces` file exported from the Ride Forces
 app. Follow [Explore a recording](EXPLORER.md) for chart navigation, selection,
 settings and GPS, or the [video export guide](VIDEO_EXPORT.md) to create an overlay.
 

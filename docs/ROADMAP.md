@@ -11,7 +11,7 @@ owns system design and scientific boundaries.
 | M3 — Analysis              | Complete, reduced scope | Immutable models, device/frame APIs, source-app projection/mean, extrema, shared snapshots/service and provisional context/events; [analysis contracts](development/ANALYSIS_MODELS.md) |
 | M4 — Explorer              | Partial                 | Raw/calibrated charts, markers, time zoom, selection/extrema, GPS, light/dark and English/German UI; persistent library and full acceptance remain                                      |
 | M5 — Playback              | Complete                | Sample playback at 0.5×/1×/2×, pause/resume and seeking                                                                                                                                 |
-| M6 — Exports               | Partial                 | Five 4K layouts, both aspects, transparent/opaque video, previews, presets/batches, CSV/JSON, optional NVIDIA; PNG sequences and full acceptance remain                                 |
+| M6 — Exports               | Complete                | Five 4K layouts, both aspects, transparent/opaque video, previews, presets/batches, CSV/JSON, optional NVIDIA                                                                           |
 | M7 — Video synchronization | Planned                 | Local video ingest, offsets, timeline preview, frame-accurate alignment                                                                                                                 |
 | M8 — Windows release       | Partial                 | Portable EXE, standard/complete ZIPs, notice collection and tag pipeline; missing redistribution material, signing, installer/uninstaller and clean-Windows verification remain         |
 | M9 — Linux / macOS         | Partial                 | Native Linux x64/macOS arm64/x64 packages and mandatory runtime CI; macOS Developer ID/notarization and clean-machine qualification remain open                                         |
@@ -35,9 +35,7 @@ owns system design and scientific boundaries.
 ## Next product work
 
 1. Finish M4's persistent library and remaining explorer acceptance.
-2. Complete M6 beyond [video](implementation/VIDEO_EXPORT.md) and
-   [batch](implementation/EXPORT_BATCHES.md) export.
-3. Scope M7 and remaining M8 work independently.
+2. Scope M7 and remaining M8 work independently.
 
 Validation follows owner instructions. Roadmap entries authorize neither
 implementation nor Git operations.

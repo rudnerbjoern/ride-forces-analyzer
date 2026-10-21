@@ -7,6 +7,9 @@
 SourceEnvelope owns original bytes, an immutable recursive tree and provenance.
 Canonical floats supplement exact tokens; unknown fields, ordering, null/absence,
 GPS slots and metadata remain retained. Defaults never alter source data.
+For `.zforces`, bounded Raw-DEFLATE expansion precedes JSON validation. Original
+bytes and provenance identify the compressed file; the tree contains its decoded
+JSON. Both formats use the same downstream models and analysis.
 Absent rate/riding position use 50/Seated; absent start/end independently use
 0/N-1 with warnings. Invalid supplied core data fails; missing sensors stay absent.
 

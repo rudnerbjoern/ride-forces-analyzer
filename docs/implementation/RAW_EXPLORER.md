@@ -15,7 +15,7 @@ Product scope belongs in the [roadmap](../ROADMAP.md).
 | Area                 | Contract                                                                                                                                                                  |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | About                | Package version, purpose, copyright, licenses, project/source-app links and independence from Ride Forces; live English/German and light/dark appearance                  |
-| Open                 | Local `.forces`, background import/analysis; preserve bytes, unknown fields, absent sensors and source arrays                                                             |
+| Open                 | Local `.forces` / `.zforces` in one dialog; background import/analysis preserves bytes, unknown fields, absent sensors and source arrays                                  |
 | Failure/cancellation | Retain the last usable recording and service binding                                                                                                                      |
 | Folder memory        | Successful file-dialog import remembers its directory across restarts in `preferences.sqlite3` beside the export database; cancellation/failure preserves previous folder |
 | Preference failures  | Missing folder/unreadable storage uses dialog defaults; write failures do not block import                                                                                |

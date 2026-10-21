@@ -3,7 +3,7 @@
 Use JSON to process a recording in scripts or other analysis tools. FFmpeg is
 not required.
 
-1. Open a `.forces` recording.
+1. Open a `.forces` or `.zforces` recording.
 2. Set **From sample** and **To sample**; both endpoints are included.
 3. Choose **Smoothing** and wait for the analysis to finish updating.
 4. Choose **Data export → Export JSON…** or **Export Analyzer JSON…** and choose

@@ -61,8 +61,7 @@ Real NVIDIA probes select Vulkan/NVENC or explicit CPU fallback. Completed outpu
 is published exclusively. Widgets only configure/transport
 background jobs. Manual Resolve alignment is outside the processing path.
 [Export contracts](../implementation/VIDEO_EXPORT.md) and
-[encoder compatibility boundary](07_deployment_view.md#encoder-installation) scope this partial M6 implementation;
-PNG sequences and additional export products remain planned.
+[encoder compatibility boundary](07_deployment_view.md#encoder-installation) define the supported export scope.
 
 `storage.exports` persists versioned preset/batch definitions in SQLite; originals
 remain external read-only files. `rendering.batches` imports each job, checks its

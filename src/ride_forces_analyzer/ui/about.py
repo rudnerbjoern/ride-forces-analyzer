@@ -39,7 +39,7 @@ class AboutDialog(QDialog):
                 "Explore ride recordings and export G-force overlays for your videos. Processing stays offline and original recordings remain unchanged.",
             ),
             tr(
-                "Record your rides with the Ride Forces app for iPhone or Apple Watch, then export them as .forces files.",
+                "Record your rides with the Ride Forces app for iPhone or Apple Watch, then export them as .forces or .zforces files.",
             ),
             tr(
                 "Independent project: not affiliated with, endorsed by or sponsored by the Ride Forces app or its developer.",

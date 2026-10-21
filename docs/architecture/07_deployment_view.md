@@ -66,7 +66,7 @@ Manual CI runs all suites, native package jobs, workflow validation and mandator
 archives and package builds before a narrowly authorized job publishes native
 downloads under the [release policy](../development/RELEASE.md). Neither runs a duplicate
 full check after a push to `main`.
-The partial M6 video export uses offline FFmpeg; standalone installation/uninstallation remains planned for
+Video export uses offline FFmpeg; standalone installation/uninstallation remains planned for
 M8; the checkout is a development environment, not a released installer.
 
 The Windows packaging path builds a PyInstaller EXE with an embedded interpreter

@@ -3,7 +3,7 @@
 Use CSV to inspect your recording in a spreadsheet or another analysis tool.
 FFmpeg is not required.
 
-1. Open a `.forces` recording.
+1. Open a `.forces` or `.zforces` recording.
 2. Set **From sample** and **To sample** in the inspector's **Selection** section.
    Both endpoints are included. The initial selection includes the whole recording.
 3. Choose the desired **Smoothing** setting and wait for the chart to finish updating.

@@ -301,7 +301,10 @@ class ExplorerWindow(QMainWindow):
         layout = QVBoxLayout(body)
         layout.setContentsMargins(12, 8, 12, 8)
         layout.setSpacing(6)
-        self.heading = bind(QLabel(), tr("Open a .forces recording to explore your ride"))
+        self.heading = bind(
+            QLabel(),
+            tr("Open a .forces or .zforces recording to explore your ride"),
+        )
         self.heading.setObjectName("recordingHeading")
         self.heading.setTextFormat(Qt.TextFormat.PlainText)
         self.heading.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
@@ -965,7 +968,7 @@ class ExplorerWindow(QMainWindow):
             self,
             tr("Open Ride Forces recording"),
             self.preferences.recording_directory(),
-            tr("Ride Forces (*.forces);;All files (*)"),
+            tr("Ride Forces (*.forces *.zforces);;All files (*)"),
         )
         if filename:
             self._chosen_path = Path(filename)

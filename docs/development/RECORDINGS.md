@@ -86,9 +86,9 @@ updating the tests and this catalog together.
 - Owner-supplied Ride Forces app export, covered by the common CC BY-SA 4.0 grant.
 - Size: 91361 bytes.
 - SHA-256: `005ce708ec946bcf4dbe0163fc2fb23c629b65c1ed11706000c130855c4ba1e5`.
-- Preserve original bytes. This export shares its recording ID with the Manta
-  `.forces`, CSV and JSON references; sample correspondence is not established
-  by the identifier alone.
+- Preserve original bytes. Raw-DEFLATE expands to 783028 bytes of schema 2.2.0 JSON.
+  All JSON fields and values match the Manta `.forces` reference, including 9638
+  acceleration/gravity samples and 145 GPS entries; object-member order differs.
 
 ## Validation and scientific limits
 

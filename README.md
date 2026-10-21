@@ -9,7 +9,7 @@
 **Relive the ride. Explore the forces. Add them to your videos.**
 
 Find the strongest airtime moment, inspect a launch or bring your ride data into
-an Onride video. Ride Forces Analyzer turns `.forces` recordings from the
+an Onride video. Ride Forces Analyzer turns `.forces` and compressed `.zforces` recordings from the
 [Ride Forces app](https://rideforces.com/) on iPhone or Apple Watch into
 interactive charts and 4K video overlays on Windows, Linux and macOS.
 
@@ -26,7 +26,7 @@ Free and open source · Offline processing · English and German · Light and da
 ## Get started
 
 You need **Windows 10/11 x64, Ubuntu 24.04 x64 or macOS 15+** and a recording
-exported as a `.forces` file from the Ride Forces app. macOS downloads are available
+exported as a `.forces` or `.zforces` file from the Ride Forces app. macOS downloads are available
 separately for Apple Silicon and Intel.
 
 ### 1. Download and launch
@@ -52,7 +52,7 @@ verification, Linux prerequisites and first-launch instructions.
 
 ### 2. Open your ride
 
-Click **Open recording** or press **Ctrl+O** (**⌘O** on macOS) and choose your `.forces` file.
+Click **Open recording** or press **Ctrl+O** (**⌘O** on macOS) and choose your `.forces` or `.zforces` file.
 Click a point in the chart to inspect that sample, move through the ride with the
 slider, or zoom into a section with the mouse wheel or by dragging across the plot.
 Use **Play / Pause** beside the sample slider to follow the ride at **0.5×, 1× or 2× speed** (default **1×**).
