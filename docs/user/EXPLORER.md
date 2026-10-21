@@ -16,6 +16,20 @@ The instructions below use the English interface labels.
   or the available recording boundaries when markers are absent.
 - Show or hide individual force curves using their controls.
 
+Click the **Play** icon to the right of the sample slider to follow the recording at
+**1×** speed by default. The dropdown beside it selects **0.5×**, **1×** or **2×**;
+you can change speed while playing or paused without jumping to another moment.
+Opening a recording resets the speed to **1×**.
+Play changes to a **Pause** icon; click it to hold the current moment.
+Hover over the button for its description.
+When zoomed in, the chart slides along as the cursor reaches the middle, keeping
+the same zoom level. Scrolling stops at the recording's end.
+Moving the slider, editing Sample or clicking the chart while playing continues
+from the new position. Playback works in raw and calibrated views, stops at the
+last sample and restarts at sample 0 if you press Play there. It follows the whole
+recording rather than the From/To export selection. Opening another recording or
+the export assistant pauses playback. Closing the window stops it.
+
 Zoom changes the visible time interval; the force scale stays fixed. A click
 selects a moment, while a drag changes the view.
 

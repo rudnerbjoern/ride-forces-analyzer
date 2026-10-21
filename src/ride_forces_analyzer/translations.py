@@ -9,6 +9,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:disable
 
 GERMAN: dict[str, str] = {
+    "Play": "Wiedergabe",
+    "Pause": "Pause",
+    "Play recording": "Aufnahme wiedergeben",
+    "Playback speed": "Wiedergabegeschwindigkeit",
+    "{0:g}×": "{0:g}×",
+    "Pause playback": "Wiedergabe anhalten",
     "Updating analysis…": "Analyse wird aktualisiert …",
     "Analysis failed: {0}": "Analyse fehlgeschlagen: {0}",
     "Application": "Anwendung",

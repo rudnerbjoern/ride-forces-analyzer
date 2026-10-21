@@ -18,8 +18,10 @@ Source-app projection, live configurable smoothing and coarse GPS overview are
 implemented in the explorer. Reduced M3 includes selected-range per-axis
 extrema and focused Windows acceptance. Extra filters/events and universal physical rider
 qualification are deferred; GPS analytics is excluded. Five-profile 4K transparent/opaque
-video export with previews and saved batches is implemented as a partial M6 slice. Persistent library, interactive
-playback, remaining exports, synchronization and release remain planned.
+video export with previews and saved batches is implemented as a partial M6 slice.
+Interactive sample playback supports pause/resume, seeking and 0.5×/1×/2× speed
+selection. Persistent library, remaining exports, synchronization and release
+remain planned.
 
 The [roadmap](../ROADMAP.md) owns completed and remaining product scope.
 These architecture chapters and the linked API/product contracts describe current

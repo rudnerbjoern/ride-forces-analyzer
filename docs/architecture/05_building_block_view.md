@@ -31,7 +31,7 @@ flowchart TB
     Frames --> Analysis
     Frames --> SciPy["SciPy: passive frame rotation"]
     Storage["storage: SQLite export definitions"] --> Rendering
-    Playback["playback: planned"] -.-> Domain
+    Qt --> Playback["playback: monotonic sample clock"]
     Rendering["rendering: 4K frames / encoder / batches"] --> Recording["analysis.recording: shared snapshots"]
     Rendering --> Service
     Rendering --> AnalysisService["analysis.service: state and subscriptions"]
@@ -58,9 +58,9 @@ widgets contain no parser, scientific transformations or source mutation.
 | importers            | Strict decoding, motion/optional validation, ordered diagnostics and public import composition  | Implemented: [importers](../../src/ride_forces_analyzer/importers/)                                                          |
 | analysis             | Immutable contracts, device/frame math and source-app projection/mean                           | Implemented analysis services: [analysis](../../src/ride_forces_analyzer/analysis/); basic extrema implemented               |
 | storage              | SQLite export presets and batch snapshots                                                       | Implemented export configuration; persistent ride library remains planned                                                    |
-| playback             | Playback timeline and interpolation consumption                                                 | Reserved package; services planned                                                                                           |
+| playback             | Monotonic sample clock, 0.5×/1×/2× speed, pause and seek                                        | Implemented: `playback.clock.SamplePlayback`                                                                                 |
 | rendering            | Independent RGBA generation and FFmpeg encoding                                                 | Implemented five-profile landscape/portrait transparent/opaque video                                                         |
-| ui                   | Raw chart controls and background import/export transport                                       | Implemented raw explorer; persistent library/playback remain planned                                                         |
+| ui                   | Raw chart controls and background import/export transport                                       | Implemented raw/calibrated explorer and sample playback; persistent library remains planned                                  |
 
 ## Importer composition and interfaces
 

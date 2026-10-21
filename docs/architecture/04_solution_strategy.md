@@ -17,7 +17,7 @@ flowchart LR
     Canonical --> Analysis["Source-app projection and mean"]
     Canonical --> Explorer["Raw/calibrated explorer and GPS overview"]
     Analysis --> Explorer
-    Explorer -.-> Playback["M5 playback: planned"]
+    Explorer --> Playback["M5: sample playback"]
     Analysis --> Frames["4K RGBA frame generation"]
     Frames --> Encoder["Offline FFmpeg encoding"]
     Encoder --> Opaque["Opaque video"]
@@ -38,7 +38,8 @@ analysis or synchronization. M2 ingestion does not establish those semantics.
   primitives. Source-app projection/mean and strict provisional frame transforms are implemented;
   basic selected-range extrema are implemented. General physical rider qualification
   and broad statistics are outside current M3 acceptance. `storage` implements
-  SQLite export presets/batches; the ride library and `playback` remain planned.
+  SQLite export presets/batches; the ride library remains planned. `playback`
+  supplies a Qt-independent monotonic sample clock with 0.5×/1×/2× speed selection.
   `rendering` implements the
   owner-requested 4K overlay slice, independently of interactive playback.
 - `ui` owns the raw explorer, Qt Charts interactions and background worker transport.
@@ -80,7 +81,7 @@ The app-reference path implements independently normalized source directions and
 a configurable centered mean, with per-source evidence; see the source-app projection decision via chapter 09.
 NumPy provides array mathematics and Pint converts declared common component units
 to SI. SciPy supports existing explicit frame rotations. Additional scientific
-filters are deferred; any playback interpolation needs its own M5 requirement.
+filters are deferred.
 GeographicLib/geodesic speed analysis is not required. Pandas is a tabular adapter;
 AHRS is research only, pyproj requires an approved conversion use case. Adoption
 policy and rationale belong to [analysis library decision](09_architecture_decisions.md#analysis-models-and-libraries).

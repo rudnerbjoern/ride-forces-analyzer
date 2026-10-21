@@ -72,6 +72,30 @@ extrema plus 5% outward padding, including zero. All-zero raw data uses [−1, 1
 calibrated bounds include at least [−1.05, 1.05], with explicit −1/0/+1 g labels.
 No vertical zoom.
 
+## Sample playback
+
+- A fixed-width Play/Pause icon button sits immediately right of the sample slider;
+  disabled without a recording or when only one sample exists. Tooltips and
+  accessible names follow the English/German UI language.
+- The adjacent speed dropdown selects 0.5×, 1× or 2×; 1× is the default on import.
+  Speed changes preserve continuous position and play/pause state.
+- Play advances from the selected integer sample at the chosen multiple of the
+  effective recording rate. A monotonic clock determines elapsed samples, independent of UI timer count.
+  Delayed callbacks skip to the current sample without slowing playback.
+- Cursor, cards, technical details and viewport follow existing sample navigation.
+  Raw and calibrated views share the clock; selection and analysis stay unchanged.
+- During playback, cursor motion uses continuous elapsed time. A zoomed viewport
+  follows once the cursor reaches its midpoint, preserving its width and stopping
+  at the recording end. Starting in the right half preserves the cursor's position without an initial
+  jump to the center. Values remain at integer samples; no force values are interpolated.
+  Time ticks stay anchored to the recording's replay origin instead of being rebuilt
+  at moving viewport fractions. Manual seeks retain immediate navigation.
+- Manual seeking while playing resets the clock origin to that sample. Pause freezes
+  the displayed sample; resuming starts there. There is no force interpolation.
+- The range is the whole recording. Stop at the last sample without looping;
+  pressing Play there restarts at sample 0. Import/replacement, export opening and
+  window close pause playback. Failed import retains the prior recording, paused.
+
 ## Smoothing
 
 - Odd centered mean, 1–51 samples; default 11 on successful open; 1 disables filtering.
