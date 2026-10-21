@@ -147,14 +147,18 @@ Basic per-axis extrema for inclusive selections are implemented in the pure
 Explorer presentation exposes them in the inspector; widgets perform no calculation.
 Raw operation avoids importing the NumPy-backed analysis package. This is a small selected-range product, not a generic statistics engine.
 
-## CSV export boundary
+## Sample data export boundary
 
-`csv_export.export_csv` serializes one bound `RecordingAnalysis` and an inclusive
-source interval. Numerical preparation and sample correspondence stay in analysis;
-the serializer has no Qt, frame-generation or encoder dependency.
-`ui.csv_export` owns worker transport and progress/cancellation UI. The explorer
+`csv_export.export_csv` and `json_export.export_json` serialize one bound `RecordingAnalysis` and an inclusive
+source interval. `json_export.export_analyzer_json` provides a separate versioned
+format with grouped arrays, shared time/quality and scientific configuration.
+Numerical preparation and sample correspondence stay in analysis;
+the serializers have no Qt, frame-generation or video encoder dependency.
+`_export_file` owns exclusive creation and atomic replacement of confirmed exports.
+`ui.data_export` owns shared worker transport and progress/cancellation UI. The explorer
 captures snapshot/range before the save dialog; later workspace changes cannot
-change that export. See the [CSV contract](../implementation/CSV_EXPORT.md).
+change that export. See the [CSV contract](../implementation/CSV_EXPORT.md) and
+[JSON contract](../implementation/JSON_EXPORT.md).
 
 ## Video export boundary
 

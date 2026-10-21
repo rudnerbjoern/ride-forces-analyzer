@@ -7,12 +7,14 @@ FFmpeg is not required.
 2. Set **From sample** and **To sample** in the inspector's **Selection** section.
    Both endpoints are included. The initial selection includes the whole recording.
 3. Choose the desired **Smoothing** setting and wait for the chart to finish updating.
-4. Click **Export CSV…**, choose a new filename and save.
+4. Choose **Data export → Export CSV…**, choose a new filename and save.
 
 The export runs in the background with a progress window and **Cancel** button.
-Existing files are preserved; choose another name when a file already exists.
-Cancelling or closing the application removes incomplete output. The original
-recording stays unchanged. Successful exports remember their destination folder,
+If the destination exists, confirm replacement or decline to keep the existing
+file. Replacement happens only after a successful export; cancellation or failure
+preserves the previous file. Cancelling or closing the application removes
+incomplete output. The original recording stays unchanged. Successful exports
+remember their destination folder,
 shared with video export.
 
 ## What the file contains

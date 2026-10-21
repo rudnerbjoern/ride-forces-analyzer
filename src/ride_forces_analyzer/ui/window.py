@@ -43,6 +43,8 @@ from PySide6.QtWidgets import (
     QGraphicsRectItem,
     QLabel,
     QMainWindow,
+    QMenu,
+    QMessageBox,
     QPlainTextEdit,
     QProgressBar,
     QPushButton,
@@ -256,12 +258,22 @@ class ExplorerWindow(QMainWindow):
         self.export_button.setEnabled(False)
         self.export_button.clicked.connect(self.show_export)
         toolbar.addWidget(self.export_button)
-        self.csv_button = bind(QPushButton(), tr("Export CSV…"))
-        self.csv_button.setEnabled(False)
-        self.csv_button.clicked.connect(self.show_csv_export)
-        toolbar.addWidget(self.csv_button)
+        self.data_export_button = bind(QPushButton(), tr("Data export"))
+        self.data_export_button.setEnabled(False)
+        data_menu = QMenu(self.data_export_button)
+        self.csv_action = bind(QAction(self), tr("Export CSV…"))
+        self.csv_action.triggered.connect(self.show_csv_export)
+        data_menu.addAction(self.csv_action)
+        self.json_action = bind(QAction(self), tr("Export JSON…"))
+        self.json_action.triggered.connect(self.show_json_export)
+        data_menu.addAction(self.json_action)
+        self.analyzer_json_action = bind(QAction(self), tr("Export Analyzer JSON…"))
+        self.analyzer_json_action.triggered.connect(self.show_analyzer_json_export)
+        data_menu.addAction(self.analyzer_json_action)
+        self.data_export_button.setMenu(data_menu)
+        toolbar.addWidget(self.data_export_button)
         self.export_window: QDialog | None = None
-        self.csv_window: QDialog | None = None
+        self.data_export_window: QDialog | None = None
         self.batch_window: QDialog | None = None
         self.batches_button = bind(QPushButton(), tr("Batches…"))
         self.batches_button.clicked.connect(self.show_batches)
@@ -773,8 +785,8 @@ class ExplorerWindow(QMainWindow):
                 return
         if self.gps_window is not None:
             self.gps_window.close()
-        if self.csv_window is not None:
-            self.csv_window.close()
+        if self.data_export_window is not None:
+            self.data_export_window.close()
         self.updates.stopped = True
         self._accept_results = False
         self._load_generation += 1
@@ -802,50 +814,97 @@ class ExplorerWindow(QMainWindow):
             enabled and self.data is not None and self.data.calibration_available,
         )
         self.play_button.setEnabled(enabled and self.data is not None and self.data.count > 1)
-        self.csv_button.setEnabled(
+        self.data_export_button.setEnabled(
             enabled and self.data is not None and self.data.analysis is not None,
         )
 
+        self.csv_action.setEnabled(self.data_export_button.isEnabled())
+        self.json_action.setEnabled(self.data_export_button.isEnabled())
+        self.analyzer_json_action.setEnabled(self.data_export_button.isEnabled())
+
     @Slot()
     def show_csv_export(self) -> None:
+        self._show_data_export("csv")
+
+    @Slot()
+    def show_json_export(self) -> None:
+        self._show_data_export("json")
+
+    @Slot()
+    def show_analyzer_json_export(self) -> None:
+        self._show_data_export("analyzer_json")
+
+    def _show_data_export(self, format: Literal["csv", "json", "analyzer_json"]) -> None:
         if self.data is None or self.data.analysis is None:
             return
-        if self.csv_window is not None and self.csv_window.isVisible():
-            self.csv_window.raise_()
+        if self.data_export_window is not None and self.data_export_window.isVisible():
+            self.data_export_window.raise_()
             return
         self._pause_playback()
         analysis = self.data.analysis
         first, last = self.first.value(), self.last.value()
         source_path = analysis.source.recording.source.provenance.path
-        name = f"{source_path.stem if source_path else 'recording'}.csv"
+        suffix = ".csv" if format == "csv" else ".json"
+        stem = source_path.stem if source_path else "recording"
+        name = f"{stem}{'.analyzer' if format == 'analyzer_json' else ''}{suffix}"
         directory = self.preferences.export_directory()
         suggested = (
             Path(directory) / name
             if directory
-            else source_path.with_suffix(".csv")
+            else source_path.with_name(name)
             if source_path
             else Path(name)
         )
         filename, _ = QFileDialog.getSaveFileName(
             self,
-            tr("Export CSV"),
+            tr("Export Analyzer JSON")
+            if format == "analyzer_json"
+            else tr("Export JSON")
+            if format == "json"
+            else tr("Export CSV"),
             str(suggested),
-            tr("CSV files (*.csv)"),
+            tr("CSV files (*.csv)") if format == "csv" else tr("JSON files (*.json)"),
             options=QFileDialog.Option.DontConfirmOverwrite,
         )
         if not filename:
             return
         path = Path(filename)
-        if path.suffix.lower() != ".csv":
-            path = path.with_name(path.name + ".csv")
-        if self.csv_window is not None:
-            self.csv_window.deleteLater()
-        from .csv_export import CsvExportDialog
+        if path.suffix.lower() != suffix:
+            path = path.with_name(path.name + suffix)
+        overwrite = path.exists()
+        if (
+            overwrite
+            and QMessageBox.question(
+                self,
+                tr("Replace existing file?"),
+                tr("The file already exists:\n{0}\n\nDo you want to replace it?", str(path)),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            != QMessageBox.StandardButton.Yes
+        ):
+            return
+        if self.data_export_window is not None:
+            self.data_export_window.deleteLater()
+        from .data_export import DataExportDialog
 
-        dialog = CsvExportDialog(analysis, path, first, last, self.preferences, self)
-        dialog.saved.connect(self._csv_saved)
-        self.csv_window = dialog
+        dialog = DataExportDialog(
+            analysis,
+            path,
+            first,
+            last,
+            self.preferences,
+            self,
+            format,
+            overwrite,
+        )
+        dialog.saved.connect(self._csv_saved if format == "csv" else self._json_saved)
+        self.data_export_window = dialog
         dialog.show()
+
+    @Slot(str)
+    def _json_saved(self, path: str) -> None:
+        bind(self.statusBar(), tr("JSON saved to {0}", path), "message")
 
     @Slot(str)
     def _csv_saved(self, path: str) -> None:

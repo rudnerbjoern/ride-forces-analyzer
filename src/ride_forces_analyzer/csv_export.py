@@ -10,6 +10,7 @@ from pathlib import Path
 
 from ride_forces_analyzer.analysis.recording import ForceSample, RecordingAnalysis
 from ride_forces_analyzer.domain._validation import has_type
+from ride_forces_analyzer._export_file import export_file
 from ride_forces_analyzer.explorer import format_sample_time
 
 
@@ -52,6 +53,7 @@ def export_csv(
     first: int,
     last: int,
     *,
+    overwrite: bool = False,
     cancelled: Callable[[], bool] = lambda: False,
     progress: Callable[[int], None] = lambda count: None,
 ) -> int:
@@ -65,11 +67,12 @@ def export_csv(
     Raises:
         TypeError: Input is not a snapshot or interval indices are not integers.
         ValueError: Snapshot, range or destination suffix is invalid.
-        FileExistsError: Destination already exists; no file is overwritten.
+        FileExistsError: Destination exists and overwrite is not enabled.
         OSError: Destination cannot be written.
         CsvExportCancelled: Cancellation requested before completion.
 
-    Writing/callback failures remove only the newly created incomplete file.
+    Overwrite requires explicit opt-in and replaces the destination only after
+    successful writing. Cancellation/failure preserves existing output.
     """
     if not has_type(analysis, RecordingAnalysis):
         raise TypeError("CSV export requires RecordingAnalysis")
@@ -85,47 +88,40 @@ def export_csv(
         raise ValueError("CSV sample times require a sample rate")
     window = dict(analysis.configuration.smoothing.parameters).get("window_samples", 11)
     count = last - first + 1
-    created = False
-    try:
-        if cancelled():
-            raise CsvExportCancelled()
-        with path.open("x", encoding="utf-8-sig", newline="") as stream:
-            created = True
-            writer = csv.writer(stream)
-            writer.writerow(CSV_COLUMNS)
-            for written, index in enumerate(range(first, last + 1), 1):
-                if cancelled():
-                    raise CsvExportCancelled()
-                sample = analysis.sample(index)
-                writer.writerow(
-                    (
-                        format_sample_time(index - analysis.time.replay_origin, rate.value),
-                        *_forces(sample.smoothed),
-                        sample.combined_g,
-                        sample.orientation_degrees,
-                        sample.index,
-                        sample.recording_seconds,
-                        sample.replay_seconds,
-                        sample.raw.x,
-                        sample.raw.y,
-                        sample.raw.z,
-                        *_forces(sample.projected),
-                        sample.context.value if sample.context is not None else None,
-                        rate.value,
-                        analysis.time.basis.kind.value,
-                        window,
-                        ";".join(
-                            f"{name}={state.value}" for name, state in sample.quality.capabilities
-                        ),
-                        ";".join(item.code for item in sample.quality.diagnostics),
-                    ),
-                )
-                if written % 250 == 0 or written == count:
-                    progress(written)
+    if cancelled():
+        raise CsvExportCancelled()
+    with export_file(path, encoding="utf-8-sig", newline="", overwrite=overwrite) as stream:
+        writer = csv.writer(stream)
+        writer.writerow(CSV_COLUMNS)
+        for written, index in enumerate(range(first, last + 1), 1):
             if cancelled():
                 raise CsvExportCancelled()
-    except BaseException:
-        if created:
-            path.unlink(missing_ok=True)
-        raise
+            sample = analysis.sample(index)
+            writer.writerow(
+                (
+                    format_sample_time(index - analysis.time.replay_origin, rate.value),
+                    *_forces(sample.smoothed),
+                    sample.combined_g,
+                    sample.orientation_degrees,
+                    sample.index,
+                    sample.recording_seconds,
+                    sample.replay_seconds,
+                    sample.raw.x,
+                    sample.raw.y,
+                    sample.raw.z,
+                    *_forces(sample.projected),
+                    sample.context.value if sample.context is not None else None,
+                    rate.value,
+                    analysis.time.basis.kind.value,
+                    window,
+                    ";".join(
+                        f"{name}={state.value}" for name, state in sample.quality.capabilities
+                    ),
+                    ";".join(item.code for item in sample.quality.diagnostics),
+                ),
+            )
+            if written % 250 == 0 or written == count:
+                progress(written)
+        if cancelled():
+            raise CsvExportCancelled()
     return count

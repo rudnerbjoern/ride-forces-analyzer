@@ -278,13 +278,19 @@ after layout. Card values and clock text refresh from explorer presentation when
 sample, calibration or smoothing changes. Technical expansion is independent of
 analysis state. All raw/calibrated, failure and worker shutdown paths above remain.
 
-## CSV export runtime
+## Sample data export runtime
 
 The explorer pauses playback and captures the current analysis snapshot and From/To
-interval before destination selection. A Qt worker streams prepared sample views to
-CSV; no analysis or encoding runs in the widget. Queued progress and terminal signals
+interval before destination selection. Existing destinations require confirmation
+after suffix completion, defaulting to No. A shared Qt worker serializes prepared sample
+views to CSV or JSON; no analysis or encoding runs in the widget. JSON collects
+parallel arrays before incremental encoding. The separate Analyzer JSON option
+collects grouped measurement arrays and stores shared time/quality once.
+Queued progress and terminal signals
 update the modal progress window on the UI thread. Cancellation/main-window close
-sets a worker event; incomplete output is removed. Success remembers the existing
+sets a worker event; incomplete output is removed. Confirmed replacement is written
+separately and committed atomically after success; failure preserves the previous
+file. Success remembers the existing
 export directory and reports the saved path. The bound snapshot stays alive until
 worker completion, independently of later workspace updates.
 
