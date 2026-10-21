@@ -48,6 +48,7 @@ test("PR labels cover nested Markdown, dependency locks and CI without labeling 
     [[".github/dependabot.yml"], ["dependencies"]],
     [[".github/workflows/ci.yml"], ["ci"]],
     [[".github/labeler.yml", "tests/ci/changes.test.mjs"], ["ci"]],
+    [[".github/release.yml"], ["ci"]],
     [["README.md", "pyproject.toml", ".github/scripts/ci-changes.mjs"],
       ["ci", "dependencies", "documentation"]],
     [["src/ride_forces_analyzer/importers/service.py", "tests/test_service.py"], []],
@@ -57,6 +58,33 @@ test("PR labels cover nested Markdown, dependency locks and CI without labeling 
   assert.deepEqual(Object.keys(rules).sort(), ["ci", "dependencies", "documentation"]);
   for (const [files, expected] of cases) {
     assert.deepEqual(labelsFor(files), expected, JSON.stringify(files));
+  }
+});
+
+test("Release notes categorize typed and automatic PR labels and retain unlabelled changes", async () => {
+  const release = parse(await readFile(new URL("../../.github/release.yml", import.meta.url), "utf8"));
+  const categories = release.changelog.categories;
+  assert.deepEqual(release.changelog.exclude ?? {}, {});
+  assert.deepEqual(categories.at(-1).labels, ["*"]);
+  const knownLabels = new Set(["bug", "enhancement", ...Object.keys(rules), "*"]);
+  for (const category of categories) {
+    assert.ok(category.title.trim());
+    assert.deepEqual(category.exclude ?? {}, {});
+    for (const label of category.labels) {
+      assert.ok(knownLabels.has(label), `Unknown release category label: ${label}`);
+    }
+  }
+  for (const [labels, title] of [
+    [["bug", "documentation"], "Fixes"],
+    [["enhancement", "documentation"], "Improvements"],
+    [["dependencies", "ci"], "Dependencies"],
+    [["documentation"], "Documentation"],
+    [["ci"], "Maintenance"],
+    [["unclassified"], "Other changes"],
+    [[], "Other changes"],
+  ]) {
+    const category = categories.find(item => item.labels.some(label => label === "*" || labels.includes(label)));
+    assert.equal(category?.title, title, JSON.stringify(labels));
   }
 });
 
