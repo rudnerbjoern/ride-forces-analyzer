@@ -6,7 +6,8 @@ This guide defines workflow routing and gates; [setup](SETUP.md) owns local comm
 Development checks remain on Windows. The reusable
 [native package workflow](../../.github/workflows/posix-packages.yml) additionally
 builds and executes Linux x64 and macOS arm64/x64 packages on their own runners.
-`posix` follows the `code` selection and is mandatory in the final `check` gate.
+`posix` runs for application/shared inputs or changes to the CI/native package
+workflows. The final `check` gate requires every selected target to succeed.
 Each target has a 30-minute budget, uses locked dependencies, tests native platform
 contracts and executes the extracted frozen app with a real CPU encode. Linux uses
 Xvfb; macOS verifies app signatures. PR and manual CI runs build and verify packages
@@ -38,18 +39,22 @@ test failures remain failures. No full logs, recordings, databases or screenshot
 [ci-changes.mjs](../../.github/scripts/ci-changes.mjs) classifies cumulative
 `git diff base...head`: full history, NUL-delimited paths, rename detection disabled
 to include both rename paths and deletions. Missing revisions/Git failures/invalid
-outputs fail closed. Hosted runs do not reuse test results.
+outputs fail closed. The independent `dependencies` selection runs the locked
+Node/PowerShell dependency and workflow contracts inside `dependency-check`, even
+when application checks are skipped. A contract failure fails that job and blocks
+the merge gate. Hosted runs do not reuse test results.
 
-| Job             | Selection / checks                                                                                                                                                                                                                                    |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gitleaks`      | Every run; checksum-pinned scanner self-test and complete fetched-history scan                                                                                                                                                                        |
-| `actionlint`    | Workflow/script/CI-test/dependency-test changes, manual/full reusable runs; validate all workflows                                                                                                                                                    |
-| `documentation` | Any Markdown path, including source/tests/skills and deletions/renames; locked Node install, `npm run test:docs`                                                                                                                                      |
-| `code`          | Non-Markdown source/tests/fixtures/scripts; workflows, Python/Node manifests/locks/version files, Git/editor settings, VS Code settings, Dependabot/label rules; application lint/format/types/contracts/dependencies and pytest excluding `tests/ui` |
-| `ui`            | Same selection as `code`; complete `tests/ui` serially on a separate Windows runner                                                                                                                                                                   |
-| `posix`         | Same selection as `code`; native Linux x64 and macOS arm64/x64 builds, platform contracts and frozen-package GUI/encoding checks                                                                                                                      |
-| `skills`        | Non-Markdown skill files, consumed commit policy, Python manifest/lock/version, Git/editor settings, workflows/CI selector/tests; separate skill Ruff/mypy/pytest                                                                                     |
-| `check`         | Always evaluate detection and selected results: selected = success, unselected = skipped                                                                                                                                                              |
+| Job                | Selection / result                                                                                                                                                                                       |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gitleaks`         | Every run; checksum-pinned scanner self-test and complete fetched-history scan                                                                                                                           |
+| `dependency-check` | Every run detects changes and tests the selector; selected `dependencies` additionally installs locked Node dependencies and runs `npm run test:dependencies`                                            |
+| `actionlint`       | Workflow/script/CI-test/dependency-test and Dependabot/label/release-rule changes; manual/full reusable runs; validate all workflows                                                                     |
+| `documentation`    | Any Markdown path, including source/tests/skills and deletions/renames; locked Node install and `npm run test:docs`                                                                                      |
+| `code`             | Non-Markdown application/source/test/script and shared Python/Node/Git/editor inputs, excluding CI metadata and Node/PowerShell contracts; application lint/format/types and pytest excluding `tests/ui` |
+| `ui`               | Same selection as `code`; complete `tests/ui` serially on a separate Windows runner                                                                                                                      |
+| `posix`            | Application/shared inputs, `.github/workflows/ci.yml` or `.github/workflows/posix-packages.yml`; native Linux x64/macOS arm64/x64 build and runtime checks                                               |
+| `skills`           | Non-Markdown skill implementation/tests, consumed commit policy, Python manifest/lock/version and Git/editor settings; separate skill Ruff/mypy/pytest                                                   |
+| `check`            | Always evaluate detection, contract-selection validity and selected job results: selected = success, unselected = skipped                                                                                |
 
 The `code`/`ui` jobs partition the complete application suite by directory and run
 concurrently after selection; no timing-based exclusions. Both are required when
@@ -57,11 +62,15 @@ code is selected, including manual/release runs. UI tests remain serial per desk
 A second Windows setup can reduce wall-clock waiting when runners are available;
 it does not guarantee lower total runner minutes.
 
-- Markdown-only changes skip application tests; skill-only implementation skips
-  application tests. Ordinary application/Node-only changes skip skills unless
-  they touch a shared input listed above. Mixed changes select all affected suites.
+- Markdown-only and skill-only changes skip application tests. CI metadata,
+  Node/PowerShell workflow contracts and selector changes select dependency/syntax
+  checks without application/UI/skill tests. Changing the CI/native package workflow
+  additionally selects POSIX. Python release-helper changes retain conservative
+  application validation; shared toolchain/manifest inputs also retain full checks.
+  Mixed changes select the union of affected suites.
 - Commit-policy Markdown selects docs/skills. Code-only/skill-only runs supply
-  CSpell; mixed runs with docs use its CSpell check.
+  CSpell; standalone dependency-contract runs also supply CSpell. Mixed runs with
+  docs use its CSpell check.
 - The complete PR diff remains authoritative after documentation-only follow-up commits.
 - Markdown/CSpell configuration alone does not select docs, per owner policy.
   Documentation-test helpers under `tests/` select code; affected local docs checks
@@ -88,8 +97,9 @@ it does not guarantee lower total runner minutes.
 ## Workflow validation
 
 - Windows x64 actionlint 1.7.12, SHA-256 verified before extraction.
-- `.github/workflows/`, `.github/scripts/`, `tests/ci/` and `tests/dependencies/`
-  changes select all-workflow validation; manual/full reusable runs always select it.
+- `.github/workflows/`, `.github/scripts/`, `tests/ci/`, `tests/dependencies/` and
+  Dependabot/label/release-rule changes select all-workflow validation;
+  manual/full reusable runs always select it.
 - Final gate requires success when selected, skipped when unselected; failed,
   cancelled, missing or unexpected results block merge/release quality.
 - Checks workflow structure/expressions; ShellCheck/Pyflakes integrations disabled.

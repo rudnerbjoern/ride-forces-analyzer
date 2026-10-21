@@ -9,75 +9,91 @@ import { changedPaths, classifyChanges, selectChecks, writeOutputs } from "../..
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 
+function selected(...names) {
+  return Object.fromEntries(["code", "documentation", "skills", "workflows", "dependencies", "posix"]
+    .map(name => [name, names.includes(name)]));
+}
+
 for (const filename of ["README.md", "AGENTS.md", "docs/nested/PLAN.md",
-  ".agents/skills/github-delivery/SKILL.md",
-  "src/package/README.md", "tests/NOTES.md"]) {
+  ".agents/skills/github-delivery/SKILL.md", "src/package/README.md", "tests/NOTES.md"]) {
   test(`Markdown only selects documentation: ${filename}`, () => {
-    assert.deepEqual(classifyChanges([filename]), { code: false, documentation: true, skills: false, workflows: false });
+    assert.deepEqual(classifyChanges([filename]), selected("documentation"));
   });
 }
 
 for (const filename of ["src/ride_forces_analyzer/importers/service.py", "tests/importers/test_decoder.py",
   "tests/types/recording.test.mjs", "tests/docs/documentation.test.mjs",
   "tests/fixtures/schema-inventory.json", "tests/fixtures/real/recording.forces",
-  "pyproject.toml", "uv.lock", ".python-version", ".node-version", "ffmpeg.json", "package.json",
-  "package-lock.json", ".github/workflows/ci.yml", ".github/dependabot.yml", ".github/labeler.yml", ".github/release.yml", ".github/scripts/ci-changes.mjs",
-  ".gitignore", ".gitattributes", ".editorconfig", ".vscode/settings.json", "tools/check.ps1",
-  "tests/ci/changes.test.mjs"]) {
-  test(`Changed code/test input selects code checks: ${filename}`, () => {
-    const skills = ["pyproject.toml", "uv.lock", ".python-version", ".github/workflows/ci.yml",
-      ".github/scripts/ci-changes.mjs", "tests/ci/changes.test.mjs", ".gitignore",
-      ".gitattributes", ".editorconfig"].includes(filename);
-    const workflows = filename.startsWith(".github/workflows/") || filename.startsWith(".github/scripts/") || filename.startsWith("tests/ci/");
-    assert.deepEqual(classifyChanges([filename]), { code: true, documentation: false, skills, workflows });
+  ".node-version", "ffmpeg.json", "package.json", "package-lock.json", ".vscode/settings.json", "tools/check.ps1"]) {
+  test(`Application/shared tooling input selects application checks: ${filename}`, () => {
+    assert.deepEqual(classifyChanges([filename]), selected("code", "dependencies", "posix"));
+  });
+}
+
+for (const filename of ["pyproject.toml", "uv.lock", ".python-version", ".gitignore", ".gitattributes", ".editorconfig"]) {
+  test(`Shared Python/Git input selects application and skill checks: ${filename}`, () => {
+    assert.deepEqual(classifyChanges([filename]), selected("code", "dependencies", "posix", "skills"));
   });
 }
 
 for (const filename of [".agents/skills/github-delivery/scripts/git_delivery.py",
-  ".agents/skills/github-delivery/scripts/git-delivery.ps1",
-  ".agents/skills/github-delivery/tests/test_github_delivery.py"]) {
+  ".agents/skills/github-delivery/scripts/git-delivery.ps1", ".agents/skills/github-delivery/tests/test_github_delivery.py"]) {
   test(`Skill implementation/test changes select only skill checks: ${filename}`, () => {
-    assert.deepEqual(classifyChanges([filename]), { code: false, documentation: false, skills: true, workflows: false });
+    assert.deepEqual(classifyChanges([filename]), selected("skills"));
   });
 }
 
-test("Workflow and validation inputs select syntax checks without broadening ordinary source changes", () => {
-  for (const filename of [".github/workflows/source-release.yml", ".github/scripts/check-release-policy.py",
-    "tests/ci/changes.test.mjs", "tests/dependencies/dependabot.test.mjs"]) {
-    assert.equal(classifyChanges([filename]).workflows, true, filename);
-  }
-  for (const filename of ["README.md", "src/ride_forces_analyzer/explorer.py", ".cspell.json"]) {
-    assert.equal(classifyChanges([filename]).workflows, false, filename);
-  }
+for (const filename of [".github/labeler.yml", ".github/dependabot.yml", ".github/release.yml",
+  ".github/workflows/labeler.yml", ".github/workflows/source-release.yml",
+  ".github/scripts/ci-changes.mjs", ".github/scripts/test-gitleaks.ps1",
+  "tests/ci/changes.test.mjs", "tests/dependencies/dependabot.test.mjs"]) {
+  test(`CI metadata/contracts select targeted checks: ${filename}`, () => {
+    assert.deepEqual(classifyChanges([filename]), selected("dependencies", "workflows"));
+  });
+}
+
+for (const filename of [".github/workflows/posix-packages.yml", ".github/workflows/ci.yml"]) {
+  test(`Native/caller workflow selects POSIX independently: ${filename}`, () => {
+    assert.deepEqual(classifyChanges([filename]), selected("dependencies", "workflows", "posix"));
+  });
+}
+
+test("Python release helpers retain conservative application validation", () => {
+  assert.deepEqual(classifyChanges([".github/scripts/check-release-policy.py"]),
+    selected("code", "dependencies", "workflows", "posix"));
+});
+
+test("Mixed labeling and native workflow changes skip application and skill tests", () => {
+  assert.deepEqual(classifyChanges([
+    ".github/labeler.yml", ".github/workflows/ci.yml", ".github/workflows/posix-packages.yml",
+    ".github/workflows/source-release.yml", "docs/development/CI.md", "tests/ci/changes.test.mjs",
+    "tests/dependencies/labels.test.mjs", "tests/dependencies/dependabot.test.mjs", ".github/scripts/ci-changes.mjs",
+  ]), selected("dependencies", "workflows", "documentation", "posix"));
 });
 
 test("The commit policy selects documentation and its consuming skill", () => {
-  assert.deepEqual(classifyChanges([".github/commit-message-instructions.md"]),
-    { code: false, documentation: true, skills: true, workflows: false });
+  assert.deepEqual(classifyChanges([".github/commit-message-instructions.md"]), selected("documentation", "skills"));
 });
 
-test("Mixed application, documentation and skill changes select all suites", () => {
-  assert.deepEqual(classifyChanges(["src/import.py", "README.md",
-    ".agents/skills/github-delivery/scripts/git_delivery.py"]),
-  { code: true, documentation: true, skills: true, workflows: false });
+test("Mixed application, documentation and skill changes select all affected suites", () => {
+  assert.deepEqual(classifyChanges(["src/import.py", "README.md", ".agents/skills/github-delivery/scripts/git_delivery.py"]),
+    selected("code", "documentation", "skills", "dependencies", "posix"));
 });
 
 for (const filenames of [[], ["docs/diagram.svg"], [".cspell.json", ".markdownlint-cli2.jsonc"]]) {
   test(`Unrelated changes do not select test suites: ${JSON.stringify(filenames)}`, () => {
-    assert.deepEqual(classifyChanges(filenames), { code: false, documentation: false, skills: false, workflows: false });
+    assert.deepEqual(classifyChanges(filenames), selected());
   });
 }
 
-test("Mixed changes select both suites", () => {
-  assert.deepEqual(classifyChanges(["docs/API.md", "src/import.py"]),
-    { code: true, documentation: true, skills: false, workflows: false });
+test("Mixed application and documentation changes select both", () => {
+  assert.deepEqual(classifyChanges(["docs/API.md", "src/import.py"]), selected("code", "documentation", "dependencies", "posix"));
 });
 
 test("Manual CI selects every suite without PR revisions; unsupported events fail closed", () => {
-  assert.deepEqual(selectChecks("workflow_dispatch", undefined, undefined, "missing-directory"),
-    { code: true, documentation: true, skills: true, workflows: true });
-  assert.deepEqual(selectChecks("push", undefined, undefined, "missing-directory", true),
-    { code: true, documentation: true, skills: true, workflows: true });
+  const all = selected("code", "documentation", "skills", "workflows", "dependencies", "posix");
+  assert.deepEqual(selectChecks("workflow_dispatch", undefined, undefined, "missing-directory"), all);
+  assert.deepEqual(selectChecks("push", undefined, undefined, "missing-directory", true), all);
   for (const event of [undefined, "push", "pull_request_target"]) {
     assert.throws(() => selectChecks(event), /Unsupported CI event/);
   }
@@ -89,7 +105,7 @@ test("Missing or option-like revisions fail instead of silently skipping tests",
     assert.throws(() => changedPaths(revision, "a".repeat(40)), /full commit SHA/);
     assert.throws(() => changedPaths("a".repeat(40), revision), /full commit SHA/);
   }
-  assert.throws(() => writeOutputs({ code: false, documentation: false, skills: false, workflows: false }), /GITHUB_OUTPUT/);
+  assert.throws(() => writeOutputs(selected()), /GITHUB_OUTPUT/);
 });
 
 test("Real PR diffs cover renames, deletions, divergent base and cumulative changes", async () => {
@@ -125,12 +141,12 @@ test("Real PR diffs cover renames, deletions, divergent base and cumulative chan
     assert.deepEqual(changedPaths(base, head, directory).sort(),
       ["docs/deleted.md", "docs/renamed.md", "src/old.py"]);
     assert.deepEqual(classifyChanges(changedPaths(base, head, directory)),
-      { code: true, documentation: true, skills: false, workflows: false });
+      selected("code", "documentation", "dependencies", "posix"));
     await put("docs/final notes.md", "# Final notes\n");
     const finalHead = commit("Synthetic documentation update");
     // A docs-only last commit must not hide earlier unmerged code changes.
     assert.deepEqual(classifyChanges(changedPaths(base, finalHead, directory)),
-      { code: true, documentation: true, skills: false, workflows: false });
+      selected("code", "documentation", "dependencies", "posix"));
     git("switch", "base");
     await put("src/base_only.py", "value = 2\n");
     const divergentBase = commit("Synthetic base-only change");
@@ -138,9 +154,9 @@ test("Real PR diffs cover renames, deletions, divergent base and cumulative chan
     assert.throws(() => changedPaths("f".repeat(40), finalHead, directory), /Cannot determine/);
     const output = path.join(directory, "output.txt");
     await writeFile(output, "existing=true\n");
-    writeOutputs({ code: true, documentation: false, skills: true, workflows: true }, output);
+    writeOutputs(selected("code", "skills", "workflows", "dependencies", "posix"), output);
     assert.equal(await readFile(output, "utf8"),
-      "existing=true\ncode=true\ndocumentation=false\nskills=true\nworkflows=true\n");
+      "existing=true\ncode=true\ndocumentation=false\nskills=true\nworkflows=true\ndependencies=true\nposix=true\n");
     const cli = spawnSync(process.execPath, [path.join(root, ".github/scripts/ci-changes.mjs")], {
       cwd: directory,
       encoding: "utf8",
@@ -151,7 +167,7 @@ test("Real PR diffs cover renames, deletions, divergent base and cumulative chan
     assert.ifError(cli.error);
     assert.equal(cli.status, 0, cli.stdout + cli.stderr);
     assert.match(cli.stdout, /Code checks: true; documentation checks: true; skill checks: false/);
-    assert.ok((await readFile(output, "utf8")).endsWith("code=true\ndocumentation=true\nskills=false\nworkflows=false\n"));
+    assert.ok((await readFile(output, "utf8")).endsWith("code=true\ndocumentation=true\nskills=false\nworkflows=false\ndependencies=true\nposix=true\n"));
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -169,7 +185,7 @@ test("PR runs cancel only superseded runs of the same workflow and have bounded 
     assert.ok(Object.hasOwn(budgets, name));
     if (name === "posix") {
       assert.match(job, /uses: \.\/\.github\/workflows\/posix-packages\.yml/);
-      assert.match(job, /needs\.dependency-check\.outputs\.code == 'true'/);
+      assert.match(job, /needs\.dependency-check\.outputs\.posix == 'true'/);
       continue;
     }
     assert.match(job, new RegExp(`    timeout-minutes: ${budgets[name]}(?:\\r?\\n)`));
@@ -187,7 +203,7 @@ test("Native package uploads require release opt-in while PRs still build and ve
     assert.match(workflow, /      upload-packages:\r?\n        type: boolean\r?\n        required: false\r?\n        default: false/);
   }
   const caller = ci.split("\n  posix:")[1].split("\n  check:")[0];
-  assert.match(caller, /needs\.dependency-check\.outputs\.code == 'true'/);
+  assert.match(caller, /needs\.dependency-check\.outputs\.posix == 'true'/);
   assert.match(caller, /upload-packages: \$\{\{ inputs\.upload-packages \|\| false \}\}/);
   const quality = release.split("\n  quality:")[1].split("\n  source:")[0];
   assert.match(quality, /uses: \.\/\.github\/workflows\/ci\.yml/);
@@ -232,7 +248,21 @@ test("Python checks retain locked resolution and bounded reports without hiding 
   assert.match(ui, /if: \$\{\{ needs\.dependency-check\.outputs\.code == 'true' \}\}/);
   assert.match(workflow, /UI_REQUIRED: \$\{\{ needs\.dependency-check\.outputs\.code \}\}/);
   assert.match(workflow, /UI_RESULT: \$\{\{ needs\.ui\.result \}\}/);
+  assert.match(workflow, /POSIX_REQUIRED: \$\{\{ needs\.dependency-check\.outputs\.posix \}\}/);
+  assert.match(workflow, /CONTRACTS_REQUIRED: \$\{\{ needs\.dependency-check\.outputs\.dependencies \}\}/);
   assert.match(workflow, /needs: \[dependency-check, code, ui, documentation, skills, gitleaks, actionlint, posix\]/);
+});
+
+test("Dependency contracts run in the selector job even when application checks are skipped", async () => {
+  const workflow = await readFile(path.join(root, ".github/workflows/ci.yml"), "utf8");
+  const dependency = workflow.split("\n  dependency-check:")[1].split("\n  actionlint:")[0];
+  assert.match(dependency, /dependencies: \$\{\{ steps\.changes\.outputs\.dependencies \}\}/);
+  assert.match(dependency, /posix: \$\{\{ steps\.changes\.outputs\.posix \}\}/);
+  for (const command of ["npm ci --no-audit --no-fund", "npm run test:dependencies"]) {
+    assert.ok(dependency.includes(`if: \${{ steps.changes.outputs.dependencies == 'true' }}\n        run: ${command}`));
+  }
+  assert.ok(dependency.indexOf("run: node .github/scripts/ci-changes.mjs") < dependency.indexOf("run: npm run test:dependencies"));
+  assert.equal(workflow.match(/run: npm run test:dependencies/g).length, 1);
 });
 
 test("The actual workflow gate rejects failed, cancelled, missing and inconsistent results", async () => {
@@ -293,6 +323,19 @@ test("The actual workflow gate rejects failed, cancelled, missing and inconsiste
   }
   cases.push(["success", "false", "false", "false", "skipped", "skipped", "skipped", false,
     "success", "false", "skipped", "skipped", "success"]);
+  for (const example of cases) example.push(example[1], "false");
+  for (const [required, result, passed] of [
+    ["true", "success", true], ["true", "failure", false], ["true", "cancelled", false],
+    ["true", "skipped", false], ["true", "", false], ["false", "skipped", true],
+    ["false", "success", false], ["", "skipped", false], ["invalid", "skipped", false],
+  ]) {
+    cases.push(["success", "false", "false", "false", "skipped", "skipped", "skipped", passed,
+      "success", "false", "skipped", "skipped", result, required, "false"]);
+  }
+  for (const required of ["", "invalid"]) {
+    cases.push(["success", "false", "false", "false", "skipped", "skipped", "skipped", false,
+      "success", "false", "skipped", "skipped", "skipped", "false", required]);
+  }
   await mkdir(path.join(root, ".tmp"), { recursive: true });
   const directory = await mkdtemp(path.join(root, ".tmp/ci-gate-"));
   try {
@@ -306,7 +349,8 @@ foreach ($case in $cases) {
     $env:DEPENDENCY_RESULT = $case[0]
     $env:CODE_REQUIRED = $case[1]
     $env:UI_REQUIRED = $case[1]
-    $env:POSIX_REQUIRED = $case[1]
+    $env:POSIX_REQUIRED = $case[13]
+    $env:CONTRACTS_REQUIRED = $case[14]
     $env:DOCUMENTATION_REQUIRED = $case[2]
     $env:SKILLS_REQUIRED = $case[3]
     $env:CODE_RESULT = $case[4]
@@ -327,7 +371,7 @@ Write-Output "Verified $($cases.Count) workflow gate cases."
       "-File", runner], { cwd: root, encoding: "utf8", timeout: 30000 });
     assert.ifError(result.error);
     assert.equal(result.status, 0, result.stdout + result.stderr);
-    assert.match(result.stdout, /Verified 53 workflow gate cases/);
+    assert.match(result.stdout, /Verified 64 workflow gate cases/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
