@@ -1,5 +1,8 @@
 # Provisional airtime context
 
+For an explanation of the displayed forces, colors and labels, see the
+[user forces and airtime guide](../user/FORCES_AND_AIRTIME.md).
+
 <!-- cspell:words Pendrill -->
 
 - **Input:** smoothed calibrated vertical channel and effective source sample rate;

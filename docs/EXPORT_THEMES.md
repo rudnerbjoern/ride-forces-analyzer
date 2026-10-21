@@ -1,5 +1,8 @@
 # Export layout reference — Manta
 
+For help choosing a layout and reading its instruments, see the
+[user layout guide](user/EXPORT_LAYOUTS.md).
+
 All five layouts show the same Manta moment: **01:11.18** at 50 Hz
 (71.36 replay seconds), the strongest absolute force in the marker interval
 with the default **11-sample smoothing**.

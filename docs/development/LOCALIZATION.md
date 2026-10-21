@@ -1,5 +1,8 @@
 # English and German presentation
 
+For changing application language and appearance, see the
+[user explorer guide](../user/EXPLORER.md#adjust-smoothing-and-display).
+
 The application supports English and German offline.
 Settings → Application provides language and appearance choices. Save applies
 them immediately; Cancel preserves the active settings. Language and light/dark appearance

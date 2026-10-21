@@ -10,10 +10,25 @@ sponsorship by that app or its developer.
 chapter 9 retains decision status and rationale. Completed requirements, stage plans and
 historical acceptance reports are not maintained.
 
+## For users
+
+- [Windows, Linux and macOS installation](user/INSTALLATION.md):
+  downloads, checksums, first launch, FFmpeg, updates, privacy and startup problems.
+- [Explore a recording](user/EXPLORER.md): navigate, zoom, select intervals,
+  inspect extrema, adjust smoothing, change appearance and open GPS.
+- [Understand forces and airtime](user/FORCES_AND_AIRTIME.md): signs, colors,
+  context labels and interpretation limits.
+- [Export a ride overlay](user/VIDEO_EXPORT.md): choose a range and layout,
+  preview, save a video and place it above your footage.
+- [Choose an export layout](user/EXPORT_LAYOUTS.md): compare placement, read the
+  instruments and check landscape/portrait previews.
+- [Presets and batches](user/EXPORT_BATCHES.md): reuse settings, queue recordings
+  and find results or handle failed jobs.
+
 ## Current product and API contracts
 
 - [Explorer and GPS](implementation/RAW_EXPLORER.md).
-- [Video export](implementation/VIDEO_EXPORT.md), [saved presets and batches](implementation/EXPORT_BATCHES.md).
+- [Video export contract](implementation/VIDEO_EXPORT.md), [saved presets and batches](implementation/EXPORT_BATCHES.md).
 - [All export themes](EXPORT_THEMES.md), [layout extension API](development/EXPORT_LAYOUTS.md),
   [Manta video with the G-Orbit overlay](https://youtu.be/tsRzD416voU).
 - [Provisional airtime context](implementation/AIRTIME.md) and
@@ -41,7 +56,7 @@ historical acceptance reports are not maintained.
   [Codex settings](development/CODEX.md).
 - [Dependencies and update policy](development/DEPENDENCIES.md),
   [third-party licenses](../THIRD_PARTY_NOTICES.md).
-- [Releases and Windows downloads](development/RELEASE.md).
+- [Release policy and native packages](development/RELEASE.md).
 - [Recording catalog and authorization](development/RECORDINGS.md),
   [recording reuse license](../tests/fixtures/real/README.md), [image reuse license](images/README.md).
 

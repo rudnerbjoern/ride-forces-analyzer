@@ -17,4 +17,5 @@ ci:
           - .github/workflows/**
           - .github/scripts/**
           - .github/labeler.yml
+          - .github/release.yml
           - tests/ci/**
