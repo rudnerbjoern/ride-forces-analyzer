@@ -35,7 +35,7 @@ the old job and add it again.
 2. Select a batch, or click **New batch…** and enter a unique name.
 3. Select one or more saved presets.
 4. Choose **Start/end markers for each recording** or **Entire recording**.
-5. Click **Add recordings × presets…** and select your `.forces` files.
+5. Click **Add recordings × presets…** and select your `.forces` or `.zforces` files.
 6. Check the job table, including the recording, range, smoothing and video format.
 
 Every selected recording is paired with every selected preset. For example,

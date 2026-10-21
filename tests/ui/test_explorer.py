@@ -212,13 +212,24 @@ def test_vertical_context_bar_preserves_curve_and_tracks_viewport(
 
 
 @pytest.mark.parametrize(
-    "filename",
-    [name for name in REAL_FIXTURES if name.startswith(("Manta-", "IronGwazi-"))],
+    ("filename", "expected_identity"),
+    [
+        (name, identity)
+        for name, identity in REAL_FIXTURES.items()
+        if name.startswith(("Manta-", "IronGwazi-"))
+    ]
+    + [
+        (
+            "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.zforces",
+            (91361, "005ce708ec946bcf4dbe0163fc2fb23c629b65c1ed11706000c130855c4ba1e5"),
+        ),
+    ],
 )
 def test_open_chart_navigation_selection_and_integrity(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
     filename: str,
+    expected_identity: tuple[int, str],
 ) -> None:
     window = explorer_window
     path = REAL_FIXTURE_DIRECTORY / filename
@@ -226,7 +237,8 @@ def test_open_chart_navigation_selection_and_integrity(
     mtime = path.stat().st_mtime_ns
 
     def chosen(*args: object, **kwargs: object) -> tuple[str, str]:
-        return str(path), "Ride Forces (*.forces)"
+        assert args[3] == "Ride Forces (*.forces *.zforces);;All files (*)"
+        return str(path), "Ride Forces (*.forces *.zforces)"
 
     monkeypatch.setattr(QFileDialog, "getOpenFileName", chosen)
     window.open_action.trigger()
@@ -299,7 +311,7 @@ def test_open_chart_navigation_selection_and_integrity(
         assert window.summary.text() == data.technical_summary
         assert "absent" in window.summary.text()
     assert path.read_bytes() == original and path.stat().st_mtime_ns == mtime
-    expected_size, expected_hash = REAL_FIXTURES[filename]
+    expected_size, expected_hash = expected_identity
     assert len(original) == expected_size and sha256(original).hexdigest() == expected_hash
 
 

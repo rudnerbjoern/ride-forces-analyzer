@@ -35,6 +35,9 @@ and [source ownership](../architecture/08_concepts.md#source-ownership-and-valid
 
 ## Application analysis handoff
 
+- Path imports support `.forces` JSON and `.zforces` Raw-DEFLATE recordings through
+  the same validation/analysis path. Bytes-only imports accept uncompressed JSON.
+  [Decoding](STRICT_DECODING.md) defines compression limits and original provenance.
 - Import success means lossless parsing, not analysis. Import remains usable
   without NumPy/Qt and retains bytes, metadata, unknown fields and independent GPS.
 - The application worker supplies `ImportSuccess` and an explicit source-app recipe

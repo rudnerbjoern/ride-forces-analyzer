@@ -1,6 +1,7 @@
 # Explore a recording
 
-Open a `.forces` file with **Open recording**, or **Ctrl+O** (**⌘O** on macOS).
+Open a `.forces` or compressed `.zforces` file with **Open recording**, or **Ctrl+O** (**⌘O** on macOS).
+Both formats appear in the same file dialog; no manual extraction is needed.
 The application reads the recording without changing the original file.
 The instructions below use the English interface labels.
 

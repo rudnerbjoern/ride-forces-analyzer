@@ -27,6 +27,17 @@ file access. Both return DecodeSuccess | ImportFailure. These stage-specific
 names distinguish decoded sources from the separately implemented
 [complete import_forces API](IMPORT_SERVICE.md).
 
+The path API accepts UTF-8 JSON `.forces` and Raw-DEFLATE `.zforces` files
+(case-insensitive compressed extension). Compressed input is expanded in memory
+before the same strict JSON/schema pipeline, without an extraction file.
+`max_bytes` bounds both original and expanded bytes; expansion stops at the
+budget plus one. Invalid, truncated, concatenated streams and trailing bytes
+fail with `INVALID_COMPRESSION`; ZIP, GZIP and zlib containers are not accepted.
+Bytes-only APIs continue to accept uncompressed JSON without format guessing.
+Original bytes, byte count, digest and path always refer to the original file;
+the immutable source tree represents its decoded JSON. Expanded oversize input
+retains no source/count/hash, matching the resource-failure policy below.
+
 DecodeSuccess exposes success=True, schema_version="2.2.0", retained SourceEnvelope,
 original byte_count, source_sha256 and an empty diagnostic tuple. It exposes no
 Recording or inferred capability/GPS status. ImportFailure exposes success=False,
@@ -99,7 +110,7 @@ failure is also a structured resource error rather than an uncaught exception.
 
 ## Diagnostics, offline checks and tests
 
-Codes: EMPTY_INPUT, INVALID_UTF8, INVALID_JSON, NON_JSON_NUMBER, INVALID_JSON_NUMBER,
+Codes: EMPTY_INPUT, INVALID_COMPRESSION, INVALID_UTF8, INVALID_JSON, NON_JSON_NUMBER, INVALID_JSON_NUMBER,
 DUPLICATE_JSON_KEY, INVALID_ROOT, INVALID_SCHEMA_VERSION, UNSUPPORTED_SCHEMA_VERSION,
 MISSING_REQUIRED_FIELD, INVALID_REQUIRED_FIELD, RESOURCE_LIMIT_EXCEEDED,
 SOURCE_NOT_FOUND, SOURCE_UNREADABLE, INVALID_SOURCE_PATH. Decoding returns the first

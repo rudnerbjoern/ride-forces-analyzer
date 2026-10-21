@@ -307,7 +307,7 @@ class BatchDialog(QDialog):
                 self,
                 tr("Add recordings"),
                 "",
-                "Ride Forces (*.forces)",
+                "Ride Forces (*.forces *.zforces)",
             )
             if not paths:
                 return
