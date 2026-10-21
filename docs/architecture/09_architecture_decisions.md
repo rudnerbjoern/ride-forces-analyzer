@@ -86,7 +86,8 @@ Kraken/Voltron discrepancies; [concepts](08_concepts.md) and
 
 Implemented outputs are transparent ProRes 4444 MOV and independent opaque H.264
 MP4, with manual video alignment. Preview and encoding share production frames;
-CPU fallback remains available. Additional outputs, interactive playback, POV
-synchronization and standalone packaging remain planned in the
+CPU fallback remains available. Interactive sample playback is implemented separately
+from export. Additional outputs, POV synchronization and standalone packaging
+remain planned in the
 [roadmap](../ROADMAP.md); [export contracts](../implementation/VIDEO_EXPORT.md)
 and [deployment limits](07_deployment_view.md) define the current boundary.

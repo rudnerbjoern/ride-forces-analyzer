@@ -181,8 +181,13 @@ follow the [lifetime concepts](08_concepts.md#snapshot-lifetime-and-reuse).
 
 Visible-range extrema update on source/viewport/mode/smoothing changes; the
 explicit From/To selection is separate from the viewport.
-Persistent ride library, interactive playback and POV synchronization remain
-planned. Frame rendering and encoding are implemented for the 4K overlay slice. Universal physical
+The explorer's Play/Pause action starts a Qt-independent monotonic sample clock.
+A GUI-thread timer adopts its current integer sample through existing navigation;
+missed ticks do not accumulate drift. Seeking resets the clock origin. Pause, recording
+end, import/replacement, export opening and window close stop timer delivery.
+No analysis is recalculated during playback. The persistent ride library and POV
+synchronization remain planned.
+Frame rendering and encoding are implemented for the 4K overlay slice. Universal physical
 rider qualification and analytical GPS are outside current M3 acceptance. This view introduces
 no invented runtime interactions for those services.
 

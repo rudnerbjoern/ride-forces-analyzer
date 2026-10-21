@@ -4,13 +4,17 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
+# cspell:words Pixmap
+
 from ride_forces_analyzer import __version__
 from ride_forces_analyzer.i18n import Language, tr
-from .translation import bind, set_ui_language, system_ui_language
+from .translation import bind, items, set_ui_language, system_ui_language
 
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 from importlib.util import find_spec
+from time import monotonic
+from math import ceil
 
 from PySide6.QtCharts import QCategoryAxis, QChart, QChartView, QLineSeries, QValueAxis
 from PySide6.QtCore import QElapsedTimer, QPointF, Qt, QThreadPool, QTimer, Signal, Slot
@@ -27,6 +31,7 @@ from PySide6.QtGui import (
     QWheelEvent,
 )
 from PySide6.QtWidgets import (
+    QComboBox,
     QApplication,
     QCheckBox,
     QDialog,
@@ -57,6 +62,7 @@ from ride_forces_analyzer.config import AppSettings
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.explorer import ExplorerData, failure_text
 from ride_forces_analyzer.importers import ImportFailure
+from ride_forces_analyzer.playback import SamplePlayback
 
 from ride_forces_analyzer.gps_overview import prepare_gps_overview
 
@@ -211,6 +217,14 @@ class ExplorerWindow(QMainWindow):
         self.setWindowIcon(app_icon())
         self.resize(settings.window_width, settings.window_height)
         self.data: ExplorerData | None = None
+        self.playback: SamplePlayback | None = None
+        self._playback_position = 0.0
+        self._updating_playback = False
+        self._playback_button_playing: bool | None = None
+        self.playback_timer = QTimer(self)
+        self.playback_timer.setTimerType(Qt.TimerType.PreciseTimer)
+        self.playback_timer.setInterval(16)
+        self.playback_timer.timeout.connect(self._playback_tick)
         self.analysis_controller: AnalysisController | None = None
         if find_spec("numpy") is not None:
             from .analysis import AnalysisController
@@ -408,10 +422,28 @@ class ExplorerWindow(QMainWindow):
         self.position.setObjectName("samplePosition")
         navigation.addWidget(bind(QLabel(), tr("Sample")))
         navigation.addWidget(self.slider, 1)
+        self.play_button = QPushButton()
+        self.play_button.setObjectName("playPauseButton")
+        self.play_button.clicked.connect(self.toggle_playback)
+        navigation.addWidget(self.play_button)
+        self.playback_speed = QComboBox()
+        self.playback_speed.setObjectName("playbackSpeed")
+        items(self.playback_speed, [tr("{0:g}×", speed) for speed in (0.5, 1.0, 2.0)])
+        self.playback_speed.setCurrentIndex(1)
+        bind(self.playback_speed, tr("Playback speed"), "toolTip")
+        bind(self.playback_speed, tr("Playback speed"), "accessibleName")
+        self.playback_speed.currentIndexChanged.connect(self.set_playback_speed)
+        navigation.addWidget(self.playback_speed)
         navigation.addWidget(self.position)
         self.slider.valueChanged.connect(self.position.setValue)
         self.position.valueChanged.connect(self.slider.setValue)
         self.slider.valueChanged.connect(self.show_sample)
+        self._sync_playback_button()
+        self.play_button.setFixedWidth(self.play_button.sizeHint().width())
+        playback_controls = (self.play_button, self.playback_speed, self.position)
+        control_height = max(control.sizeHint().height() for control in playback_controls)
+        for control in playback_controls:
+            control.setFixedHeight(control_height)
         navigation_layout.addLayout(navigation)
         self.time_readout = bind(QLabel(), tr("Replay —   |   Recording —"))
         self.time_readout.setObjectName("Muted")
@@ -723,6 +755,7 @@ class ExplorerWindow(QMainWindow):
             axis.setLinePen(QPen(QColor(self.theme.border), 1))
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        self._pause_playback()
         if self.batch_window is not None and self.batch_window.isVisible():
             self.batch_window.close()
             if self.batch_window.isVisible():
@@ -747,6 +780,8 @@ class ExplorerWindow(QMainWindow):
         for control in (
             self.slider,
             self.position,
+            self.play_button,
+            self.playback_speed,
             self.first,
             self.last,
             self.zoom_button,
@@ -759,11 +794,13 @@ class ExplorerWindow(QMainWindow):
         self.export_button.setEnabled(
             enabled and self.data is not None and self.data.calibration_available,
         )
+        self.play_button.setEnabled(enabled and self.data is not None and self.data.count > 1)
 
     @Slot()
     def show_export(self) -> None:
         if self.data is None or not self.data.calibration_available:
             return
+        self._pause_playback()
         if self.export_window is not None and self.export_window.isVisible():
             self.export_window.raise_()
             self.export_window.activateWindow()
@@ -823,6 +860,7 @@ class ExplorerWindow(QMainWindow):
     def open_path(self, path: Path) -> None:
         if self._worker is not None:
             return
+        self._pause_playback()
         self._load_generation += 1
         worker = LoadWorker(path, self._load_generation)
         worker.signals.completed.connect(self._load_completed)
@@ -862,6 +900,7 @@ class ExplorerWindow(QMainWindow):
             self._failed(tr("Unable to display recording."))
             return
         outcome = outcome.with_calibration(outcome.calibration_available)
+        self._pause_playback()
         if self.analysis_controller is not None:
             self.analysis_controller.bind_snapshot(outcome.analysis)
         if self._chosen_path is not None:
@@ -873,6 +912,10 @@ class ExplorerWindow(QMainWindow):
             self.gps_window = None
         self.gps_button.setEnabled(prepare_gps_overview(outcome.source.recording) is not None)
         self.data = outcome
+        self.playback = SamplePlayback(outcome.count, outcome.sample_rate, clock=monotonic)
+        self.playback_speed.blockSignals(True)
+        self.playback_speed.setCurrentIndex(1)
+        self.playback_speed.blockSignals(False)
         self.smoothing_slider.blockSignals(True)
         self.smoothing_slider.setValue((outcome.smoothing_window - 1) // 2)
         self.smoothing_slider.blockSignals(False)
@@ -1224,7 +1267,13 @@ class ExplorerWindow(QMainWindow):
     def show_sample(self, index: int) -> None:
         if self.data is None:
             return
+        if self.playback is not None and not self._updating_playback:
+            self.playback.seek(index)
+            self._playback_position = float(index)
+            self._sync_playback_button()
         self._refresh_sample(index)
+        if self._updating_playback:
+            return
         self._redraw_cursor()
         low, high = self.axis_x.min(), self.axis_x.max()
         time = self.data.time_at(index)
@@ -1232,6 +1281,85 @@ class ExplorerWindow(QMainWindow):
             width = high - low
             first = max(0.0, min(time - width / 2, self.data.duration - width))
             self.axis_x.setRange(first, first + width)
+
+    @Slot()
+    def toggle_playback(self) -> None:
+        if self.playback is None:
+            return
+        if self.playback.playing:
+            self._pause_playback()
+        else:
+            self.slider.setValue(self.playback.play(self.slider.value()))
+            self._playback_position = float(self.slider.value())
+            self._sync_playback_button()
+
+    @Slot(int)
+    def set_playback_speed(self, index: int) -> None:
+        if self.playback is not None and 0 <= index < 3:
+            self._playback_tick()
+            self.playback.set_speed((0.5, 1.0, 2.0)[index])
+            self._sync_playback_button()
+
+    @Slot()
+    def _playback_tick(self) -> None:
+        if self.playback is not None:
+            position = self.playback.current_position()
+            index = int(position)
+            if self.data is not None and position != self._playback_position:
+                low, high = self.axis_x.min(), self.axis_x.max()
+                previous = self._playback_position / self.data.sample_rate
+                time = position / self.data.sample_rate
+                if low <= previous <= high and time >= previous:
+                    width = high - low
+                    first = min(
+                        max(low, time - width / 2),
+                        low + time - previous,
+                        max(0.0, self.data.duration - width),
+                    )
+                    if first > low:
+                        self.axis_x.setRange(first, first + width)
+                elif time < low or time > high:
+                    width = high - low
+                    first = max(0.0, min(time - width / 2, self.data.duration - width))
+                    self.axis_x.setRange(first, first + width)
+            self._playback_position = position
+            self._updating_playback = True
+            try:
+                self.slider.setValue(index)
+            finally:
+                self._updating_playback = False
+            self._redraw_cursor()
+            self._sync_playback_button()
+
+    def _pause_playback(self) -> None:
+        if self.playback is not None:
+            self.slider.setValue(self.playback.pause())
+            self._playback_position = float(self.slider.value())
+            self._redraw_cursor()
+        self._sync_playback_button()
+
+    def _sync_playback_button(self) -> None:
+        playing = self.playback is not None and self.playback.playing
+        if playing == self._playback_button_playing:
+            return
+        self._playback_button_playing = playing
+        bind(self.play_button, tr("Pause") if playing else tr("Play"), "accessibleName")
+        bind(
+            self.play_button,
+            tr("Pause playback") if playing else tr("Play recording"),
+            "toolTip",
+        )
+        self.play_button.setIcon(
+            self.style().standardIcon(
+                QStyle.StandardPixmap.SP_MediaPause
+                if playing
+                else QStyle.StandardPixmap.SP_MediaPlay,
+            ),
+        )
+        if playing and not self.playback_timer.isActive():
+            self.playback_timer.start()
+        elif not playing:
+            self.playback_timer.stop()
 
     @Slot(float)
     def select_chart_sample(self, fraction: float) -> None:
@@ -1291,23 +1419,25 @@ class ExplorerWindow(QMainWindow):
         if self.data is None or not isinstance(self.axis_x, QCategoryAxis):
             return
         low, high = self.axis_x.min(), self.axis_x.max()
+        stride = max(1, round(round((high - low) * self.data.sample_rate / 5, 9)))
+        anchor = self.data.source.recording.indices.start or 0
+        first_tick = ceil((max(0.0, low * self.data.sample_rate) - anchor - 1e-9) / stride)
+        first = anchor + first_tick * stride
+        indices = range(
+            first,
+            min(self.data.count, int(high * self.data.sample_rate + 1e-9) + 1),
+            stride,
+        )
+        labels = [self.data.replay_text(index) for index in indices]
+        if self.axis_x.categoriesLabels() == labels:
+            return
         self.axis_x.blockSignals(True)
         for label in self.axis_x.categoriesLabels():
             self.axis_x.remove(label)
         self.axis_x.setStartValue(low - 1 / self.data.sample_rate)
-        indices = sorted(
-            {
-                min(
-                    self.data.count - 1,
-                    max(0, round((low + (high - low) * step / 5) * self.data.sample_rate)),
-                )
-                for step in range(6)
-            },
-        )
         for index in indices:
             time = self.data.time_at(index)
-            if low <= time <= high:
-                self.axis_x.append(self.data.replay_text(index), time)
+            self.axis_x.append(self.data.replay_text(index), time)
         self.axis_x.setRange(low, high)
         self.axis_x.blockSignals(False)
 
@@ -1349,7 +1479,12 @@ class ExplorerWindow(QMainWindow):
     @Slot()
     def _redraw_cursor(self) -> None:
         if self.data is not None:
-            time = self.data.time_at(self.slider.value())
+            position = (
+                self._playback_position
+                if self.playback is not None and self.playback.playing
+                else self.slider.value()
+            )
+            time = position / self.data.sample_rate
             self.sample_cursor.replace(
                 [QPointF(time, self.axis_y.min()), QPointF(time, self.axis_y.max())],
             )

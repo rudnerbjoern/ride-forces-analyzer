@@ -42,8 +42,8 @@ interfaces. The explorer calls the importer asynchronously; raw curves and
 sample controls make no universal physical calibration claim. Source-app
 projection/mean is implemented; selected-range extrema are implemented within reduced
 M3. GPS supplies coarse spatial context only. The 4K overlay exporter writes one
-video in one of five layouts for manual alignment in Resolve; interactive playback
-and POV synchronization remain planned.
+video in one of five layouts for manual alignment in Resolve. Interactive sample
+playback is implemented; POV synchronization remains planned.
 
 ## Technical context
 

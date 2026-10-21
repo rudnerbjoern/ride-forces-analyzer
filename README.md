@@ -55,6 +55,7 @@ verification, Linux prerequisites and first-launch instructions.
 Click **Open recording** or press **Ctrl+O** (**⌘O** on macOS) and choose your `.forces` file.
 Click a point in the chart to inspect that sample, move through the ride with the
 slider, or zoom into a section with the mouse wheel or by dragging across the plot.
+Use **Play / Pause** beside the sample slider to follow the ride at **0.5×, 1× or 2× speed** (default **1×**).
 See [Explore a recording](docs/user/EXPLORER.md) for navigation and selection.
 
 ### 3. Create an overlay

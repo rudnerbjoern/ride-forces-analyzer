@@ -108,6 +108,13 @@ Failed loads retain the previous view. All metadata is plain source text.
 Recording time is inferred `index / effective_rate`, not an acquisition epoch.
 Integer-rate replay uses start-relative `MM:SS.ff`, with a within-second sample
 counter; fractional rates use seconds. GPS never determines this clock.
+Interactive playback scales monotonic elapsed seconds by 0.5×, 1× or 2× and maps
+them to existing integer samples using the effective recording rate. Speed changes
+preserve continuous position and play/pause state; new recordings default to 1×. UI timer frequency does not define recording
+time. Delayed delivery catches up, pause excludes elapsed wall time, and seeking
+sets a new origin. No measurements, force interpolation or analysis stages are
+created; the recording end stops playback without looping. Continuous clock position
+drives only cursor/camera movement between samples; displayed values remain sampled.
 Selections are inclusive; extrema use existing full channels and earliest ties.
 Inspector extrema follow the visible time range, independently of cursor and
 curve visibility. The explicit From/To interval is a separate export/zoom
