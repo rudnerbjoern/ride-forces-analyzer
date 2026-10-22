@@ -24,6 +24,7 @@ from PySide6.QtWidgets import QApplication, QWidget
 from ride_forces_analyzer.config import AppSettings
 from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.ui.export import ExportDialog
+from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 from ride_forces_analyzer.ui.window import ExplorerWindow
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -113,12 +114,16 @@ def capture_details(application: QApplication, window: ExplorerWindow, output: P
                 ):
                     raise RuntimeError("Cannot capture airtime chart and legend")
                 details["contexts"] = sorted(
-                    {window.data.vertical_context_label(index) for index in range(*interval)},
+                    {
+                        context_label
+                        for index in range(*interval)
+                        if (context_label := window.data.vertical_context_label(index)) is not None
+                    },
                 )
             elif name == "Taron":
                 bounds = QRect()
-                for label in window.value_labels:
-                    card = label.parentWidget()
+                for value_label in window.value_labels:
+                    card = value_label.parentWidget()
                     if card is None:
                         raise RuntimeError("Missing force value card")
                     bounds = bounds.united(QRect(card.mapTo(window, QPoint()), card.size()))
@@ -273,6 +278,9 @@ def capture_reference(output: Path, *, details: bool = False) -> None:
                 dialog.setMinimumSize(*EXPORT_SIZE)
                 dialog.resize(*EXPORT_SIZE)
                 dialog.layout_profile.setCurrentIndex(0)
+                dialog.position.setCurrentIndex(
+                    dialog.position.findData(LayoutPosition.BOTTOM.value),
+                )
                 dialog.aspect.setCurrentIndex(0)
                 dialog.overlay_language.setCurrentIndex(0)
                 dialog.mode.setCurrentIndex(0)
@@ -307,6 +315,7 @@ def capture_reference(output: Path, *, details: bool = False) -> None:
                     "workspace_size": WORKSPACE_SIZE,
                     "export_size": EXPORT_SIZE,
                     "layout": "ribbon",
+                    "position": dialog.position.currentData(),
                     "aspect": "landscape",
                     "output": "transparent",
                     "fps": 50,

@@ -1,6 +1,7 @@
 """Native language switching and German layouts over unchanged recording data."""
 
 # cspell:words Aufnahme öffnen Ansicht zurücksetzen Kalibrierte Kräfte Reihe Fahrtzeit Messpunkte zurück Abbrechen prüfen Bahn Schließen Hochformat Meine Vorgabe exportieren Quellwert bleibt erhalten
+# cspell:words Oben Unten rechts
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -257,6 +258,23 @@ def test_german_export_and_batch_dialogs_fit_and_save_language(
             wait_until(lambda: dialog.preview_result is not None)
             assert dialog.overlay_language.currentIndex() == 1
             assert dialog.aspect.itemText(1).startswith("Hochformat")
+            assert [dialog.position.itemText(i) for i in range(dialog.position.count())] == [
+                "Oben",
+                "Unten",
+            ]
+            selected_position = dialog.position.currentData()
+            window.set_ui_language(0)
+            assert dialog.position.currentText() == "Bottom"
+            window.set_ui_language(1)
+            assert dialog.position.currentText() == "Unten"
+            assert dialog.position.currentData() == selected_position
+            dialog.layout_profile.setCurrentIndex(3)
+            QCoreApplication.processEvents()
+            assert dialog.position.count() == 4
+            assert "Oben rechts" in [dialog.position.itemText(i) for i in range(4)]
+            assert_combo_text_fits(dialog.position)
+            dialog.layout_profile.setCurrentIndex(0)
+            assert dialog.position.count() == 2
             assert dialog.next.text() == "Export prüfen →"
             for combo in dialog.findChildren(QComboBox):
                 if combo.isVisible():

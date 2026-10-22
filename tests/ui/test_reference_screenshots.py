@@ -10,8 +10,10 @@ import shutil
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
+from textwrap import dedent
 
 from PIL import Image
+import pytest
 
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
 
@@ -48,6 +50,7 @@ def test_capture_cli_is_repeatable_and_preserves_original_and_preferences() -> N
             assert manifest["sample"] == 4960 and manifest["selection"] == [4200, 5100]
             assert manifest["smoothing"] == 11 and manifest["language"] == "en"
             assert manifest["layout"] == "ribbon" and manifest["fps"] == 50
+            assert manifest["position"] == "bottom"
             pixels: dict[str, bytes] = {}
             for filename, size in (
                 ("workspace-dark.png", (1600, 1100)),
@@ -89,13 +92,31 @@ def test_capture_rejects_changed_source_before_writing_images() -> None:
         assert not output.exists()
 
 
-def test_detail_capture_uses_three_recordings_and_identical_comparison_scales() -> None:
+@pytest.mark.parametrize("missing_context", [False, True])
+def test_detail_capture_uses_three_recordings_and_identical_comparison_scales(
+    missing_context: bool,
+) -> None:
     """Real UI crops retain source identities and honest smoothing comparison axes."""
     with TemporaryDirectory(dir=ROOT / ".tmp") as directory:
         work = Path(directory)
         output = work / "details"
+        command = [sys.executable, str(SCRIPT), "--details", "--output", str(output)]
+        if missing_context:
+            wrapper = dedent("""
+                import sys
+                from runpy import run_path
+                from ride_forces_analyzer.explorer import ExplorerData
+                original = ExplorerData.vertical_context_label
+                ExplorerData.vertical_context_label = (
+                    lambda self, index: None if index % 2 == 0 else original(self, index)
+                )
+                script = sys.argv.pop(1)
+                sys.argv[0] = script
+                run_path(script, run_name="__main__")
+            """)
+            command = [sys.executable, "-c", wrapper, *command[1:]]
         result = subprocess.run(
-            [sys.executable, str(SCRIPT), "--details", "--output", str(output)],
+            command,
             cwd=work,
             capture_output=True,
             text=True,
@@ -112,6 +133,7 @@ def test_detail_capture_uses_three_recordings_and_identical_comparison_scales() 
             assert manifest[name]["source_sha256"] == REAL_FIXTURES[source.name][1]
             assert sha256(source.read_bytes()).hexdigest() == REAL_FIXTURES[source.name][1]
         assert {"Floater Airtime", "Ejector Airtime"} <= set(manifest["VoltronNevera"]["contexts"])
+        assert all(isinstance(label, str) for label in manifest["VoltronNevera"]["contexts"])
         assert manifest["Taron"]["cards"][2] == ["Longitudinal", "+1.08 g", "Acceleration"]
         smoothing = manifest["Manta"]
         assert smoothing["smoothing"] == [1, 11, 31]

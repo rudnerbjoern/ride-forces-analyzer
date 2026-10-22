@@ -19,6 +19,7 @@
     1000
   ],
   "layout": "ribbon",
+  "position": "bottom",
   "aspect": "landscape",
   "output": "transparent",
   "fps": 50,

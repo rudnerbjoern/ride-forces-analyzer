@@ -28,7 +28,37 @@ For an example of a rendered template in use, watch the
 ## Renderer contract
 
 Each layout module exports one immutable `PLUGIN` with its stable key,
-landscape/portrait regions `(x, y, width, height)` and a renderer factory.
+landscape/portrait `LayoutPositions` and a renderer factory. Each format owns a
+read-only `regions` mapping from `LayoutPosition` StrEnum members to explicit pixel
+regions `(x, y, width, height)`, plus a supported `default` key. Coordinates start
+at the canvas's upper-left corner. Position entries may have different sizes.
+Use named members such as `LayoutPosition.TOP_LEFT` in code. Their explicit string
+values (such as `top_left`) remain stable; parse external values with
+`LayoutPosition(value)`. Metadata keys and defaults require enum members.
+Mappings are copied; coordinates/dimensions must be integers, coordinates
+nonnegative and sizes positive. Plugin construction rejects regions outside the
+3840×2160 landscape or 2160×3840 portrait canvas, including nondefault entries.
+`ExportSettings.position` accepts a `LayoutPosition`; `None` selects the format's
+default. Unsupported layout/format combinations and raw string positions raise
+`ValueError`. Rendering, previews and encoder padding resolve the same region.
+`LayoutPositions.select` retains supported positions, otherwise chooses an equivalent
+edge/corner on the same vertical or horizontal side. The assistant remembers each
+layout's current position for its lifetime. That position supplies an unspecified
+axis (Orbit Top right → Ribbon Bottom → Orbit Bottom right); without a remembered
+position, the target default supplies it.
+Without an equivalent, the default applies. Preview thumbnails and the assistant's
+localized Position selector share this policy on layout/format changes.
+Preview workers receive a copy of the remembered positions for their revision.
+`PreviewBackground` defines `CHECKER`, `LIGHT` and `DARK` for `build_previews` and
+the assistant worker. Their string values are UI data; backgrounds affect previews only.
+Saved presets resolve `None` to the current layout/format default and persist the
+explicit `LayoutPosition` value. Immutable job snapshots retain it when presets
+change; batches pass the saved settings unchanged to export preparation/encoding.
+Coordinates remain layout-owned and are not stored in presets/jobs.
+
+`LANDSCAPE_POSITIONS` and `PORTRAIT_POSITIONS` live in each layout module.
+Ribbon/Capsule declare top/bottom, Column left/right and Corners/G-Orbit all four
+corners. Their defaults retain the existing geometry.
 The factory receives an `ExportTimeline`. Its renderer implements
 `render_position(position: float) -> Image.Image`, returning a native-sized
 RGBA region at an absolute source-sample position, including fractional samples.

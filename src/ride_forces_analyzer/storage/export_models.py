@@ -4,7 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-from dataclasses import asdict, fields
+from dataclasses import asdict, fields, replace
 from pathlib import Path
 import json
 from typing import Literal, Self, cast
@@ -22,6 +22,7 @@ from pydantic import (
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, StageConfiguration
 from ride_forces_analyzer.analysis.models import AnalysisProfile
 from ride_forces_analyzer.rendering.model import ExportSettings
+from ride_forces_analyzer.rendering.layouts import registry
 
 RangeMode = Literal["markers", "selection", "entire"]
 
@@ -47,6 +48,16 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
     def complete_settings(cls, value: object) -> object:
         _require_fields(value, {item.name for item in fields(ExportSettings)}, "Export settings")
         return value
+
+    @field_validator("settings")
+    @classmethod
+    def explicit_position(cls, value: ExportSettings) -> ExportSettings:
+        """Bind implicit placement to its current named default for saved snapshots."""
+        if value.position is not None:
+            return value
+        plugin = registry.PLUGINS[value.layout]
+        positions = plugin.landscape if value.aspect == "landscape" else plugin.portrait
+        return replace(value, position=positions.default)
 
     @field_validator("analysis_configuration", mode="before")
     @classmethod

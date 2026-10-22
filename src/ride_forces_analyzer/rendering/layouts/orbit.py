@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 from math import cos, sin, radians
 from ..peaks import PeakEnvelope
 from .common import ACCELERATION_COLOR, BRAKING_COLOR, Drawing
-from .contracts import LayoutPlugin
+from .contracts import LayoutPlugin, LayoutPosition, LayoutPositions
 
 
 FONT_FILE = "segoeui.ttf"  # Regular Windows font file.
@@ -34,8 +34,24 @@ PANEL_OUTLINE_WIDTH = 2  # Panel border thickness in pixels.
 TEXT_OUTLINE_WIDTH = 1  # Glyph outline thickness in pixels.
 TEXT_OUTLINE_COLOR = (0, 0, 0, 230)  # Glyph outline RGBA color.
 NATIVE_SIZE = (800, 800)  # Square native drawing dimensions.
-LANDSCAPE_REGION = (192, 1260, 800, 800)  # Landscape placement: x, y, width, height.
-PORTRAIT_REGION = (240, 2412, 1188, 1188)  # Portrait placement: x, y, width, height.
+LANDSCAPE_POSITIONS = LayoutPositions(  # Landscape regions: x, y, width, height.
+    {
+        LayoutPosition.TOP_LEFT: (192, 100, 800, 800),
+        LayoutPosition.TOP_RIGHT: (2848, 100, 800, 800),
+        LayoutPosition.BOTTOM_LEFT: (192, 1260, 800, 800),
+        LayoutPosition.BOTTOM_RIGHT: (2848, 1260, 800, 800),
+    },
+    default=LayoutPosition.BOTTOM_LEFT,
+)
+PORTRAIT_POSITIONS = LayoutPositions(  # Portrait regions: x, y, width, height.
+    {
+        LayoutPosition.TOP_LEFT: (240, 240, 1188, 1188),
+        LayoutPosition.TOP_RIGHT: (732, 240, 1188, 1188),
+        LayoutPosition.BOTTOM_LEFT: (240, 2412, 1188, 1188),
+        LayoutPosition.BOTTOM_RIGHT: (732, 2412, 1188, 1188),
+    },
+    default=LayoutPosition.BOTTOM_LEFT,
+)
 CENTER = (400, 400)  # Shared center of all circular instruments.
 BACKGROUND_INSET = 2  # Circular background inset from the square canvas.
 FORCE_ARCS = (
@@ -304,4 +320,4 @@ class OrbitRenderer(Drawing):
         return image
 
 
-PLUGIN = LayoutPlugin("orbit", LANDSCAPE_REGION, PORTRAIT_REGION, OrbitRenderer)
+PLUGIN = LayoutPlugin("orbit", LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, OrbitRenderer)

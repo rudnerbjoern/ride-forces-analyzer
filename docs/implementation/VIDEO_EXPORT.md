@@ -75,7 +75,7 @@ the [roadmap](../ROADMAP.md) owns planned scope.
   source indices; layouts consume a bound `ExportTimeline`.
   Force/orientation views share prepared buffers; context uses full-history labels
   without per-layout reclassification.
-- Orientation is independent of force smoothing. Layout, aspect, language, video
+- Orientation is independent of force smoothing. Layout, aspect, position, language, video
   rate and seeking do not recalculate analysis. Running exports/preview workers
   retain bound snapshots independently of later workspace changes.
 - Source time is index/rate; fractional output positions interpolate adjacent values.
@@ -93,6 +93,12 @@ the [roadmap](../ROADMAP.md) owns planned scope.
   Corners, G-Orbit and Column preserve complete instruments with proportional
   scaling/margins. Previews retain aspect without cropping/stretching.
   Frame composition and encoder padding share region geometry.
+- The export API accepts a layout/format-supported position or uses that format's
+  default. Coordinates and dimensions come from the layout; frame composition,
+  large previews, thumbnails and encoder padding use the same selected region.
+  The assistant offers localized positions beside Layout profile. Layout/format
+  changes retain a supported selection or choose an equivalent edge/corner on the
+  same side, falling back to the default. Thumbnails use the same policy.
 - Compact time plots show three forces plus numeric tilt; Column adds an
   orientation plot. Export uses calibrated channels at the selected centered-mean
   setting. Bounds use selected extrema plus 5% outward padding and −1/0/+1 g labels.

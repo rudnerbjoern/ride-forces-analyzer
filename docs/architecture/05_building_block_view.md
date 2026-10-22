@@ -171,6 +171,8 @@ Export timelines bind one immutable `RecordingAnalysis`. Read-only channel views
 share prepared buffers, and layouts read prepared orientation/context without
 recalculation. Previews share that snapshot across profiles; running exports never
 adopt later workspace changes. Presets persist recipes, never sample arrays.
+Saved settings resolve implicit placement to a named layout/format position;
+immutable job snapshots retain it through batch execution. Geometry stays in layouts.
 
 The [Manta G-Orbit video example](https://youtu.be/tsRzD416voU) shows the exported
 overlay composed over Onride footage.
@@ -187,7 +189,11 @@ uses the current label in the vertical value card. The
 [provisional thresholds and limits](../implementation/AIRTIME.md) do not establish
 scientific qualification or a general ride-event analysis service.
 `rendering.layouts` provides one module per built-in profile and an explicit
-registry of immutable layout metadata and factories. Each renderer implements
+registry of immutable layout metadata and factories. Each plugin owns explicit
+position/region mappings and a supported default for each format; registration
+validates integer geometry and canvas bounds. The registry resolves the selected
+position or format default consistently for frame composition, previews and
+encoder padding. Each renderer implements
 the same native-RGBA-region/source-position protocol. Shared drawing primitives
 and a three-channel chart base support the related compact profiles; G-Orbit and
 Column draw independently. `rendering.frames` selects the registered renderer and

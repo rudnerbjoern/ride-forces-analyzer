@@ -10,8 +10,9 @@ import pytest
 
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
+from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 from ride_forces_analyzer.rendering.model import ExportSettings, PROFILES, prepare_export
-from ride_forces_analyzer.rendering.preview import build_previews
+from ride_forces_analyzer.rendering.preview import PreviewBackground, build_previews
 
 
 @pytest.mark.parametrize("layout", [profile[0] for profile in PROFILES])
@@ -58,13 +59,14 @@ def test_previews_match_production_at_exact_graph_sample(
     sample = manta.source.recording.indices.start + 72 * 50 + 1
     settings = ExportSettings(
         layout="orbit",
+        position=LayoutPosition.TOP_RIGHT,
         fps=30,
         aspect=aspect,
         invert_vertical=False,
         invert_lateral=False,
     )
     first, last = sample - 101, sample + 100
-    result = build_previews(manta.analysis, settings, first, last, sample, "dark")
+    result = build_previews(manta.analysis, settings, first, last, sample, PreviewBackground.DARK)
     assert result.sample == sample and not result.outside_range
     assert tuple((p.layout, p.title) for p in result.profiles) == PROFILES
     timeline = prepare_export(manta.analysis, settings, first, last)
@@ -75,6 +77,12 @@ def test_previews_match_production_at_exact_graph_sample(
             else replace(
                 settings,
                 layout=profile.layout,
+                position={
+                    "corners": LayoutPosition.TOP_RIGHT,
+                    "column": LayoutPosition.RIGHT,
+                    "ribbon": LayoutPosition.TOP,
+                    "capsule": LayoutPosition.TOP,
+                }[profile.layout],
                 invert_vertical=True,
                 invert_lateral=profile.layout == "column",
             )
@@ -90,6 +98,44 @@ def test_previews_match_production_at_exact_graph_sample(
         assert profile.image.tobytes() == expected.tobytes()
     with pytest.raises(ValueError, match="outside"):
         OverlayRenderer(timeline).render_sample(last + 1)
+
+
+@pytest.mark.parametrize("position", [LayoutPosition.TOP, LayoutPosition.BOTTOM])
+@pytest.mark.parametrize("previous", [LayoutPosition.TOP_LEFT, LayoutPosition.TOP_RIGHT])
+def test_edge_choice_moves_corner_previews_to_equivalent_side(
+    manta: ExplorerData,
+    monkeypatch: pytest.MonkeyPatch,
+    position: LayoutPosition,
+    previous: LayoutPosition,
+) -> None:
+    assert manta.analysis is not None
+    settings_by_layout: dict[str, ExportSettings] = {}
+
+    def render(self: OverlayRenderer, sample: float) -> Image.Image:
+        settings_by_layout[self.timeline.settings.layout] = self.timeline.settings
+        return Image.new("RGBA", (8, 8))
+
+    monkeypatch.setattr(OverlayRenderer, "render_sample", render)
+    build_previews(
+        manta.analysis,
+        ExportSettings(layout="ribbon", position=position),
+        3500,
+        3700,
+        3600,
+        previous_positions={"orbit": previous},
+    )
+    assert settings_by_layout["corners"].position == (
+        LayoutPosition.TOP_RIGHT if position == LayoutPosition.TOP else LayoutPosition.BOTTOM_RIGHT
+    )
+    assert (
+        settings_by_layout["orbit"].position
+        == {
+            (LayoutPosition.TOP, LayoutPosition.TOP_LEFT): LayoutPosition.TOP_LEFT,
+            (LayoutPosition.BOTTOM, LayoutPosition.TOP_LEFT): LayoutPosition.BOTTOM_LEFT,
+            (LayoutPosition.TOP, LayoutPosition.TOP_RIGHT): LayoutPosition.TOP_RIGHT,
+            (LayoutPosition.BOTTOM, LayoutPosition.TOP_RIGHT): LayoutPosition.BOTTOM_RIGHT,
+        }[position, previous]
+    )
 
 
 @pytest.mark.parametrize("fps", [30, 50, 60, "60000/1001"])
@@ -128,7 +174,7 @@ def test_outside_range_keeps_graph_sample_and_smoothing(
     sample = data.source.recording.indices.start + 72 * 50
     settings = ExportSettings(output=mode)
     original = data.source.source_sha256
-    result = build_previews(data.analysis, settings, 0, 100, sample, "light")
+    result = build_previews(data.analysis, settings, 0, 100, sample, PreviewBackground.LIGHT)
     assert result.outside_range and result.sample == sample
     assert data.source.source_sha256 == original and data.calibration_available
     assert data.smoothing_window == 3
