@@ -177,6 +177,12 @@ explicit export configuration may prepare a different one using shared stages.
 Running exports never follow workspace updates. Snapshot ownership and release
 follow the [lifetime concepts](08_concepts.md#snapshot-lifetime-and-reuse).
 
+The export assistant resolves supported or equivalent positions when layout/format
+changes, retaining each layout's unspecified axis for the current session. Position
+and preview-background changes only refresh production previews. Debounced workers
+receive copied position choices; only the current revision updates the UI. Presets
+and jobs capture explicit placement independently of this temporary view state.
+
 ## Product boundaries
 
 Visible-range extrema update on source/viewport/mode/smoothing changes; the

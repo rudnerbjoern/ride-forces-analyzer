@@ -42,6 +42,9 @@ your footage.
 
 Choose these settings:
 
+- **Position:** choose one of the selected layout's placements beside **Layout profile**.
+  The preview updates immediately. Changing layout or format keeps a supported
+  or equivalent position (such as top left → top), otherwise it selects the default.
 - **Video format:** landscape for a normal widescreen video, or portrait for
   vertical videos. Both export in 4K.
 - **Overlay language:** English or German, independently of the application language.

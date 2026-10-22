@@ -9,15 +9,21 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from .charts import ChartRenderer
-from .contracts import LayoutPlugin
+from .contracts import LayoutPlugin, LayoutPosition, LayoutPositions
 
 if TYPE_CHECKING:
     from ..model import ExportTimeline
 
 
 NATIVE_SIZE = (3072, 360)  # Native landscape drawing size in pixels.
-LANDSCAPE_REGION = (384, 1692, 3072, 360)  # Landscape placement: x, y, width, height.
-PORTRAIT_REGION = (240, 1360, 1680, 2240)  # Portrait placement: x, y, width, height.
+LANDSCAPE_POSITIONS = LayoutPositions(  # Landscape regions: x, y, width, height.
+    {LayoutPosition.TOP: (384, 108, 3072, 360), LayoutPosition.BOTTOM: (384, 1692, 3072, 360)},
+    default=LayoutPosition.BOTTOM,
+)
+PORTRAIT_POSITIONS = LayoutPositions(  # Portrait regions: x, y, width, height.
+    {LayoutPosition.TOP: (240, 240, 1680, 2240), LayoutPosition.BOTTOM: (240, 1360, 1680, 2240)},
+    default=LayoutPosition.BOTTOM,
+)
 PLOT_LEFT = 460  # Plot left inset inside a card.
 STACKED = False  # Stack force cards vertically.
 FONT_FILE = "segoeui.ttf"  # Regular Windows font file.
@@ -156,4 +162,4 @@ def create_renderer(timeline: ExportTimeline) -> ChartRenderer:
     return RibbonRenderer(timeline)
 
 
-PLUGIN = LayoutPlugin("ribbon", LANDSCAPE_REGION, PORTRAIT_REGION, create_renderer)
+PLUGIN = LayoutPlugin("ribbon", LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, create_renderer)

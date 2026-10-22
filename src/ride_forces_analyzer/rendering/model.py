@@ -14,6 +14,7 @@ from typing import Literal, overload
 from ride_forces_analyzer.analysis.models import SampleValues
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, RecordingAnalysis
 from ride_forces_analyzer.i18n import Language
+from .layouts.contracts import LayoutPosition
 
 FrameRate = int | Literal["60000/1001"]
 EXPORT_FRAME_RATES: tuple[FrameRate, ...] = (24, 25, 30, 50, "60000/1001", 60)
@@ -39,6 +40,7 @@ class ExportSettings:
     layout: ExportLayout = "column"
     aspect: Literal["landscape", "portrait"] = "landscape"
     language: Language = "en"
+    position: LayoutPosition | None = None
 
     @property
     def dimensions(self) -> tuple[int, int]:
@@ -66,6 +68,9 @@ class ExportSettings:
             raise ValueError("Unknown export output mode")
         if self.layout not in tuple(key for key, _ in PROFILES):
             raise ValueError("Unknown export layout")
+        from .layouts.registry import export_region
+
+        export_region(self)
 
 
 @dataclass(frozen=True, slots=True)

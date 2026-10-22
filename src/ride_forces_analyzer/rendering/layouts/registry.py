@@ -13,7 +13,7 @@ from .corners import PLUGIN as CORNERS
 from .capsule import PLUGIN as CAPSULE
 from .orbit import PLUGIN as ORBIT
 from .column import PLUGIN as COLUMN
-from .contracts import LayoutPlugin, LayoutRenderer, Region
+from .contracts import LayoutPlugin, LayoutPosition, LayoutRenderer, Region
 
 if TYPE_CHECKING:
     from ..model import ExportLayout, ExportSettings, ExportTimeline
@@ -21,12 +21,18 @@ if TYPE_CHECKING:
 PLUGINS: Mapping[ExportLayout, LayoutPlugin] = MappingProxyType(
     {plugin.key: plugin for plugin in (RIBBON, CORNERS, CAPSULE, ORBIT, COLUMN)},
 )
-REGIONS = {key: plugin.landscape for key, plugin in PLUGINS.items()}
+REGIONS = {
+    key: plugin.landscape.regions[plugin.landscape.default] for key, plugin in PLUGINS.items()
+}
 
 
 def export_region(settings: ExportSettings) -> Region:
     plugin = PLUGINS[settings.layout]
-    return plugin.landscape if settings.aspect == "landscape" else plugin.portrait
+    positions = plugin.landscape if settings.aspect == "landscape" else plugin.portrait
+    position = positions.default if settings.position is None else settings.position
+    if type(position) is not LayoutPosition or position not in positions.regions:
+        raise ValueError("Unsupported export position for layout and format")
+    return positions.regions[position]
 
 
 def create_renderer(timeline: ExportTimeline) -> LayoutRenderer:

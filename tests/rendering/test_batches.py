@@ -18,6 +18,7 @@ from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.rendering.batches import build_jobs, make_job, run_batches
 from ride_forces_analyzer.rendering.encoding import ExportCancelled
 from ride_forces_analyzer.rendering.model import ExportSettings, ExportTimeline
+from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 from ride_forces_analyzer.storage.export_models import BatchJob, SavedBatch, SavedPreset
 from ride_forces_analyzer.storage.exports import ExportStore, ExportStoreError
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
@@ -42,10 +43,13 @@ def preset(name: str = "Ribbon", window: int = 11) -> SavedPreset:
 def test_portrait_and_landscape_persistence(
     export_directory: Path,
     manta: ExplorerData,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from ride_forces_analyzer.rendering import batches
+
     chosen = SavedPreset(
         name="Portrait",
-        settings=ExportSettings(aspect="portrait"),
+        settings=ExportSettings(aspect="portrait", position=LayoutPosition.LEFT),
         analysis_configuration=source_app_configuration(),
         schema_version=1,
         smoothing_window=11,
@@ -56,12 +60,36 @@ def test_portrait_and_landscape_persistence(
     store.save_preset(chosen)
     store.create_batch("Mixed formats")
     store.append_jobs("Mixed formats", (short_job(manta, chosen), short_job(manta)))
+    assert preset().settings.position is LayoutPosition.BOTTOM
+    store.save_preset(
+        chosen.model_copy(
+            update={"settings": replace(chosen.settings, position=LayoutPosition.RIGHT)},
+        ),
+        overwrite=True,
+    )
     reopened = ExportStore(path)
     assert reopened.presets()[0].settings.dimensions == (2160, 3840)
+    assert reopened.presets()[0].settings.position is LayoutPosition.RIGHT
+    jobs = reopened.batch("Mixed formats").jobs
+    assert [job.preset.settings.position for job in jobs] == [
+        LayoutPosition.LEFT,
+        LayoutPosition.BOTTOM,
+    ]
     assert [job.preset.settings.aspect for job in reopened.batch("Mixed formats").jobs] == [
         "portrait",
         "landscape",
     ]
+    rendered: list[ExportSettings] = []
+
+    def export(timeline: ExportTimeline, target: Path, **kwargs: object) -> Path:
+        rendered.append(timeline.settings)
+        target.write_bytes(b"completed")
+        return target
+
+    monkeypatch.setattr(batches, "export_video", export)
+    result = run_batches(reopened.batches(), export_directory)
+    assert [item.status for item in result.results] == ["completed", "completed"]
+    assert rendered == [job.preset.settings for job in jobs]
 
 
 def short_job(data: ExplorerData, chosen: SavedPreset | None = None) -> BatchJob:
@@ -310,6 +338,7 @@ def test_saved_batch_reopens_and_exports_different_rides_and_formats(
         ("analysis_configuration",),
         ("settings", "aspect"),
         ("settings", "language"),
+        ("settings", "position"),
         ("analysis_configuration", "events_input"),
         ("analysis_configuration", "smoothing", "parameters"),
         ("analysis_configuration", "profile", "assumptions"),
@@ -337,5 +366,29 @@ def test_incomplete_stored_configuration_is_rejected_without_rewriting_database(
         db.execute(f"UPDATE {table} SET payload=?", (json.dumps(payload),))
     before = path.read_bytes()
     with pytest.raises(ExportStoreError, match="incomplete|Field required"):
+        store.presets() if table == "presets" else store.batches()
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("table", ("presets", "batches"))
+@pytest.mark.parametrize("position", ("left", "unknown"))
+def test_invalid_stored_position_is_rejected_without_rewriting_database(
+    export_directory: Path,
+    manta: ExplorerData,
+    table: str,
+    position: str,
+) -> None:
+    path = export_directory / "invalid-position.sqlite3"
+    store = ExportStore(path)
+    chosen = preset()
+    store.save_preset(chosen)
+    store.save_batch(SavedBatch(name="Batch", jobs=(short_job(manta, chosen),), schema_version=1))
+    with closing(sqlite3.connect(path)) as db, db:
+        payload = json.loads(db.execute(f"SELECT payload FROM {table}").fetchone()[0])
+        item = payload if table == "presets" else payload["jobs"][0]["preset"]
+        item["settings"]["position"] = position
+        db.execute(f"UPDATE {table} SET payload=?", (json.dumps(payload),))
+    before = path.read_bytes()
+    with pytest.raises(ExportStoreError, match="position|Input should be"):
         store.presets() if table == "presets" else store.batches()
     assert path.read_bytes() == before

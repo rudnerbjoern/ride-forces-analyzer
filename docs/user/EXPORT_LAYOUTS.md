@@ -8,7 +8,7 @@ easy to read.
 
 ![Five export layouts showing the same Manta moment and their positions in a landscape video](../images/manta-export-themes.png)
 
-| Layout                 | Position in landscape video | Useful when you want to…                                      |
+| Layout                 | Default position            | Useful when you want to…                                      |
 | ---------------------- | --------------------------- | ------------------------------------------------------------- |
 | **Flow Ribbon**        | Along the bottom            | Follow all three force curves together in a wide strip.       |
 | **Corner Instruments** | Upper right                 | Read separate force cards while keeping the center clear.     |
@@ -17,6 +17,8 @@ easy to read.
 | **Four-panel column**  | Right side                  | Compare force histories and a separate orientation curve.     |
 
 Flow Ribbon is selected when you first open the export assistant.
+The comparison above shows each layout at its own default position; assistant
+thumbnails follow your current position choices.
 [Open the larger detail views](../EXPORT_THEMES.md) to inspect each layout.
 
 ## Try a layout with your recording
@@ -25,17 +27,24 @@ Flow Ribbon is selected when you first open the export assistant.
 2. Click **Export 4K…** and choose a layout thumbnail or **Layout profile**.
 3. Choose landscape or portrait under **Video format**. Every layout supports
    both; the portrait arrangement adapts to the narrower frame.
-4. Check whether the labels and curves will be readable at your video's viewing
+4. Choose **Position** beside **Layout profile**. Ribbon and Capsule offer top or
+   bottom, Column left or right, and Corners and G-Orbit all four corners.
+   Switching layout or format keeps a supported or equivalent position, such as
+   top left → top. Corner previews follow top/bottom choices, retaining their last
+   left/right side in this assistant session. For example, Orbit at top right moves
+   to bottom right when you select Bottom in Ribbon. Without a previous choice, the
+   layout's default supplies the side.
+5. Check whether the labels and curves will be readable at your video's viewing
    size, and whether the chosen position leaves the action clear.
-5. Choose a light, dark or checkerboard preview background to check visibility.
+6. Choose a light, dark or checkerboard preview background to check visibility.
 
 The preview shows a single moment, rather than playing the video. To inspect
 another moment, close the assistant, select another chart sample and reopen it.
 No FFmpeg installation is needed to compare layouts.
 
-Layouts have fixed positions and styling. The assistant does not offer dragging,
-resizing, custom fonts or custom colors. You can choose the layout, video format
-and overlay language. For the remaining export steps, follow the
+Layouts provide preset positions and styling. The assistant does not offer dragging,
+resizing, custom fonts or custom colors. You can choose the layout, position, video
+format and overlay language. For the remaining export steps, follow the
 [video export guide](VIDEO_EXPORT.md).
 
 ## Read the instruments

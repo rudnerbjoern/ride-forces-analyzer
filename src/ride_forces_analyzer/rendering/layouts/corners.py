@@ -8,12 +8,28 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import annotations
 from .charts import ChartRenderer
-from .contracts import LayoutPlugin
+from .contracts import LayoutPlugin, LayoutPosition, LayoutPositions
 
 
 NATIVE_SIZE = (840, 1120)  # Native landscape drawing size in pixels.
-LANDSCAPE_REGION = (2808, 140, 840, 1120)  # Landscape placement: x, y, width, height.
-PORTRAIT_REGION = (372, 240, 1680, 2240)  # Portrait placement: x, y, width, height.
+LANDSCAPE_POSITIONS = LayoutPositions(  # Landscape regions: x, y, width, height.
+    {
+        LayoutPosition.TOP_LEFT: (192, 140, 840, 1120),
+        LayoutPosition.TOP_RIGHT: (2808, 140, 840, 1120),
+        LayoutPosition.BOTTOM_LEFT: (192, 900, 840, 1120),
+        LayoutPosition.BOTTOM_RIGHT: (2808, 900, 840, 1120),
+    },
+    default=LayoutPosition.TOP_RIGHT,
+)
+PORTRAIT_POSITIONS = LayoutPositions(  # Portrait regions: x, y, width, height.
+    {
+        LayoutPosition.TOP_LEFT: (108, 240, 1680, 2240),
+        LayoutPosition.TOP_RIGHT: (372, 240, 1680, 2240),
+        LayoutPosition.BOTTOM_LEFT: (108, 1360, 1680, 2240),
+        LayoutPosition.BOTTOM_RIGHT: (372, 1360, 1680, 2240),
+    },
+    default=LayoutPosition.TOP_RIGHT,
+)
 PLOT_LEFT = 390  # Plot left inset inside a card.
 STACKED = True  # Stack force cards vertically.
 FONT_FILE = "segoeui.ttf"  # Regular Windows font file.
@@ -134,4 +150,4 @@ class CornersRenderer(ChartRenderer):
     time_bottom_gap = TIME_BOTTOM_GAP
 
 
-PLUGIN = LayoutPlugin("corners", LANDSCAPE_REGION, PORTRAIT_REGION, CornersRenderer)
+PLUGIN = LayoutPlugin("corners", LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, CornersRenderer)

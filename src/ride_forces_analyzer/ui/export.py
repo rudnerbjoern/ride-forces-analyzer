@@ -14,7 +14,18 @@ from functools import partial
 from threading import Event
 from time import monotonic
 
-from PySide6.QtCore import QEvent, QObject, QRunnable, QThreadPool, Qt, Signal, Slot, QSize, QTimer
+from PySide6.QtCore import (
+    QEvent,
+    QObject,
+    QRunnable,
+    QThreadPool,
+    Qt,
+    Signal,
+    Slot,
+    QSize,
+    QTimer,
+    QSignalBlocker,
+)
 from PySide6.QtGui import QCloseEvent, QImage, QPixmap, QResizeEvent, QIcon
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -45,13 +56,16 @@ from ride_forces_analyzer.rendering.progress import remaining_seconds
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.rendering.model import (
     EXPORT_FRAME_RATES,
+    ExportLayout,
     ExportSettings,
     ExportTimeline,
     PROFILES,
     prepare_export,
     prepare_export_analysis,
 )
-from ride_forces_analyzer.rendering.preview import ExportPreview, build_previews
+from ride_forces_analyzer.rendering.preview import ExportPreview, PreviewBackground, build_previews
+from ride_forces_analyzer.rendering.layouts import registry
+from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 from ride_forces_analyzer.rendering.batches import make_job
 from ride_forces_analyzer.storage.export_models import SavedPreset, make_preset
 from ride_forces_analyzer.storage.exports import (
@@ -75,11 +89,13 @@ class PreviewWorker(QRunnable):
         first: int,
         last: int,
         sample: int,
-        background: str,
+        background: PreviewBackground,
+        previous_positions: dict[ExportLayout, LayoutPosition],
     ) -> None:
         super().__init__()
         self.revision, self.analysis, self.settings = revision, analysis, settings
         self.first, self.last, self.sample, self.background = first, last, sample, background
+        self.previous_positions = previous_positions.copy()
         self.signals = PreviewSignals()
 
     @Slot()
@@ -91,11 +107,8 @@ class PreviewWorker(QRunnable):
                 self.first,
                 self.last,
                 self.sample,
-                "light"
-                if self.background == "light"
-                else "dark"
-                if self.background == "dark"
-                else "checker",
+                self.background,
+                self.previous_positions,
             )
         except Exception as error:
             self.signals.failed.emit(self.revision, str(error))
@@ -204,6 +217,7 @@ class ExportDialog(QDialog):
         self.preview_worker: PreviewWorker | None = None
         self.preview_result: ExportPreview | None = None
         self.preview_revision = 0
+        self.preview_positions: dict[ExportLayout, LayoutPosition] = {}
         self.closing = False
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -275,10 +289,17 @@ class ExportDialog(QDialog):
         self.layout_profile = QComboBox()
         items(self.layout_profile, [tr(title) for _, title in PROFILES])
         self.layout_profile.currentIndexChanged.connect(self._layout_changed)
-        form.addRow(bind(QLabel(), tr("Layout profile")), self.layout_profile)
+        layout_row = QHBoxLayout()
+        layout_row.addWidget(self.layout_profile, 1)
+        layout_row.addWidget(bind(QLabel(), tr("Position")))
+        self.position = QComboBox()
+        layout_row.addWidget(self.position)
+        form.addRow(bind(QLabel(), tr("Layout profile")), layout_row)
         self.aspect = QComboBox()
         items(self.aspect, [tr("Landscape · 16:9 · 3840×2160"), tr("Portrait · 9:16 · 2160×3840")])
         form.addRow(bind(QLabel(), tr("Video format")), self.aspect)
+        self.aspect.currentIndexChanged.connect(self._refresh_positions)
+        self._refresh_positions()
         self.overlay_language = QComboBox()
         items(self.overlay_language, ["English", "Deutsch"])
         self.overlay_language.setCurrentIndex(1 if get_language() == "de" else 0)
@@ -391,6 +412,8 @@ class ExportDialog(QDialog):
                 tr("Dark background · preview only"),
             ],
         )
+        for index, background in enumerate(PreviewBackground):
+            self.background.setItemData(index, background.value)
         right.addWidget(self.background)
         self.preview_note = QLabel()
         self.preview_note.setWordWrap(True)
@@ -446,6 +469,7 @@ class ExportDialog(QDialog):
             self.overlay_language,
             self.aspect,
             self.layout_profile,
+            self.position,
             self.mode,
             self.fps,
             self.interval,
@@ -473,6 +497,7 @@ class ExportDialog(QDialog):
             self.overlay_language,
             self.layout_profile,
             self.aspect,
+            self.position,
             self.mode,
             self.fps,
             self.interval,
@@ -556,6 +581,11 @@ class ExportDialog(QDialog):
         self.aspect.setCurrentIndex(0 if settings.aspect == "landscape" else 1)
         self.layout_profile.setCurrentIndex(
             next(i for i, (key, _) in enumerate(PROFILES) if key == settings.layout),
+        )
+        plugin = registry.PLUGINS[settings.layout]
+        positions = plugin.landscape if settings.aspect == "landscape" else plugin.portrait
+        self.position.setCurrentIndex(
+            self.position.findData((settings.position or positions.default).value),
         )
         self.mode.setCurrentIndex(0 if settings.output == "transparent" else 1)
         if self.fps.findText(settings.fps_label) < 0:
@@ -647,6 +677,7 @@ class ExportDialog(QDialog):
             invert_lateral=self.flip_lateral.isChecked(),
             prefer_gpu=self.gpu.isChecked(),
             layout=PROFILES[self.layout_profile.currentIndex()][0],
+            position=LayoutPosition(self.position.currentData()),
         )
 
     def _bounds(self) -> tuple[int, int]:
@@ -657,6 +688,13 @@ class ExportDialog(QDialog):
 
     @Slot()
     def _schedule_preview(self) -> None:
+        settings = self._settings()
+        for key, plugin in registry.PLUGINS.items():
+            positions = plugin.landscape if settings.aspect == "landscape" else plugin.portrait
+            self.preview_positions[key] = positions.select(
+                settings.position,
+                self.preview_positions.get(key),
+            )
         self._update_size_estimate()
         self.preview_revision += 1
         self.preview_result = None
@@ -678,7 +716,8 @@ class ExportDialog(QDialog):
             first,
             last,
             self.current_sample,
-            ("checker", "light", "dark")[self.background.currentIndex()],
+            PreviewBackground(self.background.currentData()),
+            self.preview_positions,
         )
         worker.signals.ready.connect(self._preview_ready)
         worker.signals.failed.connect(self._preview_failed)
@@ -803,10 +842,37 @@ class ExportDialog(QDialog):
 
     @Slot(int)
     def _layout_changed(self, index: int) -> None:
+        self._refresh_positions()
         self.flip_vertical.setChecked(True)
         self.flip_lateral.setChecked(False)
         self.flip_vertical.setEnabled(True)
         self.flip_lateral.setEnabled(False)
+
+    @Slot()
+    def _refresh_positions(self) -> None:
+        previous = self.position.currentData()
+        plugin = registry.PLUGINS[PROFILES[self.layout_profile.currentIndex()][0]]
+        positions = plugin.landscape if self.aspect.currentIndex() == 0 else plugin.portrait
+        labels = {
+            LayoutPosition.TOP: tr("Top"),
+            LayoutPosition.BOTTOM: tr("Bottom"),
+            LayoutPosition.LEFT: tr("Left"),
+            LayoutPosition.RIGHT: tr("Right"),
+            LayoutPosition.TOP_LEFT: tr("Top left"),
+            LayoutPosition.TOP_RIGHT: tr("Top right"),
+            LayoutPosition.BOTTOM_LEFT: tr("Bottom left"),
+            LayoutPosition.BOTTOM_RIGHT: tr("Bottom right"),
+        }
+        with QSignalBlocker(self.position):
+            self.position.clear()
+            items(self.position, [labels[position] for position in positions.regions])
+            for index, position in enumerate(positions.regions):
+                self.position.setItemData(index, position.value)
+            selected = positions.select(
+                LayoutPosition(previous) if previous is not None else None,
+                self.preview_positions.get(plugin.key),
+            )
+            self.position.setCurrentIndex(self.position.findData(selected.value))
 
     @Slot()
     def _browse(self) -> None:

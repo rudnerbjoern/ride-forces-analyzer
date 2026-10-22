@@ -7,13 +7,24 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words LANCZOS
 
 from dataclasses import dataclass, replace
-from typing import Literal
+from collections.abc import Mapping
+from enum import StrEnum
 
 from PIL import Image, ImageDraw
 
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from .frames import OverlayRenderer
+from .layouts import registry
+from .layouts.contracts import LayoutPosition
 from .model import ExportLayout, ExportSettings, PROFILES, prepare_export
+
+
+class PreviewBackground(StrEnum):
+    """Preview-only backgrounds with stable UI values."""
+
+    CHECKER = "checker"
+    LIGHT = "light"
+    DARK = "dark"
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,7 +47,8 @@ def build_previews(
     first: int,
     last: int,
     sample: int,
-    background: Literal["checker", "light", "dark"] = "checker",
+    background: PreviewBackground = PreviewBackground.CHECKER,
+    previous_positions: Mapping[ExportLayout, LayoutPosition] | None = None,
 ) -> ExportPreview:
     count = len(analysis.time.source_indices)
     if not 0 <= sample < count:
@@ -53,20 +65,35 @@ def build_previews(
     previews: list[ProfilePreview] = []
     width, height = settings.dimensions
     size = (width // 4, height // 4)
-    backdrop = Image.new("RGBA", size, "#e4eaf0" if background != "dark" else "#162533")
-    if background == "checker":
+    selected_plugin = registry.PLUGINS[settings.layout]
+    selected_positions = (
+        selected_plugin.landscape if settings.aspect == "landscape" else selected_plugin.portrait
+    )
+    selected_position = settings.position or selected_positions.default
+    backdrop = Image.new(
+        "RGBA",
+        size,
+        "#162533" if background == PreviewBackground.DARK else "#e4eaf0",
+    )
+    if background == PreviewBackground.CHECKER:
         draw = ImageDraw.Draw(backdrop)
         for y in range(0, size[1], 30):
             for x in range(0, size[0], 30):
                 if (x // 30 + y // 30) % 2:
                     draw.rectangle((x, y, x + 29, y + 29), fill="#aebfce")
     for layout, title in PROFILES:
+        plugin = registry.PLUGINS[layout]
+        positions = plugin.landscape if settings.aspect == "landscape" else plugin.portrait
         profile = (
             settings
             if layout == settings.layout
             else replace(
                 settings,
                 layout=layout,
+                position=positions.select(
+                    selected_position,
+                    previous_positions.get(layout) if previous_positions is not None else None,
+                ),
                 invert_vertical=True,
                 invert_lateral=layout == "column",
             )

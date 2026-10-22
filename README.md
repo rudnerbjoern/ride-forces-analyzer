@@ -144,10 +144,11 @@ braking. Flow Ribbon, Corner Instruments and Telemetry Capsule also show the
 current vertical context with the same colors and labels as the workspace.
 
 Every layout supports **4K landscape** for classic YouTube videos and **portrait**
-for Shorts or TikTok. Export the whole recording, its marker interval or your
+for Shorts or TikTok. Choose **Position** beside the layout to keep the action clear.
+Export the whole recording, its marker interval or your
 selected section. Choose the overlay language independently of the application.
 
-![Export assistant showing five layout thumbnails and a Flow Ribbon preview with Ejector Airtime, yellow lateral history and green/red longitudinal history](docs/images/export-preview.png)
+![Export assistant showing layout thumbnails, the Position selector and a Flow Ribbon preview with Ejector Airtime](docs/images/export-preview.png)
 
 *Preview the selected chart moment before rendering. The checkerboard indicates transparency and is not part of the video.*
 
