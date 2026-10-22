@@ -183,6 +183,7 @@ GERMAN: dict[str, str] = {
     "Export 4K…": "4K-Export…",
     "Batches…": "Stapel…",
     "Appearance": "Darstellung",
+    "Restore last file": "Letzte Datei wieder öffnen",
     "Application appearance · does not change exported videos": "Darstellung der Anwendung · ohne Einfluss auf exportierte Videos",
     "Import notes": "Importhinweise",
     "Inspector": "Details",

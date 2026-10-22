@@ -26,6 +26,12 @@ Invalid model construction fails before window creation. The GUI smoke test star
 the real module in a separate Windows process and exits through the Qt event loop;
 its tests exercise the real bootstrap contract above.
 
+After the event loop starts, the explorer applies the optional Restore last file
+preference (off by default). Preferences supplies an existing absolute file path;
+the normal background import/analysis flow loads it. A manual load already requested
+or a closed window prevents the scheduled restoration. Only successful imports update
+the remembered path; missing files and unavailable preference storage are skipped.
+
 ## Optional update discovery
 
 Before normal interaction, the explorer schedules an optional update check after

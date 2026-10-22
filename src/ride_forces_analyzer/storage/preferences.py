@@ -23,6 +23,8 @@ PreferenceKey = Literal[
     "appearance",
     "export_fps",
     "automatic_updates",
+    "restore_last_file",
+    "last_recording_path",
     "update_checked_at",
     "skipped_update",
 ]
@@ -47,6 +49,24 @@ class Preferences:
 
     def export_directory(self) -> str:
         return self._directory("export_directory")
+
+    def restore_last_file(self) -> bool:
+        return self._read("restore_last_file") == "true"
+
+    def remember_restore_last_file(self, enabled: bool) -> None:
+        enabled = _BOOLEAN.validate_python(enabled, strict=True)
+        self._write("restore_last_file", "true" if enabled else "false")
+
+    def last_recording(self) -> Path | None:
+        value = self._read("last_recording_path")
+        if value:
+            try:
+                path = Path(value)
+                if path.is_absolute() and path.is_file():
+                    return path
+            except OSError, ValueError:
+                pass
+        return None
 
     def _directory(self, key: DirectoryKey) -> str:
         value = self._read(key)
@@ -130,10 +150,13 @@ class Preferences:
     def _remember(self, key: DirectoryKey, path: Path) -> None:
         path = _PATH.validate_python(path, strict=True)
         try:
-            directory = path.resolve().parent
+            resolved = path.resolve()
+            directory = resolved.parent
             if not directory.is_dir():
                 return
             self._write(key, str(directory))
+            if key == "recording_directory":
+                self._write("last_recording_path", str(resolved))
         except OSError, ValueError:
             return
 
