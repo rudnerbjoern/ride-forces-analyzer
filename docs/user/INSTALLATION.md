@@ -5,7 +5,7 @@
 Download your platform's package and checksum file from
 [GitHub Releases](https://github.com/rudnerbjoern/ride-forces-analyzer/releases).
 The application includes Python; no Python installation or setup script is needed.
-In commands below, replace `VERSION` with the downloaded version, such as `0.6.0`.
+In commands below, replace `VERSION` with the downloaded version, such as `0.7.0`.
 
 ## Windows 10/11 x64
 
