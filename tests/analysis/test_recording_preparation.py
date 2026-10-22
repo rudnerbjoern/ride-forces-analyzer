@@ -75,6 +75,34 @@ def test_combined_uses_device_axes_and_is_prepared_with_the_smoothing_snapshot(
     assert snapshot.sample(2).combined_g == 6.5
 
 
+def test_combined_failure_preserves_directional_results_and_marks_missing_samples(
+    configuration: AnalysisConfiguration,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = synthetic_source()
+    expected = prepare_snapshot(configuration, source)
+    monkeypatch.setattr(recording, "combined_force", Mock(side_effect=ValueError("Invalid norm")))
+    snapshot = prepare_snapshot(configuration, source)
+    smoothed = snapshot.forces.smoothed
+    assert smoothed.availability.state is AvailabilityState.AVAILABLE
+    assert smoothed.combined is not None
+    count = len(source.recording.motion.acceleration)
+    assert smoothed.combined.valid_rows == (False,) * count
+    assert {
+        diagnostic.source_index
+        for diagnostic in smoothed.quality.diagnostics
+        if diagnostic.code == "COMBINED_SAMPLE_UNAVAILABLE"
+    } == set(range(count))
+    for index in range(count):
+        sample = snapshot.sample(index)
+        previous = expected.sample(index)
+        assert sample.combined_g is None
+        assert sample.smoothed is not None and sample.smoothed == previous.smoothed
+        assert sample.raw == previous.raw
+        assert sample.orientation_degrees == previous.orientation_degrees
+        assert sample.context == previous.context
+
+
 NOW = datetime(2026, 10, 20, tzinfo=UTC)
 
 
