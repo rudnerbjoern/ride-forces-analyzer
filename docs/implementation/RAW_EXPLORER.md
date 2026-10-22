@@ -161,13 +161,25 @@ explicitly override language.
 - **Load map background** explicitly requests only the currently visible OSM area;
   no startup, resize, prefetch or offline-download requests. The static background
   sits behind the route with visible linked © OpenStreetMap contributors attribution.
-- `map_background` selects one zoom (0–19), at most 16 intersecting 256-pixel tiles,
+- `map_background` selects one zoom (0–19) for the viewport's physical pixel size,
+  including display scaling, capped at 2048 pixels per image dimension and at most
+  64 intersecting 256-pixel tiles. Raster scaling uses smooth transformation;
+  resizing an existing image adds no map detail until explicitly reloaded.
+  Requests use
   at most 1 MiB per response, sequential 5-second requests and a 20-second loop budget.
   No API key or new dependency is required. Only tile coordinates and the identifying
   User-Agent are sent; no recording, track or timestamps are uploaded.
-- Cache tiles under application data `map-cache/osm`. Respect HTTP expiry, Age,
+- Cache individual PNG tiles as BLOBs in application data `map-cache.sqlite3`, keyed
+  by provider, zoom, x and y, with expiry, ETag, Last-Modified and last use.
+  Read fresh tiles without network requests; revalidate expired tiles. Limit image
+  payloads to 100 MiB, evicting least recently used tiles; reclaim freed database
+  pages automatically (SQLite metadata is additional). Cache failures do not
+  prevent downloading or displaying a map. Respect HTTP expiry, Age,
   no-cache/no-store and conditional ETag/Last-Modified revalidation; absent expiry
   uses seven days. Follow the [OSM tile policy](https://operations.osmfoundation.org/policies/tiles/).
+- **Settings → Application → Clear map cache** immediately removes every tile and
+  its HTTP metadata, independently of Save/Cancel. Storage reports success/failure
+  to the dialog; already displayed maps remain visible.
 - Worker failure preserves the route and any existing background. Closing cancels
   the request; revision checks reject late results after close/reopen. Reloading is
   explicit, including after a resize. Unusable coordinates disable map loading.

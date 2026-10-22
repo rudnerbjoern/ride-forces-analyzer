@@ -11,13 +11,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
 from email.message import Message
-import json
 from math import asinh, ceil, floor, isfinite, log2, pi, radians, tan
-from pathlib import Path
 import re
 from threading import Event
 from time import monotonic, time
-from typing import cast
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -25,14 +22,15 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QImage, QPainter
 
 from . import __version__
-from .runtime_paths import data_directory
 from .gps_overview import GpsOverview
+from .storage.map_tiles import TileCache, TileEntry
 
 TILE_SIZE = 256
 WORLD_SIZE = 2 * pi * 6378137
 MAX_LATITUDE = 85.0511287798066
 MAX_TILE_BYTES = 1024 * 1024
-MAX_TILES = 16
+MAX_TILES = 64
+MAX_IMAGE_SIZE = 2048
 CACHE_SECONDS = 7 * 86400
 TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 USER_AGENT = (
@@ -118,7 +116,7 @@ def viewport_request(
     x, y, width, height = bounds
     if not all(isfinite(value) for value in (*origin, *bounds)) or min(width, height, *size) <= 0:
         raise MapError("Invalid map viewport")
-    density = min(min(size[0], 1024) / width, min(size[1], 1024) / height)
+    density = min(min(size[0], MAX_IMAGE_SIZE) / width, min(size[1], MAX_IMAGE_SIZE) / height)
     zoom = max(0, min(19, floor(log2(density * WORLD_SIZE / TILE_SIZE))))
     for level in range(zoom, -1, -1):
         scale = WORLD_SIZE / (TILE_SIZE * (1 << level))
@@ -135,7 +133,7 @@ def viewport_request(
         if (
             request.tiles
             and len(request.tiles) <= MAX_TILES
-            and max(request.width, request.height) <= 2048
+            and max(request.width, request.height) <= MAX_IMAGE_SIZE
         ):
             return request
     raise MapError("Map viewport exceeds request limit")
@@ -170,33 +168,23 @@ def _image(data: bytes) -> QImage:
     return image
 
 
-def _tile(zoom: int, x: int, y: int, cache: Path) -> QImage:
-    path = cache / str(zoom) / str(x) / f"{y}.png"
-    metadata_path = path.with_suffix(".json")
-    metadata: dict[str, object] = {}
+def _tile(zoom: int, x: int, y: int, cache: TileCache) -> QImage:
+    entry = cache.get(TILE_URL, zoom, x, y)
     cached: QImage | None = None
-    try:
-        with path.open("rb") as stream:
-            cached = _image(stream.read(MAX_TILE_BYTES + 1))
-        raw = json.loads(metadata_path.read_text(encoding="utf-8"))
-        if isinstance(raw, dict):
-            metadata = cast(dict[str, object], raw)
-        expires = metadata.get("expires")
-        if (
-            type(expires) in (int, float)
-            and isfinite(float(cast(float, expires)))
-            and float(cast(float, expires)) > time()
-        ):
-            return cached
-    except OSError, ValueError, MapError:
-        cached = None
+    if entry is not None:
+        try:
+            cached = _image(entry.data)
+            if isfinite(entry.expires) and entry.expires > time():
+                return cached
+        except MapError:
+            cache.delete(TILE_URL, zoom, x, y)
+            entry = None
     headers = {"User-Agent": USER_AGENT, "Accept": "image/png"}
-    if cached is not None:
-        for field, name in (("etag", "If-None-Match"), ("modified", "If-Modified-Since")):
-            value = metadata.get(field)
-            if isinstance(value, str) and value:
-                headers[name] = value
-    path.parent.mkdir(parents=True, exist_ok=True)
+    if entry is not None:
+        if entry.etag:
+            headers["If-None-Match"] = entry.etag
+        if entry.modified:
+            headers["If-Modified-Since"] = entry.modified
     try:
         with urlopen(
             Request(TILE_URL.format(z=zoom, x=x, y=y), headers=headers),
@@ -205,25 +193,25 @@ def _tile(zoom: int, x: int, y: int, cache: Path) -> QImage:
             data = bytes(response.read(MAX_TILE_BYTES + 1))
             image = _image(data)
             response_headers = response.headers
+            entry = None
     except HTTPError as error:
-        if error.code != 304 or cached is None:
+        if error.code != 304 or cached is None or entry is None:
             raise MapError("Map server unavailable") from error
-        image, data, response_headers = cached, b"", error.headers
+        image, data, response_headers = cached, entry.data, error.headers
     if "no-store" in response_headers.get("Cache-Control", "").lower():
-        path.unlink(missing_ok=True)
-        metadata_path.unlink(missing_ok=True)
+        cache.delete(TILE_URL, zoom, x, y)
     else:
-        if data:
-            path.write_bytes(data)
-        metadata_path.write_text(
-            json.dumps(
-                {
-                    "expires": _expiry(response_headers, time()),
-                    "etag": response_headers.get("ETag", metadata.get("etag", "")),
-                    "modified": response_headers.get("Last-Modified", metadata.get("modified", "")),
-                },
+        cache.put(
+            TILE_URL,
+            zoom,
+            x,
+            y,
+            TileEntry(
+                data,
+                _expiry(response_headers, time()),
+                response_headers.get("ETag", entry.etag if entry is not None else ""),
+                response_headers.get("Last-Modified", entry.modified if entry is not None else ""),
             ),
-            encoding="utf-8",
         )
     return image
 
@@ -238,19 +226,20 @@ def load_background(request: MapRequest, cancelled: Event) -> MapBackground:
     """Load a single viewport with bounded sequential HTTPS, cache and cancellation."""
     if (
         not 0 <= request.zoom <= 19
-        or not 0 < request.width <= 2048
-        or not 0 < request.height <= 2048
+        or not 0 < request.width <= MAX_IMAGE_SIZE
+        or not 0 < request.height <= MAX_IMAGE_SIZE
         or not request.tiles
         or len(request.tiles) > MAX_TILES
     ):
         raise MapError("Invalid map request")
     deadline = monotonic() + 20
     tiles: list[tuple[int, int, QImage]] = []
+    cache = TileCache()
     try:
         for x, y in request.tiles:
             if cancelled.is_set() or monotonic() >= deadline:
                 raise MapError("Map request stopped")
-            tiles.append((x, y, _tile(request.zoom, x, y, data_directory() / "map-cache" / "osm")))
+            tiles.append((x, y, _tile(request.zoom, x, y, cache)))
     except (OSError, URLError, ValueError) as error:
         raise MapError("Map could not be loaded") from error
     if cancelled.is_set():

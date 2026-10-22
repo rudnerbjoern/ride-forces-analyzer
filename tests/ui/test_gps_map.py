@@ -1,12 +1,12 @@
 """Explicit map requests stay independent of recordings and ignore stale workers."""
 
-# cspell:words Kartenhintergrund laden
+# cspell:words Kartenhintergrund laden Pixmap
 
 from threading import Event
 
 from PySide6.QtCore import QThreadPool, Qt
 from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QGraphicsPixmapItem
 import pytest
 
 from ride_forces_analyzer.map_background import MapBackground, MapError, MapRequest
@@ -53,6 +53,8 @@ def test_gps_map_requires_click_and_preserves_route_and_explorer_on_failure(
     wait_until(lambda: dialog.worker is None)
     assert dialog.map_item is not None
     item = dialog.map_item
+    assert isinstance(item, QGraphicsPixmapItem)
+    assert item.transformationMode() == Qt.TransformationMode.SmoothTransformation
     assert item.zValue() < min(route.zValue() for route in route_items)
     assert (item.pos().x(), item.pos().y()) == pytest.approx(requests[0].scene_position)
     assert item.scale() == pytest.approx(requests[0].pixel_scale)

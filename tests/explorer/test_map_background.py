@@ -3,7 +3,6 @@
 from dataclasses import replace
 from http.client import HTTPMessage
 from io import BytesIO
-import json
 from pathlib import Path
 from threading import Event
 from urllib.error import HTTPError, URLError
@@ -15,6 +14,8 @@ import pytest
 
 from ride_forces_analyzer import map_background as maps
 from ride_forces_analyzer.gps_overview import GpsOverview
+from ride_forces_analyzer.storage import map_tiles
+from ride_forces_analyzer.storage.map_tiles import TileCache, TileEntry
 
 
 def png() -> bytes:
@@ -74,13 +75,18 @@ def test_viewport_request_is_bounded_and_georeferenced() -> None:
         maps.viewport_request(origin, (0, 0, 0, 1), (850, 650))
     large = maps.viewport_request(origin, (-600, -600, 1200, 1200), (3840, 2160))
     assert 1 <= len(large.tiles) <= maps.MAX_TILES
+    assert max(large.width, large.height) <= maps.MAX_IMAGE_SIZE
+    high_density = maps.viewport_request(origin, bounds, (1700, 1300))
+    assert high_density.zoom == request.zoom + 1
+    assert high_density.pixel_scale == request.pixel_scale / 2
+    assert high_density.width > request.width and high_density.height > request.height
 
 
 def test_tiles_cache_then_revalidate_and_crop_exact_viewport(
     export_directory: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(maps, "data_directory", lambda: export_directory)
+    monkeypatch.setattr(map_tiles, "data_directory", lambda: export_directory)
     now = [1000.0]
     monkeypatch.setattr(maps, "time", lambda: now[0])
     calls: list[Request] = []
@@ -118,7 +124,7 @@ def test_unavailable_tiles_and_cancellation_keep_cache_and_requests_honest(
     monkeypatch: pytest.MonkeyPatch,
     mode: str,
 ) -> None:
-    monkeypatch.setattr(maps, "data_directory", lambda: export_directory)
+    monkeypatch.setattr(map_tiles, "data_directory", lambda: export_directory)
     calls: list[Request] = []
 
     def fetch(request: Request, *, timeout: float) -> Response:
@@ -140,14 +146,14 @@ def test_unavailable_tiles_and_cancellation_keep_cache_and_requests_honest(
         with pytest.raises(maps.MapError):
             maps.load_background(request, cancelled)
     assert len(calls) == (0 if mode == "cancelled" else 2 if mode == "no-store" else 1)
-    assert not list(export_directory.rglob("*.png"))
+    assert TileCache(export_directory / "map-cache.sqlite3").get(maps.TILE_URL, 0, 0, 0) is None
 
 
 def test_missing_cache_headers_retain_tiles_for_seven_days(
     export_directory: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(maps, "data_directory", lambda: export_directory)
+    monkeypatch.setattr(map_tiles, "data_directory", lambda: export_directory)
     monkeypatch.setattr(maps, "time", lambda: 1000.0)
 
     def fetch(request: Request, *, timeout: float) -> Response:
@@ -157,5 +163,53 @@ def test_missing_cache_headers_retain_tiles_for_seven_days(
 
     monkeypatch.setattr(maps, "urlopen", fetch)
     maps.load_background(maps.MapRequest(0, 0, 0, 256, 256, (0, 0)), Event())
-    metadata = json.loads(next(export_directory.rglob("*.json")).read_text(encoding="utf-8"))
-    assert metadata["expires"] == 1000 + 7 * 86400
+    entry = TileCache(export_directory / "map-cache.sqlite3").get(maps.TILE_URL, 0, 0, 0)
+    assert entry is not None and entry.expires == 1000 + 7 * 86400
+
+
+@pytest.mark.parametrize("mode", ["broken-cache", "invalid-image", "no-store", "offline"])
+def test_map_cache_failures_and_expired_responses(
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mode: str,
+) -> None:
+    monkeypatch.setattr(map_tiles, "data_directory", lambda: export_directory)
+    monkeypatch.setattr(maps, "time", lambda: 1000.0)
+    path = export_directory / "map-cache.sqlite3"
+    cache = TileCache(path)
+    data = png()
+    if mode == "broken-cache":
+        path.mkdir()
+    else:
+        cache.put(
+            maps.TILE_URL,
+            0,
+            0,
+            0,
+            TileEntry(b"invalid" if mode == "invalid-image" else data, 0, '"old"', ""),
+        )
+    calls: list[Request] = []
+
+    def fetch(request: Request, *, timeout: float) -> Response:
+        calls.append(request)
+        if mode == "offline":
+            raise URLError("offline")
+        return Response(data, "no-store" if mode == "no-store" else "max-age=10")
+
+    monkeypatch.setattr(maps, "urlopen", fetch)
+    request = maps.MapRequest(0, 64, 64, 128, 128, (0, 0))
+    if mode == "offline":
+        with pytest.raises(maps.MapError):
+            maps.load_background(request, Event())
+        assert cache.get(maps.TILE_URL, 0, 0, 0) is not None
+    else:
+        result = maps.load_background(request, Event())
+        assert not result.image.isNull()
+        entry = cache.get(maps.TILE_URL, 0, 0, 0)
+        if mode in ("broken-cache", "no-store"):
+            assert entry is None
+        else:
+            assert entry is not None and entry.data == data
+    assert len(calls) == 1
+    if mode == "invalid-image":
+        assert calls[0].get_header("If-none-match") is None

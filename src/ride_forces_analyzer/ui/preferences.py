@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
     QLabel,
+    QPushButton,
     QVBoxLayout,
     QWidget,
 )
@@ -19,6 +20,7 @@ from PySide6.QtWidgets import (
 from ride_forces_analyzer.i18n import Language, tr
 from ride_forces_analyzer.rendering.model import EXPORT_FRAME_RATES, ExportSettings
 from ride_forces_analyzer.storage.preferences import Preferences
+from ride_forces_analyzer.storage.map_tiles import TileCache
 from .translation import bind, items
 
 
@@ -54,6 +56,12 @@ class SettingsDialog(QDialog):
             "toolTip",
         )
         application_form.addRow(bind(QLabel(), tr("Appearance")), self.appearance)
+        self.clear_map_cache = bind(QPushButton(), tr("Clear map cache"))
+        self.clear_map_cache.clicked.connect(self.clear_cached_maps)
+        application_form.addRow(self.clear_map_cache)
+        self.map_cache_status = QLabel()
+        self.map_cache_status.setWordWrap(True)
+        application_form.addRow(self.map_cache_status)
         layout.addWidget(application)
         group = bind(QGroupBox(), tr("Export"), "title")
         form = QFormLayout(group)
@@ -74,6 +82,13 @@ class SettingsDialog(QDialog):
         self.buttons.accepted.connect(self.save)
         self.buttons.rejected.connect(self.reject)
         layout.addWidget(self.buttons)
+
+    @Slot()
+    def clear_cached_maps(self) -> None:
+        if TileCache().clear():
+            bind(self.map_cache_status, tr("Map cache cleared."))
+        else:
+            bind(self.map_cache_status, tr("Could not clear map cache. Try again later."))
 
     @Slot()
     def save(self) -> None:

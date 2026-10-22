@@ -114,11 +114,13 @@ class GpsDialog(QDialog):
         if self.stopped or self.worker is not None or self.route is None:
             return
         bounds = self.view.mapToScene(self.view.viewport().rect()).boundingRect()
+        viewport = self.view.viewport()
+        density = viewport.devicePixelRatioF()
         try:
             request = viewport_request(
                 self.route.origin,
                 (bounds.x(), bounds.y(), bounds.width(), bounds.height()),
-                (self.view.viewport().width(), self.view.viewport().height()),
+                (round(viewport.width() * density), round(viewport.height() * density)),
             )
         except MapError:
             self.map_failed(self.revision)
@@ -143,6 +145,7 @@ class GpsDialog(QDialog):
         if self.map_item is not None:
             scene.removeItem(self.map_item)
         item = scene.addPixmap(QPixmap.fromImage(result.image))
+        item.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
         item.setPos(*result.request.scene_position)
         item.setScale(result.request.pixel_scale)
         item.setZValue(-1)

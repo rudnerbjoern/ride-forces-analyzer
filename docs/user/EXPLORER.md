@@ -100,12 +100,20 @@ Only the visible area is requested, without an account or API key. This action
 contacts OpenStreetMap: it reveals your IP address and the requested geographic
 area, but does not upload the GPS track, timestamps or recording file.
 
-The map is static. After resizing the window, click the button again to update
-its coverage; resizing alone does not contact the service. The visible OpenStreetMap
-credit links to its copyright information. Previously viewed tiles are cached locally
-to avoid repeated downloads. Network failures leave the track usable, and a map is
+The map is static. After enlarging the window, click the button again to load
+more detail for its new size; enlargement alone only scales the existing image
+and does not contact the service. Map resolution accounts for display scaling,
+up to 2048 pixels per dimension. The visible OpenStreetMap
+credit links to its copyright information. Previously viewed tiles are cached in a
+local database to avoid repeated downloads. The cache keeps up to 100 MiB of images
+and removes the least recently used tiles when full. Network failures leave the track usable, and a map is
 not required for any recording analysis or export. Polar coordinates outside the
 map's coverage retain the offline route view.
+
+Use **Settings → Application → Clear map cache** to delete all cached map tiles
+immediately, independently of Save or Cancel. The result appears below the button.
+An already displayed background remains visible; subsequent map loading fills the
+cache again as needed.
 
 ## Common questions
 

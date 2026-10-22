@@ -134,7 +134,10 @@ The map-capable GPS view uses the same Web Mercator projection for route and til
 latitudes outside ±85.05112878° keep the local WGS84 route without a map. A map request
 is explicit and covers only the visible viewport. Tile coordinates reveal the viewed
 area; the recording and full track stay local. HTTP tile caching is separate from
-analysis and stored under `map-cache/osm` in the application data directory.
+analysis and stored in `map-cache.sqlite3` in the application data directory.
+Tiles are keyed by provider, zoom and coordinates. PNG payloads are limited to
+100 MiB with least-recently-used eviction; SQLite metadata adds overhead. Storage
+failure is a cache miss or ignored write, never a dependency of map loading.
 
 ## Appearance and localization
 

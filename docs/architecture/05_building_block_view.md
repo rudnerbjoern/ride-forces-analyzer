@@ -136,7 +136,8 @@ independent source GPS slots, preserving gaps and source ownership. `ui.gps`
 renders these in a separate dialog, enabled only for usable positions. Original
 geographic segments retain the same missing-fix/time-gap boundaries. `map_background`
 projects them to Web Mercator for consistent route/raster alignment, derives a visible
-tile request and owns bounded HTTPS/cache/image composition. `ui.gps` transports
+tile request and owns bounded HTTPS/image composition. `storage.map_tiles` stores
+PNG bytes and HTTP validators in a separate, bounded SQLite tile cache. `ui.gps` transports
 that request through a worker and applies only current results. Without supported
 map coordinates, the original local WGS84 approximation remains available.
 The geometry has no dependencies on force analysis, sensor time or local selections.
