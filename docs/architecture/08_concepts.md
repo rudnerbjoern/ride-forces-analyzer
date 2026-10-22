@@ -130,6 +130,11 @@ calibrated views include labeled -1/0/+1 g references.
 
 GPS is independent coarse spatial reference, preserving missing fixes and gaps.
 It supplies no qualified ride speed, distance, height or reconstructed track.
+The map-capable GPS view uses the same Web Mercator projection for route and tiles;
+latitudes outside ±85.05112878° keep the local WGS84 route without a map. A map request
+is explicit and covers only the visible viewport. Tile coordinates reveal the viewed
+area; the recording and full track stay local. HTTP tile caching is separate from
+analysis and stored under `map-cache/osm` in the application data directory.
 
 ## Appearance and localization
 

@@ -86,7 +86,8 @@ offline after setup and leave the original files unchanged.
   These are provisional interpretations of the recording, not measured sensations.
 - **Keep the ride context nearby.** View available ride, park, train, row and
   seat information. Open an approximate GPS route overview when positions are
-  present in the recording.
+  present in the recording. Optionally load an OpenStreetMap background for the
+  visible area; this explicit action requires internet access.
 - **Prepare several exports at once.** Save your preferred settings, reuse them
   for another ride, and queue multiple recordings and layouts for one batch run.
 - **Export sample data as CSV or JSON.** Save a selected interval with original values,

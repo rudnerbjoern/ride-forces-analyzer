@@ -90,10 +90,22 @@ language preserves your current recording, selection, zoom and smoothing.
 
 ## Open the GPS overview
 
-When usable positions exist, open **GPS overview** for an offline route view. It has
-no background map. Gaps in the coordinates can break the route into sections.
+When usable positions exist, open **GPS overview** for an offline route view.
+Gaps in the coordinates can break the route into sections.
 GPS is independent of force samples and does not move the chart selection.
 It provides approximate location context, not a force or speed measurement.
+
+Click **Load map background** to place an OpenStreetMap map behind the track.
+Only the visible area is requested, without an account or API key. This action
+contacts OpenStreetMap: it reveals your IP address and the requested geographic
+area, but does not upload the GPS track, timestamps or recording file.
+
+The map is static. After resizing the window, click the button again to update
+its coverage; resizing alone does not contact the service. The visible OpenStreetMap
+credit links to its copyright information. Previously viewed tiles are cached locally
+to avoid repeated downloads. Network failures leave the track usable, and a map is
+not required for any recording analysis or export. Polar coordinates outside the
+map's coverage retain the offline route view.
 
 ## Common questions
 

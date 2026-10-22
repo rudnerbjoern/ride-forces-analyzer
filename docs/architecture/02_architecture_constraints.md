@@ -14,6 +14,8 @@
   and pytest. Node tools serve development/type/documentation checks only.
 - Application processing must work offline. Installing dependencies and obtaining
   reference documentation can require network access.
+  The optional GPS map background requires an explicit user request; it is not
+  a dependency of import, analysis, route display or export.
 - The importer supports only the explicitly dispatched schema 2.2.0. New versions
   require authorized evidence, an adapter and regression coverage.
 - Importing and scientific processing stay outside Qt widgets. Frame generation

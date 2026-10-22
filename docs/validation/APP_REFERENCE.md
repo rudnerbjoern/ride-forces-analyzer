@@ -171,7 +171,8 @@ rounded bins may not sum exactly to totals.
   Kraken 1,790.73/6.27, Taron 883.66/19.42. Crossings/jumps/clusters identify no ride elements.
 - Iron Gwazi: no GPS; no borrowed route. Current offline overview: neutral-blue
   connections, breaks at unavailable fixes and missing/zero/negative/>2 s intervals,
-  no background map or speed colors. Product behavior: [GPS contract](../implementation/RAW_EXPLORER.md).
+  no default background map or speed colors. The optional requested map adds no
+  scientific qualification. Product behavior: [GPS contract](../implementation/RAW_EXPLORER.md).
 
 ### Source-speed color hypothesis
 

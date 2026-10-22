@@ -150,13 +150,27 @@ explicitly override language.
 
 ## GPS overview
 
-- Separate offline north-up view when usable coordinates exist; local WGS84
-  approximation preserves proportions and marks first/last points. One point suffices.
+- Separate north-up view when usable coordinates exist; marks first/last points.
+  One point suffices. Original geographic segments support Web Mercator route/map
+  alignment; unsupported polar coordinates keep the local WGS84 approximation.
 - Missing/out-of-range coordinates remain in source but are omitted from display.
   Break connections at missing fixes or missing/zero/negative/>2 s timestamp intervals.
 - Recording replacement or main-window close closes the GPS dialog.
-- GPS does not control forces, timing or selection. No base map, network, invented
-  fixes or confirmed speed-color contract.
+- GPS does not control forces, timing or selection. No invented fixes or confirmed
+  speed-color contract. The route remains usable offline.
+- **Load map background** explicitly requests only the currently visible OSM area;
+  no startup, resize, prefetch or offline-download requests. The static background
+  sits behind the route with visible linked © OpenStreetMap contributors attribution.
+- `map_background` selects one zoom (0–19), at most 16 intersecting 256-pixel tiles,
+  at most 1 MiB per response, sequential 5-second requests and a 20-second loop budget.
+  No API key or new dependency is required. Only tile coordinates and the identifying
+  User-Agent are sent; no recording, track or timestamps are uploaded.
+- Cache tiles under application data `map-cache/osm`. Respect HTTP expiry, Age,
+  no-cache/no-store and conditional ETag/Last-Modified revalidation; absent expiry
+  uses seven days. Follow the [OSM tile policy](https://operations.osmfoundation.org/policies/tiles/).
+- Worker failure preserves the route and any existing background. Closing cancels
+  the request; revision checks reject late results after close/reopen. Reloading is
+  explicit, including after a resize. Unusable coordinates disable map loading.
 
 ## Visible-range extrema
 
