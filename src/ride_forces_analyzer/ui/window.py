@@ -68,7 +68,7 @@ from ride_forces_analyzer.playback import SamplePlayback
 
 from ride_forces_analyzer.gps_overview import prepare_gps_overview
 
-from .chrome import app_icon, style_native_caption
+from .chrome import app_icon
 from .about import AboutDialog
 from .preferences import SettingsDialog
 from .updates import UpdateController
@@ -691,7 +691,6 @@ class ExplorerWindow(QMainWindow):
             apply_theme(application, self.theme)
         self._style_chart()
         self._draw_channels()
-        style_native_caption(int(self.winId()), dark=self.theme.name == "dark")
 
     def _style_chart(self) -> None:
         self.chart.setBackgroundBrush(QColor(self.theme.panel))
@@ -1007,7 +1006,6 @@ class ExplorerWindow(QMainWindow):
                 self.analysis_controller.bind_snapshot(
                     self.data.analysis if self.data is not None else None,
                 )
-        style_native_caption(int(self.winId()), dark=self.theme.name == "dark")
 
     @Slot(int, object)
     def _load_completed(self, generation: int, outcome: object) -> None:

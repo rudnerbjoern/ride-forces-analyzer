@@ -130,11 +130,23 @@ calibrated views include labeled -1/0/+1 g references.
 
 GPS is independent coarse spatial reference, preserving missing fixes and gaps.
 It supplies no qualified ride speed, distance, height or reconstructed track.
+The map-capable GPS view uses the same Web Mercator projection for route and tiles;
+latitudes outside ±85.05112878° keep the local WGS84 route without a map. A map request
+is explicit and covers only the visible viewport. Tile coordinates reveal the viewed
+area; the recording and full track stay local. HTTP tile caching is separate from
+analysis and stored in `map-cache.sqlite3` in the application data directory.
+Tiles are keyed by provider, zoom and coordinates. PNG payloads are limited to
+100 MiB with least-recently-used eviction; SQLite metadata adds overhead. Storage
+failure is a cache miss or ignored write, never a dependency of map loading.
 
 ## Appearance and localization
 
 Shared Qt palettes/styles cover light/dark controls, charts, GPS and native caption
 integration. Theme changes preserve analysis/view state; export colors are independent.
+One Windows event filter applies native caption colors to Qt-managed main windows
+and dialogs after show/palette/style events. This includes message and progress
+dialogs and rejects callbacks for destroyed windows through their Qt context.
+Native OS file pickers retain system-controlled appearance.
 
 Qt-independent `i18n` separates English templates from opaque values.
 German formatting affects displayed numbers, not source tokens or replay clocks.

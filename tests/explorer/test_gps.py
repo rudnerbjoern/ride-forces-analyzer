@@ -45,6 +45,12 @@ def test_gps_gaps_bad_positions_and_north_up(synthetic_recording: Recording) -> 
     assert overview is not None
     assert overview.count == 5 and overview.total == 7
     assert [len(segment) for segment in overview.segments] == [2, 1, 1, 1]
+    assert overview.geographic_segments == (
+        ((48, 7), (48.001, 7.001)),
+        ((48, 7),),
+        ((48, 7.001),),
+        ((48, 7),),
+    )
     assert overview.points[1][0] > 0 and overview.points[1][1] < 0
     empty = replace(recording, gps=GpsSequence([GpsEntry(0, None)]))
     assert prepare_gps_overview(empty) is None

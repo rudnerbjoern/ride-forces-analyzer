@@ -10,8 +10,38 @@ import ctypes
 from ctypes import wintypes
 import sys
 
-from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtCore import QEvent, QObject, QPointF, QRectF, Qt, QTimer
 from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QWidget
+
+
+class NativeCaptionFilter(QObject):
+    """Apply native colors after Qt finishes showing or restyling an app window."""
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if isinstance(watched, (QDialog, QMainWindow)) and event.type() in (
+            QEvent.Type.Show,
+            QEvent.Type.PaletteChange,
+            QEvent.Type.StyleChange,
+        ):
+            # The widget context cancels delivery if the window is destroyed first.
+            QTimer.singleShot(0, watched, lambda: self._apply(watched))
+        return False
+
+    @staticmethod
+    def _apply(window: QWidget) -> None:
+        if window.isVisible():
+            style_native_caption(
+                int(window.winId()),
+                dark=window.palette().window().color().lightness() < 128,
+            )
+
+
+def install_native_captions(application: QApplication) -> None:
+    """Install one Windows caption observer for Qt-managed application windows."""
+    if sys.platform == "win32" and application.findChild(NativeCaptionFilter) is None:
+        observer = NativeCaptionFilter(application)
+        application.installEventFilter(observer)
 
 
 def app_icon() -> QIcon:

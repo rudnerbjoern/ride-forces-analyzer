@@ -99,6 +99,9 @@ Opening, analyzing and exporting recordings happen locally. Update checks
 contact GitHub without sending recordings, GPS data or file paths. They require
 internet access; recording processing does not. Opening external links uses
 your browser. Downloads and dependency installation also require internet access.
+**Load map background** in the GPS overview contacts OpenStreetMap only when clicked.
+The requested area and your IP address are visible to that provider; the recording
+and GPS track remain local. The GPS overview works without a map or internet access.
 
 Recordings can contain GPS positions, timestamps and personal metadata. Review
 files before sharing them in issues or with other people; they are not

@@ -16,6 +16,11 @@ Optional update discovery contacts the public GitHub Releases API only: manual
 checks or opt-in daily startup checks. It sends no recording contents or file
 paths and is independent of offline import, analysis and export processing.
 
+Optional GPS backgrounds request only visible raster tile coordinates from
+OpenStreetMap after an explicit click. The provider sees the area, IP address and
+application User-Agent; no full track or recording payload is uploaded. HTTP caching
+and visible attribution follow the [tile policy](https://operations.osmfoundation.org/policies/tiles/).
+
 ```mermaid
 flowchart LR
     Capture["External Ride Forces app: iPhone / Apple Watch"]

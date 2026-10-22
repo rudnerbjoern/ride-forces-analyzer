@@ -17,6 +17,7 @@ class GpsOverview:
     segments: tuple[tuple[tuple[float, float], ...], ...]
     count: int
     total: int
+    geographic_segments: tuple[tuple[tuple[float, float], ...], ...] = ()
 
     @property
     def points(self) -> tuple[tuple[float, float], ...]:
@@ -46,12 +47,16 @@ def prepare_gps_overview(recording: Recording) -> GpsOverview | None:
     segments: list[tuple[tuple[float, float], ...]] = []
     current: list[tuple[float, float]] = []
     previous_time: float | None = None
+    geographic: list[tuple[tuple[float, float], ...]] = []
+    coordinates: list[tuple[float, float]] = []
     for entry in gps.entries:
         fix = entry.fix
         if fix is None or abs(fix.latitude) > 90 or abs(fix.longitude) > 180:
             if current:
                 segments.append(tuple(current))
+                geographic.append(tuple(coordinates))
                 current = []
+                coordinates = []
             previous_time = None
             continue
         if current and (
@@ -61,7 +66,9 @@ def prepare_gps_overview(recording: Recording) -> GpsOverview | None:
             or abs(fix.longitude - origin.longitude) > 180
         ):
             segments.append(tuple(current))
+            geographic.append(tuple(coordinates))
             current = []
+            coordinates = []
         current.append(
             (
                 radians(fix.longitude - origin.longitude) * east_radius,
@@ -69,6 +76,8 @@ def prepare_gps_overview(recording: Recording) -> GpsOverview | None:
             ),
         )
         previous_time = fix.timestamp
+        coordinates.append((fix.latitude, fix.longitude))
     if current:
         segments.append(tuple(current))
-    return GpsOverview(tuple(segments), len(valid), len(gps.entries))
+        geographic.append(tuple(coordinates))
+    return GpsOverview(tuple(segments), len(valid), len(gps.entries), tuple(geographic))
