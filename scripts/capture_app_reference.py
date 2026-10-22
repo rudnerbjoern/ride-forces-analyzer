@@ -20,9 +20,11 @@ from PySide6.QtCharts import QCategoryAxis
 from PySide6.QtCore import QPoint, QRect, QThreadPool
 from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
 from PySide6.QtWidgets import QApplication, QWidget
+from PIL import ImageGrab
 
 from ride_forces_analyzer.config import AppSettings
 from ride_forces_analyzer.storage.exports import ExportStore
+from ride_forces_analyzer.storage.preferences import Appearance
 from ride_forces_analyzer.ui.export import ExportDialog
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 from ride_forces_analyzer.ui.window import ExplorerWindow
@@ -34,6 +36,7 @@ SAMPLE = 4960
 SELECTION = (4200, 5100)
 SMOOTHING = 11
 WORKSPACE_SIZE = (1600, 1100)
+APPEARANCE_SIZE = (800, 650)
 EXPORT_SIZE = (1500, 1000)
 
 
@@ -222,7 +225,7 @@ def capture_details(application: QApplication, window: ExplorerWindow, output: P
                 raise ValueError("Original detail recording changed during capture")
 
 
-def capture_reference(output: Path, *, details: bool = False) -> None:
+def capture_reference(output: Path, *, details: bool = False, themes: bool = False) -> None:
     if sys.platform != "win32":
         raise RuntimeError("Capture requires native Windows with a desktop session")
     if sha256(SOURCE.read_bytes()).hexdigest() != SOURCE_SHA256:
@@ -264,6 +267,57 @@ def capture_reference(output: Path, *, details: bool = False) -> None:
                 window.slider.setValue(SAMPLE)
                 window.reset_view()
                 output.mkdir(parents=True, exist_ok=True)
+                if themes:
+                    images: dict[str, str] = {}
+                    window.setMinimumSize(0, 0)
+                    window.resize(*APPEARANCE_SIZE)
+                    for index, appearance in enumerate(Appearance):
+                        if appearance is Appearance.SYSTEM:
+                            continue
+                        window.set_appearance(index)
+                        wait_for(application, lambda: window.theme.name is appearance)
+                        filename = f"appearance-{appearance.value}.png"
+                        window.raise_()
+                        window.activateWindow()
+                        wait_for(application, lambda: True)
+                        focus = application.focusWidget()
+                        if focus is not None:
+                            focus.clearFocus()
+                        application.processEvents()
+                        frame = window.frameGeometry()
+                        ImageGrab.grab(
+                            bbox=(
+                                frame.left(),
+                                frame.top(),
+                                frame.right() + 1,
+                                frame.bottom() + 1,
+                            ),
+                            all_screens=True,
+                        ).save(output / filename)
+                        print(f"Captured {filename}: sample {SAMPLE}", flush=True)
+                        images[appearance.value] = filename
+                    (output / "appearance-reference.json").write_text(
+                        json.dumps(
+                            {
+                                "source_sha256": SOURCE_SHA256,
+                                "sample": SAMPLE,
+                                "replay": window.data.replay_text(SAMPLE),
+                                "selection": SELECTION,
+                                "smoothing": SMOOTHING,
+                                "language": "en",
+                                "font": "Segoe UI 9 pt",
+                                "scale_factor": 1,
+                                "workspace_size": APPEARANCE_SIZE,
+                                "includes_window_frame": True,
+                                "themes": images,
+                            },
+                            indent=2,
+                        )
+                        + "\n",
+                        encoding="utf-8",
+                        newline="\n",
+                    )
+                    return
                 for appearance, name in ((0, "dark"), (1, "light")):
                     window.set_appearance(appearance)
                     wait_for(application, lambda: window.theme.name == name)
@@ -349,15 +403,21 @@ def main() -> None:
         "--output",
         type=Path,
         default=ROOT / "docs/images",
-        help="Destination; replaces the three named screenshots and app-reference.json",
+        help="Destination for the selected reference images and settings manifest",
     )
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--details",
         action="store_true",
         help="Capture the three README detail images instead",
     )
+    mode.add_argument(
+        "--themes",
+        action="store_true",
+        help="Capture each workspace theme except System for the appearance guide instead",
+    )
     arguments = parser.parse_args()
-    capture_reference(arguments.output, details=arguments.details)
+    capture_reference(arguments.output, details=arguments.details, themes=arguments.themes)
 
 
 if __name__ == "__main__":

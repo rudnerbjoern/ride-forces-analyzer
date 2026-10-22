@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QComboBox, QDialogButtonBox, QToolBar
 from ride_forces_analyzer.rendering.model import ExportSettings
 from ride_forces_analyzer.storage.export_models import SavedPreset
 from ride_forces_analyzer.storage.exports import ExportStore
-from ride_forces_analyzer.storage.preferences import Preferences
+from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 from ride_forces_analyzer.storage.map_tiles import TileCache, TileEntry
 from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.ui.export import ExportDialog
@@ -76,9 +76,9 @@ def test_settings_save_cancel_and_new_exports_keep_independent_frame_rates(
     assert dialog.frame_rate.currentText() == "50"
     dialog.frame_rate.setCurrentText("59.94")
     dialog.language.setCurrentIndex(0)
-    dialog.appearance.setCurrentIndex(0)
+    dialog.appearance.setCurrentIndex(dialog.appearance.findData(Appearance.DARK.value))
     dialog.buttons.button(QDialogButtonBox.StandardButton.Cancel).click()
-    assert window.ui_language == "de" and window.appearance_preference == "light"
+    assert window.ui_language == "de" and window.appearance_preference is Appearance.LIGHT
     assert window.preferences.export_fps() == 50
     wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
 
@@ -87,9 +87,9 @@ def test_settings_save_cancel_and_new_exports_keep_independent_frame_rates(
     assert dialog is not None
     dialog.frame_rate.setCurrentText("59.94")
     dialog.language.setCurrentIndex(0)
-    dialog.appearance.setCurrentIndex(0)
+    dialog.appearance.setCurrentIndex(dialog.appearance.findData(Appearance.DARK.value))
     dialog.buttons.button(QDialogButtonBox.StandardButton.Save).click()
-    assert window.ui_language == "en" and window.appearance_preference == "dark"
+    assert window.ui_language == "en" and window.appearance_preference is Appearance.DARK
     assert Preferences(window.preferences.path).export_fps() == "60000/1001"
     wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
     window.settings_action.trigger()

@@ -16,6 +16,8 @@ historical acceptance reports are not maintained.
   downloads, checksums, first launch, FFmpeg, updates, privacy and startup problems.
 - [Explore a recording](user/EXPLORER.md): navigate, zoom, select intervals,
   inspect extrema, adjust smoothing, change appearance and open GPS.
+- [Choose your appearance](user/APPEARANCE.md): compare themes, try them out
+  and save your favorite.
 - [Understand forces and airtime](user/FORCES_AND_AIRTIME.md): signs, colors,
   context labels and interpretation limits.
 - [Export a ride overlay](user/VIDEO_EXPORT.md): choose a range and layout,

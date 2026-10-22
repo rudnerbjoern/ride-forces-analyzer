@@ -51,13 +51,10 @@ def assert_combo_text_fits(combo: QComboBox) -> None:
         )
 
 
-@pytest.mark.parametrize("appearance", [0, 1])
 def test_settings_choices_fit_after_repeated_language_switches(
     explorer_window: ExplorerWindow,
-    appearance: int,
 ) -> None:
     window = explorer_window
-    window.set_appearance(appearance)
     window.settings_action.trigger()
     dialog = window.findChild(SettingsDialog, "settingsDialog")
     assert dialog is not None

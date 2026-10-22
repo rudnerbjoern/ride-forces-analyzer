@@ -173,7 +173,7 @@ overlay and place it above your footage.
 
 ## Make the workspace yours
 
-Choose **English or German** and **Dark, Light or System** appearance in
+Choose **English or German** and **Dark, Light, System, Falcons Flight, Loch Ness, Manta, Red Force, Slinky Dog Dash, Taron, Top Thrill 2 or Verbolten** appearance in
 **Settings → Application**. Your saved choices are remembered. The chart adapts
 to the available window space; smaller windows let you switch between the chart
 and inspector.

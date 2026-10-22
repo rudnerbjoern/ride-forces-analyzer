@@ -8,7 +8,15 @@ from pathlib import Path
 import sys
 
 import pytest
-from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox, QProgressDialog, QWidget
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QGraphicsView,
+    QMessageBox,
+    QProgressDialog,
+    QWidget,
+)
 
 from ride_forces_analyzer.gps_overview import GpsOverview
 from ride_forces_analyzer.storage.exports import ExportStore
@@ -37,12 +45,17 @@ def test_native_captions_follow_theme_for_all_application_windows(
     files.setOption(QFileDialog.Option.DontUseNativeDialog)
     progress = QProgressDialog(window)
     progress.setAutoClose(False)
+    export = ExportDialog(window.data, 0, 10, window, store=store)
+    batches = BatchDialog(store, window)
+    route = gps_dialog(GpsOverview((((0, 0), (1, 1)),), 2, 2), "GPS", window)
+    view = route.findChild(QGraphicsView)
+    assert view is not None
     dialogs = (
         SettingsDialog(window.preferences, window, language=window.ui_language),
         AboutDialog(window, window.updates),
-        ExportDialog(window.data, 0, 10, window, store=store),
-        BatchDialog(store, window),
-        gps_dialog(GpsOverview((((0, 0), (1, 1)),), 2, 2), "GPS", window),
+        export,
+        batches,
+        route,
         QMessageBox(window),
         progress,
         files,
@@ -56,26 +69,47 @@ def test_native_captions_follow_theme_for_all_application_windows(
         assert getter(int(widget.winId()), 20, ctypes.byref(value), ctypes.sizeof(value)) == 0
         return bool(value.value)
 
+    def assert_shared_palette() -> None:
+        assert view is not None
+        assert view.palette().base().color() == QColor(window.theme.panel)
+        assert export.seconds.palette().base().color() == window.position.palette().base().color()
+        assert batches.table.palette().base().color() == window.position.palette().base().color()
+        assert export.preview_result is preview
+        scene = view.scene()
+        assert scene is not None and scene.backgroundBrush().style().value == 0
+
     try:
         window.set_appearance(0)
         for dialog in dialogs:
             dialog.show()
+        wait_until(lambda: export.preview_result is not None and export.preview_worker is None)
+        preview = export.preview_result
         QApplication.processEvents()
         for widget in (window, *dialogs):
             assert is_dark(widget), type(widget).__name__
+        assert_shared_palette()
         window.set_appearance(1)
         QApplication.processEvents()
         for widget in (window, *dialogs):
             assert not is_dark(widget), type(widget).__name__
+        assert_shared_palette()
         window.set_appearance(0)
         QApplication.processEvents()
         for dialog in dialogs:
             assert is_dark(dialog), type(dialog).__name__
+        assert_shared_palette()
+        for widget in (window, *dialogs):
+            caption = wintypes.DWORD()
+            # Custom caption colors require Windows 11; dark captions also work on Windows 10.
+            if getter(int(widget.winId()), 35, ctypes.byref(caption), ctypes.sizeof(caption)) == 0:
+                color = widget.palette().window().color()
+                assert caption.value == color.red() | color.green() << 8 | color.blue() << 16
+        for dialog in dialogs:
             dialog.hide()
             dialog.show()
         QApplication.processEvents()
         for dialog in dialogs:
-            assert is_dark(dialog), type(dialog).__name__
+            assert is_dark(dialog) == window.theme.is_dark, type(dialog).__name__
         # A queued caption update must not outlive its dialog.
         transient = QMessageBox(window)
         transient.show()

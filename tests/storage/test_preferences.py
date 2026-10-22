@@ -9,7 +9,7 @@ from typing import cast
 
 import pytest
 
-from ride_forces_analyzer.storage.preferences import Preferences
+from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 
 
 @pytest.mark.parametrize(
@@ -19,6 +19,7 @@ from ride_forces_analyzer.storage.preferences import Preferences
         ("remember_language", b"de"),
         ("remember_language", None),
         ("remember_appearance", "blue"),
+        ("remember_appearance", "dark"),
         ("remember_appearance", b"dark"),
         ("remember_automatic_updates", "false"),
         ("remember_automatic_updates", "true"),
@@ -93,7 +94,7 @@ def test_invalid_stored_preferences_keep_safe_defaults() -> None:
             )
         assert preferences.language() == "en"
         assert preferences.language("de") == "de"
-        assert preferences.appearance() == "system"
+        assert preferences.appearance() is Appearance.SYSTEM
         assert preferences.export_fps() == 50
         assert not preferences.automatic_updates()
         assert not preferences.restore_last_file()
@@ -108,11 +109,27 @@ def test_language_and_appearance_survive_restart_with_safe_defaults() -> None:
     with TemporaryDirectory(dir=".tmp") as temporary:
         database = Path(temporary) / "preferences.sqlite3"
         preferences = Preferences(database)
-        assert preferences.language() == "en" and preferences.appearance() == "system"
+        assert preferences.language() == "en" and preferences.appearance() is Appearance.SYSTEM
         preferences.remember_language("de")
-        preferences.remember_appearance("light")
+        preferences.remember_appearance(Appearance.LIGHT)
         restored = Preferences(database)
-        assert restored.language() == "de" and restored.appearance() == "light"
+        assert restored.language() == "de" and restored.appearance() is Appearance.LIGHT
+        preferences.remember_appearance(Appearance.VERBOLTEN)
+        assert Preferences(database).appearance() is Appearance.VERBOLTEN
+        preferences.remember_appearance(Appearance.MANTA)
+        assert Preferences(database).appearance() is Appearance.MANTA
+        preferences.remember_appearance(Appearance.FALCONS_FLIGHT)
+        assert Preferences(database).appearance() is Appearance.FALCONS_FLIGHT
+        preferences.remember_appearance(Appearance.TARON)
+        assert Preferences(database).appearance() is Appearance.TARON
+        preferences.remember_appearance(Appearance.RED_FORCE)
+        assert Preferences(database).appearance() is Appearance.RED_FORCE
+        preferences.remember_appearance(Appearance.LOCH_NESS)
+        assert Preferences(database).appearance() is Appearance.LOCH_NESS
+        preferences.remember_appearance(Appearance.SLINKY_DOG_DASH)
+        assert Preferences(database).appearance() is Appearance.SLINKY_DOG_DASH
+        preferences.remember_appearance(Appearance.TOP_THRILL_2)
+        assert Preferences(database).appearance() is Appearance.TOP_THRILL_2
 
 
 def test_folder_survives_restart_and_missing_directory_falls_back() -> None:

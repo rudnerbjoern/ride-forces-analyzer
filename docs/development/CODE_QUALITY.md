@@ -146,6 +146,10 @@ Shared preparation and isolation:
 - Same-scene FFmpeg Browse, raw/calibrated click/theme and language/appearance
   variants share a window, retaining assertions and resetting layout and viewport.
   Worker/error and native DPI/startup cases keep separate isolation.
+- Theme selection/save/cancel/restart uses one representative custom theme.
+  Shared light/dark dialog palettes, native captions, GPS and export preview
+  preservation share one setup; no per-theme GUI matrix. Enum persistence and
+  color contracts remain inexpensive independent checks.
 - Arrow tests drive the hold clock before/at thresholds while preserving native
   press, auto-repeat, release and keyboard checks for both fields/directions,
   without repeated five-second holds. CI runs UI serially on its own runner,

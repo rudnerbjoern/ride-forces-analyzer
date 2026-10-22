@@ -16,6 +16,7 @@ from PIL import Image
 import pytest
 
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
+from ride_forces_analyzer.storage.preferences import Appearance
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts/capture_app_reference.py"
@@ -66,6 +67,37 @@ def test_capture_cli_is_repeatable_and_preserves_original_and_preferences() -> N
         assert list(profile.iterdir()) == [sentinel]
         assert sentinel.read_text(encoding="utf-8") == "Keep personal settings unchanged"
         assert sha256(SOURCE.read_bytes()).hexdigest() == SOURCE_SHA256
+
+
+def test_theme_capture_uses_the_same_scene_for_each_appearance() -> None:
+    with TemporaryDirectory(dir=ROOT / ".tmp") as directory:
+        output = Path(directory) / "themes"
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "--themes", "--output", str(output)],
+            cwd=directory,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=120,
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        manifest = json.loads((output / "appearance-reference.json").read_text(encoding="utf-8"))
+        assert manifest["source_sha256"] == SOURCE_SHA256
+        assert manifest["sample"] == 4960 and manifest["selection"] == [4200, 5100]
+        assert manifest["smoothing"] == 11 and manifest["language"] == "en"
+        assert set(manifest["themes"]) == {
+            appearance.value for appearance in Appearance if appearance is not Appearance.SYSTEM
+        }
+        pixels: set[bytes] = set()
+        assert manifest["workspace_size"] == [800, 650]
+        assert manifest["includes_window_frame"] is True
+        for filename in manifest["themes"].values():
+            with Image.open(output / filename) as image:
+                assert image.width >= 800 and image.height > 650
+                pixels.add(sha256(image.convert("RGB").tobytes()).digest())
+        assert len(pixels) == len(manifest["themes"])
+        assert len(list(output.glob("*.png"))) == len(manifest["themes"])
 
 
 def test_capture_rejects_changed_source_before_writing_images() -> None:

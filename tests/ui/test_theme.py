@@ -1,9 +1,6 @@
-"""Native light/dark presentation without recording, viewport or export changes."""
+"""Shared theme behavior without repeating GUI workflows for each palette."""
 
-# cspell:words Über
-
-from pathlib import Path
-from tempfile import TemporaryDirectory
+# cspell:words Dunkel Über
 
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtCore import Qt
@@ -11,17 +8,16 @@ from PySide6.QtWidgets import (
     QAbstractButton,
     QApplication,
     QComboBox,
+    QDialogButtonBox,
     QFileDialog,
-    QGraphicsView,
     QToolBar,
 )
 import pytest
 
-from ride_forces_analyzer.storage.exports import ExportStore
-from ride_forces_analyzer.ui.batches import BatchDialog
-from ride_forces_analyzer.ui.export import ExportDialog
+from ride_forces_analyzer.storage.preferences import Appearance
 from ride_forces_analyzer.ui.theme import THEMES, ThemeName
 from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.preferences import SettingsDialog
 from tests.ui.helpers import wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from ride_forces_analyzer.config import AppSettings
@@ -34,7 +30,7 @@ def test_system_appearance_follows_changes_until_manually_selected(
     from ride_forces_analyzer.ui import window as ui_window
 
     window = explorer_window
-    effective_theme: ThemeName = "light"
+    effective_theme: ThemeName = Appearance.LIGHT
 
     def current_theme(application: QApplication) -> ThemeName:
         return effective_theme
@@ -43,23 +39,35 @@ def test_system_appearance_follows_changes_until_manually_selected(
     window.set_appearance(0)
     window.set_appearance(2)
     assert window.theme.name == "light"
-    assert window.preferences.appearance() == "system"
-    effective_theme = "dark"
+    assert window.preferences.appearance() is Appearance.SYSTEM
+    effective_theme = Appearance.DARK
     application = QApplication.instance()
     assert isinstance(application, QApplication)
     application.styleHints().colorSchemeChanged.emit(Qt.ColorScheme.Dark)
     assert window.theme.name == "dark"
+    window.show_settings()
+    dialog = window.findChild(SettingsDialog, "settingsDialog")
+    assert dialog is not None
+    dialog.appearance.setCurrentIndex(dialog.appearance.findData(Appearance.DARK.value))
+    effective_theme = Appearance.LIGHT
+    application.styleHints().colorSchemeChanged.emit(Qt.ColorScheme.Light)
+    assert window.theme is THEMES[Appearance.DARK]
+    assert window.preferences.appearance() is Appearance.SYSTEM
+    dialog.reject()
+    wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
+    assert window.appearance_preference is Appearance.SYSTEM
+    assert window.theme is THEMES[Appearance.LIGHT]
     window.set_appearance(1)
     application.styleHints().colorSchemeChanged.emit(Qt.ColorScheme.Dark)
     assert window.theme.name == "light"
-    assert window.preferences.appearance() == "light"
+    assert window.preferences.appearance() is Appearance.LIGHT
 
 
 def test_toolbar_controls_share_one_height(explorer_window: ExplorerWindow) -> None:
     window = explorer_window
     toolbar = window.findChild(QToolBar)
     assert toolbar is not None
-    for language, appearance in ((0, 0), (1, 1), (1, 0), (0, 1)):
+    for language, appearance in ((0, 0), (1, 1)):
         window.set_ui_language(language)
         window.set_appearance(appearance)
         QApplication.processEvents()
@@ -72,37 +80,23 @@ def test_toolbar_controls_share_one_height(explorer_window: ExplorerWindow) -> N
         assert len(heights) == 1, heights
 
 
-def test_new_window_restores_selected_language_and_theme(explorer_window: ExplorerWindow) -> None:
-    window = explorer_window
-    window.set_ui_language(1)
-    window.set_appearance(1)
-    restored = ExplorerWindow(AppSettings())
-    try:
-        assert restored.ui_language == "de"
-        assert restored.appearance_preference == "light"
-        assert restored.theme.name == "light"
-        assert restored.about_action.text() == "Über …"
-    finally:
-        restored.close()
-        restored.deleteLater()
-
-
 def test_native_file_dialog_inherits_valid_point_size(explorer_window: ExplorerWindow) -> None:
     window = explorer_window
-    for index in (0, 1):
-        window.set_appearance(index)
-        QApplication.processEvents()
-        dialog = QFileDialog(window)
-        try:
-            dialog.ensurePolished()
-            assert window.font().pointSizeF() > 0
-            assert dialog.font().pointSizeF() > 0
-        finally:
-            dialog.deleteLater()
+    dialog = QFileDialog(window)
+    try:
+        dialog.ensurePolished()
+        assert window.font().pointSizeF() > 0
+        assert dialog.font().pointSizeF() > 0
+    finally:
+        dialog.deleteLater()
 
 
-def test_light_text_and_channel_colors_have_readable_contrast() -> None:
-    theme = THEMES["light"]
+@pytest.mark.parametrize(
+    "name",
+    [Appearance.LIGHT, Appearance.FALCONS_FLIGHT, Appearance.TOP_THRILL_2],
+)
+def test_light_text_and_channel_colors_have_readable_contrast(name: ThemeName) -> None:
+    theme = THEMES[name]
 
     def luminance(color: str) -> float:
         value = QColor(color)
@@ -119,10 +113,24 @@ def test_light_text_and_channel_colors_have_readable_contrast() -> None:
         theme.muted,
         *theme.forces,
         *theme.raw,
-        *theme.markers,
         *theme.vertical_context_colors.values(),
     ):
         assert (luminance(theme.panel) + 0.05) / (luminance(color) + 0.05) >= 4.5
+    for color in (
+        *theme.markers,
+        *(theme.chart_forces or theme.forces),
+        *(theme.chart_raw or theme.raw),
+    ):
+        values = sorted((luminance(theme.chart_background or theme.panel), luminance(color)))
+        assert (values[1] + 0.05) / (values[0] + 0.05) >= 4.5
+    if theme.chart_background is not None:
+        assert theme.chart_foreground is not None
+        assert (luminance(theme.chart_foreground) + 0.05) / (
+            luminance(theme.chart_background) + 0.05
+        ) >= 7
+        assert (luminance(theme.panel) + 0.05) / (luminance(theme.text) + 0.05) >= 7
+        for background in (theme.accent, theme.link):
+            assert (luminance(theme.accent_text) + 0.05) / (luminance(background) + 0.05) >= 7
 
 
 def test_theme_switch_preserves_recording_and_chart_state(
@@ -146,10 +154,14 @@ def test_theme_switch_preserves_recording_and_chart_state(
             window.axis_y.min(),
             window.axis_y.max(),
         )
-        for index, name in ((1, "light"), (0, "dark")):
+        for index, name in (
+            (1, Appearance.LIGHT),
+            (tuple(Appearance).index(Appearance.TOP_THRILL_2), Appearance.TOP_THRILL_2),
+        ):
             window.set_appearance(index)
             QApplication.processEvents()
-            theme = THEMES["light" if name == "light" else "dark"]
+            theme = THEMES[window.theme.name]
+            assert window.theme.name == name
             assert window.data is data
             assert tuple(tuple(line.points()) for line in window.series) == points
             assert not window.series[1].isVisible()
@@ -164,49 +176,110 @@ def test_theme_switch_preserves_recording_and_chart_state(
                 window.axis_y.min(),
                 window.axis_y.max(),
             )
-            assert window.chart.backgroundBrush().color() == QColor(theme.panel)
-            assert window.axis_x.labelsBrush().color() == QColor(theme.muted)
+            assert window.chart.backgroundBrush().color() == QColor(
+                theme.chart_background or theme.panel,
+            )
+            assert window.axis_x.labelsBrush().color() == QColor(
+                theme.chart_foreground or theme.muted,
+            )
             assert [line.pen().color().name() for line in window.series] == list(
-                theme.forces if calibrated else theme.raw,
+                (theme.chart_forces or theme.forces)
+                if calibrated
+                else (theme.chart_raw or theme.raw),
             )
             assert window.palette().color(QPalette.ColorRole.WindowText) == QColor(theme.text)
+            for label, color in zip(
+                window.value_labels,
+                theme.forces if calibrated else theme.raw,
+                strict=True,
+            ):
+                assert label.styleSheet() == f"color: {color};"
             assert [
                 label.brush().color().name() for label in window.source_marker_labels.values()
             ] == list(theme.markers)
 
 
-@pytest.mark.usefixtures("small_preview_frames")
-def test_dialogs_and_gps_follow_light_and_dark(explorer_window: ExplorerWindow) -> None:
+def test_theme_settings_save_cancel_and_restart(
+    explorer_window: ExplorerWindow,
+) -> None:
     window = explorer_window
-    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
-    wait_until(window.open_action.isEnabled)
-    assert window.data is not None
-    window.gps_button.click()
-    assert window.gps_window is not None
-    view = window.gps_window.findChild(QGraphicsView)
-    assert view is not None
-    with TemporaryDirectory(dir=".tmp") as directory:
-        store = ExportStore(Path(directory) / "exports.sqlite3")
-        batches = BatchDialog(store, window)
-        batches.show()
-        dialog = ExportDialog(window.data, 0, window.data.count - 1, window, store=store)
-        dialog.show()
-        wait_until(lambda: dialog.preview_result is not None)
-        result = dialog.preview_result
-        for index in (1, 0):
-            window.set_appearance(index)
-            QApplication.processEvents()
-            expected = QColor(window.theme.panel)
-            assert view.palette().base().color() == expected
-            assert (
-                dialog.seconds.palette().base().color() == window.position.palette().base().color()
-            )
-            assert (
-                batches.table.palette().base().color() == window.position.palette().base().color()
-            )
-            assert dialog.preview_result is result
-            scene = view.scene()
-            assert scene is not None
-            assert scene.backgroundBrush().style().value == 0
-        dialog.close()
-        batches.close()
+    window.set_appearance(0)
+    window.show_settings()
+    dialog = window.findChild(SettingsDialog, "settingsDialog")
+    assert dialog is not None
+    assert tuple(
+        dialog.appearance.itemText(index) for index in range(dialog.appearance.count())
+    ) == (
+        "System",
+        "Light",
+        "Dark",
+        "Falcons Flight",
+        "Loch Ness",
+        "Manta",
+        "Red Force",
+        "Slinky Dog Dash",
+        "Taron",
+        "Top Thrill 2",
+        "Verbolten",
+    )
+    dialog.appearance.setCurrentIndex(dialog.appearance.findData(Appearance.TARON.value))
+    assert window.theme is THEMES[Appearance.TARON]
+    assert dialog.palette().color(QPalette.ColorRole.Window) == QColor(window.theme.background)
+    assert window.preferences.appearance() is Appearance.DARK
+    window.set_ui_language(1)
+    assert tuple(
+        dialog.appearance.itemText(index) for index in range(dialog.appearance.count())
+    ) == (
+        "System",
+        "Hell",
+        "Dunkel",
+        "Falcons Flight",
+        "Loch Ness",
+        "Manta",
+        "Red Force",
+        "Slinky Dog Dash",
+        "Taron",
+        "Top Thrill 2",
+        "Verbolten",
+    )
+    assert dialog.appearance.currentData() == Appearance.TARON.value
+    assert window.theme is THEMES[Appearance.TARON]
+    window.set_ui_language(0)
+    assert dialog.appearance.currentData() == Appearance.TARON.value
+    dialog.appearance.setCurrentIndex(dialog.appearance.findData(Appearance.RED_FORCE.value))
+    dialog.buttons.button(QDialogButtonBox.StandardButton.Cancel).click()
+    wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
+    assert window.theme.name == "dark"
+    assert window.preferences.appearance() is Appearance.DARK
+    window.show_settings()
+    dialog = window.findChild(SettingsDialog, "settingsDialog")
+    assert dialog is not None
+    dialog.appearance.setCurrentIndex(dialog.appearance.findData(Appearance.LIGHT.value))
+    assert window.theme is THEMES[Appearance.LIGHT]
+    dialog.close()
+    wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
+    assert window.theme is THEMES[Appearance.DARK]
+    assert window.preferences.appearance() is Appearance.DARK
+    window.show_settings()
+    dialog = window.findChild(SettingsDialog, "settingsDialog")
+    assert dialog is not None
+    dialog.appearance.setCurrentIndex(dialog.appearance.findData(Appearance.RED_FORCE.value))
+    dialog.buttons.button(QDialogButtonBox.StandardButton.Save).click()
+    assert window.theme is THEMES[Appearance.RED_FORCE]
+    assert window.preferences.appearance() is Appearance.RED_FORCE
+    assert (
+        window.theme.vertical_context_colors
+        == THEMES[
+            Appearance.DARK if window.theme.is_dark else Appearance.LIGHT
+        ].vertical_context_colors
+    )
+    window.set_ui_language(1)
+    restored = ExplorerWindow(AppSettings())
+    try:
+        assert restored.ui_language == "de"
+        assert restored.appearance_preference is Appearance.RED_FORCE
+        assert restored.theme is THEMES[Appearance.RED_FORCE]
+        assert restored.about_action.text() == "Über …"
+    finally:
+        restored.close()
+        restored.deleteLater()

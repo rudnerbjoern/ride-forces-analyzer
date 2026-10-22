@@ -11,7 +11,7 @@ from ctypes import wintypes
 import sys
 
 from PySide6.QtCore import QEvent, QObject, QPointF, QRectF, Qt, QTimer
-from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPalette, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QWidget
 
 
@@ -33,7 +33,7 @@ class NativeCaptionFilter(QObject):
         if window.isVisible():
             style_native_caption(
                 int(window.winId()),
-                dark=window.palette().window().color().lightness() < 128,
+                palette=window.palette(),
             )
 
 
@@ -74,7 +74,7 @@ def app_icon() -> QIcon:
     return icon
 
 
-def style_native_caption(window_id: int, *, dark: bool = True) -> None:
+def style_native_caption(window_id: int, *, palette: QPalette) -> None:
     """Use supported DWM attributes, allowing older Windows to retain defaults."""
     if sys.platform != "win32":
         return
@@ -83,11 +83,14 @@ def style_native_caption(window_id: int, *, dark: bool = True) -> None:
         setter.argtypes = [wintypes.HWND, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD]
         setter.restype = ctypes.c_long
         # COLORREF uses 0x00BBGGRR. Unsupported attributes leave native defaults.
-        attributes = (
-            ((20, 1), (34, 0x4A392B), (35, 0x2B1F15), (36, 0xF5EBE3))
-            if dark
-            else ((20, 0), (34, 0xE2D3C6), (35, 0xF6EFE9), (36, 0x422B17))
-        )
+        attributes = [(20, int(palette.window().color().lightness() < 128))]
+        for attribute, role in (
+            (34, QPalette.ColorRole.Mid),
+            (35, QPalette.ColorRole.Window),
+            (36, QPalette.ColorRole.WindowText),
+        ):
+            color = palette.color(role)
+            attributes.append((attribute, color.red() | color.green() << 8 | color.blue() << 16))
         for attribute, value in attributes:
             setting = wintypes.DWORD(value)
             setter(window_id, attribute, ctypes.byref(setting), ctypes.sizeof(setting))
