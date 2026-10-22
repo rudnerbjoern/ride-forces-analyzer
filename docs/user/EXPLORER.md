@@ -84,9 +84,9 @@ left/right or airtime interpretation. See [forces and airtime](FORCES_AND_AIRTIM
 
 Use **Inspector** to access the side panel; in narrow windows it switches between
 the chart and inspector views. Under **Settings → Application**, choose English
-or German and Dark, Light or System appearance. **Save** applies and remembers
-the choices; **Cancel** keeps the previous settings. Changing appearance or
-language preserves your current recording, selection, zoom and smoothing.
+or German and personalize the workspace with a theme. See
+[Choose your appearance](APPEARANCE.md) for the available styles and how to preview them.
+Changing appearance or language keeps your recording, selection, zoom and smoothing.
 
 Enable **Settings → Application → Restore last file** to reopen your last successfully
 loaded `.forces` or `.zforces` recording at the next launch. This option is off by

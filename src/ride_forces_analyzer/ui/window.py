@@ -61,7 +61,7 @@ from PySide6.QtWidgets import (
 )
 
 from ride_forces_analyzer.config import AppSettings
-from ride_forces_analyzer.storage.preferences import Preferences
+from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 from ride_forces_analyzer.explorer import ExplorerData, failure_text
 from ride_forces_analyzer.importers import ImportFailure
 from ride_forces_analyzer.playback import SamplePlayback
@@ -70,7 +70,7 @@ from ride_forces_analyzer.gps_overview import prepare_gps_overview
 
 from .chrome import app_icon
 from .about import AboutDialog
-from .preferences import SettingsDialog
+from .preferences import APPEARANCE_CHOICES, SettingsDialog
 from .updates import UpdateController
 from .gps import gps_dialog
 from .loading import LoadWorker
@@ -207,13 +207,13 @@ class ExplorerWindow(QMainWindow):
         if isinstance(application, QApplication):
             set_ui_language(application, language)
         appearance = self.preferences.appearance()
-        self.appearance_preference: Literal["dark", "light", "system"] = appearance
+        self.appearance_preference: Appearance = appearance
         self.theme = THEMES[
             system_theme(application)
-            if appearance == "system" and isinstance(application, QApplication)
-            else "light"
-            if appearance == "light"
-            else "dark"
+            if appearance is Appearance.SYSTEM and isinstance(application, QApplication)
+            else Appearance.DARK
+            if appearance is Appearance.SYSTEM
+            else appearance
         ]
         bind(self, settings.window_title, "windowTitle")
         self.setWindowIcon(app_icon())
@@ -386,6 +386,7 @@ class ExplorerWindow(QMainWindow):
             line.attachAxis(self.axis_y)
             self.series.append(line)
             toggle = bind(QCheckBox(), tr("Show {0}", name))
+            toggle.setObjectName("forceVisibility")
             toggle.setChecked(True)
             toggle.toggled.connect(line.setVisible)
             self.visibility.append(toggle)
@@ -394,6 +395,7 @@ class ExplorerWindow(QMainWindow):
         plot_layout.insertLayout(1, axes)
         self.visibility[0].toggled.connect(self._set_vertical_context_visible)
         self.airtime_legend = QLabel()
+        self.airtime_legend.setObjectName("airtimeLegend")
         self.airtime_legend.setWordWrap(True)
         self.airtime_legend.hide()
         plot_layout.addWidget(self.airtime_legend)
@@ -672,12 +674,18 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(int)
     def set_appearance(self, index: int) -> None:
-        self.appearance_preference = "system" if index == 2 else "light" if index == 1 else "dark"
+        self._preview_appearance(index)
         self.preferences.remember_appearance(self.appearance_preference)
+
+    @Slot(int)
+    def _preview_appearance(self, index: int) -> None:
+        self.appearance_preference = (
+            APPEARANCE_CHOICES[index] if 0 <= index < len(APPEARANCE_CHOICES) else Appearance.DARK
+        )
         self._apply_appearance()
 
     def _system_appearance_changed(self, scheme: Qt.ColorScheme) -> None:
-        if self.appearance_preference == "system":
+        if self.appearance_preference is Appearance.SYSTEM:
             self._apply_appearance()
 
     def _apply_appearance(self) -> None:
@@ -685,7 +693,7 @@ class ExplorerWindow(QMainWindow):
         if isinstance(application, QApplication):
             self.theme = THEMES[
                 system_theme(application)
-                if self.appearance_preference == "system"
+                if self.appearance_preference is Appearance.SYSTEM
                 else self.appearance_preference
             ]
             apply_theme(application, self.theme)
@@ -693,8 +701,9 @@ class ExplorerWindow(QMainWindow):
         self._draw_channels()
 
     def _style_chart(self) -> None:
-        self.chart.setBackgroundBrush(QColor(self.theme.panel))
-        self.chart_view.setBackgroundBrush(QColor(self.theme.panel))
+        background = QColor(self.theme.chart_background or self.theme.panel)
+        self.chart.setBackgroundBrush(background)
+        self.chart_view.setBackgroundBrush(background)
         self._style_axes()
         self._redraw_selection()
         for (name, line), color in zip(
@@ -768,8 +777,9 @@ class ExplorerWindow(QMainWindow):
 
     def _style_axes(self) -> None:
         for axis in (self.axis_x, self.axis_y):
-            axis.setLabelsBrush(QColor(self.theme.muted))
-            axis.setTitleBrush(QColor(self.theme.muted))
+            foreground = QColor(self.theme.chart_foreground or self.theme.muted)
+            axis.setLabelsBrush(foreground)
+            axis.setTitleBrush(foreground)
             axis.setGridLinePen(QPen(QColor(self.theme.grid), 1))
             axis.setLinePen(QPen(QColor(self.theme.border), 1))
 
@@ -947,8 +957,11 @@ class ExplorerWindow(QMainWindow):
 
     @Slot()
     def show_settings(self) -> None:
+        previous_appearance = APPEARANCE_CHOICES.index(self.appearance_preference)
         dialog = SettingsDialog(self.preferences, self, language=self.ui_language)
         dialog.language_selected.connect(self.set_ui_language)
+        dialog.appearance_previewed.connect(self._preview_appearance)
+        dialog.rejected.connect(lambda: self._preview_appearance(previous_appearance))
         dialog.appearance_selected.connect(self.set_appearance)
         dialog.open()
 
@@ -1176,7 +1189,11 @@ class ExplorerWindow(QMainWindow):
             self.data.smoothing_text if active else tr("Raw source values"),
             "text",
         )
-        colors = self.theme.forces if active else self.theme.raw
+        colors = (
+            (self.theme.chart_forces or self.theme.forces)
+            if active
+            else (self.theme.chart_raw or self.theme.raw)
+        )
         for i, (line, values, name, color) in enumerate(
             zip(
                 self.series,
@@ -1193,8 +1210,9 @@ class ExplorerWindow(QMainWindow):
             )
             bind(self.visibility[i], name.partition(" (")[0], "text")
             bind(self.visibility[i], name, "toolTip")
-            self.visibility[i].setStyleSheet(f"QCheckBox {{ color: {color}; }}")
-            self.value_labels[i].setStyleSheet(f"color: {color};")
+            text_color = (self.theme.forces if active else self.theme.raw)[i]
+            self.visibility[i].setStyleSheet(f"QCheckBox {{ color: {text_color}; }}")
+            self.value_labels[i].setStyleSheet(f"color: {text_color};")
         self.chart.setTitle("")
         self.signs.setVisible(active)
         self._draw_vertical_context()

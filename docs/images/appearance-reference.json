@@ -1,0 +1,30 @@
+{
+  "source_sha256": "f48157cadbfeb374eeadf48112b0bbfc1e8b47c580cb303342cf65977054ad04",
+  "sample": 4960,
+  "replay": "01:07.39",
+  "selection": [
+    4200,
+    5100
+  ],
+  "smoothing": 11,
+  "language": "en",
+  "font": "Segoe UI 9 pt",
+  "scale_factor": 1,
+  "workspace_size": [
+    800,
+    650
+  ],
+  "includes_window_frame": true,
+  "themes": {
+    "dark": "appearance-dark.png",
+    "light": "appearance-light.png",
+    "verbolten": "appearance-verbolten.png",
+    "manta": "appearance-manta.png",
+    "falcons_flight": "appearance-falcons_flight.png",
+    "taron": "appearance-taron.png",
+    "red_force": "appearance-red_force.png",
+    "loch_ness": "appearance-loch_ness.png",
+    "slinky_dog_dash": "appearance-slinky_dog_dash.png",
+    "top_thrill_2": "appearance-top_thrill_2.png"
+  }
+}

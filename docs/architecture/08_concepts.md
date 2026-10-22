@@ -143,6 +143,16 @@ failure is a cache miss or ignored write, never a dependency of map loading.
 
 Shared Qt palettes/styles cover light/dark controls, charts, GPS and native caption
 integration. Theme changes preserve analysis/view state; export colors are independent.
+Verbolten, Loch Ness, Manta, Taron and Red Force are dark themes;
+Falcons Flight and Slinky Dog Dash are light themes.
+Top Thrill 2 combines light controls with a dark chart and separate chart text
+and curve colors; value cards retain colors suited to light surfaces.
+They retain the corresponding dark/light semantic force and airtime colors.
+Native caption colors use the effective window palette.
+Appearance preferences use a `StrEnum`, serialized as string values in SQLite.
+Settings preview appearance without writing preferences; saving persists it,
+while rejecting the dialog restores the previous selection.
+`SYSTEM` is a selection resolved to a concrete light/dark theme at runtime.
 One Windows event filter applies native caption colors to Qt-managed main windows
 and dialogs after show/palette/style events. This includes message and progress
 dialogs and rejects callbacks for destroyed windows through their Qt context.

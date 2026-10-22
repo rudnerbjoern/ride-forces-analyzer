@@ -5,6 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 from contextlib import closing
+from enum import StrEnum
 from pathlib import Path
 import sqlite3
 from pydantic import FiniteFloat, TypeAdapter
@@ -15,7 +16,21 @@ from ride_forces_analyzer.i18n import Language
 from typing import Literal
 from math import isfinite
 
-Appearance = Literal["dark", "light", "system"]
+
+class Appearance(StrEnum):
+    DARK = "dark"
+    LIGHT = "light"
+    SYSTEM = "system"
+    VERBOLTEN = "verbolten"
+    MANTA = "manta"
+    FALCONS_FLIGHT = "falcons_flight"
+    TARON = "taron"
+    RED_FORCE = "red_force"
+    LOCH_NESS = "loch_ness"
+    SLINKY_DOG_DASH = "slinky_dog_dash"
+    TOP_THRILL_2 = "top_thrill_2"
+
+
 DirectoryKey = Literal["recording_directory", "export_directory"]
 PreferenceKey = Literal[
     DirectoryKey,
@@ -82,13 +97,16 @@ class Preferences:
 
     def appearance(self) -> Appearance:
         value = self._read("appearance")
-        return "light" if value == "light" else "dark" if value == "dark" else "system"
+        try:
+            return Appearance(value)
+        except ValueError:
+            return Appearance.SYSTEM
 
     def remember_language(self, value: Language) -> None:
         self._write("language", _LANGUAGE.validate_python(value, strict=True))
 
     def remember_appearance(self, value: Appearance) -> None:
-        self._write("appearance", _APPEARANCE.validate_python(value, strict=True))
+        self._write("appearance", _APPEARANCE.validate_python(value, strict=True).value)
 
     def export_fps(self) -> FrameRate:
         value = self._read("export_fps")

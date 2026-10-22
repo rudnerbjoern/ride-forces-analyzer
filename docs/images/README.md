@@ -130,6 +130,24 @@ actual axis limits for each smoothing panel. The original bytes of all three
 recordings are verified before and after capture. The default command continues
 to generate only the three full application screenshots.
 
+## Workspace appearance gallery
+
+The [appearance guide](../user/APPEARANCE.md) shows `appearance-*.png`, one image
+per workspace theme except System. All use the same Voltron scene, sample,
+selection, smoothing and font as the main application images.
+System has no separate image because it follows Light or Dark.
+Each image is captured directly from an 800×650 application content area plus
+the native Windows title bar and window borders, without downscaling. These show
+the normal compact workspace with the inspector hidden.
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\capture_app_reference.py --themes
+```
+
+[`appearance-reference.json`](appearance-reference.json) records the source hash,
+scene and image filenames. Add `--output .tmp\appearance-preview` to review first.
+These additional images are outside the 14-image license grant listed above.
+
 ## License limits
 
 The grant covers the owner's rights in these images. It does not grant rights in
