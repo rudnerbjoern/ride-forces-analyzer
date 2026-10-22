@@ -22,19 +22,23 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
 
 ## Contracts
 
-| Saved object    | Required contents                                                                                                                                               |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Preset          | Layout, landscape/portrait aspect, overlay language, output mode, fps, time context, axis inversion, GPU preference, odd 1–51 sample smoothing and range policy |
-| Analysis recipe | Explicit versioned projection, smoothing, independent orientation, context/events, input dependencies and source-app policy; smoothing matches preset window    |
-| Job             | Absolute source path, original SHA-256, title, concrete inclusive source range and complete preset snapshot                                                     |
-| Storage         | Recipes/definitions only; no source bytes or stage buffers; originals remain external/read-only                                                                 |
+| Saved object    | Required contents                                                                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Preset          | Layout, position, landscape/portrait aspect, overlay language, output mode, fps, time context, axis inversion, GPU preference, odd 1–51 sample smoothing and range policy |
+| Analysis recipe | Explicit versioned projection, smoothing, independent orientation, context/events, input dependencies and source-app policy; smoothing matches preset window              |
+| Job             | Absolute source path, original SHA-256, title, concrete inclusive source range and complete preset snapshot                                                               |
+| Storage         | Recipes/definitions only; no source bytes or stage buffers; originals remain external/read-only                                                                           |
 
 - Writes are transactional; preset/batch names are unique. Damaged/unsupported
   databases are reported, never silently replaced.
-- Every preset/job requires complete analysis/video settings, including aspect and
-  language. Missing/unsupported fields are rejected without fallback recipes,
+- Every preset/job requires complete analysis/video settings, including aspect,
+  position and language. Missing/unsupported fields are rejected without fallback recipes,
   format migration or destructive cleanup. New-object `ExportSettings` defaults
   do not fill incomplete stored records.
+- Preset creation resolves an implicit position to the current layout/format default
+  and persists its named enum value. Jobs retain that explicit position; subsequent
+  preset/default changes do not move it. Unsupported layout/format/position combinations
+  are rejected. Coordinates and sizes remain in layout metadata, never in stored jobs.
 - Save as creates a preset; Update selected replaces only that named preset.
   Loading refreshes production previews without changing explorer recording/settings.
 - Editing/deleting a preset does not change saved job snapshots.

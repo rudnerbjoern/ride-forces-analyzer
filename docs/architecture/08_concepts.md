@@ -146,8 +146,9 @@ language independently of the UI. See [localization](../development/LOCALIZATION
 ## Rendering and persistence
 
 Production RGBA frame generation is separate from FFmpeg encoding.
-Shared profile/aspect geometry drives previews and video padding. Previews use the
-exact cursor; encodes use an independent deterministic video clock.
+Layout-owned position regions for each profile/aspect drive previews and video padding.
+Saved presets/jobs retain named positions, while coordinates and sizes remain in layouts.
+Previews use the exact cursor; encodes use an independent deterministic video clock.
 The 59.94 fps option retains the exact `60000/1001` rate in settings and storage;
 rational arithmetic determines frame counts independently of sensor timing.
 Transparent ProRes and opaque H.264 are independent outputs, published exclusively

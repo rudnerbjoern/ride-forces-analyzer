@@ -62,7 +62,9 @@ appearance uses darker context colors for contrast.
 same source sample and smoothing. Its five thumbnails and large Flow Ribbon
 preview use the production renderer with landscape, English, transparent output,
 50 fps and a 12-second time window. The checkerboard is preview-only. Captures
-use isolated temporary preferences and an export database under `.tmp/`.
+show the Position selector; the other thumbnails follow the selected bottom edge
+using equivalent placements, rather than each layout's standalone default.
+Captures use isolated temporary preferences and an export database under `.tmp/`.
 
 Regenerate the three application screenshots and their
 [`app-reference.json`](app-reference.json) settings manifest from the repository

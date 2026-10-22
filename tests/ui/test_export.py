@@ -14,7 +14,7 @@ import pytest
 
 from ride_forces_analyzer.ui.export import ExportDialog, ExportWorker
 from ride_forces_analyzer.ui.window import ExplorerWindow
-from ride_forces_analyzer.rendering.preview import ExportPreview
+from ride_forces_analyzer.rendering.preview import ExportPreview, PreviewBackground
 from tests.ui.helpers import wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
@@ -27,6 +27,83 @@ def preview_ready(dialog: ExportDialog) -> ExportPreview:
     result = dialog.preview_result
     assert result is not None
     return result
+
+
+def test_position_choices_follow_layout_format_and_refresh_preview(
+    explorer_window: ExplorerWindow,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from dataclasses import replace
+
+    from ride_forces_analyzer.rendering.layouts import registry
+    from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition, LayoutPositions
+    from ride_forces_analyzer.rendering.model import PROFILES
+
+    window = explorer_window
+    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
+    wait_until(window.open_action.isEnabled)
+    window.export_button.click()
+    dialog = window.export_window
+    assert isinstance(dialog, ExportDialog)
+    preview_ready(dialog)
+    analysis = dialog.analysis
+
+    def choose_layout(key: str) -> None:
+        dialog.layout_profile.setCurrentIndex(
+            next(i for i, (name, _) in enumerate(PROFILES) if name == key),
+        )
+
+    def choices() -> list[str]:
+        return [dialog.position.itemData(i) for i in range(dialog.position.count())]
+
+    assert choices() == ["top", "bottom"]
+    assert dialog.position.currentData() == LayoutPosition.BOTTOM
+    dialog.position.setCurrentIndex(dialog.position.findData("top"))
+    assert dialog.preview_result is None
+    assert dialog.position.currentData() == LayoutPosition.TOP
+    choose_layout("capsule")
+    assert dialog.position.currentData() == LayoutPosition.TOP
+    choose_layout("column")
+    assert choices() == ["left", "right"]
+    assert dialog.position.currentData() == LayoutPosition.RIGHT
+    choose_layout("orbit")
+    assert set(choices()) == {"top_left", "top_right", "bottom_left", "bottom_right"}
+    assert dialog.position.currentData() == LayoutPosition.TOP_RIGHT
+    dialog.position.setCurrentIndex(dialog.position.findData("top_right"))
+    choose_layout("corners")
+    assert dialog.position.currentData() == LayoutPosition.TOP_RIGHT
+    choose_layout("ribbon")
+    dialog.position.setCurrentIndex(dialog.position.findData("bottom"))
+    assert dialog.preview_positions["orbit"] is LayoutPosition.BOTTOM_RIGHT
+    assert dialog.preview_positions["corners"] is LayoutPosition.BOTTOM_RIGHT
+    choose_layout("orbit")
+    assert dialog.position.currentData() == LayoutPosition.BOTTOM_RIGHT
+    dialog.position.setCurrentIndex(dialog.position.findData("top_right"))
+    choose_layout("corners")
+    dialog.aspect.setCurrentIndex(1)
+    assert dialog.position.currentData() == LayoutPosition.TOP_RIGHT
+
+    plugin = registry.PLUGINS["corners"]
+    portrait = LayoutPositions(
+        regions={LayoutPosition.BOTTOM_LEFT: plugin.portrait.regions[LayoutPosition.BOTTOM_LEFT]},
+        default=LayoutPosition.BOTTOM_LEFT,
+    )
+    monkeypatch.setattr(
+        registry,
+        "PLUGINS",
+        {**registry.PLUGINS, "corners": replace(plugin, portrait=portrait)},
+    )
+    dialog.aspect.setCurrentIndex(0)
+    dialog.aspect.setCurrentIndex(1)
+    assert choices() == ["bottom_left"]
+    assert dialog.position.currentData() == LayoutPosition.BOTTOM_LEFT
+    dialog.preview_timer.stop()
+    dialog.preview_timer.timeout.emit()
+    assert dialog.preview_worker is not None
+    assert dialog.preview_worker.settings.position is LayoutPosition.BOTTOM_LEFT
+    preview_ready(dialog)
+    assert dialog.analysis is analysis
+    assert dialog.position in dialog.controls
 
 
 def test_ffmpeg_browse_starts_in_configured_folder_and_preserves_cancelled_path(
@@ -308,7 +385,8 @@ def test_stale_preview_is_discarded_after_fast_profile_changes(
 ) -> None:
     from ride_forces_analyzer.ui import export as ui_export
     from ride_forces_analyzer.analysis.recording import RecordingAnalysis
-    from ride_forces_analyzer.rendering.model import ExportSettings
+    from ride_forces_analyzer.rendering.model import ExportLayout, ExportSettings
+    from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 
     original = ui_export.build_previews
     started, release = Event(), Event()
@@ -320,8 +398,10 @@ def test_stale_preview_is_discarded_after_fast_profile_changes(
         first: int,
         last: int,
         sample: int,
-        background: str,
+        background: PreviewBackground,
+        previous_positions: dict[ExportLayout, LayoutPosition],
     ) -> ExportPreview:
+        assert isinstance(background, PreviewBackground)
         calls.append((settings.layout, settings.fps))
         if len(calls) == 1:
             started.set()
@@ -333,7 +413,8 @@ def test_stale_preview_is_discarded_after_fast_profile_changes(
             first,
             last,
             sample,
-            "dark" if background == "dark" else "checker",
+            background,
+            previous_positions,
         )
 
     monkeypatch.setattr(ui_export, "build_previews", delayed)
@@ -363,6 +444,7 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from ride_forces_analyzer.ui.batches import BatchDialog
+    from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 
     window = explorer_window
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
@@ -381,6 +463,7 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     monkeypatch.setattr(QInputDialog, "getText", name_dialog)
     monkeypatch.setattr(QInputDialog, "getItem", batch_dialog)
     dialog.layout_profile.setCurrentIndex(3)
+    dialog.position.setCurrentIndex(dialog.position.findData(LayoutPosition.TOP_RIGHT.value))
     dialog.fps.setCurrentText("59.94")
     dialog.smoothing.setCurrentIndex(1)
     dialog.seconds.setValue(12.5)
@@ -396,6 +479,7 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     assert len(saved.jobs) == 2
     assert saved.jobs[0].preset.settings.layout == "orbit"
     assert saved.jobs[0].preset.settings.fps == "60000/1001"
+    assert saved.jobs[0].preset.settings.position is LayoutPosition.TOP_RIGHT
     assert saved.jobs[0].preset.smoothing_window == 3
     assert saved.jobs[0].preset.analysis_configuration is not None
     assert saved.jobs[1].preset.settings.layout == "ribbon"
@@ -411,6 +495,7 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     reopened.load_preset.click()
     preview_ready(reopened)
     assert reopened.layout_profile.currentIndex() == 3
+    assert reopened.position.currentData() == LayoutPosition.TOP_RIGHT
     assert reopened.fps.currentText() == "59.94" and reopened.seconds.value() == 12.5
     assert reopened.smoothing.currentIndex() == 1 and reopened.interval.currentIndex() == 2
     assert "3 samples" in reopened.preview_caption.text()

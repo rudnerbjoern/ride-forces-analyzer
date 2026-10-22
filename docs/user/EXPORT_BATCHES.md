@@ -10,13 +10,13 @@ The steps below use the English interface labels.
 ## Save and reuse a preset
 
 1. Open a recording and click **Export 4K…**.
-2. Choose your layout, video format, language, output type, frame rate, visible
+2. Choose your layout, position, video format, language, output type, frame rate, visible
    time window, smoothing and range.
 3. Click **Save as…** in the preset area and give the setup a unique name.
 4. For another export, select that preset and click **Load**.
 
 To change a saved preset, load it, adjust the settings and click **Update selected**.
-Presets remember their own frame rate and overlay language, independently of
+Presets remember their own position, frame rate and overlay language, independently of
 the application's defaults.
 
 ## Queue the current export

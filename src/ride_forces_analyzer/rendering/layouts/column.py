@@ -20,15 +20,21 @@ from pathlib import Path
 from ride_forces_analyzer.explorer import format_sample_time
 from ride_forces_analyzer.i18n import tr
 from .common import ACCELERATION_COLOR, BRAKING_COLOR
-from .contracts import LayoutPlugin
+from .contracts import LayoutPlugin, LayoutPosition, LayoutPositions
 
 FONT_FILE = "segoeui.ttf"  # Regular Windows font file.
 FONT_SIZE = 25  # Hint, scale and clock text size.
 LARGE_FONT_SIZE = 37  # Channel title and current-value text size.
 CANVAS_WIDTH = 3840  # Reference landscape canvas width.
 NATIVE_SIZE = (960, 2160)  # Native column drawing dimensions.
-LANDSCAPE_REGION = (2880, 0, 960, 2160)  # Landscape placement: x, y, width, height.
-PORTRAIT_REGION = (612, 300, 1440, 3240)  # Portrait placement: x, y, width, height.
+LANDSCAPE_POSITIONS = LayoutPositions(  # Landscape regions: x, y, width, height.
+    {LayoutPosition.LEFT: (0, 0, 960, 2160), LayoutPosition.RIGHT: (2880, 0, 960, 2160)},
+    default=LayoutPosition.RIGHT,
+)
+PORTRAIT_POSITIONS = LayoutPositions(  # Portrait regions: x, y, width, height.
+    {LayoutPosition.LEFT: (108, 300, 1440, 3240), LayoutPosition.RIGHT: (612, 300, 1440, 3240)},
+    default=LayoutPosition.RIGHT,
+)
 BACKGROUND_COLOR = (0, 0, 0, 255)  # Opaque column background RGBA.
 CHANNEL_COLORS = (
     "#8edce1",
@@ -235,4 +241,4 @@ class ColumnRenderer:
         return image
 
 
-PLUGIN = LayoutPlugin("column", LANDSCAPE_REGION, PORTRAIT_REGION, ColumnRenderer)
+PLUGIN = LayoutPlugin("column", LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, ColumnRenderer)
