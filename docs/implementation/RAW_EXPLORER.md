@@ -12,18 +12,24 @@ Product scope belongs in the [roadmap](../ROADMAP.md).
 
 ## Loading and presentation
 
-| Area                 | Contract                                                                                                                                                                  |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| About                | Package version, purpose, copyright, licenses, project/source-app links and independence from Ride Forces; live English/German and light/dark appearance                  |
-| Open                 | Local `.forces` / `.zforces` in one dialog; background import/analysis preserves bytes, unknown fields, absent sensors and source arrays                                  |
-| Failure/cancellation | Retain the last usable recording and service binding                                                                                                                      |
-| Folder memory        | Successful file-dialog import remembers its directory across restarts in `preferences.sqlite3` beside the export database; cancellation/failure preserves previous folder |
-| Preference failures  | Missing folder/unreadable storage uses dialog defaults; write failures do not block import                                                                                |
-| Curves               | Every sample; three independently visible colored channels                                                                                                                |
-| Display mode         | Calibrated by default when source directions are usable; otherwise raw with a calibration diagnostic                                                                      |
-| Direction            | Calibrated lateral +/− = right/left; longitudinal +/− = acceleration/braking; raw x/y/z have unknown units and no rider-direction claims                                  |
-| Snapshot adoption    | Refresh chart, context, cards, technical details and visible-range extrema together, without repeating preparation                                                        |
-| Shutdown/rebind      | Release subscriptions; reject late/superseded imports, results and failures, including after reopening                                                                    |
+| Area                 | Contract                                                                                                                                                        |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| About                | Package version, purpose, copyright, licenses, project/source-app links and independence from Ride Forces; live English/German and light/dark appearance        |
+| Open                 | Local `.forces` / `.zforces` in one dialog; background import/analysis preserves bytes, unknown fields, absent sensors and source arrays                        |
+| Failure/cancellation | Retain the last usable recording and service binding                                                                                                            |
+| Folder memory        | Successful imports remember their directory across restarts in `preferences.sqlite3` beside the export database; cancellation/failure preserves previous folder |
+| Preference failures  | Missing folder/unreadable storage uses dialog defaults; write failures do not block import                                                                      |
+| Curves               | Every sample; three independently visible colored channels                                                                                                      |
+| Display mode         | Calibrated by default when source directions are usable; otherwise raw with a calibration diagnostic                                                            |
+| Direction            | Calibrated lateral +/− = right/left; longitudinal +/− = acceleration/braking; raw x/y/z have unknown units and no rider-direction claims                        |
+| Snapshot adoption    | Refresh chart, context, cards, technical details and visible-range extrema together, without repeating preparation                                              |
+| Shutdown/rebind      | Release subscriptions; reject late/superseded imports, results and failures, including after reopening                                                          |
+
+**Settings → Application → Restore last file** is off by default and saved only on
+Save. Successful imports retain an absolute file path independently of that opt-in.
+At startup, an enabled option loads the existing file using the normal worker;
+missing files/directories are ignored. Earlier manual import requests take precedence.
+Failures preserve the last successful path and use normal import diagnostics.
 
 Projection follows the [source-app decision](../architecture/09_architecture_decisions.md#source-app-projection).
 Feature availability does not establish per-source scientific verification.

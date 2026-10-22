@@ -88,6 +88,12 @@ or German and Dark, Light or System appearance. **Save** applies and remembers
 the choices; **Cancel** keeps the previous settings. Changing appearance or
 language preserves your current recording, selection, zoom and smoothing.
 
+Enable **Settings → Application → Restore last file** to reopen your last successfully
+loaded `.forces` or `.zforces` recording at the next launch. This option is off by
+default. The application remembers the file's path; the original file must remain
+there. Missing files are skipped. **Save** applies the option; **Cancel** leaves it
+unchanged. Disabling it starts with an empty workspace.
+
 ## Open the GPS overview
 
 When usable positions exist, open **GPS overview** for an offline route view. It has

@@ -25,6 +25,9 @@ from ride_forces_analyzer.storage.preferences import Preferences
         ("remember_automatic_updates", 0),
         ("remember_automatic_updates", 1),
         ("remember_automatic_updates", None),
+        ("remember_restore_last_file", "true"),
+        ("remember_restore_last_file", 1),
+        ("remember_restore_last_file", None),
         ("remember_export_fps", True),
         ("remember_export_fps", 50.0),
         ("remember_export_fps", "50"),
@@ -82,6 +85,8 @@ def test_invalid_stored_preferences_keep_safe_defaults() -> None:
                     ("language", "fr"),
                     ("appearance", "blue"),
                     ("automatic_updates", "1"),
+                    ("restore_last_file", "1"),
+                    ("last_recording_path", "relative.forces"),
                     ("export_fps", "NaN"),
                     ("update_checked_at", "invalid"),
                 ],
@@ -91,6 +96,8 @@ def test_invalid_stored_preferences_keep_safe_defaults() -> None:
         assert preferences.appearance() == "system"
         assert preferences.export_fps() == 50
         assert not preferences.automatic_updates()
+        assert not preferences.restore_last_file()
+        assert preferences.last_recording() is None
         preferences.remember_automatic_updates(True)
         assert preferences.update_check_due(100000)
         preferences.remember_automatic_updates(False)
@@ -134,6 +141,32 @@ def test_corrupt_or_blocked_preferences_do_not_block_imports() -> None:
         blocked = Preferences(database / "preferences.sqlite3")
         blocked.remember_recording(root / "ride.forces")
         assert blocked.recording_directory() == ""
+        assert not blocked.restore_last_file()
+        assert blocked.last_recording() is None
+
+
+def test_last_recording_and_restore_preference_survive_restart() -> None:
+    with TemporaryDirectory(dir=".tmp") as temporary:
+        root = Path(temporary)
+        recording = root / "ride.forces"
+        recording.write_bytes(b"recording")
+        database = root / "preferences.sqlite3"
+        preferences = Preferences(database)
+        assert not preferences.restore_last_file()
+        assert preferences.last_recording() is None
+        preferences.remember_recording(recording)
+        preferences.remember_restore_last_file(True)
+        restored = Preferences(database)
+        assert restored.restore_last_file()
+        assert restored.last_recording() == recording.resolve()
+        restored.remember_restore_last_file(False)
+        assert not Preferences(database).restore_last_file()
+        assert restored.last_recording() == recording.resolve()
+        recording.unlink()
+        assert restored.last_recording() is None
+        # A folder with the same name is not a restorable recording.
+        recording.mkdir()
+        assert restored.last_recording() is None
 
 
 def test_export_folder_is_persistent_and_independent_of_recording_folder() -> None:

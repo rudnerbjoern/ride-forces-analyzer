@@ -238,7 +238,6 @@ class ExplorerWindow(QMainWindow):
         self._accept_results = True
         self._load_generation = 0
         self._worker: LoadWorker | None = None
-        self._chosen_path: Path | None = None
         self.open_action = bind(QAction(self), tr("Open recording…"))
         self.open_action.setShortcut(QKeySequence.StandardKey.Open)
         self.open_action.triggered.connect(self.choose_file)
@@ -652,6 +651,7 @@ class ExplorerWindow(QMainWindow):
         if isinstance(application, QApplication):
             application.styleHints().colorSchemeChanged.connect(self._system_appearance_changed)
         QTimer.singleShot(0, lambda: self.updates.check(manual=False))
+        QTimer.singleShot(0, self._restore_last_file)
 
     @Slot(int)
     def set_ui_language(self, index: int) -> None:
@@ -971,8 +971,19 @@ class ExplorerWindow(QMainWindow):
             tr("Ride Forces (*.forces *.zforces);;All files (*)"),
         )
         if filename:
-            self._chosen_path = Path(filename)
-            self.open_path(self._chosen_path)
+            self.open_path(Path(filename))
+
+    @Slot()
+    def _restore_last_file(self) -> None:
+        if (
+            not self._accept_results
+            or self._load_generation
+            or not self.preferences.restore_last_file()
+        ):
+            return
+        path = self.preferences.last_recording()
+        if path is not None:
+            self.open_path(path)
 
     def open_path(self, path: Path) -> None:
         if self._worker is not None:
@@ -1020,9 +1031,9 @@ class ExplorerWindow(QMainWindow):
         self._pause_playback()
         if self.analysis_controller is not None:
             self.analysis_controller.bind_snapshot(outcome.analysis)
-        if self._chosen_path is not None:
-            self.preferences.remember_recording(self._chosen_path)
-            self._chosen_path = None
+        path = outcome.source.recording.source.provenance.path
+        if path is not None:
+            self.preferences.remember_recording(path)
         if self.gps_window is not None:
             self.gps_window.close()
             self.gps_window.deleteLater()
@@ -1337,7 +1348,6 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(str)
     def _failed(self, message: str) -> None:
-        self._chosen_path = None
         self._finish_loading()
         bind(self.statusBar(), "", "toolTip")
         bind(self.statusBar(), message, "message")
