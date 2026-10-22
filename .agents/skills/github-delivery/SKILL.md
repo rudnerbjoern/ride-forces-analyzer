@@ -43,15 +43,20 @@ Creating/using this skill grants no mutation permission.
   remote branch, with a clean working tree and fast-forward ancestry. Never stash
   or overwrite owner changes. Do not delete the feature branch automatically.
 
-## Commit title and text
+## Commit messages and PR titles
 
 The linked commit policy is authoritative. Read it before generating a message;
 the helper derives its icon/type mapping from that file.
 
-- Title: `:<icon>: <type>(<scope>): <imperative outcome>`, English, at most
-  80 raw characters. Lower-case type/scope and initial summary letter; no final period.
+- Title: `:<icon>: <type>(<scope>): <imperative outcome>`, English.
+  Commit titles: at most 80 raw characters. Lower-case type/scope and initial summary
+  letter; no final period.
 - Choose the type from the staged outcome and its matching icon. Scope names the
   affected capability; never infer content from unstaged files.
+- Apply the same title rules to draft PR creation and PR title updates, except the
+  80-character limit: it does not apply to PR titles. Describe
+  the complete current PR diff against `main`, not just the latest commit or staged
+  files. PR descriptions follow the repository PR template, not commit-body rules.
 - Omit the body for a small self-explanatory change. Otherwise use `Why:` then
   `Changes:` with material effects. Preserve real newlines; use a message file.
 - Reference only actual issues/milestones. Include `BREAKING CHANGE:` when needed.

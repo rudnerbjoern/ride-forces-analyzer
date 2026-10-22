@@ -1,8 +1,8 @@
-# Ride Forces Analyzer commit messages
+# Ride Forces Analyzer commit messages and PR titles
 
 Follow [AGENTS.md](../AGENTS.md) for authorization, staged-file protection and
-required validation. This guide defines message content; it does not authorize
-staging or committing. Generate a message only for the approved staged changes.
+required validation. This guide defines commit messages and PR titles; it does not
+authorize Git or GitHub mutations. Generate a commit message only for approved staged changes.
 If nothing is staged, do not infer a commit message from the working tree.
 
 Commits belong on a dedicated working branch created from `main`. Never commit on
@@ -18,7 +18,7 @@ Use English and this header:
 
 Requirements:
 
-- Keep the raw header, including the shortcode, at or below 80 characters.
+- Keep commit titles, including the shortcode, at or below 80 characters.
 - Use lower-case `type` and `scope`; require one concise capability scope.
 - Start the summary with a lower-case imperative verb and omit its final period.
 - Describe the outcome, not a file list.
@@ -64,6 +64,16 @@ Requirements:
 - Never include secrets, personal data, or sensitive diagnostic details.
 - In particular, do not include GPS positions or recording contents in messages.
   Changes involving `.forces` fixtures must preserve their original bytes.
+
+## Pull request titles
+
+Apply the same title format, English wording, icon/type mapping, scope and imperative
+summary to every PR title, including drafts and title updates.
+The 80-character limit applies only to commit titles and does not apply to PR titles.
+Describe the complete current PR outcome relative to its base branch, rather than
+only the latest commit. PR titles do not depend on staged changes.
+Keep PR descriptions in the [PR template](pull_request_template.md) format;
+the commit-body rules above apply to commit messages only.
 
 ## Header examples
 

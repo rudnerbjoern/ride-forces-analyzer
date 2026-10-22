@@ -39,6 +39,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 - MUST verify the active branch immediately before EACH commit/push. Before push: verify explicit destination ref; after push: verify remote commit.
 - MUST stage exact authorized paths only. Before commit: inspect ONLY the staged diff; commit ONLY approved staged scope.
 - MUST follow [commit rules](.github/commit-message-instructions.md) before generating messages. Messages MUST describe approved staged changes only; no staged changes = no proposed message.
+- MUST apply the same title rules to PRs, including drafts and title updates, except the 80-character limit, which applies only to commit titles. Describe the complete current PR outcome against its base branch.
 - Branch creation, PR preparation and stage approval NEVER authorize other Git operations.
 - MUST use `.tmp/` for ALL temporary files. Track only `.tmp/.gitkeep`; ignore all other contents.
 - MUST obey `.gitattributes` and `.editorconfig`: LF text, CRLF Windows command scripts; NEVER normalize `.forces`.
