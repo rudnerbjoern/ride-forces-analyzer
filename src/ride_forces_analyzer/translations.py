@@ -38,6 +38,7 @@ GERMAN: dict[str, str] = {
     "Settings…": "Einstellungen …",
     "Settings": "Einstellungen",
     "Clear map cache": "Kartencache löschen",
+    "Clear map cache ({0} tiles)": "Kartencache löschen ({0} Kacheln)",
     "Map cache cleared.": "Kartencache gelöscht.",
     "Could not clear map cache. Try again later.": "Kartencache konnte nicht gelöscht werden. Bitte später erneut versuchen.",
     "Export": "Export",

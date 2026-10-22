@@ -34,21 +34,29 @@ def test_settings_clear_map_cache_is_immediate_and_reports_failure(
     window.settings_action.trigger()
     dialog = window.findChild(SettingsDialog, "settingsDialog")
     assert dialog is not None
-    assert dialog.clear_map_cache.text() == tr("Clear map cache")
+    assert dialog.clear_map_cache.text() == tr("Clear map cache ({0} tiles)", 1)
+    assert dialog.clear_map_cache.isEnabled()
     dialog.clear_map_cache.click()
     assert cache.get("provider", 0, 0, 0) is None
-    assert dialog.map_cache_status.text() == tr("Map cache cleared.")
+    assert dialog.clear_map_cache.text() == tr("Map cache cleared.")
+    assert not dialog.clear_map_cache.isEnabled()
     dialog.buttons.button(QDialogButtonBox.StandardButton.Cancel).click()
     wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
     assert cache.get("provider", 0, 0, 0) is None
     assert window.preferences.language() == "de"
+    window.settings_action.trigger()
+    dialog = window.findChild(SettingsDialog, "settingsDialog")
+    assert dialog is not None and not dialog.clear_map_cache.isEnabled()
+    dialog.reject()
+    wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
     cache.path.unlink()
     cache.path.mkdir()
     window.settings_action.trigger()
     dialog = window.findChild(SettingsDialog, "settingsDialog")
     assert dialog is not None
+    assert dialog.clear_map_cache.text() == tr("Clear map cache")
     dialog.clear_map_cache.click()
-    assert dialog.map_cache_status.text() == tr("Could not clear map cache. Try again later.")
+    assert dialog.clear_map_cache.text() == tr("Could not clear map cache. Try again later.")
     assert dialog.isVisible() and dialog.clear_map_cache.isEnabled()
     dialog.reject()
 

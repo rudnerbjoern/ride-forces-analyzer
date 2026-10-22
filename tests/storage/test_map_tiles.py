@@ -69,16 +69,21 @@ def test_unavailable_cache_is_a_miss_and_writes_are_optional(
     cache.delete("a", 0, 0, 0)
     assert cache.get("a", 0, 0, 0) is None
     assert not cache.clear()
+    assert cache.count() is None
 
 
 def test_clear_removes_all_providers_and_allows_cache_reuse(export_directory: Path) -> None:
     cache = TileCache(export_directory / "tiles.sqlite3")
     entry = TileEntry(b"image", 1234.0, '"etag"', "date")
+    assert cache.count() == 0
     for provider in ("a", "b"):
         cache.put(provider, 2, 1, 3, entry)
+    assert cache.count() == 2
     assert cache.clear()
+    assert cache.count() == 0
     for provider in ("a", "b"):
         assert cache.get(provider, 2, 1, 3) is None
     assert cache.clear()
     cache.put("a", 2, 1, 3, entry)
     assert cache.get("a", 2, 1, 3) == entry
+    assert cache.count() == 1

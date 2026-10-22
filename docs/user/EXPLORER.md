@@ -117,7 +117,9 @@ not required for any recording analysis or export. Polar coordinates outside the
 map's coverage retain the offline route view.
 
 Use **Settings → Application → Clear map cache** to delete all cached map tiles
-immediately, independently of Save or Cancel. The result appears below the button.
+immediately, independently of Save or Cancel. The button shows the stored tile count
+when settings open and is disabled when the cache is empty. After deletion, its
+text confirms that the cache was cleared; errors also appear in the button text.
 An already displayed background remains visible; subsequent map loading fills the
 cache again as needed.
 

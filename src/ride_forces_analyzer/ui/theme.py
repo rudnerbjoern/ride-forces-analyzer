@@ -11,6 +11,7 @@ from ride_forces_analyzer.airtime_colors import VERTICAL_CONTEXT_COLORS
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
+from .chrome import install_native_captions
 
 
 # cspell:words Segoe gridline
@@ -175,6 +176,7 @@ THEMES: dict[ThemeName, Theme] = {
 
 def apply_theme(application: QApplication, theme: Theme) -> None:
     """Palette covers native Qt surfaces not painted by the shared stylesheet."""
+    install_native_captions(application)
     palette = QPalette()
     for role, color in (
         (QPalette.ColorRole.Window, theme.background),

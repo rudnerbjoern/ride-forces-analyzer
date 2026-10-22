@@ -185,7 +185,7 @@ explicitly override language.
   uses seven days. Follow the [OSM tile policy](https://operations.osmfoundation.org/policies/tiles/).
 - **Settings → Application → Clear map cache** immediately removes every tile and
   its HTTP metadata, independently of Save/Cancel. Storage reports success/failure
-  to the dialog; already displayed maps remain visible.
+  in the button text; success disables the button. Already displayed maps remain visible.
 - Worker failure preserves the route and any existing background. Closing cancels
   the request; revision checks reject late results after close/reopen. Reloading is
   explicit, including after a resize. Unusable coordinates disable map loading.

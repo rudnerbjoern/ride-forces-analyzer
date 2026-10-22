@@ -143,6 +143,10 @@ failure is a cache miss or ignored write, never a dependency of map loading.
 
 Shared Qt palettes/styles cover light/dark controls, charts, GPS and native caption
 integration. Theme changes preserve analysis/view state; export colors are independent.
+One Windows event filter applies native caption colors to Qt-managed main windows
+and dialogs after show/palette/style events. This includes message and progress
+dialogs and rejects callbacks for destroyed windows through their Qt context.
+Native OS file pickers retain system-controlled appearance.
 
 Qt-independent `i18n` separates English templates from opaque values.
 German formatting affects displayed numbers, not source tokens or replay clocks.

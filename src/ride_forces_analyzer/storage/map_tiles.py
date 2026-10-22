@@ -118,6 +118,15 @@ class TileCache:
         except OSError, sqlite3.Error:
             pass
 
+    def count(self) -> int | None:
+        """Return the number of stored tiles, or None when storage is unavailable."""
+        try:
+            with self._connection() as connection:
+                row = connection.execute("SELECT COUNT(*) FROM tiles").fetchone()
+                return int(row[0])
+        except OSError, sqlite3.Error:
+            return None
+
     def clear(self) -> bool:
         """Delete every tile and its HTTP metadata; report failure to the caller."""
         try:

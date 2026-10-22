@@ -60,12 +60,10 @@ class SettingsDialog(QDialog):
         self.restore_last_file = bind(QCheckBox(), tr("Restore last file"))
         self.restore_last_file.setChecked(preferences.restore_last_file())
         application_form.addRow(self.restore_last_file)
-        self.clear_map_cache = bind(QPushButton(), tr("Clear map cache"))
+        self.clear_map_cache = QPushButton()
+        self._update_map_cache_count()
         self.clear_map_cache.clicked.connect(self.clear_cached_maps)
         application_form.addRow(self.clear_map_cache)
-        self.map_cache_status = QLabel()
-        self.map_cache_status.setWordWrap(True)
-        application_form.addRow(self.map_cache_status)
         layout.addWidget(application)
         group = bind(QGroupBox(), tr("Export"), "title")
         form = QFormLayout(group)
@@ -90,9 +88,18 @@ class SettingsDialog(QDialog):
     @Slot()
     def clear_cached_maps(self) -> None:
         if TileCache().clear():
-            bind(self.map_cache_status, tr("Map cache cleared."))
+            bind(self.clear_map_cache, tr("Map cache cleared."))
+            self.clear_map_cache.setEnabled(False)
         else:
-            bind(self.map_cache_status, tr("Could not clear map cache. Try again later."))
+            bind(self.clear_map_cache, tr("Could not clear map cache. Try again later."))
+
+    def _update_map_cache_count(self) -> None:
+        count = TileCache().count()
+        self.clear_map_cache.setEnabled(count != 0)
+        bind(
+            self.clear_map_cache,
+            tr("Clear map cache") if count is None else tr("Clear map cache ({0} tiles)", count),
+        )
 
     @Slot()
     def save(self) -> None:
