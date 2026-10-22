@@ -167,6 +167,9 @@ recordings or media. Sequential jobs reimport/check source hashes; per-job failu
 continue, cancellation retains completed files and discards incomplete work.
 An independent local `preferences.sqlite3` stores separate folders for the last
 successful file-dialog import and video export.
+It also retains the last successfully opened recording path and an explicit
+Restore last file opt-in. Source recordings remain external; no bytes are copied
+into preferences. Invalid or missing paths are unavailable for startup restoration.
 It also stores the explicitly saved default export frame rate (50 fps fallback);
 per-export edits and preset/batch frame rates remain independent. Missing folders or unavailable
 storage fall back to native dialog defaults without blocking imports or exports.

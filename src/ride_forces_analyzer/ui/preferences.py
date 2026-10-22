@@ -1,4 +1,4 @@
-"""Explicit default export preferences, independent of per-export settings.
+"""Application preferences and export defaults, independent of per-export settings.
 
 Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
@@ -7,6 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtWidgets import (
     QComboBox,
+    QCheckBox,
     QDialog,
     QDialogButtonBox,
     QFormLayout,
@@ -56,6 +57,9 @@ class SettingsDialog(QDialog):
             "toolTip",
         )
         application_form.addRow(bind(QLabel(), tr("Appearance")), self.appearance)
+        self.restore_last_file = bind(QCheckBox(), tr("Restore last file"))
+        self.restore_last_file.setChecked(preferences.restore_last_file())
+        application_form.addRow(self.restore_last_file)
         self.clear_map_cache = bind(QPushButton(), tr("Clear map cache"))
         self.clear_map_cache.clicked.connect(self.clear_cached_maps)
         application_form.addRow(self.clear_map_cache)
@@ -92,6 +96,7 @@ class SettingsDialog(QDialog):
 
     @Slot()
     def save(self) -> None:
+        self.preferences.remember_restore_last_file(self.restore_last_file.isChecked())
         self.preferences.remember_export_fps(EXPORT_FRAME_RATES[self.frame_rate.currentIndex()])
         self.language_selected.emit(self.language.currentIndex())
         self.appearance_selected.emit(self.appearance.currentIndex())
