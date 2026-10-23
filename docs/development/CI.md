@@ -72,7 +72,14 @@ it does not guarantee lower total runner minutes.
   CSpell; standalone dependency-contract runs also supply CSpell. Mixed runs with
   docs use its CSpell check.
 - The complete PR diff remains authoritative after documentation-only follow-up commits.
-- Markdown/CSpell configuration alone does not select docs, per owner policy.
+- Markdown/CSpell configuration alone does not select docs. CSpell configuration
+  changes select dependency contracts and the standalone `npm run spellcheck`
+  path, without application/UI/POSIX builds. The dependency contracts run the real
+  CSpell CLI against both translated catalogs, require rejection of injected
+  German/French typos and verify dictionary scope outside the catalog overrides.
+  Application/source changes select all localization tests and native UI tests,
+  including French; locked Node installs provide both dictionaries in every
+  job that runs CSpell.
   Documentation-test helpers under `tests/` select code; affected local docs checks
   remain required. Empty/unrelated changes select no suite; detection must still succeed.
 - Keep `check` required in branch protection. Failed/cancelled detection or selected

@@ -47,7 +47,7 @@ Choose these settings:
   or equivalent position (such as top left → top), otherwise it selects the default.
 - **Video format:** landscape for a normal widescreen video, or portrait for
   vertical videos. Both export in 4K.
-- **Overlay language:** English or German, independently of the application language.
+- **Overlay language:** English, German or French, independently of the application language.
 - **Output:** **Transparent overlay · ProRes 4444 MOV** to place the graphics
   over footage in an editor; **Opaque video · H.264 MP4** for a black background.
 - **Video frame rate:** match your footage and editing timeline. Choices are

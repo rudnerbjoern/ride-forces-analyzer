@@ -4,7 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-from ride_forces_analyzer.i18n import get_language, tr
+from ride_forces_analyzer.i18n import LANGUAGE_CHOICES, LANGUAGES, get_language, tr
 from ride_forces_analyzer.error_reporting import record_error
 from .translation import bind, items
 
@@ -305,8 +305,8 @@ class ExportDialog(QDialog):
         self.aspect.currentIndexChanged.connect(self._refresh_positions)
         self._refresh_positions()
         self.overlay_language = QComboBox()
-        items(self.overlay_language, ["English", "Deutsch"])
-        self.overlay_language.setCurrentIndex(1 if get_language() == "de" else 0)
+        items(self.overlay_language, [definition.name for definition in LANGUAGES.values()])
+        self.overlay_language.setCurrentIndex(LANGUAGE_CHOICES.index(get_language()))
         form.addRow(bind(QLabel(), tr("Overlay language")), self.overlay_language)
         self.mode = QComboBox()
         items(
@@ -592,7 +592,7 @@ class ExportDialog(QDialog):
             record_error("Export configuration", error)
             bind(self.status, tr(str(error)), "text")
             return
-        self.overlay_language.setCurrentIndex(1 if settings.language == "de" else 0)
+        self.overlay_language.setCurrentIndex(LANGUAGE_CHOICES.index(settings.language))
         self.aspect.setCurrentIndex(0 if settings.aspect == "landscape" else 1)
         self.layout_profile.setCurrentIndex(
             next(i for i, (key, _) in enumerate(PROFILES) if key == settings.layout),
@@ -684,7 +684,7 @@ class ExportDialog(QDialog):
 
     def _settings(self) -> ExportSettings:
         return ExportSettings(
-            language="de" if self.overlay_language.currentIndex() == 1 else "en",
+            language=LANGUAGE_CHOICES[self.overlay_language.currentIndex()],
             aspect="landscape" if self.aspect.currentIndex() == 0 else "portrait",
             fps="60000/1001" if self.fps.currentText() == "59.94" else int(self.fps.currentText()),
             window_seconds=float(self.seconds.value()),

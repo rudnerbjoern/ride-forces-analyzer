@@ -3,6 +3,20 @@
   "version": "0.2",
   "language": "en",
   "useGitignore": true,
+  "import": [
+    "@cspell/dict-de-de/cspell-ext.json",
+    "@cspell/dict-fr-fr/cspell-ext.json"
+  ],
+  "overrides": [
+    {
+      "filename": "src/ride_forces_analyzer/translations_de.py",
+      "language": "en,de"
+    },
+    {
+      "filename": "src/ride_forces_analyzer/translations_fr.py",
+      "language": "en,fr"
+    }
+  ],
   "files": [
     "**/*.{md,py,mjs,json,jsonc,toml,yml,yaml}",
     ".github/workflows/*.{yml,yaml}",
@@ -31,6 +45,7 @@
     "**/uv.lock"
   ],
   "words": [
+    "Français",
     "RFDB",
     "unraisable",
     "unwritable",

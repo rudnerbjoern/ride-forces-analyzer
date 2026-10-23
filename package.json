@@ -15,10 +15,12 @@
     "test:dependencies": "node --test tests/dependencies/security.test.mjs tests/dependencies/dependabot.test.mjs tests/dependencies/labels.test.mjs"
   },
   "devDependencies": {
+    "@cspell/dict-de-de": "4.1.3",
+    "@cspell/dict-fr-fr": "2.3.2",
+    "cspell": "10.3.6",
     "markdown-it": "15.0.3",
     "markdownlint-cli2": "0.23.3",
-    "pyright": "1.1.414",
-    "cspell": "10.3.6"
+    "pyright": "1.1.414"
   },
   "overrides": {
     "markdownlint-cli2": {

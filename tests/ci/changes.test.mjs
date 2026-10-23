@@ -24,6 +24,8 @@ for (const filename of ["README.md", "AGENTS.md", "docs/nested/PLAN.md",
 for (const filename of ["src/ride_forces_analyzer/importers/service.py", "tests/importers/test_decoder.py",
   "tests/types/recording.test.mjs", "tests/docs/documentation.test.mjs",
   "tests/fixtures/schema-inventory.json", "tests/fixtures/real/recording.forces",
+  "src/ride_forces_analyzer/translations_de.py", "src/ride_forces_analyzer/translations_fr.py",
+  "tests/localization/test_catalog.py", "tests/ui/test_french.py",
   ".node-version", "ffmpeg.json", "package.json", "package-lock.json", ".vscode/settings.json", "tools/check.ps1"]) {
   test(`Application/shared tooling input selects application checks: ${filename}`, () => {
     assert.deepEqual(classifyChanges([filename]), selected("code", "dependencies", "posix"));
@@ -80,7 +82,11 @@ test("Mixed application, documentation and skill changes select all affected sui
     selected("code", "documentation", "skills", "dependencies", "posix"));
 });
 
-for (const filenames of [[], ["docs/diagram.svg"], [".cspell.json", ".markdownlint-cli2.jsonc"]]) {
+test("CSpell configuration selects dependency contracts and the standalone spellcheck path", () => {
+  assert.deepEqual(classifyChanges([".cspell.json"]), selected("dependencies"));
+});
+
+for (const filenames of [[], ["docs/diagram.svg"], [".markdownlint-cli2.jsonc"]]) {
   test(`Unrelated changes do not select test suites: ${JSON.stringify(filenames)}`, () => {
     assert.deepEqual(classifyChanges(filenames), selected());
   });

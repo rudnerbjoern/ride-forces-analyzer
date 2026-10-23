@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import test from "node:test";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+// cspell:words Schwerkraft échantillon
+// cspell:ignore Schwerkrafft échantilllon
 
 // Resolve from the actual consumers, even if npm stops hoisting these packages.
 const project = createRequire(import.meta.url);
@@ -14,6 +18,33 @@ const mathDependencies = createRequire(mathModule);
 const katex = mathDependencies("katex");
 const { micromark } = await import(pathToFileURL(markdown.resolve("micromark")));
 const { math, mathHtml } = await import(pathToFileURL(mathModule));
+
+for (const [language, correct, typo] of [
+  ["de", "Schwerkraft", "Schwerkrafft"],
+  ["fr", "échantillon", "échantilllon"],
+]) {
+  test(`CSpell checks the ${language} catalog, rejects typos and keeps its dictionary file-scoped`, async () => {
+    const filename = `src/ride_forces_analyzer/translations_${language}.py`;
+    const root = new URL("../../", import.meta.url);
+    const original = await readFile(new URL(filename, root), "utf8");
+    const cli = fileURLToPath(import.meta.resolve("cspell/bin.mjs"));
+    for (const [path, text, expected] of [
+      [filename, original, 0],
+      [filename, original + `\n# ${typo}\n`, 1],
+      ["src/ride_forces_analyzer/i18n.py", `# ${correct}\n`, 1],
+    ]) {
+      const result = spawnSync(process.execPath,
+        [cli, "lint", `stdin://${path}`, "--config", ".cspell.json", "--no-progress"],
+        { cwd: fileURLToPath(root), input: text, encoding: "utf8", timeout: 30000 });
+      const output = result.stdout + result.stderr;
+      assert.ifError(result.error);
+      assert.equal(result.status, expected, output);
+      if (expected === 1) {
+        assert.ok(output.includes(path === filename ? typo : correct), output);
+      }
+    }
+  });
+}
 
 test("Documentation and lint consumers share the declared Markdown parser release", async () => {
   const manifest = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8"));

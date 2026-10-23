@@ -15,7 +15,9 @@ from ride_forces_analyzer.ui import translation
         (["de-DE"], "de"),
         (["de-CH"], "de"),
         (["en-US", "de-DE"], "en"),
-        (["fr-FR"], "en"),
+        (["fr-FR"], "fr"),
+        (["fr_CA"], "fr"),
+        (["es-ES", "fr-FR"], "en"),
         ([], "en"),
     ],
 )
@@ -45,3 +47,5 @@ def test_saved_language_takes_priority_over_os_fallback() -> None:
         assert preferences.language("de") == "en"
         preferences.remember_language("de")
         assert preferences.language("en") == "de"
+        preferences.remember_language("fr")
+        assert Preferences(preferences.path).language("en") == "fr"
