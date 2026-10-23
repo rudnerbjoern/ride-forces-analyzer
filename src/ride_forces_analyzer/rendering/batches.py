@@ -43,9 +43,11 @@ def _load_analysis(
     if expected_sha256 is not None and source.source_sha256 != expected_sha256:
         raise ValueError("Recording bytes changed since this batch was saved")
     if restore_markers:
-        bounds = Preferences().recording_bounds(source.source_sha256)
-        if bounds is not None and bounds[1] < len(source.recording.motion.acceleration):
-            configuration = replace(configuration, ride_bounds=bounds)
+        configuration = Preferences().recording_configuration(
+            source,
+            configuration,
+            calculation_time=datetime.now(UTC),
+        )
     service = AnalysisService()
     try:
         service.request_analysis(source, configuration, calculation_time=datetime.now(UTC))
@@ -94,6 +96,7 @@ def make_job(
                 "analysis_configuration": replace(
                     preset.analysis_configuration,
                     ride_bounds=analysis.configuration.ride_bounds,
+                    calibration=analysis.configuration.calibration,
                 ),
             },
         ),

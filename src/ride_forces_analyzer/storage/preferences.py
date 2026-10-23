@@ -5,6 +5,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 from contextlib import closing
+from dataclasses import replace
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 import sqlite3
@@ -16,6 +18,14 @@ from ride_forces_analyzer.i18n import Language
 from typing import Literal
 from math import isfinite
 import re
+
+from ride_forces_analyzer.analysis.calibration import (
+    CalibrationOverrides,
+    CalibrationReferenceError,
+    validate_calibration_references,
+)
+from ride_forces_analyzer.analysis.recording import AnalysisConfiguration
+from ride_forces_analyzer.importers import ImportSuccess
 
 _RECORDING_BOUNDS = TypeAdapter(tuple[int, int])
 
@@ -69,6 +79,94 @@ _TIMESTAMP = TypeAdapter(FiniteFloat)
 
 
 class Preferences:
+    def recording_calibration(self, source_sha256: str) -> CalibrationOverrides | None:
+        """Read a versioned reference recipe; corrupt/unsupported rows stay untouched."""
+        identifier = _recording_hash(source_sha256)
+        try:
+            if not self.path.is_file():
+                return None
+            with closing(sqlite3.connect(self.path, timeout=0.1)) as connection:
+                row = connection.execute(
+                    "SELECT gravity_index, incline_index, algorithm_version, window_samples "
+                    "FROM recording_calibration WHERE source_sha256 = ?",
+                    (identifier,),
+                ).fetchone()
+            return CalibrationOverrides(*row) if row else None
+        except OSError, sqlite3.Error, ValueError, TypeError:
+            return None
+
+    def remember_recording_calibration(
+        self,
+        source: ImportSuccess,
+        calibration: CalibrationOverrides,
+    ) -> bool:
+        """Save admitted source-bound references or reset them, preserving ride bounds.
+
+        Invalid references raise before any database write. Storage errors return
+        False. No original recording data or direction vectors are written here.
+        """
+        validate_calibration_references(source, calibration, calculation_time=datetime.now(UTC))
+        identifier = source.source_sha256
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            with closing(sqlite3.connect(self.path, timeout=0.1)) as connection, connection:
+                connection.execute(
+                    "CREATE TABLE IF NOT EXISTS recording_calibration ("
+                    "source_sha256 TEXT PRIMARY KEY, gravity_index INTEGER, incline_index INTEGER, "
+                    "algorithm_version TEXT NOT NULL, window_samples INTEGER NOT NULL)",
+                )
+                if not calibration.active:
+                    connection.execute(
+                        "DELETE FROM recording_calibration WHERE source_sha256 = ?",
+                        (identifier,),
+                    )
+                else:
+                    connection.execute(
+                        "INSERT OR REPLACE INTO recording_calibration VALUES (?, ?, ?, ?, ?)",
+                        (
+                            identifier,
+                            calibration.gravity_index,
+                            calibration.incline_index,
+                            calibration.algorithm_version,
+                            calibration.window_samples,
+                        ),
+                    )
+            return True
+        except OSError, sqlite3.Error, ValueError:
+            return False
+
+    def recording_configuration(
+        self,
+        source: ImportSuccess,
+        configuration: AnalysisConfiguration,
+        *,
+        calculation_time: datetime,
+    ) -> AnalysisConfiguration:
+        """Resolve valid local markers for a fresh import, without changing source evidence.
+
+        Invalid optional entries are ignored independently and never deleted.
+        Numerical stages remain owned by the caller's analysis service/snapshot.
+        Saved jobs must use their bound recipe instead of this local lookup.
+        """
+        bounds = self.recording_bounds(source.source_sha256)
+        if bounds is None or bounds[1] >= len(source.recording.motion.acceleration):
+            bounds = configuration.ride_bounds
+        calibration = self.recording_calibration(source.source_sha256)
+        if calibration is not None:
+            try:
+                validate_calibration_references(
+                    source,
+                    calibration,
+                    calculation_time=calculation_time,
+                )
+            except CalibrationReferenceError:
+                calibration = None
+        return replace(
+            configuration,
+            ride_bounds=bounds,
+            calibration=calibration if calibration is not None else configuration.calibration,
+        )
+
     def recording_bounds(self, source_sha256: str) -> tuple[int, int] | None:
         """Read optional content-bound markers; missing/unreadable storage is ignored."""
         identifier = _recording_hash(source_sha256)

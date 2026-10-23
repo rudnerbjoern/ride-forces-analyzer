@@ -578,6 +578,7 @@ class ExportDialog(QDialog):
                 replace(
                     preset.analysis_configuration,
                     ride_bounds=self.analysis.configuration.ride_bounds,
+                    calibration=self.analysis.configuration.calibration,
                 ),
             )
             self.data = self.data.with_analysis(self.analysis)

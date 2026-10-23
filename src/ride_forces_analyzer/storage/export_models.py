@@ -20,6 +20,7 @@ from pydantic import (
 )
 
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, StageConfiguration
+from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.analysis.models import AnalysisProfile
 from ride_forces_analyzer.rendering.model import ExportSettings
 from ride_forces_analyzer.rendering.layouts import registry
@@ -69,6 +70,11 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
         )
         if isinstance(value, dict):
             recipe = cast(dict[str, object], value)
+            _require_fields(
+                recipe.get("calibration"),
+                {item.name for item in fields(CalibrationOverrides)},
+                "Reference calibration",
+            )
             _require_fields(
                 recipe.get("profile"),
                 {item.name for item in fields(AnalysisProfile)},
@@ -177,5 +183,9 @@ def make_preset(
         settings=settings,
         smoothing_window=smoothing_window,
         range_mode=range_mode,
-        analysis_configuration=replace(analysis_configuration, ride_bounds=None),
+        analysis_configuration=replace(
+            analysis_configuration,
+            ride_bounds=None,
+            calibration=CalibrationOverrides(),
+        ),
     )

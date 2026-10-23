@@ -63,9 +63,11 @@ Successful changes update marker lines, replay labels/readouts, reset viewport a
 marker-based exports without changing From/To selection or removing samples.
 Playback pauses when opening the menu. Gravity/incline and original source indices remain intact.
 
-`preferences.sqlite3` stores overrides by the original source SHA-256. Reopening
-restores valid saved bounds; missing, invalid or unreadable entries use original
-markers. Write failure keeps the session adjustment and reports that it was not
+`preferences.sqlite3` stores bounds and versioned Gravity/Incline recipes by the
+original source SHA-256, independently of file path. Reopening restores valid
+local choices through the shared analysis configuration. Missing, invalid or
+unreadable entries use source defaults without deleting stored records.
+Gravity/Incline menu editing remains planned. Write failure keeps the session adjustment and reports that it was not
 saved. No source bytes or source JSON fields are rewritten.
 
 Time is inferred recording seconds `index / effective_sample_rate`, with

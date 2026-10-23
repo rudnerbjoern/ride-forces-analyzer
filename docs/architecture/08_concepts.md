@@ -123,6 +123,12 @@ configuration carries the effective start/end across views and bound exports;
 original markers and `AnalysisTime.replay_origin` retain source provenance.
 `RecordingAnalysis.replay_origin` and sample replay seconds use the effective start.
 Marker changes reuse all numerical stages and leave the full sample axis intact.
+Local Gravity/Incline choices use the same source hash with an explicit algorithm
+version and fixed reference window. The storage adapter validates choices before
+writes and resolves optional configuration for import/new-job composition; the
+analysis service remains independent of storage. Reusable presets carry no
+file-specific overrides, while queued jobs bind those choices and ignore later
+preference changes. Original bytes, markers and directions remain source evidence.
 Interactive playback scales monotonic elapsed seconds by 0.5×, 1× or 2× and maps
 them to existing integer samples using the effective recording rate. Speed changes
 preserve continuous position and play/pause state; new recordings default to 1×. UI timer frequency does not define recording

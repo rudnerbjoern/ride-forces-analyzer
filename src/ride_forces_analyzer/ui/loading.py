@@ -7,7 +7,6 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from ride_forces_analyzer.i18n import tr
 
 from pathlib import Path
-from dataclasses import replace
 from datetime import UTC, datetime
 
 from PySide6.QtCore import QObject, QRunnable, Signal, Slot
@@ -33,14 +32,19 @@ class LoadWorker(QRunnable):
         try:
             outcome = load_recording(self.path)
             if isinstance(outcome, ExplorerData) and outcome.analysis is not None:
-                bounds = Preferences().recording_bounds(outcome.source.source_sha256)
-                if bounds is not None and bounds[1] < outcome.count:
-                    snapshot = outcome.analysis
+                snapshot = outcome.analysis
+                now = datetime.now(UTC)
+                configuration = Preferences().recording_configuration(
+                    outcome.source,
+                    snapshot.configuration,
+                    calculation_time=now,
+                )
+                if configuration != snapshot.configuration:
                     outcome = outcome.with_analysis(
                         snapshot.with_configuration(
-                            replace(snapshot.configuration, ride_bounds=bounds),
+                            configuration,
                             revision=snapshot.revision + 1,
-                            calculation_time=datetime.now(UTC),
+                            calculation_time=now,
                         ),
                     )
         except Exception:

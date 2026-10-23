@@ -113,7 +113,10 @@ def test_inactive_overrides_do_not_reconstruct_the_original_basis() -> None:
 @pytest.mark.parametrize("field", ("gravity_index", "incline_index"))
 def test_override_indices_require_nonnegative_integers(value: object, field: str) -> None:
     with pytest.raises((TypeError, ValueError)):
-        CalibrationOverrides(**{field: cast(int, value)})
+        if field == "gravity_index":
+            CalibrationOverrides(gravity_index=cast(int, value))
+        else:
+            CalibrationOverrides(incline_index=cast(int, value))
 
 
 @pytest.mark.parametrize("field", ("gravity_index", "incline_index"))
@@ -121,7 +124,9 @@ def test_reference_indices_are_bounded_by_the_full_source_axis(field: str) -> No
     with pytest.raises(CalibrationReferenceError) as failure:
         validate_calibration_references(
             synthetic_source(),
-            CalibrationOverrides(**{field: 7}),
+            CalibrationOverrides(gravity_index=7)
+            if field == "gravity_index"
+            else CalibrationOverrides(incline_index=7),
             calculation_time=NOW,
         )
     assert failure.value.diagnostic.code == "CALIBRATION_INDEX_OUT_OF_RANGE"

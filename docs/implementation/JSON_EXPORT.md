@@ -36,6 +36,13 @@ source indices alongside `effective_ride_bounds`; Analyzer JSON exposes the same
 bounds in `recording` and the effective `time.replay_origin`. Original samples and
 source marker provenance are unchanged.
 
+Both formats include `calibration`: under app-shaped `metadata` or Analyzer
+`analysis`. It retains the versioned recipe, original `source_directions`,
+`effective_directions`, inclusive `reference_support` and custom-basis `provenance`
+(source hash, algorithm, engine, UTC calculation time and provisional capability).
+Without overrides, the effective directions equal the source directions and
+custom-reference support/provenance are absent. Source indices remain original.
+
 UTF-8 without BOM, LF, one tab before each root key, one space after its colon,
 compact arrays/objects, one root member per line and no trailing newline after
 `}`. Root order begins with the app's five numeric arrays:

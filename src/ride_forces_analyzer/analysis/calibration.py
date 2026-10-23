@@ -34,13 +34,21 @@ class CalibrationOverrides:
 
     Raises:
         TypeError: An index is not an integer, including booleans.
-        ValueError: An index is negative.
+        ValueError: An index is negative or the version/window is unsupported.
     """
 
     gravity_index: int | None = None
     incline_index: int | None = None
+    algorithm_version: str = "1"
+    window_samples: int = REFERENCE_WINDOW_SAMPLES
 
     def __post_init__(self) -> None:
+        if (
+            self.algorithm_version != "1"
+            or type(self.window_samples) is not int
+            or self.window_samples != REFERENCE_WINDOW_SAMPLES
+        ):
+            raise ValueError("Unsupported reference-calibration recipe")
         for index in (self.gravity_index, self.incline_index):
             if index is not None:
                 if type(index) is not int:

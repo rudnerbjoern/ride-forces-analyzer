@@ -155,6 +155,8 @@ Module: [`analysis.calibration`](../../src/ride_forces_analyzer/analysis/calibra
 
 - `CalibrationOverrides` holds optional nonnegative integer `gravity_index` and
   `incline_index`; booleans are rejected. Both absent means original calibration.
+  Its explicit recipe admits only `algorithm_version="1"` and `window_samples=5`;
+  unsupported versions/windows raise `ValueError`, including on saved-job loading.
 - `validate_calibration_references(source, overrides, calculation_time=...)` checks
   indices against the complete acceleration sequence, independently of ride bounds.
   It returns `None` for inactive overrides, otherwise frozen `CalibrationReferences`.
@@ -190,8 +192,18 @@ Module: [`analysis.calibration`](../../src/ride_forces_analyzer/analysis/calibra
   acceleration-based calibration and forces remain available.
 - Calibration admission errors terminate service requests with their original
   diagnostic codes and retain the previous snapshot. No source mutation or second
-  calculation pipeline is introduced. Hash-bound calibration persistence and UI
-  integration remain in the [calibration requirement](../requirements/USER_CALIBRATION.md).
+  calculation pipeline is introduced.
+- `Preferences.recording_calibration` reads the source-hash-bound recipe;
+  `remember_recording_calibration` validates against the complete import before
+  writing or resetting it. Ride bounds are stored independently under the same hash.
+  `recording_configuration` resolves valid local choices for fresh UI imports and
+  new batch jobs. Invalid/unreadable entries retain source defaults without database
+  cleanup; changing bounds never erases saved calibration, and conversely.
+- Reusable presets omit file-specific bounds/references. Jobs capture both from
+  their bound snapshot, with explicit version/window, and never consult current
+  preferences during execution. JSON exports retain the original directions beside
+  the effective basis, recipe, support intervals and calculation provenance.
+  Remaining UI work: [calibration requirement](../requirements/USER_CALIBRATION.md).
 
 ### Numerical stages
 

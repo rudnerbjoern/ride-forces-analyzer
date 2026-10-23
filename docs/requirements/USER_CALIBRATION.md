@@ -1,8 +1,9 @@
 # Editable ride markers and calibration
 
 **Status: typed overrides, reference validation/provenance, basis construction and
-partial recalculation through the service are implemented. Hash-bound calibration
-persistence, import restoration and UI changes remain planned.**
+partial recalculation through the service, hash-bound persistence, import restoration
+and bound export/job recipes are implemented. Gravity/Incline menu actions and
+their automatic saving/reset behavior remain planned.**
 This is an empirical reconstruction of reference calibration, cross-checked against
 the five original recordings' stored axes. General equivalence to the Ride Forces
 app algorithm and physical rider calibration remain unqualified. Existing
