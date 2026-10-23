@@ -95,9 +95,10 @@ class AboutDialog(QDialog):
         links = bind(
             QLabel(),
             tr(
-                '<a href="{0}">GitHub</a> · <a href="{1}">Ride Forces app</a> · <a href="{2}">License</a> · <a href="{3}">Third-party notices</a>',
+                '<a href="{0}">GitHub</a> · <a href="{1}">Ride Forces app</a> · <a href="{2}">RFDB</a> · <a href="{3}">License</a> · <a href="{4}">Third-party notices</a>',
                 "https://github.com/rudnerbjoern/ride-forces-analyzer",
                 "https://rideforces.com/",
+                "https://rideforcesdb.com/",
                 "https://github.com/rudnerbjoern/ride-forces-analyzer/blob/main/LICENSE",
                 "https://github.com/rudnerbjoern/ride-forces-analyzer/blob/main/THIRD_PARTY_NOTICES.md",
             ),
@@ -145,7 +146,7 @@ class AboutDialog(QDialog):
         for text in (
             "Copyright © 2026 Björn Rudner",
             tr(
-                "Independent project: not affiliated with, endorsed by or sponsored by the Ride Forces app or its developer.",
+                "Independent project: not affiliated with, endorsed by or sponsored by the Ride Forces app, RFDB or their developers.",
             ),
             tr(
                 "Code: GNU GPL version 3 or later. Supplied test recordings and documentation images: CC BY-SA 4.0. Third-party components retain their own licenses. Provided without warranty.",

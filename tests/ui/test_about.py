@@ -22,17 +22,21 @@ def test_about_dialog_identity_translation_and_reuse(explorer_window: ExplorerWi
     text = "\n".join(label.text() for label in labels)
     for value in (__version__, "Björn Rudner", "GPL", "CC BY-SA 4.0", "not affiliated"):
         assert value in text
-    assert any(
-        anchor.get("href") == "https://rideforces.com/"
+    assert any("not affiliated" in label.text() and "RFDB" in label.text() for label in labels)
+    links = {
+        anchor.get("href")
         for label in labels
         if label.openExternalLinks()
         for anchor in fromstring(f"<div>{label.text()}</div>").iter("a")
-    )
+    }
+    assert {"https://rideforces.com/", "https://rideforcesdb.com/"} <= links
     window.set_ui_language(1)
     window.set_appearance(1)
     QApplication.processEvents()
     assert dialog.windowTitle() == "Über Ride Forces Analyzer"
-    assert any("Unabhängiges Projekt" in label.text() for label in labels)
+    assert any(
+        "Unabhängiges Projekt" in label.text() and "RFDB" in label.text() for label in labels
+    )
     window.about_action.trigger()
     assert len(window.findChildren(AboutDialog)) == 1
     close = next(

@@ -23,6 +23,57 @@ def recording() -> ExplorerData:
     return data
 
 
+def test_arrow_keys_step_samples_only_when_paused_and_outside_inputs(
+    explorer_window: ExplorerWindow,
+    recording: ExplorerData,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    window = explorer_window
+    monkeypatch.setattr(window_module, "monotonic", lambda: 0.0)
+
+    def load_sample(path: Path) -> ExplorerData:
+        return recording
+
+    monkeypatch.setattr(loading, "load_recording", load_sample)
+    window.open_path(Path(".tmp/arrow-recording.forces"))
+    wait_until(window.open_action.isEnabled)
+    window.activateWindow()
+    window.chart_view.setFocus()
+    wait_until(window.chart_view.hasFocus)
+    window.position.setValue(100)
+    QTest.keyClick(window.chart_view, Qt.Key.Key_Right)
+    assert window.position.value() == 101
+    QTest.keyClick(window.chart_view, Qt.Key.Key_Left)
+    assert window.position.value() == 100
+    window.position.setValue(0)
+    QTest.keyClick(window.chart_view, Qt.Key.Key_Left)
+    assert window.position.value() == 0
+    window.position.setValue(recording.count - 1)
+    QTest.keyClick(window.chart_view, Qt.Key.Key_Right)
+    assert window.position.value() == recording.count - 1
+
+    window.position.setValue(100)
+    for field in (window.position, window.first, window.last):
+        field.setFocus()
+        wait_until(field.hasFocus)
+        QTest.keyClick(field, Qt.Key.Key_Right)
+        QTest.keyClick(field, Qt.Key.Key_Left)
+        assert window.position.value() == 100
+
+    window.chart_view.setFocus()
+    window.toggle_playback()
+    QTest.keyClick(window.chart_view, Qt.Key.Key_Right)
+    QTest.keyClick(window.chart_view, Qt.Key.Key_Left)
+    assert window.position.value() == 100
+    assert window.playback is not None and window.playback.playing
+    window.slider.setFocus()
+    QTest.keyClick(window.slider, Qt.Key.Key_Right)
+    assert window.position.value() == 100
+    window.toggle_playback()
+    QTest.keyClick(window.slider, Qt.Key.Key_Right)
+    assert window.position.value() == 101
+
+
 def test_play_pause_seek_end_and_translations(
     explorer_window: ExplorerWindow,
     recording: ExplorerData,

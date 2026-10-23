@@ -60,6 +60,8 @@ right-click opens the menu without changing zoom or selecting a sample.
 - Left-click inside the chart to select the nearest sample. The cursor, sample
   control and value cards move to that moment.
 - Use the slider or **Sample** number below the chart to move through the recording.
+- Press **Left/Right** to move one sample backward/forward while paused, provided
+  no input field has focus.
 - Drag across the chart to zoom into a time interval. The mouse wheel zooms
   around the pointer. **Reset view** returns to the recording's start/end markers,
   or the available recording boundaries when markers are absent.

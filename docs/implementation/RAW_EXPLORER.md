@@ -105,6 +105,9 @@ No vertical zoom.
 
 ## Sample playback
 
+- Left/Right shortcuts move one sample while paused. Input fields keep their
+  normal keyboard behavior; shortcuts do not seek during playback. Sample bounds
+  clamp navigation, and each shortcut belongs to its recording window.
 - A fixed-width Play/Pause icon button sits immediately right of the sample slider;
   disabled without a recording or when only one sample exists. Tooltips and
   accessible names follow the English/German UI language.
