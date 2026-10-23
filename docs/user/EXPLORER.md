@@ -2,6 +2,9 @@
 
 Open a `.forces` or compressed `.zforces` file with **Open recording**, or **Ctrl+O** (**⌘O** on macOS).
 Both formats appear in the same file dialog; no manual extraction is needed.
+You can also drag one `.forces` or `.zforces` file into the main window.
+Drops are unavailable while a recording is loading; other files, folders and
+multiple files are not accepted.
 The application reads the recording without changing the original file.
 The instructions below use the English interface labels.
 

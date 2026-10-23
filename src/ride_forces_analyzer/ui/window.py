@@ -23,6 +23,8 @@ from PySide6.QtGui import (
     QAction,
     QCloseEvent,
     QColor,
+    QDragEnterEvent,
+    QDropEvent,
     QKeySequence,
     QMouseEvent,
     QResizeEvent,
@@ -212,6 +214,7 @@ class TimeChartView(QChartView):
 class ExplorerWindow(QMainWindow):
     def __init__(self, settings: AppSettings) -> None:
         super().__init__()
+        self.setAcceptDrops(True)
         self._application_title = settings.window_title
         self.preferences = Preferences()
         self._marker_save_failed = False
@@ -239,7 +242,7 @@ class ExplorerWindow(QMainWindow):
         self.resize(settings.window_width, settings.window_height)
         self.data: ExplorerData | None = None
         self.playback: SamplePlayback | None = None
-        self._playback_position = 0.0
+        self._playback_position: float = 0.0
         self._updating_playback = False
         self._playback_button_playing: bool | None = None
         self.playback_timer = QTimer(self)
@@ -634,6 +637,7 @@ class ExplorerWindow(QMainWindow):
         self.readout.setTextFormat(Qt.TextFormat.RichText)
         self.readout.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.notes = QPlainTextEdit()
+        self.notes.setAcceptDrops(False)
         self.original_diagnostics = bind(QCheckBox(), tr("Original diagnostics (technical text)"))
         self.original_diagnostics.toggled.connect(self._refresh_diagnostics)
         self.original_diagnostics.hide()
@@ -1017,6 +1021,33 @@ class ExplorerWindow(QMainWindow):
         path = self.preferences.last_recording()
         if path is not None:
             self.open_path(path)
+
+    def _dropped_recording(self, event: QDropEvent) -> Path | None:
+        """Accept one local recording while the existing importer is idle."""
+        mime = event.mimeData()
+        if self._worker is not None:
+            return None
+        urls = mime.urls()
+        if len(urls) != 1 or not urls[0].isLocalFile():
+            return None
+        path = Path(urls[0].toLocalFile())
+        if path.suffix.lower() not in {".forces", ".zforces"} or not path.is_file():
+            return None
+        return path
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        if self._dropped_recording(event) is not None:
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event: QDropEvent) -> None:
+        path = self._dropped_recording(event)
+        if path is None:
+            event.ignore()
+            return
+        self.open_path(path)
+        event.acceptProposedAction()
 
     def open_path(self, path: Path) -> None:
         if self._worker is not None:
