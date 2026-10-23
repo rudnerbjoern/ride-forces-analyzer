@@ -12,6 +12,7 @@ from ride_forces_analyzer.__main__ import main
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("file", nargs="?", type=Path)
     parser.add_argument("--self-test", type=Path)
     parser.add_argument("--recording", type=Path)
     parser.add_argument("--with-ffmpeg", action="store_true")
@@ -32,4 +33,4 @@ if __name__ == "__main__":
             # windowed bootloader traceback dialog and wait for user input.
             raise SystemExit(1) from None
     else:
-        raise SystemExit(main())
+        raise SystemExit(main(recording=arguments.file))

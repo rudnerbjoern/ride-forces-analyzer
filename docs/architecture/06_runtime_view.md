@@ -26,6 +26,13 @@ Invalid model construction fails before window creation. The GUI smoke test star
 the real module in a separate Windows process and exits through the Qt event loop;
 its tests exercise the real bootstrap contract above.
 
+The module and frozen entry points accept one optional local recording path.
+An explicit path is opened through the normal import before restoration can run.
+The application receives local macOS file-open events through `QFileOpenEvent`;
+the latest pending request waits for window construction or an active import.
+The macOS bundle declares both recording extensions as alternate viewer types;
+the Linux desktop entry passes a single file with `%f`.
+
 After the event loop starts, the explorer applies the optional Restore last file
 preference (off by default). Preferences supplies an existing absolute file path;
 the normal background import/analysis flow loads it. A manual load already requested

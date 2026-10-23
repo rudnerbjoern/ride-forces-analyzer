@@ -110,6 +110,14 @@ def build(work: Path, *, expected_target: str | None = None) -> Path:
         info["CFBundleVersion"] = version
         info["CFBundleName"] = PRODUCT_NAME
         info["CFBundleDisplayName"] = PRODUCT_NAME
+        info["CFBundleDocumentTypes"] = [
+            {
+                "CFBundleTypeName": "Ride recording",
+                "CFBundleTypeExtensions": ["forces", "zforces"],
+                "CFBundleTypeRole": "Viewer",
+                "LSHandlerRank": "Alternate",
+            },
+        ]
         info["NSHumanReadableCopyright"] = COPYRIGHT
         info["RideForcesAnalyzerDescription"] = DESCRIPTION
         info["RideForcesAnalyzerAuthor"] = AUTHOR

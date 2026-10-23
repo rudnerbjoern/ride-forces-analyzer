@@ -125,6 +125,31 @@ Recordings can contain GPS positions, timestamps and personal metadata. Review
 files before sharing them in issues or with other people; they are not
 automatically made anonymous.
 
+## Open a recording directly
+
+Pass a `.forces` or `.zforces` path when starting the application. Quote paths
+containing spaces. This takes priority over **Restore last file**.
+
+```powershell
+.\Ride-Forces-Analyzer.exe "D:\Recordings\Manta.forces"
+```
+
+```bash
+# Linux, from the extracted application directory
+./Ride-Forces-Analyzer "/home/user/Recordings/Manta.zforces"
+# macOS, after placing the application in Applications
+open -a "Ride-Forces-Analyzer" --args "/Users/user/Recordings/Manta.forces"
+```
+
+On Windows, **Open with** can use the portable EXE; dropping a recording onto
+the EXE also passes its path. On Linux, the installed desktop launcher accepts
+a file from **Open with**. On macOS, the application supports Finder **Open With**
+and dropping a recording onto its Dock icon. No default file association is forced.
+Each command-line launch opens a new application instance; macOS desktop file
+events can also reach a running instance. If multiple desktop requests arrive
+during an import, the latest pending request is opened next.
+Missing or invalid files use the normal import error display.
+
 ## If the application does not start
 
 - Verify that the download matches your operating system and processor.

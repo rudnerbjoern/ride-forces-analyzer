@@ -91,6 +91,14 @@ def test_native_builder_preserves_version_notices_and_archive_layout(
         assert info["CFBundleVersion"] == info["CFBundleShortVersionString"] == "1.2.3"
         assert info["LSMinimumSystemVersion"] == "15.0"
         assert info["CFBundleName"] == info["CFBundleDisplayName"] == "Ride Forces Analyzer"
+        assert info["CFBundleDocumentTypes"] == [
+            {
+                "CFBundleTypeName": "Ride recording",
+                "CFBundleTypeExtensions": ["forces", "zforces"],
+                "CFBundleTypeRole": "Viewer",
+                "LSHandlerRank": "Alternate",
+            },
+        ]
         assert info["NSHumanReadableCopyright"] == "Copyright © 2026 Björn Rudner"
         assert info["RideForcesAnalyzerAuthor"] == "Björn Rudner"
         assert info["RideForcesAnalyzerDescription"] == "Ride force analysis and video overlays"
@@ -109,7 +117,7 @@ def test_native_builder_preserves_version_notices_and_archive_layout(
             assert fields["X-RideForcesAnalyzer-Version"] == "1.2.3"
             assert fields["X-RideForcesAnalyzer-Author"] == "Björn Rudner"
             assert fields["X-RideForcesAnalyzer-Copyright"] == "Copyright © 2026 Björn Rudner"
-            assert fields["Exec"] == "Ride-Forces-Analyzer"
+            assert fields["Exec"] == "Ride-Forces-Analyzer %f"
             assert fields["Icon"] == "ride-forces-analyzer"
             assert fields["Comment[de]"]
             for suffix in ("png", "svg"):
