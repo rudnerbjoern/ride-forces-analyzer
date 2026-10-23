@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 64 64">
+  <!-- Copyright (c) 2026 Björn Rudner. SPDX-License-Identifier: GPL-3.0-or-later -->
+  <title>Ride Forces Analyzer</title>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3979f2"/>
+      <stop offset="0.45" stop-color="#245fe5"/>
+      <stop offset="1" stop-color="#1945b5"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="white" stop-opacity="0.353"/>
+      <stop offset="0.55" stop-color="white" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#background)"/>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="13.5"
+        fill="none" stroke="url(#rim)" stroke-width="0.5"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 35 H19 L26 16 L35 49 L43 29 H56" transform="translate(0 0.7)"
+          stroke="#0b2573" stroke-opacity="0.188" stroke-width="5.5"/>
+    <path d="M8 35 H19 L26 16 L35 49 L43 29 H56" stroke="white" stroke-width="5"/>
+  </g>
+</svg>

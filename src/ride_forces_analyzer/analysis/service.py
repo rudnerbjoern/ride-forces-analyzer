@@ -231,6 +231,7 @@ class AnalysisService:
                     calculation_time=calculation_time,
                 )
         except Exception as error:
+            _LOG.exception("Analysis recalculation failed")
             failure = (
                 error.diagnostic
                 if isinstance(error, CalibrationReferenceError)

@@ -16,6 +16,7 @@ from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from ride_forces_analyzer.csv_export import CsvExportCancelled, export_csv
 from ride_forces_analyzer.json_export import JsonExportCancelled, export_json, export_analyzer_json
 from ride_forces_analyzer.i18n import tr
+from ride_forces_analyzer.error_reporting import record_error
 from ride_forces_analyzer.storage.preferences import Preferences
 from .translation import bind
 
@@ -63,6 +64,7 @@ class DataWorker(QRunnable):
         except CsvExportCancelled, JsonExportCancelled:
             self.signals.completed.emit(None)
         except Exception as error:
+            record_error("Data export", error)
             self.signals.failed.emit(str(error))
         else:
             self.signals.completed.emit(self.path)

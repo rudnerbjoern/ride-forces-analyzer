@@ -1,5 +1,8 @@
 """Binary packages preserve notices, reject private data and verify supplied sources."""
 
+# cspell:words filevers prodvers
+
+import ast
 import json
 from pathlib import Path
 import subprocess
@@ -11,6 +14,48 @@ import pytest
 from scripts import build_windows
 from scripts.check_windows_packages import validate_zip
 from ride_forces_analyzer.rendering import encoding
+
+
+@pytest.mark.parametrize("version,flags", [("1.2.3", 0), ("1.2.3rc2", 2)])
+def test_version_resource_preserves_unicode_and_project_version(
+    export_directory: Path,
+    version: str,
+    flags: int,
+) -> None:
+    resource = build_windows.write_version_info(export_directory / "version.txt", version)
+    tree = ast.parse(resource.read_text(encoding="utf-8"), mode="eval")
+    calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    ]
+    strings = {
+        ast.literal_eval(node.args[0]): ast.literal_eval(node.args[1])
+        for node in calls
+        if isinstance(node.func, ast.Name) and node.func.id == "StringStruct"
+    }
+    assert strings == {
+        "CompanyName": "Björn Rudner",
+        "FileDescription": "Ride force analysis and video overlays",
+        "FileVersion": version,
+        "InternalName": "Ride-Forces-Analyzer",
+        "LegalCopyright": "Copyright © 2026 Björn Rudner",
+        "OriginalFilename": "Ride-Forces-Analyzer.exe",
+        "ProductName": "Ride Forces Analyzer",
+        "ProductVersion": version,
+    }
+    fixed = next(
+        node
+        for node in calls
+        if isinstance(node.func, ast.Name) and node.func.id == "FixedFileInfo"
+    )
+    values = {item.arg: ast.literal_eval(item.value) for item in fixed.keywords}
+    assert values == {"filevers": (1, 2, 3, 0), "prodvers": (1, 2, 3, 0), "flags": flags}
+
+
+def test_windows_version_rejects_unrepresentable_components(export_directory: Path) -> None:
+    with pytest.raises(ValueError, match="resource limits"):
+        build_windows.write_version_info(export_directory / "version.txt", "1.2.65536")
 
 
 @pytest.mark.parametrize("previous_archive", [False, True])
@@ -48,6 +93,14 @@ def test_release_build_outputs_only_windows_downloads_and_checksums(
 
         def run(arguments: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
             if "PyInstaller" in arguments:
+                assert Path(arguments[arguments.index("--icon") + 1]).read_bytes()[:4] == (
+                    b"\x00\x00\x01\x00"
+                )
+                assert f"{build_windows.ICON_SOURCE}:ride_forces_analyzer/ui" in arguments
+                version_info = Path(arguments[arguments.index("--version-file") + 1])
+                assert "StringStruct('FileVersion', '1.2.3')" in version_info.read_text(
+                    encoding="utf-8",
+                )
                 destination = Path(arguments[arguments.index("--distpath") + 1])
                 destination.mkdir()
                 (destination / f"{build_windows.APP_NAME}.exe").write_bytes(b"synthetic app")

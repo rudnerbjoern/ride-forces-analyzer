@@ -5,6 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 from ride_forces_analyzer.i18n import tr
+from ride_forces_analyzer.error_reporting import record_error
 from .translation import bind, items, headers
 
 from pathlib import Path
@@ -66,6 +67,7 @@ class BuildWorker(QRunnable):
                 schema_version=1,
             )
         except Exception as error:
+            record_error("Batch preparation", error)
             self.signals.failed.emit(str(error))
         else:
             self.signals.finished.emit(result)
@@ -90,6 +92,7 @@ class BatchWorker(QRunnable):
                 status=self.signals.status.emit,
             )
         except Exception as error:
+            record_error("Batch execution", error)
             self.signals.failed.emit(str(error))
         else:
             self.signals.finished.emit(report)
@@ -228,6 +231,7 @@ class BatchDialog(QDialog):
         try:
             batches, presets = self.store.batches(), self.store.presets()
         except ExportStoreError as error:
+            record_error("Batch configuration", error)
             bind(self.status, tr(str(error)), "text")
             return
         self.batch_list.clear()
@@ -249,6 +253,7 @@ class BatchDialog(QDialog):
         try:
             batch = self.store.batch(name)
         except ExportStoreError as error:
+            record_error("Batch configuration", error)
             bind(self.status, tr(str(error)), "text")
             return
         self.table.setRowCount(len(batch.jobs))
@@ -293,6 +298,7 @@ class BatchDialog(QDialog):
             batch = self.store.create_batch(name)
             self.refresh(batch.name)
         except (ValueError, ExportStoreError) as error:
+            record_error("Batch configuration", error)
             bind(self.status, tr(str(error)), "text")
 
     @Slot()
@@ -324,6 +330,7 @@ class BatchDialog(QDialog):
             bind(self.status, tr("Reading originals and preparing the saved queue…"), "text")
             QThreadPool.globalInstance().start(worker)
         except (ValueError, ExportStoreError) as error:
+            record_error("Batch configuration", error)
             bind(self.status, tr(str(error)), "text")
 
     @Slot(object)
@@ -343,6 +350,7 @@ class BatchDialog(QDialog):
                 "text",
             )
         except ExportStoreError as error:
+            record_error("Batch configuration", error)
             bind(self.status, tr(str(error)), "text")
 
     @Slot()
@@ -355,6 +363,7 @@ class BatchDialog(QDialog):
             self.store.remove_jobs(name, rows)
             self._show_batch(name)
         except (ValueError, ExportStoreError) as error:
+            record_error("Batch configuration", error)
             bind(self.status, tr(str(error)), "text")
 
     @Slot()
@@ -366,6 +375,7 @@ class BatchDialog(QDialog):
             self.store.delete_batch(name)
             self.refresh()
         except (ValueError, ExportStoreError) as error:
+            record_error("Batch configuration", error)
             bind(self.status, tr(str(error)), "text")
 
     @Slot()
@@ -413,6 +423,7 @@ class BatchDialog(QDialog):
             bind(self.close_button, tr("Cancel remaining exports"), "text")
             QThreadPool.globalInstance().start(worker)
         except (ValueError, ExportStoreError) as error:
+            record_error("Batch configuration", error)
             bind(self.status, tr(str(error)), "text")
 
     def _busy(self, busy: bool) -> None:
