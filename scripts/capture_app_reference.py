@@ -13,15 +13,17 @@ import json
 import os
 from pathlib import Path
 import sys
+import tomllib
 from tempfile import TemporaryDirectory
 from time import monotonic, sleep
 
 from PySide6.QtCharts import QCategoryAxis
-from PySide6.QtCore import QPoint, QRect, QThreadPool
+from PySide6.QtCore import QPoint, QRect, QThreadPool, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
 from PySide6.QtWidgets import QApplication, QWidget
 from PIL import ImageGrab
 
+from ride_forces_analyzer import __version__
 from ride_forces_analyzer.config import AppSettings
 from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.storage.preferences import Appearance
@@ -226,6 +228,12 @@ def capture_details(application: QApplication, window: ExplorerWindow, output: P
 
 
 def capture_reference(output: Path, *, details: bool = False, themes: bool = False) -> None:
+    with (ROOT / "pyproject.toml").open("rb") as stream:
+        project_version = tomllib.load(stream)["project"]["version"]
+    if __version__ != project_version:
+        raise ValueError(
+            f"Screenshot version {__version__} differs from project version {project_version}",
+        )
     if sys.platform != "win32":
         raise RuntimeError("Capture requires native Windows with a desktop session")
     if sha256(SOURCE.read_bytes()).hexdigest() != SOURCE_SHA256:
@@ -269,6 +277,8 @@ def capture_reference(output: Path, *, details: bool = False, themes: bool = Fal
                 output.mkdir(parents=True, exist_ok=True)
                 if themes:
                     images: dict[str, str] = {}
+                    window.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
+                    window.show()
                     window.setMinimumSize(0, 0)
                     window.resize(*APPEARANCE_SIZE)
                     for index, appearance in enumerate(Appearance):

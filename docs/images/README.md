@@ -78,6 +78,7 @@ For review without replacing the documentation images, add
 `--output .tmp\app-reference-preview`. The script fixes the source hash, sample,
 selection, language, appearance, font (Segoe UI, 9 pt), scale factor (1) and export
 settings. It rejects a changed source recording and isolates personal preferences.
+It also rejects a runtime version that differs from `project.version` before capture.
 Repeated captures have identical pixels in the tested Windows/Qt environment;
 different Windows, Qt or font versions may change rendering details.
 
@@ -139,6 +140,8 @@ System has no separate image because it follows Light or Dark.
 Each image is captured directly from an 800×650 application content area plus
 the native Windows title bar and window borders, without downscaling. These show
 the normal compact workspace with the inspector hidden.
+The capture window stays on top while these images are taken to prevent other
+applications from obscuring it.
 
 ```powershell
 .\.venv\Scripts\python.exe .\scripts\capture_app_reference.py --themes

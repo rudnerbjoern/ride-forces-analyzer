@@ -109,6 +109,7 @@ def test_capture_rejects_changed_source_before_writing_images() -> None:
         copied_script = work / "scripts" / SCRIPT.name
         copied_script.parent.mkdir()
         shutil.copyfile(SCRIPT, copied_script)
+        shutil.copyfile(ROOT / "pyproject.toml", work / "pyproject.toml")
         output = work / "output"
         result = subprocess.run(
             [sys.executable, str(copied_script), "--output", str(output)],
