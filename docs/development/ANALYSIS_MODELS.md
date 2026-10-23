@@ -203,7 +203,12 @@ Module: [`analysis.calibration`](../../src/ride_forces_analyzer/analysis/calibra
   their bound snapshot, with explicit version/window, and never consult current
   preferences during execution. JSON exports retain the original directions beside
   the effective basis, recipe, support intervals and calculation provenance.
-  Remaining UI work: [calibration requirement](../requirements/USER_CALIBRATION.md).
+  The chart menu edits all four choices through `AnalysisController.request_markers`.
+  On current successful delivery, the UI adapter calls
+  `Preferences.remember_recording_markers` to save/reset bounds and references in
+  one transaction before publishing the snapshot. Invalid, superseded and closed
+  bindings do not save; storage errors report session-only changes.
+  [Calibration contract](../requirements/USER_CALIBRATION.md).
 
 ### Numerical stages
 

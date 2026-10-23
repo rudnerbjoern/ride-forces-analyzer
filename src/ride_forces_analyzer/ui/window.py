@@ -11,6 +11,7 @@ from ride_forces_analyzer.i18n import Language, tr
 from .translation import bind, items, set_ui_language, system_ui_language
 
 from pathlib import Path
+from dataclasses import replace
 from typing import TYPE_CHECKING, Literal
 from importlib.util import find_spec
 from time import monotonic
@@ -78,6 +79,7 @@ from .theme import THEMES, apply_theme, system_theme
 
 
 if TYPE_CHECKING:
+    from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
     from .analysis import AnalysisController
 
 
@@ -248,9 +250,10 @@ class ExplorerWindow(QMainWindow):
         if find_spec("numpy") is not None:
             from .analysis import AnalysisController
 
-            self.analysis_controller = AnalysisController(self)
+            self.analysis_controller = AnalysisController(self, preferences=self.preferences)
             self.analysis_controller.snapshot_ready.connect(self._analysis_updated)
             self.analysis_controller.failed.connect(self._analysis_failed)
+            self.analysis_controller.markers_saved.connect(self._markers_saved)
             self.analysis_controller.pending_changed.connect(self._analysis_pending)
         self._accept_results = True
         self._load_generation = 0
@@ -1190,37 +1193,53 @@ class ExplorerWindow(QMainWindow):
         first, last = self.data.ride_bounds
         indices = self.data.source.recording.indices
         original = indices.start, indices.end
+        from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
+
+        calibration = self.data.analysis.configuration.calibration
         menu = QMenu(self)
 
-        def add(text: str, bounds: tuple[int, int], enabled: bool) -> None:
+        def add(
+            text: str,
+            bounds: tuple[int, int],
+            reference: "CalibrationOverrides",
+            enabled: bool = True,
+        ) -> None:
             action = bind(QAction(menu), tr(text))
             action.setEnabled(enabled)
 
             def apply() -> None:
                 if self.data is not None and self.data.source is source:
-                    self._change_ride_markers(None if bounds == original else bounds)
+                    self._change_ride_markers(None if bounds == original else bounds, reference)
 
             action.triggered.connect(apply)
             menu.addAction(action)
 
-        add("Set start here", (sample, last), sample <= last)
-        add("Set end here", (first, sample), sample >= first)
+        add("Set start here", (sample, last), calibration, sample <= last)
+        add("Set end here", (first, sample), calibration, sample >= first)
+        add("Set gravity here", (first, last), replace(calibration, gravity_index=sample))
+        add("Set incline here", (first, last), replace(calibration, incline_index=sample))
         menu.addSeparator()
-        add("Reset start to original", (indices.start, last), indices.start <= last)
-        add("Reset end to original", (first, indices.end), first <= indices.end)
-        add("Reset all ride markers", original, True)
+        add("Reset start to original", (indices.start, last), calibration, indices.start <= last)
+        add("Reset end to original", (first, indices.end), calibration, first <= indices.end)
+        add("Reset gravity to original", (first, last), replace(calibration, gravity_index=None))
+        add("Reset incline to original", (first, last), replace(calibration, incline_index=None))
+        menu.addSeparator()
+        add("Reset all ride markers", original, CalibrationOverrides())
         menu.exec(position)
         menu.deleteLater()
 
-    @Slot(object)
-    def _change_ride_markers(self, bounds: tuple[int, int] | None) -> None:
+    def _change_ride_markers(
+        self,
+        bounds: tuple[int, int] | None,
+        calibration: "CalibrationOverrides",
+    ) -> None:
         if self.data is None or self.analysis_controller is None:
             return
-        self._marker_save_failed = not self.preferences.remember_recording_bounds(
-            self.data.source.source_sha256,
-            bounds,
-        )
-        self.analysis_controller.request_ride_bounds(bounds)
+        self.analysis_controller.request_markers(bounds, calibration)
+
+    @Slot(bool)
+    def _markers_saved(self, saved: bool) -> None:
+        self._marker_save_failed = not saved
 
     @Slot()
     def show_gps(self) -> None:
@@ -1242,7 +1261,9 @@ class ExplorerWindow(QMainWindow):
         bind(
             self.disclaimer,
             tr(
-                "Calibrated forces\nSource directions\n{0}\nInferred time",
+                "Calibrated forces\nReference calibration\n{0}\nInferred time"
+                if self.data.analysis is not None and self.data.analysis.calibration is not None
+                else "Calibrated forces\nSource directions\n{0}\nInferred time",
                 self.data.smoothing_text.replace(" • ", "\n"),
             )
             if active
@@ -1689,11 +1710,11 @@ class ExplorerWindow(QMainWindow):
                 "gravityIndex": "Gravity marker",
                 "inclineIndex": "Incline marker",
             }
-            display_name = tr(marker_names[name]) if self.ui_language == "de" else name
+            display_name = tr(marker_names[name])
             bind(label, f"{display_name} · {self.data.replay_text(index)}", "text")
             bind(
                 label,
-                tr("Source {0}: sample {1}; recording {2:.3f} s", name, index, time),
+                tr("{0}: sample {1}; recording {2:.3f} s", display_name, index, time),
                 "toolTip",
             )
             if self.axis_x.min() <= time <= self.axis_x.max() and plot.width() > 0:

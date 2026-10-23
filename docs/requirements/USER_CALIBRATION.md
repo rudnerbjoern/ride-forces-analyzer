@@ -2,8 +2,8 @@
 
 **Status: typed overrides, reference validation/provenance, basis construction and
 partial recalculation through the service, hash-bound persistence, import restoration
-and bound export/job recipes are implemented. Gravity/Incline menu actions and
-their automatic saving/reset behavior remain planned.**
+and bound export/job recipes, chart-menu actions and automatic saving/reset for all
+four markers are implemented. Final cross-feature validation remains planned.**
 This is an empirical reconstruction of reference calibration, cross-checked against
 the five original recordings' stored axes. General equivalence to the Ride Forces
 app algorithm and physical rider calibration remain unqualified. Existing

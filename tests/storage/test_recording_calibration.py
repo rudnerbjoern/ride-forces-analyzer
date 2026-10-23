@@ -86,3 +86,27 @@ def test_unavailable_calibration_storage_does_not_prevent_opening(tmp_path: Path
         )
         == source_app_configuration()
     )
+
+
+def test_all_markers_save_and_reset_atomically(tmp_path: Path) -> None:
+    source = synthetic_source(accelerationSequence=[{"x": "0", "y": "1", "z": "1"}] * 7)
+    preferences = Preferences(tmp_path / "references.sqlite3")
+    choice = CalibrationOverrides(gravity_index=3)
+    assert preferences.remember_recording_markers(source, (1, 5), choice)
+    with pytest.raises(CalibrationReferenceError):
+        preferences.remember_recording_markers(source, (0, 6), CalibrationOverrides(3, 3))
+    assert preferences.recording_bounds(source.source_sha256) == (1, 5)
+    assert preferences.recording_calibration(source.source_sha256) == choice
+    with closing(sqlite3.connect(preferences.path)) as connection, connection:
+        connection.execute(
+            "CREATE TRIGGER reject_calibration_reset BEFORE DELETE ON recording_calibration "
+            "BEGIN SELECT RAISE(ABORT, 'Reset blocked'); END",
+        )
+    assert not preferences.remember_recording_markers(source, None, CalibrationOverrides())
+    assert preferences.recording_bounds(source.source_sha256) == (1, 5)
+    assert preferences.recording_calibration(source.source_sha256) == choice
+    with closing(sqlite3.connect(preferences.path)) as connection, connection:
+        connection.execute("DROP TRIGGER reject_calibration_reset")
+    assert preferences.remember_recording_markers(source, None, CalibrationOverrides())
+    assert preferences.recording_bounds(source.source_sha256) is None
+    assert preferences.recording_calibration(source.source_sha256) is None

@@ -383,18 +383,34 @@ class ExplorerData:
     def markers(self) -> tuple[tuple[str, int], ...]:
         indices = self.source.recording.indices
         first, last = self.ride_bounds
+        calibration = self.analysis.configuration.calibration if self.analysis is not None else None
+        overrides = {
+            "gravityIndex": calibration.gravity_index if calibration is not None else None,
+            "inclineIndex": calibration.incline_index if calibration is not None else None,
+        }
         return tuple(
             (name, index)
             for name, index in (
                 ("startIndex", first),
                 ("endIndex", last),
-                ("gravityIndex", indices.gravity),
-                ("inclineIndex", indices.incline),
+                (
+                    "gravityIndex",
+                    overrides["gravityIndex"]
+                    if overrides["gravityIndex"] is not None
+                    else indices.gravity,
+                ),
+                (
+                    "inclineIndex",
+                    overrides["inclineIndex"]
+                    if overrides["inclineIndex"] is not None
+                    else indices.incline,
+                ),
             )
             if index is not None
             and (
                 self.source.recording.source.root is None
                 or name in self.source.recording.source.root
+                or overrides.get(name) is not None
                 or (
                     self.analysis is not None
                     and self.analysis.configuration.ride_bounds is not None

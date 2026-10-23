@@ -51,7 +51,7 @@ historical acceptance reports are not maintained.
 ## Planned requirements
 
 - [Editable calibration markers](requirements/USER_CALIBRATION.md): source-evidenced
-  Gravity/Incline calibration, local persistence and remaining menu integration.
+  Gravity/Incline calibration, local persistence, chart-menu editing and final acceptance.
 
 ## Unified analysis
 

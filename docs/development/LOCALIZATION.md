@@ -1,5 +1,7 @@
 # English and German presentation
 
+<!-- cspell:words Schwerkraft Neigung Neigungsmarkierung -->
+
 For changing application language and appearance, see the
 [user explorer guide](../user/EXPLORER.md#adjust-smoothing-and-display).
 
@@ -31,6 +33,9 @@ and export actions visible, including at 200% Windows scaling.
   translated or interpreted as format strings.
 - German numeric formatting uses decimal commas and grouping dots. Source numeric
   tokens, units and `MM:SS.ff` sample counters are not localized or parsed again.
+- Chart labels and tooltips use Start/End/Gravity/Incline marker names rather than
+  JSON field names. German uses Start-/End-/Schwerkraft-/Neigungsmarkierung;
+  menu actions and calibration explanations use Schwerkraft and Neigung consistently.
 - `ui.translation` binds Qt text properties, combo entries and table headers.
   Language changes update these bindings and the explorer's dynamic presentation,
   preserving data identity, smoothing, cursor, selections and viewport.

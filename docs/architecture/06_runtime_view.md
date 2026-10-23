@@ -179,6 +179,12 @@ smoothing changes. Calibration requests use the same service revision/delivery
 flow: Gravity invalidates forces and tilt, while Incline retains tilt. Admission
 failures preserve their calibration diagnostic codes and the last completed
 snapshot. Dependency ownership follows [snapshot reuse](08_concepts.md#snapshot-lifetime-and-reuse).
+The chart marker menu submits all four choices through this same worker flow.
+After revision, generation and binding checks, the UI adapter atomically saves
+the accepted marker configuration before view delivery. Invalid or stale work
+does not save; storage failure retains session values and reports the failure.
+Individual resets preserve the remaining choices; reset all restores source axes
+and clears both local marker records in one transaction.
 The explorer refreshes charts, context strip, selected-sample cards, technical
 details and visible-range extrema from one guarded delivery. Cursor, selection,
 viewport, language and appearance remain presentation state and do not trigger

@@ -43,6 +43,54 @@ def _recording_bounds(value: tuple[int, int]) -> tuple[int, int]:
     return first, last
 
 
+def _save_recording_bounds(
+    connection: sqlite3.Connection,
+    identifier: str,
+    bounds: tuple[int, int] | None,
+) -> None:
+    """Write admitted bounds within the caller's transaction."""
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS recording_bounds (source_sha256 TEXT PRIMARY KEY, "
+        "first_sample INTEGER NOT NULL, last_sample INTEGER NOT NULL)",
+    )
+    if bounds is None:
+        connection.execute("DELETE FROM recording_bounds WHERE source_sha256 = ?", (identifier,))
+    else:
+        connection.execute(
+            "INSERT OR REPLACE INTO recording_bounds VALUES (?, ?, ?)",
+            (identifier, *bounds),
+        )
+
+
+def _save_recording_calibration(
+    connection: sqlite3.Connection,
+    identifier: str,
+    calibration: CalibrationOverrides,
+) -> None:
+    """Write an admitted reference recipe within the caller's transaction."""
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS recording_calibration (source_sha256 TEXT PRIMARY KEY, "
+        "gravity_index INTEGER, incline_index INTEGER, algorithm_version TEXT NOT NULL, "
+        "window_samples INTEGER NOT NULL)",
+    )
+    if not calibration.active:
+        connection.execute(
+            "DELETE FROM recording_calibration WHERE source_sha256 = ?",
+            (identifier,),
+        )
+    else:
+        connection.execute(
+            "INSERT OR REPLACE INTO recording_calibration VALUES (?, ?, ?, ?, ?)",
+            (
+                identifier,
+                calibration.gravity_index,
+                calibration.incline_index,
+                calibration.algorithm_version,
+                calibration.window_samples,
+            ),
+        )
+
+
 class Appearance(StrEnum):
     DARK = "dark"
     LIGHT = "light"
@@ -79,6 +127,31 @@ _TIMESTAMP = TypeAdapter(FiniteFloat)
 
 
 class Preferences:
+    def remember_recording_markers(
+        self,
+        source: ImportSuccess,
+        bounds: tuple[int, int] | None,
+        calibration: CalibrationOverrides,
+    ) -> bool:
+        """Atomically save/reset all marker choices after numerical admission.
+
+        Invalid choices raise before writing; storage failure leaves the previous
+        transaction intact and returns False. Original source evidence is retained.
+        """
+        if bounds is not None:
+            bounds = _recording_bounds(bounds)
+            if bounds[1] >= len(source.recording.motion.acceleration):
+                raise ValueError("Ride markers outside recording")
+        validate_calibration_references(source, calibration, calculation_time=datetime.now(UTC))
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            with closing(sqlite3.connect(self.path, timeout=0.1)) as connection, connection:
+                _save_recording_bounds(connection, source.source_sha256, bounds)
+                _save_recording_calibration(connection, source.source_sha256, calibration)
+            return True
+        except OSError, sqlite3.Error, ValueError:
+            return False
+
     def recording_calibration(self, source_sha256: str) -> CalibrationOverrides | None:
         """Read a versioned reference recipe; corrupt/unsupported rows stay untouched."""
         identifier = _recording_hash(source_sha256)
@@ -110,27 +183,7 @@ class Preferences:
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with closing(sqlite3.connect(self.path, timeout=0.1)) as connection, connection:
-                connection.execute(
-                    "CREATE TABLE IF NOT EXISTS recording_calibration ("
-                    "source_sha256 TEXT PRIMARY KEY, gravity_index INTEGER, incline_index INTEGER, "
-                    "algorithm_version TEXT NOT NULL, window_samples INTEGER NOT NULL)",
-                )
-                if not calibration.active:
-                    connection.execute(
-                        "DELETE FROM recording_calibration WHERE source_sha256 = ?",
-                        (identifier,),
-                    )
-                else:
-                    connection.execute(
-                        "INSERT OR REPLACE INTO recording_calibration VALUES (?, ?, ?, ?, ?)",
-                        (
-                            identifier,
-                            calibration.gravity_index,
-                            calibration.incline_index,
-                            calibration.algorithm_version,
-                            calibration.window_samples,
-                        ),
-                    )
+                _save_recording_calibration(connection, identifier, calibration)
             return True
         except OSError, sqlite3.Error, ValueError:
             return False
@@ -194,20 +247,7 @@ class Preferences:
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with closing(sqlite3.connect(self.path, timeout=0.1)) as connection, connection:
-                connection.execute(
-                    "CREATE TABLE IF NOT EXISTS recording_bounds (source_sha256 TEXT PRIMARY KEY, "
-                    "first_sample INTEGER NOT NULL, last_sample INTEGER NOT NULL)",
-                )
-                if bounds is None:
-                    connection.execute(
-                        "DELETE FROM recording_bounds WHERE source_sha256 = ?",
-                        (identifier,),
-                    )
-                else:
-                    connection.execute(
-                        "INSERT OR REPLACE INTO recording_bounds VALUES (?, ?, ?)",
-                        (identifier, *bounds),
-                    )
+                _save_recording_bounds(connection, identifier, bounds)
             return True
         except OSError, sqlite3.Error, ValueError:
             return False
