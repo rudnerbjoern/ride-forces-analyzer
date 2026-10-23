@@ -42,7 +42,7 @@ historical acceptance reports are not maintained.
 - [Provisional airtime context](implementation/AIRTIME.md) and
   [separate opt-in airtime events](implementation/AIRTIME_EVENTS.md).
 - [Current screenshots, reference settings and image license](images/README.md).
-- [English/German presentation](development/LOCALIZATION.md).
+- [Localization: English, German and French](development/LOCALIZATION.md).
 - Import APIs: [service](development/IMPORT_SERVICE.md), [models](development/CANONICAL_MODELS.md),
   [decoder](development/STRICT_DECODING.md), [motion](development/MOTION_PARSING.md),
   [metadata/GPS](development/OPTIONAL_PARSING.md).

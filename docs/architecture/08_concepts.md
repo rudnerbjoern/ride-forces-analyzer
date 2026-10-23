@@ -189,9 +189,11 @@ dialogs and rejects callbacks for destroyed windows through their Qt context.
 Native OS file pickers retain system-controlled appearance.
 
 Qt-independent `i18n` separates English templates from opaque values.
-German formatting affects displayed numbers, not source tokens or replay clocks.
+Its typed language registry supplies English, German and French names, catalogs,
+locales and number separators to UI, storage and offline rendering. Formatting
+affects displayed numbers, not source tokens or replay clocks.
 Weak Qt bindings update controls and dropdown geometry; the installed Qt catalog
-supplies standard German dialog labels. Diagnostics keep original codes/paths and
+supplies standard dialog labels for the selected language. Diagnostics keep original codes/paths and
 messages alongside localized explanations. Export settings snapshot their own
 language independently of the UI. See [localization](../development/LOCALIZATION.md).
 
@@ -219,7 +221,8 @@ per-export edits and preset/batch frame rates remain independent. Missing folder
 storage fall back to native dialog defaults without blocking imports or exports.
 The same preferences store retains the last selected UI language and appearance;
 invalid or unavailable values fall back to the preferred OS display language
-(German when German, otherwise English) and system appearance. System appearance
+(a registered language matching the primary OS display language, otherwise English)
+and system appearance. System appearance
 follows Qt's effective OS color scheme and change notifications; unknown means dark.
 Explicit light/dark preferences override OS changes.
 Update preferences store the optional daily startup check, last attempt time and

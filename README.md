@@ -17,7 +17,7 @@ interactive charts and 4K video overlays on Windows, Linux and macOS.
 · **[Watch the Manta demo](https://youtu.be/tsRzD416voU)**
 · **[User guides](docs/README.md#for-users)**
 
-Free and open source · Offline processing · English and German · Light and dark themes
+Free and open source · Offline processing · English, German and French · Light and dark themes
 
 ![Voltron Nevera in the dark workspace, showing three force curves, a colored airtime context strip, current Ejector Airtime and visible-range extrema](docs/images/workspace-dark.png)
 
@@ -173,7 +173,7 @@ overlay and place it above your footage.
 
 ## Make the workspace yours
 
-Choose **English or German** and **Dark, Light, System, Falcons Flight, Loch Ness, Manta, Red Force, Slinky Dog Dash, Taron, Top Thrill 2 or Verbolten** appearance in
+Choose **English, German or French** and **Dark, Light, System, Falcons Flight, Loch Ness, Manta, Red Force, Slinky Dog Dash, Taron, Top Thrill 2 or Verbolten** appearance in
 **Settings → Application**. Your saved choices are remembered. The chart adapts
 to the available window space; smaller windows let you switch between the chart
 and inspector.

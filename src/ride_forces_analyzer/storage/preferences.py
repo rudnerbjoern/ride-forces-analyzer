@@ -14,7 +14,7 @@ from pydantic import FiniteFloat, TypeAdapter
 
 from .exports import default_database_path
 from ride_forces_analyzer.rendering.model import EXPORT_FRAME_RATES, FrameRate
-from ride_forces_analyzer.i18n import Language
+from ride_forces_analyzer.i18n import LANGUAGES, Language
 from typing import Literal
 from math import isfinite
 import re
@@ -292,7 +292,10 @@ class Preferences:
     def language(self, default: Language = "en") -> Language:
         default = _LANGUAGE.validate_python(default, strict=True)
         value = self._read("language")
-        return "de" if value == "de" else "en" if value == "en" else default
+        for language in LANGUAGES:
+            if value == language:
+                return language
+        return default
 
     def appearance(self) -> Appearance:
         value = self._read("appearance")

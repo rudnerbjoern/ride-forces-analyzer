@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ride_forces_analyzer.i18n import Language, tr
+from ride_forces_analyzer.i18n import LANGUAGE_CHOICES, LANGUAGES, Language, tr
 from ride_forces_analyzer.rendering.model import EXPORT_FRAME_RATES, ExportSettings
 from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 from ride_forces_analyzer.storage.map_tiles import TileCache
@@ -45,8 +45,8 @@ class SettingsDialog(QDialog):
         application_form = QFormLayout(application)
         self.language = QComboBox()
         bind(self.language, tr("Language"), "accessibleName")
-        items(self.language, ["English", "Deutsch"])
-        self.language.setCurrentIndex(1 if language == "de" else 0)
+        items(self.language, [definition.name for definition in LANGUAGES.values()])
+        self.language.setCurrentIndex(LANGUAGE_CHOICES.index(language))
         application_form.addRow(bind(QLabel(), tr("Language")), self.language)
         self.appearance = QComboBox()
         bind(self.appearance, tr("Appearance"), "accessibleName")

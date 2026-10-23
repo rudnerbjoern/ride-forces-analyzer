@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words Pixmap
 
 from ride_forces_analyzer import __version__
-from ride_forces_analyzer.i18n import Language, tr
+from ride_forces_analyzer.i18n import LANGUAGE_CHOICES, Language, tr
 from .translation import bind, items, set_ui_language, system_ui_language
 
 from pathlib import Path
@@ -719,11 +719,11 @@ class ExplorerWindow(QMainWindow):
     @Slot(int)
     def set_ui_language(self, index: int) -> None:
         application = QApplication.instance()
-        if not isinstance(application, QApplication):
+        if not isinstance(application, QApplication) or not 0 <= index < len(LANGUAGE_CHOICES):
             return
-        self.ui_language = "de" if index == 1 else "en"
+        self.ui_language = LANGUAGE_CHOICES[index]
         set_ui_language(application, self.ui_language)
-        self.preferences.remember_language("de" if index == 1 else "en")
+        self.preferences.remember_language(self.ui_language)
         for window in application.topLevelWidgets():
             if isinstance(window, ExplorerWindow):
                 window.ui_language = self.ui_language

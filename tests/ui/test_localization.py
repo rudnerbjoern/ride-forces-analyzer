@@ -1,4 +1,4 @@
-"""Native language switching and German layouts over unchanged recording data."""
+"""Native language switching and localized layouts over unchanged recording data."""
 
 # cspell:words Aufnahme öffnen Ansicht zurücksetzen Kalibrierte Kräfte Reihe Fahrtzeit Messpunkte zurück Abbrechen prüfen Bahn Schließen Hochformat Meine Vorgabe exportieren Quellwert bleibt erhalten
 # cspell:words Oben Unten rechts Schwerkraftmarkierung Neigungsmarkierung Startmarkierung Endmarkierung Schwerkraft hier setzen Original Neigung
@@ -60,7 +60,7 @@ def test_settings_choices_fit_after_repeated_language_switches(
     dialog = window.findChild(SettingsDialog, "settingsDialog")
     assert dialog is not None
     try:
-        for language in (0, 1, 0, 1):
+        for language in (0, 1, 2, 0, 2):
             window.set_ui_language(language)
             QApplication.processEvents()
             assert_combo_text_fits(dialog.appearance)
@@ -76,7 +76,7 @@ def test_settings_choices_fit_after_repeated_language_switches(
     [("1.5", (2560, 1400), (2200, 1200)), ("2", (1920, 1040), (1800, 960))],
     ids=["4k-150-percent", "4k-200-percent"],
 )
-def test_german_export_in_4k_workspace_keeps_controls_reachable(
+def test_localized_export_in_4k_workspace_keeps_controls_reachable(
     scale_factor: str,
     workspace_size: tuple[int, int],
     dialog_size: tuple[int, int],
@@ -119,7 +119,7 @@ def test_german_export_in_4k_workspace_keeps_controls_reachable(
                 assert scroll is not None and scroll.verticalScrollBar().maximum() == 0
                 assert dialog.next.isVisible() and dialog.rect().contains(dialog.next.geometry())
                 assert dialog.next.text() == 'Export prüfen →'
-                for language in (0, 1, 0, 1):
+                for language in (0, 1, 2, 0, 2):
                     window.set_ui_language(language)
                     app.processEvents()
                     for parent in (window, dialog):
@@ -147,7 +147,7 @@ def test_german_export_in_4k_workspace_keeps_controls_reachable(
                     assert scroll.verticalScrollBar().maximum() > 0
                     assert dialog.next.isVisible() and dialog.rect().contains(dialog.next.geometry())
                     assert dialog.frameGeometry().height() <= available.height()
-                print('PASS: native German export in 4K layout with visible settings and actions')
+                print('PASS: native localized export in 4K layout with visible settings and actions')
             except BaseException as error:
                 failures.append(error)
             finally:
@@ -175,7 +175,7 @@ def test_german_export_in_4k_workspace_keeps_controls_reachable(
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "PASS: native German export" in result.stdout
+    assert "PASS: native localized export" in result.stdout
 
 
 def test_language_switch_preserves_state_and_source_metadata(

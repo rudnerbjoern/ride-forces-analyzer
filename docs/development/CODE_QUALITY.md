@@ -159,8 +159,8 @@ Desktop layout references model a 3840 × 2160 editing display:
 
 | Scaling | Logical working area, reserving taskbar space | Use                                                             |
 | ------- | --------------------------------------------- | --------------------------------------------------------------- |
-| 150%    | 2560 × 1400                                   | Export layouts with English/German text                         |
-| 200%    | 1920 × 1040                                   | Shared interactions and export layouts with English/German text |
+| 150%    | 2560 × 1400                                   | Export layouts with EN/DE/FR text                               |
+| 200%    | 1920 × 1040                                   | Shared interactions and export layouts with EN/DE/FR text       |
 
 These are test-controlled Qt client sizes, independent of the physical monitor.
 Native startup separately checks actual desktop constraints. Video resolution and
@@ -184,7 +184,7 @@ runs separately. No file modification or external-target fetching.
 | Check              | Configuration / behavior                                                                                                                                        |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Markdownlint       | `.markdownlint-cli2.jsonc`: root Markdown, `docs/`, `.github/`, `.agents/skills/`; default rules except MD013/MD036, aligned MD060 tables; respects Git ignores |
-| CSpell             | `.cspell.json`: English, case-insensitive language settings, Python dictionary; code/docs/configuration patterns; shared with VS Code                           |
+| CSpell             | English default, German/French catalog overrides; case-insensitive settings and Python dictionary; shared CLI/VS Code configuration                             |
 | Local links        | `tests/docs/documentation.test.mjs`: markdown-it parses root/docs/GitHub/skill Markdown links/images; targets must exist inside the repository                  |
 | Website navigation | Same test file checks layout navigation against README level-two headings                                                                                       |
 

@@ -30,6 +30,9 @@ export function classifyChanges(filenames) {
   let dependencies = false;
   let posix = false;
   for (const filename of filenames) {
+    if (filename === ".cspell.json") {
+      dependencies = true;
+    }
     const ci = ciInputs.has(filename)
       || filename.startsWith(".github/workflows/") || filename.startsWith(".github/scripts/")
       || filename.startsWith("tests/ci/") || filename.startsWith("tests/dependencies/");

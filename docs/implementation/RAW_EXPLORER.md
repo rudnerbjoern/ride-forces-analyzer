@@ -14,7 +14,7 @@ Product scope belongs in the [roadmap](../ROADMAP.md).
 
 | Area                 | Contract                                                                                                                                                        |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| About                | Package version, purpose, copyright, licenses, project/source-app links and independence from Ride Forces; live English/German and light/dark appearance        |
+| About                | Version, purpose, copyright, licenses, app/RFDB links and independence; live English/German/French and appearance themes                                        |
 | Open                 | Local `.forces` / `.zforces` in one dialog; background import/analysis preserves bytes, unknown fields, absent sensors and source arrays                        |
 | Failure/cancellation | Retain the last usable recording and service binding                                                                                                            |
 | Folder memory        | Successful imports remember their directory across restarts in `preferences.sqlite3` beside the export database; cancellation/failure preserves previous folder |
@@ -110,7 +110,7 @@ No vertical zoom.
   clamp navigation, and each shortcut belongs to its recording window.
 - A fixed-width Play/Pause icon button sits immediately right of the sample slider;
   disabled without a recording or when only one sample exists. Tooltips and
-  accessible names follow the English/German UI language.
+  accessible names follow the English/German/French UI language.
 - The adjacent speed dropdown selects 0.5×, 1× or 2×; 1× is the default on import.
   Speed changes preserve continuous position and play/pause state.
 - Play advances from the selected integer sample at the chosen multiple of the

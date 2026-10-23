@@ -13,7 +13,7 @@ from typing import Literal, overload
 
 from ride_forces_analyzer.analysis.models import SampleValues
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, RecordingAnalysis
-from ride_forces_analyzer.i18n import Language
+from ride_forces_analyzer.i18n import LANGUAGES, Language
 from .layouts.contracts import LayoutPosition
 
 FrameRate = int | Literal["60000/1001"]
@@ -56,7 +56,7 @@ class ExportSettings:
         return "59.94" if self.fps == "60000/1001" else str(self.fps)
 
     def __post_init__(self) -> None:
-        if self.language not in ("en", "de"):
+        if self.language not in LANGUAGES:
             raise ValueError("Unsupported overlay language")
         if self.aspect not in ("landscape", "portrait"):
             raise ValueError("Unknown export aspect ratio")

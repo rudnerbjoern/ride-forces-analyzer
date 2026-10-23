@@ -135,8 +135,8 @@ left/right or airtime interpretation. See [forces and airtime](FORCES_AND_AIRTIM
 Use **Inspector** to access the side panel; in narrow windows it switches between
 the chart and inspector views. **Technical details** identifies the source format
 (Ride Forces or RFDB) and declared schema version. RFDB files without a version
-are explicitly shown as **No schema version**. Under **Settings → Application**, choose English
-or German and personalize the workspace with a theme. See
+are explicitly shown as **No schema version**. Under **Settings → Application**, choose
+**English**, **Deutsch** or **Français** and personalize the workspace with a theme. See
 [Choose your appearance](APPEARANCE.md) for the available styles and how to preview them.
 Changing appearance or language keeps your recording, selection, zoom and smoothing.
 

@@ -38,7 +38,7 @@ def test_recording_markers_tolerate_unavailable_storage(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     ("method", "invalid"),
     [
-        ("remember_language", "fr"),
+        ("remember_language", "es"),
         ("remember_language", b"de"),
         ("remember_language", None),
         ("remember_appearance", "blue"),
@@ -68,7 +68,7 @@ def test_recording_markers_tolerate_unavailable_storage(tmp_path: Path) -> None:
         ("remember_recording", None),
         ("remember_export", "ride.mov"),
         ("remember_export", 123),
-        ("language", "fr"),
+        ("language", "es"),
         ("update_check_due", "100000"),
         ("update_check_due", float("nan")),
     ],
@@ -106,7 +106,7 @@ def test_invalid_stored_preferences_keep_safe_defaults() -> None:
             connection.executemany(
                 "INSERT OR REPLACE INTO preferences (key, value) VALUES (?, ?)",
                 [
-                    ("language", "fr"),
+                    ("language", "es"),
                     ("appearance", "blue"),
                     ("automatic_updates", "1"),
                     ("restore_last_file", "1"),

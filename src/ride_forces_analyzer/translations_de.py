@@ -1,12 +1,11 @@
-"""Reviewed German UI catalog; English source templates are the stable keys.
+"""German presentation catalog; English templates remain the source keys.
 
 Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-# Catalog data contains German prose; English source templates are also checked
-# at their application call sites. German wording is reviewed with native UI checks.
-# cspell:disable
+# CSpell checks English keys and German translations using the file override.
+# cspell:words AUSSERHALB Drittanbieterhinweise Kalibrierungsmarkierung Kalibrierungsreferenz Markierungsindex Metadatenfeld Rundungsgrenzen Vertikalkraft
 
 GERMAN: dict[str, str] = {
     "Set start here": "Start hier setzen",

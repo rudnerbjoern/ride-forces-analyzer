@@ -47,10 +47,10 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 - Presets/immutable batch jobs explicitly retain aspect, overlay language, vertical
   direction and analysis recipe; incomplete saved settings are rejected.
   Mixed-aspect batches are supported.
-- Overlay language is English/German, initially following UI language but independently
+- Overlay language is English/German/French, initially following UI language but independently
   selectable. Production previews/frames share localized labels/numbers.
   Replay clocks, source values, geometry, signs and units remain unchanged.
-  German glyph bounds are checked in every profile/aspect. Known layout names
+  German and French glyph bounds are checked in every profile/aspect. Known layout names
   translate; Flow Ribbon and G-Orbit retain their identities.
 
 ### Assistant and previews

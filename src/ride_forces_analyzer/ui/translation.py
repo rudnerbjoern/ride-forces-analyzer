@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QTableWidget,
 )
 
-from ride_forces_analyzer.i18n import Language, Text, set_language
+from ride_forces_analyzer.i18n import LANGUAGES, Language, Text, set_language
 
 T = TypeVar("T", bound=QObject | QGraphicsSimpleTextItem)
 _bindings: WeakKeyDictionary[QObject, dict[str, Text]] = WeakKeyDictionary()
@@ -31,7 +31,10 @@ def system_ui_language() -> Language:
     """Use the preferred OS display language, not Qt's mutable default locale."""
     languages = QLocale.system().uiLanguages()
     primary = languages[0].lower().replace("_", "-").split("-")[0] if languages else ""
-    return "de" if primary == "de" else "en"
+    for language in LANGUAGES:
+        if primary == language:
+            return language
+    return "en"
 
 
 def _apply(widget: QObject, prop: str, value: str) -> None:
@@ -86,15 +89,15 @@ def headers(table: QTableWidget, values: Sequence[str]) -> None:
 def set_ui_language(application: QApplication, language: Language) -> None:
     global _qt_translator
     set_language(language)
-    locale = QLocale("de_DE" if language == "de" else "en_US")
+    locale = QLocale(LANGUAGES[language].locale)
     QLocale.setDefault(locale)
     if _qt_translator is not None:
         application.removeTranslator(_qt_translator)
         _qt_translator = None
-    if language == "de":
+    if language != "en":
         translator = QTranslator(application)
         if translator.load(
-            "qtbase_de",
+            f"qtbase_{language}",
             QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath),
         ):
             application.installTranslator(translator)
