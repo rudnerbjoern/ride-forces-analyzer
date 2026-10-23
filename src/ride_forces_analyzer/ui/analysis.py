@@ -4,12 +4,13 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from collections.abc import Callable
 
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, Qt, Signal, Slot
 
 from ride_forces_analyzer.analysis.recording import (
+    AnalysisConfiguration,
     AnalysisFailed,
     AnalysisInvalidated,
     AnalysisState,
@@ -49,10 +50,12 @@ class _SmoothingWorker(QRunnable):
         generation: int,
         window: int,
         report: Callable[[object], None],
+        configuration: AnalysisConfiguration | None = None,
     ) -> None:
         super().__init__()
         self.binding, self.generation, self.window = binding, generation, window
         self.report = report
+        self.configuration = configuration
 
     @Slot()
     def run(self) -> None:
@@ -61,7 +64,13 @@ class _SmoothingWorker(QRunnable):
             return
         binding.running_generation = self.generation
         try:
-            binding.service.request_smoothing(self.window, calculation_time=datetime.now(UTC))
+            if self.configuration is None:
+                binding.service.request_smoothing(self.window, calculation_time=datetime.now(UTC))
+            else:
+                binding.service.request_configuration(
+                    self.configuration,
+                    calculation_time=datetime.now(UTC),
+                )
         except Exception as error:
             if binding.active:
                 self.report(_WorkerFailure(binding, self.generation, str(error)))
@@ -123,6 +132,26 @@ class AnalysisController(QObject):
         binding.generation += 1
         self._set_pending(True)
         self.pool.start(_SmoothingWorker(binding, binding.generation, window, self._received.emit))
+
+    def request_ride_bounds(self, bounds: tuple[int, int] | None) -> None:
+        """Change markers through the same revision-guarded worker queue."""
+        binding = self._binding
+        if self._closed or binding is None:
+            return
+        configuration = binding.service.get_state().requested_configuration
+        if configuration is None:
+            return
+        binding.generation += 1
+        self._set_pending(True)
+        self.pool.start(
+            _SmoothingWorker(
+                binding,
+                binding.generation,
+                0,
+                self._received.emit,
+                replace(configuration, ride_bounds=bounds),
+            ),
+        )
 
     @Slot(object)
     def _apply(self, payload: object) -> None:

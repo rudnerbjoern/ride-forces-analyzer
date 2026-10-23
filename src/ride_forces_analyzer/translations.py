@@ -9,6 +9,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:disable
 
 GERMAN: dict[str, str] = {
+    "Set start here": "Start hier setzen",
+    "Set end here": "Ende hier setzen",
+    "Reset start to original": "Start auf Original zurücksetzen",
+    "Reset end to original": "Ende auf Original zurücksetzen",
+    "Reset all ride markers": "Alle Fahrtmarkierungen zurücksetzen",
+    "Ride markers applied for this session; local saving failed.": "Fahrtmarkierungen für diese Sitzung übernommen; lokales Speichern fehlgeschlagen.",
     "Export Analyzer JSON…": "Analyzer-JSON exportieren…",
     "Export Analyzer JSON": "Analyzer-JSON exportieren",
     "Replace existing file?": "Vorhandene Datei ersetzen?",

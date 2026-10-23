@@ -17,7 +17,7 @@ from time import monotonic
 from math import ceil
 
 from PySide6.QtCharts import QCategoryAxis, QChart, QChartView, QLineSeries, QValueAxis
-from PySide6.QtCore import QElapsedTimer, QPointF, Qt, QThreadPool, QTimer, Signal, Slot
+from PySide6.QtCore import QElapsedTimer, QPoint, QPointF, Qt, QThreadPool, QTimer, Signal, Slot
 from PySide6.QtGui import (
     QAction,
     QCloseEvent,
@@ -139,6 +139,7 @@ class SelectionSpinBox(QSpinBox):
 class TimeChartView(QChartView):
     zoom_requested = Signal(float, float)
     sample_requested = Signal(float)
+    marker_menu_requested = Signal(float, QPoint)
 
     def __init__(self, chart: QChart) -> None:
         super().__init__(chart)
@@ -146,6 +147,10 @@ class TimeChartView(QChartView):
         self._dragged = False
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.RightButton:
+            self._press_position = None
+            event.accept()
+            return
         self._press_position = (
             event.position() if event.button() == Qt.MouseButton.LeftButton else None
         )
@@ -163,6 +168,17 @@ class TimeChartView(QChartView):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.RightButton:
+            chart = self.chart()
+            point = chart.mapFromScene(self.mapToScene(event.position().toPoint()))
+            plot = chart.plotArea()
+            if plot.contains(point) and plot.width() > 0:
+                self.marker_menu_requested.emit(
+                    (point.x() - plot.left()) / plot.width(),
+                    self.mapToGlobal(event.position().toPoint()),
+                )
+            event.accept()
+            return
         clicked = (
             event.button() == Qt.MouseButton.LeftButton
             and self._press_position is not None
@@ -196,6 +212,7 @@ class ExplorerWindow(QMainWindow):
         super().__init__()
         self._application_title = settings.window_title
         self.preferences = Preferences()
+        self._marker_save_failed = False
         self.updates = UpdateController(self, self.preferences)
         language = (
             settings.language
@@ -352,6 +369,7 @@ class ExplorerWindow(QMainWindow):
         self.chart_view = TimeChartView(self.chart)
         self.chart_view.zoom_requested.connect(self.zoom_wheel)
         self.chart_view.sample_requested.connect(self.select_chart_sample)
+        self.chart_view.marker_menu_requested.connect(self.show_marker_menu)
         self.chart_view.setObjectName("recordingChart")
         self.chart_view.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.chart_view.setRubberBand(QChartView.RubberBand.HorizontalRubberBand)
@@ -1039,6 +1057,7 @@ class ExplorerWindow(QMainWindow):
             self._failed(tr("Unable to display recording."))
             return
         outcome = outcome.with_calibration(outcome.calibration_available)
+        self._marker_save_failed = False
         self._pause_playback()
         if self.analysis_controller is not None:
             self.analysis_controller.bind_snapshot(outcome.analysis)
@@ -1142,7 +1161,7 @@ class ExplorerWindow(QMainWindow):
         self._redraw_value_labels()
         self._redraw_time_labels()
         self._redraw_source_markers()
-        self.slider.setValue(outcome.source.recording.indices.start)
+        self.slider.setValue(outcome.ride_bounds[0])
         self.show_sample(self.slider.value())
         self._finish_loading()
         bind(self.statusBar(), "", "toolTip")
@@ -1153,6 +1172,55 @@ class ExplorerWindow(QMainWindow):
             else tr("Loaded — drag to zoom, navigate samples or select an interval"),
             "message",
         )
+
+    @Slot(float, QPoint)
+    def show_marker_menu(self, fraction: float, position: QPoint) -> None:
+        if (
+            self.data is None
+            or self.data.analysis is None
+            or self.analysis_controller is None
+            or self.analysis_controller.pending
+            or not self.open_action.isEnabled()
+        ):
+            return
+        self._pause_playback()
+        source = self.data.source
+        low, high = self.axis_x.min(), self.axis_x.max()
+        sample = self.data.sample_at_time(low + fraction * (high - low))
+        first, last = self.data.ride_bounds
+        indices = self.data.source.recording.indices
+        original = indices.start, indices.end
+        menu = QMenu(self)
+
+        def add(text: str, bounds: tuple[int, int], enabled: bool) -> None:
+            action = bind(QAction(menu), tr(text))
+            action.setEnabled(enabled)
+
+            def apply() -> None:
+                if self.data is not None and self.data.source is source:
+                    self._change_ride_markers(None if bounds == original else bounds)
+
+            action.triggered.connect(apply)
+            menu.addAction(action)
+
+        add("Set start here", (sample, last), sample <= last)
+        add("Set end here", (first, sample), sample >= first)
+        menu.addSeparator()
+        add("Reset start to original", (indices.start, last), indices.start <= last)
+        add("Reset end to original", (first, indices.end), first <= indices.end)
+        add("Reset all ride markers", original, True)
+        menu.exec(position)
+        menu.deleteLater()
+
+    @Slot(object)
+    def _change_ride_markers(self, bounds: tuple[int, int] | None) -> None:
+        if self.data is None or self.analysis_controller is None:
+            return
+        self._marker_save_failed = not self.preferences.remember_recording_bounds(
+            self.data.source.source_sha256,
+            bounds,
+        )
+        self.analysis_controller.request_ride_bounds(bounds)
 
     @Slot()
     def show_gps(self) -> None:
@@ -1290,8 +1358,23 @@ class ExplorerWindow(QMainWindow):
 
         if not isinstance(outcome, RecordingAnalysis):
             return
+        markers_changed = self.data.analysis is not None and (
+            outcome.configuration.ride_bounds != self.data.analysis.configuration.ride_bounds
+        )
         self.data = self.data.with_analysis(outcome)
         self._refresh_analysis_view()
+        if markers_changed:
+            self._pause_playback()
+            self.axis_x.setRange(*self.data.default_time_range)
+            self._redraw_time_labels()
+            self.update_selection()
+        if self._marker_save_failed:
+            bind(
+                self.statusBar(),
+                tr("Ride markers applied for this session; local saving failed."),
+                "message",
+            )
+            return
         bind(
             self.statusBar(),
             tr("Loaded — drag to zoom, navigate samples or select an interval"),
@@ -1563,7 +1646,7 @@ class ExplorerWindow(QMainWindow):
             return
         low, high = self.axis_x.min(), self.axis_x.max()
         stride = max(1, round(round((high - low) * self.data.sample_rate / 5, 9)))
-        anchor = self.data.source.recording.indices.start or 0
+        anchor = self.data.ride_bounds[0]
         first_tick = ceil((max(0.0, low * self.data.sample_rate) - anchor - 1e-9) / stride)
         first = anchor + first_tick * stride
         indices = range(

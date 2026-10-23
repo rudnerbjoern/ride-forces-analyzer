@@ -36,6 +36,31 @@ Live display behavior belongs to the [explorer contract](../implementation/RAW_E
 - Manta unfiltered vertical extrema: approximately -4.43665/+3.13443, distinct from
   the smoothed display.
 
+## Reference-calibration evidence
+
+- Original Gravity/Incline indices from all five pinned `.forces` recordings:
+  centered 5-sample acceleration means (index -2 through index +2), normalized
+  vertical, longitudinal projection perpendicular to vertical with original sign,
+  lateral from longitudinal cross vertical.
+- All 45 direction components match the stored original axes after rounding to
+  three decimals. Unrounded axis-angle differences are below 0.04 degrees;
+  maximum force difference with full-history 11-sample display smoothing is below
+  0.0029 on the existing provisional g scale over the original ride intervals.
+- Centered odd windows 1–51 and 101 were compared; five samples give the smallest
+  maximum axis-angle error for every fixture. With 11 samples, longitudinal errors
+  reach 17.36 degrees for Taron and 8.37 degrees for Voltron Nevera.
+- Replacing the Incline acceleration mean with the gravity mean at window 5
+  gives longitudinal errors of 32.70 degrees for Taron and 62.47 degrees for Voltron.
+  Acceleration minus gravity also fails to reproduce the original axes. Iron Gwazi
+  has no gravity data and reproduces its axes from acceleration alone.
+- This supports a fixed calibration window independent of display smoothing.
+  It does not establish the app's general algorithm, unrounded internal precision,
+  boundary handling or physical calibration validity. New-reference edge handling
+  is the explicit [calibration contract](../requirements/USER_CALIBRATION.md#reference-calibration-rule).
+- The [calibration tests](../../tests/analysis/test_calibration.py) retain the
+  original-axis comparison at source precision using the implemented basis factory.
+  Shared-snapshot/service tests cover the calibration dependency graph separately.
+
 ## Corpus extrema regression
 
 | Recording      | Source minimum | Reconstructed minimum | Source maximum | Reconstructed maximum |

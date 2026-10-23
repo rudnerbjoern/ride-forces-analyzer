@@ -23,6 +23,21 @@ from ride_forces_analyzer.importers import ImportSuccess, import_forces, import_
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
 
+def test_user_start_marker_defines_csv_replay_zero(export_directory: Path) -> None:
+    original = snapshot()
+    analysis = original.with_configuration(
+        replace(original.configuration, ride_bounds=(1, 3)),
+        revision=1,
+        calculation_time=datetime.now(UTC),
+    )
+    destination = export_directory / "markers.csv"
+    export_csv(analysis, destination, 1, 3)
+    exported = rows(destination)
+    assert exported[0]["Timestamp"] == "00:00.00"
+    assert float(exported[0]["replay_seconds"]) == 0
+    assert analysis.source.recording.indices.start == 2
+
+
 def test_shared_measurement_headers_match_the_source_app_csv() -> None:
     reference = next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.csv"))
     with reference.open(encoding="utf-8-sig", newline="") as stream:

@@ -209,7 +209,7 @@ def test_dirty_stage_dependencies(configuration: AnalysisConfiguration, change: 
         }[change]
     elif change == "profile":
         changed = replace(configuration, profile=AnalysisProfile())
-        expected = set(AnalysisStage) - {AnalysisStage.TIME}
+        expected = set(AnalysisStage) - {AnalysisStage.TIME, AnalysisStage.CALIBRATION}
     else:
         changed = replace(
             configuration,

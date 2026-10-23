@@ -23,6 +23,30 @@ from tests.exports.test_csv_export import snapshot
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
 
+def test_effective_markers_keep_original_indices_and_share_replay_zero(
+    export_directory: Path,
+) -> None:
+    original = snapshot()
+    analysis = original.with_configuration(
+        replace(original.configuration, ride_bounds=(1, 3)),
+        revision=1,
+        calculation_time=datetime.now(UTC),
+    )
+    app_path, analyzer_path = (
+        export_directory / "markers.json",
+        export_directory / "markers-analyzer.json",
+    )
+    export_json(analysis, app_path, 1, 3)
+    export_analyzer_json(analysis, analyzer_path, 1, 3)
+    app = json.loads(app_path.read_text())
+    analyzer = json.loads(analyzer_path.read_text())
+    assert app["Timestamp"][0] == "00:00.00" and app["replay_seconds"][0] == 0
+    assert app["metadata"]["effective_ride_bounds"] == [1, 3]
+    assert app["metadata"]["source_indices"]["start"] == original.source.recording.indices.start
+    assert analyzer["recording"]["effective_ride_bounds"] == [1, 3]
+    assert analyzer["time"]["replay_origin"] == 1
+
+
 @pytest.mark.parametrize("calibrated", [True, False])
 @pytest.mark.parametrize("rate", [25.0, 50.0, 59.94])
 def test_schema_preserves_prepared_values_time_quality_and_missingness(

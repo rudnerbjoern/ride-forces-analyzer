@@ -174,7 +174,11 @@ configuration. Close/reopen invalidates load generations and bindings, releases
 subscriptions and prevents late imports, errors or results from affecting a new
 source. The adapter and service do not accumulate snapshot histories.
 
-Projection, source/time and independent orientation survive smoothing changes.
+Projection, source/time, reference calibration and independent orientation survive
+smoothing changes. Calibration requests use the same service revision/delivery
+flow: Gravity invalidates forces and tilt, while Incline retains tilt. Admission
+failures preserve their calibration diagnostic codes and the last completed
+snapshot. Dependency ownership follows [snapshot reuse](08_concepts.md#snapshot-lifetime-and-reuse).
 The explorer refreshes charts, context strip, selected-sample cards, technical
 details and visible-range extrema from one guarded delivery. Cursor, selection,
 viewport, language and appearance remain presentation state and do not trigger

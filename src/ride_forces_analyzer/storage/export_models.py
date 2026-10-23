@@ -64,7 +64,7 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
     def complete_configuration(cls, value: object, info: ValidationInfo) -> object:
         _require_fields(
             value,
-            {item.name for item in fields(AnalysisConfiguration)},
+            {item.name for item in fields(AnalysisConfiguration)} - {"ride_bounds"},
             "Analysis recipe",
         )
         if isinstance(value, dict):
@@ -118,6 +118,8 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
             "events": asdict(value.events) if value.events is not None else None,
             "context_input": value.context_input,
             "events_input": value.events_input,
+            "ride_bounds": value.ride_bounds,
+            "calibration": asdict(value.calibration),
         }
 
     @field_validator("name", mode="before")
@@ -175,5 +177,5 @@ def make_preset(
         settings=settings,
         smoothing_window=smoothing_window,
         range_mode=range_mode,
-        analysis_configuration=analysis_configuration,
+        analysis_configuration=replace(analysis_configuration, ride_bounds=None),
     )

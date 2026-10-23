@@ -399,11 +399,7 @@ def test_zoom_out_stops_at_recording_bounds(
     assert (window.axis_y.min(), window.axis_y.max()) == fixed_range
     assert window.axis_x.max() - window.axis_x.min() < data.duration
     for _ in range(8):
-        QTest.mouseClick(
-            window.chart_view.viewport(),
-            Qt.MouseButton.RightButton,
-            pos=window.chart.plotArea().center().toPoint(),
-        )
+        window.zoom_wheel(0.5, -4)
         assert (window.axis_y.min(), window.axis_y.max()) == fixed_range
         assert 0 <= window.axis_x.min() < window.axis_x.max() <= data.duration
     assert window.axis_x.min() == 0 and window.axis_x.max() == data.duration

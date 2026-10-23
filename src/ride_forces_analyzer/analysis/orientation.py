@@ -6,13 +6,21 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from math import acos, degrees, hypot
 
-from ride_forces_analyzer.domain import Recording
+from ride_forces_analyzer.domain import Recording, Vector3
 
 
-def orientation_degrees(recording: Recording) -> tuple[float | None, ...]:
-    """Preserve absent/zero gravity as gaps; this is tilt, never yaw or track heading."""
+def orientation_degrees(
+    recording: Recording,
+    *,
+    vertical_direction: Vector3 | None = None,
+) -> tuple[float | None, ...]:
+    """Calculate tilt to an explicit vertical axis or the original source direction.
+
+    Absent/zero gravity remains gaps; this is never yaw or track heading.
+    The optional effective axis changes no source data or force processing.
+    """
     gravity = recording.motion.gravity
-    vertical = recording.vectors.vertical_direction
+    vertical = vertical_direction or recording.vectors.vertical_direction
     count = len(recording.motion.acceleration)
     if gravity is None or vertical is None:
         return (None,) * count

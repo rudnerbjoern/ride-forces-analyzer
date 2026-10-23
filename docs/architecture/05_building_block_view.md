@@ -99,6 +99,8 @@ services are documented only when designed.
 `analysis.smoothing` owns the centered mean and recording-edge policy. These are
 separate from the qualified physical-frame APIs. `analysis.orientation` owns
 independent source-gravity tilt; `analysis.airtime` owns display-context rules.
+`analysis.calibration` admits fixed acceleration references and builds the
+source-bound provisional basis; it does not mutate the imported recording.
 Projection and smoothing have one implementation each, consumed through unified
 snapshots. Scientific comparison tests exercise these snapshots against the
 retained original-file and screenshot evidence.
@@ -110,7 +112,10 @@ Initial preparation uses these shared projection, smoothing, independent orienta
 and context functions, plus configured event detection. Sample views read the prepared buffers without recalculation.
 Reconfiguration reuses stages with matching configuration and input references;
 smoothing retains the original projection and independent orientation. Snapshots
-retain stages, not prior snapshots or a configuration history.
+bind their optional calibration basis to projection; orientation depends only on
+the Gravity choice. The existing service invalidates the affected stages when
+Gravity or Incline changes. Snapshots retain stages, not prior snapshots or a
+configuration history.
 `analysis.events` evaluates explicitly configured provisional airtime episodes
 from the selected vertical force stage. Its versioned rules are independent of
 context confirmation/hysteresis, retain missing-data and boundary limits, and

@@ -382,11 +382,12 @@ class ExplorerData:
     @property
     def markers(self) -> tuple[tuple[str, int], ...]:
         indices = self.source.recording.indices
+        first, last = self.ride_bounds
         return tuple(
             (name, index)
             for name, index in (
-                ("startIndex", indices.start),
-                ("endIndex", indices.end),
+                ("startIndex", first),
+                ("endIndex", last),
                 ("gravityIndex", indices.gravity),
                 ("inclineIndex", indices.incline),
             )
@@ -394,13 +395,25 @@ class ExplorerData:
             and (
                 self.source.recording.source.root is None
                 or name in self.source.recording.source.root
+                or (
+                    self.analysis is not None
+                    and self.analysis.configuration.ride_bounds is not None
+                    and name in ("startIndex", "endIndex")
+                )
             )
         )
 
     @property
-    def default_time_range(self) -> tuple[float, float]:
+    def ride_bounds(self) -> tuple[int, int]:
+        if self.analysis is not None:
+            return self.analysis.ride_bounds
         indices = self.source.recording.indices
-        low, high = self.time_at(indices.start), self.time_at(indices.end)
+        return indices.start, indices.end
+
+    @property
+    def default_time_range(self) -> tuple[float, float]:
+        first, last = self.ride_bounds
+        low, high = self.time_at(first), self.time_at(last)
         if low == high:
             low = max(0.0, min(low, self.duration - 1 / self.sample_rate))
             high = min(self.duration, low + 1 / self.sample_rate)
@@ -425,7 +438,7 @@ class ExplorerData:
 
     def replay_text(self, index: int) -> str:
         self.select(index, index)
-        return format_sample_time(index - self.source.recording.indices.start, self.sample_rate)
+        return format_sample_time(index - self.ride_bounds[0], self.sample_rate)
 
     def time_at(self, index: int) -> float:
         self.select(index, index)

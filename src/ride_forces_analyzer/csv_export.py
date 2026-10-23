@@ -99,7 +99,7 @@ def export_csv(
             sample = analysis.sample(index)
             writer.writerow(
                 (
-                    format_sample_time(index - analysis.time.replay_origin, rate.value),
+                    format_sample_time(index - analysis.replay_origin, rate.value),
                     *_forces(sample.smoothed),
                     sample.combined_g,
                     sample.orientation_degrees,

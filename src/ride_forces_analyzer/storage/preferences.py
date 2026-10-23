@@ -15,6 +15,22 @@ from ride_forces_analyzer.rendering.model import EXPORT_FRAME_RATES, FrameRate
 from ride_forces_analyzer.i18n import Language
 from typing import Literal
 from math import isfinite
+import re
+
+_RECORDING_BOUNDS = TypeAdapter(tuple[int, int])
+
+
+def _recording_hash(value: object) -> str:
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+        raise ValueError("Expected a source SHA-256")
+    return value
+
+
+def _recording_bounds(value: tuple[int, int]) -> tuple[int, int]:
+    first, last = _RECORDING_BOUNDS.validate_python(value, strict=True)
+    if not 0 <= first <= last:
+        raise ValueError("Ride markers must be ordered and nonnegative")
+    return first, last
 
 
 class Appearance(StrEnum):
@@ -53,6 +69,51 @@ _TIMESTAMP = TypeAdapter(FiniteFloat)
 
 
 class Preferences:
+    def recording_bounds(self, source_sha256: str) -> tuple[int, int] | None:
+        """Read optional content-bound markers; missing/unreadable storage is ignored."""
+        identifier = _recording_hash(source_sha256)
+        try:
+            if not self.path.is_file():
+                return None
+            with closing(sqlite3.connect(self.path, timeout=0.1)) as connection:
+                row = connection.execute(
+                    "SELECT first_sample, last_sample FROM recording_bounds WHERE source_sha256 = ?",
+                    (identifier,),
+                ).fetchone()
+            return _recording_bounds(tuple(row)) if row else None
+        except OSError, sqlite3.Error, ValueError:
+            return None
+
+    def remember_recording_bounds(
+        self,
+        source_sha256: str,
+        bounds: tuple[int, int] | None,
+    ) -> bool:
+        """Save/reset local markers, returning False on storage failure; never write a source."""
+        identifier = _recording_hash(source_sha256)
+        if bounds is not None:
+            bounds = _recording_bounds(bounds)
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            with closing(sqlite3.connect(self.path, timeout=0.1)) as connection, connection:
+                connection.execute(
+                    "CREATE TABLE IF NOT EXISTS recording_bounds (source_sha256 TEXT PRIMARY KEY, "
+                    "first_sample INTEGER NOT NULL, last_sample INTEGER NOT NULL)",
+                )
+                if bounds is None:
+                    connection.execute(
+                        "DELETE FROM recording_bounds WHERE source_sha256 = ?",
+                        (identifier,),
+                    )
+                else:
+                    connection.execute(
+                        "INSERT OR REPLACE INTO recording_bounds VALUES (?, ?, ?)",
+                        (identifier, *bounds),
+                    )
+            return True
+        except OSError, sqlite3.Error, ValueError:
+            return False
+
     def __init__(self, path: Path | None = None) -> None:
         self.path = _PATH.validate_python(
             path if path is not None else default_database_path().with_name("preferences.sqlite3"),

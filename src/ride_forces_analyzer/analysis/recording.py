@@ -25,6 +25,13 @@ from ride_forces_analyzer.domain._validation import has_type
 from ride_forces_analyzer.importers import ImportSuccess, Severity
 
 from . import airtime
+from .calibration import (
+    CalibrationBasis,
+    CalibrationOverrides,
+    CalibrationReferences,
+    REFERENCE_WINDOW_SAMPLES,
+    prepare_calibration_basis,
+)
 from .models import (
     AnalysisDiagnostic,
     AnalysisProfile,
@@ -49,6 +56,7 @@ class AnalysisStage(StrEnum):
     """Stable identifiers for independently reusable or invalidated analysis stages."""
 
     TIME = "time"
+    CALIBRATION = "calibration"
     PROJECTION = "projection"
     SMOOTHING = "smoothing"
     ORIENTATION = "orientation"
@@ -137,6 +145,10 @@ class AnalysisConfiguration:
         events: Event-rule configuration, or None when no rules are configured.
         context_input: Force stage consumed by context; projection or smoothing.
         events_input: Force stage consumed by event detection when configured.
+        ride_bounds: Optional inclusive user start/end markers; original source
+            markers and full-history numerical stages remain unchanged.
+        calibration: Typed custom Gravity/Incline references; default retains
+            the exact original source directions and projection policy.
     """
 
     profile: AnalysisProfile
@@ -147,6 +159,8 @@ class AnalysisConfiguration:
     events: StageConfiguration | None = None
     context_input: AnalysisStage = AnalysisStage.SMOOTHING
     events_input: AnalysisStage = AnalysisStage.SMOOTHING
+    ride_bounds: tuple[int, int] | None = None
+    calibration: CalibrationOverrides = CalibrationOverrides()
 
 
 @dataclass(frozen=True, slots=True)
@@ -211,6 +225,7 @@ class ProjectedForces:
         unit: Existing explicit unit assignment and evidence.
         quality: Capabilities, diagnostics and scientific limitations.
         provenance: Original calculation identity/time, or None if not calculated.
+        calibration: Shared effective reference basis, or None for source axes.
     """
 
     source: ImportSuccess
@@ -221,6 +236,7 @@ class ProjectedForces:
     unit: UnitAssignment
     quality: AnalysisQuality
     provenance: AnalysisProvenance | None
+    calibration: CalibrationBasis | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -264,7 +280,7 @@ class OrientationSeries:
     """Source-gravity tilt, independent of force projection, smoothing and context.
 
     Attributes:
-        source: Recording supplying gravity and stored vertical direction.
+        source: Recording supplying gravity and original calibration evidence.
         time: Explicit correspondence for orientation rows, without invented data.
         configuration: Tilt algorithm/parameters, not yaw or track heading.
         availability: Whole-stage presence or reason prerequisites are absent.
@@ -272,6 +288,8 @@ class OrientationSeries:
         unit: Degree unit assignment and evidence.
         quality: Missing/zero-gravity diagnostics and scientific limitations.
         provenance: Original tilt calculation provenance, or None if not calculated.
+        gravity_index: Custom Gravity reference used for tilt; None uses the
+            original source vertical, independently of custom Incline choices.
     """
 
     source: ImportSuccess
@@ -282,6 +300,7 @@ class OrientationSeries:
     unit: UnitAssignment
     quality: AnalysisQuality
     provenance: AnalysisProvenance | None
+    gravity_index: int | None = None
 
 
 #: The explicitly selected numerical force stage used by context or events.
@@ -434,6 +453,7 @@ class RecordingAnalysis:
         events: Explicit event-evaluation outcome, including NOT_EVALUATED.
         quality: Aggregate scientific capabilities and diagnostics.
         revision: Service revision that produced this snapshot, not a cache key.
+        calibration: Shared custom reference basis/provenance; None retains source axes.
     """
 
     source: ImportSuccess
@@ -445,6 +465,7 @@ class RecordingAnalysis:
     events: EventAnalysis
     quality: AnalysisQuality
     revision: int
+    calibration: CalibrationBasis | None = None
 
     def validate(self) -> None:
         """Validate availability, source identity, indices and stage dependencies.
@@ -473,10 +494,24 @@ class RecordingAnalysis:
         _require(type(self.revision) is int and self.revision >= 0, "Invalid snapshot revision")
         _configuration(self.configuration)
         _time(self.time, self.source)
+        _require(
+            self.ride_bounds[1] < len(self.time.source_indices),
+            "Ride markers outside recording",
+        )
         _quality(self.quality, self.source)
         count = len(self.time.source_indices)
+        _calibration(self.calibration, self.configuration.calibration, self.source)
         projected, smoothed = self.forces.projected, self.forces.smoothed
         orientation, context, events = self.orientation, self.context, self.events
+        _require(
+            projected.calibration is self.calibration,
+            "Projection must reference the snapshot calibration",
+        )
+        _require(
+            (orientation.gravity_index is None or type(orientation.gravity_index) is int)
+            and orientation.gravity_index == self.configuration.calibration.gravity_index,
+            "Orientation Gravity reference differs from configuration",
+        )
         for source, time in (
             (projected.source, projected.time),
             (orientation.source, orientation.time),
@@ -602,6 +637,17 @@ class RecordingAnalysis:
                 )
         _events(events, self.configuration.events, self.source, count)
 
+    @property
+    def ride_bounds(self) -> tuple[int, int]:
+        """Return inclusive effective markers, retaining source markers separately."""
+        indices = self.source.recording.indices
+        return self.configuration.ride_bounds or (indices.start, indices.end)
+
+    @property
+    def replay_origin(self) -> int:
+        """Return effective replay zero; time.replay_origin retains source provenance."""
+        return self.ride_bounds[0]
+
     def sample(self, index: int) -> AnalyzedSample:
         """Read one source sample without recalculating or retaining a row cache.
 
@@ -635,7 +681,7 @@ class RecordingAnalysis:
         return AnalyzedSample(
             index=index,
             recording_seconds=index / rate.value,
-            replay_seconds=(index - self.time.replay_origin) / rate.value,
+            replay_seconds=(index - self.replay_origin) / rate.value,
             raw=self.source.recording.motion.acceleration[index],
             projected=_force_sample(self.forces.projected.channels, index),
             smoothed=_force_sample(self.forces.smoothed.channels, index),
@@ -885,6 +931,11 @@ def _prepare_analysis(
     _typed(configuration, AnalysisConfiguration)
     _require(type(revision) is int and revision >= 0, "Invalid snapshot revision")
     _configuration(configuration)
+    if configuration.ride_bounds is not None:
+        _require(
+            configuration.ride_bounds[1] < len(source.recording.motion.acceleration),
+            "Ride markers outside recording",
+        )
     window = _preparation_window(configuration)
     if configuration.events is not None:
         from .events import event_rules
@@ -914,9 +965,24 @@ def _prepare_analysis(
         vectors.longitudinal_direction,
     )
     same_policy = previous is not None and configuration.profile == previous.configuration.profile
+    same_calibration = (
+        previous is not None and configuration.calibration == previous.configuration.calibration
+    )
+    calibration = (
+        previous.calibration
+        if previous is not None and same_calibration
+        else prepare_calibration_basis(
+            source,
+            configuration.calibration,
+            calculation_time=calculation_time,
+        )
+    )
+    if calibration is not None:
+        vertical, lateral, longitudinal = calibration.directions
     if (
         previous is not None
         and same_policy
+        and same_calibration
         and configuration.projection == previous.configuration.projection
     ):
         projected = previous.forces.projected
@@ -951,6 +1017,7 @@ def _prepare_analysis(
             replace(provenance, algorithm=configuration.projection.algorithm)
             if raw is not None
             else None,
+            calibration,
         )
     if (
         previous is not None
@@ -1017,6 +1084,8 @@ def _prepare_analysis(
         previous is not None
         and same_policy
         and configuration.orientation == previous.configuration.orientation
+        and configuration.calibration.gravity_index
+        == previous.configuration.calibration.gravity_index
     ):
         orientation = previous.orientation
     else:
@@ -1034,7 +1103,14 @@ def _prepare_analysis(
                 "Orientation requires gravity, a vertical direction and an opt-in profile",
             )
         else:
-            angles = orientation_degrees(source.recording)
+            angles = orientation_degrees(
+                source.recording,
+                vertical_direction=(
+                    vertical
+                    if configuration.calibration.gravity_index is not None
+                    else vectors.vertical_direction
+                ),
+            )
             orientation_values = SampleValues(
                 np.array([np.nan if value is None else value for value in angles]),
                 valid_rows=tuple(value is not None for value in angles),
@@ -1067,6 +1143,7 @@ def _prepare_analysis(
             replace(provenance, algorithm=configuration.orientation.algorithm)
             if orientation_values is not None
             else None,
+            configuration.calibration.gravity_index,
         )
     context_input = (
         projected if configuration.context_input is AnalysisStage.PROJECTION else smoothed
@@ -1138,10 +1215,16 @@ def _prepare_analysis(
         context,
         events,
         AnalysisQuality(
-            capabilities=tuple(item for quality in qualities for item in quality.capabilities),
+            capabilities=(
+                (("calibration", calibration.references.capability),)
+                if calibration is not None
+                else ()
+            )
+            + tuple(item for quality in qualities for item in quality.capabilities),
             diagnostics=tuple(item for quality in qualities for item in quality.diagnostics),
         ),
         revision,
+        calibration,
     )
     result.validate()
     return result
@@ -1255,6 +1338,16 @@ def _text(value: str) -> None:
 
 def _configuration(configuration: AnalysisConfiguration) -> None:
     """Validate reusable configuration metadata without admitting algorithm math."""
+    _typed(configuration.calibration, CalibrationOverrides)
+    if configuration.ride_bounds is not None:
+        bounds = configuration.ride_bounds
+        _typed(bounds, tuple)
+        _require(
+            len(bounds) == 2
+            and all(type(value) is int for value in bounds)
+            and 0 <= bounds[0] <= bounds[1],
+            "Ride markers require ordered nonnegative integer indices",
+        )
     _typed(configuration.profile, AnalysisProfile)
     for selector in (configuration.context_input, configuration.events_input):
         _typed(selector, AnalysisStage)
@@ -1289,6 +1382,54 @@ def _configuration(configuration: AnalysisConfiguration) -> None:
             )
             if isinstance(value, float):
                 _require(isfinite(value), "Parameter values must be finite")
+
+
+def _calibration(
+    basis: CalibrationBasis | None,
+    overrides: CalibrationOverrides,
+    source: ImportSuccess,
+) -> None:
+    """Check reference identity/support and graph ownership without recalculation."""
+    if not overrides.active:
+        _require(basis is None, "Inactive overrides require original source axes")
+        return
+    _typed(basis, CalibrationBasis)
+    assert basis is not None
+    references = basis.references
+    _typed(references, CalibrationReferences)
+    _require(references.overrides == overrides, "Calibration references differ from configuration")
+    _provenance(
+        references.provenance,
+        StageConfiguration("user-reference-calibration", references.algorithm_version),
+        source,
+    )
+    _require(
+        references.window_samples == REFERENCE_WINDOW_SAMPLES
+        and references.algorithm_version == "1"
+        and references.capability is CapabilityState.PROVISIONAL,
+        "Unsupported calibration reference contract",
+    )
+    count = len(source.recording.motion.acceleration)
+    radius = REFERENCE_WINDOW_SAMPLES // 2
+    for index, support in (
+        (overrides.gravity_index, references.gravity_interval),
+        (overrides.incline_index, references.incline_interval),
+    ):
+        if index is None:
+            _require(support is None, "Retained source axis has no reference interval")
+        else:
+            _require(index < count, "Calibration index outside recording")
+            _require(
+                support == (max(0, index - radius), min(count - 1, index + radius)),
+                "Calibration reference support differs from its original index",
+            )
+    for vector in (
+        *basis.directions,
+        references.vertical_reference,
+        references.longitudinal_reference,
+        references.polarity_reference,
+    ):
+        _typed(vector, Vector3)
 
 
 def _time(time: AnalysisTime, source: ImportSuccess) -> None:

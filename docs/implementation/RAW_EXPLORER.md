@@ -51,6 +51,23 @@ Missing calibrated values remain unavailable; raw x/y/z appear only in raw mode.
 
 ## Time, zoom and selection
 
+Right-click inside the plot opens a localized menu with Set start here, Set end
+here, a separator, Reset start to original, Reset end to original and Reset all
+ride markers. Setting uses the nearest sample at the clicked position under the
+current zoom; the cursor/selection is unchanged. Right-click does not zoom out.
+Inclusive effective bounds require `0 <= start <= end < sample_count`;
+invalid actions are disabled. Each valid action saves immediately and submits the
+override through the analysis service; latest changes supersede pending work.
+Individual resets preserve the other marker; restoring both originals clears the override.
+Successful changes update marker lines, replay labels/readouts, reset viewport and
+marker-based exports without changing From/To selection or removing samples.
+Playback pauses when opening the menu. Gravity/incline and original source indices remain intact.
+
+`preferences.sqlite3` stores overrides by the original source SHA-256. Reopening
+restores valid saved bounds; missing, invalid or unreadable entries use original
+markers. Write failure keeps the session adjustment and reports that it was not
+saved. No source bytes or source JSON fields are rewritten.
+
 Time is inferred recording seconds `index / effective_sample_rate`, with
 `INFERRED_UNIFORM` and source/default-rate provenance. Integer-rate replay labels
 are start-relative `MM:SS.ff`; ff counts samples, not hundredths.

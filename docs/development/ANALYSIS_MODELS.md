@@ -62,6 +62,7 @@ classDiagram
     RecordingAnalysis --> ImportSuccess : source
     RecordingAnalysis --> AnalysisConfiguration : configuration
     RecordingAnalysis --> AnalysisTime : time
+    RecordingAnalysis --> CalibrationBasis : custom or None
     RecordingAnalysis --> ForceSeries : forces
     RecordingAnalysis --> OrientationSeries : orientation
     RecordingAnalysis --> SampleContext : context
@@ -70,18 +71,23 @@ classDiagram
     RecordingAnalysis ..> AnalyzedSample : assembles on demand
     AnalysisConfiguration --> AnalysisProfile : policy and assumptions
     AnalysisConfiguration --> StageConfiguration : algorithms versions and parameters
+    AnalysisConfiguration --> CalibrationOverrides : Gravity and Incline indices
+    CalibrationBasis --> CalibrationReferences : means and support
+    CalibrationReferences --> AnalysisProvenance : source and algorithm
     ForceSeries --> ProjectedForces : projected
     ForceSeries --> SmoothedForces : smoothed
     SmoothedForces --> ProjectedForces : shared input
     ProjectedForces --> ImportSuccess : source
     ProjectedForces --> AnalysisTime : correspondence
+    ProjectedForces --> CalibrationBasis : shared custom basis or None
     ProjectedForces --> SampleValues : immutable channels and validity
     SmoothedForces --> SampleValues : immutable channels, Combined and validity
     ProjectedForces --> StageAvailability : availability
     SmoothedForces --> StageAvailability : availability
     OrientationSeries --> StageAvailability : availability
     SampleContext --> StageAvailability : availability
-    OrientationSeries --> ImportSuccess : gravity and vertical direction
+    OrientationSeries --> ImportSuccess : gravity and original vertical
+    OrientationSeries ..> CalibrationOverrides : Gravity only
     OrientationSeries --> AnalysisTime : correspondence
     OrientationSeries --> SampleValues : immutable tilt and validity
     SampleContext --> ProjectedForces : when projection is selected
@@ -96,7 +102,8 @@ classDiagram
 
 - Paired context/event arrows denote alternative inputs, not simultaneous inputs.
 - Snapshots can share projection while holding different smoothing/context/events.
-- Orientation depends on source gravity/vertical direction and its own configuration.
+- Orientation depends on source gravity, effective vertical and its own configuration;
+  an Incline-only change retains it.
 - `sample(index)` assembles immutable scalar values on demand without recalculation,
   a row cache, duplicate arrays or a parent-snapshot reference.
 
@@ -132,6 +139,59 @@ classDiagram
 - Sample errors: `TypeError` for non-integer indices (including bool), `IndexError`
   outside the recording, `ValueError` for a manually assembled index-only snapshot
   without a rate. Time uses the source's inferred rate and start-relative replay origin.
+
+### User ride markers
+
+`AnalysisConfiguration.ride_bounds` optionally overrides inclusive start/end markers.
+Bounds require integer indices with `0 <= start <= end < source sample count`.
+`RecordingAnalysis.ride_bounds` resolves the override or original markers;
+`replay_origin` and `sample(index).replay_seconds` use its effective start.
+`AnalysisTime.replay_origin` remains the original source marker. A marker-only
+service request publishes a new snapshot while reusing every numerical stage.
+
+### Reference calibration
+
+Module: [`analysis.calibration`](../../src/ride_forces_analyzer/analysis/calibration.py).
+
+- `CalibrationOverrides` holds optional nonnegative integer `gravity_index` and
+  `incline_index`; booleans are rejected. Both absent means original calibration.
+- `validate_calibration_references(source, overrides, calculation_time=...)` checks
+  indices against the complete acceleration sequence, independently of ride bounds.
+  It returns `None` for inactive overrides, otherwise frozen `CalibrationReferences`.
+- Custom references use a fixed centered 5-sample arithmetic mean of original device
+  acceleration, clipped and renormalized at edges. The result retains actual
+  inclusive support intervals, unnormalized means and unchanged source axes for
+  unselected references. Gravity samples are not used in reference means; force
+  smoothing does not configure this window. Original-index means reproduce the
+  five fixtures' stored axes at source precision;
+  [evidence and limits](../validation/APP_REFERENCE.md#reference-calibration-evidence).
+- Provenance retains original source identity/hash, engine version, explicit UTC
+  time, algorithm `user-reference-calibration`, version `1`, selected indices and
+  window size. Capability remains PROVISIONAL.
+- `CalibrationReferenceError` carries an ERROR `AnalysisDiagnostic` for invalid
+  bounds, missing source axes, non-finite/zero vectors, near-parallel references or
+  ambiguous longitudinal polarity. Dimensionless sine and absolute-cosine admission
+  tolerances are named constants, both `1e-6`; they imply no physical qualification.
+- `prepare_calibration_basis` returns `CalibrationBasis` with references/provenance
+  and full-precision unit axes in vertical/lateral/longitudinal order. It projects
+  the longitudinal reference perpendicular to vertical, preserves original
+  longitudinal polarity and derives lateral from longitudinal cross vertical.
+  Inactive overrides return `None`, preserving the original rounded source basis.
+- `AnalysisConfiguration.calibration` holds the typed overrides. Snapshots and
+  their projection stage share the same optional basis. Snapshot validation checks
+  source provenance, override/support correspondence and this dependency identity;
+  `OrientationSeries.gravity_index` must match the configured custom Gravity index.
+- `AnalysisStage.CALIBRATION` identifies reference-basis invalidation. Gravity changes
+  rebuild the basis, projection, smoothing, dependent context/events and tilt.
+  Incline changes rebuild the same stages except tilt. Force-window and ride-bound
+  changes retain the basis. Original imports, sensor buffers and time remain shared.
+- `orientation_degrees` accepts an explicit effective vertical; absent custom Gravity
+  uses the exact source direction. Missing gravity still excludes tilt, while
+  acceleration-based calibration and forces remain available.
+- Calibration admission errors terminate service requests with their original
+  diagnostic codes and retain the previous snapshot. No source mutation or second
+  calculation pipeline is introduced. Hash-bound calibration persistence and UI
+  integration remain in the [calibration requirement](../requirements/USER_CALIBRATION.md).
 
 ### Numerical stages
 

@@ -7,6 +7,27 @@ The instructions below use the English interface labels.
 
 ![Recording explorer with force curves, airtime strip and inspector](../images/workspace-dark.png)
 
+## Adjust the ride start and end
+
+Right-click inside the chart to open the ride-marker menu:
+
+- **Set start here** / **Set end here** use the sample nearest the clicked position.
+- **Reset start to original** / **Reset end to original** restore just that marker.
+- **Reset all ride markers** restores both original markers.
+
+Changes apply immediately and are saved automatically. Actions that would place
+start after end are disabled. The start defines replay time zero; both markers
+define the reset view and the export assistant's marker range.
+Samples outside the ride remain available.
+The separate **From sample / To sample** selection is unchanged.
+
+The application remembers these markers locally for the recording, including
+after a restart. Moving an identical file keeps its markers; changed file contents
+are treated as a different recording. The original file is never modified.
+Restoring both original markers removes the saved adjustment.
+Gravity and incline markers are unchanged. Use the mouse wheel or left-drag to zoom;
+right-click opens the menu without changing zoom or selecting a sample.
+
 ## Find a moment
 
 - Left-click inside the chart to select the nearest sample. The cursor, sample

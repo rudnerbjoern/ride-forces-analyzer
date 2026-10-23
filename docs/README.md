@@ -48,6 +48,11 @@ historical acceptance reports are not maintained.
   [metadata/GPS](development/OPTIONAL_PARSING.md).
 - [Scientific source comparisons](validation/APP_REFERENCE.md).
 
+## Planned requirements
+
+- [Editable calibration markers](requirements/USER_CALIBRATION.md): proposed
+  Gravity/Incline reference method, automatic persistence and partial recalculation.
+
 ## Unified analysis
 
 - [Unified recording analysis API](development/ANALYSIS_MODELS.md#unified-recording-analysis):

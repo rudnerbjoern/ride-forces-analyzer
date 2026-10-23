@@ -31,6 +31,11 @@ orientation and context remain the snapshot's independent prepared values.
 
 ## App-shaped format
 
+Replay timestamps use the effective user start marker. Metadata retains original
+source indices alongside `effective_ride_bounds`; Analyzer JSON exposes the same
+bounds in `recording` and the effective `time.replay_origin`. Original samples and
+source marker provenance are unchanged.
+
 UTF-8 without BOM, LF, one tab before each root key, one space after its colon,
 compact arrays/objects, one root member per line and no trailing newline after
 `}`. Root order begins with the app's five numeric arrays:

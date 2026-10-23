@@ -1,6 +1,7 @@
 """Export, preview and persisted jobs bind complete immutable analysis snapshots."""
 
 from dataclasses import replace
+from datetime import UTC, datetime
 from math import nan
 from pathlib import Path
 from typing import cast
@@ -28,6 +29,31 @@ from ride_forces_analyzer.rendering.model import (
 from ride_forces_analyzer.rendering.preview import build_previews
 from ride_forces_analyzer.storage.export_models import SavedBatch, make_preset
 from ride_forces_analyzer.storage.exports import ExportStore
+
+
+def test_markers_bind_export_and_batch_without_leaking_into_reusable_presets(
+    manta: ExplorerData,
+    export_directory: Path,
+) -> None:
+    snapshot = manta.analysis
+    assert snapshot is not None
+    changed = snapshot.with_configuration(
+        replace(snapshot.configuration, ride_bounds=(3600, 3700)),
+        revision=snapshot.revision + 1,
+        calculation_time=datetime.now(UTC),
+    )
+    preset = make_preset("Markers", ExportSettings(), 11, "markers", changed.configuration)
+    assert preset.analysis_configuration.ride_bounds is None
+    timeline = prepare_export(changed, preset.settings, 3600, 3700)
+    assert timeline.replay_origin == 3600
+    job = batches.make_job(changed, preset)
+    assert (job.first_sample, job.last_sample) == (3600, 3700)
+    store = ExportStore(export_directory / "marker-jobs.sqlite3")
+    store.save_batch(SavedBatch(schema_version=1, name="Markers", jobs=(job,)))
+    saved = store.batch("Markers").jobs[0]
+    restored = prepare_export_analysis(snapshot, saved.preset.analysis_configuration)
+    assert restored.ride_bounds == (3600, 3700) and restored.replay_origin == 3600
+    assert restored.source.recording.indices == snapshot.source.recording.indices
 
 
 def test_export_reuses_buffers_orientation_and_full_history_context(
@@ -168,6 +194,8 @@ def test_recipe_round_trip_preserves_explicit_policy_dependencies(
         "events",
         "context_input",
         "events_input",
+        "ride_bounds",
+        "calibration",
     }
     with pytest.raises(ValueError, match="must match"):
         make_preset("Mismatched", ExportSettings(), 3, "markers", configuration)
