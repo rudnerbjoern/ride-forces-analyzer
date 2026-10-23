@@ -233,7 +233,7 @@ def prepare_export(
     return ExportTimeline(
         analysis.source.source_sha256,
         rate.value,
-        analysis.time.replay_origin,
+        analysis.replay_origin,
         first,
         last,
         window,

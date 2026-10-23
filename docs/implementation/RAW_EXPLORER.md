@@ -51,6 +51,31 @@ Missing calibrated values remain unavailable; raw x/y/z appear only in raw mode.
 
 ## Time, zoom and selection
 
+Right-click inside the plot opens a localized menu: set Start, End, Gravity and
+Incline; separator; reset each marker to original; separator; reset all ride markers.
+Setting uses the nearest sample at the clicked position under the
+current zoom; the cursor/selection is unchanged. Right-click does not zoom out.
+Inclusive effective bounds require `0 <= start <= end < sample_count`;
+invalid start/end actions are disabled. Gravity/Incline accept any admitted source
+sample, independently of their order or the ride bounds. Requests use the analysis service and
+worker/UI guards; latest changes supersede pending work. Only an adopted successful
+result saves all four choices in one transaction. Invalid references retain the
+last valid view and saved choices, with a localized error message.
+Individual resets preserve other choices; reset all clears both local records and
+restores the original source calibration. An absent original marker becomes absent.
+Effective marker lines, sample values, context and extrema update together.
+Ride-bound changes also refresh replay labels, reset viewport and marker-based
+export ranges; calibration-only changes preserve zoom. From/To selection and
+original source indices remain unchanged. Opening the menu pauses playback.
+
+`preferences.sqlite3` stores bounds and versioned Gravity/Incline recipes by the
+original source SHA-256, independently of file path. Reopening restores valid
+local choices through the shared analysis configuration. Missing, invalid or
+unreadable entries use source defaults without deleting stored records.
+Write failure retains the last saved transaction, keeps the session adjustment and
+reports that it was not saved. Closed/rebound sources and stale deliveries cannot
+save markers. No source bytes or source JSON fields are rewritten.
+
 Time is inferred recording seconds `index / effective_sample_rate`, with
 `INFERRED_UNIFORM` and source/default-rate provenance. Integer-rate replay labels
 are start-relative `MM:SS.ff`; ff counts samples, not hundredths.

@@ -1,6 +1,7 @@
 """Export, preview and persisted jobs bind complete immutable analysis snapshots."""
 
 from dataclasses import replace
+from datetime import UTC, datetime
 from math import nan
 from pathlib import Path
 from typing import cast
@@ -12,6 +13,7 @@ import pytest
 from PIL import Image
 
 from ride_forces_analyzer.analysis import recording
+from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.analysis.models import AnalysisProfile, SampleValues
 from ride_forces_analyzer.analysis.recording import AnalysisStage, StageConfiguration
 from ride_forces_analyzer.explorer import ExplorerData
@@ -28,6 +30,127 @@ from ride_forces_analyzer.rendering.model import (
 from ride_forces_analyzer.rendering.preview import build_previews
 from ride_forces_analyzer.storage.export_models import SavedBatch, make_preset
 from ride_forces_analyzer.storage.exports import ExportStore
+from ride_forces_analyzer.storage.preferences import Preferences
+
+
+def test_markers_bind_export_and_batch_without_leaking_into_reusable_presets(
+    manta: ExplorerData,
+    export_directory: Path,
+) -> None:
+    snapshot = manta.analysis
+    assert snapshot is not None
+    changed = snapshot.with_configuration(
+        replace(snapshot.configuration, ride_bounds=(3600, 3700)),
+        revision=snapshot.revision + 1,
+        calculation_time=datetime.now(UTC),
+    )
+    preset = make_preset("Markers", ExportSettings(), 11, "markers", changed.configuration)
+    assert preset.analysis_configuration.ride_bounds is None
+    timeline = prepare_export(changed, preset.settings, 3600, 3700)
+    assert timeline.replay_origin == 3600
+    job = batches.make_job(changed, preset)
+    assert (job.first_sample, job.last_sample) == (3600, 3700)
+    store = ExportStore(export_directory / "marker-jobs.sqlite3")
+    store.save_batch(SavedBatch(schema_version=1, name="Markers", jobs=(job,)))
+    saved = store.batch("Markers").jobs[0]
+    restored = prepare_export_analysis(snapshot, saved.preset.analysis_configuration)
+    assert restored.ride_bounds == (3600, 3700) and restored.replay_origin == 3600
+    assert restored.source.recording.indices == snapshot.source.recording.indices
+
+
+def test_bound_calibration_jobs_ignore_later_preferences_and_preserve_preset_scope(
+    manta: ExplorerData,
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LOCALAPPDATA", str(export_directory.resolve()))
+    original = manta.analysis
+    assert original is not None
+    source = original.source
+    choice = CalibrationOverrides(
+        source.recording.indices.gravity,
+        source.recording.indices.incline,
+    )
+    changed = original.with_configuration(
+        replace(original.configuration, ride_bounds=(3600, 3700), calibration=choice),
+        revision=original.revision + 1,
+        calculation_time=datetime.now(UTC),
+    )
+    preset = make_preset("References", ExportSettings(), 11, "markers", changed.configuration)
+    assert preset.analysis_configuration.ride_bounds is None
+    assert not preset.analysis_configuration.calibration.active
+    timeline = prepare_export(changed, preset.settings, 3600, 3700)
+    job = batches.make_job(changed, preset)
+    assert job.preset.analysis_configuration.calibration == choice
+    store = ExportStore(export_directory / "references.sqlite3")
+    store.save_batch(SavedBatch(schema_version=1, name="References", jobs=(job,)))
+    batch = store.batch("References")
+    saved = batch.jobs[0]
+    preferences = Preferences()
+    assert preferences.remember_recording_bounds(source.source_sha256, (1, 10))
+    assert preferences.remember_recording_calibration(source, CalibrationOverrides())
+    captured: list[ExportTimeline] = []
+
+    def encode(timeline: ExportTimeline, path: Path, **options: object) -> Path:
+        captured.append(timeline)
+        path.write_bytes(b"encoded")
+        return path
+
+    monkeypatch.setattr(batches, "export_video", encode)
+    report = batches.run_batches((batch,), export_directory)
+    assert [result.status for result in report.results] == ["completed"]
+    restored = captured[0].analysis
+    assert restored is not None
+    assert restored.configuration == changed.configuration
+    assert restored.forces.smoothed.channels == changed.forces.smoothed.channels
+    assert restored.orientation.values == changed.orientation.values
+    assert timeline.analysis is changed
+    reset = changed.with_configuration(
+        original.configuration,
+        revision=changed.revision + 1,
+        calculation_time=datetime.now(UTC),
+    )
+    assert reset.calibration is None and changed.calibration is not None
+    seen: list[ExportTimeline] = []
+
+    def preview(self: OverlayRenderer, position: float) -> Image.Image:
+        seen.append(self.timeline)
+        assert self.timeline.analysis is changed
+        assert self.timeline.value_at(self.timeline.channels[0], position) == (
+            timeline.value_at(timeline.channels[0], position)
+        )
+        assert self.timeline.context_at(position) == timeline.context_at(position)
+        return Image.new("RGBA", (8, 8))
+
+    monkeypatch.setattr(OverlayRenderer, "render_sample", preview)
+    build_previews(changed, timeline.settings, 3600, 3700, 3650)
+    assert len(seen) == 5
+    assert timeline.analysis is changed and timeline.analysis.configuration.calibration == choice
+    assert preferences.remember_recording_calibration(source, choice)
+    jobs = batches.build_jobs((saved.recording_path,), (preset,), "markers")
+    assert jobs[0].preset.analysis_configuration.calibration == choice
+    assert jobs[0].first_sample == 1 and jobs[0].last_sample == 10
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    (("algorithm_version", "unsupported"), ("window_samples", 11), ("window_samples", None)),
+)
+def test_saved_calibration_recipe_requires_supported_explicit_parameters(
+    field: str,
+    value: str | int | None,
+) -> None:
+    from ride_forces_analyzer.analysis.recording import source_app_configuration
+    from ride_forces_analyzer.storage.export_models import SavedPreset
+
+    preset = make_preset("References", ExportSettings(), 11, "markers", source_app_configuration())
+    payload = json.loads(preset.model_dump_json())
+    if value is None:
+        del payload["analysis_configuration"]["calibration"][field]
+    else:
+        payload["analysis_configuration"]["calibration"][field] = value
+    with pytest.raises(ValueError):
+        SavedPreset.model_validate_json(json.dumps(payload))
 
 
 def test_export_reuses_buffers_orientation_and_full_history_context(
@@ -168,6 +291,8 @@ def test_recipe_round_trip_preserves_explicit_policy_dependencies(
         "events",
         "context_input",
         "events_input",
+        "ride_bounds",
+        "calibration",
     }
     with pytest.raises(ValueError, match="must match"):
         make_preset("Mismatched", ExportSettings(), 3, "markers", configuration)

@@ -1,7 +1,7 @@
 """Native language switching and German layouts over unchanged recording data."""
 
 # cspell:words Aufnahme öffnen Ansicht zurücksetzen Kalibrierte Kräfte Reihe Fahrtzeit Messpunkte zurück Abbrechen prüfen Bahn Schließen Hochformat Meine Vorgabe exportieren Quellwert bleibt erhalten
-# cspell:words Oben Unten rechts
+# cspell:words Oben Unten rechts Schwerkraftmarkierung Neigungsmarkierung Startmarkierung Endmarkierung Schwerkraft hier setzen Original Neigung
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -10,12 +10,13 @@ import subprocess
 import sys
 from textwrap import dedent
 
-from PySide6.QtCore import QCoreApplication
+from PySide6.QtCore import QCoreApplication, QTimer
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
     QInputDialog,
     QLabel,
+    QMenu,
     QPushButton,
     QStyle,
     QStyleOptionComboBox,
@@ -192,12 +193,38 @@ def test_language_switch_preserves_state_and_source_metadata(
     data = window.data
     bounds = window.axis_x.min(), window.axis_x.max()
     values = tuple(tuple(series.points()) for series in window.series)
+
+    def assert_marker_names(names: tuple[str, ...], menu_texts: tuple[str, ...]) -> None:
+        for (key, _index), name in zip(data.markers, names, strict=True):
+            label = window.source_marker_labels[key]
+            assert label.text().startswith(name + " · ")
+            assert label.toolTip().startswith(name + ": ")
+
+        def inspect_menu() -> None:
+            menu = QApplication.activePopupWidget()
+            assert isinstance(menu, QMenu)
+            texts = [action.text() for action in menu.actions()]
+            assert all(text in texts for text in menu_texts)
+            menu.close()
+
+        QTimer.singleShot(0, inspect_menu)
+        window.show_marker_menu(0.5, window.mapToGlobal(window.rect().center()))
+
     try:
         window.set_ui_language(1)
         assert get_language() == "de"
         assert window.open_action.text() == "Aufnahme öffnen…"
         assert window.reset_button.text() == "Ansicht zurücksetzen"
         assert window.reference_toggle.text() == "Kalibrierte Kräfte"
+        assert_marker_names(
+            ("Startmarkierung", "Endmarkierung", "Schwerkraftmarkierung", "Neigungsmarkierung"),
+            (
+                "Schwerkraft hier setzen",
+                "Neigung hier setzen",
+                "Schwerkraft auf Original zurücksetzen",
+                "Neigung auf Original zurücksetzen",
+            ),
+        )
         window.notes_button.click()
         assert "GPS_NEGATIVE_VALUE" in window.notes.toPlainText()
         assert "Quellwert bleibt erhalten" in window.notes.toPlainText()
@@ -226,6 +253,15 @@ def test_language_switch_preserves_state_and_source_metadata(
         window.set_ui_language(0)
         assert window.open_action.text() == "Open recording…"
         assert "Row:" in window.ride_metadata.text()
+        assert_marker_names(
+            ("Start marker", "End marker", "Gravity marker", "Incline marker"),
+            (
+                "Set gravity here",
+                "Set incline here",
+                "Reset gravity to original",
+                "Reset incline to original",
+            ),
+        )
     finally:
         window.set_ui_language(0)
 

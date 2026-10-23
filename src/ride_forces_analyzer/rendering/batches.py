@@ -6,6 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from collections.abc import Callable, Sequence
 from datetime import datetime, UTC
+from dataclasses import replace
 from pathlib import Path
 import re
 from threading import Event
@@ -22,6 +23,7 @@ from ride_forces_analyzer.analysis.recording import (
 from ride_forces_analyzer.analysis.service import AnalysisService
 from ride_forces_analyzer.importers import ImportSuccess, import_forces
 from ride_forces_analyzer.storage.export_models import BatchJob, RangeMode, SavedBatch, SavedPreset
+from ride_forces_analyzer.storage.preferences import Preferences
 from .encoding import ExportCancelled, export_video
 from .model import prepare_export
 
@@ -31,6 +33,7 @@ def _load_analysis(
     configuration: AnalysisConfiguration,
     *,
     expected_sha256: str | None = None,
+    restore_markers: bool = False,
 ) -> RecordingAnalysis:
     """Import losslessly, verify identity before analysis, then prepare the full recipe."""
     source = import_forces(path)
@@ -39,6 +42,12 @@ def _load_analysis(
         raise ValueError(f"{path.name}: {details}")
     if expected_sha256 is not None and source.source_sha256 != expected_sha256:
         raise ValueError("Recording bytes changed since this batch was saved")
+    if restore_markers:
+        configuration = Preferences().recording_configuration(
+            source,
+            configuration,
+            calculation_time=datetime.now(UTC),
+        )
     service = AnalysisService()
     try:
         service.request_analysis(source, configuration, calculation_time=datetime.now(UTC))
@@ -66,9 +75,8 @@ def make_job(
     if path is None:
         raise ValueError("Only file-backed recordings can be queued")
     mode = range_mode or preset.range_mode
-    indices = analysis.source.recording.indices
     if mode == "markers":
-        first, last = indices.start, indices.end
+        first, last = analysis.ride_bounds
     elif mode == "entire":
         first, last = 0, len(analysis.time.source_indices) - 1
     if first is None or last is None:
@@ -83,7 +91,15 @@ def make_job(
         recording_path=path.resolve(),
         source_sha256=analysis.source.source_sha256,
         ride=analysis.source.recording.metadata.name or path.stem,
-        preset=preset,
+        preset=preset.model_copy(
+            update={
+                "analysis_configuration": replace(
+                    preset.analysis_configuration,
+                    ride_bounds=analysis.configuration.ride_bounds,
+                    calibration=analysis.configuration.calibration,
+                ),
+            },
+        ),
         range_mode=mode,
         first_sample=first,
         last_sample=last,
@@ -99,7 +115,7 @@ def build_jobs(
         raise ValueError("Choose at least one recording and one preset")
     jobs: list[BatchJob] = []
     for path in paths:
-        analysis = _load_analysis(path, source_app_configuration())
+        analysis = _load_analysis(path, source_app_configuration(), restore_markers=True)
         jobs.extend(make_job(analysis, preset, range_mode=range_mode) for preset in presets)
     return tuple(jobs)
 

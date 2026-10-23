@@ -23,6 +23,69 @@ from tests.exports.test_csv_export import snapshot
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
 
+def test_custom_calibration_exports_keep_original_and_effective_evidence(
+    export_directory: Path,
+) -> None:
+    from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
+    from tests.analysis.test_recording_preparation import NOW, prepare_snapshot, synthetic_source
+    from ride_forces_analyzer.analysis.recording import source_app_configuration
+
+    source = synthetic_source(accelerationSequence=[{"x": "1", "y": "1", "z": "1"}] * 7)
+    analysis = prepare_snapshot(
+        replace(source_app_configuration(), calibration=CalibrationOverrides(incline_index=3)),
+        source,
+    )
+    app_path, analyzer_path = (
+        export_directory / "references.json",
+        export_directory / "references-analyzer.json",
+    )
+    export_json(analysis, app_path, 0, 6)
+    export_analyzer_json(analysis, analyzer_path, 0, 6)
+    app = json.loads(app_path.read_text())
+    analyzer = json.loads(analyzer_path.read_text())
+    evidence = app["metadata"]["calibration"]
+    assert evidence == analyzer["analysis"]["calibration"]
+    assert evidence["recipe"] == {
+        "gravity_index": None,
+        "incline_index": 3,
+        "algorithm_version": "1",
+        "window_samples": 5,
+    }
+    assert evidence["source_directions"]["longitudinal"] == {"x": 0, "y": 1, "z": 0}
+    assert (
+        evidence["effective_directions"]["longitudinal"]
+        != evidence["source_directions"]["longitudinal"]
+    )
+    assert evidence["reference_support"] == {"gravity": None, "incline": [1, 5]}
+    assert evidence["provenance"]["source_sha256"] == source.source_sha256
+    assert evidence["provenance"]["calculation_time"] == NOW.isoformat()
+    assert analyzer["recording"]["indices"]["incline"] is None
+
+
+def test_effective_markers_keep_original_indices_and_share_replay_zero(
+    export_directory: Path,
+) -> None:
+    original = snapshot()
+    analysis = original.with_configuration(
+        replace(original.configuration, ride_bounds=(1, 3)),
+        revision=1,
+        calculation_time=datetime.now(UTC),
+    )
+    app_path, analyzer_path = (
+        export_directory / "markers.json",
+        export_directory / "markers-analyzer.json",
+    )
+    export_json(analysis, app_path, 1, 3)
+    export_analyzer_json(analysis, analyzer_path, 1, 3)
+    app = json.loads(app_path.read_text())
+    analyzer = json.loads(analyzer_path.read_text())
+    assert app["Timestamp"][0] == "00:00.00" and app["replay_seconds"][0] == 0
+    assert app["metadata"]["effective_ride_bounds"] == [1, 3]
+    assert app["metadata"]["source_indices"]["start"] == original.source.recording.indices.start
+    assert analyzer["recording"]["effective_ride_bounds"] == [1, 3]
+    assert analyzer["time"]["replay_origin"] == 1
+
+
 @pytest.mark.parametrize("calibrated", [True, False])
 @pytest.mark.parametrize("rate", [25.0, 50.0, 59.94])
 def test_schema_preserves_prepared_values_time_quality_and_missingness(

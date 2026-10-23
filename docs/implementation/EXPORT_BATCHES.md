@@ -31,6 +31,13 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
 
 - Writes are transactional; preset/batch names are unique. Damaged/unsupported
   databases are reported, never silently replaced.
+- Reusable presets omit file-specific ride bounds and Gravity/Incline overrides.
+  Each queued job captures its recording's bounds and reference recipe, including
+  replay zero and the explicit calibration version/window. Later marker or
+  preference edits do not change a saved job. Adding files restores valid local
+  bounds and calibration before binding jobs; execution uses the saved recipe only.
+  Existing recipes may omit the optional `ride_bounds`
+  field, meaning original markers; all numerical stage settings remain explicit.
 - Every preset/job requires complete analysis/video settings, including aspect,
   position and language. Missing/unsupported fields are rejected without fallback recipes,
   format migration or destructive cleanup. New-object `ExportSettings` defaults

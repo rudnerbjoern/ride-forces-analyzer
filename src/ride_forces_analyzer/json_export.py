@@ -91,6 +91,39 @@ def _write_document(
         raise JsonExportCancelled()
 
 
+def _calibration_metadata(analysis: RecordingAnalysis) -> dict[str, object]:
+    """Retain original directions beside the bound recipe and effective basis."""
+    source = analysis.source.recording.vectors
+    basis = analysis.calibration
+    references = basis.references if basis is not None else None
+    original = (source.vertical_direction, source.lateral_direction, source.longitudinal_direction)
+    effective = basis.directions if basis is not None else original
+    return {
+        "recipe": asdict(analysis.configuration.calibration),
+        "source_directions": {
+            name: asdict(vector) if vector is not None else None
+            for name, vector in zip(("vertical", "lateral", "longitudinal"), original, strict=True)
+        },
+        "effective_directions": {
+            name: asdict(vector) if vector is not None else None
+            for name, vector in zip(("vertical", "lateral", "longitudinal"), effective, strict=True)
+        },
+        "reference_support": {
+            "gravity": references.gravity_interval if references is not None else None,
+            "incline": references.incline_interval if references is not None else None,
+        },
+        "provenance": {
+            "source_sha256": references.provenance.source.sha256,
+            "algorithm": references.provenance.algorithm,
+            "engine_version": references.provenance.engine_version,
+            "calculation_time": references.provenance.calculation_time.isoformat(),
+            "capability": references.capability.value,
+        }
+        if references is not None
+        else None,
+    }
+
+
 def export_json(
     analysis: RecordingAnalysis,
     path: Path,
@@ -134,7 +167,7 @@ def export_json(
                 smoothed.longitudinal if smoothed else None,
                 sample.combined_g,
                 sample.orientation_degrees,
-                format_sample_time(index - analysis.time.replay_origin, rate.value),
+                format_sample_time(index - analysis.replay_origin, rate.value),
                 sample.index,
                 sample.recording_seconds,
                 sample.replay_seconds,
@@ -165,6 +198,8 @@ def export_json(
             "first_sample": first,
             "last_sample": last,
             "source_indices": asdict(recording.indices),
+            "effective_ride_bounds": analysis.ride_bounds,
+            "calibration": _calibration_metadata(analysis),
             "recording": _recording_metadata(analysis),
             "stages": {
                 name: asdict(getattr(analysis.configuration, name))
@@ -245,6 +280,7 @@ def export_analyzer_json(
                 progress(written)
         recording = _recording_metadata(analysis)
         recording["indices"] = asdict(analysis.source.recording.indices)
+        recording["effective_ride_bounds"] = analysis.ride_bounds
         recording["attributes"] = [
             {"id": item.id, "label": item.label, "value": _attribute_value(item.value)}
             for item in analysis.source.recording.attributes
@@ -281,6 +317,8 @@ def export_analyzer_json(
                 else None,
                 "context_input": configuration.context_input.value,
                 "events_input": configuration.events_input.value,
+                "ride_bounds": configuration.ride_bounds,
+                "calibration": _calibration_metadata(analysis),
                 "units": {"raw": "unknown", "forces": "g", "orientation": "deg"},
                 "force_unit_assignment": asdict(analysis.forces.projected.unit),
                 "availability": {
@@ -296,7 +334,7 @@ def export_analyzer_json(
                 "sample_rate_origin": rate.origin.value,
                 "first_sample": first,
                 "sample_count": count,
-                "replay_origin": analysis.time.replay_origin,
+                "replay_origin": analysis.replay_origin,
                 "epoch": analysis.time.basis.epoch,
                 "evidence": analysis.time.basis.evidence,
             },

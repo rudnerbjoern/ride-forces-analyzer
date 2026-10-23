@@ -269,12 +269,19 @@ def test_open_chart_navigation_selection_and_integrity(
             data.time_at(index) for index in range(data.count)
         )
     assert len(data.markers) == 4
+    marker_names = {
+        "startIndex": "Start marker",
+        "endIndex": "End marker",
+        "gravityIndex": "Gravity marker",
+        "inclineIndex": "Incline marker",
+    }
     for name, index in data.markers:
         points = window.source_marker_lines[name].points()
         assert [point.x() for point in points] == [data.time_at(index)] * 2
         assert [point.y() for point in points] == list(data.value_range)
         label = window.source_marker_labels[name]
-        assert name in label.text()
+        assert label.text() == f"{marker_names[name]} · {data.replay_text(index)}"
+        assert label.toolTip().startswith(marker_names[name] + ": sample ")
         assert label.isVisible() == (
             data.default_time_range[0] <= data.time_at(index) <= data.default_time_range[1]
         )
@@ -399,11 +406,7 @@ def test_zoom_out_stops_at_recording_bounds(
     assert (window.axis_y.min(), window.axis_y.max()) == fixed_range
     assert window.axis_x.max() - window.axis_x.min() < data.duration
     for _ in range(8):
-        QTest.mouseClick(
-            window.chart_view.viewport(),
-            Qt.MouseButton.RightButton,
-            pos=window.chart.plotArea().center().toPoint(),
-        )
+        window.zoom_wheel(0.5, -4)
         assert (window.axis_y.min(), window.axis_y.max()) == fixed_range
         assert 0 <= window.axis_x.min() < window.axis_x.max() <= data.duration
     assert window.axis_x.min() == 0 and window.axis_x.max() == data.duration
@@ -745,7 +748,7 @@ def test_replay_notation_on_chart_cursor_selection_and_markers(
     window.first.setValue(5510)
     window.last.setValue(5511)
     assert "01:31.47–01:31.48" in window.selection_label.text()
-    assert "startIndex · 00:00.00" == window.source_marker_labels["startIndex"].text()
+    assert "Start marker · 00:00.00" == window.source_marker_labels["startIndex"].text()
     window.zoom_button.click()
     assert window.axis_x.categoriesLabels() == ["01:31.47", "01:31.48"]
     window.reset_button.click()

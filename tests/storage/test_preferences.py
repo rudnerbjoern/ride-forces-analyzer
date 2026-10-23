@@ -12,6 +12,29 @@ import pytest
 from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 
 
+def test_recording_markers_survive_restart_are_content_bound_and_can_be_reset(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "preferences.sqlite3"
+    preferences = Preferences(path)
+    source, other = "a" * 64, "b" * 64
+    assert preferences.recording_bounds(source) is None
+    assert preferences.remember_recording_bounds(source, (3, 9))
+    assert Preferences(path).recording_bounds(source) == (3, 9)
+    assert preferences.recording_bounds(other) is None
+    with pytest.raises(ValueError):
+        preferences.remember_recording_bounds(source, (9, 3))
+    assert preferences.recording_bounds(source) == (3, 9)
+    assert preferences.remember_recording_bounds(source, None)
+    assert Preferences(path).recording_bounds(source) is None
+
+
+def test_recording_markers_tolerate_unavailable_storage(tmp_path: Path) -> None:
+    preferences = Preferences(tmp_path)
+    assert preferences.recording_bounds("a" * 64) is None
+    assert not preferences.remember_recording_bounds("a" * 64, (1, 2))
+
+
 @pytest.mark.parametrize(
     ("method", "invalid"),
     [

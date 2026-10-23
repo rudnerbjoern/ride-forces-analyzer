@@ -10,6 +10,7 @@ from .translation import bind, items
 # cspell:words pixmap Deutsch
 
 from pathlib import Path
+from dataclasses import replace
 from functools import partial
 from threading import Event
 from time import monotonic
@@ -211,7 +212,7 @@ class ExportDialog(QDialog):
         self.saved: tuple[SavedPreset, ...] = ()
         self.batch_window: QDialog | None = None
         self.current_sample = (
-            data.source.recording.indices.start if current_sample is None else current_sample
+            self.analysis.replay_origin if current_sample is None else current_sample
         )
         self.worker: ExportWorker | None = None
         self.preview_worker: PreviewWorker | None = None
@@ -572,7 +573,14 @@ class ExportDialog(QDialog):
         preset = self.saved[index]
         settings = preset.settings
         try:
-            self.analysis = prepare_export_analysis(self.analysis, preset.analysis_configuration)
+            self.analysis = prepare_export_analysis(
+                self.analysis,
+                replace(
+                    preset.analysis_configuration,
+                    ride_bounds=self.analysis.configuration.ride_bounds,
+                    calibration=self.analysis.configuration.calibration,
+                ),
+            )
             self.data = self.data.with_analysis(self.analysis)
         except (TypeError, ValueError) as error:
             bind(self.status, tr(str(error)), "text")
@@ -681,8 +689,7 @@ class ExportDialog(QDialog):
         )
 
     def _bounds(self) -> tuple[int, int]:
-        indices = self.data.source.recording.indices
-        return ((indices.start, indices.end), (self.first, self.last), (0, self.data.count - 1))[
+        return (self.analysis.ride_bounds, (self.first, self.last), (0, self.data.count - 1))[
             self.interval.currentIndex()
         ]
 

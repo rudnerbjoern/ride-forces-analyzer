@@ -20,6 +20,7 @@ from pydantic import (
 )
 
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, StageConfiguration
+from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.analysis.models import AnalysisProfile
 from ride_forces_analyzer.rendering.model import ExportSettings
 from ride_forces_analyzer.rendering.layouts import registry
@@ -64,11 +65,16 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
     def complete_configuration(cls, value: object, info: ValidationInfo) -> object:
         _require_fields(
             value,
-            {item.name for item in fields(AnalysisConfiguration)},
+            {item.name for item in fields(AnalysisConfiguration)} - {"ride_bounds"},
             "Analysis recipe",
         )
         if isinstance(value, dict):
             recipe = cast(dict[str, object], value)
+            _require_fields(
+                recipe.get("calibration"),
+                {item.name for item in fields(CalibrationOverrides)},
+                "Reference calibration",
+            )
             _require_fields(
                 recipe.get("profile"),
                 {item.name for item in fields(AnalysisProfile)},
@@ -118,6 +124,8 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
             "events": asdict(value.events) if value.events is not None else None,
             "context_input": value.context_input,
             "events_input": value.events_input,
+            "ride_bounds": value.ride_bounds,
+            "calibration": asdict(value.calibration),
         }
 
     @field_validator("name", mode="before")
@@ -175,5 +183,9 @@ def make_preset(
         settings=settings,
         smoothing_window=smoothing_window,
         range_mode=range_mode,
-        analysis_configuration=analysis_configuration,
+        analysis_configuration=replace(
+            analysis_configuration,
+            ride_bounds=None,
+            calibration=CalibrationOverrides(),
+        ),
     )

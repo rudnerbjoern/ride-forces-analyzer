@@ -19,6 +19,7 @@ from ride_forces_analyzer.importers import ImportSuccess, Severity
 from ride_forces_analyzer.domain._validation import has_type
 
 from .models import AnalysisDiagnostic
+from .calibration import CalibrationOverrides, CalibrationReferenceError
 from .recording import (
     AnalysisConfiguration,
     AnalysisFailed,
@@ -230,10 +231,14 @@ class AnalysisService:
                     calculation_time=calculation_time,
                 )
         except Exception as error:
-            failure = AnalysisDiagnostic(
-                "ANALYSIS_FAILED",
-                Severity.ERROR,
-                f"{type(error).__name__}: {error}",
+            failure = (
+                error.diagnostic
+                if isinstance(error, CalibrationReferenceError)
+                else AnalysisDiagnostic(
+                    "ANALYSIS_FAILED",
+                    Severity.ERROR,
+                    f"{type(error).__name__}: {error}",
+                )
             )
             with self._lock:
                 if self._is_current(revision):
@@ -431,11 +436,23 @@ def _dirty_stages(
         return frozenset(AnalysisStage)
     old = previous.configuration
     dirty: set[AnalysisStage] = set()
-    if configuration.profile != old.profile or configuration.projection != old.projection:
+    calibration_changed = configuration.calibration != old.calibration
+    if calibration_changed:
+        dirty.add(AnalysisStage.CALIBRATION)
+    if (
+        calibration_changed
+        or configuration.profile != old.profile
+        or configuration.projection != old.projection
+    ):
         dirty.add(AnalysisStage.PROJECTION)
     if AnalysisStage.PROJECTION in dirty or configuration.smoothing != old.smoothing:
         dirty.add(AnalysisStage.SMOOTHING)
-    if configuration.profile != old.profile or configuration.orientation != old.orientation:
+    if (
+        configuration.profile != old.profile
+        or configuration.orientation != old.orientation
+        or not has_type(configuration.calibration, CalibrationOverrides)
+        or configuration.calibration.gravity_index != old.calibration.gravity_index
+    ):
         dirty.add(AnalysisStage.ORIENTATION)
     if (
         configuration.context != old.context

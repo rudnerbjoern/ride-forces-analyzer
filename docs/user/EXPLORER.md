@@ -7,6 +7,33 @@ The instructions below use the English interface labels.
 
 ![Recording explorer with force curves, airtime strip and inspector](../images/workspace-dark.png)
 
+## Adjust ride markers
+
+Right-click inside the chart to open the ride-marker menu:
+
+- **Set start here** / **Set end here** use the sample nearest the clicked position.
+- **Set gravity here** / **Set incline here** adjust the calibration references.
+- Each **Reset … to original** action restores just that marker.
+- **Reset all ride markers** restores all four markers and the original calibration.
+
+Changes are calculated and saved automatically. Actions that would place
+start after end are disabled. The start defines replay time zero; both markers
+define the reset view and the export assistant's marker range.
+Samples outside the ride remain available.
+The separate **From sample / To sample** selection is unchanged.
+
+The application remembers these markers locally for the recording, including
+after a restart. Moving an identical file keeps its markers; changed file contents
+are treated as a different recording. The original file is never modified.
+Choose Gravity at a steady moment with normal positive seat loading. Incline
+sets the reference for longitudinal and lateral forces; changing Gravity also
+changes tilt. These references may be outside the ride's start/end interval.
+This calibration remains provisional. An unsuitable reference shows an error and
+keeps the previous values. If saving fails, the change stays active for this
+session and the status bar reports it. Reset all removes the saved adjustments.
+Use the mouse wheel or left-drag to zoom;
+right-click opens the menu without changing zoom or selecting a sample.
+
 ## Find a moment
 
 - Left-click inside the chart to select the nearest sample. The cursor, sample

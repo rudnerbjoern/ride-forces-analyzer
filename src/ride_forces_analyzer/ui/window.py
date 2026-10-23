@@ -11,13 +11,14 @@ from ride_forces_analyzer.i18n import Language, tr
 from .translation import bind, items, set_ui_language, system_ui_language
 
 from pathlib import Path
+from dataclasses import replace
 from typing import TYPE_CHECKING, Literal
 from importlib.util import find_spec
 from time import monotonic
 from math import ceil
 
 from PySide6.QtCharts import QCategoryAxis, QChart, QChartView, QLineSeries, QValueAxis
-from PySide6.QtCore import QElapsedTimer, QPointF, Qt, QThreadPool, QTimer, Signal, Slot
+from PySide6.QtCore import QElapsedTimer, QPoint, QPointF, Qt, QThreadPool, QTimer, Signal, Slot
 from PySide6.QtGui import (
     QAction,
     QCloseEvent,
@@ -78,6 +79,7 @@ from .theme import THEMES, apply_theme, system_theme
 
 
 if TYPE_CHECKING:
+    from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
     from .analysis import AnalysisController
 
 
@@ -139,6 +141,7 @@ class SelectionSpinBox(QSpinBox):
 class TimeChartView(QChartView):
     zoom_requested = Signal(float, float)
     sample_requested = Signal(float)
+    marker_menu_requested = Signal(float, QPoint)
 
     def __init__(self, chart: QChart) -> None:
         super().__init__(chart)
@@ -146,6 +149,10 @@ class TimeChartView(QChartView):
         self._dragged = False
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.RightButton:
+            self._press_position = None
+            event.accept()
+            return
         self._press_position = (
             event.position() if event.button() == Qt.MouseButton.LeftButton else None
         )
@@ -163,6 +170,17 @@ class TimeChartView(QChartView):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.RightButton:
+            chart = self.chart()
+            point = chart.mapFromScene(self.mapToScene(event.position().toPoint()))
+            plot = chart.plotArea()
+            if plot.contains(point) and plot.width() > 0:
+                self.marker_menu_requested.emit(
+                    (point.x() - plot.left()) / plot.width(),
+                    self.mapToGlobal(event.position().toPoint()),
+                )
+            event.accept()
+            return
         clicked = (
             event.button() == Qt.MouseButton.LeftButton
             and self._press_position is not None
@@ -196,6 +214,7 @@ class ExplorerWindow(QMainWindow):
         super().__init__()
         self._application_title = settings.window_title
         self.preferences = Preferences()
+        self._marker_save_failed = False
         self.updates = UpdateController(self, self.preferences)
         language = (
             settings.language
@@ -231,9 +250,10 @@ class ExplorerWindow(QMainWindow):
         if find_spec("numpy") is not None:
             from .analysis import AnalysisController
 
-            self.analysis_controller = AnalysisController(self)
+            self.analysis_controller = AnalysisController(self, preferences=self.preferences)
             self.analysis_controller.snapshot_ready.connect(self._analysis_updated)
             self.analysis_controller.failed.connect(self._analysis_failed)
+            self.analysis_controller.markers_saved.connect(self._markers_saved)
             self.analysis_controller.pending_changed.connect(self._analysis_pending)
         self._accept_results = True
         self._load_generation = 0
@@ -352,6 +372,7 @@ class ExplorerWindow(QMainWindow):
         self.chart_view = TimeChartView(self.chart)
         self.chart_view.zoom_requested.connect(self.zoom_wheel)
         self.chart_view.sample_requested.connect(self.select_chart_sample)
+        self.chart_view.marker_menu_requested.connect(self.show_marker_menu)
         self.chart_view.setObjectName("recordingChart")
         self.chart_view.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.chart_view.setRubberBand(QChartView.RubberBand.HorizontalRubberBand)
@@ -1039,6 +1060,7 @@ class ExplorerWindow(QMainWindow):
             self._failed(tr("Unable to display recording."))
             return
         outcome = outcome.with_calibration(outcome.calibration_available)
+        self._marker_save_failed = False
         self._pause_playback()
         if self.analysis_controller is not None:
             self.analysis_controller.bind_snapshot(outcome.analysis)
@@ -1142,7 +1164,7 @@ class ExplorerWindow(QMainWindow):
         self._redraw_value_labels()
         self._redraw_time_labels()
         self._redraw_source_markers()
-        self.slider.setValue(outcome.source.recording.indices.start)
+        self.slider.setValue(outcome.ride_bounds[0])
         self.show_sample(self.slider.value())
         self._finish_loading()
         bind(self.statusBar(), "", "toolTip")
@@ -1153,6 +1175,71 @@ class ExplorerWindow(QMainWindow):
             else tr("Loaded — drag to zoom, navigate samples or select an interval"),
             "message",
         )
+
+    @Slot(float, QPoint)
+    def show_marker_menu(self, fraction: float, position: QPoint) -> None:
+        if (
+            self.data is None
+            or self.data.analysis is None
+            or self.analysis_controller is None
+            or self.analysis_controller.pending
+            or not self.open_action.isEnabled()
+        ):
+            return
+        self._pause_playback()
+        source = self.data.source
+        low, high = self.axis_x.min(), self.axis_x.max()
+        sample = self.data.sample_at_time(low + fraction * (high - low))
+        first, last = self.data.ride_bounds
+        indices = self.data.source.recording.indices
+        original = indices.start, indices.end
+        from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
+
+        calibration = self.data.analysis.configuration.calibration
+        menu = QMenu(self)
+
+        def add(
+            text: str,
+            bounds: tuple[int, int],
+            reference: "CalibrationOverrides",
+            enabled: bool = True,
+        ) -> None:
+            action = bind(QAction(menu), tr(text))
+            action.setEnabled(enabled)
+
+            def apply() -> None:
+                if self.data is not None and self.data.source is source:
+                    self._change_ride_markers(None if bounds == original else bounds, reference)
+
+            action.triggered.connect(apply)
+            menu.addAction(action)
+
+        add("Set start here", (sample, last), calibration, sample <= last)
+        add("Set end here", (first, sample), calibration, sample >= first)
+        add("Set gravity here", (first, last), replace(calibration, gravity_index=sample))
+        add("Set incline here", (first, last), replace(calibration, incline_index=sample))
+        menu.addSeparator()
+        add("Reset start to original", (indices.start, last), calibration, indices.start <= last)
+        add("Reset end to original", (first, indices.end), calibration, first <= indices.end)
+        add("Reset gravity to original", (first, last), replace(calibration, gravity_index=None))
+        add("Reset incline to original", (first, last), replace(calibration, incline_index=None))
+        menu.addSeparator()
+        add("Reset all ride markers", original, CalibrationOverrides())
+        menu.exec(position)
+        menu.deleteLater()
+
+    def _change_ride_markers(
+        self,
+        bounds: tuple[int, int] | None,
+        calibration: "CalibrationOverrides",
+    ) -> None:
+        if self.data is None or self.analysis_controller is None:
+            return
+        self.analysis_controller.request_markers(bounds, calibration)
+
+    @Slot(bool)
+    def _markers_saved(self, saved: bool) -> None:
+        self._marker_save_failed = not saved
 
     @Slot()
     def show_gps(self) -> None:
@@ -1174,7 +1261,9 @@ class ExplorerWindow(QMainWindow):
         bind(
             self.disclaimer,
             tr(
-                "Calibrated forces\nSource directions\n{0}\nInferred time",
+                "Calibrated forces\nReference calibration\n{0}\nInferred time"
+                if self.data.analysis is not None and self.data.analysis.calibration is not None
+                else "Calibrated forces\nSource directions\n{0}\nInferred time",
                 self.data.smoothing_text.replace(" • ", "\n"),
             )
             if active
@@ -1290,8 +1379,23 @@ class ExplorerWindow(QMainWindow):
 
         if not isinstance(outcome, RecordingAnalysis):
             return
+        markers_changed = self.data.analysis is not None and (
+            outcome.configuration.ride_bounds != self.data.analysis.configuration.ride_bounds
+        )
         self.data = self.data.with_analysis(outcome)
         self._refresh_analysis_view()
+        if markers_changed:
+            self._pause_playback()
+            self.axis_x.setRange(*self.data.default_time_range)
+            self._redraw_time_labels()
+            self.update_selection()
+        if self._marker_save_failed:
+            bind(
+                self.statusBar(),
+                tr("Ride markers applied for this session; local saving failed."),
+                "message",
+            )
+            return
         bind(
             self.statusBar(),
             tr("Loaded — drag to zoom, navigate samples or select an interval"),
@@ -1563,7 +1667,7 @@ class ExplorerWindow(QMainWindow):
             return
         low, high = self.axis_x.min(), self.axis_x.max()
         stride = max(1, round(round((high - low) * self.data.sample_rate / 5, 9)))
-        anchor = self.data.source.recording.indices.start or 0
+        anchor = self.data.ride_bounds[0]
         first_tick = ceil((max(0.0, low * self.data.sample_rate) - anchor - 1e-9) / stride)
         first = anchor + first_tick * stride
         indices = range(
@@ -1606,11 +1710,11 @@ class ExplorerWindow(QMainWindow):
                 "gravityIndex": "Gravity marker",
                 "inclineIndex": "Incline marker",
             }
-            display_name = tr(marker_names[name]) if self.ui_language == "de" else name
+            display_name = tr(marker_names[name])
             bind(label, f"{display_name} · {self.data.replay_text(index)}", "text")
             bind(
                 label,
-                tr("Source {0}: sample {1}; recording {2:.3f} s", name, index, time),
+                tr("{0}: sample {1}; recording {2:.3f} s", display_name, index, time),
                 "toolTip",
             )
             if self.axis_x.min() <= time <= self.axis_x.max() and plot.width() > 0:

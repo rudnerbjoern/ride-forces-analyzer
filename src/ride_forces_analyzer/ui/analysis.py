@@ -4,12 +4,13 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from collections.abc import Callable
 
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, Qt, Signal, Slot
 
 from ride_forces_analyzer.analysis.recording import (
+    AnalysisConfiguration,
     AnalysisFailed,
     AnalysisInvalidated,
     AnalysisState,
@@ -21,6 +22,9 @@ from ride_forces_analyzer.analysis.service import (
     AnalysisService,
     AnalysisSubscription,
 )
+from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
+from ride_forces_analyzer.storage.preferences import Preferences
+from ride_forces_analyzer.i18n import diagnostic_message
 from datetime import UTC, datetime
 
 
@@ -29,10 +33,12 @@ class _Binding:
     """Identity and UI-intent generation for one imported recording."""
 
     service: AnalysisService
+    markers: tuple[tuple[int, int] | None, CalibrationOverrides]
     generation: int = 0
     running_generation: int = 0
     subscription: AnalysisSubscription | None = None
     active: bool = True
+    save_markers: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,10 +55,12 @@ class _SmoothingWorker(QRunnable):
         generation: int,
         window: int,
         report: Callable[[object], None],
+        configuration: AnalysisConfiguration | None = None,
     ) -> None:
         super().__init__()
         self.binding, self.generation, self.window = binding, generation, window
         self.report = report
+        self.configuration = configuration
 
     @Slot()
     def run(self) -> None:
@@ -61,7 +69,13 @@ class _SmoothingWorker(QRunnable):
             return
         binding.running_generation = self.generation
         try:
-            binding.service.request_smoothing(self.window, calculation_time=datetime.now(UTC))
+            if self.configuration is None:
+                binding.service.request_smoothing(self.window, calculation_time=datetime.now(UTC))
+            else:
+                binding.service.request_configuration(
+                    self.configuration,
+                    calculation_time=datetime.now(UTC),
+                )
         except Exception as error:
             if binding.active:
                 self.report(_WorkerFailure(binding, self.generation, str(error)))
@@ -85,14 +99,21 @@ class AnalysisController(QObject):
 
     snapshot_ready = Signal(object)
     failed = Signal(str)
+    markers_saved = Signal(bool)
     pending_changed = Signal(bool)
     _received = Signal(object)
 
-    def __init__(self, parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        parent: QObject | None = None,
+        *,
+        preferences: Preferences | None = None,
+    ) -> None:
         super().__init__(parent)
         self._binding: _Binding | None = None
         self._closed = False
         self._pending = False
+        self.preferences = preferences if preferences is not None else Preferences()
         self.pool = QThreadPool(self)
         self.pool.setMaxThreadCount(1)
         self._received.connect(self._apply, Qt.ConnectionType.QueuedConnection)
@@ -107,7 +128,10 @@ class AnalysisController(QObject):
         self._release()
         if snapshot is None:
             return
-        binding = _Binding(AnalysisService(snapshot))
+        binding = _Binding(
+            AnalysisService(snapshot),
+            (snapshot.configuration.ride_bounds, snapshot.configuration.calibration),
+        )
         self._binding = binding
         binding.subscription = binding.service.subscribe(
             lambda value: self._received.emit(
@@ -120,9 +144,52 @@ class AnalysisController(QObject):
         binding = self._binding
         if self._closed or binding is None:
             return
+        state = binding.service.get_state()
+        configuration = None
+        if state.status is RequestStatus.FAILED and state.snapshot is not None:
+            configuration = state.snapshot.configuration
+            parameters = dict(configuration.smoothing.parameters)
+            parameters["window_samples"] = window
+            configuration = replace(
+                configuration,
+                smoothing=replace(configuration.smoothing, parameters=tuple(parameters.items())),
+            )
         binding.generation += 1
         self._set_pending(True)
-        self.pool.start(_SmoothingWorker(binding, binding.generation, window, self._received.emit))
+        self.pool.start(
+            _SmoothingWorker(
+                binding,
+                binding.generation,
+                window,
+                self._received.emit,
+                configuration,
+            ),
+        )
+
+    def request_markers(
+        self,
+        bounds: tuple[int, int] | None,
+        calibration: CalibrationOverrides,
+    ) -> None:
+        """Change all four choices through the same revision-guarded worker queue."""
+        binding = self._binding
+        if self._closed or binding is None:
+            return
+        snapshot = binding.service.get_state().snapshot
+        if snapshot is None:
+            return
+        binding.save_markers = True
+        binding.generation += 1
+        self._set_pending(True)
+        self.pool.start(
+            _SmoothingWorker(
+                binding,
+                binding.generation,
+                0,
+                self._received.emit,
+                replace(snapshot.configuration, ride_bounds=bounds, calibration=calibration),
+            ),
+        )
 
     @Slot(object)
     def _apply(self, payload: object) -> None:
@@ -138,6 +205,7 @@ class AnalysisController(QObject):
         ):
             return
         if isinstance(payload, _WorkerFailure):
+            binding.save_markers = False
             self._set_pending(False)
             self.failed.emit(payload.message)
             return
@@ -153,8 +221,9 @@ class AnalysisController(QObject):
             return
         if isinstance(value, AnalysisFailed):
             if state.status is RequestStatus.FAILED:
+                binding.save_markers = False
                 self._set_pending(False)
-                self.failed.emit(value.failure.message)
+                self.failed.emit(diagnostic_message(value.failure.code, value.failure.message))
             return
         snapshot = value.snapshot
         if (
@@ -163,6 +232,12 @@ class AnalysisController(QObject):
             or snapshot is not state.snapshot
         ):
             return
+        markers = snapshot.configuration.ride_bounds, snapshot.configuration.calibration
+        if binding.save_markers or markers != binding.markers:
+            saved = self.preferences.remember_recording_markers(snapshot.source, *markers)
+            binding.markers = markers
+            binding.save_markers = False
+            self.markers_saved.emit(saved)
         self._set_pending(False)
         self.snapshot_ready.emit(snapshot)
 

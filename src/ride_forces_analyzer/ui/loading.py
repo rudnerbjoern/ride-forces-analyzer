@@ -7,10 +7,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from ride_forces_analyzer.i18n import tr
 
 from pathlib import Path
+from datetime import UTC, datetime
 
 from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
-from ride_forces_analyzer.explorer import load_recording
+from ride_forces_analyzer.explorer import ExplorerData, load_recording
+from ride_forces_analyzer.storage.preferences import Preferences
 
 
 class LoadSignals(QObject):
@@ -29,6 +31,22 @@ class LoadWorker(QRunnable):
     def run(self) -> None:
         try:
             outcome = load_recording(self.path)
+            if isinstance(outcome, ExplorerData) and outcome.analysis is not None:
+                snapshot = outcome.analysis
+                now = datetime.now(UTC)
+                configuration = Preferences().recording_configuration(
+                    outcome.source,
+                    snapshot.configuration,
+                    calculation_time=now,
+                )
+                if configuration != snapshot.configuration:
+                    outcome = outcome.with_analysis(
+                        snapshot.with_configuration(
+                            configuration,
+                            revision=snapshot.revision + 1,
+                            calculation_time=now,
+                        ),
+                    )
         except Exception:
             self.signals.failed.emit(
                 self.generation,

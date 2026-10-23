@@ -59,6 +59,11 @@ Source hashes establish provenance, not availability.
 Positive lateral means right; positive longitudinal means acceleration.
 Generic RIDER-frame signs remain a separate contract.
 
+User reference calibration is an empirical, provisional product policy, separate
+from source-app projection and qualified physical-frame analysis. Its
+[reference rules](../development/ANALYSIS_MODELS.md#reference-calibration) preserve
+source polarity and never qualify rider sensations or safety assessment.
+
 The optional [airtime event rules](../implementation/AIRTIME_EVENTS.md) define
 source-index episodes independently of display labels. Events require explicit
 configuration, retain provisional quality and gap/boundary flags, and never bridge
@@ -75,6 +80,13 @@ inputs; reuse does not mean retaining every configuration ever requested. A
 smoothing change keeps source, time, projection and independent orientation,
 then rebuilds smoothing and only consumers of that changed input. Context/events
 using projection remain reusable. Filters never consume already smoothed values.
+Custom reference calibration is an upstream shared stage: Gravity changes rebuild
+the basis, projection, smoothing, dependent context/events and tilt; Incline changes
+retain tilt. Force smoothing and ride-bound changes retain the basis. Raw source
+buffers and time remain shared. Resetting both references uses the exact original
+source directions, without replacing their rounded basis with orthonormal axes. The
+[reference evidence](../validation/APP_REFERENCE.md#reference-calibration-evidence)
+supports the fixed 5-sample calibration window independently of display smoothing.
 
 The service owns its current completed snapshot, including the retained result
 during pending/failed work, plus references required by active calculations and
@@ -111,6 +123,17 @@ Failed loads retain the previous view. All metadata is plain source text.
 Recording time is inferred `index / effective_rate`, not an acquisition epoch.
 Integer-rate replay uses start-relative `MM:SS.ff`, with a within-second sample
 counter; fractional rates use seconds. GPS never determines this clock.
+Optional user ride bounds are source-content-bound local preferences. The analysis
+configuration carries the effective start/end across views and bound exports;
+original markers and `AnalysisTime.replay_origin` retain source provenance.
+`RecordingAnalysis.replay_origin` and sample replay seconds use the effective start.
+Ride-bound changes reuse all numerical stages and leave the full sample axis intact.
+Local Gravity/Incline choices use the same source hash with an explicit algorithm
+version and fixed reference window. The storage adapter validates choices before
+writes and resolves optional configuration for import/new-job composition; the
+analysis service remains independent of storage. Reusable presets carry no
+file-specific overrides, while queued jobs bind those choices and ignore later
+preference changes. Original bytes, markers and directions remain source evidence.
 Interactive playback scales monotonic elapsed seconds by 0.5×, 1× or 2× and maps
 them to existing integer samples using the effective recording rate. Speed changes
 preserve continuous position and play/pause state; new recordings default to 1×. UI timer frequency does not define recording

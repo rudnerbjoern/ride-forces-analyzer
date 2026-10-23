@@ -9,6 +9,17 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:disable
 
 GERMAN: dict[str, str] = {
+    "Set start here": "Start hier setzen",
+    "Set end here": "Ende hier setzen",
+    "Set gravity here": "Schwerkraft hier setzen",
+    "Calibrated forces\nReference calibration\n{0}\nInferred time": "Kalibrierte Kräfte\nReferenzkalibrierung\n{0}\nAbgeleitete Zeit",
+    "Set incline here": "Neigung hier setzen",
+    "Reset start to original": "Start auf Original zurücksetzen",
+    "Reset end to original": "Ende auf Original zurücksetzen",
+    "Reset gravity to original": "Schwerkraft auf Original zurücksetzen",
+    "Reset incline to original": "Neigung auf Original zurücksetzen",
+    "Reset all ride markers": "Alle Fahrtmarkierungen zurücksetzen",
+    "Ride markers applied for this session; local saving failed.": "Fahrtmarkierungen für diese Sitzung übernommen; lokales Speichern fehlgeschlagen.",
     "Export Analyzer JSON…": "Analyzer-JSON exportieren…",
     "Export Analyzer JSON": "Analyzer-JSON exportieren",
     "Replace existing file?": "Vorhandene Datei ersetzen?",
@@ -262,7 +273,7 @@ GERMAN: dict[str, str] = {
     "Calibrated forces • Source directions • {0} • Inferred time": "Kalibrierte Kräfte • Quellrichtungen • {0} • Abgeleitete Zeit",
     "Raw acceleration x/y/z • Units and rider directions unverified • Inferred time": "Rohbeschleunigung x/y/z • Einheiten und Fahrtrichtungen ungeprüft • Abgeleitete Zeit",
     "Raw source values": "Rohwerte",
-    "Source {0}: sample {1}; recording {2:.3f} s": "Quelle {0}: Messpunkt {1}; Aufnahme {2:.3f} s",
+    "{0}: sample {1}; recording {2:.3f} s": "{0}: Messpunkt {1}; Aufnahme {2:.3f} s",
     "No recording": "Keine Aufnahme",
     "Calibration unavailable for this recording": "Für diese Aufnahme ist keine Kalibrierung verfügbar",
     "{0}  |  {1:,} samples  |  Sample rate {2:g} Hz ({3})  |  Time: INFERRED_UNIFORM  |  Gravity {4}  |  GPS {5}": "{0}  |  {1:,} Messpunkte  |  Abtastrate {2:g} Hz ({3})  |  Zeit: INFERRED_UNIFORM  |  Schwerkraft {4}  |  GPS {5}",
@@ -373,6 +384,12 @@ GERMAN: dict[str, str] = {
 }
 
 DIAGNOSTIC_GERMAN: dict[str, str] = {
+    "CALIBRATION_INDEX_OUT_OF_RANGE": "Die Kalibrierungsmarkierung liegt außerhalb der Aufnahme.",
+    "CALIBRATION_SOURCE_AXES_UNAVAILABLE": "Für die Kalibrierung fehlen ursprüngliche Richtungsvektoren.",
+    "CALIBRATION_NON_FINITE_REFERENCE": "Die Kalibrierungsreferenz enthält nicht endliche Werte.",
+    "CALIBRATION_ZERO_REFERENCE": "Die Kalibrierungsreferenz hat keine Richtung.",
+    "CALIBRATION_PARALLEL_REFERENCES": "Schwerkraft und Neigung ergeben keine unterschiedlichen Richtungen.",
+    "CALIBRATION_POLARITY_AMBIGUOUS": "Neigung bestimmt das ursprüngliche Vorzeichen der Längsrichtung nicht eindeutig.",
     "DUPLICATE_JSON_KEY": "Ein JSON-Schlüssel kommt mehrfach vor.",
     "EMPTY_INPUT": "Die Eingabe ist leer.",
     "GPS_NEGATIVE_VALUE": "Ein GPS-Feld enthält einen negativen Wert; der Quellwert bleibt erhalten.",
