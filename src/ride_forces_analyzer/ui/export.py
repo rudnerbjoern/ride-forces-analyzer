@@ -5,6 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 from ride_forces_analyzer.i18n import get_language, tr
+from ride_forces_analyzer.error_reporting import record_error
 from .translation import bind, items
 
 # cspell:words pixmap Deutsch
@@ -112,6 +113,7 @@ class PreviewWorker(QRunnable):
                 self.previous_positions,
             )
         except Exception as error:
+            record_error("Export preview", error)
             self.signals.failed.emit(self.revision, str(error))
         else:
             self.signals.ready.emit(self.revision, result)
@@ -182,6 +184,7 @@ class ExportWorker(QRunnable):
         except ExportCancelled:
             self.signals.finished.emit(tr("Export cancelled. No incomplete output was kept."))
         except Exception as error:
+            record_error("Video export", error)
             self.signals.failed.emit(tr("Export failed: {0}", error))
         else:
             self.signals.saved.emit(str(path))
@@ -521,6 +524,7 @@ class ExportDialog(QDialog):
             if select is not None:
                 self.preset_selector.setCurrentText(select)
         except ExportStoreError as error:
+            record_error("Export configuration", error)
             bind(self.status, tr(str(error)), "text")
 
     def _preset(self, name: str) -> SavedPreset:
@@ -544,6 +548,7 @@ class ExportDialog(QDialog):
             self._refresh_presets(preset.name)
             bind(self.status, tr("Saved preset: {0}", preset.name), "text")
         except (ValueError, ExportStoreError) as error:
+            record_error("Export configuration", error)
             bind(self.status, tr(str(error)), "text")
 
     @Slot()
@@ -562,6 +567,7 @@ class ExportDialog(QDialog):
                 "text",
             )
         except (ValueError, ExportStoreError) as error:
+            record_error("Export configuration", error)
             bind(self.status, tr(str(error)), "text")
 
     @Slot()
@@ -583,6 +589,7 @@ class ExportDialog(QDialog):
             )
             self.data = self.data.with_analysis(self.analysis)
         except (TypeError, ValueError) as error:
+            record_error("Export configuration", error)
             bind(self.status, tr(str(error)), "text")
             return
         self.overlay_language.setCurrentIndex(1 if settings.language == "de" else 0)
@@ -653,6 +660,7 @@ class ExportDialog(QDialog):
                 "text",
             )
         except (ValueError, ExportStoreError) as error:
+            record_error("Export configuration", error)
             bind(self.status, tr(str(error)), "text")
 
     @Slot()
@@ -907,6 +915,7 @@ class ExportDialog(QDialog):
             timeline = prepare_export(self.analysis, settings, first, last)
             encoder = find_ffmpeg(Path(self.encoder.text()) if self.encoder.text() else None)
         except (ValueError, OSError) as error:
+            record_error("Export preparation", error)
             bind(self.status, tr(str(error)), "text")
             return
         suffix = ".mov" if settings.output == "transparent" else ".mp4"

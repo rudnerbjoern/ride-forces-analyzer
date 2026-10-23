@@ -6,6 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass, replace
 from collections.abc import Callable
+from ride_forces_analyzer.error_reporting import record_error
 
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, Qt, Signal, Slot
 
@@ -77,6 +78,7 @@ class _SmoothingWorker(QRunnable):
                     calculation_time=datetime.now(UTC),
                 )
         except Exception as error:
+            record_error("Analysis worker", error)
             if binding.active:
                 self.report(_WorkerFailure(binding, self.generation, str(error)))
 

@@ -22,6 +22,7 @@ from ride_forces_analyzer.analysis.recording import (
 )
 from ride_forces_analyzer.analysis.service import AnalysisService
 from ride_forces_analyzer.importers import ImportSuccess, import_forces
+from ride_forces_analyzer.error_reporting import record_error
 from ride_forces_analyzer.storage.export_models import BatchJob, RangeMode, SavedBatch, SavedPreset
 from ride_forces_analyzer.storage.preferences import Preferences
 from .encoding import ExportCancelled, export_video
@@ -221,6 +222,7 @@ def run_batches(
                     cancel.set()
                     result = JobResult(**common, status="cancelled", error="Export cancelled")
                 except Exception as error:
+                    record_error("Batch export job", error)
                     result = JobResult(**common, status="failed", error=str(error))
             results.append(result)
             report = BatchReport(directory=directory, results=tuple(results))

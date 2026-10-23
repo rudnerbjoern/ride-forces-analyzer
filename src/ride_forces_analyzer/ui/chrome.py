@@ -10,9 +10,11 @@ import ctypes
 from ctypes import wintypes
 import sys
 
-from PySide6.QtCore import QEvent, QObject, QPointF, QRectF, Qt, QTimer
-from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPalette, QPen, QPixmap
+from PySide6.QtCore import QEvent, QObject, QTimer
+from PySide6.QtGui import QIcon, QPalette, QPixmap
 from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QWidget
+
+from .icons import ICON_SIZES, render_icon
 
 
 class NativeCaptionFilter(QObject):
@@ -45,32 +47,10 @@ def install_native_captions(application: QApplication) -> None:
 
 
 def app_icon() -> QIcon:
-    """Draw a compact force trace, legible in the caption and taskbar."""
+    """Draw a lightly raised force trace over a blue gradient at native icon sizes."""
     icon = QIcon()
-    for size in (16, 24, 32, 48, 64, 256):
-        pixmap = QPixmap(size, size)
-        pixmap.fill(Qt.GlobalColor.transparent)
-        painter = QPainter(pixmap)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.scale(size / 64, size / 64)
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor("#245fe5"))
-        painter.drawRoundedRect(QRectF(0, 0, 64, 64), 14, 14)
-        trace = QPainterPath(QPointF(8, 35))
-        for x, y in ((19, 35), (26, 16), (35, 49), (43, 29), (56, 29)):
-            trace.lineTo(x, y)
-        painter.setPen(
-            QPen(
-                QColor("#ffffff"),
-                5,
-                Qt.PenStyle.SolidLine,
-                Qt.PenCapStyle.RoundCap,
-                Qt.PenJoinStyle.RoundJoin,
-            ),
-        )
-        painter.drawPath(trace)
-        painter.end()
-        icon.addPixmap(pixmap)
+    for size in ICON_SIZES:
+        icon.addPixmap(QPixmap.fromImage(render_icon(size)))
     return icon
 
 

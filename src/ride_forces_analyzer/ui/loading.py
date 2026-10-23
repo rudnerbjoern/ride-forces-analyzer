@@ -13,6 +13,8 @@ from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.storage.preferences import Preferences
+from ride_forces_analyzer.error_reporting import record_error
+from ride_forces_analyzer.importers import ImportFailure, Severity
 
 
 class LoadSignals(QObject):
@@ -31,6 +33,10 @@ class LoadWorker(QRunnable):
     def run(self) -> None:
         try:
             outcome = load_recording(self.path)
+            if isinstance(outcome, ImportFailure):
+                for diagnostic in outcome.diagnostics:
+                    if diagnostic.severity is Severity.ERROR:
+                        record_error("Import", message=f"{diagnostic.code}: {diagnostic.message}")
             if isinstance(outcome, ExplorerData) and outcome.analysis is not None:
                 snapshot = outcome.analysis
                 now = datetime.now(UTC)
@@ -47,7 +53,8 @@ class LoadWorker(QRunnable):
                             calculation_time=now,
                         ),
                     )
-        except Exception:
+        except Exception as error:
+            record_error("Import worker", error)
             self.signals.failed.emit(
                 self.generation,
                 tr("Unexpected load error. The previous recording is unchanged."),

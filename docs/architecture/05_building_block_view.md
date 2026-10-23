@@ -148,7 +148,13 @@ that request through a worker and applies only current results. Without supporte
 map coordinates, the original local WGS84 approximation remains available.
 The geometry has no dependencies on force analysis, sensor time or local selections.
 
-The approved focus workspace keeps Qt-only structure in `ui.window` and local
+`ui.application.RecordingApplication` owns recording windows and their open-request
+queue. `instance.InstanceBroker` owns process locking and local Qt IPC, with no
+widget or analysis dependency. `__main__` coordinates ownership before window
+creation. Each `ui.window.ExplorerWindow` retains its own import/analysis controller
+and presentation state; only application preferences are shared across windows.
+
+The focus workspace keeps Qt-only structure in `ui.window` and local
 styling in `ui.theme` and native caption/icon integration in `ui.chrome`. Qt-independent `explorer` supplies compact header text,
 ordered metadata rows, sample clocks and directional current-value cards from
 unchanged presentation data. Split/scroll/expand state is view-only; no scientific

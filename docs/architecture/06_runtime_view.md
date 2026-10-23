@@ -4,20 +4,41 @@
 
 ## Qt bootstrap
 
+The normal module/frozen entry initializes `error_reporting` before importing
+the UI or constructing settings. A per-process UTF-8 support report receives
+application error records and main-thread, Python-thread and unraisable exception
+hooks. Worker failure boundaries retain exceptions before emitting UI messages;
+import diagnostics and analysis/batch failures remain available after handling.
+Writes are serialized and flushed without rotation or count limits. Native
+`faulthandler` output uses the same open file, with best-effort crash coverage.
+Completed-run files are removed at startup; active processes keep separate files.
+Report storage failure must not replace original application error behavior.
+No recording objects or locals are serialized; exception strings and traceback
+source lines remain technical support data that users must review before sharing.
+
 ```mermaid
 sequenceDiagram
     actor User
     participant Entry as __main__.main
     participant Settings as config.AppSettings
     participant Qt as QApplication / ExplorerWindow
+    participant IPC as InstanceBroker
     User->>Entry: Launch module with optional settings
     Entry->>Settings: Use supplied model or construct defaults
     Settings-->>Entry: Validated immutable settings
-    Entry->>Qt: Construct application and raw explorer
-    Entry->>Qt: Set title, dimensions and raw chart controls
-    Entry->>Qt: Show window and run event loop
-    User->>Qt: Close window
-    Qt-->>Entry: Event loop exit code
+    Entry->>Qt: Construct application
+    Entry->>IPC: Acquire process ownership or forward request
+    alt Owner
+        Entry->>Qt: Construct explorer and show initial window
+        Entry->>Qt: Run event loop
+        User->>Qt: Open additional recording windows
+        User->>Qt: Close last recording window
+        Qt-->>Entry: Event loop exit code
+        Entry->>IPC: Release ownership after workers finish
+    else Existing owner
+        IPC-->>Entry: Request acknowledged
+        Entry-->>User: Exit launcher without another application window
+    end
 ```
 
 AppSettings rejects unknown settings and invalid title/dimensions outside widgets.
@@ -25,6 +46,27 @@ Window dimensions are positive and at most 16,777,215 pixels, the Qt widget limi
 Invalid model construction fails before window creation. The GUI smoke test starts
 the real module in a separate Windows process and exits through the Qt event loop;
 its tests exercise the real bootstrap contract above.
+
+The module and frozen entry points accept one optional local recording path and
+`--new-window`. `instance.InstanceBroker` uses a long-lived `QLockFile` and
+`QLocalServer`/`QLocalSocket` to forward validated requests within the same local
+application-data namespace. Windows uses user-restricted pipe access; Unix sockets
+reside in a private directory. Startup retries/acknowledgement are bounded to five
+seconds; failed forwarding never launches a competing owner. Only the lock owner
+removes stale sockets; Qt handles stale process locks. No network service is used.
+
+`RecordingApplication` owns the recording-window registry and ordered request
+queue. Reopening an existing path activates its window, unless `--new-window`
+explicitly requests a separate view. Other paths use the active recording window;
+requests wait while its importer is busy. Each window owns its independent analysis
+service, selections, playback and child dialogs. Language/appearance are shared;
+new windows do not restore the last file. Closing one window unregisters it; the
+last window ends the event loop. Background workers finish before ownership ends.
+An explicit path is opened through the normal import before restoration can run.
+The application receives local macOS file-open events through `QFileOpenEvent`;
+pending requests wait for window construction or an active import.
+The macOS bundle declares both recording extensions as alternate viewer types;
+the Linux desktop entry passes a single file with `%f`.
 
 After the event loop starts, the explorer applies the optional Restore last file
 preference (off by default). Preferences supplies an existing absolute file path;

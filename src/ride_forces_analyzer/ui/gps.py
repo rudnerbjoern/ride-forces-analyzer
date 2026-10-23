@@ -7,6 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words Pixmap
 
 from ride_forces_analyzer.i18n import tr
+from ride_forces_analyzer.error_reporting import record_error
 from .translation import bind
 
 from threading import Event
@@ -53,7 +54,8 @@ class MapWorker(QRunnable):
     def run(self) -> None:
         try:
             result = load_background(self.request, self.cancelled)
-        except Exception:
+        except Exception as error:
+            record_error("Map background worker", error)
             self.signals.failed.emit(self.revision)
         else:
             self.signals.completed.emit(self.revision, result)

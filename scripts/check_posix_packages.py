@@ -9,6 +9,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 import argparse
 import json
 import os
+import plistlib
 from pathlib import Path, PurePosixPath
 import posixpath
 import shutil
@@ -59,16 +60,16 @@ def extract(archive: Path, destination: Path) -> None:
             source.extractall(destination, filter="data")
     else:
         with ZipFile(archive) as source:
-            members = source.infolist()
-            if len({entry.filename for entry in members}) != len(members):
+            zip_members = source.infolist()
+            if len({entry.filename for entry in zip_members}) != len(zip_members):
                 raise ValueError("Duplicate package member")
-            for entry in members:
+            for zip_entry in zip_members:
                 target = (
-                    source.read(entry).decode("utf-8")
-                    if stat.S_ISLNK(entry.external_attr >> 16)
+                    source.read(zip_entry).decode("utf-8")
+                    if stat.S_ISLNK(zip_entry.external_attr >> 16)
                     else None
                 )
-                validate_member(entry.filename, target)
+                validate_member(zip_entry.filename, target)
         subprocess.run(
             ["ditto", "-x", "-k", str(archive), str(destination)],
             check=True,
@@ -121,11 +122,28 @@ def check(assets: Path, recording: Path, *, expected_target: str | None = None) 
             if not (licenses / name).is_file():
                 raise ValueError(f"Missing native package notice: {name}")
         if macos:
+            with (bundle / "Contents/Info.plist").open("rb") as source:
+                info = plistlib.load(source)
+            icon = info.get("CFBundleIconFile")
+            if (
+                not isinstance(icon, str)
+                or Path(icon).name != icon
+                or not (bundle / "Contents/Resources" / icon).is_file()
+            ):
+                raise ValueError("Native app icon is missing")
             subprocess.run(
                 ["codesign", "--verify", "--deep", "--strict", str(bundle)],
                 check=True,
                 timeout=120,
             )
+        else:
+            for name in (
+                "ride-forces-analyzer.desktop",
+                "ride-forces-analyzer.png",
+                "ride-forces-analyzer.svg",
+            ):
+                if not (bundle / name).is_file():
+                    raise ValueError(f"Missing Linux launcher artwork: {name}")
         environment = dict(os.environ)
         for name in (
             "PYTHONPATH",

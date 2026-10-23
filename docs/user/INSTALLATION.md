@@ -46,6 +46,24 @@ cd Ride-Forces-Analyzer
 
 Keep `_internal` beside the executable.
 
+### Optional application-menu shortcut
+
+Keep the extracted folder in its permanent location. From that folder, run:
+
+```sh
+data_dir="${XDG_DATA_HOME:-$HOME/.local/share}"
+mkdir -p "$HOME/.local/bin" "$data_dir/applications" \
+    "$data_dir/icons/hicolor/512x512/apps"
+ln -s "$PWD/Ride-Forces-Analyzer" "$HOME/.local/bin/Ride-Forces-Analyzer"
+cp ride-forces-analyzer.desktop "$data_dir/applications/"
+cp ride-forces-analyzer.png "$data_dir/icons/hicolor/512x512/apps/"
+```
+
+Ensure `$HOME/.local/bin` is on your desktop session's `PATH`; on Ubuntu, log out
+and back in after first creating that directory. The application menu then uses
+the same blue force-trace icon as the window. If the extracted folder moves,
+update the symbolic link to its new location.
+
 ## macOS 15 or newer
 
 1. Choose `macos-arm64.zip` for **Apple Silicon** or `macos-x64.zip` for **Intel**.
@@ -107,6 +125,66 @@ Recordings can contain GPS positions, timestamps and personal metadata. Review
 files before sharing them in issues or with other people; they are not
 automatically made anonymous.
 
+## Open a recording directly
+
+Pass a `.forces` or `.zforces` path when starting the application. Quote paths
+containing spaces. This takes priority over **Restore last file**.
+
+```powershell
+.\Ride-Forces-Analyzer.exe "D:\Recordings\Manta.forces"
+```
+
+```bash
+# Linux, from the extracted application directory
+./Ride-Forces-Analyzer "/home/user/Recordings/Manta.zforces"
+# macOS, after placing the application in Applications
+open -a "Ride-Forces-Analyzer" --args "/Users/user/Recordings/Manta.forces"
+```
+
+On Windows, **Open with** can use the portable EXE; dropping a recording onto
+the EXE also passes its path. On Linux, the installed desktop launcher accepts
+a file from **Open with**. On macOS, the application supports Finder **Open With**
+and dropping a recording onto its Dock icon. No default file association is forced.
+Further launches forward their file to the running application. An already open
+file activates its window; another file opens in the active recording window.
+Requests wait while that window is importing. Launching without a path activates
+an existing window. Nothing is sent over the internet.
+
+Use `--new-window` to compare recordings in separate windows of the same application:
+
+```powershell
+.\Ride-Forces-Analyzer.exe "D:\Recordings\Manta.forces" --new-window
+```
+
+The same option works on Linux and with macOS `open -a` after `--args`.
+If macOS already has the app running, use
+`open -n -a "Ride-Forces-Analyzer" --args "/Users/user/Recordings/Manta.forces" --new-window`
+to deliver command-line arguments; the short-lived launcher forwards them and exits.
+Missing or invalid files use the normal import error display.
+
+## Support: error report from the current run
+
+The application writes a local text file, `error-report-<process-id>.txt`, in:
+
+- Windows: `%LOCALAPPDATA%\Ride Forces Analyzer\support`
+- macOS: `~/Library/Application Support/Ride Forces Analyzer/support`
+- Linux: `$XDG_DATA_HOME/ride-forces-analyzer/support`, or
+  `~/.local/share/ride-forces-analyzer/support` when unset
+
+The file starts with application/system details and collects errors throughout
+that run, without a count or size limit. It is prepared at startup so native
+crashes can write diagnostic stacks when supported. Reports from completed runs
+are removed on the next launch; reports of other running instances are preserved.
+Copy the file before restarting if you need to retain it for support.
+
+Unhandled Python errors include available tracebacks and chained exceptions.
+Native crash information is best effort; termination by the operating system,
+power loss or unwritable storage can prevent a report. Recording contents and
+local variables are not deliberately dumped, but exception messages and traces
+can contain personal paths or data fragments. Review the text and delete or
+replace anything you do not want to share before attaching it to a support request.
+Nothing is uploaded automatically.
+
 ## If the application does not start
 
 - Verify that the download matches your operating system and processor.
@@ -115,6 +193,10 @@ automatically made anonymous.
   beside the executable. On macOS, follow the first-launch instructions above.
 - If it still fails, report the application version, operating system and error
   message in a [GitHub issue](https://github.com/rudnerbjoern/ride-forces-analyzer/issues).
+  In **About**, choose **Copy diagnostic information** to copy the application,
+  system, Python and Qt versions, architecture, distribution type and FFmpeg status.
+  The check runs locally and does not include personal paths or recording data.
+  Review the copied text before pasting it into your report.
   Do not attach private recordings or personal paths unnecessarily. Report
   security issues through the [private reporting channels](../../SECURITY.md).
 
