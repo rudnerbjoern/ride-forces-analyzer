@@ -56,7 +56,8 @@ Incline; separator; reset each marker to original; separator; reset all ride mar
 Setting uses the nearest sample at the clicked position under the
 current zoom; the cursor/selection is unchanged. Right-click does not zoom out.
 Inclusive effective bounds require `0 <= start <= end < sample_count`;
-invalid start/end actions are disabled. Requests use the analysis service and
+invalid start/end actions are disabled. Gravity/Incline accept any admitted source
+sample, independently of their order or the ride bounds. Requests use the analysis service and
 worker/UI guards; latest changes supersede pending work. Only an adopted successful
 result saves all four choices in one transaction. Invalid references retain the
 last valid view and saved choices, with a localized error message.

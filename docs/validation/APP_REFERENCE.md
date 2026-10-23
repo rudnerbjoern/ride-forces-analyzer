@@ -58,13 +58,8 @@ Live display behavior belongs to the [explorer contract](../implementation/RAW_E
   boundary handling or physical calibration validity. The supported
   [reference-calibration API](../development/ANALYSIS_MODELS.md#reference-calibration)
   explicitly clips and renormalizes new-reference windows at recording edges.
-- The [calibration tests](../../tests/analysis/test_calibration.py) retain the
-  original-axis comparison at source precision and the stated angle/force ceilings
-  using complete shared snapshots for all five recordings. Reset restores the
-  exact original force, orientation and context values. Iron Gwazi retains absent
-  orientation. Shared-snapshot/service tests cover synthetic polarity, admission,
-  dependency reuse and failures; export tests retain bound calibration recipes
-  across later workspace resets.
+- The [calibration regressions](../../tests/analysis/test_calibration.py) enforce
+  the stated source-precision, angle and force limits across all five recordings.
 
 ## Corpus extrema regression
 

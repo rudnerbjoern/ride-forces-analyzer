@@ -159,6 +159,7 @@ Module: [`analysis.calibration`](../../src/ride_forces_analyzer/analysis/calibra
   unsupported versions/windows raise `ValueError`, including on saved-job loading.
 - `validate_calibration_references(source, overrides, calculation_time=...)` checks
   indices against the complete acceleration sequence, independently of ride bounds.
+  Gravity/Incline may be outside the ride interval or precede each other.
   It returns `None` for inactive overrides, otherwise frozen `CalibrationReferences`.
 - Custom references use a fixed centered 5-sample arithmetic mean of original device
   acceleration, clipped and renormalized at edges. The result retains actual
@@ -175,9 +176,11 @@ Module: [`analysis.calibration`](../../src/ride_forces_analyzer/analysis/calibra
   ambiguous longitudinal polarity. Dimensionless sine and absolute-cosine admission
   tolerances are named constants, both `1e-6`; they imply no physical qualification.
 - `prepare_calibration_basis` returns `CalibrationBasis` with references/provenance
-  and full-precision unit axes in vertical/lateral/longitudinal order. It projects
-  the longitudinal reference perpendicular to vertical, preserves original
-  longitudinal polarity and derives lateral from longitudinal cross vertical.
+  and full-precision orthonormal, right-handed axes in vertical/lateral/longitudinal
+  order. Vertical is the normalized custom Gravity mean, or the normalized source
+  vertical when unselected. Project the custom Incline mean, or source longitudinal
+  when unselected, perpendicular to that vertical; normalize and align its sign
+  with source longitudinal. Lateral is longitudinal cross vertical.
   These axes directly project acceleration without adding/subtracting gravity,
   force-unit rescaling or a claim of physical rider calibration. Custom Gravity
   assumes a steady moment with normal positive seat loading.
@@ -191,8 +194,10 @@ Module: [`analysis.calibration`](../../src/ride_forces_analyzer/analysis/calibra
   Incline changes rebuild the same stages except tilt. Force-window and ride-bound
   changes retain the basis. Original imports, sensor buffers and time remain shared.
 - `orientation_degrees` accepts an explicit effective vertical; absent custom Gravity
-  uses the exact source direction. Missing gravity still excludes tilt, while
-  acceleration-based calibration and forces remain available.
+  uses the exact source direction. Tilt is the angle between each recorded gravity
+  vector and that vertical, with normalized vectors and a clipped cosine before
+  `acos`. Missing gravity still excludes tilt, while acceleration-based calibration
+  and forces remain available. Incline alone never changes tilt.
 - Calibration admission errors terminate service requests with their original
   diagnostic codes and retain the previous snapshot. No source mutation or second
   calculation pipeline is introduced.
@@ -213,7 +218,8 @@ Module: [`analysis.calibration`](../../src/ride_forces_analyzer/analysis/calibra
   bindings do not save; storage errors report session-only changes.
   [Reference comparisons](../validation/APP_REFERENCE.md#reference-calibration-evidence)
   bound fixture agreement; arbitrary mounts, rider poses and source-app algorithm
-  equivalence remain unqualified.
+  equivalence remain unqualified. Results establish neither airtime sensations nor
+  suitability for safety assessment.
 
 ### Numerical stages
 

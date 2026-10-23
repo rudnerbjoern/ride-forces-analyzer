@@ -59,6 +59,11 @@ Source hashes establish provenance, not availability.
 Positive lateral means right; positive longitudinal means acceleration.
 Generic RIDER-frame signs remain a separate contract.
 
+User reference calibration is an empirical, provisional product policy, separate
+from source-app projection and qualified physical-frame analysis. Its
+[reference rules](../development/ANALYSIS_MODELS.md#reference-calibration) preserve
+source polarity and never qualify rider sensations or safety assessment.
+
 The optional [airtime event rules](../implementation/AIRTIME_EVENTS.md) define
 source-index episodes independently of display labels. Events require explicit
 configuration, retain provisional quality and gap/boundary flags, and never bridge
@@ -122,7 +127,7 @@ Optional user ride bounds are source-content-bound local preferences. The analys
 configuration carries the effective start/end across views and bound exports;
 original markers and `AnalysisTime.replay_origin` retain source provenance.
 `RecordingAnalysis.replay_origin` and sample replay seconds use the effective start.
-Marker changes reuse all numerical stages and leave the full sample axis intact.
+Ride-bound changes reuse all numerical stages and leave the full sample axis intact.
 Local Gravity/Incline choices use the same source hash with an explicit algorithm
 version and fixed reference window. The storage adapter validates choices before
 writes and resolves optional configuration for import/new-job composition; the
