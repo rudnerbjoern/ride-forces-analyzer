@@ -4,6 +4,8 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
+# cspell:words filevers prodvers
+
 import argparse
 from hashlib import sha256
 from importlib import metadata
@@ -20,12 +22,50 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
+from packaging.version import Version
 
 from ride_forces_analyzer.ui.icons import ICON_SOURCE
 from scripts.build_icons import build_icons
 
 ROOT = Path(__file__).resolve().parents[1]
 APP_NAME = "Ride-Forces-Analyzer"
+PRODUCT_NAME = "Ride Forces Analyzer"
+DESCRIPTION = "Ride force analysis and video overlays"
+AUTHOR = "Björn Rudner"
+COPYRIGHT = "Copyright © 2026 Björn Rudner"
+
+
+def write_version_info(destination: Path, version: str) -> Path:
+    """Write PyInstaller's UTF-8 Windows version resource from the project version.
+
+    Release components fill the four 16-bit binary fields; the full version text
+    retains prerelease suffixes. Reject values Windows cannot represent.
+    """
+    parsed = Version(version)
+    if len(parsed.release) > 4 or any(part > 65535 for part in parsed.release):
+        raise ValueError("Version exceeds Windows resource limits")
+    numeric = parsed.release + (0,) * (4 - len(parsed.release))
+    fields = {
+        "CompanyName": AUTHOR,
+        "FileDescription": DESCRIPTION,
+        "FileVersion": version,
+        "InternalName": APP_NAME,
+        "LegalCopyright": COPYRIGHT,
+        "OriginalFilename": f"{APP_NAME}.exe",
+        "ProductName": PRODUCT_NAME,
+        "ProductVersion": version,
+    }
+    strings = ",\n".join(f"StringStruct({key!r}, {value!r})" for key, value in fields.items())
+    destination.write_text(
+        "VSVersionInfo(\n"
+        f"ffi=FixedFileInfo(filevers={numeric!r}, prodvers={numeric!r}, "
+        f"flags={2 if parsed.is_prerelease else 0}),\n"
+        "kids=[StringFileInfo([StringTable('040904B0', [\n"
+        f"{strings}\n"
+        "])]), VarFileInfo([VarStruct('Translation', [1033, 1200])])])\n",
+        encoding="utf-8",
+    )
+    return destination
 
 
 def digest(path: Path) -> str:
@@ -175,6 +215,7 @@ def build(work: Path, *, release: bool = False) -> Path:
     notices = work / "notices"
     collect_notices(notices)
     icons = build_icons(work / "icons")
+    version_info = write_version_info(work / "version-info.txt", version)
     subprocess.run(
         [
             sys.executable,
@@ -186,6 +227,8 @@ def build(work: Path, *, release: bool = False) -> Path:
             "--noupx",
             "--icon",
             str(icons / "app-icon.ico"),
+            "--version-file",
+            str(version_info),
             "--name",
             APP_NAME,
             "--paths",

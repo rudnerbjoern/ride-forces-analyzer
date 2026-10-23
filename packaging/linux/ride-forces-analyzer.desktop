@@ -1,9 +1,12 @@
 [Desktop Entry]
 Type=Application
-Name=Ride Forces Analyzer
-Comment=Explore ride forces and export video overlays
+Name={product_name}
+Comment={description}
 Comment[de]=Fahrtkräfte analysieren und Video-Overlays exportieren
 Exec=Ride-Forces-Analyzer
 Icon=ride-forces-analyzer
 Terminal=false
 Categories=Science;DataVisualization;
+X-RideForcesAnalyzer-Version={version}
+X-RideForcesAnalyzer-Author={author}
+X-RideForcesAnalyzer-Copyright={copyright}

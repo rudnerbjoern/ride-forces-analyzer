@@ -114,6 +114,27 @@ connects the portable executable to the desktop icon lookup path.
 Native package checks require these artifacts. Format/command tests on Windows do
 not replace actual Linux/macOS builds or desktop integration checks.
 
+## File and application properties
+
+Both builders read the version directly from `pyproject.toml`. Shared build
+constants define product **Ride Forces Analyzer**, description **Ride force analysis
+and video overlays**, author **Björn Rudner** and **Copyright © 2026 Björn Rudner**.
+
+- Windows generates a UTF-8 `--version-file`: `ProductName`, `FileDescription`,
+  author in `CompanyName`, `LegalCopyright`, `OriginalFilename`, and matching
+  `FileVersion`/`ProductVersion`. Numeric versions use four 16-bit components;
+  full text retains prerelease suffixes and the resource marks prereleases.
+  The resource uses English text with Unicode; UI language remains independent.
+- macOS sets `CFBundleName`, `CFBundleDisplayName`, both existing version keys and
+  `NSHumanReadableCopyright` before signing. `RideForcesAnalyzerDescription` and
+  `RideForcesAnalyzerAuthor` retain the additional fields as custom bundle metadata;
+  Finder does not automatically display custom keys.
+- Linux generates `Name`/`Comment` in the desktop entry, retaining the German
+  comment. `X-RideForcesAnalyzer-Version`, `X-RideForcesAnalyzer-Author` and
+  `X-RideForcesAnalyzer-Copyright` retain additional metadata. The standard desktop-entry
+  `Version` is not an application version. Desktop environments decide which
+  fields to display; ELF files have no Windows-style properties resource.
+
 ## Windows packages
 
 PyInstaller is a pinned build-group dependency, not an application dependency.

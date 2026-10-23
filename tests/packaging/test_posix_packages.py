@@ -1,6 +1,7 @@
 """Native archive contracts are testable on the Windows development host."""
 
 from io import BytesIO
+from configparser import ConfigParser
 import json
 from pathlib import Path
 import plistlib
@@ -89,6 +90,10 @@ def test_native_builder_preserves_version_notices_and_archive_layout(
             ] == (b"icns")
         assert info["CFBundleVersion"] == info["CFBundleShortVersionString"] == "1.2.3"
         assert info["LSMinimumSystemVersion"] == "15.0"
+        assert info["CFBundleName"] == info["CFBundleDisplayName"] == "Ride Forces Analyzer"
+        assert info["NSHumanReadableCopyright"] == "Copyright © 2026 Björn Rudner"
+        assert info["RideForcesAnalyzerAuthor"] == "Björn Rudner"
+        assert info["RideForcesAnalyzerDescription"] == "Ride force analysis and video overlays"
     else:
         with tarfile.open(archive) as source:
             content = source.extractfile(f"{build_posix.APP_NAME}/{build_posix.APP_NAME}")
@@ -96,7 +101,17 @@ def test_native_builder_preserves_version_notices_and_archive_layout(
             assert content.read() == b"synthetic native executable"
             launcher = source.extractfile(f"{build_posix.APP_NAME}/ride-forces-analyzer.desktop")
             assert launcher is not None
-            assert launcher.read() == desktop.read_bytes()
+            entry = ConfigParser(interpolation=None)
+            entry.read_string(launcher.read().decode("utf-8"))
+            fields = entry["Desktop Entry"]
+            assert fields["Name"] == "Ride Forces Analyzer"
+            assert fields["Comment"] == "Ride force analysis and video overlays"
+            assert fields["X-RideForcesAnalyzer-Version"] == "1.2.3"
+            assert fields["X-RideForcesAnalyzer-Author"] == "Björn Rudner"
+            assert fields["X-RideForcesAnalyzer-Copyright"] == "Copyright © 2026 Björn Rudner"
+            assert fields["Exec"] == "Ride-Forces-Analyzer"
+            assert fields["Icon"] == "ride-forces-analyzer"
+            assert fields["Comment[de]"]
             for suffix in ("png", "svg"):
                 icon = source.extractfile(f"{build_posix.APP_NAME}/ride-forces-analyzer.{suffix}")
                 assert icon is not None and icon.read()
