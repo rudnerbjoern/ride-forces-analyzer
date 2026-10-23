@@ -158,6 +158,10 @@ Missing or invalid files use the normal import error display.
   beside the executable. On macOS, follow the first-launch instructions above.
 - If it still fails, report the application version, operating system and error
   message in a [GitHub issue](https://github.com/rudnerbjoern/ride-forces-analyzer/issues).
+  In **About**, choose **Copy diagnostic information** to copy the application,
+  system, Python and Qt versions, architecture, distribution type and FFmpeg status.
+  The check runs locally and does not include personal paths or recording data.
+  Review the copied text before pasting it into your report.
   Do not attach private recordings or personal paths unnecessarily. Report
   security issues through the [private reporting channels](../../SECURITY.md).
 
