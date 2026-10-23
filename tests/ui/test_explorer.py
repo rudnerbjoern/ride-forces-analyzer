@@ -522,8 +522,8 @@ def delayed(path):
     return original_load(path)
 loading.load_recording = delayed
 original_init = ExplorerWindow.__init__
-def initialize(self, settings):
-    original_init(self, settings)
+def initialize(self, settings, *, restore_last_file=True):
+    original_init(self, settings, restore_last_file=restore_last_file)
     self.open_path(next(Path('tests/fixtures/real').glob('*.forces')))
     QTimer.singleShot(10, self.close)
 ExplorerWindow.__init__ = initialize
