@@ -24,6 +24,9 @@ policy, package construction and publication.
   must pass for that same revision.
 - All `0.x` versions and versions with `a`, `b` or `rc` suffixes are prereleases.
   Plain versions from `1.0.0` onward are stable releases.
+- Paid code signing and macOS notarization are not release gates; the
+  [distribution constraints](../architecture/02_architecture_constraints.md#distribution-constraints)
+  define the accepted signing limitations.
 - Source validation checks license/setup files, rejects local/binary artifacts,
   and verifies all original recording bytes against the fixture inventory.
   Wheel and source-distribution builds must also succeed.
@@ -119,7 +122,10 @@ source-data exclusions and hashes, then runs each actual EXE in an isolated fold
 with Python/Qt environment overrides removed and PATH limited to Windows System32.
 It exercises the visible GUI, German/light presentation, real recording import,
 4K rendering and a real CPU encode using the complete package's encoder.
-This is native workstation validation, not a clean-VM or signing qualification.
+Automated package checks provide native workstation validation. The owner confirms
+that the standalone EXE also starts successfully on a clean Windows system without
+preinstalled Python or the development environment. This manual launch confirmation
+is specific to the EXE; no Windows version or package version was recorded.
 
 **Documented missing material:** `packaging/redistribution.json` is pending. Official
 Qt/PySide 6.12.0 sources are downloaded and pinned; a static

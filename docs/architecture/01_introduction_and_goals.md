@@ -20,7 +20,7 @@ extrema and focused Windows acceptance. Extra filters/events and universal physi
 qualification are deferred; GPS analytics is excluded. Five-profile 4K transparent/opaque
 video export with previews and saved batches, CSV and JSON sample exports are implemented.
 Interactive sample playback supports pause/resume, seeking and 0.5×/1×/2× speed
-selection. Persistent library, synchronization and remaining release work
+selection. Synchronization and remaining release work
 remain planned.
 
 The [roadmap](../ROADMAP.md) owns completed and remaining product scope.

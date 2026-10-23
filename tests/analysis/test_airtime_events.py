@@ -47,9 +47,9 @@ def snapshot_for(
 @pytest.mark.parametrize(
     "value,category",
     (
-        (0.1, VerticalContext.FLOATER_AIRTIME),
-        (-0.1, VerticalContext.FLOATER_AIRTIME),
-        (-0.10001, VerticalContext.AIRTIME),
+        (0.25, VerticalContext.FLOATER_AIRTIME),
+        (-0.25, VerticalContext.FLOATER_AIRTIME),
+        (-0.25001, VerticalContext.AIRTIME),
         (-0.5, VerticalContext.AIRTIME),
         (-0.50001, VerticalContext.STRONG_AIRTIME),
     ),
@@ -70,6 +70,10 @@ def test_event_category_bounds_and_truncated_constant_loading(
     assert result.reason is None and result.provenance is not None
     assert result.provenance.algorithm == "airtime-events"
     assert result.quality.capabilities == (("events", CapabilityState.PROVISIONAL),)
+
+
+def test_load_above_floater_bound_does_not_form_an_event() -> None:
+    assert snapshot_for((0.25001,) * 4).events.events == ()
 
 
 def test_minimum_duration_uses_qualifying_samples_and_complete_inclusive_bounds() -> None:
@@ -144,12 +148,18 @@ def test_onset_memory_expiry_and_positive_recovery_clear_ejector_qualification()
     ).events.events
     assert expired is not None and expired[0].category is VerticalContext.STRONG_AIRTIME
     recovered = snapshot_for(
-        (1, 1, -0.1, -0.1, 0.2, -0.55, -0.55, 1),
+        (1, 1, -0.1, -0.1, 0.3, -0.55, -0.55, 1),
         maximum_interruption_seconds=0.1,
         onset_window_seconds=0.1,
         ejector_onset_g_per_second=-10,
     ).events.events
     assert recovered is not None and recovered[0].category is VerticalContext.STRONG_AIRTIME
+    retained = snapshot_for(
+        (1, 1, -0.1, -0.1, 0.2, -0.55, -0.55, 1),
+        onset_window_seconds=0.1,
+        ejector_onset_g_per_second=-10,
+    ).events.events
+    assert retained is not None and retained[0].category is VerticalContext.EJECTOR_AIRTIME
 
 
 def test_gaps_always_split_and_reset_onset_and_mark_incomplete_coverage() -> None:

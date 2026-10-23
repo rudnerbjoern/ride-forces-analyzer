@@ -14,7 +14,7 @@ confirmation/hysteresis are separate and never detector inputs.
 
 | Parameter                      | Default | Constraint                           |
 | :----------------------------- | :------ | :----------------------------------- |
-| `floater_bound_g`              | 0.1     | Finite, nonnegative                  |
+| `floater_bound_g`              | 0.25    | Finite, nonnegative                  |
 | `strong_bound_g`               | -0.5    | Finite, below negative floater bound |
 | `minimum_duration_seconds`     | 0.20    | Finite, positive                     |
 | `maximum_interruption_seconds` | 0.04    | Finite, nonnegative                  |

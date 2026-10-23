@@ -26,7 +26,7 @@ selected sample. Labels accompany the colors:
 - **Heavy Gs — violet:** stronger loading into the seat.
 - **Normal Gs — neutral:** loading around 1 g.
 - **Light Gs — light blue:** reduced loading before the near-zero region.
-- **Floater Airtime — cyan:** vertical loading near zero.
+- **Floater Airtime — cyan:** vertical loading from −0.25 to +0.25 g.
 - **Airtime — yellow:** negative vertical loading.
 - **Strong Airtime — orange:** stronger negative loading without the rapid onset
   required by the Ejector label.
