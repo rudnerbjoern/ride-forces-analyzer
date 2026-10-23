@@ -1,9 +1,12 @@
 """Reference admission, basis geometry and source-app comparison evidence."""
 
-from dataclasses import FrozenInstanceError
+# cspell:words linalg arccos
+
+from dataclasses import FrozenInstanceError, replace
 from datetime import datetime
 from typing import cast
 
+import numpy as np
 import pytest
 
 from ride_forces_analyzer.analysis.calibration import (
@@ -15,9 +18,10 @@ from ride_forces_analyzer.analysis.calibration import (
     validate_calibration_references,
 )
 from ride_forces_analyzer.analysis.models import CapabilityState
+from ride_forces_analyzer.analysis.recording import source_app_configuration
 from ride_forces_analyzer.domain import Vector3
 from ride_forces_analyzer.importers import ImportSuccess, Severity, import_forces
-from tests.analysis.test_recording_preparation import NOW, synthetic_source
+from tests.analysis.test_recording_preparation import NOW, prepare_snapshot, synthetic_source
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
 
 
@@ -74,16 +78,21 @@ def test_unselected_reference_retains_its_original_source_axis(custom_gravity: b
 
 @pytest.mark.parametrize("filename", REAL_FIXTURES, ids=lambda name: name.split("-", 1)[0])
 def test_original_reference_basis_recovers_stored_axes_at_export_precision(filename: str) -> None:
-    """Compare the implemented basis to all 45 stored components, not physical validity."""
+    """Cross-check source precision, full-history forces and exact reset, not physical validity."""
     source = import_forces(REAL_FIXTURE_DIRECTORY / filename)
     assert isinstance(source, ImportSuccess)
     indices = source.recording.indices
     assert indices.gravity is not None and indices.incline is not None
-    basis = prepare_calibration_basis(
-        source,
-        CalibrationOverrides(indices.gravity, indices.incline),
+    original_snapshot = prepare_snapshot(source_app_configuration(), source)
+    snapshot = original_snapshot.with_configuration(
+        replace(
+            original_snapshot.configuration,
+            calibration=CalibrationOverrides(indices.gravity, indices.incline),
+        ),
+        revision=4,
         calculation_time=NOW,
     )
+    basis = snapshot.calibration
     assert basis is not None
     original = source.recording.vectors
     for actual, expected in zip(
@@ -98,6 +107,45 @@ def test_original_reference_basis_recovers_stored_axes_at_export_precision(filen
             expected.y,
             expected.z,
         )
+        actual_axis = np.array((actual.x, actual.y, actual.z))
+        source_axis = np.array((expected.x, expected.y, expected.z))
+        cosine = np.dot(actual_axis, source_axis) / np.linalg.norm(source_axis)
+        assert np.degrees(np.arccos(np.clip(cosine, -1, 1))) < 0.04
+    assert snapshot.forces.smoothed.channels is not None
+    assert original_snapshot.forces.smoothed.channels is not None
+    for actual, expected in zip(
+        snapshot.forces.smoothed.channels,
+        original_snapshot.forces.smoothed.channels,
+        strict=True,
+    ):
+        assert np.isfinite(actual.values).all()
+        # Independent source-axis comparison ceiling from the corpus evidence.
+        assert (
+            np.max(
+                np.abs(
+                    actual.values[indices.start : indices.end + 1]
+                    - expected.values[indices.start : indices.end + 1],
+                ),
+            )
+            < 0.0029
+        )
+    assert snapshot.forces.smoothed.combined == original_snapshot.forces.smoothed.combined
+    assert snapshot.time is original_snapshot.time and snapshot.source is source
+    assert len(snapshot.time.source_indices) == len(source.recording.motion.acceleration)
+    assert (snapshot.orientation.values is None) == (source.recording.motion.gravity is None)
+    reset = snapshot.with_configuration(
+        original_snapshot.configuration,
+        revision=5,
+        calculation_time=NOW,
+    )
+    assert reset.calibration is None
+    assert reset.forces.smoothed.channels == original_snapshot.forces.smoothed.channels
+    assert reset.orientation.values == original_snapshot.orientation.values
+    assert reset.context.labels == original_snapshot.context.labels
+    assert reset.source.recording.indices == indices
+    assert reset.source.recording.vectors is original
+    snapshot.validate()
+    reset.validate()
 
 
 def test_inactive_overrides_do_not_reconstruct_the_original_basis() -> None:

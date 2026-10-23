@@ -55,11 +55,16 @@ Live display behavior belongs to the [explorer contract](../implementation/RAW_E
   has no gravity data and reproduces its axes from acceleration alone.
 - This supports a fixed calibration window independent of display smoothing.
   It does not establish the app's general algorithm, unrounded internal precision,
-  boundary handling or physical calibration validity. New-reference edge handling
-  is the explicit [calibration contract](../requirements/USER_CALIBRATION.md#reference-calibration-rule).
+  boundary handling or physical calibration validity. The supported
+  [reference-calibration API](../development/ANALYSIS_MODELS.md#reference-calibration)
+  explicitly clips and renormalizes new-reference windows at recording edges.
 - The [calibration tests](../../tests/analysis/test_calibration.py) retain the
-  original-axis comparison at source precision using the implemented basis factory.
-  Shared-snapshot/service tests cover the calibration dependency graph separately.
+  original-axis comparison at source precision and the stated angle/force ceilings
+  using complete shared snapshots for all five recordings. Reset restores the
+  exact original force, orientation and context values. Iron Gwazi retains absent
+  orientation. Shared-snapshot/service tests cover synthetic polarity, admission,
+  dependency reuse and failures; export tests retain bound calibration recipes
+  across later workspace resets.
 
 ## Corpus extrema regression
 

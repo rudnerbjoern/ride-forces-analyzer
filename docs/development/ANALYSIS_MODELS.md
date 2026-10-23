@@ -178,6 +178,9 @@ Module: [`analysis.calibration`](../../src/ride_forces_analyzer/analysis/calibra
   and full-precision unit axes in vertical/lateral/longitudinal order. It projects
   the longitudinal reference perpendicular to vertical, preserves original
   longitudinal polarity and derives lateral from longitudinal cross vertical.
+  These axes directly project acceleration without adding/subtracting gravity,
+  force-unit rescaling or a claim of physical rider calibration. Custom Gravity
+  assumes a steady moment with normal positive seat loading.
   Inactive overrides return `None`, preserving the original rounded source basis.
 - `AnalysisConfiguration.calibration` holds the typed overrides. Snapshots and
   their projection stage share the same optional basis. Snapshot validation checks
@@ -208,7 +211,9 @@ Module: [`analysis.calibration`](../../src/ride_forces_analyzer/analysis/calibra
   `Preferences.remember_recording_markers` to save/reset bounds and references in
   one transaction before publishing the snapshot. Invalid, superseded and closed
   bindings do not save; storage errors report session-only changes.
-  [Calibration contract](../requirements/USER_CALIBRATION.md).
+  [Reference comparisons](../validation/APP_REFERENCE.md#reference-calibration-evidence)
+  bound fixture agreement; arbitrary mounts, rider poses and source-app algorithm
+  equivalence remain unqualified.
 
 ### Numerical stages
 

@@ -47,11 +47,8 @@ historical acceptance reports are not maintained.
   [decoder](development/STRICT_DECODING.md), [motion](development/MOTION_PARSING.md),
   [metadata/GPS](development/OPTIONAL_PARSING.md).
 - [Scientific source comparisons](validation/APP_REFERENCE.md).
-
-## Planned requirements
-
-- [Editable calibration markers](requirements/USER_CALIBRATION.md): source-evidenced
-  Gravity/Incline calibration, local persistence, chart-menu editing and final acceptance.
+- [Editable calibration markers](development/ANALYSIS_MODELS.md#reference-calibration):
+  source-evidenced Gravity/Incline calibration, persistence and partial recalculation.
 
 ## Unified analysis
 

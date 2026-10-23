@@ -78,6 +78,10 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 - Orientation is independent of force smoothing. Layout, aspect, position, language, video
   rate and seeking do not recalculate analysis. Running exports/preview workers
   retain bound snapshots independently of later workspace changes.
+  This includes custom Gravity/Incline references and subsequent resets: all five
+  preview layouts and the encoder consume the same effective basis and tilt.
+  Original source directions remain available as evidence; see
+  [reference calibration](../development/ANALYSIS_MODELS.md#reference-calibration).
 - Source time is index/rate; fractional output positions interpolate adjacent values.
   Inclusive ranges include the final sample interval; duration rounds up to a frame.
 - 59.94 uses exact `60000/1001` in timing, frame counts, FFmpeg and saved settings.

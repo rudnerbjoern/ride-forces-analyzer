@@ -105,6 +105,27 @@ def test_bound_calibration_jobs_ignore_later_preferences_and_preserve_preset_sco
     assert restored.forces.smoothed.channels == changed.forces.smoothed.channels
     assert restored.orientation.values == changed.orientation.values
     assert timeline.analysis is changed
+    reset = changed.with_configuration(
+        original.configuration,
+        revision=changed.revision + 1,
+        calculation_time=datetime.now(UTC),
+    )
+    assert reset.calibration is None and changed.calibration is not None
+    seen: list[ExportTimeline] = []
+
+    def preview(self: OverlayRenderer, position: float) -> Image.Image:
+        seen.append(self.timeline)
+        assert self.timeline.analysis is changed
+        assert self.timeline.value_at(self.timeline.channels[0], position) == (
+            timeline.value_at(timeline.channels[0], position)
+        )
+        assert self.timeline.context_at(position) == timeline.context_at(position)
+        return Image.new("RGBA", (8, 8))
+
+    monkeypatch.setattr(OverlayRenderer, "render_sample", preview)
+    build_previews(changed, timeline.settings, 3600, 3700, 3650)
+    assert len(seen) == 5
+    assert timeline.analysis is changed and timeline.analysis.configuration.calibration == choice
     assert preferences.remember_recording_calibration(source, choice)
     jobs = batches.build_jobs((saved.recording_path,), (preset,), "markers")
     assert jobs[0].preset.analysis_configuration.calibration == choice
