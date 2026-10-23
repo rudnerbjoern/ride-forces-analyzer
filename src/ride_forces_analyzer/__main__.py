@@ -53,8 +53,19 @@ def main(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("recording", nargs="?", type=Path)
-    parser.add_argument("--new-window", action="store_true")
+    parser = argparse.ArgumentParser(
+        description="Explore ride recordings and export video overlays.",
+    )
+    parser.add_argument(
+        "recording",
+        nargs="?",
+        type=Path,
+        help="Open a .forces or .zforces recording.",
+    )
+    parser.add_argument(
+        "--new-window",
+        action="store_true",
+        help="Open a separate recording window in the running application; without a file, open an empty window.",
+    )
     arguments = parser.parse_args()
     raise SystemExit(main(recording=arguments.recording, new_window=arguments.new_window))
