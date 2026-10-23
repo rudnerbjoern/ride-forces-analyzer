@@ -32,7 +32,7 @@ class ImportSuccess:
         object.__setattr__(self, "diagnostics", ordered)
 
     @property
-    def schema_version(self) -> str:
+    def schema_version(self) -> str | None:
         return self.recording.schema_version
 
     @property

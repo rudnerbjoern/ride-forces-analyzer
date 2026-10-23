@@ -8,6 +8,8 @@ from math import acos, degrees, hypot
 
 from ride_forces_analyzer.domain import Recording, Vector3
 
+from .projection import source_directions
+
 
 def orientation_degrees(
     recording: Recording,
@@ -20,7 +22,7 @@ def orientation_degrees(
     The optional effective axis changes no source data or force processing.
     """
     gravity = recording.motion.gravity
-    vertical = vertical_direction or recording.vectors.vertical_direction
+    vertical = vertical_direction or source_directions(recording)[0]
     count = len(recording.motion.acceleration)
     if gravity is None or vertical is None:
         return (None,) * count

@@ -13,6 +13,7 @@ under **Creative Commons Attribution-ShareAlike 4.0 International**
 - Kraken
 - Manta, including CSV, JSON and zforces exports
 - Taron
+- Typhoon (RFDB export)
 - Voltron Nevera
 
 The [recording catalog](../../../docs/development/RECORDINGS.md) identifies the

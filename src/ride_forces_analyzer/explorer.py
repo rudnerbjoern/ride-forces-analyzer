@@ -17,7 +17,7 @@ from math import ceil, floor, isclose, isfinite
 from pathlib import Path
 
 from ride_forces_analyzer.force_extrema import SelectionExtrema, calculate_extrema
-from ride_forces_analyzer.domain import SourceNumber
+from ride_forces_analyzer.domain import RecordingFormat, SourceNumber
 from ride_forces_analyzer.importers import ImportFailure, ImportSuccess, import_forces
 
 
@@ -494,6 +494,11 @@ class ExplorerData:
         recording = self.source.recording
         rate = recording.motion.sample_rate
         rows = (
+            (
+                tr("Source format"),
+                "RFDB" if recording.source_format is RecordingFormat.RFDB else "Ride Forces",
+            ),
+            (tr("Schema version"), recording.schema_version or tr("No schema version")),
             (tr("Device"), recording.metadata.device or tr("Unknown device")),
             (tr("Samples"), tr("{0:,}", self.count)),
             (tr("Sample rate"), tr("{0:g} Hz ({1})", rate.value, rate.origin.value)),

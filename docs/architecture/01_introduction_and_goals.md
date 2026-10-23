@@ -10,7 +10,8 @@ The product does not acquire sensor data or recreate the mobile recording app.
 
 M1 implements an executable minimal Qt window, validated bootstrap settings and
 separated subsystem packages. M2 implements lossless Path/bytes importing under
-schema 2.2.0, with immutable source/domain data and deterministic diagnostics.
+schema 2.2.0 and the explicit unversioned RFDB profile, with immutable source/domain
+data and deterministic diagnostics.
 The raw explorer now invokes that importer through a background adapter and shows
 complete source-axis charts, sample navigation and inclusive local selections.
 M3 implements immutable analysis contracts and explicit device-unit/norm primitives.

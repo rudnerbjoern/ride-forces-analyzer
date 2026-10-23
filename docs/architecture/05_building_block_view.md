@@ -64,8 +64,9 @@ widgets contain no parser, scientific transformations or source mutation.
 
 ## Importer composition and interfaces
 
-`decoder` performs bounded Path/bytes input, lexical preflight and strict 2.2.0
-JSON dispatch. `motion` validates components, paired lengths, independent indices
+`decoder` performs bounded Path/bytes input, lexical preflight and strict JSON
+dispatch to schema 2.2.0 or the explicit unversioned RFDB profile. `motion`
+validates components, paired lengths, independent indices
 and structural vectors. `optional` parses metadata, arbitrary ordered attributes
 and indexed GPS slots. `service` composes these workers with one per-call
 `DiagnosticBudget`; `result`/`diagnostics` expose immutable tagged outcomes.

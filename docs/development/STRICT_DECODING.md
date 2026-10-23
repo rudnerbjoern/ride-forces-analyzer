@@ -38,7 +38,8 @@ Original bytes, byte count, digest and path always refer to the original file;
 the immutable source tree represents its decoded JSON. Expanded oversize input
 retains no source/count/hash, matching the resource-failure policy below.
 
-DecodeSuccess exposes success=True, schema_version="2.2.0", retained SourceEnvelope,
+DecodeSuccess exposes success=True, typed source_format, actual schema_version
+("2.2.0" or None for RFDB), retained SourceEnvelope,
 original byte_count, source_sha256 and an empty diagnostic tuple. It exposes no
 Recording or inferred capability/GPS status. ImportFailure exposes success=False,
 recording=None and one fatal structured diagnostic. Invalid Python argument types
@@ -56,8 +57,14 @@ in original bytes. UTF-16/32 are not guessed. Empty/whitespace/BOM-only input,
 invalid UTF-8, JSON comments, trailing content/commas, malformed tokens, duplicate
 members at every depth and non-JSON NaN/Infinity constants fail deterministically.
 Duplicate detection compares decoded keys, including equivalent escape spellings.
-The root must be an object; schemaVersion must be a nonempty string and exactly
-2.2.0. New versions require an explicit adapter and authorized source evidence.
+The root must be an object. A supplied schemaVersion must be a nonempty string
+and exactly 2.2.0. New versions require an explicit adapter and authorized evidence.
+The unversioned RFDB profile requires accelerationSequence, sampleRate, startIndex,
+endIndex and all three calibration-vector keys, with none of the three modern
+direction-vector keys. Only an absent schemaVersion permits this profile; invalid
+or unsupported supplied versions never fall back to RFDB. The original tree stays
+unchanged and schema_version remains None. Both profiles use the same core shape,
+motion and optional-field validators.
 
 The 2.2.0 adapter checks required acceleration and supplied start/end fields, nonempty
 acceleration array, sample objects with x/y/z string/number shapes, and integer-valued

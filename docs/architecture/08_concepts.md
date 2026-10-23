@@ -13,19 +13,26 @@ JSON. Both formats use the same downstream models and analysis.
 Absent rate/riding position use 50/Seated; absent start/end independently use
 0/N-1 with warnings. Invalid supplied core data fails; missing sensors stay absent.
 
-Only schema 2.2.0 is dispatched. Strict decoding, configurable resource budgets
+Schema 2.2.0 and the recognized unversioned RFDB profile are dispatched. RFDB
+retains no declared schema version. Analysis interprets calibration Y/X/Z as
+provisional vertical/lateral/longitudinal directions without populating absent
+source direction fields; admission and normalization use the existing source-app
+policy. Missing gravity/GPS remain unavailable. Strict decoding, resource budgets
 and one per-call diagnostic budget protect the boundary. Core failure stops
 optional validation; optional recovery requires usable motion. ImportSuccess owns
 a complete Recording; ImportFailure has none. Diagnostics sort by severity,
 escaped JSON pointer and code with stable ties. Caller misuse raises.
 [Importer contracts](../development/IMPORT_SERVICE.md) own exact API details.
 
-The five original fixtures contain 48,027 acceleration vectors, 39,315 available
+The five schema 2.2.0 fixtures contain 48,027 acceleration vectors, 39,315 available
 gravity vectors and 650 GPS fixes. iPhone recordings have paired gravity/GPS;
 the Apple Watch fixture lacks both. Taron/Voltron omit sampleRate, so the explicit
 50 Hz absence policy applies. Motion components are decimal strings; GPS fields
 are JSON numbers. These corpus observations are not a manufacturer specification.
-The complete machine-readable [schema inventory](../../tests/fixtures/schema-inventory.json)
+The separate RFDB Typhoon fixture contains 9242 acceleration samples at an explicit
+50 Hz, without gravity/GPS. The machine-readable
+[app inventory](../../tests/fixtures/schema-inventory.json),
+[RFDB inventory](../../tests/fixtures/rfdb-schema-inventory.json)
 and [recording catalog](../development/RECORDINGS.md) preserve reproducible source
 evidence, exact hashes and publication/licensing authorization.
 

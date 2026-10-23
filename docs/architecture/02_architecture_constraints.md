@@ -16,7 +16,8 @@
   reference documentation can require network access.
   The optional GPS map background requires an explicit user request; it is not
   a dependency of import, analysis, route display or export.
-- The importer supports only the explicitly dispatched schema 2.2.0. New versions
+- The importer supports explicitly dispatched schema 2.2.0 and the observed
+  unversioned RFDB profile. Additional versions or profiles
   require authorized evidence, an adapter and regression coverage.
 - Importing and scientific processing stay outside Qt widgets. Frame generation
   and encoding remain separate responsibilities for implemented and future exports.

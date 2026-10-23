@@ -6,7 +6,21 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # cspell:words linalg
 
-from ride_forces_analyzer.domain import Vector3
+from ride_forces_analyzer.domain import Recording, RecordingFormat, Vector3
+
+
+def source_directions(
+    recording: Recording,
+) -> tuple[Vector3 | None, Vector3 | None, Vector3 | None]:
+    """Select provisional vertical/lateral/longitudinal inputs without changing source fields.
+
+    The observed RFDB profile uses calibration Y/X/Z for the same source-app
+    axes. Admission and normalization remain in project_directions.
+    """
+    vectors = recording.vectors
+    if recording.source_format is RecordingFormat.RFDB:
+        return vectors.y_calibration, vectors.x_calibration, vectors.z_calibration
+    return vectors.vertical_direction, vectors.lateral_direction, vectors.longitudinal_direction
 
 
 def project_directions(

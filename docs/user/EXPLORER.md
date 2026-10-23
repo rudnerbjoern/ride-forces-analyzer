@@ -1,6 +1,8 @@
 # Explore a recording
 
 Open a `.forces` or compressed `.zforces` file with **Open recording**, or **Ctrl+O** (**⌘O** on macOS).
+RFDB `.forces` recordings use the same dialog and need no conversion. Features
+requiring missing recording data, such as GPS or tilt, remain unavailable.
 Both formats appear in the same file dialog; no manual extraction is needed.
 The application reads the recording without changing the original file.
 The instructions below use the English interface labels.
@@ -110,7 +112,9 @@ exist. Otherwise, raw x/y/z values remain available, with unknown units and no
 left/right or airtime interpretation. See [forces and airtime](FORCES_AND_AIRTIME.md).
 
 Use **Inspector** to access the side panel; in narrow windows it switches between
-the chart and inspector views. Under **Settings → Application**, choose English
+the chart and inspector views. **Technical details** identifies the source format
+(Ride Forces or RFDB) and declared schema version. RFDB files without a version
+are explicitly shown as **No schema version**. Under **Settings → Application**, choose English
 or German and personalize the workspace with a theme. See
 [Choose your appearance](APPEARANCE.md) for the available styles and how to preview them.
 Changing appearance or language keeps your recording, selection, zoom and smoothing.

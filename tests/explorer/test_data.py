@@ -1,5 +1,7 @@
 """Pure raw-source presentation and local inclusive selection contracts."""
 
+# cspell:words Quellformat Ohne
+
 from dataclasses import replace
 
 import json
@@ -11,13 +13,46 @@ from ride_forces_analyzer.domain import (
     MotionSequence,
     Recording,
     RecordingMetadata,
+    RecordingFormat,
     SampleRate,
     SourceNumber,
     ValueOrigin,
     Vector3,
 )
 from ride_forces_analyzer.explorer import format_sample_time, present_recording
-from ride_forces_analyzer.importers import ImportSuccess, import_forces_bytes
+from ride_forces_analyzer.importers import ImportSuccess, import_forces, import_forces_bytes
+from ride_forces_analyzer.i18n import Language, get_language, set_language
+from tests.support.recordings import RFDB_FIXTURE_DIRECTORY, RFDB_FIXTURES
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+@pytest.mark.parametrize("source_format", [RecordingFormat.RIDE_FORCES, RecordingFormat.RFDB])
+def test_technical_details_identify_format_and_declared_schema(
+    synthetic_recording: Recording,
+    source_format: RecordingFormat,
+    language: Language,
+) -> None:
+    source = (
+        import_forces(RFDB_FIXTURE_DIRECTORY / next(iter(RFDB_FIXTURES)))
+        if source_format is RecordingFormat.RFDB
+        else ImportSuccess(synthetic_recording)
+    )
+    assert isinstance(source, ImportSuccess)
+    previous = get_language()
+    try:
+        set_language(language)
+        summary = present_recording(source).technical_summary
+        assert ("Quellformat" if language == "de" else "Source format") in summary
+        assert ("Schema-Version" if language == "de" else "Schema version") in summary
+        if source_format is RecordingFormat.RFDB:
+            assert "RFDB" in summary
+            assert ("Ohne Schema-Version" if language == "de" else "No schema version") in summary
+            assert "2.2.0" not in summary
+        else:
+            assert "Ride Forces" in summary
+            assert "2.2.0" in summary
+    finally:
+        set_language(previous)
 
 
 def test_nearest_sample_uses_recording_time_and_clamps_bounds(

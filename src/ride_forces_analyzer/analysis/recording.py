@@ -20,7 +20,7 @@ from math import isfinite
 import numpy as np
 
 from ride_forces_analyzer import __version__
-from ride_forces_analyzer.domain import Vector3
+from ride_forces_analyzer.domain import RecordingFormat, Vector3
 from ride_forces_analyzer.domain._validation import has_type
 from ride_forces_analyzer.importers import ImportSuccess, Severity
 
@@ -48,7 +48,7 @@ from .models import (
     UnitLabel,
 )
 from .orientation import orientation_degrees
-from .projection import project_directions
+from .projection import project_directions, source_directions
 from .smoothing import centered_mean, combined_force
 
 
@@ -591,7 +591,7 @@ class RecordingAnalysis:
             gravity = self.source.recording.motion.gravity
             _require(gravity is not None, "Orientation requires source gravity")
             _require(
-                self.source.recording.vectors.vertical_direction is not None,
+                source_directions(self.source.recording)[0] is not None,
                 "Orientation requires a vertical direction",
             )
             assert gravity is not None and orientation.values is not None
@@ -947,7 +947,7 @@ def _prepare_analysis(
         "recording-analysis",
         calculation_time,
     )
-    motion, vectors = source.recording.motion, source.recording.vectors
+    motion = source.recording.motion
     time = (
         previous.time
         if previous is not None
@@ -959,11 +959,12 @@ def _prepare_analysis(
     )
     raw_mode = configuration.profile.name is ProfileName.RAW_DEVICE_ONLY
     evidence = configuration.profile.policy_references + configuration.profile.assumptions
-    vertical, lateral, longitudinal = (
-        vectors.vertical_direction,
-        vectors.lateral_direction,
-        vectors.longitudinal_direction,
-    )
+    if source.recording.source_format is RecordingFormat.RFDB:
+        evidence += (
+            "RFDB calibration Y/X/Z maps to provisional vertical/lateral/longitudinal directions",
+        )
+    source_vertical, lateral, longitudinal = source_directions(source.recording)
+    vertical = source_vertical
     same_policy = previous is not None and configuration.profile == previous.configuration.profile
     same_calibration = (
         previous is not None and configuration.calibration == previous.configuration.calibration
@@ -1108,7 +1109,7 @@ def _prepare_analysis(
                 vertical_direction=(
                     vertical
                     if configuration.calibration.gravity_index is not None
-                    else vectors.vertical_direction
+                    else source_vertical
                 ),
             )
             orientation_values = SampleValues(

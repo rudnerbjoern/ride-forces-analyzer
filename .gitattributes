@@ -7,7 +7,10 @@
 
 # Preserve all original reference formats without line-ending conversion.
 tests/fixtures/real/** -text
+tests/fixtures/rfdb/** -text
 
 # Reference documentation and license texts use normal text handling.
 tests/fixtures/real/**/*.md text eol=lf
 tests/fixtures/real/**/*.txt text eol=lf
+tests/fixtures/rfdb/**/*.md text eol=lf
+tests/fixtures/rfdb/**/*.txt text eol=lf

@@ -35,6 +35,11 @@ class ValueOrigin(StrEnum):
     DEFAULT = "default"
 
 
+class RecordingFormat(StrEnum):
+    RIDE_FORCES = "ride-forces"
+    RFDB = "rfdb"
+
+
 @dataclass(frozen=True, slots=True)
 class SampleRate:
     value: float = 50.0
@@ -278,7 +283,8 @@ class RecordingMetadata:
 
 @dataclass(frozen=True, slots=True, init=False)
 class Recording:
-    schema_version: str
+    schema_version: str | None
+    source_format: RecordingFormat
     source: SourceEnvelope = field(repr=False)
     motion: MotionSequence = field(repr=False)
     indices: RecordingIndices
@@ -293,11 +299,12 @@ class Recording:
 
     def __init__(
         self,
-        schema_version: str,
+        schema_version: str | None,
         source: SourceEnvelope,
         motion: MotionSequence,
         indices: RecordingIndices,
         *,
+        source_format: RecordingFormat = RecordingFormat.RIDE_FORCES,
         metadata: RecordingMetadata = RecordingMetadata(),
         attributes: Sequence[Attribute] = (),
         vectors: RecordingVectors = RecordingVectors(),
@@ -307,7 +314,12 @@ class Recording:
         max_force: SourceNumber | None = None,
         min_force: SourceNumber | None = None,
     ) -> None:
-        if not has_type(schema_version, str) or not schema_version:
+        if not has_type(source_format, RecordingFormat):
+            raise TypeError("Recording format must be a RecordingFormat")
+        if source_format is RecordingFormat.RFDB:
+            if schema_version is not None:
+                raise ValueError("Unversioned RFDB recordings have no declared schema version")
+        elif not has_type(schema_version, str) or not schema_version:
             raise ValueError("Recording schema version must be a nonempty string")
         if (
             not has_type(source, SourceEnvelope)
@@ -348,6 +360,7 @@ class Recording:
             object.__setattr__(self, name, value)
         for model_name, model_value in (
             ("schema_version", schema_version),
+            ("source_format", source_format),
             ("source", source),
             ("motion", motion),
             ("indices", indices),
