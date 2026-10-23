@@ -3,7 +3,7 @@
 For an explanation of the displayed forces, colors and labels, see the
 [user forces and airtime guide](../user/FORCES_AND_AIRTIME.md).
 
-<!-- cspell:words Pendrill -->
+<!-- cspell:words Pendrill RFDB -->
 
 - **Input:** smoothed calibrated vertical channel and effective source sample rate;
   `AnalysisConfiguration.context_input` can select projection instead. The prepared
@@ -28,15 +28,16 @@ and [stage reuse/lifetime](../architecture/08_concepts.md#snapshot-lifetime-and-
 ## Presentation heuristic
 
 Provisional product thresholds; not scientific definitions or validated detection
-of rider sensations:
+of rider sensations. The Floater interval follows [RFDB](https://rideforcesdb.com/airtime);
+the other categories, onset and stabilization remain project-defined:
 
 | Condition                             | Label           |
 | ------------------------------------- | --------------- |
 | Above 1.05 g                          | Heavy Gs        |
 | 0.95 through 1.05 g                   | Normal Gs       |
-| Above 0.1 and below 0.95 g            | Light Gs        |
-| −0.1 through +0.1 g                   | Floater Airtime |
-| −0.5 through below −0.1 g             | Airtime         |
+| Above 0.25 and below 0.95 g           | Light Gs        |
+| −0.25 through +0.25 g                 | Floater Airtime |
+| −0.5 through below −0.25 g            | Airtime         |
 | Below −0.5 g without qualifying onset | Strong Airtime  |
 | Below −0.5 g with qualifying onset    | Ejector Airtime |
 
@@ -59,7 +60,7 @@ Display stabilization uses source-sample timing, without another force filter:
 | Detailed-label confirmation | `max(1, ceil(0.12 * sample_rate))` consecutive samples; not a physical event minimum                                             |
 | Enter airtime family        | Generic Airtime immediately while subtype is pending; Heavy Gs cannot persist                                                    |
 | Leave airtime family        | Non-airtime candidate immediately, subject to Floater hysteresis below                                                           |
-| Confirmed Floater           | Retained within ±0.16 g; entry boundary remains ±0.1 g                                                                           |
+| Confirmed Floater           | Retained within ±0.31 g; entry boundary remains ±0.25 g                                                                          |
 | Confirmed Strong/Ejector    | Retained below −0.4 g unless another strong subtype is confirmed; at −0.4 g or above, generic Airtime while a subtype is pending |
 | Missing value               | Unavailable immediately; pending confirmation cleared                                                                            |
 

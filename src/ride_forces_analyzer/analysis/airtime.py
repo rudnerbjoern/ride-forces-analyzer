@@ -7,13 +7,13 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import dataclass
 from math import ceil, floor, isfinite
 
-FLOATER_BOUND_G = 0.1
+FLOATER_BOUND_G = 0.25
 STRONG_BOUND_G = -0.5
 ONSET_WINDOW_SECONDS = 0.2
 EJECTOR_ONSET_G_PER_SECOND = -3.0
 ONSET_MEMORY_SECONDS = 0.5
 CONTEXT_CONFIRM_SECONDS = 0.12
-FLOATER_EXIT_BOUND_G = 0.16
+FLOATER_EXIT_BOUND_G = 0.31
 STRONG_EXIT_BOUND_G = -0.4
 
 

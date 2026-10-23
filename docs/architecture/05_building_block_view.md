@@ -57,10 +57,10 @@ widgets contain no parser, scientific transformations or source mutation.
 | domain               | Recording, SourceEnvelope, SourceNumber, vectors, motion, metadata, attributes and GPS concepts | Implemented immutable representations: [domain](../../src/ride_forces_analyzer/domain/)                                      |
 | importers            | Strict decoding, motion/optional validation, ordered diagnostics and public import composition  | Implemented: [importers](../../src/ride_forces_analyzer/importers/)                                                          |
 | analysis             | Immutable contracts, device/frame math and source-app projection/mean                           | Implemented analysis services: [analysis](../../src/ride_forces_analyzer/analysis/); basic extrema implemented               |
-| storage              | SQLite export presets and batch snapshots                                                       | Implemented export configuration; persistent ride library remains planned                                                    |
+| storage              | SQLite export presets and batch snapshots                                                       | Implemented export configuration                                                                                             |
 | playback             | Monotonic sample clock, 0.5×/1×/2× speed, pause and seek                                        | Implemented: `playback.clock.SamplePlayback`                                                                                 |
 | rendering            | Independent RGBA generation and FFmpeg encoding                                                 | Implemented five-profile landscape/portrait transparent/opaque video                                                         |
-| ui                   | Raw chart controls and background import/export transport                                       | Implemented raw/calibrated explorer and sample playback; persistent library remains planned                                  |
+| ui                   | Raw chart controls and background import/export transport                                       | Implemented raw/calibrated explorer and sample playback                                                                      |
 
 ## Importer composition and interfaces
 
