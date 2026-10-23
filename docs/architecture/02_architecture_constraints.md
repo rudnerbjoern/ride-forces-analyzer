@@ -21,6 +21,14 @@
 - Importing and scientific processing stay outside Qt widgets. Frame generation
   and encoding remain separate responsibilities for implemented and future exports.
 
+## Distribution constraints
+
+Paid code-signing certificates and subscriptions are outside the project's release
+scope. Windows packages remain unsigned; macOS packages use ad-hoc signatures
+without Developer ID signing or notarization. First-launch security prompts and
+manual OS approval are accepted distribution limitations, documented in the
+[installation guide](../user/INSTALLATION.md).
+
 ## Data and scientific constraints
 
 All five owner-authorized recordings are read-only, including complete GPS data.

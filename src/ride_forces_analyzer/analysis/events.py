@@ -22,7 +22,7 @@ from .recording import (
 
 @dataclass(frozen=True, slots=True)
 class _Rules:
-    floater_bound_g: float = 0.1
+    floater_bound_g: float = 0.25
     strong_bound_g: float = -0.5
     minimum_duration_seconds: float = 0.20
     maximum_interruption_seconds: float = 0.04

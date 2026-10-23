@@ -15,8 +15,12 @@ from ride_forces_analyzer.analysis.airtime import AirtimeContext
         (2.0, "Heavy Gs"),
         (1.0, "Normal Gs"),
         (0.5, "Light Gs"),
+        (0.25001, "Light Gs"),
+        (0.25, "Floater Airtime"),
         (0.1, "Floater Airtime"),
         (-0.1, "Floater Airtime"),
+        (-0.25, "Floater Airtime"),
+        (-0.25001, "Airtime"),
         (-0.5, "Airtime"),
         (-0.6, "Strong Airtime"),
         (None, "Unavailable"),
@@ -61,9 +65,16 @@ def test_one_sample_ejector_does_not_replace_generic_airtime() -> None:
 
 
 def test_floater_tolerates_small_boundary_fluctuations() -> None:
-    values = (0.0,) * 50 + (-0.13, 0.13) * 25
+    values = (0.0,) * 50 + (-0.28, 0.28) * 25
     context = AirtimeContext.prepare(values, 50)
     assert set(context.labels[50:]) == {"Floater Airtime"}
+
+
+@pytest.mark.parametrize("value,label", ((0.32, "Light Gs"), (-0.32, "Airtime")))
+def test_floater_exits_beyond_hysteresis(value: float, label: str) -> None:
+    context = AirtimeContext.prepare((0.2,) * 50 + (value,) * 50, 50)
+    assert context.at(49) == "Floater Airtime"
+    assert context.at(99) == label
 
 
 def test_return_to_positive_load_immediately_clears_airtime() -> None:

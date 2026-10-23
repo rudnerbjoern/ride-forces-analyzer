@@ -39,7 +39,7 @@ analysis or synchronization. M2 ingestion does not establish those semantics.
   primitives. Source-app projection/mean and strict provisional frame transforms are implemented;
   basic selected-range extrema are implemented. General physical rider qualification
   and broad statistics are outside current M3 acceptance. `storage` implements
-  SQLite export presets/batches; the ride library remains planned. `playback`
+  SQLite export presets/batches. `playback`
   supplies a Qt-independent monotonic sample clock with 0.5×/1×/2× speed selection.
   `rendering` implements the
   owner-requested 4K overlay slice, independently of interactive playback.
