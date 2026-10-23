@@ -145,9 +145,21 @@ On Windows, **Open with** can use the portable EXE; dropping a recording onto
 the EXE also passes its path. On Linux, the installed desktop launcher accepts
 a file from **Open with**. On macOS, the application supports Finder **Open With**
 and dropping a recording onto its Dock icon. No default file association is forced.
-Each command-line launch opens a new application instance; macOS desktop file
-events can also reach a running instance. If multiple desktop requests arrive
-during an import, the latest pending request is opened next.
+Further launches forward their file to the running application. An already open
+file activates its window; another file opens in the active recording window.
+Requests wait while that window is importing. Launching without a path activates
+an existing window. Nothing is sent over the internet.
+
+Use `--new-window` to compare recordings in separate windows of the same application:
+
+```powershell
+.\Ride-Forces-Analyzer.exe "D:\Recordings\Manta.forces" --new-window
+```
+
+The same option works on Linux and with macOS `open -a` after `--args`.
+If macOS already has the app running, use
+`open -n -a "Ride-Forces-Analyzer" --args "/Users/user/Recordings/Manta.forces" --new-window`
+to deliver command-line arguments; the short-lived launcher forwards them and exits.
 Missing or invalid files use the normal import error display.
 
 ## Support: error report from the current run

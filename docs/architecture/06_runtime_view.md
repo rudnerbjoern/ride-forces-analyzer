@@ -22,14 +22,23 @@ sequenceDiagram
     participant Entry as __main__.main
     participant Settings as config.AppSettings
     participant Qt as QApplication / ExplorerWindow
+    participant IPC as InstanceBroker
     User->>Entry: Launch module with optional settings
     Entry->>Settings: Use supplied model or construct defaults
     Settings-->>Entry: Validated immutable settings
-    Entry->>Qt: Construct application and raw explorer
-    Entry->>Qt: Set title, dimensions and raw chart controls
-    Entry->>Qt: Show window and run event loop
-    User->>Qt: Close window
-    Qt-->>Entry: Event loop exit code
+    Entry->>Qt: Construct application
+    Entry->>IPC: Acquire process ownership or forward request
+    alt Owner
+        Entry->>Qt: Construct explorer and show initial window
+        Entry->>Qt: Run event loop
+        User->>Qt: Open additional recording windows
+        User->>Qt: Close last recording window
+        Qt-->>Entry: Event loop exit code
+        Entry->>IPC: Release ownership after workers finish
+    else Existing owner
+        IPC-->>Entry: Request acknowledged
+        Entry-->>User: Exit launcher without another application window
+    end
 ```
 
 AppSettings rejects unknown settings and invalid title/dimensions outside widgets.
@@ -38,10 +47,24 @@ Invalid model construction fails before window creation. The GUI smoke test star
 the real module in a separate Windows process and exits through the Qt event loop;
 its tests exercise the real bootstrap contract above.
 
-The module and frozen entry points accept one optional local recording path.
+The module and frozen entry points accept one optional local recording path and
+`--new-window`. `instance.InstanceBroker` uses a long-lived `QLockFile` and
+`QLocalServer`/`QLocalSocket` to forward validated requests within the same local
+application-data namespace. Windows uses user-restricted pipe access; Unix sockets
+reside in a private directory. Startup retries/acknowledgement are bounded to five
+seconds; failed forwarding never launches a competing owner. Only the lock owner
+removes stale sockets; Qt handles stale process locks. No network service is used.
+
+`RecordingApplication` owns the recording-window registry and ordered request
+queue. Reopening an existing path activates its window, unless `--new-window`
+explicitly requests a separate view. Other paths use the active recording window;
+requests wait while its importer is busy. Each window owns its independent analysis
+service, selections, playback and child dialogs. Language/appearance are shared;
+new windows do not restore the last file. Closing one window unregisters it; the
+last window ends the event loop. Background workers finish before ownership ends.
 An explicit path is opened through the normal import before restoration can run.
 The application receives local macOS file-open events through `QFileOpenEvent`;
-the latest pending request waits for window construction or an active import.
+pending requests wait for window construction or an active import.
 The macOS bundle declares both recording extensions as alternate viewer types;
 the Linux desktop entry passes a single file with `%f`.
 

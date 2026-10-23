@@ -10,6 +10,7 @@ from pathlib import Path
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("file", nargs="?", type=Path)
+    parser.add_argument("--new-window", action="store_true")
     parser.add_argument("--self-test", type=Path)
     parser.add_argument("--recording", type=Path)
     parser.add_argument("--with-ffmpeg", action="store_true")
@@ -35,4 +36,4 @@ if __name__ == "__main__":
         initialize_error_reporting()
         from ride_forces_analyzer.__main__ import main
 
-        raise SystemExit(main(recording=arguments.file))
+        raise SystemExit(main(recording=arguments.file, new_window=arguments.new_window))

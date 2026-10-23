@@ -16,18 +16,26 @@ import sys
 from pathlib import Path
 import ride_forces_analyzer.__main__ as entry
 import ride_forces_analyzer.ui.application as application
+import ride_forces_analyzer.instance as instance
+from types import SimpleNamespace
 class Finished(Exception):
     pass
 def check(*args, **kwargs):
     assert kwargs.get("recording") == Path("recordings with spaces/Manta.zforces")
+    assert kwargs.get("new_window") is True
     print("Argument passed", flush=True)
     raise Finished
 if sys.argv[1] == "scripts.windows_entry":
     entry.main = check
 else:
-    application.RecordingApplication = lambda args: check(recording=Path(sys.argv[1]))
+    application.RecordingApplication = lambda args: SimpleNamespace(
+        setDesktopFileName=lambda name: None, receive_request=lambda request: None)
+    def forward(request):
+        return check(recording=Path(request.path).relative_to(Path.cwd()), new_window=request.new_window)
+    instance.InstanceBroker = lambda app: SimpleNamespace(
+        requested=SimpleNamespace(connect=lambda slot: None), start_or_forward=forward)
 module = sys.argv[1]
-sys.argv = [module, "recordings with spaces/Manta.zforces"]
+sys.argv = [module, "recordings with spaces/Manta.zforces", "--new-window"]
 try:
     runpy.run_module(module, run_name="__main__")
 except Finished:
@@ -53,21 +61,20 @@ from pathlib import Path
 from PySide6.QtCore import QTimer, QThreadPool
 from PySide6.QtGui import QFileOpenEvent
 from ride_forces_analyzer.config import AppSettings
+from ride_forces_analyzer.instance import OpenRequest
 from ride_forces_analyzer.ui.application import RecordingApplication
-from ride_forces_analyzer.ui.window import ExplorerWindow
 app = RecordingApplication([])
 path = Path(sys.argv[1])
 assert app.event(QFileOpenEvent(str(path)))
-assert app.pending_path == path
-window = ExplorerWindow(AppSettings(language="en"))
-app.window = window
-window.show()
-app.deliver_file()
+assert Path(app.pending_requests[0].path) == path
+app.settings = AppSettings(language="en")
+app.start(OpenRequest())
+window = app.windows[0]
 timer = QTimer()
 def check():
     if window.data is not None and window.open_action.isEnabled():
         assert window.data.title == "Manta"
-        assert app.pending_path is None
+        assert not app.pending_requests
         print("File-open import passed", flush=True)
         window.close()
         app.quit()

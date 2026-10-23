@@ -59,6 +59,7 @@ from PySide6.QtWidgets import (
     QSplitter,
     QSpinBox,
     QToolBar,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -212,7 +213,10 @@ class TimeChartView(QChartView):
 
 
 class ExplorerWindow(QMainWindow):
-    def __init__(self, settings: AppSettings) -> None:
+    new_window_requested = Signal(object)
+    closed = Signal()
+
+    def __init__(self, settings: AppSettings, *, restore_last_file: bool = True) -> None:
         super().__init__()
         self.setAcceptDrops(True)
         self._application_title = settings.window_title
@@ -272,6 +276,15 @@ class ExplorerWindow(QMainWindow):
         toolbar.addAction(self.open_action)
         open_widget = toolbar.widgetForAction(self.open_action)
         open_widget.setObjectName("Primary")
+        self.new_window_action = bind(QAction(self), tr("Open in new window…"))
+        self.new_window_action.setShortcut(QKeySequence("Ctrl+Shift+O"))
+        self.new_window_action.triggered.connect(lambda: self.choose_file(new_window=True))
+        self.addAction(self.new_window_action)
+        if isinstance(open_widget, QToolButton):
+            open_menu = QMenu(open_widget)
+            open_menu.addAction(self.new_window_action)
+            open_widget.setMenu(open_menu)
+            open_widget.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
         self.gps_button = bind(QPushButton(), tr("GPS overview"))
         self.gps_button.setEnabled(False)
         self.gps_button.clicked.connect(self.show_gps)
@@ -678,7 +691,8 @@ class ExplorerWindow(QMainWindow):
         if isinstance(application, QApplication):
             application.styleHints().colorSchemeChanged.connect(self._system_appearance_changed)
         QTimer.singleShot(0, lambda: self.updates.check(manual=False))
-        QTimer.singleShot(0, self._restore_last_file)
+        if restore_last_file:
+            QTimer.singleShot(0, self._restore_last_file)
 
     @Slot(int)
     def set_ui_language(self, index: int) -> None:
@@ -688,6 +702,12 @@ class ExplorerWindow(QMainWindow):
         self.ui_language = "de" if index == 1 else "en"
         set_ui_language(application, self.ui_language)
         self.preferences.remember_language("de" if index == 1 else "en")
+        for window in application.topLevelWidgets():
+            if isinstance(window, ExplorerWindow):
+                window.ui_language = self.ui_language
+                window._refresh_language()
+
+    def _refresh_language(self) -> None:
         if self.data is not None:
             self._refresh_diagnostics()
             bind(self.ride_metadata, self.data.metadata_rows_text)
@@ -707,13 +727,14 @@ class ExplorerWindow(QMainWindow):
         self.appearance_preference = (
             APPEARANCE_CHOICES[index] if 0 <= index < len(APPEARANCE_CHOICES) else Appearance.DARK
         )
-        self._apply_appearance()
+        self.apply_appearance()
 
     def _system_appearance_changed(self, scheme: Qt.ColorScheme) -> None:
         if self.appearance_preference is Appearance.SYSTEM:
-            self._apply_appearance()
+            self.apply_appearance()
 
-    def _apply_appearance(self) -> None:
+    def apply_appearance(self) -> None:
+        """Apply the selected appearance to all recording windows without saving it."""
         application = QApplication.instance()
         if isinstance(application, QApplication):
             self.theme = THEMES[
@@ -722,8 +743,15 @@ class ExplorerWindow(QMainWindow):
                 else self.appearance_preference
             ]
             apply_theme(application, self.theme)
-        self._style_chart()
-        self._draw_channels()
+            for window in application.topLevelWidgets():
+                if isinstance(window, ExplorerWindow):
+                    window.theme = self.theme
+                    window.appearance_preference = self.appearance_preference
+                    window._style_chart()
+                    window._draw_channels()
+        else:
+            self._style_chart()
+            self._draw_channels()
 
     def _style_chart(self) -> None:
         background = QColor(self.theme.chart_background or self.theme.panel)
@@ -831,6 +859,8 @@ class ExplorerWindow(QMainWindow):
         if self.analysis_controller is not None:
             self.analysis_controller.close()
         super().closeEvent(event)
+        if event.isAccepted():
+            self.closed.emit()
 
     def _set_controls(self, enabled: bool) -> None:
         for control in (
@@ -1000,7 +1030,7 @@ class ExplorerWindow(QMainWindow):
         dialog.activateWindow()
 
     @Slot()
-    def choose_file(self) -> None:
+    def choose_file(self, *, new_window: bool = False) -> None:
         filename, _ = QFileDialog.getOpenFileName(
             self,
             tr("Open Ride Forces recording"),
@@ -1008,7 +1038,20 @@ class ExplorerWindow(QMainWindow):
             tr("Ride Forces (*.forces *.zforces);;All files (*)"),
         )
         if filename:
-            self.open_path(Path(filename))
+            if new_window:
+                self.new_window_requested.emit(Path(filename))
+            else:
+                self.open_path(Path(filename))
+
+    @property
+    def recording_path(self) -> Path | None:
+        """Return the pending or loaded source path for external-open deduplication."""
+        if self._worker is not None:
+            return self._worker.path.resolve()
+        if self.data is not None:
+            path = self.data.source.recording.source.provenance.path
+            return path.resolve() if path is not None else None
+        return None
 
     @Slot()
     def _restore_last_file(self) -> None:

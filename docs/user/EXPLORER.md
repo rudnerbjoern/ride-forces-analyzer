@@ -10,6 +10,22 @@ The instructions below use the English interface labels.
 
 ![Recording explorer with force curves, airtime strip and inspector](../images/workspace-dark.png)
 
+## Compare recordings in separate windows
+
+Use the arrow beside **Open recording** and choose **Open in new window…**,
+or press **Ctrl+Shift+O** (**⌘Shift+O** on macOS), then select another recording.
+You can also open the same file again this way to compare different smoothing
+settings. Place the windows side by side using your operating system.
+
+Each window has its own recording, selection, zoom, playback and analysis state.
+Closing one window leaves the others open. Language and appearance apply to all
+windows. Saved ride-marker adjustments remain shared per file; existing windows
+retain their current analysis, while subsequently opened windows load saved markers.
+The last window closes the application after background work finishes.
+
+External file openings normally reuse an existing window. To request another
+window from the command line, use [the `--new-window` option](INSTALLATION.md#open-a-recording-directly).
+
 ## Adjust ride markers
 
 Right-click inside the chart to open the ride-marker menu:

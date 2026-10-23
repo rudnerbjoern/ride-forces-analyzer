@@ -207,6 +207,7 @@ GERMAN: dict[str, str] = {
     "End": "Ende",
     "Unexpected load error. The previous recording is unchanged.": "Unerwarteter Ladefehler. Die bisherige Aufnahme bleibt unverändert.",
     "Open recording…": "Aufnahme öffnen…",
+    "Open in new window…": "In neuem Fenster öffnen …",
     "GPS overview": "GPS-Übersicht",
     "Export 4K…": "4K-Export…",
     "Batches…": "Stapel…",
