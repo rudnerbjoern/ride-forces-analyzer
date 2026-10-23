@@ -26,6 +26,8 @@ REQUIRED_FILES = cast(tuple[str, ...], MODULE["REQUIRED_FILES"])
         ("local-exports", "v0.1.0", "unexpected"),
         ("none", "v0.3.1", "project.version"),
         ("recording", "v0.1.0", "integrity"),
+        ("rfdb-recording", "v0.1.0", "integrity"),
+        ("missing-rfdb-recording", "v0.1.0", "inventory"),
         ("extra-recording", "v0.1.0", "inventory"),
         ("missing-license", "v0.1.0", "required"),
         ("private-file", "v0.1.0", "unexpected"),
@@ -47,12 +49,20 @@ def test_source_archive_contract(change: str, tag: str, error: str | None) -> No
         },
     ).encode()
     files["tests/fixtures/real/example.forces"] = recording
+    files["tests/fixtures/rfdb-schema-inventory.json"] = files[
+        "tests/fixtures/schema-inventory.json"
+    ]
+    files["tests/fixtures/rfdb/example.forces"] = recording
     if change == "export-tests":
         files["tests/exports/test_csv_export.py"] = b"# Supported source tests\n"
     elif change == "local-exports":
         files["exports/private.csv"] = b"private output"
     elif change == "recording":
         files["tests/fixtures/real/example.forces"] = b"changed"
+    elif change == "rfdb-recording":
+        files["tests/fixtures/rfdb/example.forces"] = b"changed"
+    elif change == "missing-rfdb-recording":
+        del files["tests/fixtures/rfdb/example.forces"]
     elif change == "extra-recording":
         files["tests/fixtures/real/additional.forces"] = recording
     elif change == "missing-license":

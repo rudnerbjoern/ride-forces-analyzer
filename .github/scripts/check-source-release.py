@@ -30,6 +30,7 @@ REQUIRED_FILES = (
     "packaging/QT-NOTICES.txt",
     "tests/fixtures/real/README.md",
     "tests/fixtures/real/LICENSE-CC-BY-SA-4.0.txt",
+    "tests/fixtures/rfdb/README.md",
     "docs/images/README.md",
     "docs/images/LICENSE-CC-BY-SA-4.0.txt",
 )
@@ -56,12 +57,19 @@ def validate_archive(archive: Path, tag: str) -> None:
             raise ValueError("Release tag does not match project.version")
         if project.get("license") != "GPL-3.0-or-later":
             raise ValueError("Unexpected project license")
-        fixtures = json.loads(source.read("tests/fixtures/schema-inventory.json"))["fixtures"]
-        expected = {f"tests/fixtures/real/{name}" for name in fixtures}
-        if {name for name in names if name.endswith(".forces")} != expected:
+        fixtures = {}
+        for inventory, directory in (
+            ("schema-inventory.json", "real"),
+            ("rfdb-schema-inventory.json", "rfdb"),
+        ):
+            entries = json.loads(source.read(f"tests/fixtures/{inventory}"))["fixtures"]
+            fixtures.update(
+                (f"tests/fixtures/{directory}/{name}", entry) for name, entry in entries.items()
+            )
+        if {name for name in names if name.endswith(".forces")} != fixtures.keys():
             raise ValueError("Recording inventory differs from source archive")
         for name, entry in fixtures.items():
-            data = source.read(f"tests/fixtures/real/{name}")
+            data = source.read(name)
             if len(data) != entry["byte_count"] or sha256(data).hexdigest() != entry["sha256"]:
                 raise ValueError("Original recording integrity check failed")
 
