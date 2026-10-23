@@ -99,6 +99,21 @@ Automatic failures are silent; manual failures provide a retry-later message.
 The popup opens the validated repository release URL in the browser, postpones
 the notice, or saves the skipped tag. Nothing downloads or installs automatically.
 
+## Shared application icon
+
+[`ui/app-icon.svg`](../../src/ride_forces_analyzer/ui/app-icon.svg) is the shared
+window/package artwork. [`scripts.build_icons`](../../scripts/build_icons.py)
+renders it with the existing Qt SVG renderer and writes ICO (16–256 px),
+ICNS (up to 1024 px) and PNG (512 px) under the build's temporary icon directory.
+No generated icon binaries need to be maintained in source control.
+PyInstaller embeds the ICO in Windows EXEs and uses the ICNS for macOS app bundles.
+All targets collect the SVG alongside its runtime renderer. Linux archives also
+include the PNG, SVG and `ride-forces-analyzer.desktop`; the
+[optional menu setup](../user/INSTALLATION.md#optional-application-menu-shortcut)
+connects the portable executable to the desktop icon lookup path.
+Native package checks require these artifacts. Format/command tests on Windows do
+not replace actual Linux/macOS builds or desktop integration checks.
+
 ## Windows packages
 
 PyInstaller is a pinned build-group dependency, not an application dependency.

@@ -17,6 +17,7 @@ def main(settings: AppSettings | None = None) -> int:
 
     settings = settings if settings is not None else AppSettings()
     application = QApplication(sys.argv)
+    application.setDesktopFileName("ride-forces-analyzer")
     window = ExplorerWindow(settings)
     window.show()
     result = application.exec()

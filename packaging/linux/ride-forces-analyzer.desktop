@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Ride Forces Analyzer
+Comment=Explore ride forces and export video overlays
+Comment[de]=Fahrtkräfte analysieren und Video-Overlays exportieren
+Exec=Ride-Forces-Analyzer
+Icon=ride-forces-analyzer
+Terminal=false
+Categories=Science;DataVisualization;

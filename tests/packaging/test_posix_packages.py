@@ -4,6 +4,7 @@ from io import BytesIO
 import json
 from pathlib import Path
 import plistlib
+import shutil
 import subprocess
 import tarfile
 from zipfile import ZipFile
@@ -23,6 +24,13 @@ def test_native_builder_preserves_version_notices_and_archive_layout(
     root = tmp_path
     (root / "pyproject.toml").write_text('[project]\nversion="1.2.3"\n', encoding="utf-8")
     work = root / ".tmp/build"
+    desktop = root / "packaging/linux/ride-forces-analyzer.desktop"
+    desktop.parent.mkdir(parents=True)
+    shutil.copyfile(
+        Path(build_posix.__file__).resolve().parents[1]
+        / "packaging/linux/ride-forces-analyzer.desktop",
+        desktop,
+    )
     monkeypatch.setattr(build_posix, "ROOT", root)
     monkeypatch.setattr(build_posix, "runtime_target", lambda: target)
 
@@ -32,11 +40,20 @@ def test_native_builder_preserves_version_notices_and_archive_layout(
 
     def run(arguments: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
         if "PyInstaller" in arguments:
+            assert f"{build_posix.ICON_SOURCE}:ride_forces_analyzer/ui" in arguments
             if target.startswith("macos-"):
+                icon = Path(arguments[arguments.index("--icon") + 1])
+                assert icon.read_bytes()[:4] == b"icns"
                 info = work / "bin" / f"{build_posix.APP_NAME}.app/Contents/Info.plist"
                 info.parent.mkdir(parents=True)
+                resources = info.parent / "Resources"
+                resources.mkdir()
+                shutil.copyfile(icon, resources / icon.name)
                 with info.open("wb") as output:
-                    plistlib.dump({"CFBundleName": build_posix.APP_NAME}, output)
+                    plistlib.dump(
+                        {"CFBundleName": build_posix.APP_NAME, "CFBundleIconFile": icon.name},
+                        output,
+                    )
             else:
                 bundle = work / "bin" / build_posix.APP_NAME
                 bundle.mkdir(parents=True)
@@ -47,6 +64,10 @@ def test_native_builder_preserves_version_notices_and_archive_layout(
             bundle = Path(arguments[-2])
             with ZipFile(arguments[-1], "w") as output:
                 output.write(bundle / "Contents/Info.plist", f"{bundle.name}/Contents/Info.plist")
+                output.write(
+                    bundle / "Contents/Resources/app-icon.icns",
+                    f"{bundle.name}/Contents/Resources/app-icon.icns",
+                )
         return subprocess.CompletedProcess(arguments, 0, "", "")
 
     monkeypatch.setattr(build_posix, "collect_notices", notices)
@@ -62,6 +83,10 @@ def test_native_builder_preserves_version_notices_and_archive_layout(
     if target.startswith("macos-"):
         with ZipFile(archive) as source:
             info = plistlib.loads(source.read(f"{build_posix.APP_NAME}.app/Contents/Info.plist"))
+            assert info["CFBundleIconFile"] == "app-icon.icns"
+            assert source.read(f"{build_posix.APP_NAME}.app/Contents/Resources/app-icon.icns")[
+                :4
+            ] == (b"icns")
         assert info["CFBundleVersion"] == info["CFBundleShortVersionString"] == "1.2.3"
         assert info["LSMinimumSystemVersion"] == "15.0"
     else:
@@ -69,6 +94,12 @@ def test_native_builder_preserves_version_notices_and_archive_layout(
             content = source.extractfile(f"{build_posix.APP_NAME}/{build_posix.APP_NAME}")
             assert content is not None
             assert content.read() == b"synthetic native executable"
+            launcher = source.extractfile(f"{build_posix.APP_NAME}/ride-forces-analyzer.desktop")
+            assert launcher is not None
+            assert launcher.read() == desktop.read_bytes()
+            for suffix in ("png", "svg"):
+                icon = source.extractfile(f"{build_posix.APP_NAME}/ride-forces-analyzer.{suffix}")
+                assert icon is not None and icon.read()
 
 
 @pytest.mark.parametrize("target", [None, "windows-x64", "linux-arm64"])

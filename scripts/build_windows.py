@@ -21,6 +21,9 @@ from zipfile import ZipFile, ZIP_DEFLATED
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 
+from ride_forces_analyzer.ui.icons import ICON_SOURCE
+from scripts.build_icons import build_icons
+
 ROOT = Path(__file__).resolve().parents[1]
 APP_NAME = "Ride-Forces-Analyzer"
 
@@ -171,6 +174,7 @@ def build(work: Path, *, release: bool = False) -> Path:
     ]
     notices = work / "notices"
     collect_notices(notices)
+    icons = build_icons(work / "icons")
     subprocess.run(
         [
             sys.executable,
@@ -180,6 +184,8 @@ def build(work: Path, *, release: bool = False) -> Path:
             "--onefile",
             "--windowed",
             "--noupx",
+            "--icon",
+            str(icons / "app-icon.ico"),
             "--name",
             APP_NAME,
             "--paths",
@@ -194,6 +200,8 @@ def build(work: Path, *, release: bool = False) -> Path:
             str(work / "spec"),
             "--collect-data",
             "pint",
+            "--add-data",
+            f"{ICON_SOURCE}:ride_forces_analyzer/ui",
             "--add-data",
             f"{notices}:licenses/third-party",
             "--add-data",

@@ -48,6 +48,10 @@ def test_release_build_outputs_only_windows_downloads_and_checksums(
 
         def run(arguments: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
             if "PyInstaller" in arguments:
+                assert Path(arguments[arguments.index("--icon") + 1]).read_bytes()[:4] == (
+                    b"\x00\x00\x01\x00"
+                )
+                assert f"{build_windows.ICON_SOURCE}:ride_forces_analyzer/ui" in arguments
                 destination = Path(arguments[arguments.index("--distpath") + 1])
                 destination.mkdir()
                 (destination / f"{build_windows.APP_NAME}.exe").write_bytes(b"synthetic app")

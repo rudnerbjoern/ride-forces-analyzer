@@ -11,12 +11,15 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import shutil
 import subprocess
 import sys
 import tarfile
 import tomllib
 
 from ride_forces_analyzer.runtime_paths import runtime_target
+from ride_forces_analyzer.ui.icons import ICON_SOURCE
+from scripts.build_icons import build_icons
 from scripts.build_windows import APP_NAME, ROOT, collect_notices, digest
 
 
@@ -36,6 +39,7 @@ def build(work: Path, *, expected_target: str | None = None) -> Path:
     ]
     notices = work / "notices"
     collect_notices(notices)
+    icons = build_icons(work / "icons")
     macos = target.startswith("macos-")
     arguments = [
         sys.executable,
@@ -59,6 +63,8 @@ def build(work: Path, *, expected_target: str | None = None) -> Path:
         "--collect-data",
         "pint",
         "--add-data",
+        f"{ICON_SOURCE}:ride_forces_analyzer/ui",
+        "--add-data",
         f"{notices}:licenses/third-party",
         "--add-data",
         f"{ROOT / 'LICENSE'}:licenses",
@@ -67,6 +73,8 @@ def build(work: Path, *, expected_target: str | None = None) -> Path:
     ]
     if macos:
         arguments += [
+            "--icon",
+            str(icons / "app-icon.icns"),
             "--windowed",
             "--osx-bundle-identifier",
             "io.github.rudnerbjoern.rideforcesanalyzer",
@@ -112,6 +120,12 @@ def build(work: Path, *, expected_target: str | None = None) -> Path:
         )
     else:
         bundle = work / "bin" / APP_NAME
+        shutil.copyfile(icons / "app-icon.png", bundle / "ride-forces-analyzer.png")
+        shutil.copyfile(ICON_SOURCE, bundle / "ride-forces-analyzer.svg")
+        shutil.copyfile(
+            ROOT / "packaging/linux/ride-forces-analyzer.desktop",
+            bundle / "ride-forces-analyzer.desktop",
+        )
         (bundle / "START-HERE.txt").write_text(
             "Run ./Ride-Forces-Analyzer from this extracted directory.\n"
             "Keep _internal beside the executable. Install FFmpeg separately for video export.\n"

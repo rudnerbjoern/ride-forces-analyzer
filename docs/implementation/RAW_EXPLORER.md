@@ -156,7 +156,7 @@ No vertical zoom.
 | Technical details    | Expandable localized source/processing/current-sample groups; aligned label/value tables, individual processing lines, retained numeric precision/diagnostics; notes action reveals/scrolls to details |
 | Literal text         | Device metadata escaped; original diagnostics selectable                                                                                                                                               |
 | Sliders              | Narrow track/handle only                                                                                                                                                                               |
-| Native caption       | Force-trace icon and loaded ride name; application name not repeated in toolbar; native controls intact; unsupported caption colors use system defaults                                                |
+| Native caption       | Blue gradient/white force-trace icon with subtle depth; loaded ride name; application name not repeated in toolbar; native controls intact; unsupported caption colors use system defaults             |
 | Status bar           | Application version permanently at bottom right                                                                                                                                                        |
 
 Settings → Application selects Dark/Light/System and UI language. Save applies and

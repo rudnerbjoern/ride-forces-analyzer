@@ -46,6 +46,24 @@ cd Ride-Forces-Analyzer
 
 Keep `_internal` beside the executable.
 
+### Optional application-menu shortcut
+
+Keep the extracted folder in its permanent location. From that folder, run:
+
+```sh
+data_dir="${XDG_DATA_HOME:-$HOME/.local/share}"
+mkdir -p "$HOME/.local/bin" "$data_dir/applications" \
+    "$data_dir/icons/hicolor/512x512/apps"
+ln -s "$PWD/Ride-Forces-Analyzer" "$HOME/.local/bin/Ride-Forces-Analyzer"
+cp ride-forces-analyzer.desktop "$data_dir/applications/"
+cp ride-forces-analyzer.png "$data_dir/icons/hicolor/512x512/apps/"
+```
+
+Ensure `$HOME/.local/bin` is on your desktop session's `PATH`; on Ubuntu, log out
+and back in after first creating that directory. The application menu then uses
+the same blue force-trace icon as the window. If the extracted folder moves,
+update the symbolic link to its new location.
+
 ## macOS 15 or newer
 
 1. Choose `macos-arm64.zip` for **Apple Silicon** or `macos-x64.zip` for **Intel**.

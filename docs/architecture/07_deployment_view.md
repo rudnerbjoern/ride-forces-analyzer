@@ -85,6 +85,13 @@ Windows. Native Linux/macOS workers are release-build and runtime-validation
 targets, not additional developer setups. PyInstaller does not cross-compile
 these packages from Windows.
 
+Window and native package identity share one SVG asset. The existing package
+builders generate Windows ICO, macOS ICNS and Linux PNG artwork; Linux additionally
+ships a desktop entry. The runtime SVG is explicitly collected into every frozen
+application. [Icon build contracts](../development/RELEASE.md#shared-application-icon)
+own formats and reproduction; the [installation guide](../user/INSTALLATION.md#optional-application-menu-shortcut)
+owns optional desktop registration for the portable Linux package.
+
 | Target            | Baseline                                  | Package                                 | Encoder                                            |
 | ----------------- | ----------------------------------------- | --------------------------------------- | -------------------------------------------------- |
 | Windows x64       | Windows 10/11                             | EXE, standard/complete ZIP              | Existing pinned complete bundle or external FFmpeg |
