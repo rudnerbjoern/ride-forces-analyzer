@@ -31,6 +31,15 @@
 
 ## Unified recording analysis
 
+`analysis.projection.source_directions` selects the effective input axes. RFDB
+calibration Y/X/Z supplies provisional vertical/lateral/longitudinal directions;
+schema 2.2.0 uses its explicit direction fields. Both use the same rounded-basis
+admission and unit normalization. The source tree and absent canonical direction
+fields remain unchanged. Reference calibration and independent orientation use
+the same selection; orientation still requires an available gravity sequence.
+Projection provenance records the RFDB interpretation as an assumption, not
+physical qualification. See [source evidence](../validation/APP_REFERENCE.md#rfdb-axis-interpretation).
+
 Module: [`analysis.recording`](../../src/ride_forces_analyzer/analysis/recording.py).
 Import its classes explicitly; package exports remain explicit.
 

@@ -9,6 +9,21 @@ the [source-app policy](../architecture/09_architecture_decisions.md#source-app-
 and [open qualification limits](../architecture/11_technical_risks.md).
 Live display behavior belongs to the [explorer contract](../implementation/RAW_EXPLORER.md).
 
+## RFDB axis interpretation
+
+- The five authorized schema 2.2.0 recordings retain both representations:
+  calibration Y/X/Z equals vertical/lateral/longitudinal direction components
+  exactly. The unversioned [Typhoon RFDB recording](../development/RECORDINGS.md#typhoon)
+  supplies only the calibration representation.
+- RFDB analysis therefore uses Y/X/Z with the same rounded-basis admission and
+  normalized direction projection. This is a provisional source-app
+  interpretation, not a qualified physical frame or a general RFDB specification.
+- Typhoon's stored extrema (-1.0298018181818185, 4.981484909090909) match direct
+  projection onto its unnormalized Y vector and a centered 11-sample mean.
+  Normalizing that rounded vector changes these values slightly (approximately
+  -1.029864 and 4.981784). Stored extrema remain untouched metadata; they do not
+  override the shared normalized display policy.
+
 ## Computation and qualification
 
 - Compared calculation: independent direction-row normalization, direct projection

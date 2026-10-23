@@ -35,6 +35,7 @@ def _complete(decoded: DecodeResult, limits: ImportLimits) -> ImportResult:
         source,
         motion.motion,
         motion.indices,
+        source_format=decoded.source_format,
         metadata=optional.metadata,
         attributes=optional.attributes if optional.attributes is not None else (),
         vectors=motion.vectors,

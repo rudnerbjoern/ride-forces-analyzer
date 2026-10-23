@@ -22,7 +22,7 @@ def inspect_motion(source: SourceEnvelope) -> int | None:
 | Contract      | Requirement                                                                                                                                        |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Entry point   | `parse_motion(source, *, limits=DEFAULT_LIMITS)`                                                                                                   |
-| Input         | `SourceEnvelope` for supported schema 2.2.0; `SourceNumber` numbers, unchanged strings, tuple arrays                                               |
+| Input         | `SourceEnvelope` for supported schema 2.2.0 or RFDB; `SourceNumber` numbers, unchanged strings, tuple arrays                                       |
 | Preconditions | [Strict decoder](STRICT_DECODING.md) establishes bytes/tree correspondence, version and document budgets                                           |
 | Success       | `MotionParseSuccess`: same source, `MotionSequence`, `RecordingIndices`, `RecordingVectors`, ordered diagnostics; no complete Recording/GPS status |
 | Failure       | `ImportFailure`: no recording, at least one error, retained source and known nonempty version string                                               |

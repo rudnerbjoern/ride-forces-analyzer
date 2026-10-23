@@ -16,7 +16,7 @@ import stat
 from typing import Literal, cast
 import zlib
 
-from ride_forces_analyzer.domain import SourceEnvelope, SourceNumber, SourceValue
+from ride_forces_analyzer.domain import RecordingFormat, SourceEnvelope, SourceNumber, SourceValue
 from ride_forces_analyzer.domain._validation import has_type
 
 from ._json_preflight import DecodeProblem, preflight
@@ -30,9 +30,14 @@ class DecodeSuccess:
     """A supported immutable source object, not a complete canonical recording."""
 
     source: SourceEnvelope = field(repr=False)
-    schema_version: Literal["2.2.0"] = field(default="2.2.0", init=False)
+    source_format: RecordingFormat = RecordingFormat.RIDE_FORCES
     success: Literal[True] = field(default=True, init=False)
     diagnostics: tuple[ImportDiagnostic, ...] = field(default=(), init=False)
+
+    @property
+    def schema_version(self) -> str | None:
+        version = self.source.root.get("schemaVersion") if self.source.root is not None else None
+        return version if isinstance(version, str) else None
 
     @property
     def byte_count(self) -> int:
@@ -78,7 +83,7 @@ def _decode_tree(text: str) -> object:
     )
 
 
-def _schema_220(source: SourceEnvelope) -> DecodeSuccess:
+def _validate_core_shape(source: SourceEnvelope) -> None:
     root = source.root
     assert root is not None
     for key in ("accelerationSequence",):
@@ -123,7 +128,28 @@ def _schema_220(source: SourceEnvelope) -> DecodeSuccess:
                 "Index must be an integer JSON number",
             )
     # Component interpretation, rates, bounds and scientific meaning belong to Stage 3.
+
+
+def _schema_220(source: SourceEnvelope) -> DecodeSuccess:
+    _validate_core_shape(source)
     return DecodeSuccess(source)
+
+
+def _rfdb_shape(root: Mapping[str, SourceValue]) -> bool:
+    """Recognize the observed unversioned RFDB layout, not arbitrary missing versions."""
+    return {
+        "accelerationSequence",
+        "sampleRate",
+        "startIndex",
+        "endIndex",
+        "xCalibrationVector",
+        "yCalibrationVector",
+        "zCalibrationVector",
+    }.issubset(root) and not {
+        "verticalDirectionVector",
+        "lateralDirectionVector",
+        "longitudinalDirectionVector",
+    }.intersection(root)
 
 
 _SCHEMAS = {"2.2.0": _schema_220}
@@ -160,6 +186,9 @@ def _decode(data: bytes, limits: ImportLimits, path: Path | None = None) -> Deco
             raise DecodeProblem("INVALID_ROOT", (), "JSON root must be an object")
         source = SourceEnvelope(data, cast(Mapping[str, object], tree), source_path=path)
         assert source.root is not None
+        if "schemaVersion" not in source.root and _rfdb_shape(source.root):
+            _validate_core_shape(source)
+            return DecodeSuccess(source, RecordingFormat.RFDB)
         raw_version = source.root.get("schemaVersion")
         if not isinstance(raw_version, str) or not raw_version:
             raise DecodeProblem(

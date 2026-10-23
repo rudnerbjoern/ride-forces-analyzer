@@ -29,11 +29,13 @@ from PySide6.QtGui import (
     QMouseEvent,
     QResizeEvent,
     QShowEvent,
+    QShortcut,
     QPainter,
     QPen,
     QWheelEvent,
 )
 from PySide6.QtWidgets import (
+    QAbstractSpinBox,
     QComboBox,
     QApplication,
     QCheckBox,
@@ -45,6 +47,7 @@ from PySide6.QtWidgets import (
     QGraphicsSimpleTextItem,
     QGraphicsRectItem,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMenu,
     QMessageBox,
@@ -60,6 +63,7 @@ from PySide6.QtWidgets import (
     QSpinBox,
     QToolBar,
     QToolButton,
+    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -693,6 +697,24 @@ class ExplorerWindow(QMainWindow):
         QTimer.singleShot(0, lambda: self.updates.check(manual=False))
         if restore_last_file:
             QTimer.singleShot(0, self._restore_last_file)
+        for key, step in (("Left", -1), ("Right", 1)):
+            shortcut = QShortcut(QKeySequence(key), self)
+            shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+            shortcut.activated.connect(lambda step=step: self._step_sample(step))
+
+    @Slot(int)
+    def _step_sample(self, step: int) -> None:
+        if (
+            self.data is None
+            or not self.slider.isEnabled()
+            or (self.playback is not None and self.playback.playing)
+            or isinstance(
+                QApplication.focusWidget(),
+                (QAbstractSpinBox, QComboBox, QLineEdit, QPlainTextEdit, QTextEdit),
+            )
+        ):
+            return
+        self.slider.setValue(self.slider.value() + step)
 
     @Slot(int)
     def set_ui_language(self, index: int) -> None:

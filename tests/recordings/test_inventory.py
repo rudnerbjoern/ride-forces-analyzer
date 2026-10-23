@@ -8,29 +8,46 @@ import sys
 import pytest
 
 from tests.support.fixture_inventory import inspect_bytes, inventory, snapshot_bytes
-from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
+from tests.support.recordings import (
+    REAL_FIXTURE_DIRECTORY,
+    REAL_FIXTURES,
+    RFDB_FIXTURE_DIRECTORY,
+    RFDB_FIXTURES,
+)
 
 SNAPSHOT = Path(__file__).resolve().parents[1] / "fixtures" / "schema-inventory.json"
 
 
-def test_complete_recursive_fixture_snapshot() -> None:
+@pytest.mark.parametrize(
+    ("directory", "fixtures", "snapshot"),
+    [
+        (REAL_FIXTURE_DIRECTORY, REAL_FIXTURES, SNAPSHOT),
+        (RFDB_FIXTURE_DIRECTORY, RFDB_FIXTURES, SNAPSHOT.with_name("rfdb-schema-inventory.json")),
+    ],
+    ids=("app", "rfdb"),
+)
+def test_complete_recursive_fixture_snapshot(
+    directory: Path,
+    fixtures: dict[str, tuple[int, str]],
+    snapshot: Path,
+) -> None:
     """Complete schema observations preserve all pinned bytes and modification times."""
     originals = {
         name: (path.read_bytes(), path.stat().st_mtime_ns)
-        for name in REAL_FIXTURES
-        for path in (REAL_FIXTURE_DIRECTORY / name,)
+        for name in fixtures
+        for path in (directory / name,)
     }
-    actual = inventory()
-    assert set(actual["fixtures"]) == set(REAL_FIXTURES)
+    actual = inventory(directory)
+    assert set(actual["fixtures"]) == set(fixtures)
     for name, (before, modified) in originals.items():
         result = actual["fixtures"][name]
-        assert (result["byte_count"], result["sha256"]) == REAL_FIXTURES[name]
-        path = REAL_FIXTURE_DIRECTORY / name
+        assert (result["byte_count"], result["sha256"]) == fixtures[name]
+        path = directory / name
         assert path.read_bytes() == before
         assert path.stat().st_mtime_ns == modified
-        assert sha256(before).hexdigest() == REAL_FIXTURES[name][1]
+        assert sha256(before).hexdigest() == fixtures[name][1]
     # Compare aggregate statistics, never dump raw GPS values on failure.
-    assert snapshot_bytes(actual) == SNAPSHOT.read_bytes()
+    assert snapshot_bytes(actual) == snapshot.read_bytes()
 
 
 def test_inventory_sees_late_nested_extensions_and_presence() -> None:

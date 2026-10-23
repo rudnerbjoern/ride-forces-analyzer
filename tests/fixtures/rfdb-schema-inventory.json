@@ -1,0 +1,463 @@
+{
+  "fixtures": {
+    "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces": {
+      "byte_count": 365978,
+      "max_container_depth": 3,
+      "max_number_token_length": 19,
+      "node_count": 37001,
+      "paths": {
+        "$": {
+          "members": {
+            "accelerationSequence": 1,
+            "attributes": 1,
+            "date": 1,
+            "device": 1,
+            "endIndex": 1,
+            "gravityIndex": 1,
+            "inclineIndex": 1,
+            "location": 1,
+            "maxForce": 1,
+            "minForce": 1,
+            "name": 1,
+            "ridingPosition": 1,
+            "sampleRate": 1,
+            "smoothingFactor": 1,
+            "startIndex": 1,
+            "uuid": 1,
+            "xCalibrationVector": 1,
+            "yCalibrationVector": 1,
+            "zCalibrationVector": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"accelerationSequence\"]": {
+          "array_lengths": {
+            "9242": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"accelerationSequence\"][*]": {
+          "members": {
+            "x": 9242,
+            "y": 9242,
+            "z": 9242
+          },
+          "types": {
+            "object": 9242
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"x\"]": {
+          "finite_decimal_strings": 9242,
+          "string_length_max": 6,
+          "string_length_min": 1,
+          "types": {
+            "string": 9242
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"y\"]": {
+          "finite_decimal_strings": 9242,
+          "string_length_max": 6,
+          "string_length_min": 1,
+          "types": {
+            "string": 9242
+          }
+        },
+        "$[\"accelerationSequence\"][*][\"z\"]": {
+          "finite_decimal_strings": 9242,
+          "string_length_max": 6,
+          "string_length_min": 1,
+          "types": {
+            "string": 9242
+          }
+        },
+        "$[\"attributes\"]": {
+          "array_lengths": {
+            "1": 1
+          },
+          "types": {
+            "array": 1
+          }
+        },
+        "$[\"attributes\"][*]": {
+          "members": {
+            "id": 1,
+            "label": 1,
+            "value": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"attributes\"][*][\"id\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 36,
+          "string_length_min": 36,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"attributes\"][*][\"label\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 3,
+          "string_length_min": 3,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"attributes\"][*][\"value\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 1,
+          "string_length_min": 1,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"date\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"device\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"endIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"gravityIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"inclineIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"location\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 13,
+          "string_length_min": 13,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"maxForce\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"minForce\"]": {
+          "negative_numbers": 1,
+          "number_encodings": {
+            "decimal_or_exponent": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"name\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 7,
+          "string_length_min": 7,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"ridingPosition\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"sampleRate\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"smoothingFactor\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"startIndex\"]": {
+          "negative_numbers": 0,
+          "number_encodings": {
+            "integer": 1
+          },
+          "types": {
+            "number": 1
+          }
+        },
+        "$[\"uuid\"]": {
+          "finite_decimal_strings": 0,
+          "string_length_max": 36,
+          "string_length_min": 36,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"xCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"xCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"yCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"]": {
+          "members": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "types": {
+            "object": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"x\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"y\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 6,
+          "string_length_min": 6,
+          "types": {
+            "string": 1
+          }
+        },
+        "$[\"zCalibrationVector\"][\"z\"]": {
+          "finite_decimal_strings": 1,
+          "string_length_max": 5,
+          "string_length_min": 5,
+          "types": {
+            "string": 1
+          }
+        }
+      },
+      "sha256": "c6c561c1156c1197462159775866b43ce69b1ed44f7bb39bced8a37e4c2122eb"
+    }
+  },
+  "snapshot_version": 1,
+  "top_level_presence": {
+    "accelerationSequence": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "attributes": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "date": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "device": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "endIndex": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "gravityIndex": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "inclineIndex": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "location": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "maxForce": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "minForce": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "name": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "ridingPosition": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "sampleRate": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "smoothingFactor": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "startIndex": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "uuid": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "xCalibrationVector": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "yCalibrationVector": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    },
+    "zCalibrationVector": {
+      "absent_in": [],
+      "present_in": [
+        "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces"
+      ]
+    }
+  }
+}

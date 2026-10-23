@@ -74,7 +74,7 @@ different inputs; no atomic snapshot or hostile-filesystem race guarantee.
 
 | Fields                                                             | Typed view / policy                                                        |
 | ------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| schemaVersion                                                      | Explicit dispatch to literal 2.2.0 only                                    |
+| schemaVersion                                                      | Explicit 2.2.0 or recognized unversioned RFDB profile; no invented version |
 | accelerationSequence, gravitySequence                              | All finite vectors; gravity capability may be absent                       |
 | sampleRate                                                         | Valid source rate, or owner 50 only for absence with DEFAULT provenance    |
 | startIndex, endIndex, gravityIndex, inclineIndex                   | Independently bounded indices; no slicing/marker chronology                |

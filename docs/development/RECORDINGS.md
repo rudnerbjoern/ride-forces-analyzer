@@ -54,6 +54,16 @@ updating the tests and this catalog together.
 - Size: 782329 bytes.
 - SHA-256: `cfa03821140aaa76c52e1bb69905db96a775a5d6772741b5d3a90f48a4254564`.
 
+### Typhoon
+
+- File: [Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces](../../tests/fixtures/rfdb/Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces)
+- Size: 365978 bytes.
+- SHA-256: `c6c561c1156c1197462159775866b43ce69b1ed44f7bb39bced8a37e4c2122eb`.
+- Owner-created recording downloaded from RFDB; inclusion as complete test and
+  reference data authorized on 2026-10-23 under the common CC BY-SA 4.0 terms.
+- Unversioned JSON with calibration vectors, 9242 acceleration samples and an
+  explicit 50 Hz sample rate; gravity and GPS sequences are absent.
+
 ### Voltron Nevera
 
 - File: [VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces](../../tests/fixtures/real/VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces)
@@ -92,10 +102,11 @@ updating the tests and this catalog together.
 
 ## Validation and scientific limits
 
-`tests/recordings/test_integrity.py` verifies the exact five-file inventory and the
+`tests/recordings/test_integrity.py` verifies the complete recording inventory and the
 original byte lengths/SHA-256 pinned in `tests/support/recordings.py`.
 `tests/recordings/test_inventory.py` compares
-the complete [recursive snapshot](../../tests/fixtures/schema-inventory.json);
+the complete recursive snapshots for [app exports](../../tests/fixtures/schema-inventory.json)
+and [RFDB exports](../../tests/fixtures/rfdb-schema-inventory.json);
 see [source observations](../architecture/08_concepts.md#source-ownership-and-validation).
 The same complete inventory pass verifies every fixture's pinned identity and
 unchanged bytes/modification time; synthetic cases separately exercise traversal
@@ -105,8 +116,11 @@ and invalid-input behavior.
 uv run --locked pytest tests/recordings/test_inventory.py tests/recordings/test_integrity.py
 ```
 
-The [public importer](IMPORT_SERVICE.md) losslessly imports all five originals;
-the [import contract](../architecture/08_concepts.md#source-ownership-and-validation) summarizes full motion/GPS/metadata preservation.
+The five schema 2.2.0 recordings form the existing [importer](IMPORT_SERVICE.md)
+reference corpus; the unversioned RFDB recording is cataloged separately under
+`tests/fixtures/rfdb/`. The
+[import contract](../architecture/08_concepts.md#source-ownership-and-validation)
+summarizes full motion/GPS/metadata preservation.
 Analysis model/device tests preserve source bytes and exercise unavailable Watch
 capabilities. These checks do not qualify units, axes, calibration, timing,
 filtering, GPS sentinels or source-app equivalence. The separate

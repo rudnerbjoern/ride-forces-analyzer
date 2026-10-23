@@ -1,8 +1,9 @@
-"""Paths and pinned identities of the five authorized original recordings."""
+"""Paths and pinned identities of authorized original recordings by source format."""
 
 from pathlib import Path
 
 REAL_FIXTURE_DIRECTORY = Path(__file__).resolve().parents[1] / "fixtures" / "real"
+RFDB_FIXTURE_DIRECTORY = REAL_FIXTURE_DIRECTORY.parent / "rfdb"
 # Owner-supplied recordings; expected sizes and digests pin the original bytes.
 REAL_FIXTURES: dict[str, tuple[int, str]] = {
     "IronGwazi-E1A4DA01-0231-4EF6-9A9A-F58C3AB020EB.forces": (
@@ -24,5 +25,13 @@ REAL_FIXTURES: dict[str, tuple[int, str]] = {
     "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces": (
         862820,
         "f48157cadbfeb374eeadf48112b0bbfc1e8b47c580cb303342cf65977054ad04",
+    ),
+}
+
+# Keep the schema 2.2.0 corpus above separate from unversioned RFDB recordings.
+RFDB_FIXTURES: dict[str, tuple[int, str]] = {
+    "Typhoon-BBEC0F05-692B-4CED-B5C7-EEB8C7BCDBF1.forces": (
+        365978,
+        "c6c561c1156c1197462159775866b43ce69b1ed44f7bb39bced8a37e4c2122eb",
     ),
 }

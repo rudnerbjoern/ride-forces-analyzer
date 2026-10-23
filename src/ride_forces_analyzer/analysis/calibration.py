@@ -16,6 +16,7 @@ from ride_forces_analyzer.domain._validation import has_type
 from ride_forces_analyzer.importers import ImportSuccess, Severity
 
 from .models import AnalysisDiagnostic, AnalysisProvenance, CapabilityState
+from .projection import source_directions
 
 # Centered acceleration means recover the five fixtures' rounded source axes.
 REFERENCE_WINDOW_SAMPLES = 5
@@ -237,12 +238,7 @@ def validate_calibration_references(
             )
     if not overrides.active:
         return None
-    axes = source.recording.vectors
-    vertical, lateral, longitudinal = (
-        axes.vertical_direction,
-        axes.lateral_direction,
-        axes.longitudinal_direction,
-    )
+    vertical, lateral, longitudinal = source_directions(source.recording)
     if vertical is None or lateral is None or longitudinal is None:
         raise CalibrationReferenceError(
             "CALIBRATION_SOURCE_AXES_UNAVAILABLE",

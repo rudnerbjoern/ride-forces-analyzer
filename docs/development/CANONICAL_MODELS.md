@@ -11,6 +11,10 @@ and [scientific/resource limits](../architecture/11_technical_risks.md).
 - Domain imports: `ride_forces_analyzer.domain`; diagnostics/results:
   `ride_forces_analyzer.importers`.
 - Models use standard-library `dataclasses` with `frozen=True, slots=True`.
+- `Recording.source_format` is `RecordingFormat.RIDE_FORCES` or
+  `RecordingFormat.RFDB`. `schema_version` retains the declared version;
+  unversioned RFDB uses None. Absent direction fields remain absent even when
+  analysis can interpret the calibration vectors.
 - Constructors validate supplied canonical values; no decoding, schema dispatch,
   raw-field diagnostics, time inference, force calculation or Qt integration.
 - Settings use a [separate runtime contract](CODE_QUALITY.md#runtime-and-static-contracts).

@@ -17,7 +17,7 @@ Node dependencies are reproducible through `uv.lock` and `package-lock.json`.
 
 Accepted and implemented: own original bytes, exact numeric tokens and an immutable
 source tree alongside typed models; a mutable path or JSON re-encoding cannot
-preserve evidence. Strict schema 2.2.0 decoding, motion and optional validation
+preserve evidence. Strict schema 2.2.0 / unversioned RFDB decoding, motion and optional validation
 compose one deterministic, bounded Path/bytes service. Unknown fields and GPS stay
 intact. Watch recordings disprove mandatory gravity/GPS; defaults apply only to
 absence and never alter source. Expected input failures are structured outcomes;

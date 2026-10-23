@@ -1,7 +1,7 @@
 # Optional data parsing
 
 `importers.parse_optional_data(source: SourceEnvelope, *, limits: ImportLimits = DEFAULT_LIMITS)`
-returns `OptionalParseSuccess` or `ImportFailure`. Input: supported 2.2.0 envelope
+returns `OptionalParseSuccess` or `ImportFailure`. Input: supported 2.2.0 or RFDB envelope
 from the [strict decoder](STRICT_DECODING.md). No I/O, network, Qt, motion validation,
 resampling, unit/epoch conversion or scientific interpretation.
 Success provides optional accessors, never a complete Recording.
