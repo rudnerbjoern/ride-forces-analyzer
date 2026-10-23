@@ -150,6 +150,29 @@ events can also reach a running instance. If multiple desktop requests arrive
 during an import, the latest pending request is opened next.
 Missing or invalid files use the normal import error display.
 
+## Support: error report from the current run
+
+The application writes a local text file, `error-report-<process-id>.txt`, in:
+
+- Windows: `%LOCALAPPDATA%\Ride Forces Analyzer\support`
+- macOS: `~/Library/Application Support/Ride Forces Analyzer/support`
+- Linux: `$XDG_DATA_HOME/ride-forces-analyzer/support`, or
+  `~/.local/share/ride-forces-analyzer/support` when unset
+
+The file starts with application/system details and collects errors throughout
+that run, without a count or size limit. It is prepared at startup so native
+crashes can write diagnostic stacks when supported. Reports from completed runs
+are removed on the next launch; reports of other running instances are preserved.
+Copy the file before restarting if you need to retain it for support.
+
+Unhandled Python errors include available tracebacks and chained exceptions.
+Native crash information is best effort; termination by the operating system,
+power loss or unwritable storage can prevent a report. Recording contents and
+local variables are not deliberately dumped, but exception messages and traces
+can contain personal paths or data fragments. Review the text and delete or
+replace anything you do not want to share before attaching it to a support request.
+Nothing is uploaded automatically.
+
 ## If the application does not start
 
 - Verify that the download matches your operating system and processor.

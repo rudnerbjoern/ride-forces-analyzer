@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 from ride_forces_analyzer import __version__
 from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.diagnostics import collect_diagnostics
+from ride_forces_analyzer.error_reporting import record_error
 
 from .translation import bind
 from .chrome import app_icon
@@ -42,7 +43,8 @@ class _DiagnosticWorker(QRunnable):
     def run(self) -> None:
         try:
             report = collect_diagnostics()
-        except Exception:
+        except Exception as error:
+            record_error("Support diagnostics", error)
             report = "Diagnostics: Collection failed"
         self.signals.completed.emit(report)
 

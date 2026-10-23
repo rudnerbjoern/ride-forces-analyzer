@@ -4,6 +4,18 @@
 
 ## Qt bootstrap
 
+The normal module/frozen entry initializes `error_reporting` before importing
+the UI or constructing settings. A per-process UTF-8 support report receives
+application error records and main-thread, Python-thread and unraisable exception
+hooks. Worker failure boundaries retain exceptions before emitting UI messages;
+import diagnostics and analysis/batch failures remain available after handling.
+Writes are serialized and flushed without rotation or count limits. Native
+`faulthandler` output uses the same open file, with best-effort crash coverage.
+Completed-run files are removed at startup; active processes keep separate files.
+Report storage failure must not replace original application error behavior.
+No recording objects or locals are serialized; exception strings and traceback
+source lines remain technical support data that users must review before sharing.
+
 ```mermaid
 sequenceDiagram
     actor User
