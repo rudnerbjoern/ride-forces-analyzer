@@ -13,7 +13,7 @@ owns system design and scientific boundaries.
 | M5 — Playback              | Complete | Sample playback at 0.5×/1×/2×, pause/resume and seeking                                                                                                                                 |
 | M6 — Exports               | Complete | Five layouts (native HD HUD, otherwise 4K), both aspects, transparent/opaque video, previews, presets/batches, CSV/JSON, optional NVIDIA                                                |
 | M7 — Video synchronization | Planned  | Local video ingest, offsets, timeline preview, frame-accurate alignment                                                                                                                 |
-| M8 — Windows release       | Partial  | Portable EXE, standard/complete ZIPs, notice collection and tag pipeline; owner-confirmed clean-Windows EXE launch; redistribution material and installer/uninstaller remain            |
+| M8 — Windows release       | Partial  | Portable EXE, standard/complete ZIPs, notices and tag pipeline; owner-confirmed clean-Windows EXE launch; accepted redistribution scope; installer/uninstaller remain                   |
 | M9 — Linux / macOS         | Partial  | Native Linux x64/macOS arm64/x64 packages and mandatory runtime CI; clean-machine qualification remains open                                                                            |
 
 ## Product boundaries
@@ -29,8 +29,8 @@ owns system design and scientific boundaries.
   M3 completion requirement. They do not establish physical qualification.
 - Installed libraries do not establish features. SQLite stores export configuration;
   manual Onride alignment is separate from playback/synchronization.
-- [Release obligations](development/RELEASE.md#windows-packages) identify missing
-  redistribution sources/notices and the limits of workstation package checks.
+- [Release policy](development/RELEASE.md#windows-packages) defines the accepted
+  redistribution scope and the limits of workstation package checks.
 - Paid code signing and macOS notarization are outside release scope;
   see [distribution constraints](architecture/02_architecture_constraints.md#distribution-constraints).
 

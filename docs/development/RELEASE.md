@@ -4,8 +4,8 @@ The [release workflow](../../.github/workflows/source-release.yml) handles
 owner-authorized pushes of `v*` tags. Windows remains the development environment;
 Linux/macOS packages are built and executed by native target workers in reusable CI.
 The workflow validates tagged sources and prepares a standalone Windows x64 EXE,
-standard/complete ZIPs, a Linux x64 tarball and macOS arm64/x64 app ZIPs. Binary publication is
-accompanied by documented missing redistribution material below.
+standard/complete ZIPs, a Linux x64 tarball and macOS arm64/x64 app ZIPs. The accepted
+redistribution scope and its verification limits are documented below.
 No installer is included.
 Local acceptance and owner review still precede tag creation; CI is secondary
 validation. [Windows setup](SETUP.md) owns the required local checks.
@@ -163,25 +163,25 @@ that the standalone EXE also starts successfully on a clean Windows system witho
 preinstalled Python or the development environment. This manual launch confirmation
 is specific to the EXE; no Windows version or package version was recorded.
 
-**Documented missing material:** `packaging/redistribution.json` is pending. Official
+**Accepted redistribution scope:** `packaging/redistribution.json` is accepted. Official
 Qt/PySide 6.12.0 sources are downloaded and pinned; a static
 [Qt notice file](../../packaging/QT-NOTICES.txt) is included by the existing
 notice collector. The shared Qt GUI hook excludes the unused PDF image plugin on
 all targets, preserving the standard GUI dependencies and other image plugins.
 Frozen package self-tests check that PDF image support is absent before exercising
-import/rendering. Complete corresponding sources/build instructions for the static
-GyanD FFmpeg binary's libraries remain missing. Generic upstream links do not close
-that gap.
-The catalog is included in the EXE and both ZIPs. These recorded gaps do not
-block package construction; they remain unresolved license/source obligations.
+import/rendering. The existing FFmpeg delivery model is owner-accepted; no additional
+source bundle is planned. Completeness of corresponding sources/build instructions
+for FFmpeg and its linked libraries has not been independently verified. The catalog
+records this limitation and is included in the EXE and
+both ZIPs. The accepted status describes project scope, not verified license compliance.
 
-`--release` reports the documented gaps and verifies the supplied source archives'
+`--release` verifies the supplied source archives'
 SHA-256 values. It downloads configured HTTPS sources only into
 `.tmp/`; those dependency archives are not bundled as a release download. The Windows
 job and package execution checks must succeed before the publication job can run.
 Publication rechecks all downloaded asset hashes and the live tag, then attaches
-the EXE, both Windows ZIPs, Linux/macOS packages and platform checksum files. A
-documented missing provider source does not block the workflow. Missing or modified
+the EXE, both Windows ZIPs, Linux/macOS packages and platform checksum files. The
+accepted source-verification limitation does not block the workflow. Missing or modified
 files that are explicitly listed in the catalog still fail verification.
 The Windows downloads have their own checksum file.
 
@@ -228,7 +228,7 @@ Preferences/export databases use `~/.local/share/ride-forces-analyzer` on Linux
 (or absolute XDG_DATA_HOME) and `~/Library/Application Support/Ride Forces Analyzer`
 on macOS. No recording or user data is installed in the app bundle. Rendering
 uses Pillow's scalable font fallback when Segoe UI is absent; glyph metrics need
-not be pixel-identical to Windows. Existing redistribution gaps remain documented
+not be pixel-identical to Windows. The accepted redistribution scope remains documented
 in the shipped catalog; no static Windows FFmpeg binary is added to these packages.
 
 ## Distribution boundaries

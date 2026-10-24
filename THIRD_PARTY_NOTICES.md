@@ -59,9 +59,10 @@ Top-level metadata does not replace bundled-component notices.
 | Setup              | Publisher download or user-selected encoder; setup retains LICENSE/README beside `bin/`                                                                |
 | Complete ZIP       | Exact pinned encoder plus publisher LICENSE/README and executable license/build output                                                                 |
 
-Redistributing FFmpeg requires exact corresponding sources/build information and
-notices for linked libraries. The README commit/generic upstream URL is not a
-verified complete static-library source bundle; that gap remains open.
+The owner has accepted the current FFmpeg delivery scope. No separate source bundle
+is planned. Completeness of corresponding sources/build instructions for the
+bundled binary and its linked libraries has not been independently verified;
+this is a recorded limitation rather than pending release work.
 [FFmpeg legal guidance](https://ffmpeg.org/legal.html) describes build-dependent
 licensing. Codec patent permissions are separate and not established here.
 
@@ -119,10 +120,9 @@ CC BY-SA 4.0, PSF-2.0 or Python-2.0. Entries are not unique upstream projects.
 - Windows packages collect runtime notices, Python license, PyInstaller
   bootloader license/exception, static Qt notices and the redistribution catalog.
   The complete ZIP additionally contains FFmpeg publisher/license/build material.
-- **Open:** complete FFmpeg static-library corresponding sources/build instructions.
-  [redistribution.json](packaging/redistribution.json)
-  records these gaps; the builder reports them without blocking publication.
-  This does not resolve or waive the obligations.
+- **Accepted scope:** [redistribution.json](packaging/redistribution.json) records
+  the owner-accepted delivery model and the source-verification
+  limitation. Acceptance records the project scope, not verified license compliance.
 - Dependency source archives are verified as release-build inputs, not attached
   as a separate release download. [Package boundaries](docs/development/RELEASE.md#windows-packages)
   define checks/remaining limits; this inventory does not establish full release acceptance.

@@ -73,8 +73,8 @@ The Windows packaging path builds a PyInstaller EXE with an embedded interpreter
 and libraries, plus standard and FFmpeg-complete ZIPs with notices. An isolated
 native smoke checker executes each artifact and the complete package's CPU encoder.
 The release workflow requires these checks and integrity verification of supplied
-source archives before publishing binaries. Missing provider sources are recorded
-in the shipped redistribution catalog and reported without blocking the build;
+source archives before publishing binaries. The shipped redistribution catalog records
+the accepted delivery scope and source-verification limits, with no pending work;
 local candidates do not establish public binary or clean-VM acceptance. See
 [Windows packages](../development/RELEASE.md#windows-packages).
 

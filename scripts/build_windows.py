@@ -175,12 +175,8 @@ def write_zip(folder: Path, output: Path) -> None:
 
 
 def validate_redistribution(manifest: Path) -> None:
-    """Verify supplied source files; report documented gaps without blocking builds."""
+    """Verify the supplied source archives against the manifest."""
     value = json.loads(manifest.read_text(encoding="utf-8"))
-    if value.get("status") != "verified":
-        print("NOTICE: Redistribution material has documented open items:", flush=True)
-        for item in value.get("open_items", []):
-            print(f"- {item}", flush=True)
     sources = value.get("source_archives")
     if not isinstance(sources, list):
         raise ValueError("Source archives must be a list")

@@ -13,6 +13,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 - NEVER make a simple task unnecessarily complex or turn it into a broader engineering project. NEVER introduce unnecessary complexity, abstractions, tools, frameworks or processes.
 - NEVER expand task scope under any circumstances without the owner's prior explicit permission. Useful, recommended or related work is NEVER automatically authorized.
 - NEVER invent requirements or act on assumptions or ideas about tasks the owner has not assigned. MUST perform only the requested work and necessary checks, then STOP.
+- MUST preserve the owner's accepted FFmpeg delivery model. The owner rejected a previous source-archive attempt because excessive effort, huge additional archives and broken delivery made it unacceptable. NEVER repeat that approach or reopen FFmpeg source procurement/source bundles as an automatic 1.0 or release prerequisite. Only a new, explicit owner instruction for that exact FFmpeg work authorizes reconsideration; general reviews, releases or Git requests do not.
 
 ## Communication and scope
 

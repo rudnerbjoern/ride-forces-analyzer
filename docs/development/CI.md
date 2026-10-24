@@ -159,7 +159,7 @@ the reusable quality stage also builds and checks the native Linux/macOS artifac
   introduction. See [release notes policy](RELEASE.md#automatic-release-notes).
 - No job creates tags or changes repository visibility.
   [Release guide](RELEASE.md) owns tag/version/ancestry policy, retries, artifact
-  handling, download verification and outstanding redistribution limits.
+  handling, download verification and documented redistribution limits.
 - Hosted success does not replace local application/GUI or clean-Windows validation.
 
 ## Verification boundaries

@@ -163,9 +163,8 @@ def test_standard_zip_rejects_unsafe_private_or_encoder_content(unexpected: str)
             validate_zip(archive, complete=False)
 
 
-def test_binary_release_allows_documented_gaps_but_rejects_changed_sources(
+def test_binary_release_validates_sources_and_rejects_changes(
     monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
 ) -> None:
     with TemporaryDirectory(dir=".tmp") as directory:
         root = Path(directory).resolve()
@@ -173,17 +172,16 @@ def test_binary_release_allows_documented_gaps_but_rejects_changed_sources(
         monkeypatch.setattr(build_windows, "ROOT", root)
         manifest = root / "redistribution.json"
         manifest.write_text(
-            '{"status":"pending","source_archives":[],"open_items":["Provider sources unavailable"]}',
+            '{"status":"accepted","source_archives":[]}',
             encoding="utf-8",
         )
         build_windows.validate_redistribution(manifest)
-        assert "Provider sources unavailable" in capsys.readouterr().out
         source = root / ".tmp/source.zip"
         source.write_bytes(b"synthetic source archive")
         manifest.write_text(
             json.dumps(
                 {
-                    "status": "pending",
+                    "status": "accepted",
                     "source_archives": [
                         {"path": ".tmp/source.zip", "sha256": build_windows.digest(source)},
                     ],
