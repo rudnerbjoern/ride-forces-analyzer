@@ -7,7 +7,9 @@ import json
 from pathlib import Path
 import runpy
 import subprocess
+import sys
 from tempfile import TemporaryDirectory
+from types import ModuleType
 from zipfile import ZipFile
 
 import pytest
@@ -35,7 +37,10 @@ def test_qt_gui_hook_excludes_only_pdf_plugins(monkeypatch: pytest.MonkeyPatch) 
         assert Path(filename) == hook
         return ["PySide6.QtCore"], binaries, [("translations/qtbase_de.qm", "translations")]
 
-    monkeypatch.setattr("PyInstaller.utils.hooks.qt.add_qt6_dependencies", dependencies)
+    qt_hook = ModuleType("PyInstaller.utils.hooks.qt")
+    monkeypatch.setattr(qt_hook, "add_qt6_dependencies", dependencies, raising=False)
+    monkeypatch.setitem(sys.modules, "PyInstaller", None)
+    monkeypatch.setitem(sys.modules, qt_hook.__name__, qt_hook)
     result = runpy.run_path(str(hook))
     assert result["binaries"] == binaries[3:]
     assert result["hiddenimports"] == ["PySide6.QtCore"]
