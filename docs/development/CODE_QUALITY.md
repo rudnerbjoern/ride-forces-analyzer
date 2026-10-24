@@ -126,6 +126,7 @@ separately from repeated full-frame rendering.
 | GPU behavior                         | CPU fallback allowed; command-contract tests verify GPU options independently of hardware                    |
 | Real batches                         | Two jobs with different rides/formats; pure queue tests cover the ride/preset cross-product                  |
 | Progress/cancellation                | Shared GUI flow once; layout controls in existing interaction checks                                         |
+| Parallel rendering                   | Equal pixels, ordered/bounded frames, worker ownership and cleanup; real HUD encoding and cancellation       |
 | Compact layouts                      | Targeted navigation/scrolling regressions, not another full workflow matrix                                  |
 
 Add variants for distinct risks, without multiplying independent options through
@@ -154,6 +155,16 @@ Shared preparation and isolation:
   press, auto-repeat, release and keyboard checks for both fields/directions,
   without repeated five-second holds. CI runs UI serially on its own runner,
   concurrently with non-UI checks; see [CI routing](CI.md).
+- Explorer gesture, overlay, metadata and responsive-layout checks share windows
+  within related workflows. Arrow directions, marker defaults, recording formats,
+  languages and playback modes run as successive variants in those workflows.
+  Reset controls and viewport between variants instead of recreating the window.
+- Export source/range, layout, preview and portrait-preset checks share one Explorer
+  session; preview/format changes retain the same assistant. CSV and both JSON
+  formats share one loaded recording and check cancellation/overwrite against the
+  previous dialog and saved folder. Worker failures and parent closure remain
+  covered; independent windows, fresh-process startup and screenshot repeatability
+  retain isolation.
 
 Desktop layout references model a 3840 × 2160 editing display:
 

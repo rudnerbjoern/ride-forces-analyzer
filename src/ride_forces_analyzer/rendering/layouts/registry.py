@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from collections.abc import Mapping
 from .ribbon import PLUGIN as RIBBON
 from .corners import PLUGIN as CORNERS
-from .capsule import PLUGIN as CAPSULE
+from .hud import PLUGIN as HUD
 from .orbit import PLUGIN as ORBIT
 from .column import PLUGIN as COLUMN
 from .contracts import LayoutPlugin, LayoutPosition, LayoutRenderer, Region
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from ..model import ExportLayout, ExportSettings, ExportTimeline
 
 PLUGINS: Mapping[ExportLayout, LayoutPlugin] = MappingProxyType(
-    {plugin.key: plugin for plugin in (RIBBON, CORNERS, CAPSULE, ORBIT, COLUMN)},
+    {plugin.key: plugin for plugin in (RIBBON, CORNERS, HUD, ORBIT, COLUMN)},
 )
 REGIONS = {
     key: plugin.landscape.regions[plugin.landscape.default] for key, plugin in PLUGINS.items()

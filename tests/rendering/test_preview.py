@@ -26,11 +26,19 @@ def test_portrait_contains_complete_region(manta: ExplorerData, layout: str) -> 
     renderer = OverlayRenderer(prepare_export(manta.analysis, settings, 3500, 3700))
     frame = renderer.render_sample(3600)
     x, y, width, height = export_region(settings)
-    assert x > 0 and y > 0 and x + width < frame.width and y + height < frame.height
+    if layout == "hud":
+        assert (x, y, width, height) == (0, 0, *frame.size)
+    else:
+        assert x > 0 and y > 0 and x + width < frame.width and y + height < frame.height
     region = renderer.render_region(0)
     assert region.size == (width, height)
     bounds = frame.getchannel("A").getbbox()
-    if layout == "orbit":
+    if layout == "hud":
+        assert bounds is not None
+        # The bottom gradient reaches the frame edges; the upper canvas stays open.
+        assert bounds[0] == 0 and bounds[2:] == (width, height)
+        assert 0 < bounds[1] < height
+    elif layout == "orbit":
         assert width == height and bounds is not None
         assert x <= bounds[0] < x + 10 and y <= bounds[1] < y + 10
         assert x + width - 10 < bounds[2] <= x + width
@@ -51,15 +59,19 @@ def test_portrait_contains_complete_region(manta: ExplorerData, layout: str) -> 
 
 
 @pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("selected_layout", ["orbit", "hud"])
 def test_previews_match_production_at_exact_graph_sample(
     manta: ExplorerData,
     aspect: Literal["landscape", "portrait"],
+    selected_layout: Literal["orbit", "hud"],
 ) -> None:
     assert manta.analysis is not None
     sample = manta.source.recording.indices.start + 72 * 50 + 1
     settings = ExportSettings(
-        layout="orbit",
-        position=LayoutPosition.TOP_RIGHT,
+        layout=selected_layout,
+        position=(
+            LayoutPosition.FULL_SCREEN if selected_layout == "hud" else LayoutPosition.TOP_RIGHT
+        ),
         fps=30,
         aspect=aspect,
         invert_vertical=False,
@@ -73,15 +85,18 @@ def test_previews_match_production_at_exact_graph_sample(
     for profile in result.profiles:
         chosen = (
             settings
-            if profile.layout == "orbit"
+            if profile.layout == selected_layout
             else replace(
                 settings,
                 layout=profile.layout,
                 position={
                     "corners": LayoutPosition.TOP_RIGHT,
                     "column": LayoutPosition.RIGHT,
-                    "ribbon": LayoutPosition.TOP,
-                    "capsule": LayoutPosition.TOP,
+                    "ribbon": (
+                        LayoutPosition.BOTTOM if selected_layout == "hud" else LayoutPosition.TOP
+                    ),
+                    "hud": LayoutPosition.FULL_SCREEN,
+                    "orbit": LayoutPosition.BOTTOM_LEFT,
                 }[profile.layout],
                 invert_vertical=True,
                 invert_lateral=profile.layout == "column",

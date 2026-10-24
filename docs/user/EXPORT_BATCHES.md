@@ -9,7 +9,7 @@ The steps below use the English interface labels.
 
 ## Save and reuse a preset
 
-1. Open a recording and click **Export 4K…**.
+1. Open a recording and click **Export video…**.
 2. Choose your layout, position, video format, language, output type, frame rate, visible
    time window, smoothing and range.
 3. Click **Save as…** in the preset area and give the setup a unique name.
@@ -49,6 +49,10 @@ You can manage saved batches without opening a recording first.
 2. Select the batches you want and click **Run selected batches…**, or choose
    **Run ALL saved batches…**.
 3. Choose an output folder and follow the current-job progress and result counts.
+
+Frame generation uses **Settings → Export → Parallel render jobs** on this computer,
+as described in the [video export guide](VIDEO_EXPORT.md). Videos still run one
+after another.
 
 Each run creates a new directory below the chosen folder, with numbered batch
 folders and video filenames. Earlier outputs are not overwritten. The run's

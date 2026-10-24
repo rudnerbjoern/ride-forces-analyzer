@@ -14,11 +14,13 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QLabel,
     QPushButton,
+    QSpinBox,
     QVBoxLayout,
     QWidget,
 )
 
 from ride_forces_analyzer.i18n import LANGUAGE_CHOICES, LANGUAGES, Language, tr
+from ride_forces_analyzer.cpu_resources import render_job_limit
 from ride_forces_analyzer.rendering.model import EXPORT_FRAME_RATES, ExportSettings
 from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 from ride_forces_analyzer.storage.map_tiles import TileCache
@@ -78,6 +80,18 @@ class SettingsDialog(QDialog):
         )
         explanation.setWordWrap(True)
         form.addRow(explanation)
+        self.render_jobs = QSpinBox()
+        self.render_jobs.setRange(1, render_job_limit())
+        self.render_jobs.setValue(preferences.render_jobs())
+        bind(self.render_jobs, tr("Parallel render jobs"), "accessibleName")
+        bind(
+            self.render_jobs,
+            tr(
+                "Applies to exports and batches on this computer. More jobs use more CPU and memory.",
+            ),
+            "toolTip",
+        )
+        form.addRow(bind(QLabel(), tr("Parallel render jobs")), self.render_jobs)
         layout.addWidget(group)
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
@@ -148,6 +162,7 @@ class SettingsDialog(QDialog):
     def save(self) -> None:
         self.preferences.remember_restore_last_file(self.restore_last_file.isChecked())
         self.preferences.remember_export_fps(EXPORT_FRAME_RATES[self.frame_rate.currentIndex()])
+        self.preferences.remember_render_jobs(self.render_jobs.value())
         self.language_selected.emit(self.language.currentIndex())
         self.appearance_selected.emit(
             APPEARANCE_CHOICES.index(Appearance(self.appearance.currentData())),

@@ -29,6 +29,9 @@ from ride_forces_analyzer.rendering.model import ExportSettings, ExportTimeline,
         ("column", LayoutPosition.TOP_LEFT, LayoutPosition.LEFT),
         ("ribbon", LayoutPosition.LEFT, LayoutPosition.BOTTOM),
         ("orbit", None, LayoutPosition.BOTTOM_LEFT),
+        ("hud", LayoutPosition.TOP_RIGHT, LayoutPosition.FULL_SCREEN),
+        ("hud", LayoutPosition.FULL_SCREEN, LayoutPosition.FULL_SCREEN),
+        ("orbit", LayoutPosition.FULL_SCREEN, LayoutPosition.BOTTOM_LEFT),
     ],
 )
 def test_equivalent_position_keeps_shared_axis_and_uses_default_for_other_axis(
@@ -41,6 +44,14 @@ def test_equivalent_position_keeps_shared_axis_and_uses_default_for_other_axis(
     plugin = registry.PLUGINS[cast(ExportLayout, layout)]
     for positions in (plugin.landscape, plugin.portrait):
         assert positions.select(preferred) == expected
+
+
+def test_fullscreen_switch_preserves_the_previous_corner() -> None:
+    positions = registry.PLUGINS["orbit"].landscape
+    assert (
+        positions.select(LayoutPosition.FULL_SCREEN, LayoutPosition.TOP_RIGHT)
+        is LayoutPosition.TOP_RIGHT
+    )
 
 
 @pytest.mark.parametrize("position", ["right", "missing", 1, False])

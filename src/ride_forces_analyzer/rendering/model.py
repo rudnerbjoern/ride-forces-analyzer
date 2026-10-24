@@ -19,11 +19,11 @@ from .layouts.contracts import LayoutPosition
 FrameRate = int | Literal["60000/1001"]
 EXPORT_FRAME_RATES: tuple[FrameRate, ...] = (24, 25, 30, 50, "60000/1001", 60)
 
-ExportLayout = Literal["column", "ribbon", "corners", "capsule", "orbit"]
+ExportLayout = Literal["column", "ribbon", "corners", "hud", "orbit"]
 PROFILES: tuple[tuple[ExportLayout, str], ...] = (
     ("ribbon", "Flow Ribbon"),
     ("corners", "Corner Instruments"),
-    ("capsule", "Telemetry Capsule"),
+    ("hud", "HUD"),
     ("orbit", "G-Orbit"),
     ("column", "Four-panel column"),
 )
@@ -44,6 +44,10 @@ class ExportSettings:
 
     @property
     def dimensions(self) -> tuple[int, int]:
+        if self.layout == "hud":
+            from .layouts.hud import LANDSCAPE, PORTRAIT
+
+            return (PORTRAIT if self.aspect == "portrait" else LANDSCAPE).size
         return (2160, 3840) if self.aspect == "portrait" else (3840, 2160)
 
     @property

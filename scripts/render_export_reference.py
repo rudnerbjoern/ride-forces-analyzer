@@ -85,7 +85,7 @@ def render_reference(output: Path) -> None:
             language="en",
             aspect="landscape",
             fps=50,
-            window_seconds=12.0,
+            window_seconds=30.0 if layout == "hud" else 12.0,
             output="transparent",
             invert_vertical=True,
             invert_lateral=layout == "column",
@@ -94,9 +94,14 @@ def render_reference(output: Path) -> None:
         frame = OverlayRenderer(timeline).render_sample(SAMPLE)
         if frame.size != settings.dimensions or frame.getchannel("A").getextrema()[0] != 0:
             raise ValueError(f"Invalid reference canvas/transparency: {title}")
+        x, y, width, height = export_region(settings)
+        if frame.size != background.size:
+            # Documentation illustrates placement in a 4K editing timeline.
+            scale = background.width / frame.width
+            x, y, width, height = (round(value * scale) for value in (x, y, width, height))
+            frame = frame.resize(background.size, Image.Resampling.LANCZOS)
         composite = Image.alpha_composite(background, frame).convert("RGB")
         composite.save(output / f"manta-{layout}.png", optimize=True)
-        x, y, width, height = export_region(settings)
         detail = composite.crop((x, y, x + width, y + height))
         detail.thumbnail((1440, 1440), Image.Resampling.LANCZOS)
         detail.save(output / f"manta-{layout}-detail.png", optimize=True)
@@ -141,6 +146,9 @@ def render_reference(output: Path) -> None:
         "aspect": "landscape",
         "fps": 50,
         "window_seconds": 12.0,
+        "profile_window_seconds": {
+            layout: 30.0 if layout == "hud" else 12.0 for layout, _ in PROFILES
+        },
         "profiles": [layout for layout, _ in PROFILES],
     }
     (output / "manta-reference.json").write_text(

@@ -11,7 +11,7 @@
 Find the strongest airtime moment, inspect a launch or bring your ride data into
 an Onride video. Ride Forces Analyzer turns `.forces` and compressed `.zforces` recordings from the
 [Ride Forces app](https://rideforces.com/) on iPhone or Apple Watch into
-interactive charts and 4K video overlays on Windows, Linux and macOS.
+interactive charts and video overlays on Windows, Linux and macOS.
 
 **[Download](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)**
 · **[Watch the Manta demo](https://youtu.be/tsRzD416voU)**
@@ -60,7 +60,7 @@ See [Explore a recording](docs/user/EXPLORER.md) for navigation and selection.
 
 ### 3. Create an overlay
 
-Click **Export 4K…**, choose a layout and check the preview. Export a transparent
+Click **Export video…**, choose a layout and check the preview. Export a transparent
 MOV for your video editor or an MP4 with a solid background. Align the overlay
 with your footage in the editor; automatic video synchronization is not available yet.
 The [video export guide](docs/user/VIDEO_EXPORT.md) takes you through each step.
@@ -133,7 +133,7 @@ to see an exported overlay in use.
 | :--------------------- | :------------------------------------------------------ |
 | **Flow Ribbon**        | A strip along the bottom with force histories.          |
 | **Corner Instruments** | Compact instruments in the upper right.                 |
-| **Telemetry Capsule**  | A compact panel across the top.                         |
+| **HUD**                | Frameless gauges and wide force histories.              |
 | **G-Orbit**            | Circular gauges with signed forces and peak indicators. |
 | **Four-panel column**  | Stacked force and orientation plots.                    |
 
@@ -141,11 +141,13 @@ to see an exported overlay in use.
 [compare larger previews](docs/EXPORT_THEMES.md).
 
 Export themes use yellow for lateral data, green for acceleration and red for
-braking. Flow Ribbon, Corner Instruments and Telemetry Capsule also show the
+braking. Flow Ribbon, Corner Instruments and HUD also show the
 current vertical context with the same colors and labels as the workspace.
 
-Every layout supports **4K landscape** for classic YouTube videos and **portrait**
-for Shorts or TikTok. Choose **Position** beside the layout to keep the action clear.
+Every layout supports **landscape** for classic YouTube videos and **portrait**
+for Shorts or TikTok. HUD exports at its native **1920×1080** or **1080×1920**;
+scale it to your timeline in your video editor. The other layouts export in 4K.
+Choose **Position** beside the layout to keep the action clear.
 Export the whole recording, its marker interval or your
 selected section. Choose the overlay language independently of the application.
 
@@ -224,9 +226,9 @@ Copyright © 2026 Björn Rudner.
 The application is free and open source under **GPL-3.0-or-later**, including
 commercial use under its terms, without warranty. See [LICENSE](LICENSE).
 
-Supplied [recordings](tests/fixtures/real/README.md) and
-[documentation images](docs/images/README.md) have separate **CC BY-SA 4.0**
-licenses, including attribution and ShareAlike requirements. These grants do not
+Reuse terms for supplied recordings are in the
+[recording notice](tests/fixtures/real/README.md); image licensing and attribution
+are in the [central image guide](docs/images/README.md). These grants do not
 automatically apply to your own recordings or exports. Dependencies retain their
 own licenses; see [third-party notices](THIRD_PARTY_NOTICES.md) for their terms
 and unresolved redistribution requirements.

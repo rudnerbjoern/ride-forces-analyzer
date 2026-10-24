@@ -1,4 +1,4 @@
-# 4K ride overlay export
+# Ride overlay video export
 
 For instructions on creating an overlay and using it in a video editor, see the
 [user guide](../user/VIDEO_EXPORT.md). This page defines the technical contracts.
@@ -18,15 +18,15 @@ and [encoder qualification limits](../architecture/07_deployment_view.md#encoder
 The [layout API](../development/EXPORT_LAYOUTS.md) owns styling/extensions;
 the [roadmap](../ROADMAP.md) owns planned scope.
 
-<!-- cspell:words qscale -->
+<!-- cspell:words qscale Bahnschrift -->
 
 ## Supported output
 
 | Setting            | Contract                                                                                                   |
 | ------------------ | ---------------------------------------------------------------------------------------------------------- |
 | Output             | One video per recording; transparent ProRes 4444 MOV (default) or independent opaque H.264 MP4             |
-| Canvas             | Landscape 16:9, 3840×2160; portrait 9:16, 2160×3840                                                        |
-| Profiles           | Flow Ribbon (assistant opening default), Corner Instruments, Telemetry Capsule, G-Orbit, four-panel column |
+| Canvas             | HUD: native 1920×1080 / 1080×1920; other profiles: 3840×2160 / 2160×3840                                   |
+| Profiles           | Flow Ribbon (assistant opening default), Corner Instruments, HUD, G-Orbit, four-panel column               |
 | Frame-rate choices | 24/25/30/50/59.94/60 fps; default 50 without a valid saved preference                                      |
 | Context window     | 1–60 s, default 12; shared source position and centered cursor in time plots                               |
 | Alignment          | Manual in DaVinci Resolve; source-video ingestion/synchronization excluded                                 |
@@ -40,7 +40,12 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 - Settings → Export persists the default frame rate in `preferences.sqlite3`.
   Save changes it; Cancel and temporary assistant edits do not. Presets/batches
   retain their own rates, including exact `60000/1001`.
-- Save dialog suggests the source `.forces` stem plus `.mov`/`.mp4`.
+- The local `render_jobs` preference defaults to 1 and accepts positive integers,
+  capped at the detected logical processor count (1 if unavailable). Settings →
+  Export applies it to newly started individual and batch exports. It is not part
+  of visual presets or saved batch snapshots.
+- Save dialog suggests the source recording stem, ` - `, the selected layout's
+  displayed name and `.mov`/`.mp4` (for example, `Manta - HUD.mov`).
   Successful exports remember the destination folder across restarts, separately
   from the recording folder. Missing folders use dialog defaults; cancellation or
   failure preserves the previous folder.
@@ -93,7 +98,7 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 
 ### Geometry, directions and colors
 
-- All profiles fit the full canvas. Portrait Ribbon/Capsule stack force cards;
+- All profiles fit the full canvas. Portrait Ribbon stacks force cards;
   Corners, G-Orbit and Column preserve complete instruments with proportional
   scaling/margins. Previews retain aspect without cropping/stretching.
   Frame composition and encoder padding share region geometry.
@@ -123,6 +128,76 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 | Longitudinal              | Positive acceleration above zero; negative braking below zero in histories/current-only instruments, all layouts/aspects; not invertible                                         |
 | Numeric signs             | Axis inversion never negates source values or changes right/left/braking signs                                                                                                   |
 | Orientation               | Angle between normalized current source gravity and stored vertical, clipped cosine, 0–180°; not yaw/GPS heading; missing/zero gravity breaks curve, no force-derived substitute |
+
+### HUD
+
+- Frameless full-screen arrangement with a transparent center: vertical force and
+  provisional airtime context at the left, acceleration/braking at the right,
+  and signed lateral force below. A transparent-to-black gradient gently darkens
+  the bottom histories; the center remains transparent. No reticle is drawn.
+- Fine major/minor ticks, luminous pointers, bold technical-font readouts, colored
+  bloom and soft black shadows remain transparent over footage. Bahnschrift is used
+  when installed, using its Bold weight for values; the existing scalable font
+  fallback applies otherwise. Prepared airtime labels are shown in uppercase.
+- A narrow orientation line sits at the outer right edge, alongside the existing
+  instrument height, with 0° at the top and 180° at the bottom. Only 0°, 45°, 90°,
+  135° and 180° are marked and labeled. A white triangular bug follows the prepared
+  orientation, including fractional-sample interpolation. Missing orientation hides
+  the entire line, labels and bug for that frame; no placeholder is shown.
+- The vertical instrument has independent negative/positive bounds in both formats:
+  Seated starts at −1.5…+5 g and Flying at −4…+3 g. The recording's effective
+  `riding_position` selects Flying only for the explicit `Flying` value; absent
+  source metadata already defaults to Seated in the importer. Other or unavailable
+  positions use the general Seated display range without changing source metadata.
+  Each bound expands outward independently in 0.5 g steps to include actual valid
+  samples in the export interval. Both sides use equal pixels per g; zero moves
+  with the bounds instead of staying at the center. Direction reversal mirrors
+  the instrument without negating values or exchanging its numeric bounds.
+  Only whole g values are labeled. Whole, half and quarter g values use long,
+  medium and short tick marks respectively; wider ranges reduce tick density
+  with an integer stride while preserving the exact endpoint marks.
+- Lateral and longitudinal instruments retain symmetric scales. Four minor ticks
+  separate major labels. Lateral uses at least ±2 g in both formats,
+  expanding to the next 0.5 g boundary from the largest absolute actual selected
+  peak (for example, 2.05 g → ±2.5 g), independently of major tick spacing.
+  Longitudinal uses
+  ±1.5 g in both formats. Before frame generation, its actual valid selected
+  samples determine the largest absolute peak: only peaks exceeding 1.5 g expand
+  that scale outward. Padded chart bounds and samples outside the export interval
+  do not affect instrument ranges. All ranges remain fixed for the
+  entire export. Major tick
+  spacing grows for wider ranges to retain readable density; values are never clipped.
+- Three thin, wide force histories share a centered time cursor aligned exactly
+  with the lateral instrument's zero. Their left/right time spans have equal width
+  around that line; baselines and time ticks use the same plot bounds. They use the
+  selected interval's independent per-channel scales. Each is symmetric around
+  zero, includes 5% headroom and rounds outward to 0.1 g (minimum ±0.1 g).
+  These ranges use valid selected samples, stay fixed during the entire export
+  and do not change the large instrument scales. Curve heights therefore show
+  variation within each channel, rather than equal g-per-pixel across channels.
+  Histories use the
+  selected time window. Selecting HUD in the assistant sets a 30-second window
+  (15 seconds before/after the cursor), still editable; loaded presets retain their
+  saved window. Time advances left-to-right; vertical respects its inversion,
+  lateral is positive-up, and longitudinal acceleration is above zero/braking below.
+  Curves break at missing samples and omit context outside the export interval.
+  Longitudinal segments change green/red exactly at their zero crossing.
+- Independent markers disappear for missing channels. Readouts use existing
+  interpolation and prepared context; no speed, gears or vehicle attitude is invented.
+- Bright bars along all three instrument scales show independent positive/negative
+  held peaks: 1.5 seconds, then release toward zero at 1 g/s, as in G-Orbit.
+  Larger peaks replace the held value immediately. Pointers, lateral dot and
+  numeric readouts continue to show current values. Envelopes start at the first
+  selected sample, reset at missing samples and use source time, independent of
+  seek order and video rate. Missing current values hide their bars and pointers.
+- The only position is `full_screen` in both formats. Native 1920×1080/1080×1920
+  drawing is exported directly without resizing, for scaling in the video editor.
+  Both transparent and opaque output retain these dimensions, including saved
+  presets and batches. Preview galleries keep their common display dimensions.
+  Static effects are prepared once; moving effects use instrument/history tiles.
+  Rendering is independent of seek order and previous frames.
+- Removed layout keys are unsupported in saved presets/jobs; no automatic remapping
+  or database cleanup is performed.
 
 ### G-Orbit
 
@@ -156,6 +231,12 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 
 - Background export provides progress/cancellation; window close requests cancel.
   Pillow RGBA generation remains separate from external FFmpeg encoding.
+- `rendering.parallel.render_region_bytes` uses the direct serial path for one
+  job. Multiple jobs use a bounded thread pool with independent renderers, images
+  and fonts per worker, sharing only the immutable timeline. Results reach the
+  encoder in frame order, with at most the job count plus one outstanding frames.
+  Closing on cancellation or failure cancels queued work and joins active renders.
+  Batch videos remain sequential; their frames use the selected render-job count.
 - Probe actual NVIDIA Vulkan ProRes with alpha / NVENC H.264; otherwise CPU fallback.
   Display selected backend. GPU ProRes never receives CPU `qscale`.
 - Pipe only the selected layout region; encoder pads remaining transparent/opaque

@@ -29,10 +29,59 @@ def preview_ready(dialog: ExportDialog) -> ExportPreview:
     return result
 
 
-def test_position_choices_follow_layout_format_and_refresh_preview(
+def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    window = explorer_window
+    assert not window.export_button.isEnabled()
+    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
+    wait_until(window.open_action.isEnabled)
+    assert window.export_button.isEnabled()
+    window.first.setValue(120)
+    window.last.setValue(160)
+    assert window.data is not None
+    sample = window.data.source.recording.indices.start + 72 * 50
+    window.slider.setValue(sample)
+    window.export_button.click()
+    dialog = window.export_window
+    assert isinstance(dialog, ExportDialog) and dialog.isVisible()
+    assert (dialog.first, dialog.last) == (120, 160)
+    assert "Manta" in dialog.windowTitle()
+    assert dialog.mode.currentIndex() == 0 and dialog.fps.currentText() == "50"
+    assert dialog.layout_profile.count() == 5
+    assert dialog.layout_profile.currentIndex() == 0
+    assert dialog.current_sample == sample
+    wait_until(lambda dialog=dialog: dialog.preview_result is not None)
+    assert dialog.preview_result is not None and dialog.preview_result.sample == sample
+    assert all(not button.icon().isNull() for button in dialog.profile_buttons)
+    assert dialog.preview_caption.height() >= 2 * dialog.preview_caption.fontMetrics().height()
+    dialog.profile_buttons[0].click()
+    assert dialog.profile_buttons[0].isChecked()
+    assert dialog.pages.currentIndex() == 0 and not dialog.start.isVisible()
+    assert dialog.flip_vertical.isChecked() and not dialog.flip_lateral.isChecked()
+    wait_until(lambda dialog=dialog: dialog.preview_result is not None)
+    dialog.interval.setCurrentIndex(1)
+    wait_until(lambda dialog=dialog: dialog.preview_result is not None)
+    assert dialog.preview_result is not None and dialog.preview_result.outside_range
+    assert dialog.preview_result.sample == sample
+    assert "OUTSIDE" in dialog.preview_note.text()
+    dialog.next.click()
+    assert dialog.pages.currentIndex() == 1 and dialog.start.isVisible()
+    assert f"{sample:,}" in dialog.summary.text()
+    dialog.back.click()
+    assert dialog.pages.currentIndex() == 0
+    dialog.layout_profile.setCurrentIndex(4)
+    assert dialog.flip_vertical.isChecked() and not dialog.flip_lateral.isChecked()
+    dialog.layout_profile.setCurrentIndex(3)
+    assert dialog.flip_vertical.isEnabled() and not dialog.flip_lateral.isEnabled()
+    assert dialog.flip_vertical.isChecked()
+    dialog.layout_profile.setCurrentIndex(0)
+    assert dialog.flip_vertical.isEnabled() and not dialog.flip_lateral.isEnabled()
+    assert dialog.flip_vertical.isChecked() and not dialog.flip_lateral.isChecked()
+    dialog.close()
+
+    # Check layout/position transitions in the same Explorer session.
     from dataclasses import replace
 
     from ride_forces_analyzer.rendering.layouts import registry
@@ -61,8 +110,12 @@ def test_position_choices_follow_layout_format_and_refresh_preview(
     dialog.position.setCurrentIndex(dialog.position.findData("top"))
     assert dialog.preview_result is None
     assert dialog.position.currentData() == LayoutPosition.TOP
-    choose_layout("capsule")
-    assert dialog.position.currentData() == LayoutPosition.TOP
+    choose_layout("hud")
+    assert choices() == ["full_screen"]
+    assert dialog.position.currentData() == LayoutPosition.FULL_SCREEN
+    assert dialog.seconds.value() == 30
+    dialog.seconds.setValue(20)
+    assert dialog.seconds.value() == 20
     choose_layout("column")
     assert choices() == ["left", "right"]
     assert dialog.position.currentData() == LayoutPosition.RIGHT
@@ -83,6 +136,7 @@ def test_position_choices_follow_layout_format_and_refresh_preview(
     dialog.aspect.setCurrentIndex(1)
     assert dialog.position.currentData() == LayoutPosition.TOP_RIGHT
 
+    original_plugins = registry.PLUGINS
     plugin = registry.PLUGINS["corners"]
     portrait = LayoutPositions(
         regions={LayoutPosition.BOTTOM_LEFT: plugin.portrait.regions[LayoutPosition.BOTTOM_LEFT]},
@@ -105,8 +159,61 @@ def test_position_choices_follow_layout_format_and_refresh_preview(
     assert dialog.analysis is analysis
     assert dialog.position in dialog.controls
 
+    monkeypatch.setattr(registry, "PLUGINS", original_plugins)
+    dialog.aspect.setCurrentIndex(0)
+    preview_ready(dialog)
 
-def test_ffmpeg_browse_starts_in_configured_folder_and_preserves_cancelled_path(
+    # Keep the same assistant for preview settings and portrait preset loading.
+    sample = dialog.current_sample
+    dialog.profile_buttons[3].click()
+    dialog.fps.setCurrentText("30")
+    dialog.seconds.setValue(8)
+    dialog.background.setCurrentIndex(2)
+    assert dialog.preview_result is None and not dialog.next.isEnabled()
+    dark_preview = preview_ready(dialog)
+    assert dialog.current_sample == sample and "G-Orbit" in dialog.preview_caption.text()
+    assert dark_preview.profiles[3].image.getpixel((0, 0)) == (22, 37, 51)
+    dialog.mode.setCurrentIndex(1)
+    opaque_preview = preview_ready(dialog)
+    assert all(profile.image.getpixel((0, 0)) == (0, 0, 0) for profile in opaque_preview.profiles)
+    assert dialog.worker is None
+    dialog.mode.setCurrentIndex(0)
+    estimate = dialog.size_estimate.text()
+    assert "Estimated file size:" in estimate and "MiB" in estimate
+    dialog.mode.setCurrentIndex(1)
+    assert dialog.size_estimate.text() != estimate
+    assert dialog.review_size_estimate.text() == dialog.size_estimate.text()
+    dialog.mode.setCurrentIndex(0)
+    assert dialog.size_estimate.text() == estimate
+    dialog.aspect.setCurrentIndex(1)
+    wait_until(lambda dialog=dialog: dialog.preview_result is None)
+    result = preview_ready(dialog)
+    assert all(profile.image.size == (540, 960) for profile in result.profiles)
+
+    def preset_name(*args: object, **kwargs: object) -> tuple[str, bool]:
+        return "Portrait", True
+
+    monkeypatch.setattr(QInputDialog, "getText", preset_name)
+    dialog.save_preset.click()
+    assert dialog.store.presets()[0].settings.aspect == "portrait"
+    dialog.aspect.setCurrentIndex(0)
+    dialog.load_preset.click()
+    assert dialog.aspect.currentIndex() == 1
+    preview_ready(dialog)
+    dialog.next.click()
+    assert "2160×3840" in dialog.summary.text()
+    dialog.back.click()
+    dialog.layout_profile.setCurrentIndex(2)
+    result = preview_ready(dialog)
+    assert all(profile.image.size == (540, 960) for profile in result.profiles)
+    assert "1080×1920" in dialog.summary.text()
+    dialog.aspect.setCurrentIndex(0)
+    preview_ready(dialog)
+    assert "1920×1080" in dialog.summary.text()
+    dialog.close()
+
+
+def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -158,11 +265,8 @@ def test_ffmpeg_browse_starts_in_configured_folder_and_preserves_cancelled_path(
             assert starts[-1] == str(other)
             assert dialog.encoder.text() == str(other / "ffmpeg.exe")
 
+    dialog.close()
 
-def test_save_dialog_suggests_source_name_and_restores_successful_export_folder(
-    explorer_window: ExplorerWindow,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
     from ride_forces_analyzer.ui import export as ui_export
     from ride_forces_analyzer.storage.preferences import Preferences
 
@@ -195,99 +299,16 @@ def test_save_dialog_suggests_source_name_and_restores_successful_export_folder(
         monkeypatch.setattr(ui_export, "export_video", export)
         dialog.start.click()
         wait_until(lambda: dialog.worker is None)
-        assert Path(suggestions[0]).name == source.stem + ".mov"
+        assert Path(suggestions[0]).name == source.stem + " - Flow Ribbon.mov"
         assert Preferences(dialog.preferences.path).export_directory() == str(output.parent)
+        dialog.back.click()
+        dialog.layout_profile.setCurrentIndex(2)
+        dialog.mode.setCurrentIndex(1)
+        preview_ready(dialog)
+        dialog.next.click()
         dialog.start.click()
-        assert Path(suggestions[1]) == output.parent / (source.stem + ".mov")
+        assert Path(suggestions[1]) == output.parent / (source.stem + " - HUD.mp4")
         assert dialog.preferences.export_directory() == str(output.parent)
-    dialog.close()
-
-
-def test_portrait_format_refreshes_all_previews_and_review(
-    explorer_window: ExplorerWindow,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    window = explorer_window
-    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
-    wait_until(window.open_action.isEnabled)
-    window.export_button.click()
-    dialog = window.export_window
-    assert isinstance(dialog, ExportDialog)
-    preview_ready(dialog)
-    estimate = dialog.size_estimate.text()
-    assert "Estimated file size:" in estimate and "MiB" in estimate
-    dialog.mode.setCurrentIndex(1)
-    assert dialog.size_estimate.text() != estimate
-    assert dialog.review_size_estimate.text() == dialog.size_estimate.text()
-    dialog.mode.setCurrentIndex(0)
-    assert dialog.size_estimate.text() == estimate
-    dialog.aspect.setCurrentIndex(1)
-    wait_until(lambda: dialog.preview_result is None)
-    result = preview_ready(dialog)
-    assert all(profile.image.size == (540, 960) for profile in result.profiles)
-
-    def preset_name(*args: object, **kwargs: object) -> tuple[str, bool]:
-        return "Portrait", True
-
-    monkeypatch.setattr(QInputDialog, "getText", preset_name)
-    dialog.save_preset.click()
-    assert dialog.store.presets()[0].settings.aspect == "portrait"
-    dialog.aspect.setCurrentIndex(0)
-    dialog.load_preset.click()
-    assert dialog.aspect.currentIndex() == 1
-    preview_ready(dialog)
-    dialog.next.click()
-    assert "2160×3840" in dialog.summary.text()
-    dialog.close()
-
-
-def test_export_dialog_tracks_loaded_source_and_range(explorer_window: ExplorerWindow) -> None:
-    window = explorer_window
-    assert not window.export_button.isEnabled()
-    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
-    wait_until(window.open_action.isEnabled)
-    assert window.export_button.isEnabled()
-    window.first.setValue(120)
-    window.last.setValue(160)
-    assert window.data is not None
-    sample = window.data.source.recording.indices.start + 72 * 50
-    window.slider.setValue(sample)
-    window.export_button.click()
-    dialog = window.export_window
-    assert isinstance(dialog, ExportDialog) and dialog.isVisible()
-    assert (dialog.first, dialog.last) == (120, 160)
-    assert "Manta" in dialog.windowTitle()
-    assert dialog.mode.currentIndex() == 0 and dialog.fps.currentText() == "50"
-    assert dialog.layout_profile.count() == 5
-    assert dialog.layout_profile.currentIndex() == 0
-    assert dialog.current_sample == sample
-    wait_until(lambda: dialog.preview_result is not None)
-    assert dialog.preview_result is not None and dialog.preview_result.sample == sample
-    assert all(not button.icon().isNull() for button in dialog.profile_buttons)
-    assert dialog.preview_caption.height() >= 2 * dialog.preview_caption.fontMetrics().height()
-    dialog.profile_buttons[0].click()
-    assert dialog.profile_buttons[0].isChecked()
-    assert dialog.pages.currentIndex() == 0 and not dialog.start.isVisible()
-    assert dialog.flip_vertical.isChecked() and not dialog.flip_lateral.isChecked()
-    wait_until(lambda: dialog.preview_result is not None)
-    dialog.interval.setCurrentIndex(1)
-    wait_until(lambda: dialog.preview_result is not None)
-    assert dialog.preview_result is not None and dialog.preview_result.outside_range
-    assert dialog.preview_result.sample == sample
-    assert "OUTSIDE" in dialog.preview_note.text()
-    dialog.next.click()
-    assert dialog.pages.currentIndex() == 1 and dialog.start.isVisible()
-    assert f"{sample:,}" in dialog.summary.text()
-    dialog.back.click()
-    assert dialog.pages.currentIndex() == 0
-    dialog.layout_profile.setCurrentIndex(4)
-    assert dialog.flip_vertical.isChecked() and not dialog.flip_lateral.isChecked()
-    dialog.layout_profile.setCurrentIndex(3)
-    assert dialog.flip_vertical.isEnabled() and not dialog.flip_lateral.isEnabled()
-    assert dialog.flip_vertical.isChecked()
-    dialog.layout_profile.setCurrentIndex(0)
-    assert dialog.flip_vertical.isEnabled() and not dialog.flip_lateral.isEnabled()
-    assert dialog.flip_vertical.isChecked() and not dialog.flip_lateral.isChecked()
     dialog.close()
 
 
@@ -316,6 +337,7 @@ def test_export_worker_progress_cancel_and_gui_recovery(
 
         assert isinstance(args[0], ExportTimeline)
         assert args[0].settings.layout == "orbit"
+        assert kwargs["render_jobs"] == window.preferences.render_jobs()
         started.set()
         cancelled = kwargs["cancelled"]
         assert isinstance(cancelled, Event)
@@ -352,30 +374,6 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     assert dialog.start.isEnabled()
     assert "cancelled" in dialog.status.text()
     assert not dialog.eta_timer.isActive() and dialog.eta.text() == ""
-    dialog.close()
-
-
-def test_preview_refreshes_settings_without_encoding(explorer_window: ExplorerWindow) -> None:
-    window = explorer_window
-    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
-    wait_until(window.open_action.isEnabled)
-    window.export_button.click()
-    dialog = window.export_window
-    assert isinstance(dialog, ExportDialog)
-    wait_until(lambda: dialog.preview_result is not None)
-    sample = dialog.current_sample
-    dialog.profile_buttons[3].click()
-    dialog.fps.setCurrentText("30")
-    dialog.seconds.setValue(8)
-    dialog.background.setCurrentIndex(2)
-    assert dialog.preview_result is None and not dialog.next.isEnabled()
-    dark_preview = preview_ready(dialog)
-    assert dialog.current_sample == sample and "G-Orbit" in dialog.preview_caption.text()
-    assert dark_preview.profiles[3].image.getpixel((0, 0)) == (22, 37, 51)
-    dialog.mode.setCurrentIndex(1)
-    opaque_preview = preview_ready(dialog)
-    assert all(profile.image.getpixel((0, 0)) == (0, 0, 0) for profile in opaque_preview.profiles)
-    assert dialog.worker is None
     dialog.close()
 
 
@@ -540,6 +538,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     )
     store.create_batch("Day1")
     window = explorer_window
+    window.preferences.remember_render_jobs(4)
     assert window.data is None and window.batches_button.isEnabled()
     window.batches_button.click()
     dialog = window.batch_window
@@ -564,6 +563,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     names: list[str] = []
 
     def fake_run(batches: tuple[SavedBatch, ...], directory: Path, **kwargs: object) -> BatchReport:
+        assert kwargs["render_jobs"] == window.preferences.render_jobs()
         names.extend(batch.name for batch in batches)
         started.set()
         cancelled = kwargs["cancelled"]

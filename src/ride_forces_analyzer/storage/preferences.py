@@ -111,6 +111,7 @@ PreferenceKey = Literal[
     "language",
     "appearance",
     "export_fps",
+    "render_jobs",
     "automatic_updates",
     "restore_last_file",
     "last_recording_path",
@@ -321,6 +322,20 @@ class Preferences:
         if type(value) not in (int, str) or value not in EXPORT_FRAME_RATES:
             raise ValueError("Unsupported default export frame rate")
         self._write("export_fps", str(value))
+
+    def render_jobs(self) -> int:
+        from ride_forces_analyzer.cpu_resources import effective_render_jobs
+
+        value = self._read("render_jobs")
+        try:
+            return effective_render_jobs(int(value))
+        except ValueError:
+            return 1
+
+    def remember_render_jobs(self, value: int) -> None:
+        from ride_forces_analyzer.cpu_resources import effective_render_jobs
+
+        self._write("render_jobs", str(effective_render_jobs(value)))
 
     def automatic_updates(self) -> bool:
         return self._read("automatic_updates") == "true"
