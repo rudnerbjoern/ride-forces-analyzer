@@ -47,7 +47,7 @@ def test_qt_gui_hook_excludes_only_pdf_plugins(monkeypatch: pytest.MonkeyPatch) 
     assert result["datas"] == [("translations/qtbase_de.qm", "translations")]
 
 
-@pytest.mark.parametrize("version,flags", [("1.2.3", 0), ("1.2.3rc2", 2)])
+@pytest.mark.parametrize("version,flags", [("1.0.0", 0), ("1.2.3", 0), ("1.2.3rc2", 2)])
 def test_version_resource_preserves_unicode_and_project_version(
     export_directory: Path,
     version: str,
@@ -81,7 +81,8 @@ def test_version_resource_preserves_unicode_and_project_version(
         if isinstance(node.func, ast.Name) and node.func.id == "FixedFileInfo"
     )
     values = {item.arg: ast.literal_eval(item.value) for item in fixed.keywords}
-    assert values == {"filevers": (1, 2, 3, 0), "prodvers": (1, 2, 3, 0), "flags": flags}
+    numeric = (1, 0, 0, 0) if version == "1.0.0" else (1, 2, 3, 0)
+    assert values == {"filevers": numeric, "prodvers": numeric, "flags": flags}
 
 
 def test_windows_version_rejects_unrepresentable_components(export_directory: Path) -> None:

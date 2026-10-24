@@ -23,8 +23,8 @@ policy, package construction and publication.
   be contained in `origin/main` and associated with a merged PR targeting this
   repository's `main`. Full CI, including mandatory Gitleaks history scanning,
   must pass for that same revision.
-- All `0.x` versions and versions with `a`, `b` or `rc` suffixes are prereleases.
-  Plain versions from `1.0.0` onward are stable releases.
+- Version `1.0.0` is the first stable release. Stable releases use plain numeric
+  versions and are published as the latest release.
 - Paid code signing and macOS notarization are not release gates; the
   [distribution constraints](../architecture/02_architecture_constraints.md#distribution-constraints)
   define the accepted signing limitations.
@@ -51,7 +51,7 @@ To retry publication of an existing tag after a workflow correction, dispatch th
 current workflow from `main` with the `tag` input, for example:
 
 ```powershell
-gh workflow run source-release.yml --ref main -f tag=v0.8.0
+gh workflow run source-release.yml --ref main -f tag=v1.0.0
 ```
 
 Quality checks use the current workflow definition and check out the resolved
@@ -89,8 +89,8 @@ attempts, including failures, are recorded in `preferences.sqlite3`. It also sto
 the opt-in and one skipped tag. Manual checks bypass the interval and skipped tag.
 Only published releases with an uploaded application download for the running
 OS/architecture qualify; source archives and checksums alone do not. The highest
-newer supported version is selected numerically, including `0.x` and `a`/`b`/`rc`
-prereleases; bare tags, drafts and releases without downloads do not qualify.
+newer supported version is selected numerically; bare tags, drafts and releases
+without downloads do not qualify.
 
 The public GitHub Releases API uses unauthenticated HTTPS without recording data
 or paths. Checks bound pages (five of 100), response bytes (2 MiB per page), socket
@@ -124,7 +124,7 @@ and video overlays**, author **Björn Rudner** and **Copyright © 2026 Björn Ru
 - Windows generates a UTF-8 `--version-file`: `ProductName`, `FileDescription`,
   author in `CompanyName`, `LegalCopyright`, `OriginalFilename`, and matching
   `FileVersion`/`ProductVersion`. Numeric versions use four 16-bit components;
-  full text retains prerelease suffixes and the resource marks prereleases.
+  full text retains the exact project version; stable releases have no preview flag.
   The resource uses English text with Unicode; UI language remains independent.
 - macOS sets `CFBundleName`, `CFBundleDisplayName`, both existing version keys and
   `NSHumanReadableCopyright` before signing. `RideForcesAnalyzerDescription` and
