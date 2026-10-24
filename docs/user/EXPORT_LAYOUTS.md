@@ -4,6 +4,9 @@ All five layouts show the same ride data in different arrangements. Choose the
 one that leaves the important parts of your footage visible and makes the forces
 easy to read.
 
+G-force numbers use one decimal place to reduce distracting digit changes.
+Curves and pointers retain their full precision.
+
 ## Compare the layouts
 
 ![Five export layouts showing the same Voltron Nevera moment and their positions in a landscape video](../images/voltron-export-themes.png)

@@ -390,6 +390,8 @@ FRENCH: dict[str, str] = {
     "Only file-backed recordings can be queued": "Seuls les enregistrements provenant d’un fichier peuvent être ajoutés à la file",
     "A selection preset needs explicit bounds for this recording": "Un préréglage de sélection nécessite des bornes explicites pour cet enregistrement",
     "{0:+.2f} g": "{0:+.2f} g",
+    "{0:+.1f} g": "{0:+.1f} g",
+    "{0:.1f} {1}": "{0:.1f} {1}",
     "{0:.6g}": "{0:.6g}",
     "{0:.3g}": "{0:.3g}",
     "{0:+.2f}": "{0:+.2f}",

@@ -164,7 +164,7 @@ class ColumnRenderer:
                 tr("Unavailable", language=self.timeline.settings.language)
                 if value is None
                 else tr(
-                    "{0:.2f} {1}",
+                    "{0:.1f} {1}" if channel.unit == "g" else "{0:.2f} {1}",
                     value,
                     channel.unit,
                     language=self.timeline.settings.language,

@@ -89,6 +89,8 @@ the [roadmap](../ROADMAP.md) owns planned scope.
   [reference calibration](../development/ANALYSIS_MODELS.md#reference-calibration).
 - Source time is index/rate; fractional output positions interpolate adjacent values.
   Inclusive ranges include the final sample interval; duration rounds up to a frame.
+- Force readouts use one decimal place in every layout and production preview.
+  Curves, pointers, analysis buffers and data exports retain their existing precision.
 - 59.94 uses exact `60000/1001` in timing, frame counts, FFmpeg and saved settings.
   Use a matching 59.94 editing timeline for GoPro footage recorded at that rate.
 - Default interval uses effective start/end markers; current selection and entire
