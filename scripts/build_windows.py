@@ -243,6 +243,8 @@ def build(work: Path, *, release: bool = False) -> Path:
             str(work / "spec"),
             "--collect-data",
             "pint",
+            "--additional-hooks-dir",
+            str(ROOT / "packaging/hooks"),
             "--add-data",
             f"{ICON_SOURCE}:ride_forces_analyzer/ui",
             "--add-data",

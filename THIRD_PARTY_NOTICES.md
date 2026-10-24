@@ -39,8 +39,8 @@ Top-level metadata does not replace bundled-component notices.
   source-archive license/attribution texts and is included in EXE/both ZIPs.
   Installed binding metadata alone is insufficient. Source archives are pinned in
   [redistribution.json](packaging/redistribution.json).
-- **Open:** those archives exclude Qt PDF/Chromium. PyInstaller collects a PDF
-  plugin without a direct application import; matching sources/notices remain missing.
+- Those archives exclude Qt PDF/Chromium. The builders exclude the unused PDF
+  image plugin through the shared Qt GUI hook; normal image plugins remain included.
 - Numerical wheels include native components: SciPy notices cover OpenBLAS, LAPACK
   and GCC runtime, including `GPL-3.0-or-later WITH GCC-exception-3.1`.
   Preserve that exception and NumPy's complete license collection; “BSD” alone is insufficient.
@@ -119,8 +119,8 @@ CC BY-SA 4.0, PSF-2.0 or Python-2.0. Entries are not unique upstream projects.
 - Windows packages collect runtime notices, Python license, PyInstaller
   bootloader license/exception, static Qt notices and the redistribution catalog.
   The complete ZIP additionally contains FFmpeg publisher/license/build material.
-- **Open:** Qt PDF/Chromium sources/notices and complete FFmpeg static-library
-  corresponding sources/build instructions. [redistribution.json](packaging/redistribution.json)
+- **Open:** complete FFmpeg static-library corresponding sources/build instructions.
+  [redistribution.json](packaging/redistribution.json)
   records these gaps; the builder reports them without blocking publication.
   This does not resolve or waive the obligations.
 - Dependency source archives are verified as release-build inputs, not attached

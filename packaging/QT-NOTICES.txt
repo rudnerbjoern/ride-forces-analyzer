@@ -2,7 +2,8 @@ Qt 6.12.0 and PySide/Shiboken 6.12.0 upstream license and attribution texts
 Original texts from the official source archives listed in redistribution.json.
 This includes upstream notices for the selected Qt modules; inclusion does not
 imply every described third-party component is linked in the application.
-Qt PDF/Chromium is not covered by this collection and remains open.
+Qt PDF/Chromium is not covered by this collection; the unused PDF image plugin
+is excluded from application packages.
 
 
 ===== pyside-setup-everywhere-src-6.12.0.tar.xz/pyside-setup-everywhere-src-6.12.0/LICENSES/Apache-2.0.txt =====

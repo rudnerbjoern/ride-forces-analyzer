@@ -13,7 +13,6 @@
     }
   ],
   "open_items": [
-    "Qt PDF sources and notices are still needed for the PDF plugin collected by the existing packager; the prepared Qt everywhere archive does not contain Qt WebEngine/PDF",
     "Exact corresponding source and build instructions for GyanD FFmpeg 9.0.2 and every statically linked library"
   ]
 }

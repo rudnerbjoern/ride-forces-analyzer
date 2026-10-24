@@ -1,10 +1,11 @@
 """Binary packages preserve notices, reject private data and verify supplied sources."""
 
-# cspell:words filevers prodvers
+# cspell:words filevers prodvers qpdf libqpdf imageformats qjpeg qwindows qtbase hiddenimports datas
 
 import ast
 import json
 from pathlib import Path
+import runpy
 import subprocess
 from tempfile import TemporaryDirectory
 from zipfile import ZipFile
@@ -14,6 +15,31 @@ import pytest
 from scripts import build_windows
 from scripts.check_windows_packages import validate_zip
 from ride_forces_analyzer.rendering import encoding
+
+
+def test_qt_gui_hook_excludes_only_pdf_plugins(monkeypatch: pytest.MonkeyPatch) -> None:
+    binaries = [
+        ("plugins/imageformats/qpdf.dll", "PySide6/plugins/imageformats"),
+        ("plugins/imageformats/libqpdf.so", "PySide6/Qt/plugins/imageformats"),
+        ("plugins/imageformats/libqpdf.dylib", "PySide6/Qt/plugins/imageformats"),
+        ("plugins/imageformats/qjpeg.dll", "PySide6/plugins/imageformats"),
+        ("plugins/platforms/qwindows.dll", "PySide6/plugins/platforms"),
+    ]
+    hook = (
+        Path(build_windows.__file__).resolve().parents[1] / "packaging/hooks/hook-PySide6.QtGui.py"
+    )
+
+    def dependencies(
+        filename: str,
+    ) -> tuple[list[str], list[tuple[str, str]], list[tuple[str, str]]]:
+        assert Path(filename) == hook
+        return ["PySide6.QtCore"], binaries, [("translations/qtbase_de.qm", "translations")]
+
+    monkeypatch.setattr("PyInstaller.utils.hooks.qt.add_qt6_dependencies", dependencies)
+    result = runpy.run_path(str(hook))
+    assert result["binaries"] == binaries[3:]
+    assert result["hiddenimports"] == ["PySide6.QtCore"]
+    assert result["datas"] == [("translations/qtbase_de.qm", "translations")]
 
 
 @pytest.mark.parametrize("version,flags", [("1.2.3", 0), ("1.2.3rc2", 2)])
@@ -93,6 +119,9 @@ def test_release_build_outputs_only_windows_downloads_and_checksums(
 
         def run(arguments: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
             if "PyInstaller" in arguments:
+                assert arguments[arguments.index("--additional-hooks-dir") + 1] == str(
+                    root / "packaging/hooks",
+                )
                 assert Path(arguments[arguments.index("--icon") + 1]).read_bytes()[:4] == (
                     b"\x00\x00\x01\x00"
                 )

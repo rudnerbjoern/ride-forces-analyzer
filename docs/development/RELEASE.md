@@ -166,9 +166,12 @@ is specific to the EXE; no Windows version or package version was recorded.
 **Documented missing material:** `packaging/redistribution.json` is pending. Official
 Qt/PySide 6.12.0 sources are downloaded and pinned; a static
 [Qt notice file](../../packaging/QT-NOTICES.txt) is included by the existing
-notice collector. Sources/notices for the automatically bundled Qt PDF plugin and
-complete corresponding sources/build instructions for the static GyanD FFmpeg
-binary's libraries remain missing. Generic upstream links do not close those gaps.
+notice collector. The shared Qt GUI hook excludes the unused PDF image plugin on
+all targets, preserving the standard GUI dependencies and other image plugins.
+Frozen package self-tests check that PDF image support is absent before exercising
+import/rendering. Complete corresponding sources/build instructions for the static
+GyanD FFmpeg binary's libraries remain missing. Generic upstream links do not close
+that gap.
 The catalog is included in the EXE and both ZIPs. These recorded gaps do not
 block package construction; they remain unresolved license/source obligations.
 
