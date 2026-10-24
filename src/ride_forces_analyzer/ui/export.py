@@ -169,12 +169,14 @@ class ExportWorker(QRunnable):
         ffmpeg: Path,
         *,
         render_jobs: int = 1,
+        overwrite: bool = False,
     ) -> None:
         super().__init__()
         self.timeline = timeline
         self.destination = destination
         self.ffmpeg = ffmpeg
         self.render_jobs = render_jobs
+        self.overwrite = overwrite
         self.cancelled = Event()
         self.signals = ExportSignals()
 
@@ -189,6 +191,7 @@ class ExportWorker(QRunnable):
                 progress=self.signals.progress.emit,
                 status=self.signals.status.emit,
                 render_jobs=self.render_jobs,
+                overwrite=self.overwrite,
             )
         except ExportCancelled:
             self.signals.finished.emit(tr("Export cancelled. No incomplete output was kept."))
@@ -948,6 +951,7 @@ class ExportDialog(QDialog):
             Path(filename),
             encoder,
             render_jobs=self.preferences.render_jobs(),
+            overwrite=Path(filename).exists(),
         )
         worker.signals.progress.connect(self._progress)
         worker.signals.status.connect(self._status_message)

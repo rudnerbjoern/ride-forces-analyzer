@@ -243,7 +243,10 @@ the [roadmap](../ROADMAP.md) owns planned scope.
   Display selected backend. GPU ProRes never receives CPU `qscale`.
 - Pipe only the selected layout region; encoder pads remaining transparent/opaque
   canvas to selected dimensions.
-- Never overwrite existing files. Publish completed output exclusively; use
+- The save dialog confirms replacement of existing videos. An explicitly confirmed
+  replacement atomically publishes the completed staged video on the same filesystem;
+  cancellation or failure preserves the original. Other callers and batches default
+  to exclusive creation. For new files, use
   same-volume hard links to avoid duplicate large files. Cross-volume or unsupported
   links fall back to exclusive copying; failed/cancelled copies remove partial output.
 - Processing stays offline after installation, reusing Pillow. External full FFmpeg

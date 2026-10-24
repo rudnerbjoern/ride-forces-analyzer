@@ -57,7 +57,8 @@ editor scaling; other layouts use 4K. One renderer runs serially or independent
 renderer threads prepare a bounded, ordered frame stream. FFmpeg uses a probed
 NVIDIA backend when supported, otherwise CPU encoding.
 
-Single exports publish a new completed file exclusively. Batches execute saved,
+Single exports publish completed files exclusively or atomically replace a video
+after explicit confirmation. Batches execute saved,
 source-hash-bound recipes sequentially and retain completed outputs across later
 failures or cancellation. [Export contracts](../implementation/VIDEO_EXPORT.md)
 and [batch contracts](../implementation/EXPORT_BATCHES.md) own detailed behavior.
