@@ -1,13 +1,13 @@
-# Export layout reference — Manta
+# Export layout reference — Voltron Nevera
 
 For help choosing a layout and reading its instruments, see the
 [user layout guide](user/EXPORT_LAYOUTS.md).
 
-All five layouts show the same Manta moment. Recording details, fixed settings,
+All five layouts show the same Voltron Nevera moment. Recording details, fixed settings,
 reproduction commands and image licensing are documented in the
 [central image guide](images/README.md).
 
-![Five Manta export layouts at the same strong negative vertical-force peak, showing their positions within a landscape video](images/manta-export-themes.png)
+![Five Voltron Nevera export layouts at the same positive vertical-force peak with simultaneous lateral and braking forces](images/voltron-export-themes.png)
 
 The overview preserves placement in the full 3840×2160 landscape canvas.
 Checkerboards illustrate transparent space and translucent panels; they are
@@ -38,18 +38,18 @@ recent onset, independently of axis inversion. Missing values show Unavailable.
 A wide strip along the bottom keeps the three force traces together while
 leaving most of the footage visible. The assistant's default layout.
 
-![Flow Ribbon detail with three force traces and −3.55 g vertical readout](images/manta-ribbon-detail.png)
+![Flow Ribbon detail with three force traces and +4.37 g vertical readout](images/voltron-ribbon-detail.png)
 
-[Open the complete 4K placement view](images/manta-ribbon.png).
+[Open the complete 4K placement view](images/voltron-ribbon.png).
 
 ## Corner Instruments
 
 Three stacked cards at the upper right provide larger individual values and
 traces beside the footage.
 
-![Corner Instruments detail with vertical, lateral and longitudinal cards](images/manta-corners-detail.png)
+![Corner Instruments detail with vertical, lateral and longitudinal cards](images/voltron-corners-detail.png)
 
-[Open the complete 4K placement view](images/manta-corners.png).
+[Open the complete 4K placement view](images/voltron-corners.png).
 
 ## HUD
 
@@ -60,9 +60,9 @@ frameless game-HUD design. Three wide force histories share one time cursor
 at the bottom. Scale ranges adapt to actual forces; missing values remain gaps.
 The complete arrangement adapts independently to landscape and portrait.
 
-![Frameless full-screen HUD with glowing edge scales, airtime and three force histories](images/manta-hud-detail.png)
+![Frameless full-screen HUD with glowing force scales, orientation and three force histories](images/voltron-hud-detail.png)
 
-[Open the complete 4K placement view](images/manta-hud.png). HUD video exports
+[Open the complete 4K placement view](images/voltron-hud.png). HUD video exports
 retain native 1920×1080 or 1080×1920 resolution for scaling in your editor.
 
 ## G-Orbit
@@ -83,9 +83,9 @@ bars. Narrower, muted peak bars hold each direction's maximum for 1.5 seconds,
 then release at 1 g/s. Subtle translucent fills extend to the held peaks;
 numeric readouts continue to show the current forces.
 
-![G-Orbit detail with a cyan −3.72 g vertical gauge and signed side indicators](images/manta-orbit-detail.png)
+![G-Orbit detail with a cyan +4.37 g vertical gauge and signed side indicators](images/voltron-orbit-detail.png)
 
-[Open the complete 4K placement view](images/manta-orbit.png).
+[Open the complete 4K placement view](images/voltron-orbit.png).
 
 ## Four-panel column
 
@@ -95,43 +95,11 @@ force axes are positive-down, unlike the compact lateral charts;
 the underlying signed values are identical. The longitudinal trace is green for
 acceleration and red for braking, changing color at zero crossings.
 
-![Four-panel column detail showing all force plots and the orientation curve](images/manta-column-detail.png)
+![Four-panel column detail showing all force plots and the orientation curve](images/voltron-column-detail.png)
 
-[Open the complete 4K placement view](images/manta-column.png).
+[Open the complete 4K placement view](images/voltron-column.png).
 
-## Reference settings
-
-English labels, landscape, 50 fps and a 12-second time window (30 seconds for HUD). Source sample
-4782, recording time 95.64 seconds; the marker interval determines force bounds.
-All profiles use the same unchanged Manta recording from the
-[authorized catalog](development/RECORDINGS.md). The strongest point was selected
-from calibrated values, not from the source's stored extrema.
-Portrait layouts are also available in the assistant; this comparison shows landscape.
-
-## Regenerate after layout changes
-
-From the project folder in Windows PowerShell, after setup:
-
-```powershell
-.\.venv\Scripts\python.exe .\scripts\render_export_reference.py
-```
-
-The [script](../scripts/render_export_reference.py) replaces the eleven reference
-PNGs in `docs/images` and writes `manta-reference.json` with the source identity,
-sample, values and settings. It always uses **zero-based source sample 4782**,
-11-sample smoothing, English labels, landscape, 50 fps, a 12-second window
-(30 seconds for HUD) and
-the original marker range. Vertical defaults positive-down; lateral defaults
-left/right and longitudinal positive-up. It never searches for a new maximum. The source SHA-256 must match
-the authorized Manta recording or generation stops.
-
-To inspect changes before replacing the documentation images:
-
-```powershell
-.\.venv\Scripts\python.exe .\scripts\render_export_reference.py --output .tmp\theme-preview
-```
-
-No GUI or FFmpeg is needed. The installed Windows font and current production
-renderer determine appearance; the source position and comparison settings stay fixed.
+Fixed reference settings and regeneration commands are maintained in the
+[central image guide](images/README.md#image-content-and-reproduction).
 
 [Back to the project](../README.md) · [Export behavior](implementation/VIDEO_EXPORT.md)

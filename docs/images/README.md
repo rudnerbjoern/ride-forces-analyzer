@@ -18,7 +18,7 @@ an officially compatible license. Do not imply endorsement. See the
 
 Suggested attribution, adjusted for the filename and changes:
 
-> Ride Forces Analyzer — manta-hud.png, copyright © 2026 Björn Rudner.
+> Ride Forces Analyzer — voltron-hud.png, copyright © 2026 Björn Rudner.
 > Source: [project documentation images](https://github.com/rudnerbjoern/ride-forces-analyzer/tree/main/docs/images).
 > License: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Changes: none.
 
@@ -35,18 +35,21 @@ HUD placement views are enlarged to illustrate a 4K editing timeline; its video
 export retains the native 1920×1080 or 1080×1920 resolution.
 Source hashes and exact settings are retained in the linked generated manifests.
 
-| Images                                            | Content and fixed settings                                                                                                                                                                                                    | Manifest                                |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| `workspace-dark.png`, `workspace-light.png`       | Voltron Nevera sample 4960, replay `01:07.39`, selection 4200–5100, 11-sample smoothing; 1600×1100 workspace.                                                                                                                 | [Application](app-reference.json)       |
-| `export-preview.png`                              | Same Voltron sample and smoothing; 1500×1000 assistant, Flow Ribbon selected at the bottom, five layout thumbnails, landscape transparent output, 50 fps, 12-second window.                                                   | [Application](app-reference.json)       |
-| Manta layout images and `manta-export-themes.png` | All five layouts at sample 4782, replay `00:40.32` (40.64 s at 50 Hz), marker interval 2750–9637, 11-sample smoothing; 3840×2160 placement views and detail crops. HUD uses a 30-second window; other layouts use 12 seconds. | [Manta](manta-reference.json)           |
-| `voltron-airtime-detail.png`                      | Voltron sample 4960, replay `01:07.39`, interval 4500–5250, 11-sample smoothing; force curves, context strip and legend.                                                                                                      | [README details](readme-reference.json) |
-| `taron-force-cards.png`                           | Taron sample 3399, replay `00:22.15`, 11-sample smoothing; vertical +0.05 g, lateral +0.35 g, longitudinal +1.08 g.                                                                                                           | [README details](readme-reference.json) |
-| `manta-smoothing-comparison.png`                  | Manta samples 4650–4900 (93–98 s); vertical force with smoothing windows 1, 11 and 31 on identical time/force scales, without a cursor.                                                                                       | [README details](readme-reference.json) |
-| `appearance-*.png`                                | Same Voltron scene as the workspace screenshots; one image per theme except System, 800×650 content plus native window frame, inspector hidden, no downscaling.                                                               | [Appearance](appearance-reference.json) |
+| Images                                                | Content and fixed settings                                                                                                                                                                                                                               | Manifest                                 |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `workspace-dark.png`, `workspace-light.png`           | Voltron Nevera sample 4960, replay `01:07.39`, selection 4200–5100, 11-sample smoothing; 1600×1100 workspace.                                                                                                                                            | [Application](app-reference.json)        |
+| `export-preview.png`                                  | Same Voltron sample and smoothing; 1500×1000 assistant, Flow Ribbon selected at the bottom, five layout thumbnails, landscape transparent output, 50 fps, 12-second window.                                                                              | [Application](app-reference.json)        |
+| Voltron layout images and `voltron-export-themes.png` | All five layouts at sample 8575, replay `02:20.04` (140.08 s at 50 Hz; recording time 171.50 s), marker interval 1571–10374, 11-sample smoothing; 3840×2160 placement views and detail crops. HUD uses a 30-second window; other layouts use 12 seconds. | [Voltron Nevera](voltron-reference.json) |
+| `voltron-airtime-detail.png`                          | Voltron sample 4960, replay `01:07.39`, interval 4500–5250, 11-sample smoothing; force curves, context strip and legend.                                                                                                                                 | [README details](readme-reference.json)  |
+| `taron-force-cards.png`                               | Taron sample 3399, replay `00:22.15`, 11-sample smoothing; vertical +0.05 g, lateral +0.35 g, longitudinal +1.08 g.                                                                                                                                      | [README details](readme-reference.json)  |
+| `manta-smoothing-comparison.png`                      | Manta samples 4650–4900 (93–98 s); vertical force with smoothing windows 1, 11 and 31 on identical time/force scales, without a cursor.                                                                                                                  | [README details](readme-reference.json)  |
+| `appearance-*.png`                                    | Same Voltron scene as the workspace screenshots; one image per theme except System, 800×650 content plus native window frame, inspector hidden, no downscaling.                                                                                          | [Appearance](appearance-reference.json)  |
 
-The Manta layout sample has vertical −3.55 g, lateral +0.11 g, longitudinal
-+0.09 g and tilt 177.9°. Airtime labels are provisional interpretations.
+The Voltron Nevera layout sample has vertical +4.37 g, lateral −0.67 g,
+longitudinal −0.42 g and tilt 62.9°. It is the fixed vertical-force maximum with
+simultaneous lateral and braking forces; regeneration never selects a new peak.
+The layout generator checks the original recording's SHA-256 before drawing.
+Airtime labels are provisional interpretations.
 Native UI captures use Segoe UI 9 pt and scale factor 1; README detail captures
 use a 1280×720 dark workspace. Export thumbnails follow the selected position
 through each layout's existing placement rules.
@@ -60,7 +63,7 @@ Run the required command from the repository root in native Windows PowerShell:
 .\.venv\Scripts\python.exe .\scripts\capture_app_reference.py --details
 # Appearance gallery
 .\.venv\Scripts\python.exe .\scripts\capture_app_reference.py --themes
-# Five Manta layouts, crops and comparison sheet
+# Five Voltron Nevera layouts, crops and comparison sheet
 .\.venv\Scripts\python.exe .\scripts\render_export_reference.py
 ```
 

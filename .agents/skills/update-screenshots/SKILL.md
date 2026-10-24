@@ -23,7 +23,7 @@ uv run --locked python scripts/capture_app_reference.py
 # Voltron airtime, Taron force cards, Manta smoothing; readme-reference.json
 uv run --locked python scripts/capture_app_reference.py --details
 
-# Five Manta layouts, their detail crops and comparison sheet; manta-reference.json
+# Five Voltron Nevera layouts, their detail crops and comparison sheet; voltron-reference.json
 uv run --locked python scripts/render_export_reference.py
 ```
 

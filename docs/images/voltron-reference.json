@@ -1,0 +1,37 @@
+{
+  "recording": "Voltron Nevera",
+  "source_file": "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces",
+  "sample": 8575,
+  "replay": "02:20.04",
+  "recording_seconds": 171.5,
+  "replay_seconds": 140.08,
+  "rate": 50.0,
+  "values": [
+    4.365497903276147,
+    -0.6689254689866224,
+    -0.420851349258314
+  ],
+  "orientation_degrees": 62.85439946067607,
+  "source_sha256": "f48157cadbfeb374eeadf48112b0bbfc1e8b47c580cb303342cf65977054ad04",
+  "smoothing": 11,
+  "first": 1571,
+  "last": 10374,
+  "language": "en",
+  "aspect": "landscape",
+  "fps": 50,
+  "window_seconds": 12.0,
+  "profile_window_seconds": {
+    "ribbon": 12.0,
+    "corners": 12.0,
+    "hud": 30.0,
+    "orbit": 12.0,
+    "column": 12.0
+  },
+  "profiles": [
+    "ribbon",
+    "corners",
+    "hud",
+    "orbit",
+    "column"
+  ]
+}

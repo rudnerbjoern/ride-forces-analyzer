@@ -1,4 +1,4 @@
-"""Regenerate the Manta documentation images at one fixed source sample.
+"""Regenerate the Voltron Nevera layout images at one fixed source sample.
 
 Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
@@ -28,18 +28,18 @@ from ride_forces_analyzer.rendering.layouts import export_region
 from ride_forces_analyzer.rendering.model import ExportSettings, PROFILES, prepare_export
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "tests/fixtures/real/Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces"
-SOURCE_SHA256 = "1d06e636b0cd26c7634503bf3f5f93e1906791ce47028c129af1c1828c7b268c"
-SAMPLE = 4782  # Zero-based source index: never search for a new peak.
+SOURCE = ROOT / "tests/fixtures/real/VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+SOURCE_SHA256 = "f48157cadbfeb374eeadf48112b0bbfc1e8b47c580cb303342cf65977054ad04"
+SAMPLE = 8575  # Zero-based source index: never search for a new peak.
 SMOOTHING = 11
 
 
 def load_reference(source: Path = SOURCE) -> RecordingAnalysis:
     if sha256(source.read_bytes()).hexdigest() != SOURCE_SHA256:
-        raise ValueError("Manta source hash differs from the fixed reference recording")
+        raise ValueError("Voltron Nevera source hash differs from the fixed reference recording")
     imported = import_forces(source)
     if not isinstance(imported, ImportSuccess):
-        raise ValueError("Cannot import the Manta reference recording")
+        raise ValueError("Cannot import the Voltron Nevera reference recording")
     configuration = source_app_configuration()
     configuration = replace(
         configuration,
@@ -53,7 +53,7 @@ def load_reference(source: Path = SOURCE) -> RecordingAnalysis:
     )
     if analysis.forces.smoothed.channels is None:
         reason = analysis.forces.smoothed.availability.reason
-        raise ValueError(reason.message if reason else "Manta calibration unavailable")
+        raise ValueError(reason.message if reason else "Voltron Nevera calibration unavailable")
     return analysis
 
 
@@ -63,9 +63,10 @@ def render_reference(output: Path) -> None:
     rate = analysis.time.basis.sample_rate
     assert rate is not None
     replay = format_sample_time(SAMPLE - first, rate.value)
-    sample = analysis.sample(SAMPLE).smoothed
+    reference = analysis.sample(SAMPLE)
+    sample = reference.smoothed
     if sample is None:
-        raise ValueError("Manta reference sample unavailable")
+        raise ValueError("Voltron Nevera reference sample unavailable")
     values = (sample.vertical, sample.lateral, sample.longitudinal)
     output.mkdir(parents=True, exist_ok=True)
     background = Image.new("RGBA", (3840, 2160), "#22313e")
@@ -101,10 +102,10 @@ def render_reference(output: Path) -> None:
             x, y, width, height = (round(value * scale) for value in (x, y, width, height))
             frame = frame.resize(background.size, Image.Resampling.LANCZOS)
         composite = Image.alpha_composite(background, frame).convert("RGB")
-        composite.save(output / f"manta-{layout}.png", optimize=True)
+        composite.save(output / f"voltron-{layout}.png", optimize=True)
         detail = composite.crop((x, y, x + width, y + height))
         detail.thumbnail((1440, 1440), Image.Resampling.LANCZOS)
-        detail.save(output / f"manta-{layout}-detail.png", optimize=True)
+        detail.save(output / f"voltron-{layout}-detail.png", optimize=True)
         left, top = index % 3 * 640, index // 3 * 450
         sheet_draw.text((left + 20, top + 15), title, font=font, fill="#eff6ff")
         sheet.paste(
@@ -113,7 +114,7 @@ def render_reference(output: Path) -> None:
         )
         sheet_draw.text(
             (left + 20, top + 412),
-            f"Manta | {replay} | {values[0]:+.2f} g vertical",
+            f"Voltron Nevera | {replay} | {values[0]:+.2f} g vertical",
             font=small,
             fill="#aec5d8",
         )
@@ -130,14 +131,17 @@ def render_reference(output: Path) -> None:
         ),
     ):
         sheet_draw.text((1300, 550 + line * 40), text, font=small, fill="#aec5d8")
-    sheet.save(output / "manta-export-themes.png", optimize=True)
+    sheet.save(output / "voltron-export-themes.png", optimize=True)
     manifest = {
+        "recording": "Voltron Nevera",
+        "source_file": SOURCE.name,
         "sample": SAMPLE,
         "replay": replay,
         "recording_seconds": SAMPLE / rate.value,
         "replay_seconds": (SAMPLE - first) / rate.value,
         "rate": rate.value,
         "values": values,
+        "orientation_degrees": reference.orientation_degrees,
         "source_sha256": SOURCE_SHA256,
         "smoothing": SMOOTHING,
         "first": first,
@@ -151,9 +155,10 @@ def render_reference(output: Path) -> None:
         },
         "profiles": [layout for layout, _ in PROFILES],
     }
-    (output / "manta-reference.json").write_text(
+    (output / "voltron-reference.json").write_text(
         json.dumps(manifest, indent=2) + "\n",
         encoding="utf-8",
+        newline="\n",
     )
     print(f"Saved reference images and manifest to {output}", flush=True)
 

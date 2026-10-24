@@ -127,7 +127,7 @@ the original samples remain unchanged.*
 **[Watch G-Orbit over Manta Onride footage](https://youtu.be/tsRzD416voU)**
 to see an exported overlay in use.
 
-![All five export layouts compared at Manta's strong negative vertical-force peak](docs/images/manta-export-themes.png)
+![All five export layouts compared at Voltron Nevera's vertical-force peak with simultaneous lateral and braking forces](docs/images/voltron-export-themes.png)
 
 | Layout                 | Look and placement                                      |
 | :--------------------- | :------------------------------------------------------ |

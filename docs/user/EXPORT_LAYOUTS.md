@@ -6,7 +6,7 @@ easy to read.
 
 ## Compare the layouts
 
-![Five export layouts showing the same Manta moment and their positions in a landscape video](../images/manta-export-themes.png)
+![Five export layouts showing the same Voltron Nevera moment and their positions in a landscape video](../images/voltron-export-themes.png)
 
 | Layout                 | Default position            | Useful when you want to…                                      |
 | ---------------------- | --------------------------- | ------------------------------------------------------------- |
