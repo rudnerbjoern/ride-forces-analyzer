@@ -31,7 +31,7 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 | Context window     | 1–60 s, default 12; shared source position and centered cursor in time plots                               |
 | Alignment          | Manual in DaVinci Resolve; source-video ingestion/synchronization excluded                                 |
 
-[Manta G-Orbit demo](https://youtu.be/tsRzD416voU): exported overlay over Onride footage.
+[Manta overlay demo](https://youtu.be/0sGiE6F8YlI): all five layouts in turn over Onride footage.
 
 ## Contracts
 

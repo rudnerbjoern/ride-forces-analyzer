@@ -38,7 +38,7 @@ historical acceptance reports are not maintained.
 - [CSV sample export contract](implementation/CSV_EXPORT.md).
 - [JSON sample export contract](implementation/JSON_EXPORT.md).
 - [All export themes](EXPORT_THEMES.md), [layout extension API](development/EXPORT_LAYOUTS.md),
-  [Manta video with the G-Orbit overlay](https://youtu.be/tsRzD416voU).
+  [Manta demo with all five overlays](https://youtu.be/0sGiE6F8YlI).
 - [Provisional airtime context](implementation/AIRTIME.md) and
   [separate opt-in airtime events](implementation/AIRTIME_EVENTS.md).
 - [Current screenshots, reference settings and image license](images/README.md).

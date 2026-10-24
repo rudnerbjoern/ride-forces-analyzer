@@ -14,7 +14,7 @@ an Onride video. Ride Forces Analyzer turns `.forces` and compressed `.zforces` 
 interactive charts and video overlays on Windows, Linux and macOS.
 
 **[Download](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)**
-· **[Watch the Manta demo](https://youtu.be/tsRzD416voU)**
+· **[Watch the Manta demo](https://youtu.be/0sGiE6F8YlI)**
 · **[User guides](docs/README.md#for-users)**
 
 Free and open source · Offline processing · English, German and French · Light and dark themes
@@ -124,8 +124,9 @@ the original samples remain unchanged.*
 
 ## Bring the ride into your videos
 
-**[Watch G-Orbit over Manta Onride footage](https://youtu.be/tsRzD416voU)**
-to see an exported overlay in use.
+**[Watch the Manta overlay demo](https://youtu.be/0sGiE6F8YlI)**
+to see all five layouts in turn over Onride footage: Four-panel column,
+Flow Ribbon, G-Orbit, HUD and Corner Instruments.
 
 ![All five export layouts compared at Voltron Nevera's vertical-force peak with simultaneous lateral and braking forces](docs/images/voltron-export-themes.png)
 

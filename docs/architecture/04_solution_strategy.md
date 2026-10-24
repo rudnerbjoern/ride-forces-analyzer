@@ -54,7 +54,9 @@ analysis or synchronization. M2 ingestion does not establish those semantics.
 `rendering.model` prepares source-bound calibrated forces, tilt and a deterministic
 source/video clock. `rendering.frames` generates Pillow RGBA frames, delegating
 profiles to `rendering.layouts`: ribbon, corner cards, HUD or signed
-orbit gauges ([Manta G-Orbit video example](https://youtu.be/tsRzD416voU)). The original four-panel column remains available. The encoder
+orbit gauges. The original four-panel column remains available. The
+[Manta overlay demo](https://youtu.be/0sGiE6F8YlI) shows all five layouts in turn.
+The encoder
 consumes the selected rectangular region, pads to the layout's output canvas and
 encodes one transparent ProRes 4444 MOV or independent opaque H.264 MP4.
 HUD retains its native 1920×1080 or 1080×1920 canvas for scaling in the video editor;

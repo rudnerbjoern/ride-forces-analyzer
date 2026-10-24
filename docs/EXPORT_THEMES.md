@@ -3,6 +3,9 @@
 For help choosing a layout and reading its instruments, see the
 [user layout guide](user/EXPORT_LAYOUTS.md).
 
+[Watch the Manta overlay demo](https://youtu.be/0sGiE6F8YlI) to see all five
+layouts in turn over Onride footage.
+
 All five layouts show the same Voltron Nevera moment. Recording details, fixed settings,
 reproduction commands and image licensing are documented in the
 [central image guide](images/README.md).
@@ -66,8 +69,6 @@ The complete arrangement adapts independently to landscape and portrait.
 retain native 1920×1080 or 1080×1920 resolution for scaling in your editor.
 
 ## G-Orbit
-
-[Watch the Manta video with the G-Orbit overlay on YouTube](https://youtu.be/tsRzD416voU).
 
 A lower-left instrument combines force arcs around one center: vertical on the
 outer left half, longitudinal on the outer right half and lateral on the upper

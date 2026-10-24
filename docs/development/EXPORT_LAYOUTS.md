@@ -10,8 +10,8 @@ Layouts are internal, explicitly registered plugins. No package discovery,
 installation, network access or third-party code loading is involved.
 Public selection and saved-preset keys come from the explicit profile registry.
 
-For an example of a rendered template in use, watch the
-[Manta G-Orbit demo on YouTube](https://youtu.be/tsRzD416voU).
+For examples of all five rendered layouts in turn over Onride footage, watch the
+[Manta overlay demo on YouTube](https://youtu.be/0sGiE6F8YlI).
 
 ## Files and responsibilities
 

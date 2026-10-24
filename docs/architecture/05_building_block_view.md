@@ -202,8 +202,8 @@ adopt later workspace changes. Presets persist recipes, never sample arrays.
 Saved settings resolve implicit placement to a named layout/format position;
 immutable job snapshots retain it through batch execution. Geometry stays in layouts.
 
-The [Manta G-Orbit video example](https://youtu.be/tsRzD416voU) shows the exported
-overlay composed over Onride footage.
+The [Manta overlay demo](https://youtu.be/0sGiE6F8YlI) shows all five exported
+layouts in turn over Onride footage.
 
 `analysis.orientation` implements source-gravity-to-vertical tilt with missing/zero
 vectors retained as gaps. `rendering.model` binds source identity, smoothing,
