@@ -162,11 +162,19 @@ class ExportSignals(QObject):
 
 
 class ExportWorker(QRunnable):
-    def __init__(self, timeline: ExportTimeline, destination: Path, ffmpeg: Path) -> None:
+    def __init__(
+        self,
+        timeline: ExportTimeline,
+        destination: Path,
+        ffmpeg: Path,
+        *,
+        render_jobs: int = 1,
+    ) -> None:
         super().__init__()
         self.timeline = timeline
         self.destination = destination
         self.ffmpeg = ffmpeg
+        self.render_jobs = render_jobs
         self.cancelled = Event()
         self.signals = ExportSignals()
 
@@ -180,6 +188,7 @@ class ExportWorker(QRunnable):
                 cancelled=self.cancelled,
                 progress=self.signals.progress.emit,
                 status=self.signals.status.emit,
+                render_jobs=self.render_jobs,
             )
         except ExportCancelled:
             self.signals.finished.emit(tr("Export cancelled. No incomplete output was kept."))
@@ -300,7 +309,7 @@ class ExportDialog(QDialog):
         layout_row.addWidget(self.position)
         form.addRow(bind(QLabel(), tr("Layout profile")), layout_row)
         self.aspect = QComboBox()
-        items(self.aspect, [tr("Landscape · 16:9 · 3840×2160"), tr("Portrait · 9:16 · 2160×3840")])
+        items(self.aspect, [tr("Landscape · 16:9"), tr("Portrait · 9:16")])
         form.addRow(bind(QLabel(), tr("Video format")), self.aspect)
         self.aspect.currentIndexChanged.connect(self._refresh_positions)
         self._refresh_positions()
@@ -923,17 +932,23 @@ class ExportDialog(QDialog):
             return
         suffix = ".mov" if settings.output == "transparent" else ".mp4"
         source_path = self.data.source.recording.source.provenance.path
-        name = f"{source_path.stem if source_path is not None else 'ride-forces-4k'}{suffix}"
+        stem = source_path.stem if source_path is not None else "ride-forces"
+        name = f"{stem} - {self.layout_profile.currentText()}{suffix}"
         suggested = Path(self.preferences.export_directory()) / name
         filename, _ = QFileDialog.getSaveFileName(
             self,
-            tr("Save 4K video"),
+            tr("Save video"),
             str(suggested),
             tr("Video (*{0})", suffix),
         )
         if not filename:
             return
-        worker = ExportWorker(timeline, Path(filename), encoder)
+        worker = ExportWorker(
+            timeline,
+            Path(filename),
+            encoder,
+            render_jobs=self.preferences.render_jobs(),
+        )
         worker.signals.progress.connect(self._progress)
         worker.signals.status.connect(self._status_message)
         worker.signals.finished.connect(self._finished)
@@ -951,7 +966,7 @@ class ExportDialog(QDialog):
         self.start.setEnabled(False)
         self.back.setEnabled(False)
         bind(self.cancel, tr("Cancel export"), "text")
-        bind(self.status, tr("Exporting 4K video…"), "text")
+        bind(self.status, tr("Exporting video…"), "text")
         QThreadPool.globalInstance().start(worker)
 
     @Slot(str)

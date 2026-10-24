@@ -59,15 +59,19 @@ def test_portrait_contains_complete_region(manta: ExplorerData, layout: str) -> 
 
 
 @pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("selected_layout", ["orbit", "hud"])
 def test_previews_match_production_at_exact_graph_sample(
     manta: ExplorerData,
     aspect: Literal["landscape", "portrait"],
+    selected_layout: Literal["orbit", "hud"],
 ) -> None:
     assert manta.analysis is not None
     sample = manta.source.recording.indices.start + 72 * 50 + 1
     settings = ExportSettings(
-        layout="orbit",
-        position=LayoutPosition.TOP_RIGHT,
+        layout=selected_layout,
+        position=(
+            LayoutPosition.FULL_SCREEN if selected_layout == "hud" else LayoutPosition.TOP_RIGHT
+        ),
         fps=30,
         aspect=aspect,
         invert_vertical=False,
@@ -81,15 +85,18 @@ def test_previews_match_production_at_exact_graph_sample(
     for profile in result.profiles:
         chosen = (
             settings
-            if profile.layout == "orbit"
+            if profile.layout == selected_layout
             else replace(
                 settings,
                 layout=profile.layout,
                 position={
                     "corners": LayoutPosition.TOP_RIGHT,
                     "column": LayoutPosition.RIGHT,
-                    "ribbon": LayoutPosition.TOP,
+                    "ribbon": (
+                        LayoutPosition.BOTTOM if selected_layout == "hud" else LayoutPosition.TOP
+                    ),
                     "hud": LayoutPosition.FULL_SCREEN,
+                    "orbit": LayoutPosition.BOTTOM_LEFT,
                 }[profile.layout],
                 invert_vertical=True,
                 invert_lateral=profile.layout == "column",

@@ -24,12 +24,13 @@ thumbnails follow your current position choices.
 ## Try a layout with your recording
 
 1. In the main chart, select a moment with forces you want to show.
-2. Click **Export 4K…** and choose a layout thumbnail or **Layout profile**.
+2. Click **Export video…** and choose a layout thumbnail or **Layout profile**.
 3. Choose landscape or portrait under **Video format**. Every layout supports
    both; the portrait arrangement adapts to the narrower frame.
 4. Choose **Position** beside **Layout profile**. Ribbon offers top or
    bottom, Column left or right, and Corners and G-Orbit all four corners.
-   HUD uses the whole frame with a fixed **Full screen** position.
+   HUD uses the whole frame with a fixed **Full screen** position. Its native
+   1920×1080 or 1080×1920 output can be scaled to a 4K timeline in your editor.
    Switching layout or format keeps a supported or equivalent position, such as
    top left → top. Corner previews follow top/bottom choices, retaining their last
    left/right side in this assistant session. For example, Orbit at top right moves

@@ -23,6 +23,7 @@ from types import TracebackType
 from typing import TextIO
 
 from ride_forces_analyzer import __version__
+from ride_forces_analyzer.cpu_resources import detect_cpu_resources
 from ride_forces_analyzer.runtime_paths import data_directory
 
 _LOGGER = logging.getLogger("ride_forces_analyzer.errors")
@@ -112,7 +113,11 @@ def initialize_error_reporting() -> Path | None:
             f"Run started (UTC): {datetime.now(UTC).isoformat()}\n"
             f"Operating system: {platform.system()} {platform.release()}\n"
             f"Architecture: {platform.machine()}\nPython: {platform.python_version()}\n"
-            "Local support report. Review personal data before sharing.\n\n",
+            + "".join(
+                f"{key}: {value}\n"
+                for key, value in detect_cpu_resources().diagnostic_fields().items()
+            )
+            + "Local support report. Review personal data before sharing.\n\n",
         )
         stream.flush()
     except OSError:

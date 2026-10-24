@@ -118,9 +118,10 @@ class LayoutRenderer(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class LayoutPlugin:
-    """Register a renderer and validated position regions for both 4K formats.
+    """Register a renderer and position regions within the maximum 4K canvas bounds.
 
-    Regions outside their format's canvas raise ValueError at registration.
+    HUD uses a smaller native-resolution canvas. Regions exceeding the maximum
+    landscape/portrait bounds raise ValueError at registration.
     """
 
     key: ExportLayout

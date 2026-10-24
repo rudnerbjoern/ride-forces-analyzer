@@ -36,6 +36,7 @@ from ride_forces_analyzer.rendering.batches import BatchReport, build_jobs, run_
 from ride_forces_analyzer.rendering.encoding import find_ffmpeg
 from ride_forces_analyzer.storage.export_models import SavedBatch, SavedPreset, RangeMode
 from ride_forces_analyzer.storage.exports import ExportStore, ExportStoreError
+from ride_forces_analyzer.storage.preferences import Preferences
 
 
 class BatchSignals(QObject):
@@ -74,9 +75,17 @@ class BuildWorker(QRunnable):
 
 
 class BatchWorker(QRunnable):
-    def __init__(self, batches: tuple[SavedBatch, ...], directory: Path, ffmpeg: Path) -> None:
+    def __init__(
+        self,
+        batches: tuple[SavedBatch, ...],
+        directory: Path,
+        ffmpeg: Path,
+        *,
+        render_jobs: int = 1,
+    ) -> None:
         super().__init__()
         self.batches, self.directory, self.ffmpeg = batches, directory, ffmpeg
+        self.render_jobs = render_jobs
         self.cancelled = Event()
         self.signals = BatchSignals()
 
@@ -90,6 +99,7 @@ class BatchWorker(QRunnable):
                 cancelled=self.cancelled,
                 progress=self.signals.progress.emit,
                 status=self.signals.status.emit,
+                render_jobs=self.render_jobs,
             )
         except Exception as error:
             record_error("Batch execution", error)
@@ -411,7 +421,12 @@ class BatchDialog(QDialog):
             directory = QFileDialog.getExistingDirectory(self, tr("Choose batch output folder"))
             if not directory:
                 return
-            worker = BatchWorker(batches, Path(directory), encoder)
+            worker = BatchWorker(
+                batches,
+                Path(directory),
+                encoder,
+                render_jobs=Preferences().render_jobs(),
+            )
             worker.signals.progress.connect(self._progress)
             worker.signals.status.connect(self._status_message)
             worker.signals.finished.connect(self._finished)

@@ -63,8 +63,8 @@ def test_every_persisted_profile_has_registered_geometry() -> None:
             "hud",
             LayoutPosition.FULL_SCREEN,
             {LayoutPosition.FULL_SCREEN},
-            (0, 0, 3840, 2160),
-            (0, 0, 2160, 3840),
+            (0, 0, 1920, 1080),
+            (0, 0, 1080, 1920),
         ),
         (
             "column",

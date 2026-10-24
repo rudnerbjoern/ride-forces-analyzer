@@ -32,7 +32,7 @@ flowchart TB
     Frames --> SciPy["SciPy: passive frame rotation"]
     Storage["storage: SQLite export definitions"] --> Rendering
     Qt --> Playback["playback: monotonic sample clock"]
-    Rendering["rendering: 4K frames / encoder / batches"] --> Recording["analysis.recording: shared snapshots"]
+    Rendering["rendering: frames / encoder / batches"] --> Recording["analysis.recording: shared snapshots"]
     Rendering --> Service
     Rendering --> AnalysisService["analysis.service: state and subscriptions"]
     Presentation --> Recording
@@ -61,6 +61,16 @@ widgets contain no parser, scientific transformations or source mutation.
 | playback             | Monotonic sample clock, 0.5×/1×/2× speed, pause and seek                                        | Implemented: `playback.clock.SamplePlayback`                                                                                 |
 | rendering            | Independent RGBA generation and FFmpeg encoding                                                 | Implemented five-profile landscape/portrait transparent/opaque video                                                         |
 | ui                   | Raw chart controls and background import/export transport                                       | Implemented raw/calibrated explorer and sample playback                                                                      |
+
+`cpu_resources.detect_cpu_resources` provides an immutable count of physical CPU
+cores and logical processors. Startup support reports and
+copied diagnostics include these counts. Physical topology uses native Windows
+processor-core records, macOS kernel queries or Linux CPU topology package/core pairs;
+logical counts use Python's `os.cpu_count`, including its configured override.
+Unavailable information remains unknown rather than assuming an SMT ratio.
+`effective_render_jobs` validates positive integer counts and caps them at the
+logical processor count, falling back to one if unavailable. The machine-local
+preference defaults to one and is separate from visual presets and batch snapshots.
 
 ## Importer composition and interfaces
 
@@ -222,13 +232,16 @@ portrait variants retain their own profile's styling rather than another layout'
 `rendering.peaks` prepares immutable signed peak-hold envelopes from the selected
 source interval for G-Orbit. Hold/release follows source time, so random preview
 seeks and video-rate changes do not depend on prior render calls.
-`ExportSettings` owns landscape/portrait dimensions. Shared region geometry drives
+`ExportSettings` owns landscape/portrait output dimensions, using HUD's native
+geometry for direct HD export and 4K for the other profiles. Shared region geometry drives
 frame composition and encoder padding; portrait force cards reflow vertically.
 Previews downsample the complete canvas proportionally. SQLite preset/job snapshots
 retain the explicit aspect and complete analysis recipe. Incomplete stored formats
 are rejected without migration or destructive cleanup.
 The ribbon, corners, HUD and orbit preserve translucent panels and
-opaque data. `rendering.encoding` probes NVIDIA Vulkan/NVENC, streams the selected
+opaque data. `rendering.parallel` generates ordered region bytes with one serial
+renderer or a bounded thread pool. Each worker owns its renderer, images and fonts;
+only the immutable timeline is shared. `rendering.encoding` probes NVIDIA Vulkan/NVENC, streams the selected
 bounded region to FFmpeg and publishes one
 new output exclusively. No GPU or codec operation changes the source clock/data.
 `rendering.preview` prepares five exact-source-sample snapshots with the production

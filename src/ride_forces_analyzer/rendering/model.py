@@ -44,6 +44,10 @@ class ExportSettings:
 
     @property
     def dimensions(self) -> tuple[int, int]:
+        if self.layout == "hud":
+            from .layouts.hud import LANDSCAPE, PORTRAIT
+
+            return (PORTRAIT if self.aspect == "portrait" else LANDSCAPE).size
         return (2160, 3840) if self.aspect == "portrait" else (3840, 2160)
 
     @property

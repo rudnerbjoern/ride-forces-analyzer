@@ -294,6 +294,7 @@ def test_fullscreen_hud_has_open_center_and_is_independent_of_seek_order(
     manta: ExplorerData,
     aspect: Literal["landscape", "portrait"],
     language: Literal["en", "de", "fr"],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     assert manta.analysis is not None
     timeline = prepare_export(
@@ -317,8 +318,15 @@ def test_fullscreen_hud_has_open_center_and_is_independent_of_seek_order(
     )
     assert center.getchannel("A").getbbox() is None
     assert image.getchannel("A").getextrema() == (0, 255)
+
+    def reject_resize(*_args: Any, **_kwargs: Any) -> Image.Image:
+        raise AssertionError("HUD export must retain its native pixels without resizing")
+
+    monkeypatch.setattr(Image.Image, "resize", reject_resize)
     frame = OverlayRenderer(timeline).render_sample(3650.5)
-    assert frame.size == timeline.settings.dimensions
+    assert frame.size == timeline.settings.dimensions == image.size
+    region = OverlayRenderer(timeline).render_region(0)
+    assert region.size == image.size
     assert frame.getchannel("A").getpixel((0, 0)) == 0
     opaque = OverlayRenderer(
         replace(timeline, settings=replace(timeline.settings, output="opaque")),
@@ -372,7 +380,6 @@ def test_orientation_edge_scale_tracks_degrees_and_disappears_in_gaps(
     values: list[float | None] = [None] * manta.count
     values[3600:3607] = [0.0, 45.0, 90.0, 135.0, 180.0, None, 90.0]
     orientation = replace(timeline.channels[3], values=tuple(values))
-    renderer = HudRenderer(replace(timeline, channels=(*timeline.channels[:3], orientation)))
     absent = HudRenderer(
         replace(
             timeline,
@@ -388,11 +395,13 @@ def test_orientation_edge_scale_tracks_degrees_and_disappears_in_gaps(
         text: str,
         **kwargs: Any,
     ) -> None:
-        if kwargs.get("font") is renderer.orientation_tick:
+        if text in {"0°", "45°", "90°", "135°", "180°"}:
             labels.append(text)
         original_text(draw, xy, text, **kwargs)
 
     monkeypatch.setattr(ImageDraw.ImageDraw, "text", record_orientation_text)
+    renderer = HudRenderer(replace(timeline, channels=(*timeline.channels[:3], orientation)))
+    assert labels == ["0°", "45°", "90°", "135°", "180°"]
     g = renderer.geometry
     assert [renderer.orientation_y(v) for v in (0, 90, 180)] == pytest.approx(
         [g.scale_top, (g.scale_top + g.scale_bottom) / 2, g.scale_bottom],
@@ -414,7 +423,7 @@ def test_orientation_edge_scale_tracks_degrees_and_disappears_in_gaps(
         bug = (g.size[0] - ORIENTATION_EDGE - 9, round(renderer.orientation_y(degrees)))
         assert image.getpixel(bug) == ImageColor.getcolor(WHITE, "RGBA")
         assert without.getpixel(bug) != image.getpixel(bug)
-    assert set(labels) == {"0°", "45°", "90°", "135°", "180°"}
+    assert labels == ["0°", "45°", "90°", "135°", "180°"]
     labels.clear()
     for position in (3605, 3604.5, 3605.5):
         assert (
@@ -638,6 +647,23 @@ def test_glow_and_shadow_have_soft_alpha_without_a_filled_panel() -> None:
         isinstance(color, tuple) and len(color) == 4 and color[:3] == (0, 0, 0) and color[3] > 0
         for _, color in colors
     )
+
+
+def test_cropped_effects_preserve_pixels_and_tile_edges() -> None:
+    # Include soft ink, separated marks and clipping at each original tile edge.
+    for bounds in ((100, 60, 125, 85), (0, 0, 4, 4), (295, 175, 299, 179), None):
+        ink = Image.new("RGBA", (300, 180))
+        if bounds is not None:
+            draw = ImageDraw.Draw(ink)
+            draw.rectangle(bounds, fill=CYAN)
+            draw.line((bounds[0], 90, bounds[2], 95), fill=(255, 90, 40, 80), width=2)
+        before = ink.tobytes()
+        expected = Image.new("RGBA", (330, 210), (70, 110, 145, 150))
+        actual = expected.copy()
+        expected.alpha_composite(HudRenderer.effects(ink), (13, 17))
+        HudRenderer.composite_effects(actual, ink, (13, 17))
+        assert actual.tobytes() == expected.tobytes(), bounds
+        assert ink.tobytes() == before
 
 
 @pytest.mark.parametrize("aspect", ["landscape", "portrait"])

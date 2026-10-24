@@ -126,6 +126,7 @@ separately from repeated full-frame rendering.
 | GPU behavior                         | CPU fallback allowed; command-contract tests verify GPU options independently of hardware                    |
 | Real batches                         | Two jobs with different rides/formats; pure queue tests cover the ride/preset cross-product                  |
 | Progress/cancellation                | Shared GUI flow once; layout controls in existing interaction checks                                         |
+| Parallel rendering                   | Equal pixels, ordered/bounded frames, worker ownership and cleanup; real HUD encoding and cancellation       |
 | Compact layouts                      | Targeted navigation/scrolling regressions, not another full workflow matrix                                  |
 
 Add variants for distinct risks, without multiplying independent options through

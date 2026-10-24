@@ -36,7 +36,7 @@ GREEN = "#73ffad"  # Positive longitudinal force.
 RED = "#ff6265"  # Negative longitudinal force.
 WHITE = "#d9f8ff"  # Neutral scale ticks and labels.
 BASELINE_COLOR = (181, 228, 238, 75)  # Quiet zero references and separators.
-GLOW_RADIUS = 5.5  # Broad native-pixel bloom; final frames are scaled to 4K.
+GLOW_RADIUS = 5.5  # Broad native-pixel bloom; export retains the native resolution.
 GLOW_ALPHA = tuple(round(value * 0.85) for value in range(256))
 SHADOW_RADIUS = 6.0  # Soft contrast halo on bright footage.
 SHADOW_OFFSET = 3  # Downward shadow displacement.
@@ -112,11 +112,11 @@ PORTRAIT = HudGeometry(
     history_row=96,
 )
 LANDSCAPE_POSITIONS = LayoutPositions(
-    {LayoutPosition.FULL_SCREEN: (0, 0, 3840, 2160)},
+    {LayoutPosition.FULL_SCREEN: (0, 0, *LANDSCAPE.size)},
     default=LayoutPosition.FULL_SCREEN,
 )
 PORTRAIT_POSITIONS = LayoutPositions(
-    {LayoutPosition.FULL_SCREEN: (0, 0, 2160, 3840)},
+    {LayoutPosition.FULL_SCREEN: (0, 0, *PORTRAIT.size)},
     default=LayoutPosition.FULL_SCREEN,
 )
 
@@ -233,6 +233,7 @@ class HudRenderer(Drawing):
             alpha = round(HISTORY_SHADE_ALPHA * (y - top) / (self.height - top - 1))
             draw.line((0, y, self.width, y), fill=(0, 0, 0, alpha))
         self.base.alpha_composite(ink)
+        self.orientation_base = self._orientation_scale()
 
     @staticmethod
     def _font_path() -> Path:
@@ -260,6 +261,26 @@ class HudRenderer(Drawing):
         result.alpha_composite(edge)
         result.alpha_composite(ink)
         return result
+
+    @classmethod
+    def composite_effects(
+        cls,
+        image: Image.Image,
+        ink: Image.Image,
+        position: tuple[int, int],
+    ) -> None:
+        """Filter painted pixels and their halo, preserving the original tile's clipping."""
+        bounds = ink.getbbox()
+        if bounds is None:
+            return
+        left, top, right, bottom = bounds
+        left, top = max(0, left - EFFECT_MARGIN), max(0, top - EFFECT_MARGIN)
+        right = min(ink.width, right + EFFECT_MARGIN)
+        bottom = min(ink.height, bottom + EFFECT_MARGIN)
+        image.alpha_composite(
+            cls.effects(ink.crop((left, top, right, bottom))),
+            (position[0] + left, position[1] + top),
+        )
 
     def vertical_y(self, value: float) -> float:
         """Negative lifting is above zero by default; honor the vertical display override."""
@@ -510,7 +531,7 @@ class HudRenderer(Drawing):
                     ((x, y), (x + direction * 17, y - 9), (x + direction * 17, y + 9)),
                     fill=color,
                 )
-            image.alpha_composite(self.effects(tile), (left, top))
+            self.composite_effects(image, tile, (left, top))
 
         value = values[1]
         top = g.lateral_y - 78
@@ -533,12 +554,10 @@ class HudRenderer(Drawing):
                     draw.line((zero, y, self.lateral_x(peak), y), fill=YELLOW, width=3)
             draw.ellipse((x - 5, y - 5, x + 5, y + 5), fill=YELLOW)
             draw.polygon(((x, y + 9), (x - 7, y + 21), (x + 7, y + 21)), fill=YELLOW)
-        image.alpha_composite(self.effects(tile), (0, top))
+        self.composite_effects(image, tile, (0, top))
 
-    def _orientation(self, image: Image.Image, position: float) -> None:
-        value = self.timeline.value_at(self.timeline.channels[3], position)
-        if value is None:
-            return
+    def _orientation_scale(self) -> Image.Image:
+        """Prepare the conditional orientation strip's unchanging ink once."""
         g = self.geometry
         top = g.scale_top - EFFECT_MARGIN
         tile = Image.new(
@@ -559,9 +578,20 @@ class HudRenderer(Drawing):
                 WHITE,
                 "rm",
             )
+        return tile
+
+    def _orientation(self, image: Image.Image, position: float) -> None:
+        value = self.timeline.value_at(self.timeline.channels[3], position)
+        if value is None:
+            return
+        g = self.geometry
+        top = g.scale_top - EFFECT_MARGIN
+        tile = self.orientation_base.copy()
+        draw = ImageDraw.Draw(tile)
+        x = ORIENTATION_STRIP_WIDTH - ORIENTATION_EDGE
         y = self.orientation_y(value) - top
         draw.polygon(((x, y), (x - 10, y - 5), (x - 10, y + 5)), fill=WHITE)
-        image.alpha_composite(self.effects(tile), (self.width - ORIENTATION_STRIP_WIDTH, top))
+        self.composite_effects(image, tile, (self.width - ORIENTATION_STRIP_WIDTH, top))
 
     def _histories(self, image: Image.Image, position: float) -> None:
         g = self.geometry
@@ -604,7 +634,7 @@ class HudRenderer(Drawing):
                     x, y = self.history_point(row, value, (index - start) / (2 * half))
                     points.append((x, y - top))
             paint()
-        image.alpha_composite(self.effects(tile), (0, top))
+        self.composite_effects(image, tile, (0, top))
 
     def render_position(self, position: float) -> Image.Image:
         image = self.base.copy()

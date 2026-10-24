@@ -11,7 +11,7 @@
 Find the strongest airtime moment, inspect a launch or bring your ride data into
 an Onride video. Ride Forces Analyzer turns `.forces` and compressed `.zforces` recordings from the
 [Ride Forces app](https://rideforces.com/) on iPhone or Apple Watch into
-interactive charts and 4K video overlays on Windows, Linux and macOS.
+interactive charts and video overlays on Windows, Linux and macOS.
 
 **[Download](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)**
 · **[Watch the Manta demo](https://youtu.be/tsRzD416voU)**
@@ -60,7 +60,7 @@ See [Explore a recording](docs/user/EXPLORER.md) for navigation and selection.
 
 ### 3. Create an overlay
 
-Click **Export 4K…**, choose a layout and check the preview. Export a transparent
+Click **Export video…**, choose a layout and check the preview. Export a transparent
 MOV for your video editor or an MP4 with a solid background. Align the overlay
 with your footage in the editor; automatic video synchronization is not available yet.
 The [video export guide](docs/user/VIDEO_EXPORT.md) takes you through each step.
@@ -144,8 +144,10 @@ Export themes use yellow for lateral data, green for acceleration and red for
 braking. Flow Ribbon, Corner Instruments and HUD also show the
 current vertical context with the same colors and labels as the workspace.
 
-Every layout supports **4K landscape** for classic YouTube videos and **portrait**
-for Shorts or TikTok. Choose **Position** beside the layout to keep the action clear.
+Every layout supports **landscape** for classic YouTube videos and **portrait**
+for Shorts or TikTok. HUD exports at its native **1920×1080** or **1080×1920**;
+scale it to your timeline in your video editor. The other layouts export in 4K.
+Choose **Position** beside the layout to keep the action clear.
 Export the whole recording, its marker interval or your
 selected section. Choose the overlay language independently of the application.
 

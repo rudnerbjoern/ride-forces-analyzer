@@ -7,6 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words colorspace creationflags ENOTSUP EXDEV faststart hwupload lavfi libx movflags nostdin nvenc prores qscale rawvideo yuva
 
 from collections.abc import Callable
+from contextlib import closing
 from pathlib import Path
 import json
 import errno
@@ -17,9 +18,10 @@ import sys
 from threading import Event
 from uuid import uuid4
 
-from .frames import OverlayRenderer
 from .layouts import export_region
 from .model import ExportTimeline
+from .parallel import render_region_bytes
+from ride_forces_analyzer.cpu_resources import effective_render_jobs
 from ride_forces_analyzer.runtime_paths import ffmpeg_name
 
 
@@ -217,14 +219,16 @@ def export_video(
     cancelled: Event | None = None,
     progress: Callable[[int, int], None] | None = None,
     status: Callable[[str], None] | None = None,
+    render_jobs: int = 1,
 ) -> Path:
-    """Publish one complete 4K video. Never overwrite existing files or source data."""
+    """Publish one complete video. Never overwrite existing files or source data."""
     extension = ".mov" if timeline.settings.output == "transparent" else ".mp4"
     destination = destination.resolve()
     if destination.suffix.lower() != extension:
         raise ValueError(f"This output requires a {extension} filename")
     if destination.exists():
         raise ValueError("Output already exists; choose a new filename")
+    render_jobs = effective_render_jobs(render_jobs)
     executable = find_ffmpeg(ffmpeg)
     cancellation = cancelled if cancelled is not None else Event()
     if cancellation.is_set():
@@ -245,7 +249,6 @@ def export_video(
     created_destination = False
     try:
         target = staging / f"output{extension}"
-        renderer = OverlayRenderer(timeline)
         with (staging / "encoder.log").open("w+b") as log:
             process = subprocess.Popen(
                 encoder_command(executable, timeline, target, use_gpu=use_gpu),
@@ -259,12 +262,13 @@ def export_video(
             )
             assert process.stdin is not None
             try:
-                for frame in range(timeline.frame_count):
-                    if cancellation.is_set():
-                        raise ExportCancelled()
-                    process.stdin.write(renderer.render_region(frame).tobytes())
-                    if progress is not None:
-                        progress(frame + 1, timeline.frame_count)
+                with closing(render_region_bytes(timeline, render_jobs)) as frames:
+                    for frame in range(timeline.frame_count):
+                        if cancellation.is_set():
+                            raise ExportCancelled()
+                        process.stdin.write(next(frames))
+                        if progress is not None:
+                            progress(frame + 1, timeline.frame_count)
                 process.stdin.close()
                 code = process.wait(timeout=120)
             except BrokenPipeError as error:

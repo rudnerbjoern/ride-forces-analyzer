@@ -20,7 +20,7 @@ your original recording unchanged, and processing works offline after setup.
 ## 1. Choose the part of the ride
 
 Click a point in the chart that you want to see in the preview, then click
-**Export 4K…**. The assistant opens with that moment and your current smoothing.
+**Export video…**. The assistant opens with that moment and your current smoothing.
 
 Choose **Range** to decide how much of the ride to export:
 
@@ -46,7 +46,8 @@ Choose these settings:
   The preview updates immediately. Changing layout or format keeps a supported
   or equivalent position (such as top left → top), otherwise it selects the default.
 - **Video format:** landscape for a normal widescreen video, or portrait for
-  vertical videos. Both export in 4K.
+  vertical videos. HUD exports at 1920×1080 or 1080×1920; the other layouts export
+  at 3840×2160 or 2160×3840. Review export shows the actual dimensions.
 - **Overlay language:** English, German or French, independently of the application language.
 - **Output:** **Transparent overlay · ProRes 4444 MOV** to place the graphics
   over footage in an editor; **Opaque video · H.264 MP4** for a black background.
@@ -56,6 +57,15 @@ Choose these settings:
 Transparent MOV files can be much larger than MP4 files. The size estimate is
 only a rough guide. To remember a frame rate for future exports, use
 **Settings → Export** in the main window.
+
+**Parallel render jobs** in the same settings controls how many video frames are
+generated concurrently. Choose from 1 up to this computer's logical processor
+count; the default is 1. More jobs use more CPU and memory and are not always
+faster. This local preference applies to individual exports and batches; presets
+retain their visual settings independently.
+
+HUD retains its native resolution without upscaling. For a 4K project, let your
+video editor scale the complete overlay to fill the timeline frame.
 
 ## 3. Check the preview
 
@@ -89,6 +99,9 @@ depends on calibration and smoothing; they are not a measurement of what a rider
 3. Click **Export video…**, choose a destination and a new file name, then save.
 4. Wait for the export to finish. You can follow its progress or cancel it.
 
+The suggested file name includes the recording name and chosen overlay, for
+example `Manta - HUD.mov`.
+
 Existing videos are not overwritten; choose a different name if one already
 exists. Cancelling or a failed export leaves no incomplete video behind.
 
@@ -121,7 +134,7 @@ how saved jobs retain their recording paths and settings.
 
 ## Common questions
 
-- **Export 4K is disabled:** the recording needs usable calibration directions
+- **Export video is disabled:** the recording needs usable calibration directions
   for directional forces. A recording that only supports raw x/y/z display
   cannot be exported as a ride overlay.
 - **The preview works, but export cannot find FFmpeg:** install FFmpeg and select

@@ -19,7 +19,7 @@ flowchart LR
     Analysis --> Explorer
     Analysis --> Data["CSV sample table / JSON sample arrays"]
     Explorer --> Playback["M5: sample playback"]
-    Analysis --> Frames["4K RGBA frame generation"]
+    Analysis --> Frames["RGBA frame generation"]
     Frames --> Encoder["Offline FFmpeg encoding"]
     Encoder --> Opaque["Opaque video"]
     Encoder --> Overlay["ProRes 4444 transparent overlay"]
@@ -42,7 +42,7 @@ analysis or synchronization. M2 ingestion does not establish those semantics.
   SQLite export presets/batches. `playback`
   supplies a Qt-independent monotonic sample clock with 0.5×/1×/2× speed selection.
   `rendering` implements the
-  owner-requested 4K overlay slice, independently of interactive playback.
+  video overlays, independently of interactive playback.
 - `ui` owns the raw explorer, Qt Charts interactions and background worker transport.
   `explorer` prepares raw/calibrated presentation and validates local selections
   independently of Qt. The entry point uses strictly validated settings.
@@ -55,8 +55,10 @@ analysis or synchronization. M2 ingestion does not establish those semantics.
 source/video clock. `rendering.frames` generates Pillow RGBA frames, delegating
 profiles to `rendering.layouts`: ribbon, corner cards, HUD or signed
 orbit gauges ([Manta G-Orbit video example](https://youtu.be/tsRzD416voU)). The original four-panel column remains available. The encoder
-consumes the selected rectangular region, pads to 4K and
+consumes the selected rectangular region, pads to the layout's output canvas and
 encodes one transparent ProRes 4444 MOV or independent opaque H.264 MP4.
+HUD retains its native 1920×1080 or 1080×1920 canvas for scaling in the video editor;
+the other layouts use 4K output.
 Real NVIDIA probes select Vulkan/NVENC or explicit CPU fallback. Completed output
 is published exclusively. Widgets only configure/transport
 background jobs. Manual Resolve alignment is outside the processing path.

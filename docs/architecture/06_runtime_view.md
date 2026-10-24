@@ -360,7 +360,12 @@ worker completion, independently of later workspace updates.
 ## 4K export runtime
 
 Export snapshots the loaded immutable recording, current smoothing and selected
-range/profile/aspect/language. A Qt worker prepares/streams frames to FFmpeg; NVIDIA Vulkan
+range/profile/aspect/language. HUD streams native HD frames; other profiles use 4K.
+A Qt worker prepares the timeline and streams frames to FFmpeg. The local render-job
+preference selects one serial renderer or multiple independent renderer threads,
+capped at the logical processor count. Bounded prefetch preserves frame order;
+cancel/failure joins active renders and cancels queued work. Batch videos remain
+sequential and use the same render-job preference for their frames. NVIDIA Vulkan
 or NVENC is selected only after an actual encode probe, otherwise CPU is used.
 Signals report backend/progress, completion and failure without blocking widgets.
 Cancellation or window close sets a thread event; incomplete files are discarded.

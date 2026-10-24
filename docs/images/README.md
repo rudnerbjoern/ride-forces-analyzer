@@ -31,6 +31,8 @@ Program code has its own GPL license; supplied recordings have a separate
 
 All images use the actual application or production renderer, in English.
 Checkerboards illustrate transparency and are not part of exported videos.
+HUD placement views are enlarged to illustrate a 4K editing timeline; its video
+export retains the native 1920×1080 or 1080×1920 resolution.
 Source hashes and exact settings are retained in the linked generated manifests.
 
 | Images                                            | Content and fixed settings                                                                                                                                                                                                    | Manifest                                |

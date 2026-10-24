@@ -74,27 +74,34 @@ def test_settings_save_cancel_and_new_exports_keep_independent_frame_rates(
     assert dialog is not None and dialog.isVisible()
     assert dialog.windowTitle() == "Einstellungen"
     assert dialog.frame_rate.currentText() == "50"
+    assert dialog.render_jobs.value() == 1
+    jobs = min(2, dialog.render_jobs.maximum())
+    dialog.render_jobs.setValue(jobs)
     dialog.frame_rate.setCurrentText("59.94")
     dialog.language.setCurrentIndex(0)
     dialog.appearance.setCurrentIndex(dialog.appearance.findData(Appearance.DARK.value))
     dialog.buttons.button(QDialogButtonBox.StandardButton.Cancel).click()
     assert window.ui_language == "de" and window.appearance_preference is Appearance.LIGHT
     assert window.preferences.export_fps() == 50
+    assert window.preferences.render_jobs() == 1
     wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
 
     window.settings_action.trigger()
     dialog = window.findChild(SettingsDialog, "settingsDialog")
     assert dialog is not None
     dialog.frame_rate.setCurrentText("59.94")
+    dialog.render_jobs.setValue(jobs)
     dialog.language.setCurrentIndex(0)
     dialog.appearance.setCurrentIndex(dialog.appearance.findData(Appearance.DARK.value))
     dialog.buttons.button(QDialogButtonBox.StandardButton.Save).click()
     assert window.ui_language == "en" and window.appearance_preference is Appearance.DARK
     assert Preferences(window.preferences.path).export_fps() == "60000/1001"
+    assert Preferences(window.preferences.path).render_jobs() == jobs
     wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
     window.settings_action.trigger()
     dialog = window.findChild(SettingsDialog, "settingsDialog")
     assert dialog is not None and dialog.frame_rate.currentText() == "59.94"
+    assert dialog.render_jobs.value() == jobs
     dialog.reject()
 
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))

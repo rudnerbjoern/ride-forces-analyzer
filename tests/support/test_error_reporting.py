@@ -55,6 +55,8 @@ def test_report_retains_every_error_and_replaces_completed_runs(export_directory
         export_directory,
         """
 support = directory / "support"
+from ride_forces_analyzer.cpu_resources import CpuResources
+reports.detect_cpu_resources = lambda: CpuResources(12, 24)
 support.mkdir()
 (support / "error-report-999999999.txt").write_text("obsolete")
 active = support / f"error-report-{os.getppid()}.txt"
@@ -69,6 +71,8 @@ for number in range(75):
     except ValueError as error:
         reports.record_error("Import", error)
 text = path.read_text(encoding="utf-8")
+assert "Physical CPU cores: 12" in text
+assert "Logical processors: 24" in text
 assert all(f"ValueError: failure-{number}" in text for number in range(75))
 print(path.name)
 """,

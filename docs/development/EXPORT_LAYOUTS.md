@@ -39,7 +39,7 @@ values (such as `top_left`) remain stable; parse external values with
 `LayoutPosition(value)`. Metadata keys and defaults require enum members.
 Mappings are copied; coordinates/dimensions must be integers, coordinates
 nonnegative and sizes positive. Plugin construction rejects regions outside the
-3840×2160 landscape or 2160×3840 portrait canvas, including nondefault entries.
+maximum 3840×2160 landscape or 2160×3840 portrait bounds, including nondefault entries.
 `ExportSettings.position` accepts a `LayoutPosition`; `None` selects the format's
 default. Unsupported layout/format combinations and raw string positions raise
 `ValueError`. Rendering, previews and encoder padding resolve the same region.
@@ -59,7 +59,9 @@ change; batches pass the saved settings unchanged to export preparation/encoding
 Coordinates remain layout-owned and are not stored in presets/jobs.
 
 `LayoutPosition.FULL_SCREEN` serializes as `full_screen`. HUD uses this single
-position with a region covering the complete format canvas. Switching from a
+position with a region covering its native 1920×1080 or 1080×1920 export canvas.
+The compositor and encoder retain these dimensions without upscaling; the other
+profiles use 4K canvases. Switching from a
 full-screen layout restores another layout's remembered position when available,
 otherwise its default. No corner/edge is inferred from a full-screen position.
 
@@ -88,8 +90,10 @@ HUD, G-Orbit and Column have independent drawing code.
 
 HUD owns immutable landscape/portrait pixel geometry, scale subdivisions and
 type/color/effect constants. Static force scales, labels and shadows are drawn once.
-Dynamic light/shadow layers are bounded to side instruments, the lateral readout
-and histories. Premultiplied-alpha blur preserves colored light without dark
+Dynamic light/shadow layers are cropped to painted pixels plus their effect margin,
+within the original instrument/history tile boundaries. Empty tiles skip filtering.
+The orientation line and labels reuse prepared ink; only its bug is redrawn.
+Premultiplied-alpha blur preserves colored light without dark
 fringes. A static transparent-to-black gradient sits behind the bottom histories.
 Value readouts use the installed Bahnschrift Bold weight; context labels use
 uppercase text. There is no UI dependency or frame-history cache.

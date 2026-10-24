@@ -202,6 +202,14 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     preview_ready(dialog)
     dialog.next.click()
     assert "2160×3840" in dialog.summary.text()
+    dialog.back.click()
+    dialog.layout_profile.setCurrentIndex(2)
+    result = preview_ready(dialog)
+    assert all(profile.image.size == (540, 960) for profile in result.profiles)
+    assert "1080×1920" in dialog.summary.text()
+    dialog.aspect.setCurrentIndex(0)
+    preview_ready(dialog)
+    assert "1920×1080" in dialog.summary.text()
     dialog.close()
 
 
@@ -291,10 +299,15 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
         monkeypatch.setattr(ui_export, "export_video", export)
         dialog.start.click()
         wait_until(lambda: dialog.worker is None)
-        assert Path(suggestions[0]).name == source.stem + ".mov"
+        assert Path(suggestions[0]).name == source.stem + " - Flow Ribbon.mov"
         assert Preferences(dialog.preferences.path).export_directory() == str(output.parent)
+        dialog.back.click()
+        dialog.layout_profile.setCurrentIndex(2)
+        dialog.mode.setCurrentIndex(1)
+        preview_ready(dialog)
+        dialog.next.click()
         dialog.start.click()
-        assert Path(suggestions[1]) == output.parent / (source.stem + ".mov")
+        assert Path(suggestions[1]) == output.parent / (source.stem + " - HUD.mp4")
         assert dialog.preferences.export_directory() == str(output.parent)
     dialog.close()
 
@@ -324,6 +337,7 @@ def test_export_worker_progress_cancel_and_gui_recovery(
 
         assert isinstance(args[0], ExportTimeline)
         assert args[0].settings.layout == "orbit"
+        assert kwargs["render_jobs"] == window.preferences.render_jobs()
         started.set()
         cancelled = kwargs["cancelled"]
         assert isinstance(cancelled, Event)
@@ -524,6 +538,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     )
     store.create_batch("Day1")
     window = explorer_window
+    window.preferences.remember_render_jobs(4)
     assert window.data is None and window.batches_button.isEnabled()
     window.batches_button.click()
     dialog = window.batch_window
@@ -548,6 +563,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     names: list[str] = []
 
     def fake_run(batches: tuple[SavedBatch, ...], directory: Path, **kwargs: object) -> BatchReport:
+        assert kwargs["render_jobs"] == window.preferences.render_jobs()
         names.extend(batch.name for batch in batches)
         started.set()
         cancelled = kwargs["cancelled"]

@@ -173,7 +173,7 @@ def test_cancel_and_existing_destination_preserve_files(
         ("hud", "transparent", "portrait", False, "fr"),
     ],
 )
-def test_native_encoder_produces_4k_video_with_verified_alpha(
+def test_native_encoder_produces_layout_resolution_with_verified_alpha(
     manta: ExplorerData,
     export_directory: Path,
     mode: str,
@@ -203,7 +203,13 @@ def test_native_encoder_produces_4k_video_with_verified_alpha(
         "ride_forces_analyzer.rendering.encoding.subprocess.Popen",
         wraps=subprocess.Popen,
     ) as processes:
-        export_video(timeline, output, ffmpeg=ffmpeg, progress=lambda a, b: progress.append((a, b)))
+        export_video(
+            timeline,
+            output,
+            ffmpeg=ffmpeg,
+            progress=lambda a, b: progress.append((a, b)),
+            render_jobs=2 if layout == "hud" else 1,
+        )
     # One encoder process, plus the optional GPU capability probe.
     assert processes.call_count == 1 + int(prefer_gpu)
     assert progress[-1] == (timeline.frame_count, timeline.frame_count)
@@ -301,6 +307,7 @@ def test_cancel_during_real_encoding_leaves_no_output(
             ffmpeg=ffmpeg,
             cancelled=cancelled,
             progress=cancel_after_frame,
+            render_jobs=2,
         )
     assert not output.exists()
 

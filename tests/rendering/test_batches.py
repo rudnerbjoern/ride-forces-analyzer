@@ -80,16 +80,19 @@ def test_portrait_and_landscape_persistence(
         "landscape",
     ]
     rendered: list[ExportSettings] = []
+    renderer_counts: list[object] = []
 
     def export(timeline: ExportTimeline, target: Path, **kwargs: object) -> Path:
         rendered.append(timeline.settings)
+        renderer_counts.append(kwargs["render_jobs"])
         target.write_bytes(b"completed")
         return target
 
     monkeypatch.setattr(batches, "export_video", export)
-    result = run_batches(reopened.batches(), export_directory)
+    result = run_batches(reopened.batches(), export_directory, render_jobs=2)
     assert [item.status for item in result.results] == ["completed", "completed"]
     assert rendered == [job.preset.settings for job in jobs]
+    assert renderer_counts == [2, 2]
 
 
 def test_hud_preset_round_trip_and_removed_layout_rejection() -> None:
@@ -98,6 +101,8 @@ def test_hud_preset_round_trip_and_removed_layout_rejection() -> None:
     chosen = preset().model_copy(update={"settings": ExportSettings(layout="hud")})
     saved = SavedPreset.model_validate_json(chosen.model_dump_json())
     assert saved.settings.layout == "hud"
+    assert saved.settings.dimensions == (1920, 1080)
+    assert replace(saved.settings, aspect="portrait").dimensions == (1080, 1920)
     assert saved.settings.position is LayoutPosition.FULL_SCREEN
     payload = json.loads(saved.model_dump_json())
     payload["settings"]["layout"] = "capsule"

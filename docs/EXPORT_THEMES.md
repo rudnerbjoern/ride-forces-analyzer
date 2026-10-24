@@ -62,7 +62,8 @@ The complete arrangement adapts independently to landscape and portrait.
 
 ![Frameless full-screen HUD with glowing edge scales, airtime and three force histories](images/manta-hud-detail.png)
 
-[Open the complete 4K placement view](images/manta-hud.png).
+[Open the complete 4K placement view](images/manta-hud.png). HUD video exports
+retain native 1920×1080 or 1080×1920 resolution for scaling in your editor.
 
 ## G-Orbit
 

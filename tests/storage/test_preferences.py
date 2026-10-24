@@ -12,6 +12,25 @@ import pytest
 from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 
 
+def test_render_jobs_survive_restart_and_fit_the_current_computer(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ride_forces_analyzer import cpu_resources
+
+    monkeypatch.setattr(cpu_resources, "render_job_limit", lambda: 24)
+    path = tmp_path / "preferences.sqlite3"
+    preferences = Preferences(path)
+    assert preferences.render_jobs() == 1
+    preferences.remember_render_jobs(18)
+    assert Preferences(path).render_jobs() == 18
+    monkeypatch.setattr(cpu_resources, "render_job_limit", lambda: 4)
+    assert Preferences(path).render_jobs() == 4
+    preferences.remember_render_jobs(100)
+    monkeypatch.setattr(cpu_resources, "render_job_limit", lambda: 24)
+    assert Preferences(path).render_jobs() == 4
+
+
 def test_recording_markers_survive_restart_are_content_bound_and_can_be_reset(
     tmp_path: Path,
 ) -> None:
@@ -56,6 +75,10 @@ def test_recording_markers_tolerate_unavailable_storage(tmp_path: Path) -> None:
         ("remember_export_fps", 50.0),
         ("remember_export_fps", "50"),
         ("remember_export_fps", 0),
+        ("remember_render_jobs", True),
+        ("remember_render_jobs", 2.0),
+        ("remember_render_jobs", "2"),
+        ("remember_render_jobs", 0),
         ("remember_update_check", "100000"),
         ("remember_update_check", True),
         ("remember_update_check", float("nan")),
@@ -112,6 +135,7 @@ def test_invalid_stored_preferences_keep_safe_defaults() -> None:
                     ("restore_last_file", "1"),
                     ("last_recording_path", "relative.forces"),
                     ("export_fps", "NaN"),
+                    ("render_jobs", "NaN"),
                     ("update_checked_at", "invalid"),
                 ],
             )
@@ -119,6 +143,7 @@ def test_invalid_stored_preferences_keep_safe_defaults() -> None:
         assert preferences.language("de") == "de"
         assert preferences.appearance() is Appearance.SYSTEM
         assert preferences.export_fps() == 50
+        assert preferences.render_jobs() == 1
         assert not preferences.automatic_updates()
         assert not preferences.restore_last_file()
         assert preferences.last_recording() is None

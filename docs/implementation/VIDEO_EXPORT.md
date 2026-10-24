@@ -1,4 +1,4 @@
-# 4K ride overlay export
+# Ride overlay video export
 
 For instructions on creating an overlay and using it in a video editor, see the
 [user guide](../user/VIDEO_EXPORT.md). This page defines the technical contracts.
@@ -25,7 +25,7 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 | Setting            | Contract                                                                                                   |
 | ------------------ | ---------------------------------------------------------------------------------------------------------- |
 | Output             | One video per recording; transparent ProRes 4444 MOV (default) or independent opaque H.264 MP4             |
-| Canvas             | Landscape 16:9, 3840×2160; portrait 9:16, 2160×3840                                                        |
+| Canvas             | HUD: native 1920×1080 / 1080×1920; other profiles: 3840×2160 / 2160×3840                                   |
 | Profiles           | Flow Ribbon (assistant opening default), Corner Instruments, HUD, G-Orbit, four-panel column               |
 | Frame-rate choices | 24/25/30/50/59.94/60 fps; default 50 without a valid saved preference                                      |
 | Context window     | 1–60 s, default 12; shared source position and centered cursor in time plots                               |
@@ -40,7 +40,12 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 - Settings → Export persists the default frame rate in `preferences.sqlite3`.
   Save changes it; Cancel and temporary assistant edits do not. Presets/batches
   retain their own rates, including exact `60000/1001`.
-- Save dialog suggests the source `.forces` stem plus `.mov`/`.mp4`.
+- The local `render_jobs` preference defaults to 1 and accepts positive integers,
+  capped at the detected logical processor count (1 if unavailable). Settings →
+  Export applies it to newly started individual and batch exports. It is not part
+  of visual presets or saved batch snapshots.
+- Save dialog suggests the source recording stem, ` - `, the selected layout's
+  displayed name and `.mov`/`.mp4` (for example, `Manta - HUD.mov`).
   Successful exports remember the destination folder across restarts, separately
   from the recording folder. Missing folders use dialog defaults; cancellation or
   failure preserves the previous folder.
@@ -186,8 +191,10 @@ the [roadmap](../ROADMAP.md) owns planned scope.
   selected sample, reset at missing samples and use source time, independent of
   seek order and video rate. Missing current values hide their bars and pointers.
 - The only position is `full_screen` in both formats. Native 1920×1080/1080×1920
-  drawing is scaled by the existing composer to the complete 4K canvas. Static
-  effects are prepared once; moving effects use instrument/history tiles.
+  drawing is exported directly without resizing, for scaling in the video editor.
+  Both transparent and opaque output retain these dimensions, including saved
+  presets and batches. Preview galleries keep their common display dimensions.
+  Static effects are prepared once; moving effects use instrument/history tiles.
   Rendering is independent of seek order and previous frames.
 - Removed layout keys are unsupported in saved presets/jobs; no automatic remapping
   or database cleanup is performed.
@@ -224,6 +231,12 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 
 - Background export provides progress/cancellation; window close requests cancel.
   Pillow RGBA generation remains separate from external FFmpeg encoding.
+- `rendering.parallel.render_region_bytes` uses the direct serial path for one
+  job. Multiple jobs use a bounded thread pool with independent renderers, images
+  and fonts per worker, sharing only the immutable timeline. Results reach the
+  encoder in frame order, with at most the job count plus one outstanding frames.
+  Closing on cancellation or failure cancels queued work and joins active renders.
+  Batch videos remain sequential; their frames use the selected render-job count.
 - Probe actual NVIDIA Vulkan ProRes with alpha / NVENC H.264; otherwise CPU fallback.
   Display selected backend. GPU ProRes never receives CPU `qscale`.
 - Pipe only the selected layout region; encoder pads remaining transparent/opaque
