@@ -17,10 +17,17 @@
   "aspect": "landscape",
   "fps": 50,
   "window_seconds": 12.0,
+  "profile_window_seconds": {
+    "ribbon": 12.0,
+    "corners": 12.0,
+    "hud": 30.0,
+    "orbit": 12.0,
+    "column": 12.0
+  },
   "profiles": [
     "ribbon",
     "corners",
-    "capsule",
+    "hud",
     "orbit",
     "column"
   ]

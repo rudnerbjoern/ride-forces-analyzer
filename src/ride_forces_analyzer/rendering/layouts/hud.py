@@ -1,0 +1,647 @@
+"""Frameless full-screen HUD with fine scales, glow and shared-time force histories.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
+
+# cspell:words bahnschrift RGBa getbbox getchannel putalpha WINDIR
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from math import ceil, floor
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+from ride_forces_analyzer.airtime_colors import VERTICAL_CONTEXT_COLORS
+from ..peaks import PeakEnvelope
+from .common import Drawing
+from .contracts import LayoutPlugin, LayoutPosition, LayoutPositions
+
+if TYPE_CHECKING:
+    from ..model import ExportChannel, ExportTimeline
+
+
+FONT_FILE = "bahnschrift.ttf"  # Native Windows technical typeface; Drawing retains its fallback.
+LABEL_SIZE = 20  # Instrument headings.
+NUMBER_SIZE = 54  # Large signed current values.
+CONTEXT_SIZE = 23  # Airtime category beneath the vertical value.
+TICK_SIZE = 18  # Major scale labels and time ticks.
+HISTORY_LABEL_SIZE = 16  # Small channel names beside/before the traces.
+CYAN = "#67efff"  # Vertical force, cursor and cool instrument light.
+YELLOW = "#ffed51"  # Signed lateral force.
+GREEN = "#73ffad"  # Positive longitudinal force.
+RED = "#ff6265"  # Negative longitudinal force.
+WHITE = "#d9f8ff"  # Neutral scale ticks and labels.
+BASELINE_COLOR = (181, 228, 238, 75)  # Quiet zero references and separators.
+GLOW_RADIUS = 5.5  # Broad native-pixel bloom; export retains the native resolution.
+GLOW_ALPHA = tuple(round(value * 0.85) for value in range(256))
+SHADOW_RADIUS = 6.0  # Soft contrast halo on bright footage.
+SHADOW_OFFSET = 3  # Downward shadow displacement.
+SHADOW_ALPHA = tuple(round(value * 0.95) for value in range(256))
+EDGE_ALPHA = tuple(round(value * 0.35) for value in range(256))  # Fine dark contrast edge.
+HISTORY_SHADE_ALPHA = 105  # Soft bottom gradient behind the three histories.
+HISTORY_SCALE_STEP = 0.1  # Round independent history ranges outward in g, with this minimum.
+VERTICAL_SEATED = (-1.5, 5.0)  # Default vertical instrument range in g.
+VERTICAL_FLYING = (-4.0, 3.0)  # Flying posture uses a larger negative range.
+VERTICAL_RANGE_STEP = 0.5  # Expand the two bounds independently in g.
+VERTICAL_MAJOR_INTERVALS = 14  # Bound tick density for large vertical ranges.
+ORIENTATION_TICKS = (0, 45, 90, 135, 180)  # Fixed degrees down the outer right edge.
+ORIENTATION_TICK_SIZE = 12  # Compact labels beside the existing right instrument.
+ORIENTATION_STRIP_WIDTH = 48  # Native pixels reserved for the conditional edge scale.
+ORIENTATION_EDGE = 2  # Keep the fine line immediately inside the canvas edge.
+PEAK_HOLD_SECONDS = 1.5  # Source-time hold, matching G-Orbit.
+PEAK_RELEASE_G_PER_SECOND = 1.0  # Return toward zero after the hold.
+LINE_WIDTH = 2  # Crisp core of scales, markers and curves.
+MINOR_DIVISIONS = 5  # Four fine subdivisions between neighboring major ticks.
+EFFECT_MARGIN = 24  # Keep tile bloom/shadows away from clipped edges.
+
+
+@dataclass(frozen=True, slots=True)
+class HudGeometry:
+    """Format-specific native pixel geometry; the center has no painted background."""
+
+    size: tuple[int, int]
+    title_y: int
+    value_y: int
+    context_y: int
+    scale_top: int
+    scale_bottom: int
+    left_axis: int
+    right_axis: int
+    lateral_y: int
+    lateral_left: int
+    lateral_right: int
+    history_top: int
+    history_left: int
+    history_row: int
+
+
+LANDSCAPE = HudGeometry(
+    size=(1920, 1080),
+    title_y=122,
+    value_y=153,
+    context_y=216,
+    scale_top=250,
+    scale_bottom=670,
+    left_axis=128,
+    right_axis=1792,
+    lateral_y=760,
+    lateral_left=590,
+    lateral_right=1330,
+    history_top=835,
+    history_left=175,
+    history_row=65,
+)
+PORTRAIT = HudGeometry(
+    size=(1080, 1920),
+    title_y=280,
+    value_y=312,
+    context_y=385,
+    scale_top=440,
+    scale_bottom=1195,
+    left_axis=55,
+    right_axis=970,
+    lateral_y=1435,
+    lateral_left=130,
+    lateral_right=945,
+    history_top=1535,
+    history_left=95,
+    history_row=96,
+)
+LANDSCAPE_POSITIONS = LayoutPositions(
+    {LayoutPosition.FULL_SCREEN: (0, 0, *LANDSCAPE.size)},
+    default=LayoutPosition.FULL_SCREEN,
+)
+PORTRAIT_POSITIONS = LayoutPositions(
+    {LayoutPosition.FULL_SCREEN: (0, 0, *PORTRAIT.size)},
+    default=LayoutPosition.FULL_SCREEN,
+)
+
+
+def _scale(
+    extent: float,
+    minimum: float,
+    step: float,
+    *,
+    range_step: float | None = None,
+) -> tuple[float, float]:
+    """Round a symmetric scale outward, keeping major/minor tick density bounded."""
+    extent = max(minimum, extent)
+    step *= max(1, ceil(extent / (5 * step)))
+    rounding = step if range_step is None else range_step
+    return ceil(extent / rounding) * rounding, step
+
+
+def _selected_bounds(channel: ExportChannel, first: int, last: int) -> tuple[float, float]:
+    """Read valid selected extrema, including zero for empty or one-sided channels."""
+    low = high = 0.0
+    for value in channel.values[first : last + 1]:
+        if value is not None:
+            low, high = min(low, value), max(high, value)
+    return low, high
+
+
+def _ticks(
+    low: float,
+    high: float,
+    step: float,
+    *,
+    divisions: int = MINOR_DIVISIONS,
+) -> list[tuple[float, bool]]:
+    """Include exact endpoints alongside bounded major/minor subdivisions."""
+    ticks = {
+        index * step / divisions: index % divisions == 0
+        for index in range(
+            ceil(low / step * divisions),
+            floor(high / step * divisions) + 1,
+        )
+    }
+    ticks[low] = ticks[high] = True
+    return sorted(ticks.items())
+
+
+class HudRenderer(Drawing):
+    font_file = FONT_FILE
+    tick_font_file = FONT_FILE
+    label_size = LABEL_SIZE
+    number_size = NUMBER_SIZE
+    small_size = CONTEXT_SIZE
+    tick_size = TICK_SIZE
+    text_stroke_width = 0
+
+    def __init__(self, timeline: ExportTimeline) -> None:
+        self.geometry = PORTRAIT if timeline.settings.aspect == "portrait" else LANDSCAPE
+        super().__init__(timeline, *self.geometry.size)
+        if isinstance(self.number, ImageFont.FreeTypeFont) and self._font_path().is_file():
+            self.number.set_variation_by_name("Bold")
+        self.portrait = timeline.settings.aspect == "portrait"
+        self.history_label = self._font(
+            self._font_path(),
+            HISTORY_LABEL_SIZE,
+        )
+        self.orientation_tick = self._font(self._font_path(), ORIENTATION_TICK_SIZE)
+        bounds = tuple(
+            _selected_bounds(channel, timeline.first, timeline.last)
+            for channel in timeline.channels[:3]
+        )
+        peaks = tuple(max(abs(low), abs(high)) for low, high in bounds)
+        posture = timeline.analysis.source.recording.metadata.riding_position
+        defaults = (
+            VERTICAL_FLYING
+            if posture is not None and posture.value == "Flying"
+            else VERTICAL_SEATED
+        )
+        vertical_low = (
+            floor(min(defaults[0], bounds[0][0]) / VERTICAL_RANGE_STEP) * VERTICAL_RANGE_STEP
+        )
+        vertical_high = (
+            ceil(max(defaults[1], bounds[0][1]) / VERTICAL_RANGE_STEP) * VERTICAL_RANGE_STEP
+        )
+        vertical_step = float(
+            max(1, ceil((vertical_high - vertical_low) / VERTICAL_MAJOR_INTERVALS)),
+        )
+        lateral, lateral_step = _scale(peaks[1], 2.0, 0.5, range_step=0.5)
+        longitudinal, longitudinal_step = _scale(peaks[2], 1.5, 0.5)
+        self.scales = (
+            (vertical_low, vertical_high, vertical_step),
+            (-lateral, lateral, lateral_step),
+            (-longitudinal, longitudinal, longitudinal_step),
+        )
+        self.history_scales = tuple(
+            max(1, ceil(peak * 1.05 / HISTORY_SCALE_STEP)) * HISTORY_SCALE_STEP for peak in peaks
+        )
+        self.peaks = tuple(
+            PeakEnvelope.prepare(
+                channel.values,
+                timeline.first,
+                timeline.last,
+                timeline.sample_rate,
+                hold_seconds=PEAK_HOLD_SECONDS,
+                release_g_per_second=PEAK_RELEASE_G_PER_SECOND,
+            )
+            for channel in timeline.channels[:3]
+        )
+        self._draw_static(ImageDraw.Draw(self.base))
+        ink = self.effects(self.base)
+        self.base = Image.new("RGBA", self.geometry.size)
+        draw = ImageDraw.Draw(self.base)
+        top = self.geometry.history_top - 40
+        for y in range(top, self.height):
+            alpha = round(HISTORY_SHADE_ALPHA * (y - top) / (self.height - top - 1))
+            draw.line((0, y, self.width, y), fill=(0, 0, 0, alpha))
+        self.base.alpha_composite(ink)
+        self.orientation_base = self._orientation_scale()
+
+    @staticmethod
+    def _font_path() -> Path:
+        import os
+
+        return Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts" / FONT_FILE
+
+    @staticmethod
+    def effects(ink: Image.Image) -> Image.Image:
+        """Composite soft black shadow, colored bloom and crisp ink, preserving alpha."""
+        alpha = ink.getchannel("A")
+        shadow_mask = Image.new("L", ink.size)
+        shadow_mask.paste(
+            alpha.filter(ImageFilter.GaussianBlur(SHADOW_RADIUS)).point(SHADOW_ALPHA),
+            (0, SHADOW_OFFSET),
+        )
+        result = Image.new("RGBA", ink.size, (0, 0, 0, 0))
+        result.putalpha(shadow_mask)
+        # Premultiplied blur retains saturated light rather than dark RGB fringes.
+        glow = ink.convert("RGBa").filter(ImageFilter.GaussianBlur(GLOW_RADIUS)).convert("RGBA")
+        glow.putalpha(glow.getchannel("A").point(GLOW_ALPHA))
+        result.alpha_composite(glow)
+        edge = Image.new("RGBA", ink.size, (0, 0, 0, 0))
+        edge.putalpha(alpha.filter(ImageFilter.MaxFilter(3)).point(EDGE_ALPHA))
+        result.alpha_composite(edge)
+        result.alpha_composite(ink)
+        return result
+
+    @classmethod
+    def composite_effects(
+        cls,
+        image: Image.Image,
+        ink: Image.Image,
+        position: tuple[int, int],
+    ) -> None:
+        """Filter painted pixels and their halo, preserving the original tile's clipping."""
+        bounds = ink.getbbox()
+        if bounds is None:
+            return
+        left, top, right, bottom = bounds
+        left, top = max(0, left - EFFECT_MARGIN), max(0, top - EFFECT_MARGIN)
+        right = min(ink.width, right + EFFECT_MARGIN)
+        bottom = min(ink.height, bottom + EFFECT_MARGIN)
+        image.alpha_composite(
+            cls.effects(ink.crop((left, top, right, bottom))),
+            (position[0] + left, position[1] + top),
+        )
+
+    def vertical_y(self, value: float) -> float:
+        """Negative lifting is above zero by default; honor the vertical display override."""
+        g = self.geometry
+        low, high, _ = self.scales[0]
+        fraction = (value - low) / (high - low)
+        if not self.timeline.channels[0].inverted:
+            fraction = 1 - fraction
+        return g.scale_top + fraction * (g.scale_bottom - g.scale_top)
+
+    def longitudinal_y(self, value: float) -> float:
+        g = self.geometry
+        return (g.scale_top + g.scale_bottom) / 2 - (
+            value / self.scales[2][1] * (g.scale_bottom - g.scale_top) / 2
+        )
+
+    def orientation_y(self, value: float) -> float:
+        """Map the prepared tilt from 0° at the top to 180° at the bottom."""
+        g = self.geometry
+        return g.scale_top + value / 180 * (g.scale_bottom - g.scale_top)
+
+    def lateral_x(self, value: float) -> float:
+        g = self.geometry
+        return (g.lateral_left + g.lateral_right) / 2 + (
+            value / self.scales[1][1] * (g.lateral_right - g.lateral_left) / 2
+        )
+
+    def history_point(self, row: int, value: float, fraction: float) -> tuple[float, float]:
+        """Center the shared source-time axis on the lateral instrument's zero."""
+        g = self.geometry
+        top = g.history_top + row * g.history_row
+        amplitude = g.history_row * (0.32 if self.portrait else 0.36)
+        center = top + g.history_row / 2
+        sign = 1 if row == 0 and self.timeline.channels[0].inverted else -1
+        return (
+            g.history_left + fraction * 2 * (self.lateral_x(0) - g.history_left),
+            center + sign * value / self.history_scales[row] * amplitude,
+        )
+
+    def _tick_text(self, value: float) -> str:
+        if abs(value) < 1e-10:
+            return "0"
+        return self._tr("{0:+.1f}" if self.portrait else "{0:+g}", value)
+
+    def _draw_static(self, draw: ImageDraw.ImageDraw) -> None:
+        x: float
+        g = self.geometry
+        edge = 40 if self.portrait else 68
+        self._text(draw, (edge, g.title_y), self._tr("Vertical").upper(), self.label, CYAN)
+        self._text(
+            draw,
+            (self.width - edge, g.title_y),
+            self._tr("Acceleration").upper(),
+            self.label,
+            GREEN,
+            "rt",
+        )
+        for row, x in ((0, g.left_axis), (2, g.right_axis)):
+            low, high, step = self.scales[row]
+            mapping = self.vertical_y if row == 0 else self.longitudinal_y
+            zero = mapping(0)
+            if row == 0:
+                draw.line((x, g.scale_top, x, g.scale_bottom), fill=CYAN, width=LINE_WIDTH)
+            else:
+                draw.line((x, g.scale_top, x, zero), fill=GREEN, width=LINE_WIDTH)
+                draw.line((x, zero, x, g.scale_bottom), fill=RED, width=LINE_WIDTH)
+            for value, major in _ticks(
+                low,
+                high,
+                step,
+                divisions=4 if row == 0 else MINOR_DIVISIONS,
+            ):
+                y = mapping(value)
+                if row == 0:
+                    major = value.is_integer()
+                    length = 20 if major else 14 if (value * 2).is_integer() else 8
+                else:
+                    length = 20 if major else 9
+                direction = 1 if row == 2 or self.portrait else -1
+                color = CYAN if row == 0 else GREEN if value > 0 else RED if value < 0 else WHITE
+                draw.line(
+                    (x, y, x + direction * length, y),
+                    fill=color,
+                    width=LINE_WIDTH if major else 1,
+                )
+                if major:
+                    self._text(
+                        draw,
+                        (x + direction * 30, y),
+                        ("0" if value == 0 else self._tr("{0:+g}", value))
+                        if row == 0
+                        else self._tick_text(value),
+                        self.tick,
+                        WHITE if row == 0 else color,
+                        "lm" if direction > 0 else "rm",
+                    )
+            draw.line((x - 12, zero, x + 12, zero), fill=WHITE, width=LINE_WIDTH)
+
+        if self.portrait:
+            self._text(
+                draw,
+                (self.width / 2, g.lateral_y - 94),
+                self._tr("Lateral").upper(),
+                self.label,
+                WHITE,
+                "mm",
+            )
+        self._text(
+            draw,
+            (g.lateral_left - 24, g.lateral_y),
+            self._tr("Left").upper(),
+            self.label,
+            YELLOW if self.portrait else WHITE,
+            "rm",
+        )
+        self._text(
+            draw,
+            (g.lateral_right + 24, g.lateral_y),
+            self._tr("Right").upper(),
+            self.label,
+            YELLOW if self.portrait else WHITE,
+            "lm",
+        )
+        draw.line(
+            (g.lateral_left, g.lateral_y, g.lateral_right, g.lateral_y),
+            fill=YELLOW if self.portrait else WHITE,
+            width=LINE_WIDTH,
+        )
+        for value, major in _ticks(*self.scales[1]):
+            x = self.lateral_x(value)
+            length = 10 if major else 5
+            draw.line((x, g.lateral_y - length, x, g.lateral_y + length), fill=WHITE, width=1)
+            if (self.portrait and major) or value == 0:
+                self._text(
+                    draw,
+                    (x, g.lateral_y + 28),
+                    self._tick_text(value),
+                    self.tick,
+                    WHITE,
+                    "mt",
+                )
+
+        history_right, _ = self.history_point(0, 0, 1)
+        for row, channel in enumerate(self.timeline.channels[:3]):
+            top = g.history_top + row * g.history_row
+            center = top + g.history_row / 2
+            self._text(
+                draw,
+                (40, top - 10 if self.portrait else center),
+                self._tr(channel.name).upper(),
+                self.history_label,
+                (CYAN, YELLOW, GREEN)[row],
+                "lt" if self.portrait else "lm",
+            )
+            draw.line(
+                (g.history_left, center, history_right, center),
+                fill=BASELINE_COLOR,
+                width=1,
+            )
+            draw.line(
+                (g.history_left, top + g.history_row - 1, history_right, top + g.history_row - 1),
+                fill=BASELINE_COLOR,
+                width=1,
+            )
+            if self.portrait:
+                for value in (-self.history_scales[row], self.history_scales[row]):
+                    _, y = self.history_point(row, value, 0)
+                    self._text(
+                        draw,
+                        (g.history_left - 14, y),
+                        self._tick_text(value),
+                        self.history_label,
+                        WHITE,
+                        "rm",
+                    )
+        cursor, _ = self.history_point(0, 0, 0.5)
+        bottom = g.history_top + 3 * g.history_row
+        draw.line(
+            (cursor, g.history_top - 12, cursor, bottom + 7),
+            fill=CYAN,
+            width=LINE_WIDTH,
+        )
+        for index in range(17):
+            fraction = index / 16
+            x, _ = self.history_point(0, 0, fraction)
+            draw.line((x, bottom, x, bottom + (10 if index % 4 == 0 else 5)), fill=WHITE, width=1)
+            if index % 4 == 0:
+                seconds = (fraction - 0.5) * self.timeline.settings.window_seconds
+                self._text(
+                    draw,
+                    (x, bottom + 22),
+                    "0" if index == 8 else self._tr("{0:+g} s", seconds),
+                    self.tick,
+                    WHITE,
+                    "mt",
+                )
+
+    def _gauges(self, image: Image.Image, position: float) -> None:
+        x: float
+        g = self.geometry
+        edge = 40 if self.portrait else 68
+        values = tuple(
+            self.timeline.value_at(channel, position) for channel in self.timeline.channels[:3]
+        )
+        for row in (0, 2):
+            value = values[row]
+            color = WHITE if value is None else CYAN if row == 0 else GREEN if value >= 0 else RED
+            # Only a narrow side strip is blurred per frame; the empty center is untouched.
+            left, right = (
+                (0, 430 if not self.portrait else 390)
+                if row == 0
+                else (
+                    self.width - (430 if not self.portrait else 390),
+                    self.width,
+                )
+            )
+            top = g.value_y - EFFECT_MARGIN
+            tile = Image.new("RGBA", (right - left, g.scale_bottom + 100 - top))
+            draw = ImageDraw.Draw(tile)
+            anchor_x = edge if row == 0 else self.width - edge
+            self._text(
+                draw,
+                (anchor_x - left, g.value_y - top),
+                self._tr("Unavailable") if value is None else self._tr("{0:+.2f} g", value),
+                self.label if value is None else self.number,
+                color,
+                "lt" if row == 0 else "rt",
+            )
+            if row == 0:
+                context = "Unavailable" if value is None else self.timeline.context_at(position)
+                self._text(
+                    draw,
+                    (anchor_x - left, g.context_y - top),
+                    self._tr(context).upper(),
+                    self.small,
+                    VERTICAL_CONTEXT_COLORS.get(context, WHITE),
+                )
+            if value is not None:
+                x = (g.left_axis if row == 0 else g.right_axis) - left
+                mapping = self.vertical_y if row == 0 else self.longitudinal_y
+                y, zero = mapping(value) - top, mapping(0) - top
+                for peak in self.peaks[row].at(position, value):
+                    if peak != 0:
+                        peak_color = CYAN if row == 0 else GREEN if peak > 0 else RED
+                        draw.line((x, zero, x, mapping(peak) - top), fill=peak_color, width=4)
+                direction = 1 if row == 0 else -1
+                draw.polygon(
+                    ((x, y), (x + direction * 17, y - 9), (x + direction * 17, y + 9)),
+                    fill=color,
+                )
+            self.composite_effects(image, tile, (left, top))
+
+        value = values[1]
+        top = g.lateral_y - 78
+        tile = Image.new("RGBA", (self.width, 110))
+        draw = ImageDraw.Draw(tile)
+        self._text(
+            draw,
+            (self.width / 2, 4),
+            self._tr("Unavailable") if value is None else self._tr("{0:+.2f} g", value),
+            self.label if value is None else self.number,
+            YELLOW,
+            "mt",
+        )
+        if value is not None:
+            x = self.lateral_x(value)
+            zero = self.lateral_x(0)
+            y = g.lateral_y - top
+            for peak in self.peaks[1].at(position, value):
+                if peak != 0:
+                    draw.line((zero, y, self.lateral_x(peak), y), fill=YELLOW, width=3)
+            draw.ellipse((x - 5, y - 5, x + 5, y + 5), fill=YELLOW)
+            draw.polygon(((x, y + 9), (x - 7, y + 21), (x + 7, y + 21)), fill=YELLOW)
+        self.composite_effects(image, tile, (0, top))
+
+    def _orientation_scale(self) -> Image.Image:
+        """Prepare the conditional orientation strip's unchanging ink once."""
+        g = self.geometry
+        top = g.scale_top - EFFECT_MARGIN
+        tile = Image.new(
+            "RGBA",
+            (ORIENTATION_STRIP_WIDTH, g.scale_bottom - g.scale_top + 2 * EFFECT_MARGIN),
+        )
+        draw = ImageDraw.Draw(tile)
+        x = ORIENTATION_STRIP_WIDTH - ORIENTATION_EDGE
+        draw.line((x, g.scale_top - top, x, g.scale_bottom - top), fill=WHITE, width=1)
+        for degrees in ORIENTATION_TICKS:
+            y = self.orientation_y(degrees) - top
+            draw.line((x - 7, y, x, y), fill=WHITE, width=1)
+            self._text(
+                draw,
+                (x - 12, y),
+                f"{degrees}°",
+                self.orientation_tick,
+                WHITE,
+                "rm",
+            )
+        return tile
+
+    def _orientation(self, image: Image.Image, position: float) -> None:
+        value = self.timeline.value_at(self.timeline.channels[3], position)
+        if value is None:
+            return
+        g = self.geometry
+        top = g.scale_top - EFFECT_MARGIN
+        tile = self.orientation_base.copy()
+        draw = ImageDraw.Draw(tile)
+        x = ORIENTATION_STRIP_WIDTH - ORIENTATION_EDGE
+        y = self.orientation_y(value) - top
+        draw.polygon(((x, y), (x - 10, y - 5), (x - 10, y + 5)), fill=WHITE)
+        self.composite_effects(image, tile, (self.width - ORIENTATION_STRIP_WIDTH, top))
+
+    def _histories(self, image: Image.Image, position: float) -> None:
+        g = self.geometry
+        tile = Image.new("RGBA", (self.width, 3 * g.history_row + 2 * EFFECT_MARGIN))
+        draw = ImageDraw.Draw(tile)
+        top = g.history_top - EFFECT_MARGIN
+        half = self.timeline.settings.window_seconds * self.timeline.sample_rate / 2
+        start = position - half
+        first, last = (
+            max(self.timeline.first, ceil(start)),
+            min(self.timeline.last, floor(position + half)),
+        )
+        for row, channel in enumerate(self.timeline.channels[:3]):
+            points: list[tuple[float, float]] = []
+
+            def paint() -> None:
+                if len(points) < 2:
+                    return
+                if row != 2:
+                    draw.line(points, fill=CYAN if row == 0 else YELLOW, width=LINE_WIDTH)
+                    return
+                zero_y = self.history_point(row, 0, 0)[1] - top
+                for a, b in zip(points, points[1:]):
+                    color_a = GREEN if a[1] <= zero_y else RED
+                    color_b = GREEN if b[1] <= zero_y else RED
+                    if color_a == color_b:
+                        draw.line((a, b), fill=color_a, width=LINE_WIDTH)
+                    else:
+                        fraction = (zero_y - a[1]) / (b[1] - a[1])
+                        crossing = (a[0] + fraction * (b[0] - a[0]), zero_y)
+                        draw.line((a, crossing), fill=color_a, width=LINE_WIDTH)
+                        draw.line((crossing, b), fill=color_b, width=LINE_WIDTH)
+
+            for index in range(first, last + 1):
+                value = channel.values[index]
+                if value is None:
+                    paint()
+                    points = []
+                else:
+                    x, y = self.history_point(row, value, (index - start) / (2 * half))
+                    points.append((x, y - top))
+            paint()
+        self.composite_effects(image, tile, (0, top))
+
+    def render_position(self, position: float) -> Image.Image:
+        image = self.base.copy()
+        self._histories(image, position)
+        self._gauges(image, position)
+        self._orientation(image, position)
+        return image
+
+
+PLUGIN = LayoutPlugin("hud", LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, HudRenderer)

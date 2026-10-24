@@ -28,138 +28,132 @@ from tests.ui.helpers import resize_workspace, wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
 
 
-@pytest.mark.parametrize("field", ["first", "last"], ids=["from", "to"])
-@pytest.mark.parametrize("direction", [1, -1], ids=["up", "down"])
 def test_selection_arrows_accelerate_while_held_and_reset_on_release(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
-    field: str,
-    direction: int,
 ) -> None:
     window = explorer_window
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
     wait_until(window.open_action.isEnabled)
     resize_workspace(window, 1280, 820)
-    window.first.setValue(3000)
-    window.last.setValue(7000)
-    control = window.first if field == "first" else window.last
-    option = QStyleOptionSpinBox()
-    option.initFrom(control)
-    button = (
-        control.style()
-        .subControlRect(
-            QStyle.ComplexControl.CC_SpinBox,
-            option,
-            QStyle.SubControl.SC_SpinBoxUp if direction > 0 else QStyle.SubControl.SC_SpinBoxDown,
-            control,
+    for field, direction in (("first", 1), ("first", -1), ("last", 1), ("last", -1)):
+        window.first.setValue(3000)
+        window.last.setValue(7000)
+        control = window.first if field == "first" else window.last
+        option = QStyleOptionSpinBox()
+        option.initFrom(control)
+        button = (
+            control.style()
+            .subControlRect(
+                QStyle.ComplexControl.CC_SpinBox,
+                option,
+                QStyle.SubControl.SC_SpinBoxUp
+                if direction > 0
+                else QStyle.SubControl.SC_SpinBoxDown,
+                control,
+            )
+            .center()
         )
-        .center()
-    )
-    initial = control.value()
-    values = [initial]
-    control.valueChanged.connect(values.append)
-    elapsed_ms = 0
+        initial = control.value()
+        values = [initial]
+        control.valueChanged.connect(values.append)
+        elapsed_ms = 0
 
-    def elapsed(_: QElapsedTimer) -> int:
-        return elapsed_ms
+        def elapsed(_: QElapsedTimer) -> int:
+            return elapsed_ms
 
-    monkeypatch.setattr(QElapsedTimer, "elapsed", elapsed)
-    QTest.mousePress(control, Qt.MouseButton.LeftButton, pos=button)
-    try:
-        assert control.value() == initial + direction
-        # Drive the clock at each boundary without waiting five real seconds.
-        # Native stepping still updates the real selection controls and chart.
-        for elapsed_ms, stride in (
-            (999, 1),
-            (1000, 5),
-            (1999, 5),
-            (2000, 10),
-            (2999, 10),
-            (3000, 20),
-            (4999, 20),
-            (5000, 50),
-        ):
+        monkeypatch.setattr(QElapsedTimer, "elapsed", elapsed)
+        QTest.mousePress(control, Qt.MouseButton.LeftButton, pos=button)
+        try:
+            assert control.value() == initial + direction
+            # Drive the clock at each boundary without waiting five real seconds.
+            # Native stepping still updates the real selection controls and chart.
+            for elapsed_ms, stride in (
+                (999, 1),
+                (1000, 5),
+                (1999, 5),
+                (2000, 10),
+                (2999, 10),
+                (3000, 20),
+                (4999, 20),
+                (5000, 50),
+            ):
+                previous = control.value()
+                control.stepBy(direction)
+                assert control.value() == previous + direction * stride
+            # Retain a real native auto-repeat: range updates must not stop its timer.
             previous = control.value()
-            control.stepBy(direction)
-            assert control.value() == previous + direction * stride
-        # Retain a real native auto-repeat: range updates must not stop its timer.
-        previous = control.value()
-        wait_until(lambda: control.value() != previous)
-        assert (control.value() - previous) * direction >= 50
-        increments = {(last - first) * direction for first, last in zip(values, values[1:])}
-        assert {1, 5, 10, 20, 50} <= increments
-        assert window.selection_band.isVisible()
-        assert window.first.value() <= window.last.value()
-    finally:
-        QTest.mouseRelease(control, Qt.MouseButton.LeftButton, pos=button)
-    released = control.value()
-    QTest.qWait(200)
-    assert control.value() == released
-    # The released hold must not accelerate keyboard steps even at the old time.
-    QTest.keyClick(control, Qt.Key.Key_Up if direction > 0 else Qt.Key.Key_Down)
-    assert control.value() == released + direction
-    released = control.value()
-    elapsed_ms = 0
-    QTest.mouseClick(control, Qt.MouseButton.LeftButton, pos=button)
-    assert control.value() == released + direction
+            wait_until(lambda: control.value() != previous)
+            assert (control.value() - previous) * direction >= 50
+            increments = {(last - first) * direction for first, last in zip(values, values[1:])}
+            assert {1, 5, 10, 20, 50} <= increments
+            assert window.selection_band.isVisible()
+            assert window.first.value() <= window.last.value()
+        finally:
+            QTest.mouseRelease(control, Qt.MouseButton.LeftButton, pos=button)
+        released = control.value()
+        QTest.qWait(200)
+        assert control.value() == released
+        # The released hold must not accelerate keyboard steps even at the old time.
+        QTest.keyClick(control, Qt.Key.Key_Up if direction > 0 else Qt.Key.Key_Down)
+        assert control.value() == released + direction
+        released = control.value()
+        elapsed_ms = 0
+        QTest.mouseClick(control, Qt.MouseButton.LeftButton, pos=button)
+        assert control.value() == released + direction
 
 
-@pytest.mark.parametrize("appearance", [0, 1], ids=["dark", "light"])
-def test_selection_highlight_tracks_fields_zoom_and_resize_without_changing_data(
+def test_selection_and_context_overlays_follow_the_viewport(
     explorer_window: ExplorerWindow,
-    appearance: int,
 ) -> None:
     window = explorer_window
     assert not window.selection_band.isVisible()
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
     wait_until(window.open_action.isEnabled)
-    window.set_appearance(appearance)
-    data = window.data
-    assert data is not None
-    for reference in (False, True):
-        window.reference_toggle.setChecked(reference)
-        points = tuple(window.series[0].points())
-        current = window.position.value()
-        window.last.setValue(data.count - 1)
-        window.first.setValue(4200)
-        window.last.setValue(5100)
-        for first, last, size in (
-            (4000, 5200, (1280, 820)),
-            (4400, 4800, (1600, 1100)),
-            (5200, 5500, (1280, 820)),
-        ):
-            window.axis_x.setRange(data.time_at(first), data.time_at(last))
-            resize_workspace(window, *size)
-            QApplication.processEvents()
-            plot = window.chart.plotArea()
-            band = window.selection_band
-            assert band.isVisible() == (first <= 5100 and last >= 4200)
-            if band.isVisible():
-                rect = band.rect()
-                assert rect.left() == pytest.approx(
-                    plot.left() + (max(first, 4200) - first) / (last - first) * plot.width(),
-                )
-                assert rect.right() == pytest.approx(
-                    plot.left() + (min(last, 5100) - first) / (last - first) * plot.width(),
-                )
-                assert rect.top() == pytest.approx(plot.top())
-                assert rect.bottom() == pytest.approx(plot.bottom())
-            assert tuple(window.series[0].points()) == points
-            assert window.position.value() == current
-            assert band.acceptedMouseButtons() == Qt.MouseButton.NoButton
-            color = window.chart_view.palette().highlight().color()
-            assert band.brush().color().rgb() == color.rgb()
-            assert 0 < band.brush().color().alpha() < 255
-        window.first.setValue(4500)
-        window.last.setValue(4500)
-        window.axis_x.setRange(data.time_at(4400), data.time_at(4600))
-        assert window.selection_band.isVisible()
-        assert window.selection_band.rect().width() >= 2
+    for appearance in (0, 1):
+        window.set_appearance(appearance)
+        data = window.data
+        assert data is not None
+        for reference in (False, True):
+            window.reference_toggle.setChecked(reference)
+            points = tuple(window.series[0].points())
+            current = window.position.value()
+            window.last.setValue(data.count - 1)
+            window.first.setValue(4200)
+            window.last.setValue(5100)
+            for first, last, size in (
+                (4000, 5200, (1280, 820)),
+                (4400, 4800, (1600, 1100)),
+                (5200, 5500, (1280, 820)),
+            ):
+                window.axis_x.setRange(data.time_at(first), data.time_at(last))
+                resize_workspace(window, *size)
+                QApplication.processEvents()
+                plot = window.chart.plotArea()
+                band = window.selection_band
+                assert band.isVisible() == (first <= 5100 and last >= 4200)
+                if band.isVisible():
+                    rect = band.rect()
+                    assert rect.left() == pytest.approx(
+                        plot.left() + (max(first, 4200) - first) / (last - first) * plot.width(),
+                    )
+                    assert rect.right() == pytest.approx(
+                        plot.left() + (min(last, 5100) - first) / (last - first) * plot.width(),
+                    )
+                    assert rect.top() == pytest.approx(plot.top())
+                    assert rect.bottom() == pytest.approx(plot.bottom())
+                assert tuple(window.series[0].points()) == points
+                assert window.position.value() == current
+                assert band.acceptedMouseButtons() == Qt.MouseButton.NoButton
+                color = window.chart_view.palette().highlight().color()
+                assert band.brush().color().rgb() == color.rgb()
+                assert 0 < band.brush().color().alpha() < 255
+            window.first.setValue(4500)
+            window.last.setValue(4500)
+            window.axis_x.setRange(data.time_at(4400), data.time_at(4600))
+            assert window.selection_band.isVisible()
+            assert window.selection_band.rect().width() >= 2
 
-
-def test_vertical_context_bar_preserves_curve_and_tracks_viewport(
-    explorer_window: ExplorerWindow,
-) -> None:
     window = explorer_window
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
     wait_until(window.open_action.isEnabled)
@@ -211,118 +205,117 @@ def test_vertical_context_bar_preserves_curve_and_tracks_viewport(
     assert tuple(p.y() for p in window.series[0].points()) == data.channels[0]
 
 
-@pytest.mark.parametrize(
-    ("filename", "expected_identity"),
-    [
+def test_open_chart_navigation_selection_and_integrity(
+    explorer_window: ExplorerWindow,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    window = explorer_window
+    for filename, expected_identity in [
         (name, identity)
         for name, identity in REAL_FIXTURES.items()
         if name.startswith(("Manta-", "IronGwazi-"))
-    ]
-    + [
+    ] + [
         (
             "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.zforces",
             (91361, "005ce708ec946bcf4dbe0163fc2fb23c629b65c1ed11706000c130855c4ba1e5"),
         ),
-    ],
-)
-def test_open_chart_navigation_selection_and_integrity(
-    explorer_window: ExplorerWindow,
-    monkeypatch: pytest.MonkeyPatch,
-    filename: str,
-    expected_identity: tuple[int, str],
-) -> None:
-    window = explorer_window
-    path = REAL_FIXTURE_DIRECTORY / filename
-    original = path.read_bytes()
-    mtime = path.stat().st_mtime_ns
+    ]:
+        window = explorer_window
+        window.visibility[1].setChecked(True)
+        window.notes_button.setChecked(False)
+        path = REAL_FIXTURE_DIRECTORY / filename
+        original = path.read_bytes()
+        mtime = path.stat().st_mtime_ns
 
-    def chosen(*args: object, **kwargs: object) -> tuple[str, str]:
-        assert args[3] == "Ride Forces (*.forces *.zforces);;All files (*)"
-        return str(path), "Ride Forces (*.forces *.zforces)"
+        def chosen(*args: object, **kwargs: object) -> tuple[str, str]:
+            assert args[3] == "Ride Forces (*.forces *.zforces);;All files (*)"
+            return str(path), "Ride Forces (*.forces *.zforces)"
 
-    monkeypatch.setattr(QFileDialog, "getOpenFileName", chosen)
-    window.open_action.trigger()
-    wait_until(window.open_action.isEnabled)
-    data = window.data
-    assert data is not None, window.statusBar().currentMessage()
-    assert window.windowTitle() == f"{data.title} · Ride Forces Analyzer"
-    assert not window.windowIcon().isNull()
-    assert window.ride_metadata.isVisible()
-    assert window.ride_metadata.text() == data.metadata_rows_text
-    assert f"Ride: {data.source.recording.metadata.name}" in window.ride_metadata.text()
-    park = data.source.recording.metadata.location
-    assert (
-        (f"Park: {park}" in window.ride_metadata.text())
-        if park
-        else "Park:" not in window.ride_metadata.text()
-    )
-    assert "Train:" not in window.ride_metadata.text()
-    assert "Row:" in window.ride_metadata.text()
-    assert window.reference_toggle.isEnabled() and window.reference_toggle.isChecked()
-    assert data.calibrated_enabled
-    assert data.count == len(data.source.recording.motion.acceleration)
-    for series, values in zip(window.series, data.plotted_channels, strict=True):
-        assert series.count() == data.count
-        assert window.axis_y.min() <= min(values) <= max(values) <= window.axis_y.max()
-        assert tuple(point.y() for point in series.points()) == tuple(values)
-        assert tuple(point.x() for point in series.points()) == tuple(
-            data.time_at(index) for index in range(data.count)
+        monkeypatch.setattr(QFileDialog, "getOpenFileName", chosen)
+        window.open_action.trigger()
+        wait_until(window.open_action.isEnabled)
+        data = window.data
+        assert data is not None, window.statusBar().currentMessage()
+        assert window.windowTitle() == f"{data.title} · Ride Forces Analyzer"
+        assert not window.windowIcon().isNull()
+        assert window.ride_metadata.isVisible()
+        assert window.ride_metadata.text() == data.metadata_rows_text
+        assert f"Ride: {data.source.recording.metadata.name}" in window.ride_metadata.text()
+        park = data.source.recording.metadata.location
+        assert (
+            (f"Park: {park}" in window.ride_metadata.text())
+            if park
+            else "Park:" not in window.ride_metadata.text()
         )
-    assert len(data.markers) == 4
-    marker_names = {
-        "startIndex": "Start marker",
-        "endIndex": "End marker",
-        "gravityIndex": "Gravity marker",
-        "inclineIndex": "Incline marker",
-    }
-    for name, index in data.markers:
-        points = window.source_marker_lines[name].points()
-        assert [point.x() for point in points] == [data.time_at(index)] * 2
-        assert [point.y() for point in points] == list(data.value_range)
-        label = window.source_marker_labels[name]
-        assert label.text() == f"{marker_names[name]} · {data.replay_text(index)}"
-        assert label.toolTip().startswith(marker_names[name] + ": sample ")
-        assert label.isVisible() == (
-            data.default_time_range[0] <= data.time_at(index) <= data.default_time_range[1]
-        )
-    window.position.setValue(12)
-    assert window.slider.value() == 12
-    assert window.readout.text() == data.sample_text(12, rich=True)
-    assert "0.240 s" in window.readout.text()
-    assert window.sample_cursor.points()[0].x() == data.time_at(12)
-    assert window.axis_x.titleText() == data.replay_time_label
-    assert "INFERRED_UNIFORM" in window.summary.text()
-    window.first.setValue(5)
-    window.last.setValue(50)
-    assert "46 samples" in window.selection_label.text()
-    window.zoom_button.click()
-    assert window.axis_x.min() == 5 / data.sample_rate
-    assert window.axis_x.max() == 50 / data.sample_rate
-    window.axis_x.setRange(10.2 / data.sample_rate, 20.8 / data.sample_rate)
-    window.visible_button.click()
-    assert window.first.value() == 10 and window.last.value() == 21
-    window.position.setValue(data.count - 1)
-    assert window.axis_x.min() <= data.duration <= window.axis_x.max()
-    window.first.setValue(21)
-    window.last.setValue(21)
-    window.zoom_button.click()
-    assert window.axis_x.max() > window.axis_x.min()
-    window.visibility[1].setChecked(False)
-    assert not window.series[1].isVisible()
-    window.reset_button.click()
-    assert (window.axis_x.min(), window.axis_x.max()) == data.default_time_range
-    assert ("G-force (g)" if data.calibrated_enabled else "unknown") in window.axis_y.titleText()
-    window.notes_button.click()
-    assert window.notes.isVisible()
-    if filename.startswith("IronGwazi"):
-        assert window.summary.text() == data.technical_summary
-        assert "absent" in window.summary.text()
-    assert path.read_bytes() == original and path.stat().st_mtime_ns == mtime
-    expected_size, expected_hash = expected_identity
-    assert len(original) == expected_size and sha256(original).hexdigest() == expected_hash
+        assert "Train:" not in window.ride_metadata.text()
+        assert "Row:" in window.ride_metadata.text()
+        assert window.reference_toggle.isEnabled() and window.reference_toggle.isChecked()
+        assert data.calibrated_enabled
+        assert data.count == len(data.source.recording.motion.acceleration)
+        for series, values in zip(window.series, data.plotted_channels, strict=True):
+            assert series.count() == data.count
+            assert window.axis_y.min() <= min(values) <= max(values) <= window.axis_y.max()
+            assert tuple(point.y() for point in series.points()) == tuple(values)
+            assert tuple(point.x() for point in series.points()) == tuple(
+                data.time_at(index) for index in range(data.count)
+            )
+        assert len(data.markers) == 4
+        marker_names = {
+            "startIndex": "Start marker",
+            "endIndex": "End marker",
+            "gravityIndex": "Gravity marker",
+            "inclineIndex": "Incline marker",
+        }
+        for name, index in data.markers:
+            points = window.source_marker_lines[name].points()
+            assert [point.x() for point in points] == [data.time_at(index)] * 2
+            assert [point.y() for point in points] == list(data.value_range)
+            label = window.source_marker_labels[name]
+            assert label.text() == f"{marker_names[name]} · {data.replay_text(index)}"
+            assert label.toolTip().startswith(marker_names[name] + ": sample ")
+            assert label.isVisible() == (
+                data.default_time_range[0] <= data.time_at(index) <= data.default_time_range[1]
+            )
+        window.position.setValue(12)
+        assert window.slider.value() == 12
+        assert window.readout.text() == data.sample_text(12, rich=True)
+        assert "0.240 s" in window.readout.text()
+        assert window.sample_cursor.points()[0].x() == data.time_at(12)
+        assert window.axis_x.titleText() == data.replay_time_label
+        assert "INFERRED_UNIFORM" in window.summary.text()
+        window.first.setValue(5)
+        window.last.setValue(50)
+        assert "46 samples" in window.selection_label.text()
+        window.zoom_button.click()
+        assert window.axis_x.min() == 5 / data.sample_rate
+        assert window.axis_x.max() == 50 / data.sample_rate
+        window.axis_x.setRange(10.2 / data.sample_rate, 20.8 / data.sample_rate)
+        window.visible_button.click()
+        assert window.first.value() == 10 and window.last.value() == 21
+        window.position.setValue(data.count - 1)
+        assert window.axis_x.min() <= data.duration <= window.axis_x.max()
+        window.first.setValue(21)
+        window.last.setValue(21)
+        window.zoom_button.click()
+        assert window.axis_x.max() > window.axis_x.min()
+        window.visibility[1].setChecked(False)
+        assert not window.series[1].isVisible()
+        window.reset_button.click()
+        assert (window.axis_x.min(), window.axis_x.max()) == data.default_time_range
+        assert (
+            "G-force (g)" if data.calibrated_enabled else "unknown"
+        ) in window.axis_y.titleText()
+        window.notes_button.click()
+        assert window.notes.isVisible()
+        if filename.startswith("IronGwazi"):
+            assert window.summary.text() == data.technical_summary
+            assert "absent" in window.summary.text()
+        assert path.read_bytes() == original and path.stat().st_mtime_ns == mtime
+        expected_size, expected_hash = expected_identity
+        assert len(original) == expected_size and sha256(original).hexdigest() == expected_hash
 
 
-def test_left_click_selects_nearest_sample_in_current_chart_view(
+def test_chart_click_and_wheel_navigation_preserve_view_and_selection(
     explorer_window: ExplorerWindow,
 ) -> None:
     window = explorer_window
@@ -373,8 +366,49 @@ def test_left_click_selects_nearest_sample_in_current_chart_view(
             assert window.position.value() != previous
             assert (window.axis_x.min(), window.axis_x.max()) == time_range
 
+    window = explorer_window
+    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
+    wait_until(window.open_action.isEnabled)
+    data = window.data
+    assert data is not None
 
-def test_zoom_out_stops_at_recording_bounds(
+    def wheel(delta: int, fraction: float = 0.25) -> None:
+        plot = window.chart.plotArea()
+        point = plot.center()
+        point.setX(plot.left() + fraction * plot.width())
+        position = window.chart_view.mapFromScene(window.chart.mapToScene(point))
+        event = QWheelEvent(
+            position,
+            window.chart_view.viewport().mapToGlobal(position),
+            QPoint(),
+            QPoint(0, delta),
+            Qt.MouseButton.NoButton,
+            Qt.KeyboardModifier.NoModifier,
+            Qt.ScrollPhase.NoScrollPhase,
+            False,
+        )
+        QApplication.sendEvent(window.chart_view.viewport(), event)
+
+    window.axis_x.setRange(0, data.duration)
+    wheel(120)
+    assert window.axis_x.max() - window.axis_x.min() == pytest.approx(data.duration / 1.25)
+    assert window.axis_x.min() == pytest.approx(data.duration * 0.05, abs=data.duration * 0.002)
+    assert (window.axis_y.min(), window.axis_y.max()) == data.value_range
+    wheel(-120)
+    assert window.axis_x.min() == pytest.approx(0, abs=1e-10)
+    assert window.axis_x.max() == pytest.approx(data.duration)
+    for _ in range(5):
+        wheel(-120)
+        assert window.axis_x.min() == 0 and window.axis_x.max() == data.duration
+    for _ in range(5):
+        wheel(2400, 0.5)
+    assert window.axis_x.max() - window.axis_x.min() == pytest.approx(1 / data.sample_rate)
+    assert (window.axis_y.min(), window.axis_y.max()) == data.value_range
+    wheel(0)
+    assert window.axis_x.max() - window.axis_x.min() == pytest.approx(1 / data.sample_rate)
+
+
+def test_zoom_and_reference_changes_preserve_recording_bounds_and_data(
     explorer_window: ExplorerWindow,
 ) -> None:
     window = explorer_window
@@ -426,6 +460,45 @@ def test_zoom_out_stops_at_recording_bounds(
     assert window.axis_x.min() <= data.duration == window.axis_x.max()
     window.reset_button.click()
     assert (window.axis_x.min(), window.axis_x.max()) == data.default_time_range
+
+    window = explorer_window
+    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
+    wait_until(window.open_action.isEnabled)
+    data = window.data
+    assert data is not None and data.calibration_available and data.calibrated_enabled
+    assert [line.name() for line in window.series] == [
+        "Vertical",
+        "Lateral (+ right / − left)",
+        "Longitudinal (+ acceleration / − braking)",
+    ]
+    assert all(name in window.readout.text() for name in data.channel_names)
+    assert window.readout.wordWrap()
+    assert window.visibility[1].text() == "Lateral"
+    assert window.visibility[1].toolTip() == "Lateral (+ right / − left)"
+    assert window.visibility[2].text() == "Longitudinal"
+    assert window.visibility[2].toolTip() == "Longitudinal (+ acceleration / − braking)"
+    assert window.reference_toggle.text() == "Calibrated forces"
+    assert window.reference_toggle.toolTip() == "App reference available for Manta"
+    assert "Calibrated forces" in window.disclaimer.text()
+    assert "11 samples" in window.disclaimer.text()
+    before = (window.axis_x.min(), window.axis_x.max(), window.first.value(), window.last.value())
+    window.reference_toggle.setChecked(False)
+    assert [line.name() for line in window.series] == ["x", "y", "z"]
+    document = QTextDocument()
+    document.setHtml(window.readout.text())
+    assert "braking" not in document.toPlainText() and "right" not in document.toPlainText()
+    assert tuple(point.y() for point in window.series[0].points()) == data.channels[0]
+    assert (
+        window.axis_x.min(),
+        window.axis_x.max(),
+        window.first.value(),
+        window.last.value(),
+    ) == before
+    window.reference_toggle.setChecked(True)
+    assert tuple(point.y() for point in window.series[0].points()) == tuple(
+        data.plotted_channels[0],
+    )
+    assert window.data is not None and window.data.channels == data.channels
 
 
 def test_failed_and_cancelled_opens_preserve_previous_recording(
@@ -535,51 +608,6 @@ print('Closed cleanly with background import drained')
     assert b"Closed cleanly with background import drained" in result.stdout
 
 
-def test_mouse_wheel_zooms_time_at_pointer_with_fixed_value_axis(
-    explorer_window: ExplorerWindow,
-) -> None:
-    window = explorer_window
-    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
-    wait_until(window.open_action.isEnabled)
-    data = window.data
-    assert data is not None
-
-    def wheel(delta: int, fraction: float = 0.25) -> None:
-        plot = window.chart.plotArea()
-        point = plot.center()
-        point.setX(plot.left() + fraction * plot.width())
-        position = window.chart_view.mapFromScene(window.chart.mapToScene(point))
-        event = QWheelEvent(
-            position,
-            window.chart_view.viewport().mapToGlobal(position),
-            QPoint(),
-            QPoint(0, delta),
-            Qt.MouseButton.NoButton,
-            Qt.KeyboardModifier.NoModifier,
-            Qt.ScrollPhase.NoScrollPhase,
-            False,
-        )
-        QApplication.sendEvent(window.chart_view.viewport(), event)
-
-    window.axis_x.setRange(0, data.duration)
-    wheel(120)
-    assert window.axis_x.max() - window.axis_x.min() == pytest.approx(data.duration / 1.25)
-    assert window.axis_x.min() == pytest.approx(data.duration * 0.05, abs=data.duration * 0.002)
-    assert (window.axis_y.min(), window.axis_y.max()) == data.value_range
-    wheel(-120)
-    assert window.axis_x.min() == pytest.approx(0, abs=1e-10)
-    assert window.axis_x.max() == pytest.approx(data.duration)
-    for _ in range(5):
-        wheel(-120)
-        assert window.axis_x.min() == 0 and window.axis_x.max() == data.duration
-    for _ in range(5):
-        wheel(2400, 0.5)
-    assert window.axis_x.max() - window.axis_x.min() == pytest.approx(1 / data.sample_rate)
-    assert (window.axis_y.min(), window.axis_y.max()) == data.value_range
-    wheel(0)
-    assert window.axis_x.max() - window.axis_x.min() == pytest.approx(1 / data.sample_rate)
-
-
 def test_optional_markers_are_absent_and_labels_follow_time_view(
     explorer_window: ExplorerWindow,
     synthetic_recording: object,
@@ -610,128 +638,77 @@ def test_optional_markers_are_absent_and_labels_follow_time_view(
     assert window.source_marker_labels["endIndex"].isVisible()
 
 
-@pytest.mark.parametrize("start,end", [(1, 2), (None, 2), (1, None), (None, None)])
 def test_load_and_reset_use_independent_marker_defaults(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
-    start: int | None,
-    end: int | None,
 ) -> None:
-    import json
+    for start, end in ((1, 2), (None, 2), (1, None), (None, None)):
+        import json
 
-    from ride_forces_analyzer.explorer import present_recording
-    from ride_forces_analyzer.importers import ImportSuccess, import_forces_bytes
+        from ride_forces_analyzer.explorer import present_recording
+        from ride_forces_analyzer.importers import ImportSuccess, import_forces_bytes
 
-    root: dict[str, object] = {
-        "schemaVersion": "2.2.0",
-        "device": "Apple Watch",
-        "accelerationSequence": [{"x": 0, "y": 0, "z": 1}] * 4,
-    }
-    if start is not None:
-        root["startIndex"] = start
-    if end is not None:
-        root["endIndex"] = end
-    imported = import_forces_bytes(json.dumps(root).encode())
-    assert isinstance(imported, ImportSuccess)
-    data = present_recording(imported)
+        root: dict[str, object] = {
+            "schemaVersion": "2.2.0",
+            "device": "Apple Watch",
+            "accelerationSequence": [{"x": 0, "y": 0, "z": 1}] * 4,
+        }
+        if start is not None:
+            root["startIndex"] = start
+        if end is not None:
+            root["endIndex"] = end
+        imported = import_forces_bytes(json.dumps(root).encode())
+        assert isinstance(imported, ImportSuccess)
+        data = present_recording(imported)
 
-    def load_synthetic(path: Path) -> ExplorerData:
-        return data
+        def load_synthetic(path: Path) -> ExplorerData:
+            return data
 
-    monkeypatch.setattr(loading, "load_recording", load_synthetic)
-    window = explorer_window
-    window.open_path(Path("synthetic.forces"))
-    wait_until(window.open_action.isEnabled)
-    expected = ((start if start is not None else 0) / 50, (end if end is not None else 3) / 50)
-    assert (window.axis_x.min(), window.axis_x.max()) == expected
-    assert window.position.value() == (start if start is not None else 0)
-    window.chart.zoomOut()
-    window.axis_x.setRange(0, data.duration)
-    window.reset_button.click()
-    assert (window.axis_x.min(), window.axis_x.max()) == expected
-    assert window.source_marker_lines["startIndex"].count() == (0 if start is None else 2)
-    assert window.source_marker_lines["endIndex"].count() == (0 if end is None else 2)
+        monkeypatch.setattr(loading, "load_recording", load_synthetic)
+        window = explorer_window
+        window.open_path(Path("synthetic.forces"))
+        wait_until(window.open_action.isEnabled)
+        expected = ((start if start is not None else 0) / 50, (end if end is not None else 3) / 50)
+        assert (window.axis_x.min(), window.axis_x.max()) == expected
+        assert window.position.value() == (start if start is not None else 0)
+        window.chart.zoomOut()
+        window.axis_x.setRange(0, data.duration)
+        window.reset_button.click()
+        assert (window.axis_x.min(), window.axis_x.max()) == expected
+        assert window.source_marker_lines["startIndex"].count() == (0 if start is None else 2)
+        assert window.source_marker_lines["endIndex"].count() == (0 if end is None else 2)
 
 
-def test_app_reference_toggle_for_manta_preserves_raw_values_selection_and_time(
+def test_technical_details_and_replay_labels_follow_language_and_sample(
     explorer_window: ExplorerWindow,
-) -> None:
-    window = explorer_window
-    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
-    wait_until(window.open_action.isEnabled)
-    data = window.data
-    assert data is not None and data.calibration_available and data.calibrated_enabled
-    assert [line.name() for line in window.series] == [
-        "Vertical",
-        "Lateral (+ right / − left)",
-        "Longitudinal (+ acceleration / − braking)",
-    ]
-    assert all(name in window.readout.text() for name in data.channel_names)
-    assert window.readout.wordWrap()
-    assert window.visibility[1].text() == "Lateral"
-    assert window.visibility[1].toolTip() == "Lateral (+ right / − left)"
-    assert window.visibility[2].text() == "Longitudinal"
-    assert window.visibility[2].toolTip() == "Longitudinal (+ acceleration / − braking)"
-    assert window.reference_toggle.text() == "Calibrated forces"
-    assert window.reference_toggle.toolTip() == "App reference available for Manta"
-    assert "Calibrated forces" in window.disclaimer.text()
-    assert "11 samples" in window.disclaimer.text()
-    before = (window.axis_x.min(), window.axis_x.max(), window.first.value(), window.last.value())
-    window.reference_toggle.setChecked(False)
-    assert [line.name() for line in window.series] == ["x", "y", "z"]
-    document = QTextDocument()
-    document.setHtml(window.readout.text())
-    assert "braking" not in document.toPlainText() and "right" not in document.toPlainText()
-    assert tuple(point.y() for point in window.series[0].points()) == data.channels[0]
-    assert (
-        window.axis_x.min(),
-        window.axis_x.max(),
-        window.first.value(),
-        window.last.value(),
-    ) == before
-    window.reference_toggle.setChecked(True)
-    assert tuple(point.y() for point in window.series[0].points()) == tuple(
-        data.plotted_channels[0],
-    )
-    assert window.data is not None and window.data.channels == data.channels
-
-
-@pytest.mark.parametrize(
-    ("language", "headings"),
-    [
-        (0, ("Source", "Processing", "Current sample")),
-        (1, ("Quelle", "Verarbeitung", "Aktueller Messpunkt")),
-    ],
-)
-def test_technical_details_sections_translate_and_update_sample(
-    explorer_window: ExplorerWindow,
-    language: int,
-    headings: tuple[str, str, str],
 ) -> None:
     window = explorer_window
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
     wait_until(window.open_action.isEnabled)
-    window.set_ui_language(language)
-    window.details_button.setChecked(True)
-    captions = [label.text() for label in window.details_body.findChildren(QLabel)]
-    assert all(heading in captions for heading in headings)
-    for index in (1571, 4960):
-        window.position.setValue(index)
-        assert window.data is not None
-        assert window.readout.text() == window.data.sample_text(index, rich=True)
-        assert window.summary.text() == window.data.technical_summary
-        assert window.readout.textFormat() == Qt.TextFormat.RichText
-        assert window.summary.textFormat() == Qt.TextFormat.RichText
-        document = QTextDocument()
-        document.setHtml(window.readout.text())
-        seconds = f"{window.data.time_at(index):.3f} s"
-        assert (seconds.replace(".", ",") if language == 1 else seconds) in document.toPlainText()
-    assert "\n" in window.disclaimer.text()
+    for language, headings in (
+        (0, ("Source", "Processing", "Current sample")),
+        (1, ("Quelle", "Verarbeitung", "Aktueller Messpunkt")),
+    ):
+        window.set_ui_language(language)
+        window.details_button.setChecked(True)
+        captions = [label.text() for label in window.details_body.findChildren(QLabel)]
+        assert all(heading in captions for heading in headings)
+        for index in (1571, 4960):
+            window.position.setValue(index)
+            assert window.data is not None
+            assert window.readout.text() == window.data.sample_text(index, rich=True)
+            assert window.summary.text() == window.data.technical_summary
+            assert window.readout.textFormat() == Qt.TextFormat.RichText
+            assert window.summary.textFormat() == Qt.TextFormat.RichText
+            document = QTextDocument()
+            document.setHtml(window.readout.text())
+            seconds = f"{window.data.time_at(index):.3f} s"
+            assert (
+                seconds.replace(".", ",") if language == 1 else seconds
+            ) in document.toPlainText()
+        assert "\n" in window.disclaimer.text()
 
-
-def test_replay_notation_on_chart_cursor_selection_and_markers(
-    explorer_window: ExplorerWindow,
-) -> None:
+    window.set_ui_language(0)
     from PySide6.QtCharts import QCategoryAxis
 
     window = explorer_window
@@ -980,9 +957,74 @@ def test_smoothing_slider_preserves_source_time_and_selection(
     assert window.smoothing_slider.value() == 5 and window.data.smoothing_window == 11
 
 
-def test_chart_shrinks_to_available_height_without_workspace_scrolling(
+def test_workspace_layout_and_cards_follow_size_language_and_theme(
     explorer_window: ExplorerWindow,
 ) -> None:
+    for initial_width in (720, 1280):
+        resize_workspace(explorer_window, 720, 480)
+        explorer_window.inspector_button.setChecked(False)
+        explorer_window.details_button.setChecked(False)
+        window = explorer_window
+        resize_workspace(window, initial_width, 480)
+        QTest.qWait(50)
+        wide = initial_width >= 1080
+        assert window.inspector.isVisible() == wide
+        assert window.plot_panel.isVisible()
+        assert window.workspace.orientation() == (
+            Qt.Orientation.Horizontal if wide else Qt.Orientation.Vertical
+        )
+        if not wide:
+            window.inspector_button.click()
+            assert window.inspector.isVisible()
+            assert not window.plot_panel.isVisible()
+        resize_workspace(window, 1280, 820)
+        QTest.qWait(50)
+        assert window.inspector.isVisible()
+        assert window.workspace.orientation() == Qt.Orientation.Horizontal
+        assert not window.details_body.isVisible()
+        window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
+        wait_until(window.open_action.isEnabled)
+        assert window.data is not None
+        assert window.header_summary.text() == window.data.overview_text
+        for index in (2013, 4782):
+            window.position.setValue(index)
+            assert window.time_readout.text() == window.data.sample_clock_text(index)
+            assert [label.text() for label in window.value_labels] == [
+                card[1] for card in window.data.sample_cards(index)
+            ]
+            context = window.data.vertical_context_label(index)
+            assert context is not None
+            assert window.value_hints[0].text() == window.data.sample_cards(index)[0][2]
+            assert window.theme.vertical_context_colors[context] in (
+                window.value_hints[0].styleSheet()
+            )
+        window.reference_toggle.setChecked(False)
+        assert [label.text() for label in window.value_names] == ["x", "y", "z"]
+        assert all("unknown" in label.text() for label in window.value_hints)
+        window.reference_toggle.setChecked(True)
+        resize_workspace(window, 720, 480)
+        QTest.qWait(50)
+        assert (window.width(), window.height()) == (720, 480)
+        assert window.workspace.orientation() == Qt.Orientation.Vertical
+        assert not window.inspector.isVisible()
+        window.inspector_button.click()
+        assert window.inspector.isVisible()
+        assert not window.plot_panel.isVisible()
+        assert (window.width(), window.height()) == (720, 480)
+        window.notes_button.click()
+        assert window.details_body.isVisible() and window.notes.isVisible()
+        QTest.qWait(20)
+        note_position = window.notes.mapTo(window.inspector.viewport(), QPoint(0, 0))
+        assert note_position.y() < window.inspector.viewport().height()
+        assert note_position.y() + window.notes.height() > 0
+        window.details_button.click()
+        assert not window.notes_button.isChecked() and not window.notes.isVisible()
+        resize_workspace(window, 1280, 820)
+        QTest.qWait(50)
+        assert window.workspace.orientation() == Qt.Orientation.Horizontal
+        assert window.inspector.isVisible()
+        assert window.chart.plotArea().width() > 0
+
     window = explorer_window
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
     wait_until(window.open_action.isEnabled)
@@ -1026,70 +1068,17 @@ def test_chart_shrinks_to_available_height_without_workspace_scrolling(
         assert heights[0] > heights[1] > heights[2]
         assert heights[3] == heights[0]
 
-
-@pytest.mark.parametrize("initial_width", [720, 1280], ids=["compact", "wide"])
-def test_focus_workspace_layout_and_current_value_cards(
-    explorer_window: ExplorerWindow,
-    initial_width: int,
-) -> None:
+    window.set_appearance(0)
+    """Disabled-handle styling must never paint a light rectangle behind the track."""
     window = explorer_window
-    resize_workspace(window, initial_width, 480)
-    QTest.qWait(50)
-    wide = initial_width >= 1080
-    assert window.inspector.isVisible() == wide
-    assert window.plot_panel.isVisible()
-    assert window.workspace.orientation() == (
-        Qt.Orientation.Horizontal if wide else Qt.Orientation.Vertical
-    )
-    if not wide:
-        window.inspector_button.click()
-        assert window.inspector.isVisible()
-        assert not window.plot_panel.isVisible()
-    resize_workspace(window, 1280, 820)
-    QTest.qWait(50)
-    assert window.inspector.isVisible()
-    assert window.workspace.orientation() == Qt.Orientation.Horizontal
-    assert not window.details_body.isVisible()
-    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
-    wait_until(window.open_action.isEnabled)
-    assert window.data is not None
-    assert window.header_summary.text() == window.data.overview_text
-    for index in (2013, 4782):
-        window.position.setValue(index)
-        assert window.time_readout.text() == window.data.sample_clock_text(index)
-        assert [label.text() for label in window.value_labels] == [
-            card[1] for card in window.data.sample_cards(index)
-        ]
-        context = window.data.vertical_context_label(index)
-        assert context is not None
-        assert window.value_hints[0].text() == window.data.sample_cards(index)[0][2]
-        assert window.theme.vertical_context_colors[context] in (window.value_hints[0].styleSheet())
-    window.reference_toggle.setChecked(False)
-    assert [label.text() for label in window.value_names] == ["x", "y", "z"]
-    assert all("unknown" in label.text() for label in window.value_hints)
-    window.reference_toggle.setChecked(True)
-    resize_workspace(window, 720, 480)
-    QTest.qWait(50)
-    assert (window.width(), window.height()) == (720, 480)
-    assert window.workspace.orientation() == Qt.Orientation.Vertical
-    assert not window.inspector.isVisible()
-    window.inspector_button.click()
-    assert window.inspector.isVisible()
-    assert not window.plot_panel.isVisible()
-    assert (window.width(), window.height()) == (720, 480)
-    window.notes_button.click()
-    assert window.details_body.isVisible() and window.notes.isVisible()
-    QTest.qWait(20)
-    note_position = window.notes.mapTo(window.inspector.viewport(), QPoint(0, 0))
-    assert note_position.y() < window.inspector.viewport().height()
-    assert note_position.y() + window.notes.height() > 0
-    window.details_button.click()
-    assert not window.notes_button.isChecked() and not window.notes.isVisible()
-    resize_workspace(window, 1280, 820)
-    QTest.qWait(50)
-    assert window.workspace.orientation() == Qt.Orientation.Horizontal
-    assert window.inspector.isVisible()
-    assert window.chart.plotArea().width() > 0
+    for slider in (window.slider, window.smoothing_slider):
+        for enabled in (False, True):
+            slider.setEnabled(enabled)
+            QApplication.processEvents()
+            pixels = slider.grab().toImage()
+            # Away from the handle and above the narrow track: only panel background.
+            color = pixels.pixelColor(pixels.width() // 2, 0)
+            assert max(color.red(), color.green(), color.blue()) < 70
 
 
 def test_focus_header_preserves_literal_device_metadata(
@@ -1116,19 +1105,6 @@ def test_focus_header_preserves_literal_device_metadata(
     assert explorer_window.header_summary.text() == view.overview_text
     assert "<b>Watch</b>" in explorer_window.header_summary.text()
     assert explorer_window.header_summary.textFormat() == Qt.TextFormat.PlainText
-
-
-def test_slider_background_stays_dark(explorer_window: ExplorerWindow) -> None:
-    """Disabled-handle styling must never paint a light rectangle behind the track."""
-    window = explorer_window
-    for slider in (window.slider, window.smoothing_slider):
-        for enabled in (False, True):
-            slider.setEnabled(enabled)
-            QApplication.processEvents()
-            pixels = slider.grab().toImage()
-            # Away from the handle and above the narrow track: only panel background.
-            color = pixels.pixelColor(pixels.width() // 2, 0)
-            assert max(color.red(), color.green(), color.blue()) < 70
 
 
 def test_visible_extrema_follow_zoom_and_ignore_selection_and_cursor(

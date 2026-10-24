@@ -1,13 +1,19 @@
 """Planning estimates follow export length and codec without running an encoder."""
 
 from dataclasses import replace
+from typing import Literal
+
+import pytest
 
 from ride_forces_analyzer.rendering.model import ExportSettings
 from ride_forces_analyzer.rendering.size_estimate import estimate_size_bytes
 
 
-def test_estimate_scales_with_duration_and_frame_rate_and_distinguishes_codec() -> None:
-    settings = ExportSettings(layout="orbit")
+@pytest.mark.parametrize("layout", ["orbit", "hud"])
+def test_estimate_scales_with_duration_and_frame_rate_and_distinguishes_codec(
+    layout: Literal["orbit", "hud"],
+) -> None:
+    settings = ExportSettings(layout=layout)
     low, high = estimate_size_bytes(settings, 500, 50)
     assert 0 < low < high
     longer = estimate_size_bytes(settings, 1000, 50)

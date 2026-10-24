@@ -23,6 +23,7 @@ from types import TracebackType
 from typing import TextIO
 
 from ride_forces_analyzer import __version__
+from ride_forces_analyzer.cpu_resources import detect_cpu_resources
 from ride_forces_analyzer.runtime_paths import data_directory
 
 _LOGGER = logging.getLogger("ride_forces_analyzer.errors")
@@ -64,11 +65,16 @@ def _running(pid: int) -> bool:
         kernel = ctypes.WinDLL("kernel32", use_last_error=True)
         kernel.OpenProcess.restype = ctypes.c_void_p
         kernel.OpenProcess.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32]
+        kernel.WaitForSingleObject.restype = ctypes.c_uint32
+        kernel.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
         kernel.CloseHandle.argtypes = [ctypes.c_void_p]
-        handle = kernel.OpenProcess(0x1000, False, pid)
+        handle = kernel.OpenProcess(0x100000, False, pid)  # SYNCHRONIZE access.
         if handle:
-            kernel.CloseHandle(handle)
-            return True
+            try:
+                # A process object may remain accessible after the process has exited.
+                return bool(kernel.WaitForSingleObject(handle, 0))
+            finally:
+                kernel.CloseHandle(handle)
         return ctypes.get_last_error() != 87  # Invalid PID; other errors may mean access denied.
     try:
         os.kill(pid, 0)
@@ -107,7 +113,11 @@ def initialize_error_reporting() -> Path | None:
             f"Run started (UTC): {datetime.now(UTC).isoformat()}\n"
             f"Operating system: {platform.system()} {platform.release()}\n"
             f"Architecture: {platform.machine()}\nPython: {platform.python_version()}\n"
-            "Local support report. Review personal data before sharing.\n\n",
+            + "".join(
+                f"{key}: {value}\n"
+                for key, value in detect_cpu_resources().diagnostic_fields().items()
+            )
+            + "Local support report. Review personal data before sharing.\n\n",
         )
         stream.flush()
     except OSError:

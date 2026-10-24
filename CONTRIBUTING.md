@@ -48,8 +48,8 @@ Node, then run PowerShell from the repository root:
   attribution before submission; existing permission covers only the five listed originals.
 - Never publish private recordings in issues/PRs to request approval.
   Prefer minimal synthetic reproductions when real data is unnecessary.
-- Contributed code uses GPL-3.0-or-later; licensed documentation images and recording
-  adaptations retain applicable CC BY-SA 4.0 duties.
+- Contributed code uses GPL-3.0-or-later; recording adaptations retain applicable
+  CC BY-SA 4.0 duties. Documentation images follow the [central image guide](docs/images/README.md).
 - Contribute only material you have rights to provide; identify third-party
   code/assets and retain notices. See [project licenses](README.md#license)
   and [third-party boundaries](THIRD_PARTY_NOTICES.md).

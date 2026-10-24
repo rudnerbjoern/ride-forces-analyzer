@@ -293,7 +293,7 @@ class ExplorerWindow(QMainWindow):
         self.gps_button.setEnabled(False)
         self.gps_button.clicked.connect(self.show_gps)
         toolbar.addWidget(self.gps_button)
-        self.export_button = bind(QPushButton(), tr("Export 4K…"))
+        self.export_button = bind(QPushButton(), tr("Export video…"))
         self.export_button.setEnabled(False)
         self.export_button.clicked.connect(self.show_export)
         toolbar.addWidget(self.export_button)

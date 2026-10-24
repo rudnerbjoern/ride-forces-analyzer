@@ -63,8 +63,7 @@ def build_previews(
         count - 1 if outside else last,
     )
     previews: list[ProfilePreview] = []
-    width, height = settings.dimensions
-    size = (width // 4, height // 4)
+    size = (540, 960) if settings.aspect == "portrait" else (960, 540)
     selected_plugin = registry.PLUGINS[settings.layout]
     selected_positions = (
         selected_plugin.landscape if settings.aspect == "landscape" else selected_plugin.portrait

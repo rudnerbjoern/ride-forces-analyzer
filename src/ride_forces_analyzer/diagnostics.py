@@ -10,6 +10,7 @@ import sys
 from PySide6.QtCore import qVersion
 
 from ride_forces_analyzer import __version__
+from ride_forces_analyzer.cpu_resources import detect_cpu_resources
 from ride_forces_analyzer.rendering.encoding import encoder_environment, find_ffmpeg
 
 
@@ -27,6 +28,7 @@ def collect_diagnostics() -> str:
         "Qt": qVersion(),
         "Distribution": "Packaged application" if getattr(sys, "frozen", False) else "Source",
     }
+    fields.update(detect_cpu_resources().diagnostic_fields())
     try:
         executable = find_ffmpeg()
     except ValueError:

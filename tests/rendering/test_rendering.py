@@ -30,6 +30,7 @@ from ride_forces_analyzer.rendering.layouts.common import ACCELERATION_COLOR, BR
 from ride_forces_analyzer.rendering.layouts.charts import ChartRenderer
 from ride_forces_analyzer.rendering.layouts.column import BACKGROUND_COLOR, ColumnRenderer
 from ride_forces_analyzer.rendering.layouts.orbit import OrbitRenderer
+from ride_forces_analyzer.rendering.layouts.hud import HudRenderer
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
 
 
@@ -165,18 +166,19 @@ def test_cancel_and_existing_destination_preserve_files(
         ("ribbon", "transparent", "landscape", True, "en"),
         ("corners", "transparent", "portrait", False, "de"),
         ("orbit", "transparent", "portrait", True, "en"),
-        ("capsule", "opaque", "landscape", False, "en"),
+        ("hud", "opaque", "landscape", False, "en"),
         ("column", "opaque", "landscape", True, "de"),
         ("orbit", "opaque", "portrait", False, "en"),
         ("ribbon", "opaque", "portrait", True, "en"),
+        ("hud", "transparent", "portrait", False, "fr"),
     ],
 )
-def test_native_encoder_produces_4k_video_with_verified_alpha(
+def test_native_encoder_produces_layout_resolution_with_verified_alpha(
     manta: ExplorerData,
     export_directory: Path,
     mode: str,
     prefer_gpu: bool,
-    layout: Literal["column", "ribbon", "corners", "capsule", "orbit"],
+    layout: Literal["column", "ribbon", "corners", "hud", "orbit"],
     aspect: Literal["landscape", "portrait"],
     language: Literal["en", "de"],
 ) -> None:
@@ -201,7 +203,13 @@ def test_native_encoder_produces_4k_video_with_verified_alpha(
         "ride_forces_analyzer.rendering.encoding.subprocess.Popen",
         wraps=subprocess.Popen,
     ) as processes:
-        export_video(timeline, output, ffmpeg=ffmpeg, progress=lambda a, b: progress.append((a, b)))
+        export_video(
+            timeline,
+            output,
+            ffmpeg=ffmpeg,
+            progress=lambda a, b: progress.append((a, b)),
+            render_jobs=2 if layout == "hud" else 1,
+        )
     # One encoder process, plus the optional GPU capability probe.
     assert processes.call_count == 1 + int(prefer_gpu)
     assert progress[-1] == (timeline.frame_count, timeline.frame_count)
@@ -250,8 +258,14 @@ def test_native_encoder_produces_4k_video_with_verified_alpha(
     right = image.getpixel((x + 18, y + height // 2))
     assert isinstance(left, tuple) and isinstance(right, tuple)
     assert left[3] == (0 if mode == "transparent" else 255)
-    expected_alpha = 255 if mode == "opaque" or layout == "column" else 210
+    expected_alpha = (
+        255 if mode == "opaque" or layout == "column" else 0 if layout == "hud" else 210
+    )
     assert abs(right[3] - expected_alpha) <= 2
+    if layout == "hud" and mode == "transparent":
+        alpha = image.getchannel("A").histogram()
+        assert alpha[0] > 0 and alpha[255] > 0
+        assert sum(alpha[1:255]) > 0  # Glow/shadow opacity survives real ProRes encoding.
 
 
 @pytest.mark.parametrize("mode", ["transparent", "opaque"])
@@ -293,14 +307,15 @@ def test_cancel_during_real_encoding_leaves_no_output(
             ffmpeg=ffmpeg,
             cancelled=cancelled,
             progress=cancel_after_frame,
+            render_jobs=2,
         )
     assert not output.exists()
 
 
-@pytest.mark.parametrize("layout", ["ribbon", "corners", "capsule"])
+@pytest.mark.parametrize("layout", ["ribbon", "corners"])
 def test_compact_profiles_preserve_alpha_color_and_force_scales(
     manta: ExplorerData,
-    layout: Literal["ribbon", "corners", "capsule"],
+    layout: Literal["ribbon", "corners"],
 ) -> None:
     assert manta.analysis is not None
     timeline = prepare_export(
@@ -353,7 +368,10 @@ def test_vertical_force_direction_and_manual_override(
     for timeline in (default, reversed_direction):
         vertical = timeline.channels[0]
         renderer = OverlayRenderer(timeline)
-        if layout == "orbit":
+        if layout == "hud":
+            assert isinstance(renderer.renderer, HudRenderer)
+            ys = [renderer.renderer.vertical_y(value) for value in (-1, 0, 1)]
+        elif layout == "orbit":
             assert isinstance(renderer.renderer, OrbitRenderer)
             ys = [sin(radians(renderer.renderer.orbit_angle(value))) for value in (-1, 0, 1)]
             assert renderer.renderer.orbit_angle(0) == 180
@@ -383,7 +401,7 @@ def test_lateral_direction_and_time_follow_layout_axes(
     assert left < zero == 100 < right
     assert zero - left == pytest.approx(right - zero)
     assert lateral_x(replace(channel, inverted=False), -1, 0, 200) == left
-    if layout == "orbit":
+    if layout in ("orbit", "hud"):
         return
     renderer = OverlayRenderer(timeline)
     chart = renderer.renderer
@@ -415,7 +433,11 @@ def test_longitudinal_acceleration_up_and_braking_down(
     channel = timeline.channels[2]
     assert not channel.inverted
     renderer = OverlayRenderer(timeline)
-    if layout != "orbit":
+    if layout == "hud":
+        assert isinstance(renderer.renderer, HudRenderer)
+        ys = [renderer.renderer.longitudinal_y(value) for value in (-1, 0, 1)]
+        assert ys[2] < ys[1] < ys[0]
+    elif layout != "orbit":
         chart = renderer.renderer
         assert isinstance(chart, (ChartRenderer, ColumnRenderer))
         braking, zero, acceleration = [
@@ -429,7 +451,7 @@ def test_longitudinal_acceleration_up_and_braking_down(
         assert sin(radians(renderer.renderer.orbit_angle(-1, 2))) > 0
 
 
-@pytest.mark.parametrize("layout", ["column", "ribbon", "corners", "capsule"])
+@pytest.mark.parametrize("layout", ["column", "ribbon", "corners"])
 def test_longitudinal_trace_changes_color_at_zero(
     manta: ExplorerData,
     layout: ExportLayout,

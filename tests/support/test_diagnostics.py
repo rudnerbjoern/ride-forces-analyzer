@@ -6,6 +6,7 @@ import subprocess
 import pytest
 
 from ride_forces_analyzer import __version__, diagnostics
+from ride_forces_analyzer.cpu_resources import CpuResources
 
 
 @pytest.mark.parametrize("state", ["available", "missing", "failure", "timeout"])
@@ -31,9 +32,12 @@ def test_diagnostics_encoder_status_and_privacy(
         )
 
     monkeypatch.setattr(diagnostics, "find_ffmpeg", find)
+    monkeypatch.setattr(diagnostics, "detect_cpu_resources", lambda: CpuResources(12, 24))
     monkeypatch.setattr(diagnostics.subprocess, "run", run)
     report = diagnostics.collect_diagnostics()
     assert f"Ride Forces Analyzer: {__version__}" in report
+    assert "Physical CPU cores: 12" in report
+    assert "Logical processors: 24" in report
     for field in ("Operating system", "Architecture", "Python", "Qt", "Distribution"):
         assert f"{field}: " in report
     expected = {"available": "Available", "missing": "Not found"}.get(state, "Check failed")

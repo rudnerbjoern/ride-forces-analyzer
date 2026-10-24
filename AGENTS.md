@@ -6,6 +6,10 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 
 - MUST give these simplicity and scope rules the highest priority within project instructions.
 - MUST keep simple tasks simple and choose the simplest solution that fully satisfies the owner's request, reusing existing code and workflows.
+- MUST treat the owner's time, attention and computing resources as limited. Minimize commands, process starts and visible GUI interruptions; test counts alone are not a quality goal.
+- MUST group related GUI checks and reuse application/window fixtures where isolation is unnecessary. NEVER repeatedly restart the desktop application for assertions that can share one session.
+- MUST keep Git-only requests limited to the authorized Git operations and necessary scope checks. NEVER automatically start the full application or GUI suite solely to commit or push.
+- MUST batch Git preparation and reuse current-context review and validation evidence for unchanged inputs. NEVER duplicate checks already performed by the delivery helper; retain required commit/push boundary checks. Keep tool output bounded; if output is truncated, read only the missing portion instead of requesting the entire output again.
 - NEVER make a simple task unnecessarily complex or turn it into a broader engineering project. NEVER introduce unnecessary complexity, abstractions, tools, frameworks or processes.
 - NEVER expand task scope under any circumstances without the owner's prior explicit permission. Useful, recommended or related work is NEVER automatically authorized.
 - NEVER invent requirements or act on assumptions or ideas about tasks the owner has not assigned. MUST perform only the requested work and necessary checks, then STOP.
@@ -37,7 +41,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 - NEVER commit on `main` or detached HEAD. NEVER push to remote `main`, delete it or bypass this restriction via force, `--all`, `--mirror` or alternative destination refs.
 - MUST integrate into `main` exclusively through an authorized PR targeting `main`. NEVER merge, rebase or reset local `main` to integrate changes.
 - MUST verify the active branch immediately before EACH commit/push. Before push: verify explicit destination ref; after push: verify remote commit.
-- MUST stage exact authorized paths only. Before commit: inspect ONLY the staged diff; commit ONLY approved staged scope.
+- MUST stage exact authorized paths only. Before commit: inspect ONLY the staged diff, once per staged fingerprint; reuse that review while the fingerprint is unchanged. Commit ONLY approved staged scope.
 - MUST follow [commit rules](.github/commit-message-instructions.md) before generating messages. Messages MUST describe approved staged changes only; no staged changes = no proposed message.
 - MUST apply the same title rules to PRs, including drafts and title updates, except the 80-character limit, which applies only to commit titles. Describe the complete current PR outcome against its base branch.
 - Branch creation, PR preparation and stage approval NEVER authorize other Git operations.
@@ -75,6 +79,6 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 - MUST reuse successful evidence ONLY when relevant contents (including staged files), dependencies, lock files, tools, configuration and environment are demonstrably unchanged. Changed inputs: rerun affected checks. Missing evidence/uncertain equivalence: run required suites.
 - MUST record exact commands, results, limitations, platform and tested revision/file scope in `docs/validation/` as required by the applicable plan. Stage-specific report structure belongs in that plan. Temporary logs: `.tmp/`. NEVER add a cache framework solely for evidence reuse.
 - MUST batch Git status/scope checks where practical; retain required commit/push boundary checks. Repeat fixture hashes ONLY for relevant changes, integrity uncertainty or explicit acceptance requirements.
-- Before commit, ALL required checks in the [Windows setup](docs/development/SETUP.md) MUST have valid passing evidence for the committed content. Execute from repository root; evidence MAY be reused only under the rule above.
+- Before commit, MUST have valid passing evidence for checks affected by the committed changes, using the [Windows setup](docs/development/SETUP.md) commands as applicable. Reuse valid evidence; missing evidence requires focused affected checks, not an automatic full-suite run. Run the full suite only when explicitly requested or justified by concrete change impact. Execute from repository root.
 - MUST retain configured lint, format and strict type-checking rules. NEVER weaken checks to obtain a pass.
 - MUST require actual runner output; exit code alone is insufficient. NEVER present local/static checks as hosted CI evidence or substitute non-Windows results for Windows/GUI verification.

@@ -155,7 +155,11 @@ def run_batches(
     cancelled: Event | None = None,
     progress: Callable[[int, int, int, int, str], None] | None = None,
     status: Callable[[str], None] | None = None,
+    render_jobs: int = 1,
 ) -> BatchReport:
+    from ride_forces_analyzer.cpu_resources import effective_render_jobs
+
+    render_jobs = effective_render_jobs(render_jobs)
     total = sum(len(batch.jobs) for batch in batches)
     if not total:
         raise ValueError("The selected batches contain no export jobs")
@@ -216,6 +220,7 @@ def run_batches(
                         cancelled=cancel,
                         progress=on_progress,
                         status=status,
+                        render_jobs=render_jobs,
                     )
                     result = JobResult(**common, status="completed", output=target)
                 except ExportCancelled:

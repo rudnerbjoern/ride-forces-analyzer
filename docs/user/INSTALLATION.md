@@ -87,7 +87,7 @@ need a compatible external FFmpeg installation:
 - macOS with Homebrew already installed: `brew install ffmpeg`.
 - Windows: use the Complete ZIP or select an existing `ffmpeg.exe`.
 
-In **Export 4K…**, use **Browse** to select the FFmpeg executable if automatic
+In **Export video…**, use **Browse** to select the FFmpeg executable if automatic
 discovery does not find it. Finder launches may not include Homebrew in PATH.
 CPU H.264 and ProRes 4444 export do not require an NVIDIA GPU. Installed recording
 processing and video export work offline.
@@ -194,7 +194,8 @@ Nothing is uploaded automatically.
 - If it still fails, report the application version, operating system and error
   message in a [GitHub issue](https://github.com/rudnerbjoern/ride-forces-analyzer/issues).
   In **About**, choose **Copy diagnostic information** to copy the application,
-  system, Python and Qt versions, architecture, distribution type and FFmpeg status.
+  system, Python and Qt versions, architecture, physical CPU cores, logical
+  processors, distribution type and FFmpeg status.
   The check runs locally and does not include personal paths or recording data.
   Review the copied text before pasting it into your report.
   Do not attach private recordings or personal paths unnecessarily. Report

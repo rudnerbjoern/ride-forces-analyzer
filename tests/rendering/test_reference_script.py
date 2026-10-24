@@ -68,9 +68,16 @@ def test_reference_cli_uses_fixed_sample_from_another_directory(reference_direct
     assert manifest["recording_seconds"] == 95.64
     assert manifest["source_sha256"] == SOURCE_SHA256
     assert manifest["language"] == "en" and manifest["aspect"] == "landscape"
+    assert manifest["profile_window_seconds"] == {
+        "ribbon": 12.0,
+        "corners": 12.0,
+        "hud": 30.0,
+        "orbit": 12.0,
+        "column": 12.0,
+    }
     assert manifest["values"][0] == pytest.approx(-3.5516046708080875)
     assert len(list(output.glob("*.png"))) == 11
-    for layout in ("ribbon", "corners", "capsule", "orbit", "column"):
+    for layout in ("ribbon", "corners", "hud", "orbit", "column"):
         with Image.open(output / f"manta-{layout}.png") as image:
             assert image.size == (3840, 2160)
         with Image.open(output / f"manta-{layout}-detail.png") as image:

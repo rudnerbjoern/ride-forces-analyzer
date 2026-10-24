@@ -6,6 +6,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+import pytest
+
 
 def run_report(directory: Path, program: str) -> subprocess.CompletedProcess[str]:
     setup = """
@@ -25,11 +27,36 @@ reports.data_directory = lambda: directory
     )
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows process-handle lifetime")
+@pytest.mark.parametrize("exit_code", [0, 259])
+def test_completed_process_is_not_running_while_its_handle_is_open(
+    export_directory: Path,
+    exit_code: int,
+) -> None:
+    result = run_report(
+        export_directory,
+        f"""
+import subprocess
+with subprocess.Popen(
+    [sys.executable, "-c", "import sys; sys.stdin.buffer.read(); sys.exit({exit_code})"],
+    stdin=subprocess.PIPE,
+) as process:
+    assert reports._running(process.pid)
+    process.communicate(input=b"", timeout=10)
+    assert process.returncode == {exit_code}
+    assert not reports._running(process.pid)
+""",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_report_retains_every_error_and_replaces_completed_runs(export_directory: Path) -> None:
     result = run_report(
         export_directory,
         """
 support = directory / "support"
+from ride_forces_analyzer.cpu_resources import CpuResources
+reports.detect_cpu_resources = lambda: CpuResources(12, 24)
 support.mkdir()
 (support / "error-report-999999999.txt").write_text("obsolete")
 active = support / f"error-report-{os.getppid()}.txt"
@@ -44,6 +71,8 @@ for number in range(75):
     except ValueError as error:
         reports.record_error("Import", error)
 text = path.read_text(encoding="utf-8")
+assert "Physical CPU cores: 12" in text
+assert "Logical processors: 24" in text
 assert all(f"ValueError: failure-{number}" in text for number in range(75))
 print(path.name)
 """,

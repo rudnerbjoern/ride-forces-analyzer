@@ -1,4 +1,4 @@
-"""Shared three-channel time plots used by the ribbon, corners and capsule.
+"""Shared three-channel time plots used by the ribbon and corners.
 
 Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later

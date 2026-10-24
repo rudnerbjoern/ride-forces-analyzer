@@ -208,9 +208,15 @@ def test_overlay_labels_fit_and_language_is_reproducible(
     second = OverlayRenderer(timeline).render_sample(3600)
     first_pixels = first.tobytes()
     assert first_pixels == second.tobytes()
-    assert calls and any(
-        ("Neigung" if language == "de" else "Inclinaison") in text for text, _, _ in calls
-    )
+    assert calls
+    if layout == "hud":
+        assert not any("Neigung" in text or "Inclinaison" in text for text, _, _ in calls)
+        context = timeline.context_at(3600)
+        assert any(tr(context, language=language).upper() == text for text, _, _ in calls)
+    else:
+        assert any(
+            ("Neigung" if language == "de" else "Inclinaison") in text for text, _, _ in calls
+        )
     assert not any("Hz" in text or "fps" in text for text, _, _ in calls)
     assert not any("G-ORBIT" in text for text, _, _ in calls)
     if layout == "orbit":
