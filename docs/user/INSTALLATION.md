@@ -171,19 +171,13 @@ The application writes a local text file, `error-report-<process-id>.txt`, in:
 - Linux: `$XDG_DATA_HOME/ride-forces-analyzer/support`, or
   `~/.local/share/ride-forces-analyzer/support` when unset
 
-The file starts with application/system details and collects errors throughout
-that run, without a count or size limit. It is prepared at startup so native
-crashes can write diagnostic stacks when supported. Reports from completed runs
-are removed on the next launch; reports of other running instances are preserved.
+The file contains system details and errors from the current run. Reports from
+completed runs are removed on the next launch.
 Copy the file before restarting if you need to retain it for support.
 
-Unhandled Python errors include available tracebacks and chained exceptions.
-Native crash information is best effort; termination by the operating system,
-power loss or unwritable storage can prevent a report. Recording contents and
-local variables are not deliberately dumped, but exception messages and traces
-can contain personal paths or data fragments. Review the text and delete or
-replace anything you do not want to share before attaching it to a support request.
-Nothing is uploaded automatically.
+Some crashes may leave no report. Error messages can contain personal paths or
+data fragments. Review the text and remove anything you do not want to share
+before attaching it to a support request. Nothing is uploaded automatically.
 
 ## If the application does not start
 
@@ -193,10 +187,8 @@ Nothing is uploaded automatically.
   beside the executable. On macOS, follow the first-launch instructions above.
 - If it still fails, report the application version, operating system and error
   message in a [GitHub issue](https://github.com/rudnerbjoern/ride-forces-analyzer/issues).
-  In **About**, choose **Copy diagnostic information** to copy the application,
-  system, Python and Qt versions, architecture, physical CPU cores, logical
-  processors, distribution type and FFmpeg status.
-  The check runs locally and does not include personal paths or recording data.
+  In **About**, choose **Copy diagnostic information** to collect version,
+  system and video-export details for the report.
   Review the copied text before pasting it into your report.
   Do not attach private recordings or personal paths unnecessarily. Report
   security issues through the [private reporting channels](../../SECURITY.md).

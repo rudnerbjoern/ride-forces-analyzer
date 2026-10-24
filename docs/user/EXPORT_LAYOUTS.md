@@ -31,11 +31,8 @@ thumbnails follow your current position choices.
    bottom, Column left or right, and Corners and G-Orbit all four corners.
    HUD uses the whole frame with a fixed **Full screen** position. Its native
    1920×1080 or 1080×1920 output can be scaled to a 4K timeline in your editor.
-   Switching layout or format keeps a supported or equivalent position, such as
-   top left → top. Corner previews follow top/bottom choices, retaining their last
-   left/right side in this assistant session. For example, Orbit at top right moves
-   to bottom right when you select Bottom in Ribbon. Without a previous choice, the
-   layout's default supplies the side.
+   The assistant remembers each layout's position while open and keeps a similar
+   placement when you switch layouts. Check the preview after switching.
 5. Check whether the labels and curves will be readable at your video's viewing
    size, and whether the chosen position leaves the action clear.
 6. Choose a light, dark or checkerboard preview background to check visibility.
@@ -71,38 +68,21 @@ HUD leaves the center open and places freely floating instruments around
 the screen: vertical G-force and airtime at the left, acceleration/braking at the
 right, lateral force below. Fine scale marks, bright pointers, large numbers,
 colored glow and black shadows keep the instruments readable over footage.
-The vertical instrument uses the recording's riding position: **Seated** starts
-at **−1.5…+5 g**, **Flying** at **−4…+3 g**. Its negative and positive limits expand
-independently in 0.5 g steps when selected values require more room. Both sides
-use equal spacing per g, so zero is offset rather than centered. Missing source
-positions default to Seated during import; other/unavailable values use the
-general Seated display range. Position is never guessed from the ride name.
-Only whole g values are labeled on the vertical instrument. Long marks denote
-whole g values, medium marks half g values and short marks quarter g values;
-unusually wide ranges show fewer marks to stay readable.
-The right acceleration/braking instrument starts at ±1.5 g. Before rendering,
-larger actual peaks in the selected export interval expand its range; the range
-then stays fixed for the whole video.
-The lateral instrument starts at ±2 g. Larger actual left/right peaks in the
-export interval expand it to the next 0.5 g boundary, such as 2.05 g → ±2.5 g,
-with the same fixed range throughout the video.
-The brighter bars along the scales hold positive and negative peaks separately
-for 1.5 seconds, then return toward zero at 1 g/s. Pointers and numbers show the
-current values. Missing data resets the held peaks.
-A narrow line at the outer right edge shows orientation from 0° at the top to
-180° at the bottom, with marks at 0°, 45°, 90°, 135° and 180°. A small white pointer
-shows the current angle. The entire orientation scale disappears when its data
-is unavailable; the force instruments keep their positions.
-Numbers use a bold weight and airtime labels use uppercase text. Three thin force
-histories run across the bottom over a soft dark gradient with a shared time cursor.
-Their time-zero line aligns exactly with zero on the left/right force instrument.
-Selecting HUD sets **Visible time window** to 30 seconds: 15 before and 15 after
-the cursor. You can change it afterward; loaded presets retain their saved window.
-All three read left-to-right; the lateral history is positive-up. Each bottom
-curve has its own tighter scale fitted to the selected export interval, fixed
-throughout the video. Curve heights are relative to each channel's own range;
-the large instrument scales remain independent. Missing values hide their marker and break
-their curve. No speed, gear, heading or vehicle-attitude data is added.
+The vertical scale starts at **−1.5…+5 g** for Seated recordings and **−4…+3 g**
+for Flying recordings. Acceleration/braking starts at **±1.5 g** and lateral force
+at **±2 g**. Scales expand to fit stronger forces in your chosen interval and stay
+fixed throughout the video.
+
+Bright bars briefly hold recent peaks; pointers and numbers show current values.
+The outer right edge shows tilt from **0° to 180°** when orientation data is
+available. Three force histories at the bottom share a time cursor aligned with
+zero on the lateral instrument. Each curve has its own scale, so equal heights
+do not necessarily mean equal forces.
+
+Selecting HUD sets **Visible time window** to **30 seconds**, centered on the
+cursor. You can change it afterward; loaded presets retain their saved window.
+Missing measurements leave gaps. Exact scale and drawing rules are documented in
+the [developer layout reference](../development/EXPORT_LAYOUTS.md).
 
 The time plots do not all run in the same direction: the four-panel column reads
 left to right, while compact lateral histories show the past below and the future

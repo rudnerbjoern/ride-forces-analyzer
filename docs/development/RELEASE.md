@@ -6,7 +6,8 @@ Linux/macOS packages are built and executed by native target workers in reusable
 The workflow validates tagged sources and prepares a standalone Windows x64 EXE,
 standard/complete ZIPs, a Linux x64 tarball and macOS arm64/x64 app ZIPs. The accepted
 redistribution scope and its verification limits are documented below.
-No installer is included.
+Windows releases use portable EXE/ZIP packages. An installer and uninstaller are
+optional future extensions outside M8 completion; no installer is included.
 Local acceptance and owner review still precede tag creation; CI is secondary
 validation. [Windows setup](SETUP.md) owns the required local checks.
 

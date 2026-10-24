@@ -18,7 +18,7 @@ For examples of all five rendered layouts in turn over Onride footage, watch the
 | File under `src/ride_forces_analyzer/rendering/layouts/` | Responsibility                                                  |
 | -------------------------------------------------------- | --------------------------------------------------------------- |
 | `orbit.py`                                               | G-Orbit drawing, force arcs, orientation and peak presentation  |
-| `column.py`                                              | Original four-panel column                                      |
+| `column.py`                                              | Four-panel column                                               |
 | `ribbon.py`                                              | Flow Ribbon geometry and portrait reflow                        |
 | `corners.py`                                             | Stacked Corner Instruments geometry                             |
 | `hud.py`                                                 | Full-screen HUD scales, transparent glow and force histories    |
@@ -165,7 +165,7 @@ force interpolation or independent orientation buffers.
    encoder consume the registration without layout-specific branches.
 4. Verify registry coverage, region bounds, force directions, alpha and localized
    text. Use representative video integration rather than a full option matrix.
-   Regenerate the fixed-sample [Manta reference](../EXPORT_THEMES.md) to review
+   Regenerate the fixed-sample [Voltron Nevera reference](../EXPORT_THEMES.md) to review
    intended design changes. Structural changes must preserve existing pixels.
 
 Registry tests also substitute a small custom renderer to verify that composition

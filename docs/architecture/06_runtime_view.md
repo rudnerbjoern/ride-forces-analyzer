@@ -4,374 +4,195 @@
 
 ## Qt bootstrap
 
-The normal module/frozen entry initializes `error_reporting` before importing
-the UI or constructing settings. A per-process UTF-8 support report receives
-application error records and main-thread, Python-thread and unraisable exception
-hooks. Worker failure boundaries retain exceptions before emitting UI messages;
-import diagnostics and analysis/batch failures remain available after handling.
-Writes are serialized and flushed without rotation or count limits. Native
-`faulthandler` output uses the same open file, with best-effort crash coverage.
-Completed-run files are removed at startup; active processes keep separate files.
-Report storage failure must not replace original application error behavior.
-No recording objects or locals are serialized; exception strings and traceback
-source lines remain technical support data that users must review before sharing.
+The module and frozen entry points initialize local error reporting before UI
+imports. Settings are validated before creating recording windows.
+`InstanceBroker` acquires local process ownership or forwards the optional file
+path and `--new-window` request to the existing owner.
 
 ```mermaid
 sequenceDiagram
     actor User
-    participant Entry as __main__.main
-    participant Settings as config.AppSettings
-    participant Qt as QApplication / ExplorerWindow
-    participant IPC as InstanceBroker
-    User->>Entry: Launch module with optional settings
-    Entry->>Settings: Use supplied model or construct defaults
-    Settings-->>Entry: Validated immutable settings
-    Entry->>Qt: Construct application
-    Entry->>IPC: Acquire process ownership or forward request
-    alt Owner
-        Entry->>Qt: Construct explorer and show initial window
-        Entry->>Qt: Run event loop
-        User->>Qt: Open additional recording windows
-        User->>Qt: Close last recording window
-        Qt-->>Entry: Event loop exit code
-        Entry->>IPC: Release ownership after workers finish
-    else Existing owner
-        IPC-->>Entry: Request acknowledged
-        Entry-->>User: Exit launcher without another application window
+    participant Entry as Entry point
+    participant Broker as InstanceBroker
+    participant App as RecordingApplication
+    participant Window as ExplorerWindow
+    User->>Entry: Launch with optional recording path
+    Entry->>Entry: Initialize support report and settings
+    Entry->>Broker: Acquire ownership or forward request
+    alt Existing owner
+        Broker-->>Entry: Acknowledge request
+        Entry-->>User: Exit launcher
+    else New owner
+        Entry->>App: Create application and initial window
+        App->>Window: Open requested or restored recording
+        App->>App: Run event loop
+        User->>Window: Close last window
+        App->>Broker: Release ownership after workers finish
     end
 ```
 
-AppSettings rejects unknown settings and invalid title/dimensions outside widgets.
-Window dimensions are positive and at most 16,777,215 pixels, the Qt widget limit.
-Invalid model construction fails before window creation. The GUI smoke test starts
-the real module in a separate Windows process and exits through the Qt event loop;
-its tests exercise the real bootstrap contract above.
+Locking and local sockets use the application-data namespace, bounded forwarding
+and restricted local access. Failed forwarding does not start a competing owner.
+macOS file-open events enter the same request queue; Linux desktop launchers pass
+a file path. Requests wait while the target window imports.
 
-The module and frozen entry points accept one optional local recording path and
-`--new-window`. `instance.InstanceBroker` uses a long-lived `QLockFile` and
-`QLocalServer`/`QLocalSocket` to forward validated requests within the same local
-application-data namespace. Windows uses user-restricted pipe access; Unix sockets
-reside in a private directory. Startup retries/acknowledgement are bounded to five
-seconds; failed forwarding never launches a competing owner. Only the lock owner
-removes stale sockets; Qt handles stale process locks. No network service is used.
+Each window owns its recording, analysis, playback and child dialogs. Language
+and appearance are shared. Explicit file paths take precedence over optional
+Restore last file; only successful imports update the remembered path.
 
-`RecordingApplication` owns the recording-window registry and ordered request
-queue. Reopening an existing path activates its window, unless `--new-window`
-explicitly requests a separate view. Other paths use the active recording window;
-requests wait while its importer is busy. Each window owns its independent analysis
-service, selections, playback and child dialogs. Language/appearance are shared;
-new windows do not restore the last file. Closing one window unregisters it; the
-last window ends the event loop. Background workers finish before ownership ends.
-An explicit path is opened through the normal import before restoration can run.
-The application receives local macOS file-open events through `QFileOpenEvent`;
-pending requests wait for window construction or an active import.
-The macOS bundle declares both recording extensions as alternate viewer types;
-the Linux desktop entry passes a single file with `%f`.
-
-After the event loop starts, the explorer applies the optional Restore last file
-preference (off by default). Preferences supplies an existing absolute file path;
-the normal background import/analysis flow loads it. A manual load already requested
-or a closed window prevents the scheduled restoration. Only successful imports update
-the remembered path; missing files and unavailable preference storage are skipped.
+Support reports collect handled/unhandled errors and best-effort native crash
+stacks. Writes are serialized and flushed without a per-run size limit.
+Startup removes completed-process
+reports and preserves active ones. Report failure must not replace the original
+error. Exception messages may contain personal paths; nothing is uploaded.
 
 ## Optional update discovery
 
-Before normal interaction, the explorer schedules an optional update check after
-the event loop starts. A controller applies the saved opt-in, daily attempt limit
-and skipped version. A worker calls the Qt-independent release service; only the
-GUI thread updates status or opens a release notice. Closing the main window
-suppresses late results. Network operations have bounded reads/timeouts and never
-block the GUI or recording processing. Manual checks in About bypass the daily
-interval and show errors; automatic errors are silent. No installer is invoked.
+A worker performs an opt-in startup check at most once per day or an explicit
+About-dialog check. The Qt-independent service uses bounded HTTPS reads; the UI
+discards late results after closure. Manual failures show a retry message,
+automatic failures remain silent. Download and installation stay manual.
+[Release discovery](../development/RELEASE.md#in-application-update-discovery)
+defines selection and persistence.
 
 ## Read-only import and failures
 
 ```mermaid
 sequenceDiagram
     participant Caller
-    participant Service as Public import service
-    participant Decoder as Strict decoder
-    participant File as Local original
-    participant Motion as Motion validation
-    participant Optional as Optional validation
-    participant Domain as Immutable domain models
-    Caller->>Service: import_forces(Path, limits)
-    Service->>Decoder: decode_forces(Path, limits)
-    Decoder->>File: Bounded binary read only
-    File-->>Decoder: Original bytes
-    Decoder->>Decoder: Resource preflight, strict JSON and version dispatch
-    Decoder-->>Service: DecodeSuccess or ImportFailure
-    alt Decode / schema / I/O failure
-        Service-->>Caller: ImportFailure with ordered diagnostic
-    else Decoding succeeds
-        Service->>Service: Create per-call diagnostic budget
-        Service->>Motion: Validate motion using shared budget
-        Motion-->>Service: Motion subset or ImportFailure
-        alt Invalid core motion or exhausted budget
-            Service-->>Caller: ImportFailure, optional validation is skipped
-        else Motion succeeds
-            Service->>Optional: Validate metadata, attributes and independent GPS
-            Optional-->>Service: Optional data with warnings or budget failure
-            alt Diagnostic budget exhausted
-                Service-->>Caller: ImportFailure, no Recording
-            else Complete available data
-                Service->>Domain: Construct Recording with owned source
-                Domain-->>Service: Immutable Recording
-                Service-->>Caller: ImportSuccess with ordered warnings/info
-            end
+    participant Service as import_forces
+    participant Decoder
+    participant Motion
+    participant Optional
+    Caller->>Service: Path or bytes, resource limits
+    Service->>Decoder: Read/decompress and strictly decode
+    alt Decode or schema failure
+        Service-->>Caller: Structured ImportFailure
+    else Supported source
+        Service->>Motion: Validate core motion with shared budget
+        alt Core failure
+            Service-->>Caller: ImportFailure and skip optional parsing
+        else Usable motion
+            Service->>Optional: Validate metadata, attributes and GPS
+            Service-->>Caller: Complete ImportSuccess or resource failure
         end
     end
 ```
 
-The bytes variant bypasses the file read and otherwise uses the same composition.
-The public service remains synchronous; the raw explorer runs it on a Qt worker
-thread with an indeterminate progress indicator. Other callers choose scheduling. Invalid caller argument types/limit configuration raise TypeError or
-ValueError; expected source/I/O defects return structured failures.
-
-Optional missing/defective GPS does not invalidate usable core motion. Invalid
-supplied gravity remains fatal; gravity is never fabricated. Global resource
-failures remain fatal even inside unknown or optional content. Unreadable or
-oversized inputs have no complete-source digest; no partial read is represented
-as complete provenance. Each call owns independent state, so repeated same
-bytes/policy produce equivalent output. See [API contracts](../development/IMPORT_SERVICE.md).
+Path reads are bounded and read-only; bytes imports bypass filesystem access.
+Optional-data defects may retain usable core motion with warnings. Invalid supplied
+gravity and global resource failures remain fatal. Caller misuse raises
+`TypeError`/`ValueError`; expected input/I/O defects return structured failures.
+[Import contracts](../development/IMPORT_SERVICE.md) own detailed rules.
 
 ## Explorer analysis delivery
 
-The import worker calls the lossless importer, then `present_recording` prepares
-one snapshot through `AnalysisService`. Parsing itself does not calculate analysis.
-An expected unavailable stage still yields a READY raw-capable snapshot; an import
-failure preserves the displayed source and service binding. UI adoption creates
-an active service from the validated snapshot without repeating numerical work.
+The import worker prepares a complete immutable analysis snapshot. Expected
+unavailable stages still permit raw display; failed imports retain the previous
+view. The UI adopts the prepared snapshot without repeating calculations.
 
 ```mermaid
 sequenceDiagram
-    participant UI as Explorer views
-    participant Loader as Import worker
+    participant UI as Explorer
     participant Adapter as AnalysisController
-    participant Worker as Smoothing worker
+    participant Worker
     participant Service as AnalysisService
-    UI->>Loader: Open path with load generation
-    Loader->>Loader: Lossless import
-    Loader->>Service: Prepare complete source snapshot
-    Service-->>Loader: Consistent immutable snapshot
-    Loader-->>UI: Presentation and load generation
-    UI->>UI: Reject closed or superseded load
-    UI->>Adapter: Bind prepared snapshot
-    Adapter->>Service: Adopt snapshot and subscribe
-    Service-->>Adapter: Initial AnalysisState with snapshot and request status
-    Adapter->>Adapter: Queue Qt delivery and check active binding on UI thread
-    Adapter-->>UI: Initialize matching READY snapshot
-    UI->>Adapter: Change smoothing and advance UI intent
+    UI->>Adapter: Bind imported snapshot and subscribe
+    Service-->>Adapter: Initial coherent state
+    Adapter-->>UI: Apply current binding on GUI thread
+    UI->>Adapter: Request smoothing or marker change
     Adapter->>Worker: Queue latest intent
-    Worker->>Worker: Skip obsolete or closed binding
-    Worker->>Service: Request smoothing synchronously
-    Service->>Service: Advance revision and mark dependent stages dirty
-    Service-->>Adapter: AnalysisInvalidated(source, revision, dirty stages)
-    Adapter->>Adapter: Queue Qt delivery and recheck current request status
-    Adapter-->>UI: Show pending only for matching active request
-    Service->>Service: Reuse upstream stages and calculate outside state lock
-    alt Completion superseded or service closed
-        Service->>Service: Discard completion without changing current state
-    else Current calculation succeeds
-        Service->>Service: Publish complete snapshot and READY state
-        Service-->>Adapter: AnalysisUpdated(source, revision, replaced stages, snapshot)
-        Adapter->>Adapter: Recheck source intent revision binding and status on UI thread
-        Adapter-->>UI: Apply matching snapshot or discard stale delivery
-    else Current calculation fails
-        Service->>Service: Retain previous snapshot and publish FAILED state
-        Service-->>Adapter: AnalysisFailed(source, revision, affected stages, failure)
-        Adapter->>Adapter: Recheck source intent revision binding and status on UI thread
-        Adapter-->>UI: Clear matching pending status and present failure
-        Note over Service,UI: Retained values keep their original configuration and revision
+    Worker->>Service: Request configuration synchronously
+    Service->>Service: Advance revision and calculate outside lock
+    alt Current result
+        Service-->>Adapter: Complete snapshot or failure
+        Adapter-->>UI: Apply only matching source, intent and revision
+    else Superseded or closed
+        Service->>Service: Discard completion
     end
-    Note over Service,UI: Running exports retain their previously bound snapshot
     UI->>Adapter: Close or bind another source
-    Adapter->>Service: Unsubscribe and close previous service
-    Adapter->>Adapter: Reject late queued callbacks and worker results
+    Adapter->>Service: Unsubscribe and close old service
 ```
 
-The service calculates synchronously in its caller's thread and owns subscriptions,
-not workers or Qt signals. Initial registration/state capture is coordinated:
-`AnalysisState` immediately includes source identity, the last completed snapshot
-(or None), requested revision/status, dirty stages and failure. Per-registration
-queues deliver initial state before later notifications, outside the state lock.
-Stage interests filter numerical changes while retaining terminal status for
-subscribers that observed pending work. Callback exceptions remove only that
-registration. Detailed pending indications may be coalesced after completion.
-Technical notifications are distinct from domain `AirtimeEvent` values.
+The service owns revisions, current state and subscriptions, not Qt or workers.
+Callbacks run outside its state lock and are serialized per subscription. Initial
+state precedes subsequent notifications. Failure retains the previous complete
+snapshot with its original configuration; no partial result replaces it.
 
-Current requests finish with an update or failure. Failed work publishes no partial
-snapshot; the previous snapshot remains identified by its own configuration and
-revision. Superseded success/failure cannot replace the current state or clear a
-newer request's pending status. The adapter's single worker queue skips obsolete
-intents; an intent generation invalidates already queued UI callbacks even before
-the newer request reaches the service.
+The adapter checks active binding, source, revision, terminal status and UI-intent
+generation again on GUI delivery. Load generations similarly reject late imports.
+Thus a delayed pending message cannot undo completion, and an old error cannot
+affect a new recording.
 
-Every queued initial/pending/update/failure delivery is checked again on the UI
-thread: active binding/subscription, UI-intent generation, source hash, service
-revision and terminal status must still match. A delayed pending message cannot
-restore pending after completion; an older initial state cannot overwrite a newer
-result. Failure retains displayed values and resets the smoothing control to their
-configuration. Close/reopen invalidates load generations and bindings, releases
-subscriptions and prevents late imports, errors or results from affecting a new
-source. The adapter and service do not accumulate snapshot histories.
-
-Projection, source/time, reference calibration and independent orientation survive
-smoothing changes. Calibration requests use the same service revision/delivery
-flow: Gravity invalidates forces and tilt, while Incline retains tilt. Admission
-failures preserve their calibration diagnostic codes and the last completed
-snapshot. Dependency ownership follows [snapshot reuse](08_concepts.md#snapshot-lifetime-and-reuse).
-The chart marker menu submits all four choices through this same worker flow.
-After revision, generation and binding checks, the UI adapter atomically saves
-the accepted marker configuration before view delivery. Invalid or stale work
-does not save; storage failure retains session values and reports the failure.
-Individual resets preserve the remaining choices; reset all restores source axes
-and clears both local marker records in one transaction.
-The explorer refreshes charts, context strip, selected-sample cards, technical
-details and visible-range extrema from one guarded delivery. Cursor, selection,
-viewport, language and appearance remain presentation state and do not trigger
-numerical preparation. Export assistants/previews bind their opening snapshot;
-explicit export configuration may prepare a different one using shared stages.
-Running exports never follow workspace updates. Snapshot ownership and release
-follow the [lifetime concepts](08_concepts.md#snapshot-lifetime-and-reuse).
-
-The export assistant resolves supported or equivalent positions when layout/format
-changes, retaining each layout's unspecified axis for the current session. Position
-and preview-background changes only refresh production previews. Debounced workers
-receive copied position choices; only the current revision updates the UI. Presets
-and jobs capture explicit placement independently of this temporary view state.
+Smoothing retains projection and independent orientation. Gravity changes rebuild
+calibration, forces and tilt; Incline changes retain tilt. Successful current marker
+results save all choices atomically before view delivery. Stale/invalid requests do
+not save; storage failure keeps session values and reports the failure.
+[Snapshot concepts](08_concepts.md#snapshot-lifetime-and-reuse) own dependencies.
 
 ## Product boundaries
 
-Visible-range extrema update on source/viewport/mode/smoothing changes; the
-explicit From/To selection is separate from the viewport.
-The explorer's Play/Pause action starts a Qt-independent monotonic sample clock.
-A GUI-thread timer adopts its current integer sample through existing navigation;
-missed ticks do not accumulate drift. Seeking resets the clock origin. Pause, recording
-end, import/replacement, export opening and window close stop timer delivery.
-No analysis is recalculated during playback. POV synchronization remains planned.
-Frame rendering and encoding are implemented for the 4K overlay slice. Universal physical
-rider qualification and analytical GPS are outside current M3 acceptance. This view introduces
-no invented runtime interactions for those services.
+Cursor, selection, viewport, language and appearance are presentation state.
+Visible-range extrema follow the viewport; From/To remains a separate inclusive
+export interval. Playback uses monotonic elapsed time and the source sample rate;
+delayed UI ticks catch up without accumulating drift. Seeking resets the origin.
+Displayed values remain source samples; playback does not calculate analysis.
+Video synchronization remains in external editing software.
 
 ## Implemented device-only analysis
 
-```mermaid
-sequenceDiagram
-    participant Caller
-    participant Device as analysis.device
-    participant Pint as Private Pint registry
-    participant NumPy
-    Caller->>Device: Full M2 success, explicit UTC time, per-sequence contracts
-    loop Acceleration and gravity independently
-        Device->>Device: Check source hash, sequence, unit and quantity references
-        alt Absent sequence or absent contract
-            Device->>Device: UNAVAILABLE channels with ordered warnings, no samples
-        else Qualified DEVICE components
-            Device->>Pint: Convert one supported component-unit factor to SI
-            Pint-->>Device: Explicit SI scale
-            Device->>NumPy: Convert owned array, then stable Euclidean norm
-            NumPy-->>Device: Owned vectors and magnitude, or finite-range defect
-            Device->>Device: Retain usable vectors and report invalid products independently
-        end
-    end
-    Device-->>Caller: Immutable AnalysisResult retaining complete M2 source
-```
-
-Caller contract/type/hash defects raise TypeError/ValueError. Expected finite-range
-calculation defects produce INVALID products with structured errors. Source
-absence and unknown units produce UNAVAILABLE products with different warning
-codes. A declaration cannot create absent gravity. The caller supplies calculation
-time; sample indices remain indices, with no generated timeline or epoch.
-There is no addition/subtraction of the two source channels, no normalization
-into rider G, and no calibration, filtering or GPS processing. The registry reads
-installed definitions at module initialization; subsequent calculations perform
-no file or network access. Caller evidence references are explicit attestations,
-not an empirical verification service.
+Explicit `analysis.device` calls validate source-bound unit/quantity contracts,
+convert independent sequences with Pint and calculate vectors/norms with NumPy.
+Absent data/units yield unavailable channels; numerical range defects yield invalid
+products without discarding independent usable channels. Caller declarations do
+not certify sensor semantics. [Device API](../development/ANALYSIS_MODELS.md#device-only-vectors-and-units)
+defines the contract.
 
 ## Explicit provisional frame projection
 
-A separate `analysis.frames.analyze_rider_frame` call checks M2 success, source-bound
-calibration, profile/assumption permission and independent device-unit contracts.
-Missing mapping/data/units returns excluded channels. An explicit admitted basis
-passes through SciPy passive rotation; resulting rider vectors are PROVISIONAL.
-Range failures yield INVALID, while other usable sequences remain independent.
-It never guesses source axes, normalizes input bases or labels real rider forces verified.
-The caller supplies UTC time; no clock alignment, gravity combination or filtering occurs.
-See [passive frame decision](09_architecture_decisions.md#passive-frame-transforms).
+`analysis.frames` checks explicit source calibration, unit contracts, profile
+permission and a proper orthonormal basis before applying passive SciPy rotation.
+Available rider vectors remain provisional. No source basis repair, gravity
+combination or clock alignment occurs.
+[Frame API](../development/ANALYSIS_MODELS.md#passive-frame-math-and-provisional-rider-vectors)
+owns admission and failure rules.
 
 ## Raw explorer interaction
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant Window as Raw explorer
-    participant Worker as Qt worker
-    participant View as Qt-independent presentation
-    participant Importer as M2 import service
-    User->>Window: Choose a local recording
-    Window->>Worker: Start background load and show progress
-    Worker->>View: Load and prepare raw view
-    View->>Importer: Read-only import
-    Importer-->>View: Full success or structured failure
-    View-->>Worker: Immutable axes and source or failure
-    Worker-->>Window: Queued completion
-    Window->>Window: Show complete x/y/z or retain previous view on failure
-    User->>Window: Navigate, zoom and choose an inclusive interval
-    Window->>View: Validate local sample selection
-```
+Qt workers import and prepare data; Qt Charts displays raw or calibrated channels.
+Calibration/preparation unavailability retains raw data with an explanation.
+Navigation, zoom, curve visibility and appearance preserve the snapshot. Failed
+loads preserve the previous usable view; shutdown drains background work.
 
-Cancelling the picker changes nothing. The previous view survives load errors.
-Application shutdown drains outstanding worker tasks after the window closes;
-it does not kill parsing mid-call. Axis labels use source values/inferred elapsed seconds,
-not rider G or a fabricated clock. Qt Charts handles interactive chart drawing;
-export frame generation and encoding are separate implemented services.
-
-Background presentation attempts source-direction projection and a configurable centered mean
-(default 11) for every successful import. Loading selects calibrated curves by
-default; the checkbox switches arrays/value bounds while preserving time/selection.
-Expected calibration errors or absent optional NumPy retain raw data and a visible
-explanation. Source hashes do not gate availability.
-
-The focus workspace presents loaded curves with current-value cards and a right
-inspector. A width breakpoint switches compact windows between chart and inspector;
-scroll areas preserve reachable controls without changing chart coordinates.
-Global import-note access opens the inspector/details and scrolls to diagnostics
-after layout. Card values and clock text refresh from explorer presentation when
-sample, calibration or smoothing changes. Technical expansion is independent of
-analysis state. All raw/calibrated, failure and worker shutdown paths above remain.
+The GPS dialog reads independent route data. Explicit map requests use a worker,
+retain the route on failure and reject results after close/replacement. Resize
+alone does not start a request. [Explorer contracts](../implementation/RAW_EXPLORER.md)
+own interaction details.
 
 ## Sample data export runtime
 
-The explorer pauses playback and captures the current analysis snapshot and From/To
-interval before destination selection. Existing destinations require confirmation
-after suffix completion, defaulting to No. A shared Qt worker serializes prepared sample
-views to CSV or JSON; no analysis or encoding runs in the widget. JSON collects
-parallel arrays before incremental encoding. The separate Analyzer JSON option
-collects grouped measurement arrays and stores shared time/quality once.
-Queued progress and terminal signals
-update the modal progress window on the UI thread. Cancellation/main-window close
-sets a worker event; incomplete output is removed. Confirmed replacement is written
-separately and committed atomically after success; failure preserves the previous
-file. Success remembers the existing
-export directory and reports the saved path. The bound snapshot stays alive until
-worker completion, independently of later workspace updates.
+Before destination selection, the UI pauses playback and captures the snapshot
+and inclusive From/To interval. Existing destinations require explicit confirmation.
+A shared worker serializes CSV or JSON and transports progress/cancellation.
+Confirmed replacement commits atomically after success; failure/cancellation
+preserves an existing file and removes temporary output. Only success remembers
+the destination folder. The worker retains its bound snapshot until completion.
 
-## 4K export runtime
+## Video export runtime
 
-Export snapshots the loaded immutable recording, current smoothing and selected
-range/profile/aspect/language. HUD streams native HD frames; other profiles use 4K.
-A Qt worker prepares the timeline and streams frames to FFmpeg. The local render-job
-preference selects one serial renderer or multiple independent renderer threads,
-capped at the logical processor count. Bounded prefetch preserves frame order;
-cancel/failure joins active renders and cancels queued work. Batch videos remain
-sequential and use the same render-job preference for their frames. NVIDIA Vulkan
-or NVENC is selected only after an actual encode probe, otherwise CPU is used.
-Signals report backend/progress, completion and failure without blocking widgets.
-Cancellation or window close sets a thread event; incomplete files are discarded.
-The service publishes the completed encoder output exclusively.
-No existing file is replaced. The user aligns the
-single exported overlay with an Onride clip externally in Resolve.
+The assistant captures its opening snapshot and preview sample. Debounced preview
+workers receive current settings; revision checks discard outdated results.
+Export binds the selected range, layout, aspect, language and analysis recipe.
+
+A worker streams native-HD HUD or 4K regions to FFmpeg. The local render-job
+preference selects serial generation or a bounded thread pool with independent
+renderers. Ordered prefetch preserves frame order. NVIDIA Vulkan/NVENC is used
+only after a successful probe; CPU remains the fallback.
+
+Cancellation joins active renders, cancels queued work and discards incomplete
+output. Successful encoding publishes a new file exclusively. The user aligns the
+overlay in their editor. [Video contracts](../implementation/VIDEO_EXPORT.md)
+define output, timing and publication details.
 
 ## Saved batch runtime
 
@@ -380,22 +201,21 @@ sequenceDiagram
     actor User
     participant UI as Batch window
     participant Store as SQLite export store
-    participant Queue as Batch worker/service
-    participant Encoder as Existing export service
+    participant Queue as Batch service
+    participant Encoder as Video export
     User->>UI: Run selected or all saved batches
-    UI->>Store: Read immutable batch definitions
-    Store-->>UI: Source paths, hashes, ranges and preset snapshots
-    UI->>Queue: Queue snapshot and unique output root
-    loop Each recording/preset job
-        Queue->>Queue: Reimport, check hash, prepare saved recipe/range
-        Queue->>Encoder: Render and encode one video
-        Encoder-->>Queue: Complete output or failure/cancellation
-        Queue-->>UI: Progress and per-job result
-        Queue->>Queue: Persist incremental run report
+    UI->>Store: Read immutable job snapshots
+    UI->>Queue: Start queue in a unique output directory
+    loop Each job
+        Queue->>Queue: Reimport, verify hash and restore saved recipe
+        Queue->>Encoder: Render and encode
+        Encoder-->>Queue: Completion, failure or cancellation
+        Queue->>Queue: Update run-report.json
+        Queue-->>UI: Progress and result
     end
 ```
 
-Expected job failures are recorded and processing continues; cancellation discards
-the active incomplete encode and skips remaining jobs. Completed files stay intact.
-Close/Escape requests cancellation and never abandons an active encoder. Presets
-and definitions survive restart; resume/history services remain outside scope.
+Videos run sequentially; their frames use the local render-job preference.
+Per-job failures allow later jobs to continue. Cancellation skips pending jobs and
+preserves completed videos. Closing the dialog requests cancellation and waits for
+the active encoder. Definitions survive restart; automatic resume is outside scope.

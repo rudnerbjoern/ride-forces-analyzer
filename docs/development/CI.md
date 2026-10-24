@@ -132,7 +132,7 @@ it does not guarantee lower total runner minutes.
   Updated rules take effect after reaching `main`, on the next matching PR event.
 - Permissions: `contents: read`, `pull-requests: write`; labels must exist.
   `sync-labels: false` preserves existing/manual labels. Labels neither approve nor merge.
-  Validation stays read-only; no scheduled workflow or runtime dependency is added.
+  Validation stays read-only; label automation is independent of application runtime.
 
 ## Source release tags
 

@@ -29,7 +29,7 @@ Node, then run PowerShell from the repository root:
   behavior, actual check commands/results and remaining limits. Keep incomplete work
   in draft. CI must pass; maintainers review/merge.
 - Follow the [commit format](.github/commit-message-instructions.md). Code,
-  documentation and commits use English; user-facing changes maintain English/German
+  documentation and commits use English; user-facing changes maintain English/German/French
   UI text and layout fit.
 - Follow [architecture constraints](docs/architecture/02_architecture_constraints.md):
   import, analysis, storage and rendering logic stay outside Qt widgets.
@@ -45,7 +45,7 @@ Node, then run PowerShell from the repository root:
   [Recording catalog](docs/development/RECORDINGS.md) and integrity tests define scope.
 - New real recordings require explicit maintainer approval and rights-holder
   permission to publish complete contents, including GPS, timestamps and metadata. Agree license and
-  attribution before submission; existing permission covers only the five listed originals.
+  attribution before submission; existing permission covers the cataloged reference files.
 - Never publish private recordings in issues/PRs to request approval.
   Prefer minimal synthetic reproductions when real data is unnecessary.
 - Contributed code uses GPL-3.0-or-later; recording adaptations retain applicable

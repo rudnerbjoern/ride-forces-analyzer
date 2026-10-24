@@ -24,13 +24,13 @@ and visible attribution follow the [tile policy](https://operations.osmfoundatio
 ```mermaid
 flowchart LR
     Capture["External Ride Forces app: iPhone / Apple Watch"]
-    Original["Owner-supplied local .forces file"]
+    Original["Local .forces / .zforces recording"]
     Caller["Developer / local API caller"]
-    Analyzer["Ride Forces Analyzer: implemented import boundary"]
+    Analyzer["Ride Forces Analyzer"]
     Result["Immutable recording and diagnostics"]
     Desktop["Desktop user"]
-    Window["Raw recording explorer: implemented"]
-    Video["Local POV video: planned input"]
+    Window["Recording explorer"]
+    Video["Local POV video: external editor input"]
     Editor["Video editor: exported overlay consumer"]
     Capture --> Original
     Original --> Analyzer
@@ -38,17 +38,14 @@ flowchart LR
     Analyzer --> Result
     Desktop --> Window
     Window --> Analyzer
-    Video -.-> Analyzer
+    Video --> Editor
     Analyzer --> Editor
 ```
 
-Solid edges represent existing interactions; dashed edges are planned product
-interfaces. The explorer calls the importer asynchronously; raw curves and
-sample controls make no universal physical calibration claim. Source-app
-projection/mean is implemented; selected-range extrema are implemented within reduced
-M3. GPS supplies coarse spatial context only. The 4K overlay exporter writes one
-video in one of five layouts for manual alignment in Resolve. Interactive sample
-playback is implemented; POV synchronization remains planned.
+The explorer schedules local import and analysis. Raw data and calibrated display
+remain distinct; GPS supplies approximate spatial context. Exported overlays are
+aligned with footage in the external editor. Optional network requests are
+independent of this processing path.
 
 ## Technical context
 
@@ -59,7 +56,7 @@ playback is implemented; POV synchronization remains planned.
 | Import output                       | Typed ImportSuccess or ImportFailure in the caller process    | Implemented; no Qt dependency                                        |
 | Desktop bootstrap                   | Local PySide6 process and native Qt event loop                | Implemented raw explorer and background file opening                 |
 | Video output                        | Local ProRes MOV / H.264 MP4, five layouts and two aspects    | Implemented; manual external alignment                               |
-| POV input / synchronization         | Local video ingest and matching                               | Planned                                                              |
+| POV input / synchronization         | Video ingest and matching remain in external editing software | Excluded from project scope                                          |
 | Dependency distribution / GitHub CI | Developer network access and Windows PR runners               | Development infrastructure; not an application processing dependency |
 
 [Chapter 05](05_building_block_view.md) documents callable interfaces;

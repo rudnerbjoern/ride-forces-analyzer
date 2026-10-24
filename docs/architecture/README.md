@@ -12,7 +12,7 @@ unverified scientific assumptions are explicitly distinguished.
 | 01      | [Introduction and goals](01_introduction_and_goals.md)     | Scope, quality goals and stakeholders                       |
 | 02      | [Architecture constraints](02_architecture_constraints.md) | Platform, offline processing and data protection            |
 | 03      | [Context and scope](03_context_and_scope.md)               | External systems, users and interfaces                      |
-| 04      | [Solution strategy](04_solution_strategy.md)               | Layering and the implemented/planned processing pipeline    |
+| 04      | [Solution strategy](04_solution_strategy.md)               | Processing pipeline, boundaries and scientific policy       |
 | 05      | [Building block view](05_building_block_view.md)           | Packages, responsibilities and public interfaces            |
 | 06      | [Runtime view](06_runtime_view.md)                         | Qt startup, successful imports and failure paths            |
 | 07      | [Deployment view](07_deployment_view.md)                   | Local Windows execution, development and release boundaries |

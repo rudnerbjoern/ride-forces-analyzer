@@ -70,7 +70,7 @@ hysteresis can make the label differ from the instantaneous number.
 
 ## Context text colors
 
-Compact-theme hints use the stabilized category, identically in both languages
+Compact-theme hints use the stabilized category, identically in all three languages
 and aspects. The explorer's dark palette matches export; light appearance uses
 darker equivalents for contrast.
 
@@ -97,6 +97,6 @@ readout colors are independent.
 - The backward difference is an onset indicator, not qualified biomechanical jerk.
   Calibration, sensor motion, filtering, posture and restraints limit sensation
   inference. [Source-contract limits](../architecture/08_concepts.md#scientific-provenance-and-gates)
-  still apply; owner review of thresholds against recordings remains open.
+  still apply; the thresholds remain provisional.
 - Behavior tests and [reference images](../images/README.md#image-content-and-reproduction)
   support implementation/visual review, not scientific qualification.

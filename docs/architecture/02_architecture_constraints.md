@@ -7,15 +7,15 @@
 - Native Windows remains the development and local regression environment.
   Distribution targets also include Linux x64 and macOS x64/arm64; each frozen
   package must be built and checked on its own target OS. Qt needs a desktop
-  session. Python 3.14.6, uv and PySide6 are the current toolchain.
+  session. Python, uv and PySide6 form the toolchain.
   Version pins and installation commands are authoritative in
   [project configuration](../../pyproject.toml) and [Windows setup](../development/SETUP.md).
 - Use typed Python, Pydantic for bootstrap settings, Ruff, mypy, Pylance/Pyright
   and pytest. Node tools serve development/type/documentation checks only.
 - Application processing must work offline. Installing dependencies and obtaining
   reference documentation can require network access.
-  The optional GPS map background requires an explicit user request; it is not
-  a dependency of import, analysis, route display or export.
+  Optional map backgrounds and release checks are independent network actions;
+  neither is required for import, analysis, route display or export.
 - The importer supports explicitly dispatched schema 2.2.0 and the observed
   unversioned RFDB profile. Additional versions or profiles
   require authorized evidence, an adapter and regression coverage.
@@ -32,7 +32,7 @@ manual OS approval are accepted distribution limitations, documented in the
 
 ## Data and scientific constraints
 
-All five owner-authorized recordings are read-only, including complete GPS data.
+Authorized recordings are read-only, including complete GPS data.
 Never rewrite, normalize, redact or replace them during processing. Preserve
 unknown JSON fields, original numeric spelling and exact bytes. The
 [recording catalog](../development/RECORDINGS.md) owns the authorization/digest inventory.
@@ -46,11 +46,10 @@ or GPS. See [concepts](08_concepts.md) and [risks](11_technical_risks.md).
 
 [AGENTS.md](../../AGENTS.md) governs scope and Git authorization. Work on a feature
 branch; integrate through an authorized PR, never a direct commit/push to main.
-Finish milestone acceptance and documentation locally before publication; CI is
+Finish applicable acceptance and documentation locally before publication; CI is
 secondary validation. Temporary artifacts belong in `.tmp/`; source recordings
 are excluded from text normalization. Dependencies are locked and reviewed.
 
 Analysis uses locked NumPy/Pint/SciPy in the optional `analysis` extra.
-GeographicLib is not adopted or required for the GPS reference-only scope.
-AHRS and pyproj remain research only. Preserve actual binary/transitive
-license notices for eventual distribution; see [analysis library decision](09_architecture_decisions.md#analysis-models-and-libraries).
+Preserve actual binary/transitive license notices for distribution; see the
+[analysis library decision](09_architecture_decisions.md#analysis-models-and-libraries).

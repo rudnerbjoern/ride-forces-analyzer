@@ -7,8 +7,7 @@ This is an independent project, with no affiliation with, endorsement from or
 sponsorship by that app or its developer.
 [Roadmap](ROADMAP.md) distinguishes implemented scope from open work.
 [Architecture](architecture/README.md) describes the system in twelve arc42 chapters;
-chapter 9 retains decision status and rationale. Completed requirements, stage plans and
-historical acceptance reports are not maintained.
+chapter 9 retains decision status and rationale.
 
 ## For users
 

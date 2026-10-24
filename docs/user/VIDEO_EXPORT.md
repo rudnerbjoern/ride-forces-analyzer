@@ -1,10 +1,10 @@
 # Export a ride overlay
 
-Turn your `.forces` recording into a video showing the forces throughout your
+Turn your `.forces` or `.zforces` recording into a video showing the forces throughout your
 ride. Export a transparent overlay to place above your Onride footage, or a video
 with a black background to watch on its own.
 
-The steps below use the English interface labels. The application also supports German.
+The steps below use English interface labels. German and French are also available.
 
 ## Before you start
 

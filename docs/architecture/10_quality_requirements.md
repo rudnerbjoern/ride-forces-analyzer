@@ -19,20 +19,12 @@ explicit scientific provenance are the primary quality goals.
 | Render opaque/transparent output                        | Separate frames/encoding, complete geometry/alpha, exclusive publication          | Rendering/preview/encoder suites; [encoder compatibility boundary](07_deployment_view.md#encoder-installation)   |
 | Reopen/run saved batches                                | Durable snapshots, hash checks, independent failures and cooperative cancellation | Storage/batch suites; [batch contract](../implementation/EXPORT_BATCHES.md)                                      |
 
-The maintained regression suites verify current contracts rather than archived
-milestone identifiers. Keep arc42 views consistent, decisions documented and diagrams checked.
-Numerical correctness alone does not qualify physical sensor semantics.
+The maintained regression suites verify current behavior and public contracts.
+Numerical correctness does not qualify physical sensor semantics.
+[Windows setup](../development/SETUP.md) owns commands; [AGENTS.md](../../AGENTS.md)
+owns focused-check selection and evidence reuse.
 
-[Windows setup](../development/SETUP.md) owns exact quality commands.
-Native local acceptance precedes publication; PR CI is secondary validation.
-Active validation reports retain necessary scientific/security/release evidence;
-superseded milestone reports and delivery transcripts are not maintained.
-Run focused checks first; full suites follow owner authorization under AGENTS.md.
-
-Import benchmarks are local observations, not throughput, total-RAM or cold-cache
-guarantees. Universal physical calibration, analytical GPS, extra filters and broad
-statistics are excluded from reduced M3. The owner confirms standalone EXE startup
-on clean Windows without preinstalled Python or the development environment;
-[release scope](../development/RELEASE.md#windows-packages) retains the evidence limits.
-Linux/macOS clean-machine qualification and a manually inspected Onride composite
-remain separate acceptance areas.
+Native local acceptance precedes publication. Native package checks establish
+their tested platform scope; they do not replace clean-machine qualification.
+Scientific evidence remains in the [source comparisons](../validation/APP_REFERENCE.md).
+The [release guide](../development/RELEASE.md) owns distribution limits.

@@ -60,8 +60,8 @@ Run `.\setup.ps1 -VideoExport` to install the FFmpeg full build pinned by
 fetch and extract the publisher archive under `.tmp/`; repeat setup reuses the
 installed encoder. Cleaning `.tmp/` removes this optional tool installation.
 The export dialog can also use an existing ffmpeg.exe without downloading anything.
-Installed export processing is offline. Pillow is already a locked render extra;
-no new Python dependency is introduced. The full build supports Vulkan ProRes
+Installed export processing is offline. Pillow is a locked render extra.
+The full build supports Vulkan ProRes
 and NVIDIA NVENC when the actual GPU probe succeeds; CPU encoding remains usable.
 See the [user export guide](../user/VIDEO_EXPORT.md) for operation and
 [export contracts](../implementation/VIDEO_EXPORT.md) for supported behavior.
@@ -109,8 +109,8 @@ regression commands, run only for affected skill inputs.
 Follow [AGENTS.md](../../AGENTS.md) for evidence reuse, local acceptance before
 publication and explicit Git authorization. PR CI is secondary validation and a
 merge gate; local success grants no delivery or next-stage permission. Record
-exact commands, runner results, platform, tested scope and limitations in the
-applicable `docs/validation/` report; temporary logs stay in `.tmp/`.
+exact commands and results in an acceptance report only when explicitly required;
+routine runner logs stay in `.tmp/`.
 
 ## VS Code and Test Explorer
 
@@ -148,7 +148,7 @@ The repository's [Pages configuration](../../_config.yml) uses Midnight v0.2.0.
 The [start page](../../index.html) renders the README directly, keeping one maintained
 user introduction. Images are served from `docs/images`; documentation, license
 and fixture links open their maintained files on GitHub. The README itself keeps
-its normal repository-relative links. No Ruby dependency is added to the application.
+its normal repository-relative links. Ruby is not an application dependency.
 
 The [local layout](../../_layouts/default.html) adds section navigation and Windows
 EXE/Complete ZIP buttons. At build time it selects the most recently published

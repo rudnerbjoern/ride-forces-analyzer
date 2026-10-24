@@ -74,8 +74,8 @@ checks of all three Windows artifacts, including the complete package's real CPU
 encode. Do not run `scripts.check_windows_packages` locally as an additional
 release-preparation gate; its ZIP checks belong to the pipeline.
 
-Report manifest-listed redistribution gaps accurately; a successful EXE build
-does not close them or establish clean-machine/signing acceptance. Keep logs and
+Report the accepted redistribution scope and recorded verification limits accurately;
+a successful EXE build does not establish clean-machine/signing acceptance. Keep logs and
 outputs in `.tmp/`; no routine tracked validation diary.
 
 ## 4. Deliver the reviewed changes

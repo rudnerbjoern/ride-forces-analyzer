@@ -62,7 +62,7 @@ See [Explore a recording](docs/user/EXPLORER.md) for navigation and selection.
 
 Click **Export video…**, choose a layout and check the preview. Export a transparent
 MOV for your video editor or an MP4 with a solid background. Align the overlay
-with your footage in the editor; automatic video synchronization is not available yet.
+with your footage in the editor.
 The [video export guide](docs/user/VIDEO_EXPORT.md) takes you through each step.
 
 Your recordings stay on your computer. Opening, analyzing and exporting work
@@ -176,8 +176,9 @@ overlay and place it above your footage.
 
 ## Make the workspace yours
 
-Choose **English, German or French** and **Dark, Light, System, Falcons Flight, Loch Ness, Manta, Red Force, Slinky Dog Dash, Taron, Top Thrill 2 or Verbolten** appearance in
-**Settings → Application**. Your saved choices are remembered. The chart adapts
+Choose **English, German or French** and a light, dark or ride-inspired theme in
+**Settings → Application**. [Compare the themes](docs/user/APPEARANCE.md).
+Your saved choices are remembered. The chart adapts
 to the available window space; smaller windows let you switch between the chart
 and inspector.
 
@@ -232,4 +233,4 @@ Reuse terms for supplied recordings are in the
 are in the [central image guide](docs/images/README.md). These grants do not
 automatically apply to your own recordings or exports. Dependencies retain their
 own licenses; see [third-party notices](THIRD_PARTY_NOTICES.md) for their terms
-and unresolved redistribution requirements.
+and documented distribution limits.

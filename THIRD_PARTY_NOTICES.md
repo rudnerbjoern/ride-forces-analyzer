@@ -96,17 +96,18 @@ CC BY-SA 4.0, PSF-2.0 or Python-2.0. Entries are not unique upstream projects.
 
 ## Fonts, graphics and recordings
 
-| Material                                                    | Use / license boundary                                                                                                                                                                                              |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Windows Segoe UI, including bold                            | Loaded from Windows Fonts; no tracked fonts or font embedding in video. Raster output permission does not authorize copying fonts into an installer                                                                 |
-| Pillow fallback                                             | ImageFont embeds an Aileron Regular subset; publisher declares No Rights Reserved, permitting modification/redistribution. Preserve provenance and verify exact bundled font/native-library notices                 |
-| App icon                                                    | Drawn by project code in `ui/chrome.py`; no external icon asset                                                                                                                                                     |
-| Project documentation images                                | License, attribution, image inventory and reproduction: [central image guide](docs/images/README.md)                                                                                                                |
-| Recording references                                        | All owner-supplied test/reference data, including Manta recordings and app exports: CC BY-SA 4.0 with GPS/metadata. See [catalog](docs/development/RECORDINGS.md) and [notice](tests/fixtures/real/README.md)       |
-| External Ride Forces / Apple Maps screenshots               | Not tracked; supplying screenshots does not authorize redistribution of third-party app/map imagery                                                                                                                 |
+| Material                                      | Use / license boundary                                                                                                                                                                                        |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Windows Segoe UI, including bold              | Loaded from Windows Fonts; no tracked fonts or font embedding in video. Raster output permission does not authorize copying fonts into an installer                                                           |
+| Pillow fallback                               | ImageFont embeds an Aileron Regular subset; publisher declares No Rights Reserved, permitting modification/redistribution. Preserve provenance and verify exact bundled font/native-library notices           |
+| App icon                                      | Project-owned `ui/app-icon.svg`, shared by the application and native package icons                                                                                                                           |
+| Project documentation images                  | License, attribution, image inventory and reproduction: [central image guide](docs/images/README.md)                                                                                                          |
+| Recording references                          | All owner-supplied test/reference data, including Manta recordings and app exports: CC BY-SA 4.0 with GPS/metadata. See [catalog](docs/development/RECORDINGS.md) and [notice](tests/fixtures/real/README.md) |
+| External Ride Forces / Apple Maps screenshots | Not tracked; supplying screenshots does not authorize redistribution of third-party app/map imagery                                                                                                           |
 
-- No tracked font files or external SVG/JPEG/icon assets. GPS uses no map tiles;
-  no Apple Maps background is shipped. Product/park names grant no endorsement or trademarks.
+- No font files or third-party icon assets are tracked. GPS can request OpenStreetMap
+  tiles explicitly and cache them locally; no map tiles or Apple Maps background
+  are bundled. Product/park names grant no endorsement or trademarks.
 - [Microsoft font FAQ](https://learn.microsoft.com/en-us/typography/fonts/font-faq):
   raster images/video and font redistribution are distinct.
 - [Aileron publisher](https://dotcolon.net/fonts/aileron/): separate reuse statement,

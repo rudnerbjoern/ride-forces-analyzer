@@ -19,11 +19,11 @@ or press **Ctrl+Shift+O** (**⌘Shift+O** on macOS), then select another recordi
 You can also open the same file again this way to compare different smoothing
 settings. Place the windows side by side using your operating system.
 
-Each window has its own recording, selection, zoom, playback and analysis state.
+Each window has its own recording, selection, zoom, playback and smoothing.
 Closing one window leaves the others open. Language and appearance apply to all
 windows. Saved ride-marker adjustments remain shared per file; existing windows
 retain their current analysis, while subsequently opened windows load saved markers.
-The last window closes the application after background work finishes.
+Closing the last window closes the application.
 
 External file openings normally reuse an existing window. To request another
 window from the command line, use [the `--new-window` option](INSTALLATION.md#open-a-recording-directly).
@@ -133,9 +133,7 @@ exist. Otherwise, raw x/y/z values remain available, with unknown units and no
 left/right or airtime interpretation. See [forces and airtime](FORCES_AND_AIRTIME.md).
 
 Use **Inspector** to access the side panel; in narrow windows it switches between
-the chart and inspector views. **Technical details** identifies the source format
-(Ride Forces or RFDB) and declared schema version. RFDB files without a version
-are explicitly shown as **No schema version**. Under **Settings → Application**, choose
+the chart and inspector views. Under **Settings → Application**, choose
 **English**, **Deutsch** or **Français** and personalize the workspace with a theme. See
 [Choose your appearance](APPEARANCE.md) for the available styles and how to preview them.
 Changing appearance or language keeps your recording, selection, zoom and smoothing.
@@ -158,22 +156,14 @@ Only the visible area is requested, without an account or API key. This action
 contacts OpenStreetMap: it reveals your IP address and the requested geographic
 area, but does not upload the GPS track, timestamps or recording file.
 
-The map is static. After enlarging the window, click the button again to load
-more detail for its new size; enlargement alone only scales the existing image
-and does not contact the service. Map resolution accounts for display scaling,
-up to 2048 pixels per dimension. The visible OpenStreetMap
-credit links to its copyright information. Previously viewed tiles are cached in a
-local database to avoid repeated downloads. The cache keeps up to 100 MiB of images
-and removes the least recently used tiles when full. Network failures leave the track usable, and a map is
-not required for any recording analysis or export. Polar coordinates outside the
-map's coverage retain the offline route view.
+After enlarging the window, click the button again to load more map detail.
+Previously viewed map areas are saved locally to avoid repeated downloads.
+If loading fails or the map does not cover the location, the route remains usable
+without a background. A map is not required for analysis or export.
 
 Use **Settings → Application → Clear map cache** to delete all cached map tiles
-immediately, independently of Save or Cancel. The button shows the stored tile count
-when settings open and is disabled when the cache is empty. After deletion, its
-text confirms that the cache was cleared; errors also appear in the button text.
-An already displayed background remains visible; subsequent map loading fills the
-cache again as needed.
+immediately. An already displayed background stays visible; future map requests
+download the needed images again.
 
 ## Common questions
 

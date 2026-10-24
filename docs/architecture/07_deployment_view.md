@@ -8,143 +8,97 @@
 
 ```mermaid
 flowchart TB
-    subgraph Host["Windows development workstation"]
-        Python["Managed Python in .venv"]
-        GUI["Qt desktop execution mode"]
-        Caller["Python importer caller / test mode"]
-        Original["Read-only local .forces files"]
-        Python --> GUI
-        Python --> Caller
-        Caller --> Original
-    end
-    subgraph Dev["Development infrastructure"]
-        UV["uv and locked Python dependencies"]
-        Node["Node: type / documentation tools"]
-        Git["Git and delivery skill"]
-        CI["Windows PR checks and native package jobs"]
-        UV -.-> Python
-        Git -.-> CI
-    end
-    subgraph Targets["Native release/runtime targets"]
-        Win["Windows x64 EXE / ZIPs"]
-        Linux["Linux x64 portable tar.gz"]
-        Mac["macOS arm64 / x64 app ZIPs"]
-    end
-    CI --> Win
-    CI --> Linux
-    CI --> Mac
+    Source["Source checkout"] --> Windows["Windows development workstation"]
+    Windows --> Quality["Locked local checks"]
+    Source --> CI["GitHub CI: quality and native builds"]
+    CI --> Win["Windows x64 EXE / ZIPs"]
+    CI --> Linux["Linux x64 tar.gz"]
+    CI --> Mac["macOS arm64 / x64 app ZIPs"]
+    Win --> Local["Offline recording processing"]
+    Linux --> Local
+    Mac --> Local
+    Local --> FFmpeg["Bundled or external FFmpeg"]
 ```
 
-The Python API and raw explorer are local entry points. The explorer invokes
-import in a worker thread in the same process; no IPC service is introduced. No cloud component participates in recording processing. Developer
-installation, reference lookups, GitHub delivery and dependency-update proposals
-may require network access; installed runtime and checks work offline.
+No cloud service participates in recording processing. Optional release checks
+contact GitHub; explicit map-background requests contact OpenStreetMap.
+Development tools, dependency installation and GitHub delivery require network
+access as applicable.
 
 ## Mapping and environment
 
-The development Qt entry point runs in the Windows desktop session; domain/importer APIs run
-in the caller process without Qt. [Windows setup](../development/SETUP.md) owns
-installation, version checks and invocation: `setup.ps1` creates the locked
-`.venv`, `start.ps1` launches it without dependency synchronization. The optional
-`-Development` switch installs Node tools; Node is not a runtime dependency.
-Caches/downloads belong in `.tmp/`.
+Development and local regression checks run on native Windows.
+`setup.ps1` creates the locked environment; `start.ps1` starts the application
+without dependency synchronization. Node supplies development checks only.
+[Windows setup](../development/SETUP.md) owns versions and commands.
 
-Analysis models require NumPy; opt-in `analysis.device` additionally requires
-Pint, and `analysis.frames` requires SciPy. Its private registry loads bundled definitions at initialization with no
-disk cache; calculations need no cloud, Qt or per-sample Pint objects.
-[analysis library decision](09_architecture_decisions.md#analysis-models-and-libraries) retains
-Windows x64 wheel compatibility and license boundaries. SciPy supports explicit frames;
-GeographicLib is not required by reduced M3; no new numerical dependency is needed
-for basic extrema.
-This does not verify ARM64, free-threaded Python, a clean VM or a release installer.
+NumPy serves analysis buffers, Pint explicit unit conversion and SciPy passive
+frame transforms. Import/raw handling remains independent of those optional
+analysis libraries. A frozen application contains its Python runtime, Qt and
+required modules; users do not install Python.
 
 ## Validation and release boundary
 
-[PR CI](../development/CI.md) selects application, documentation and skill jobs on
-Windows after local acceptance. It cannot replace native desktop verification.
-Manual CI runs all suites, native package jobs, workflow validation and mandatory secret scanning; a separate `v*` tag workflow validates source
-archives and package builds before a narrowly authorized job publishes native
-downloads under the [release policy](../development/RELEASE.md). Neither runs a duplicate
-full check after a push to `main`.
-Video export uses offline FFmpeg; standalone installation/uninstallation remains planned for
-M8; the checkout is a development environment, not a released installer.
+PR CI selects checks by changed scope; release calls validate the tagged revision
+and require native package checks before publication. Local acceptance and explicit
+owner delivery authorization remain separate from CI.
+[CI routing](../development/CI.md) and [release policy](../development/RELEASE.md)
+own exact gates.
 
-The Windows packaging path builds a PyInstaller EXE with an embedded interpreter
-and libraries, plus standard and FFmpeg-complete ZIPs with notices. An isolated
-native smoke checker executes each artifact and the complete package's CPU encoder.
-The release workflow requires these checks and integrity verification of supplied
-source archives before publishing binaries. The shipped redistribution catalog records
-the accepted delivery scope and source-verification limits, with no pending work;
-local candidates do not establish public binary or clean-VM acceptance. See
-[Windows packages](../development/RELEASE.md#windows-packages).
+Windows distribution uses portable EXE, Standard ZIP and Complete ZIP packages.
+Installer/uninstaller support is optional future work. Package self-tests isolate
+preferences and exercise GUI startup, import, rendering and encoding. The shared
+Qt hook omits the unused PDF image plugin. The redistribution catalog records the
+accepted delivery scope and verification limits.
 
 ## Native distribution targets
 
-Development, editor configuration and the full local regression suite remain on
-Windows. Native Linux/macOS workers are release-build and runtime-validation
-targets, not additional developer setups. PyInstaller does not cross-compile
-these packages from Windows.
+| Target            | Baseline                                   | Package                    | FFmpeg                              |
+| ----------------- | ------------------------------------------ | -------------------------- | ----------------------------------- |
+| Windows x64       | Windows 10/11                              | EXE; Standard/Complete ZIP | Bundled in Complete ZIP or external |
+| Linux x64         | Ubuntu 24.04 / glibc 2.39, desktop session | One-directory tar.gz       | External                            |
+| macOS arm64 / x64 | macOS 15+                                  | Separate app ZIPs          | External                            |
 
-Window and native package identity share one SVG asset. The existing package
-builders generate Windows ICO, macOS ICNS and Linux PNG artwork; Linux additionally
-ships a desktop entry. The runtime SVG is explicitly collected into every frozen
-application. [Icon build contracts](../development/RELEASE.md#shared-application-icon)
-own formats and reproduction; the [installation guide](../user/INSTALLATION.md#optional-application-menu-shortcut)
-owns optional desktop registration for the portable Linux package.
+Each package is built and executed on its native target; Windows does not
+cross-compile Linux/macOS packages. Native CI verifies real imports, visible GUI,
+rendering and CPU encoding. This does not establish compatibility with every
+desktop, GPU or clean system. Windows is unsigned; macOS uses ad-hoc signing
+without notarization. [Installation](../user/INSTALLATION.md) owns first-launch steps.
 
-| Target            | Baseline                                  | Package                                 | Encoder                                            |
-| ----------------- | ----------------------------------------- | --------------------------------------- | -------------------------------------------------- |
-| Windows x64       | Windows 10/11                             | EXE, standard/complete ZIP              | Existing pinned complete bundle or external FFmpeg |
-| Linux x64         | Ubuntu 24.04, glibc 2.39, desktop session | Portable one-directory tar.gz           | External FFmpeg                                    |
-| macOS arm64 / x64 | macOS 15 or newer                         | Separate architecture-specific app ZIPs | External FFmpeg                                    |
-
-The existing Windows builder also owns shared notice collection. The native
-[POSIX builder](../../scripts/build_posix.py) reuses it and the same frozen
-entry point/self-test. Linux archives preserve executable permissions; macOS
-archives preserve framework symlinks and ad-hoc signatures. These signatures
-are not Developer ID signing or notarization. Native checkers extract the actual
-package, isolate preferences, run from `/`, verify notices and exercise the GUI,
-real import, German/light presentation, 4K rendering and external CPU encoding.
-
-The [native workflow](../../.github/workflows/posix-packages.yml) builds on
-Ubuntu 24.04, macOS 15 Apple Silicon and macOS 15 Intel. The required CI gate
-includes all three; release quality reuses those same jobs/artifacts before
-Windows packaging and publication. No target failure is optional. Static Windows
-checks cannot establish a working macOS package; native job success is required.
-See [release installation and limits](../development/RELEASE.md#linux-and-macos-packages).
-
-Local state uses LOCALAPPDATA on Windows, absolute XDG_DATA_HOME (fallback
-`~/.local/share`) on Linux, and `~/Library/Application Support` on macOS.
-Recording files and independent GPS are unchanged. Native Qt chooses the UI font;
-Pillow retains its scalable fallback when Segoe UI is unavailable. Export staging
-uses the chosen destination folder and is removed on completion/failure, so a
-read-only launch directory is supported. External encoders do not inherit frozen
-Linux library paths. Update checks require an asset for the running OS/architecture.
+The shared SVG icon produces Windows ICO, macOS ICNS and Linux PNG/desktop-entry
+assets. Builders collect it and required license notices. Native checkers verify
+package layout, hashes and execution; macOS additionally checks the app signature.
+[Release packaging](../development/RELEASE.md) owns artifact construction.
 
 ## Encoder installation
 
-`setup.ps1 -VideoExport` installs the version/checksum-pinned full FFmpeg build
-from ffmpeg.json into `.tmp/ffmpeg/bin`, or the export dialog accepts an existing
-executable. Installation may download the archive; video processing never downloads
-codecs or uses cloud services. Pillow is an existing locked render extra; Windows
-Segoe UI supplies text, with a scalable bundled Pillow-font fallback. Supported
-NVIDIA devices can use Vulkan ProRes 4444 or NVENC H.264; CPU remains independent.
-Representative native checks cover CPU/GPU encodes, both aspects, preview parity,
-and alpha. The original landscape column was exported for complete
-Manta/Kraken/Voltron recordings (9,640/10,084/10,504 frames at 50 fps) and imported
-into Resolve 21.1.0.17 as 3840×2160 ProRes 4444 with Straight alpha and exact frame
-counts. Start/ride/end comparisons retained exact alpha and mean RGB error below
-0.022/255. This establishes media-pool import, not a visually qualified Onride
-composite or complete-ride coverage of every layout/aspect/language. ProRes files
-remain large; FFV1 was evaluated but is not an application output. See
-[FFmpeg ProRes options](https://www.ffmpeg.org/ffmpeg-codecs.html#ProRes) and the
-[Blackmagic codec list](https://documents.blackmagicdesign.com/SupportNotes/DaVinci_Resolve_19_Supported_Codec_List.pdf).
+Windows Complete ZIP contains the encoder pinned in `ffmpeg.json`.
+Development setup can install it under `.tmp/ffmpeg/bin`; the assistant also
+accepts an external executable. Linux/macOS use an external native FFmpeg.
+
+Pillow generates RGBA regions. Supported NVIDIA backends provide Vulkan ProRes
+4444 with alpha or NVENC H.264; a real probe selects the backend. CPU fallback
+remains available. HUD exports native HD and other layouts 4K. Output format and
+editor compatibility depend on the selected encoder and editor.
+[Video contracts](../implementation/VIDEO_EXPORT.md) define encoding/publication
+and [the user guide](../user/VIDEO_EXPORT.md#5-put-the-overlay-above-your-footage)
+explains compositing.
+
+Export staging uses the destination filesystem and is cleaned after completion,
+failure or cancellation, including when launched from a read-only directory.
+External Linux encoders do not inherit frozen-library overrides.
 
 ## Local export configuration
 
-Python's built-in sqlite3 stores presets and batch definitions in `exports.sqlite3`
-under the platform data directory described above. Connections are short-lived,
-writes transactional and schema versions explicit; no server/ORM dependency is
-introduced. Recordings remain at their original paths with pinned content hashes.
-The user selects an output root; every batch run creates a unique subdirectory
-containing videos and run-report.json. Test databases stay under .tmp/.
+The platform data root is LOCALAPPDATA on Windows, absolute XDG_DATA_HOME or
+`~/.local/share` on Linux, and `~/Library/Application Support` on macOS.
+
+- `preferences.sqlite3`: language, appearance, folders, restore/update consent,
+  render-job count and source-hash-bound marker choices.
+- `exports.sqlite3`: versioned presets and immutable batch jobs.
+- `map-cache.sqlite3`: optional cached map tiles and HTTP metadata.
+- `support/`: per-process diagnostic reports.
+
+SQLite writes are transactional; recordings and rendered media remain external.
+Batch output directories contain videos and `run-report.json`.
+[Persistence concepts](08_concepts.md#rendering-and-persistence) describe ownership.

@@ -4,8 +4,7 @@ Configuration is authoritative. This guide neither duplicates lock contents nor
 claims dependencies are latest or vulnerability-free.
 
 Windows remains the development host. The same Python lock supplies Linux x64
-and macOS x64/arm64 native release workers; no additional Python runtime dependency
-is introduced. Linux desktop shared libraries and an external FFmpeg are target
+and macOS x64/arm64 native release workers. Linux desktop shared libraries and an external FFmpeg are target
 OS requirements, not bundled GyanD downloads. The
 [release guide](RELEASE.md#linux-and-macos-packages) owns installation commands,
 platform baselines and native validation.
@@ -29,7 +28,7 @@ platform baselines and native validation.
   and VS Code pytest coverage integration.
 - Standalone redistribution requires actual assembled notices;
   [third-party inventory](../../THIRD_PARTY_NOTICES.md) owns Qt Charts/FFmpeg terms,
-  fonts/materials and outstanding source/notice duties.
+  fonts/materials and the accepted distribution scope.
 
 ## Dependency updates
 
