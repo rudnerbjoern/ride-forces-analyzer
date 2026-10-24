@@ -1,7 +1,7 @@
 # Ride Forces Analyzer
 
 [![CI](https://github.com/rudnerbjoern/ride-forces-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/rudnerbjoern/ride-forces-analyzer/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/rudnerbjoern/ride-forces-analyzer?include_prereleases)](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)
+[![Release](https://img.shields.io/github/v/release/rudnerbjoern/ride-forces-analyzer)](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
 [![Platforms: Windows, Linux and macOS](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-blue)](docs/user/INSTALLATION.md)
 [![GitHub issues](https://img.shields.io/github/issues/rudnerbjoern/ride-forces-analyzer)](https://github.com/rudnerbjoern/ride-forces-analyzer/issues)
@@ -45,7 +45,7 @@ No Python installation is needed. The Windows Complete ZIP includes FFmpeg for
 video export; Linux and macOS need it installed separately. Windows EXE and
 Standard ZIP downloads are also available if you prefer to use your own FFmpeg.
 
-This is a preview release. Windows and macOS may display a security warning
+Version **1.0.0** is the first stable release. Windows and macOS may display a security warning
 when you first open the app.
 Follow the [installation guide](docs/user/INSTALLATION.md) for download
 verification, Linux prerequisites and first-launch instructions.

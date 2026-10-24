@@ -89,7 +89,9 @@ Run from the repository root on native Windows:
 uv run --locked pytest --cov --cov-report=term-missing `
     tests/analysis/test_recording.py tests/analysis/test_recording_validation.py `
     tests/analysis/test_recording_preparation.py tests/analysis/test_recording_recalculation.py `
-    tests/analysis/test_service.py tests/analysis/test_airtime_events.py
+    tests/analysis/test_service.py tests/analysis/test_airtime_events.py `
+    tests/analysis/test_calibration_recalculation.py tests/analysis/test_ride_markers.py `
+    tests/analysis/test_rfdb.py
 uv run --locked coverage html
 uv run --locked coverage json
 ```

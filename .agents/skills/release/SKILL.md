@@ -26,7 +26,7 @@ Honor existing owner authorization; ask only for missing target version or permi
   and reusable. Preserve its `{{VERSION}}`, `{{REPOSITORY}}` and `{{TAG}}`
   placeholders and preview their substitution. Add a concise Upgrade notes section
   only when this release needs specific user action; remove obsolete upgrade notes
-  when preparing the next release. Follow prerelease and redistribution policy.
+  when preparing the next release. Follow version and redistribution policy.
 - Refresh screenshots affected by visible/version changes through
   [update-screenshots](../update-screenshots/SKILL.md); do not introduce a new capture tool.
 

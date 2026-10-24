@@ -151,8 +151,8 @@ and fixture links open their maintained files on GitHub. The README itself keeps
 its normal repository-relative links. Ruby is not an application dependency.
 
 The [local layout](../../_layouts/default.html) adds section navigation and Windows
-EXE/Complete ZIP buttons. At build time it selects the most recently published
-non-draft release containing both Windows assets, including prereleases, and adds
+EXE/Complete ZIP buttons. At build time it selects the most recent published
+release containing both Windows assets and adds
 Linux/macOS links when their matching assets are present. Unpublished platform
 packages never produce broken buttons. Without
 matching metadata it links to the release list. A newly published release appears
