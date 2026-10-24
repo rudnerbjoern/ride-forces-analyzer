@@ -4,7 +4,6 @@ from pathlib import Path
 
 from PySide6.QtCore import QMimeData, QPoint, QPointF, Qt, QUrl
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
-import pytest
 
 from ride_forces_analyzer.ui.window import ExplorerWindow
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
@@ -31,22 +30,24 @@ def drop_events(urls: list[QUrl]) -> tuple[QMimeData, QDragEnterEvent, QDropEven
     return mime, enter, drop
 
 
-@pytest.mark.parametrize("extension", ["forces", "zforces"])
-def test_drop_imports_recording(explorer_window: ExplorerWindow, extension: str) -> None:
-    path = next(REAL_FIXTURE_DIRECTORY.glob(f"Manta*.{extension}"))
-    mime, enter, drop = drop_events([QUrl.fromLocalFile(str(path.resolve()))])
-    explorer_window.dragEnterEvent(enter)
-    assert enter.isAccepted()
-    explorer_window.dropEvent(drop)
-    assert drop.isAccepted()
-    assert mime.hasUrls()
-    # A second drop must not replace an active import.
-    _, busy_enter, busy_drop = drop_events([QUrl.fromLocalFile(str(path.resolve()))])
-    explorer_window.dragEnterEvent(busy_enter)
-    explorer_window.dropEvent(busy_drop)
-    assert not busy_enter.isAccepted() and not busy_drop.isAccepted()
-    wait_until(lambda: explorer_window.data is not None and explorer_window.open_action.isEnabled())
-    assert explorer_window.data is not None and explorer_window.data.title == "Manta"
+def test_drop_imports_recording(explorer_window: ExplorerWindow) -> None:
+    for extension in ("forces", "zforces"):
+        path = next(REAL_FIXTURE_DIRECTORY.glob(f"Manta*.{extension}"))
+        mime, enter, drop = drop_events([QUrl.fromLocalFile(str(path.resolve()))])
+        explorer_window.dragEnterEvent(enter)
+        assert enter.isAccepted()
+        explorer_window.dropEvent(drop)
+        assert drop.isAccepted()
+        assert mime.hasUrls()
+        # A second drop must not replace an active import.
+        _, busy_enter, busy_drop = drop_events([QUrl.fromLocalFile(str(path.resolve()))])
+        explorer_window.dragEnterEvent(busy_enter)
+        explorer_window.dropEvent(busy_drop)
+        assert not busy_enter.isAccepted() and not busy_drop.isAccepted()
+        wait_until(
+            lambda: explorer_window.data is not None and explorer_window.open_action.isEnabled(),
+        )
+        assert explorer_window.data is not None and explorer_window.data.title == "Manta"
 
 
 def test_drop_rejects_unrelated_payloads(
