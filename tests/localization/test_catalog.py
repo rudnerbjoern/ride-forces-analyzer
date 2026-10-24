@@ -209,6 +209,24 @@ def test_overlay_labels_fit_and_language_is_reproducible(
     first_pixels = first.tobytes()
     assert first_pixels == second.tobytes()
     assert calls
+    texts = {text for text, _, _ in calls}
+    force_readouts = {text for text in texts if re.fullmatch(r"[+-]?\d+[.,]\d+ g", text)}
+    assert force_readouts
+    assert all(re.fullmatch(r"[+-]?\d+[.,]\d g", text) for text in force_readouts)
+    for channel in timeline.channels[:3]:
+        value = timeline.value_at(channel, 3600)
+        assert value is not None
+        expected = tr(
+            "{0:.1f} {1}" if layout == "column" else "{0:+.1f} g",
+            value,
+            "g",
+            language=language,
+        )
+        assert str(expected) in texts
+    if layout == "column":
+        angle = timeline.value_at(timeline.channels[3], 3600)
+        assert angle is not None
+        assert str(tr("{0:.2f} {1}", angle, "°", language=language)) in texts
     if layout == "hud":
         assert not any("Neigung" in text or "Inclinaison" in text for text, _, _ in calls)
         context = timeline.context_at(3600)

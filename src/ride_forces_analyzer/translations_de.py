@@ -391,6 +391,8 @@ GERMAN: dict[str, str] = {
     "Only file-backed recordings can be queued": "Nur Aufnahmen aus Dateien können einem Stapel hinzugefügt werden",
     "A selection preset needs explicit bounds for this recording": "Für eine Auswahlvorgabe müssen die Bereichsgrenzen dieser Aufnahme angegeben werden",
     "{0:+.2f} g": "{0:+.2f} g",
+    "{0:+.1f} g": "{0:+.1f} g",
+    "{0:.1f} {1}": "{0:.1f} {1}",
     "{0:.6g}": "{0:.6g}",
     "{0:.3g}": "{0:.3g}",
     "{0:+.2f}": "{0:+.2f}",

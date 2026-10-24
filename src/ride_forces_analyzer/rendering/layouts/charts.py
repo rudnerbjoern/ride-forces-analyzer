@@ -189,7 +189,7 @@ class ChartRenderer(Drawing):
         for row, channel in enumerate(self.timeline.channels[:3]):
             value = self.timeline.value_at(channel, position)
             x, y, _, _ = self.card_box(row)
-            readout = self._tr("Unavailable") if value is None else self._tr("{0:+.2f} g", value)
+            readout = self._tr("Unavailable") if value is None else self._tr("{0:+.1f} g", value)
             self._text(
                 draw,
                 (x + self.text_left, y + self.value_top),

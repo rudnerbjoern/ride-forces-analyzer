@@ -504,7 +504,7 @@ class HudRenderer(Drawing):
             self._text(
                 draw,
                 (anchor_x - left, g.value_y - top),
-                self._tr("Unavailable") if value is None else self._tr("{0:+.2f} g", value),
+                self._tr("Unavailable") if value is None else self._tr("{0:+.1f} g", value),
                 self.label if value is None else self.number,
                 color,
                 "lt" if row == 0 else "rt",
@@ -540,7 +540,7 @@ class HudRenderer(Drawing):
         self._text(
             draw,
             (self.width / 2, 4),
-            self._tr("Unavailable") if value is None else self._tr("{0:+.2f} g", value),
+            self._tr("Unavailable") if value is None else self._tr("{0:+.1f} g", value),
             self.label if value is None else self.number,
             YELLOW,
             "mt",

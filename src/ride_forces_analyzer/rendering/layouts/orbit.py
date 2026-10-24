@@ -266,7 +266,7 @@ class OrbitRenderer(Drawing):
             self._text(
                 draw,
                 (x, y + VALUE_OFFSET_Y),
-                self._tr("Unavailable") if current is None else self._tr("{0:+.2f} g", current),
+                self._tr("Unavailable") if current is None else self._tr("{0:+.1f} g", current),
                 self.label if current is None else self.number,
                 CHANNEL_COLORS[row],
                 TEXT_ANCHOR,
