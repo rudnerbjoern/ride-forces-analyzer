@@ -6,6 +6,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+import pytest
+
 
 def run_report(directory: Path, program: str) -> subprocess.CompletedProcess[str]:
     setup = """
@@ -23,6 +25,29 @@ reports.data_directory = lambda: directory
         timeout=30,
         check=False,
     )
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows process-handle lifetime")
+@pytest.mark.parametrize("exit_code", [0, 259])
+def test_completed_process_is_not_running_while_its_handle_is_open(
+    export_directory: Path,
+    exit_code: int,
+) -> None:
+    result = run_report(
+        export_directory,
+        f"""
+import subprocess
+with subprocess.Popen(
+    [sys.executable, "-c", "import sys; sys.stdin.buffer.read(); sys.exit({exit_code})"],
+    stdin=subprocess.PIPE,
+) as process:
+    assert reports._running(process.pid)
+    process.communicate(input=b"", timeout=10)
+    assert process.returncode == {exit_code}
+    assert not reports._running(process.pid)
+""",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_report_retains_every_error_and_replaces_completed_runs(export_directory: Path) -> None:

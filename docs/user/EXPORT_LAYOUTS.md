@@ -12,7 +12,7 @@ easy to read.
 | ---------------------- | --------------------------- | ------------------------------------------------------------- |
 | **Flow Ribbon**        | Along the bottom            | Follow all three force curves together in a wide strip.       |
 | **Corner Instruments** | Upper right                 | Read separate force cards while keeping the center clear.     |
-| **Telemetry Capsule**  | Along the top               | Keep a compact strip above the main action.                   |
+| **HUD**                | Full screen                 | Follow frameless edge gauges and three force histories.       |
 | **G-Orbit**            | Lower left                  | Follow current forces and recent peaks on circular gauges.    |
 | **Four-panel column**  | Right side                  | Compare force histories and a separate orientation curve.     |
 
@@ -27,8 +27,9 @@ thumbnails follow your current position choices.
 2. Click **Export 4K…** and choose a layout thumbnail or **Layout profile**.
 3. Choose landscape or portrait under **Video format**. Every layout supports
    both; the portrait arrangement adapts to the narrower frame.
-4. Choose **Position** beside **Layout profile**. Ribbon and Capsule offer top or
+4. Choose **Position** beside **Layout profile**. Ribbon offers top or
    bottom, Column left or right, and Corners and G-Orbit all four corners.
+   HUD uses the whole frame with a fixed **Full screen** position.
    Switching layout or format keeps a supported or equivalent position, such as
    top left → top. Corner previews follow top/bottom choices, retaining their last
    left/right side in this assistant session. For example, Orbit at top right moves
@@ -59,11 +60,48 @@ format and overlay language. For the remaining export steps, follow the
 - **Tilt / orientation:** an angle describing tilt, not a compass heading or GPS
   direction. If the recording lacks usable gravity data, no angle is invented.
 
-Flow Ribbon, Corner Instruments and Telemetry Capsule include force histories
+Flow Ribbon and Corner Instruments include force histories
 and the current vertical context, such as Floater, Airtime or Ejector. The
 four-panel column adds a dedicated orientation history. G-Orbit concentrates on
 current forces; its quieter peak indicators briefly retain recent extremes while
 the numbers continue to show the current values.
+
+HUD leaves the center open and places freely floating instruments around
+the screen: vertical G-force and airtime at the left, acceleration/braking at the
+right, lateral force below. Fine scale marks, bright pointers, large numbers,
+colored glow and black shadows keep the instruments readable over footage.
+The vertical instrument uses the recording's riding position: **Seated** starts
+at **−1.5…+5 g**, **Flying** at **−4…+3 g**. Its negative and positive limits expand
+independently in 0.5 g steps when selected values require more room. Both sides
+use equal spacing per g, so zero is offset rather than centered. Missing source
+positions default to Seated during import; other/unavailable values use the
+general Seated display range. Position is never guessed from the ride name.
+Only whole g values are labeled on the vertical instrument. Long marks denote
+whole g values, medium marks half g values and short marks quarter g values;
+unusually wide ranges show fewer marks to stay readable.
+The right acceleration/braking instrument starts at ±1.5 g. Before rendering,
+larger actual peaks in the selected export interval expand its range; the range
+then stays fixed for the whole video.
+The lateral instrument starts at ±2 g. Larger actual left/right peaks in the
+export interval expand it to the next 0.5 g boundary, such as 2.05 g → ±2.5 g,
+with the same fixed range throughout the video.
+The brighter bars along the scales hold positive and negative peaks separately
+for 1.5 seconds, then return toward zero at 1 g/s. Pointers and numbers show the
+current values. Missing data resets the held peaks.
+A narrow line at the outer right edge shows orientation from 0° at the top to
+180° at the bottom, with marks at 0°, 45°, 90°, 135° and 180°. A small white pointer
+shows the current angle. The entire orientation scale disappears when its data
+is unavailable; the force instruments keep their positions.
+Numbers use a bold weight and airtime labels use uppercase text. Three thin force
+histories run across the bottom over a soft dark gradient with a shared time cursor.
+Their time-zero line aligns exactly with zero on the left/right force instrument.
+Selecting HUD sets **Visible time window** to 30 seconds: 15 before and 15 after
+the cursor. You can change it afterward; loaded presets retain their saved window.
+All three read left-to-right; the lateral history is positive-up. Each bottom
+curve has its own tighter scale fitted to the selected export interval, fixed
+throughout the video. Curve heights are relative to each channel's own range;
+the large instrument scales remain independent. Missing values hide their marker and break
+their curve. No speed, gear, heading or vehicle-attitude data is added.
 
 The time plots do not all run in the same direction: the four-panel column reads
 left to right, while compact lateral histories show the past below and the future

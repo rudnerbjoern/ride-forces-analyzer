@@ -19,11 +19,11 @@ from .layouts.contracts import LayoutPosition
 FrameRate = int | Literal["60000/1001"]
 EXPORT_FRAME_RATES: tuple[FrameRate, ...] = (24, 25, 30, 50, "60000/1001", 60)
 
-ExportLayout = Literal["column", "ribbon", "corners", "capsule", "orbit"]
+ExportLayout = Literal["column", "ribbon", "corners", "hud", "orbit"]
 PROFILES: tuple[tuple[ExportLayout, str], ...] = (
     ("ribbon", "Flow Ribbon"),
     ("corners", "Corner Instruments"),
-    ("capsule", "Telemetry Capsule"),
+    ("hud", "HUD"),
     ("orbit", "G-Orbit"),
     ("column", "Four-panel column"),
 )

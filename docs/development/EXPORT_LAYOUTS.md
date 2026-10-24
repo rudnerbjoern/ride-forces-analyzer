@@ -1,12 +1,14 @@
 # Export layout extensions
 
+<!-- cspell:words Bahnschrift -->
+
 For choosing and reading the available layouts, see the
 [user layout guide](../user/EXPORT_LAYOUTS.md). This page covers implementation
 and extension of the renderers.
 
 Layouts are internal, explicitly registered plugins. No package discovery,
 installation, network access or third-party code loading is involved.
-The public selection and saved-preset keys remain unchanged.
+Public selection and saved-preset keys come from the explicit profile registry.
 
 For an example of a rendered template in use, watch the
 [Manta G-Orbit demo on YouTube](https://youtu.be/tsRzD416voU).
@@ -19,8 +21,8 @@ For an example of a rendered template in use, watch the
 | `column.py`                                              | Original four-panel column                                      |
 | `ribbon.py`                                              | Flow Ribbon geometry and portrait reflow                        |
 | `corners.py`                                             | Stacked Corner Instruments geometry                             |
-| `capsule.py`                                             | Telemetry Capsule geometry, number sizing and portrait reflow   |
-| `charts.py`                                              | Shared three-channel time plots for ribbon, corners and capsule |
+| `hud.py`                                                 | Full-screen HUD scales, transparent glow and force histories    |
+| `charts.py`                                              | Shared three-channel time plots for ribbon and corners          |
 | `common.py`                                              | Fonts, text/panel drawing and shared lateral coordinate mapping |
 | `contracts.py`                                           | `LayoutPlugin` metadata and `LayoutRenderer` protocol           |
 | `registry.py`                                            | Explicit registrations, region lookup and renderer construction |
@@ -56,9 +58,14 @@ explicit `LayoutPosition` value. Immutable job snapshots retain it when presets
 change; batches pass the saved settings unchanged to export preparation/encoding.
 Coordinates remain layout-owned and are not stored in presets/jobs.
 
+`LayoutPosition.FULL_SCREEN` serializes as `full_screen`. HUD uses this single
+position with a region covering the complete format canvas. Switching from a
+full-screen layout restores another layout's remembered position when available,
+otherwise its default. No corner/edge is inferred from a full-screen position.
+
 `LANDSCAPE_POSITIONS` and `PORTRAIT_POSITIONS` live in each layout module.
-Ribbon/Capsule declare top/bottom, Column left/right and Corners/G-Orbit all four
-corners. Their defaults retain the existing geometry.
+Ribbon declares top/bottom, Column left/right, Corners/G-Orbit all four corners,
+and HUD full-screen. Each format has one explicit default.
 The factory receives an `ExportTimeline`. Its renderer implements
 `render_position(position: float) -> Image.Image`, returning a native-sized
 RGBA region at an absolute source-sample position, including fractional samples.
@@ -75,9 +82,49 @@ force values in a layout. For time-dependent instruments, derive state from sour
 
 The shared chart base handles trace sampling and axes. Individual chart modules
 own native dimensions, plot offsets, stacking and aspect-specific factories.
-Portrait Ribbon/Capsule reuse the stacked chart arrangement with their own style
-and portrait constants; editing Corners does not change those profiles.
-G-Orbit and Column have independent drawing code.
+Portrait Ribbon reuses the stacked chart arrangement with its own style
+and portrait constants; editing Corners does not change that profile.
+HUD, G-Orbit and Column have independent drawing code.
+
+HUD owns immutable landscape/portrait pixel geometry, scale subdivisions and
+type/color/effect constants. Static force scales, labels and shadows are drawn once.
+Dynamic light/shadow layers are bounded to side instruments, the lateral readout
+and histories. Premultiplied-alpha blur preserves colored light without dark
+fringes. A static transparent-to-black gradient sits behind the bottom histories.
+Value readouts use the installed Bahnschrift Bold weight; context labels use
+uppercase text. There is no UI dependency or frame-history cache.
+A conditional orientation strip occupies the outermost 48 native pixels at the
+right edge, aligned to the side instruments' height. It reads channel 3 through
+`ExportTimeline.value_at`, maps 0…180° downward and draws only the five 45° marks
+and a white triangular bug. The complete strip is omitted for missing orientation,
+including gaps at fractional positions; existing instruments are not repositioned.
+Instrument scales hold `(low, high, major_step)` bounds. Vertical uses source
+`riding_position`: explicit `Flying` selects −4…+3 g; the general range is
+−1.5…+5 g. Both bounds fit valid selected extrema independently in 0.5 g steps,
+with bounded tick density and exact endpoint ticks. Only whole g values are
+labeled on the vertical instrument: whole, half and quarter g ticks use long,
+medium and short marks respectively. Wider ranges thin the quarter-g grid with
+an integer stride. Unknown/unavailable posture
+uses the general display range, without source reclassification. The affine
+vertical mapping has equal pixels per g on both sides and supports reversal.
+Scale bars reuse `rendering.peaks.PeakEnvelope` with a 1.5-second hold and 1 g/s
+release, independently for each sign/channel. Current markers/readouts remain
+instantaneous. Envelopes are prepared once from the selected interval, reset
+on gaps and preserve deterministic fractional-sample rendering and seeking.
+The right instrument uses a ±1.5 g minimum in both aspects. Its range is fitted
+once to the absolute longitudinal peak of valid selected samples, without padded
+chart bounds or history headroom, and rounded outward using the scale tick policy.
+The lateral instrument uses the same actual-peak selection with a ±2 g minimum,
+rounded outward in fixed 0.5 g steps. Major/minor tick density stays bounded for
+large ranges; endpoint ticks and portrait labels show the resulting exact bounds.
+History ranges are fitted once to valid selected samples per channel, separately
+from instrument ranges: symmetric zero-centered bounds, 5% headroom, rounded
+outward to 0.1 g with a ±0.1 g minimum. Missing values and data outside the export
+interval do not affect these ranges; seeking and the visible time window do not
+rescale them. Portrait history endpoint labels use these independent bounds.
+The histories' time-zero cursor shares the exact x coordinate of `lateral_x(0)`.
+Their right boundary mirrors `history_left` around this coordinate, keeping equal
+pixels per second before/after zero; curves, baselines and time ticks share the bounds.
 
 ## Design constants
 

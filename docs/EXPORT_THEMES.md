@@ -3,14 +3,9 @@
 For help choosing a layout and reading its instruments, see the
 [user layout guide](user/EXPORT_LAYOUTS.md).
 
-All five layouts show the same Manta moment: **00:40.32** at 50 Hz
-(40.64 replay seconds), source sample 4782 within the marker interval
-with the default **11-sample smoothing**.
-
-- Vertical: **−3.55 g**.
-- Lateral: **+0.11 g**, right.
-- Longitudinal: **+0.09 g**, acceleration.
-- Tilt: **177.9°**.
+All five layouts show the same Manta moment. Recording details, fixed settings,
+reproduction commands and image licensing are documented in the
+[central image guide](images/README.md).
 
 ![Five Manta export layouts at the same strong negative vertical-force peak, showing their positions within a landscape video](images/manta-export-themes.png)
 
@@ -33,7 +28,7 @@ arc, peak fills and peak markers. Channel headings and numeric text retain their
 theme colors.
 Theme graphics contain no Hz/fps labels; source sample rate and overlay export
 frame rate are technical settings, not the frame rate of the underlying video.
-Flow Ribbon, Corner Instruments and Telemetry Capsule show source-time vertical
+Flow Ribbon, Corner Instruments and HUD show source-time vertical
 context using the provisional [airtime heuristic](implementation/AIRTIME.md).
 It distinguishes Floater, Airtime, Strong Airtime and Ejector using load and
 recent onset, independently of axis inversion. Missing values show Unavailable.
@@ -56,13 +51,18 @@ traces beside the footage.
 
 [Open the complete 4K placement view](images/manta-corners.png).
 
-## Telemetry Capsule
+## HUD
 
-A slim strip at the top presents the same three channels, replay time and tilt.
+Freely floating scales surround an open center: vertical G-force/airtime on the
+left, acceleration/braking on the right, and lateral force below. Fine ticks,
+luminous pointers, large technical readouts and soft black shadows follow the
+frameless game-HUD design. Three wide force histories share one time cursor
+at the bottom. Scale ranges adapt to actual forces; missing values remain gaps.
+The complete arrangement adapts independently to landscape and portrait.
 
-![Telemetry Capsule detail with force values and traces in a horizontal strip](images/manta-capsule-detail.png)
+![Frameless full-screen HUD with glowing edge scales, airtime and three force histories](images/manta-hud-detail.png)
 
-[Open the complete 4K placement view](images/manta-capsule.png).
+[Open the complete 4K placement view](images/manta-hud.png).
 
 ## G-Orbit
 
@@ -100,7 +100,7 @@ acceleration and red for braking, changing color at zero crossings.
 
 ## Reference settings
 
-English labels, landscape, 50 fps and a 12-second time window. Source sample
+English labels, landscape, 50 fps and a 12-second time window (30 seconds for HUD). Source sample
 4782, recording time 95.64 seconds; the marker interval determines force bounds.
 All profiles use the same unchanged Manta recording from the
 [authorized catalog](development/RECORDINGS.md). The strongest point was selected
@@ -118,7 +118,8 @@ From the project folder in Windows PowerShell, after setup:
 The [script](../scripts/render_export_reference.py) replaces the eleven reference
 PNGs in `docs/images` and writes `manta-reference.json` with the source identity,
 sample, values and settings. It always uses **zero-based source sample 4782**,
-11-sample smoothing, English labels, landscape, 50 fps, a 12-second window and
+11-sample smoothing, English labels, landscape, 50 fps, a 12-second window
+(30 seconds for HUD) and
 the original marker range. Vertical defaults positive-down; lateral defaults
 left/right and longitudinal positive-up. It never searches for a new maximum. The source SHA-256 must match
 the authorized Manta recording or generation stops.

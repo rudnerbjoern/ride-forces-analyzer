@@ -26,11 +26,19 @@ def test_portrait_contains_complete_region(manta: ExplorerData, layout: str) -> 
     renderer = OverlayRenderer(prepare_export(manta.analysis, settings, 3500, 3700))
     frame = renderer.render_sample(3600)
     x, y, width, height = export_region(settings)
-    assert x > 0 and y > 0 and x + width < frame.width and y + height < frame.height
+    if layout == "hud":
+        assert (x, y, width, height) == (0, 0, *frame.size)
+    else:
+        assert x > 0 and y > 0 and x + width < frame.width and y + height < frame.height
     region = renderer.render_region(0)
     assert region.size == (width, height)
     bounds = frame.getchannel("A").getbbox()
-    if layout == "orbit":
+    if layout == "hud":
+        assert bounds is not None
+        # The bottom gradient reaches the frame edges; the upper canvas stays open.
+        assert bounds[0] == 0 and bounds[2:] == (width, height)
+        assert 0 < bounds[1] < height
+    elif layout == "orbit":
         assert width == height and bounds is not None
         assert x <= bounds[0] < x + 10 and y <= bounds[1] < y + 10
         assert x + width - 10 < bounds[2] <= x + width
@@ -81,7 +89,7 @@ def test_previews_match_production_at_exact_graph_sample(
                     "corners": LayoutPosition.TOP_RIGHT,
                     "column": LayoutPosition.RIGHT,
                     "ribbon": LayoutPosition.TOP,
-                    "capsule": LayoutPosition.TOP,
+                    "hud": LayoutPosition.FULL_SCREEN,
                 }[profile.layout],
                 invert_vertical=True,
                 invert_lateral=profile.layout == "column",

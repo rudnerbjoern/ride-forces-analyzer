@@ -85,7 +85,7 @@ def render_reference(output: Path) -> None:
             language="en",
             aspect="landscape",
             fps=50,
-            window_seconds=12.0,
+            window_seconds=30.0 if layout == "hud" else 12.0,
             output="transparent",
             invert_vertical=True,
             invert_lateral=layout == "column",
@@ -141,6 +141,9 @@ def render_reference(output: Path) -> None:
         "aspect": "landscape",
         "fps": 50,
         "window_seconds": 12.0,
+        "profile_window_seconds": {
+            layout: 30.0 if layout == "hud" else 12.0 for layout, _ in PROFILES
+        },
         "profiles": [layout for layout, _ in PROFILES],
     }
     (output / "manta-reference.json").write_text(

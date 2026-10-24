@@ -51,8 +51,8 @@ image set as refreshed. Do not use incomplete output as a reference.
   Update descriptions in place when needed. Retain the existing links on coaster
   names and the distinction between provisional context and measured forces.
 - Check the linked [layout gallery](../../../docs/EXPORT_THEMES.md) when its
-  images change. Preserve the image guide's reproduction instructions and license
-  boundaries; new images do not automatically inherit its listed license grant.
+  images change. Follow the [central image guide](../../../docs/images/README.md)
+  for reproduction settings, licensing and attribution.
 - Inspect the diff for unintended image/document changes. Preserve unrelated
   owner changes; do not stage, commit or publish as part of this skill.
 

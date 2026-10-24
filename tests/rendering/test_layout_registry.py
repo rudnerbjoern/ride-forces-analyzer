@@ -60,11 +60,11 @@ def test_every_persisted_profile_has_registered_geometry() -> None:
             (240, 1360, 1680, 2240),
         ),
         (
-            "capsule",
-            LayoutPosition.TOP,
-            {LayoutPosition.TOP, LayoutPosition.BOTTOM},
-            (768, 108, 2304, 300),
-            (240, 240, 1680, 2240),
+            "hud",
+            LayoutPosition.FULL_SCREEN,
+            {LayoutPosition.FULL_SCREEN},
+            (0, 0, 3840, 2160),
+            (0, 0, 2160, 3840),
         ),
         (
             "column",
@@ -184,6 +184,7 @@ def test_position_enum_values_are_explicit_and_unknown_values_fail() -> None:
         "TOP_RIGHT": "top_right",
         "BOTTOM_LEFT": "bottom_left",
         "BOTTOM_RIGHT": "bottom_right",
+        "FULL_SCREEN": "full_screen",
     }
     with pytest.raises(ValueError):
         LayoutPosition("middle")

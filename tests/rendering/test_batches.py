@@ -92,6 +92,19 @@ def test_portrait_and_landscape_persistence(
     assert rendered == [job.preset.settings for job in jobs]
 
 
+def test_hud_preset_round_trip_and_removed_layout_rejection() -> None:
+    from pydantic import ValidationError
+
+    chosen = preset().model_copy(update={"settings": ExportSettings(layout="hud")})
+    saved = SavedPreset.model_validate_json(chosen.model_dump_json())
+    assert saved.settings.layout == "hud"
+    assert saved.settings.position is LayoutPosition.FULL_SCREEN
+    payload = json.loads(saved.model_dump_json())
+    payload["settings"]["layout"] = "capsule"
+    with pytest.raises(ValidationError):
+        SavedPreset.model_validate_json(json.dumps(payload))
+
+
 def short_job(data: ExplorerData, chosen: SavedPreset | None = None) -> BatchJob:
     assert data.analysis is not None
     first = data.source.recording.indices.start

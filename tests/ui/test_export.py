@@ -61,8 +61,12 @@ def test_position_choices_follow_layout_format_and_refresh_preview(
     dialog.position.setCurrentIndex(dialog.position.findData("top"))
     assert dialog.preview_result is None
     assert dialog.position.currentData() == LayoutPosition.TOP
-    choose_layout("capsule")
-    assert dialog.position.currentData() == LayoutPosition.TOP
+    choose_layout("hud")
+    assert choices() == ["full_screen"]
+    assert dialog.position.currentData() == LayoutPosition.FULL_SCREEN
+    assert dialog.seconds.value() == 30
+    dialog.seconds.setValue(20)
+    assert dialog.seconds.value() == 20
     choose_layout("column")
     assert choices() == ["left", "right"]
     assert dialog.position.currentData() == LayoutPosition.RIGHT

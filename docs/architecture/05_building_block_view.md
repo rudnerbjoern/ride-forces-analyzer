@@ -227,7 +227,7 @@ frame composition and encoder padding; portrait force cards reflow vertically.
 Previews downsample the complete canvas proportionally. SQLite preset/job snapshots
 retain the explicit aspect and complete analysis recipe. Incomplete stored formats
 are rejected without migration or destructive cleanup.
-The compact ribbon, corners, capsule and orbit preserve translucent panels and
+The ribbon, corners, HUD and orbit preserve translucent panels and
 opaque data. `rendering.encoding` probes NVIDIA Vulkan/NVENC, streams the selected
 bounded region to FFmpeg and publishes one
 new output exclusively. No GPU or codec operation changes the source clock/data.

@@ -29,6 +29,7 @@ class LayoutPosition(StrEnum):
     TOP_RIGHT = "top_right"
     BOTTOM_LEFT = "bottom_left"
     BOTTOM_RIGHT = "bottom_right"
+    FULL_SCREEN = "full_screen"
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +75,9 @@ class LayoutPositions:
         if preferred in self.regions:
             assert preferred is not None
             return preferred
+        if preferred is LayoutPosition.FULL_SCREEN and previous in self.regions:
+            assert previous is not None
+            return previous
         axes = {
             LayoutPosition.TOP: (0, None),
             LayoutPosition.BOTTOM: (1, None),
@@ -83,6 +87,7 @@ class LayoutPositions:
             LayoutPosition.TOP_RIGHT: (0, 1),
             LayoutPosition.BOTTOM_LEFT: (1, 0),
             LayoutPosition.BOTTOM_RIGHT: (1, 1),
+            LayoutPosition.FULL_SCREEN: (None, None),
         }
         if preferred is not None:
             anchor = previous if previous in self.regions else self.default

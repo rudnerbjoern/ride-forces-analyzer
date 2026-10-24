@@ -858,6 +858,8 @@ class ExportDialog(QDialog):
     @Slot(int)
     def _layout_changed(self, index: int) -> None:
         self._refresh_positions()
+        if PROFILES[index][0] == "hud":
+            self.seconds.setValue(30.0)
         self.flip_vertical.setChecked(True)
         self.flip_lateral.setChecked(False)
         self.flip_vertical.setEnabled(True)
@@ -869,6 +871,7 @@ class ExportDialog(QDialog):
         plugin = registry.PLUGINS[PROFILES[self.layout_profile.currentIndex()][0]]
         positions = plugin.landscape if self.aspect.currentIndex() == 0 else plugin.portrait
         labels = {
+            LayoutPosition.FULL_SCREEN: tr("Full screen"),
             LayoutPosition.TOP: tr("Top"),
             LayoutPosition.BOTTOM: tr("Bottom"),
             LayoutPosition.LEFT: tr("Left"),

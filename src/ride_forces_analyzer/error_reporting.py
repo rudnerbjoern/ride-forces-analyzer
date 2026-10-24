@@ -64,11 +64,16 @@ def _running(pid: int) -> bool:
         kernel = ctypes.WinDLL("kernel32", use_last_error=True)
         kernel.OpenProcess.restype = ctypes.c_void_p
         kernel.OpenProcess.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32]
+        kernel.WaitForSingleObject.restype = ctypes.c_uint32
+        kernel.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
         kernel.CloseHandle.argtypes = [ctypes.c_void_p]
-        handle = kernel.OpenProcess(0x1000, False, pid)
+        handle = kernel.OpenProcess(0x100000, False, pid)  # SYNCHRONIZE access.
         if handle:
-            kernel.CloseHandle(handle)
-            return True
+            try:
+                # A process object may remain accessible after the process has exited.
+                return bool(kernel.WaitForSingleObject(handle, 0))
+            finally:
+                kernel.CloseHandle(handle)
         return ctypes.get_last_error() != 87  # Invalid PID; other errors may mean access denied.
     try:
         os.kill(pid, 0)
