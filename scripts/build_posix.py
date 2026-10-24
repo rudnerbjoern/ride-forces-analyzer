@@ -71,6 +71,8 @@ def build(work: Path, *, expected_target: str | None = None) -> Path:
         str(work / "spec"),
         "--collect-data",
         "pint",
+        "--additional-hooks-dir",
+        str(ROOT / "packaging/hooks"),
         "--add-data",
         f"{ICON_SOURCE}:ride_forces_analyzer/ui",
         "--add-data",

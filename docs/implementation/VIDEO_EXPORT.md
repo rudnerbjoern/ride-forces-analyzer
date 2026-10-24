@@ -12,7 +12,7 @@ See [native deployment requirements](../development/RELEASE.md#linux-and-macos-p
 
 Current output/interaction contracts. Architecture owns
 [component/API boundaries](../architecture/05_building_block_view.md#video-export-boundary),
-[runtime](../architecture/06_runtime_view.md#4k-export-runtime),
+[runtime](../architecture/06_runtime_view.md#video-export-runtime),
 [snapshot reuse/lifetime](../architecture/08_concepts.md#snapshot-lifetime-and-reuse)
 and [encoder qualification limits](../architecture/07_deployment_view.md#encoder-installation).
 The [layout API](../development/EXPORT_LAYOUTS.md) owns styling/extensions;
@@ -31,7 +31,7 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 | Context window     | 1–60 s, default 12; shared source position and centered cursor in time plots                               |
 | Alignment          | Manual in DaVinci Resolve; source-video ingestion/synchronization excluded                                 |
 
-[Manta G-Orbit demo](https://youtu.be/tsRzD416voU): exported overlay over Onride footage.
+[Manta overlay demo](https://youtu.be/0sGiE6F8YlI): all five layouts in turn over Onride footage.
 
 ## Contracts
 
@@ -196,7 +196,7 @@ the [roadmap](../ROADMAP.md) owns planned scope.
   presets and batches. Preview galleries keep their common display dimensions.
   Static effects are prepared once; moving effects use instrument/history tiles.
   Rendering is independent of seek order and previous frames.
-- Removed layout keys are unsupported in saved presets/jobs; no automatic remapping
+- Unsupported layout keys are rejected in saved presets/jobs; no automatic remapping
   or database cleanup is performed.
 
 ### G-Orbit

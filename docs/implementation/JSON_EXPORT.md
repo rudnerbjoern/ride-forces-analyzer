@@ -78,8 +78,9 @@ The final `metadata` object contains:
   independent orientation and context.
 
 This is a sample-data export, not a lossless `.forces` archive or reimport format.
-It does not include source paths/hashes, unknown source fields, independent GPS
-sequences or detected event lists. Recording-level coordinates are not sample GPS
+It does not include source paths, unknown source fields, independent GPS sequences
+or detected event lists. Custom-calibration provenance includes its source hash.
+Recording-level coordinates are not sample GPS
 correspondence. Raw units and source-app physical interpretation retain the
 [analysis limits](../development/ANALYSIS_MODELS.md#raw-values-and-qualified-quantities).
 
@@ -128,7 +129,8 @@ samples.vertical_context
 
 Combined retains the norm of smoothed device axes, not projected axes. Both JSON
 formats read the same prepared sample views and retain the scientific boundaries
-above. Analyzer JSON includes no source paths/hashes, aligned GPS, detected event
-lists or lossless source archive. The default filename is `<stem>.analyzer.json`;
+above. Analyzer JSON includes no source paths, aligned GPS, detected event lists
+or lossless source archive; custom-calibration provenance retains its source hash.
+The default filename is `<stem>.analyzer.json`;
 the destination suffix remains `.json`. The explorer offers it as a separate
 **Data export → Export Analyzer JSON…** action.

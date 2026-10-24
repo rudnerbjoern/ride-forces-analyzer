@@ -1,94 +1,63 @@
 # 4. Solution Strategy
 
-<!-- cspell:words AHRS -->
-
 [Architecture index](README.md)
 
-Use a version-aware import boundary to separate unstable external JSON from
-immutable canonical recording data. Keep raw evidence alongside typed accessors
-instead of re-encoding, silently repairing or scientifically interpreting it.
-Compose pure validation workers through one public service and per-call resource
-policy. The explorer consumes validated imports and prepares presentation outside widgets.
+## Processing pipeline
 
 ```mermaid
 flowchart LR
-    Original["Original .forces: read-only"] --> Importer["M2 version-aware importer"]
-    Importer --> Canonical["M2 immutable recording and raw source"]
-    Canonical --> Analysis["Source-app projection and mean"]
-    Canonical --> Explorer["Raw/calibrated explorer and GPS overview"]
-    Analysis --> Explorer
-    Analysis --> Data["CSV sample table / JSON sample arrays"]
-    Explorer --> Playback["M5: sample playback"]
-    Analysis --> Frames["RGBA frame generation"]
+    Original["Read-only .forces / .zforces"] --> Importer["Bounded version-aware importer"]
+    Importer --> Recording["Immutable recording and original source"]
+    Recording --> Analysis["Shared analysis snapshot"]
+    Analysis --> Explorer["Charts, inspector and playback"]
+    Recording --> GPS["Independent GPS overview"]
+    Analysis --> Data["CSV / JSON exports"]
+    Analysis --> Frames["Pillow RGBA regions"]
     Frames --> Encoder["Offline FFmpeg encoding"]
-    Encoder --> Opaque["Opaque video"]
-    Encoder --> Overlay["ProRes 4444 transparent overlay"]
-    POV["Local POV video"] -.-> Sync["M7 synchronization: planned"]
-    Sync -.-> Frames
+    Encoder --> Opaque["Opaque H.264 MP4"]
+    Encoder --> Overlay["Transparent ProRes 4444 MOV"]
 ```
 
-Solid edges are implemented; dashed edges describe the planned pipeline. Domain
-coordinates and a common time base require explicit evidence before scientific
-analysis or synchronization. M2 ingestion does not establish those semantics.
+The importer establishes structural validity and provenance. Analysis separately
+prepares display quantities. Video alignment remains in external editing software.
 
 ## Boundary choices
 
-- `domain` owns representations; `importers` owns external format adapters and
-  diagnostics. A valid source tree or motion subset is not a complete import.
-- `analysis` exposes immutable contracts and explicit DEVICE vector/unit
-  primitives. Source-app projection/mean and strict provisional frame transforms are implemented;
-  basic selected-range extrema are implemented. General physical rider qualification
-  and broad statistics are outside current M3 acceptance. `storage` implements
-  SQLite export presets/batches. `playback`
-  supplies a Qt-independent monotonic sample clock with 0.5×/1×/2× speed selection.
-  `rendering` implements the
-  video overlays, independently of interactive playback.
-- `ui` owns the raw explorer, Qt Charts interactions and background worker transport.
-  `explorer` prepares raw/calibrated presentation and validates local selections
-  independently of Qt. The entry point uses strictly validated settings.
-- Each import owns its bytes, immutable tree and diagnostics; no shared mutable
-  recording state or process-global decoder configuration is introduced.
+- Own exact source bytes and an immutable source tree alongside typed accessors;
+  decoding never rewrites or silently repairs the input.
+- Keep numerical preparation in Qt-independent analysis services. Widgets schedule
+  workers and display results; presentation formats prepared values.
+- Share immutable stages across charts, previews and exports. Reconfiguration
+  rebuilds only dependent stages; running exports retain their bound snapshot.
+- Keep frame generation separate from encoding. Layouts own geometry and styling;
+  the encoder consumes ordered region bytes and pads the output canvas.
+- Store application preferences, marker overrides and export definitions locally
+  in SQLite. Original recordings remain external read-only files.
 
-## Implemented export policy
+[Building blocks](05_building_block_view.md) identify ownership;
+[runtime](06_runtime_view.md) describes scheduling and failure handling.
 
-`rendering.model` prepares source-bound calibrated forces, tilt and a deterministic
-source/video clock. `rendering.frames` generates Pillow RGBA frames, delegating
-profiles to `rendering.layouts`: ribbon, corner cards, HUD or signed
-orbit gauges ([Manta G-Orbit video example](https://youtu.be/tsRzD416voU)). The original four-panel column remains available. The encoder
-consumes the selected rectangular region, pads to the layout's output canvas and
-encodes one transparent ProRes 4444 MOV or independent opaque H.264 MP4.
-HUD retains its native 1920×1080 or 1080×1920 canvas for scaling in the video editor;
-the other layouts use 4K output.
-Real NVIDIA probes select Vulkan/NVENC or explicit CPU fallback. Completed output
-is published exclusively. Widgets only configure/transport
-background jobs. Manual Resolve alignment is outside the processing path.
-[Export contracts](../implementation/VIDEO_EXPORT.md) and
-[encoder compatibility boundary](07_deployment_view.md#encoder-installation) define the supported export scope.
+## Scientific policy
 
-`storage.exports` persists versioned preset/batch definitions in SQLite; originals
-remain external read-only files. `rendering.batches` imports each job, checks its
-saved source hash, restores its immutable preset/range and runs the existing
-encoder sequentially. A unique run directory and incremental result report retain
-completed work across per-job failure/cancellation. Qt owns queue editing and
-worker transport, not SQL, import validation or execution logic.
+The product path independently normalizes admitted source directions, projects
+acceleration and applies a configurable centered mean. Raw axes remain available
+when calibrated preparation is unavailable. Orientation uses source gravity,
+independently of force smoothing.
 
-## Scientific strategy
+Explicit device-unit and strict provisional-frame APIs remain separate from this
+display policy. NumPy supplies arrays, Pint declared-unit conversion and SciPy
+passive rotations. GPS supplies approximate spatial context, not force validation
+or a shared clock. [Decisions](09_architecture_decisions.md) retain rationale;
+[concepts](08_concepts.md#scientific-provenance-and-gates) define provenance and gates.
 
-The [analysis boundary](08_concepts.md#scientific-provenance-and-gates) defines reduced
-M3: existing force preparation/mean, basic extrema and verified contracts. Generic
-device/frame APIs keep explicit source-bound unit gates; universal physical rider
-calibration is deferred and is not a completion prerequisite. GPS is reference-only.
+## Export strategy
 
-The app-reference path implements independently normalized source directions and
-a configurable centered mean, with per-source evidence; see the source-app projection decision via chapter 09.
-NumPy provides array mathematics and Pint converts declared common component units
-to SI. SciPy supports existing explicit frame rotations. Additional scientific
-filters are deferred.
-GeographicLib/geodesic speed analysis is not required. Pandas is a tabular adapter;
-AHRS is research only, pyproj requires an approved conversion use case. Adoption
-policy and rationale belong to [analysis library decision](09_architecture_decisions.md#analysis-models-and-libraries).
+Production renderers serve previews and video output. HUD retains native HD for
+editor scaling; other layouts use 4K. One renderer runs serially or independent
+renderer threads prepare a bounded, ordered frame stream. FFmpeg uses a probed
+NVIDIA backend when supported, otherwise CPU encoding.
 
-Use explicit profiles, raw/filtered provenance and per-channel capability gates.
-Do not combine acceleration/gravity, infer yaw or merge GPS/motion clocks without
-independent evidence. [Concepts](08_concepts.md), [decisions](09_architecture_decisions.md)
-and [risks](11_technical_risks.md) maintain these boundaries; open product work stays in the roadmap.
+Single exports publish a new completed file exclusively. Batches execute saved,
+source-hash-bound recipes sequentially and retain completed outputs across later
+failures or cancellation. [Export contracts](../implementation/VIDEO_EXPORT.md)
+and [batch contracts](../implementation/EXPORT_BATCHES.md) own detailed behavior.

@@ -21,11 +21,11 @@ Do not upload additional recordings or GPS data without separate owner authoriza
 
 ## Environment
 
-- Windows version:
+- Operating system and version:
 - Application version or commit:
 - Python and uv versions, if running from source:
 
-<!-- For display problems: resolution, Windows scaling, language and light/dark theme.
+<!-- For display problems: resolution, display scaling, language and appearance theme.
 For video-export problems: layout, output profile, FFmpeg version and GPU, if relevant.
 Omit environment details unrelated to the problem. -->
 

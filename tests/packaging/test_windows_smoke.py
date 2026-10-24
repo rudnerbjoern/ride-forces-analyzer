@@ -6,6 +6,11 @@ from pathlib import Path
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
+from unittest.mock import Mock
+
+import pytest
+
+from scripts import windows_smoke
 
 from ride_forces_analyzer import __version__
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
@@ -43,3 +48,22 @@ def test_windows_entry_self_test_imports_and_renders_with_german_light_settings(
         assert result["version"] == __version__
         assert result["passed"] and result["gui"] and result["german_light"]
         assert result["samples"] == 9638 and result["render"]
+        assert "pdf_plugin_absent" not in result
+
+
+def test_frozen_self_test_rejects_pdf_plugin(
+    monkeypatch: pytest.MonkeyPatch,
+    export_directory: Path,
+) -> None:
+    monkeypatch.setattr(windows_smoke.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(windows_smoke, "QApplication", Mock(return_value=Mock()))
+    monkeypatch.setattr(windows_smoke.QImageReader, "supportedImageFormats", lambda: [b"pdf"])
+    report = export_directory / "self-test.json"
+
+    with pytest.raises(AssertionError):
+        windows_smoke.smoke_test(report, None, False)
+
+    result = json.loads(report.read_text(encoding="utf-8"))
+    assert not result["passed"]
+    assert "pdf_plugin_absent" not in result
+    assert "AssertionError" in result["error"]

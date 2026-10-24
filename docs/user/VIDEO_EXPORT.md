@@ -1,10 +1,10 @@
 # Export a ride overlay
 
-Turn your `.forces` recording into a video showing the forces throughout your
+Turn your `.forces` or `.zforces` recording into a video showing the forces throughout your
 ride. Export a transparent overlay to place above your Onride footage, or a video
 with a black background to watch on its own.
 
-The steps below use the English interface labels. The application also supports German.
+The steps below use English interface labels. German and French are also available.
 
 ## Before you start
 
@@ -121,7 +121,8 @@ In a video editor that supports transparent ProRes 4444, such as DaVinci Resolve
 5. Export the combined video from your editor.
 
 The analyzer does not load your footage or synchronize it automatically.
-[Watch the Manta example](https://youtu.be/tsRzD416voU) for an overlay in use.
+[Watch the Manta example](https://youtu.be/0sGiE6F8YlI) for all five overlays
+shown in turn over Onride footage.
 
 ## Reuse settings
 

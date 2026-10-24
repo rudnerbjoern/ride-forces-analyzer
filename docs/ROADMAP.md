@@ -12,8 +12,8 @@ owns system design and scientific boundaries.
 | M4 — Explorer              | Complete | Raw/calibrated charts, markers, time zoom, selection/extrema, GPS, appearance themes and EN/DE/FR UI                                                                                    |
 | M5 — Playback              | Complete | Sample playback at 0.5×/1×/2×, pause/resume and seeking                                                                                                                                 |
 | M6 — Exports               | Complete | Five layouts (native HD HUD, otherwise 4K), both aspects, transparent/opaque video, previews, presets/batches, CSV/JSON, optional NVIDIA                                                |
-| M7 — Video synchronization | Planned  | Local video ingest, offsets, timeline preview, frame-accurate alignment                                                                                                                 |
-| M8 — Windows release       | Partial  | Portable EXE, standard/complete ZIPs, notice collection and tag pipeline; owner-confirmed clean-Windows EXE launch; redistribution material and installer/uninstaller remain            |
+| M7 — Video synchronization | Closed   | Not feasible within project scope: no simple, reliable automation with available data; alignment remains in external video editors                                                      |
+| M8 — Windows release       | Complete | Portable EXE, standard/complete ZIPs, notices and tag pipeline; owner-confirmed clean-Windows EXE launch; accepted redistribution scope                                                 |
 | M9 — Linux / macOS         | Partial  | Native Linux x64/macOS arm64/x64 packages and mandatory runtime CI; clean-machine qualification remains open                                                                            |
 
 ## Product boundaries
@@ -28,15 +28,14 @@ owns system design and scientific boundaries.
   use project-defined rules; scientific validation of these categories is not an
   M3 completion requirement. They do not establish physical qualification.
 - Installed libraries do not establish features. SQLite stores export configuration;
-  manual Onride alignment is separate from playback/synchronization.
-- [Release obligations](development/RELEASE.md#windows-packages) identify missing
-  redistribution sources/notices and the limits of workstation package checks.
+  Onride alignment remains in external video editors. Video ingest, a synchronization
+  timeline and automatic alignment are outside the project scope.
+- [Release policy](development/RELEASE.md#windows-packages) defines the accepted
+  redistribution scope and the limits of workstation package checks.
+- M8 covers portable Windows packages. An installer and uninstaller are optional
+  future extensions outside its completion scope.
 - Paid code signing and macOS notarization are outside release scope;
   see [distribution constraints](architecture/02_architecture_constraints.md#distribution-constraints).
-
-## Next product work
-
-- Scope M7 and remaining M8 work independently.
 
 Validation follows owner instructions. Roadmap entries authorize neither
 implementation nor Git operations.

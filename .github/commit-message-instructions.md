@@ -35,10 +35,9 @@ Requirements:
 - Prefer a Ride Forces Analyzer capability scope: `recordings` for source-file
   integrity and fixtures, `imports` for recording ingestion, `analysis` for
   calibration and G-force calculations, `storage` for the local ride library,
-  `playback` for the timeline, `rendering` for frames and exports, `sync` for POV
-  video synchronization, `gui` for desktop interactions, or `config` for
-  application settings. Use a scope only when the staged change affects it;
-  most product capabilities remain planned beyond M1.
+  `playback` for the timeline, `rendering` for frames and exports,
+  `gui` for desktop interactions, or `config` for
+  application settings. Use a scope only when the staged change affects it.
 - Use `foundation`, `docs`, `tests`, `deps`, `ci`, `tooling`, or `packaging` for
   project scaffolding or genuinely cross-cutting development changes.
 - Choose the type from the primary outcome: `feat` adds behavior, `fix` corrects

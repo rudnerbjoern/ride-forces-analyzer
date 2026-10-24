@@ -132,7 +132,7 @@ it does not guarantee lower total runner minutes.
   Updated rules take effect after reaching `main`, on the next matching PR event.
 - Permissions: `contents: read`, `pull-requests: write`; labels must exist.
   `sync-labels: false` preserves existing/manual labels. Labels neither approve nor merge.
-  Validation stays read-only; no scheduled workflow or runtime dependency is added.
+  Validation stays read-only; label automation is independent of application runtime.
 
 ## Source release tags
 
@@ -159,7 +159,7 @@ the reusable quality stage also builds and checks the native Linux/macOS artifac
   introduction. See [release notes policy](RELEASE.md#automatic-release-notes).
 - No job creates tags or changes repository visibility.
   [Release guide](RELEASE.md) owns tag/version/ancestry policy, retries, artifact
-  handling, download verification and outstanding redistribution limits.
+  handling, download verification and documented redistribution limits.
 - Hosted success does not replace local application/GUI or clean-Windows validation.
 
 ## Verification boundaries

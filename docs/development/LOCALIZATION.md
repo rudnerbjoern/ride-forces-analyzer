@@ -11,9 +11,9 @@ them immediately; Cancel preserves the active settings. Language and light/dark 
 are saved in local `preferences.sqlite3` and restored on startup. Without valid
 preferences, the preferred OS display language selects its registered language
 (including regional variants such as fr-CA); unsupported primary languages fall
-back to English. Appearance defaults to System, following Windows' effective light/dark
+back to English. Appearance defaults to System, following Qt's effective OS light/dark
 scheme at startup and when it changes (including OS-scheduled changes). An unknown
-system scheme falls back to dark. Explicit Dark/Light choices override Windows;
+system scheme falls back to dark. Explicit Dark/Light choices override the OS scheme;
 selecting System restores automatic following. An explicit `AppSettings(language="de")`
 overrides the saved language for startup; subsequent choices in Settings are saved.
 All registered languages support the appearance themes and compact explorer layout.
@@ -57,8 +57,8 @@ and export actions visible, including at 200% Windows scaling.
   rules; external encoder/runtime details may remain in their original language.
 - Export settings store a separate `language` field. New assistants initially use
   the UI language, while loaded presets restore their saved choice. Rendering,
-  previews and batch snapshots use that explicit language; old records default
-  to English. UI switching never changes an existing saved job.
+  previews and batch snapshots use that explicit language. Incomplete stored
+  settings are rejected. UI switching never changes an existing saved job.
 
 ## Maintaining translations
 
@@ -80,5 +80,4 @@ Add regression coverage for placeholder compatibility, source preservation and
 new visible behavior. Inspect localized layouts on native Windows, including compact
 windows and both export aspects. Production glyph bounds, preview consistency,
 explicit saved-language round trips and representative real encodes are covered
-by the localization and rendering regression suites. No source-app scientific
-semantics or milestone status changes are implied by localization.
+by the localization and rendering regression suites.

@@ -6,8 +6,9 @@
 
 ## Platform
 
-Accepted: native Windows, Python/uv and PySide6 for offline processing of read-only
-`.forces` files; sensor capture is out of scope. Domain/analysis stay outside Qt,
+Accepted: native Windows development and native Windows/Linux/macOS distribution,
+using Python/uv and PySide6 for offline processing of read-only `.forces` and
+`.zforces` recordings. Sensor capture is out of scope. Domain/analysis stay outside Qt,
 and frame generation stays separate from encoding. Pydantic validates settings;
 Node supports development checks only. [Constraints](02_architecture_constraints.md)
 and [Windows setup](../development/SETUP.md) own tool/version details. Python and
@@ -93,7 +94,7 @@ availability and provisional g interpretation; it does not qualify physical unit
 Implemented outputs are transparent ProRes 4444 MOV and independent opaque H.264
 MP4, with manual video alignment. Preview and encoding share production frames;
 CPU fallback remains available. Interactive sample playback is implemented separately
-from export. Additional outputs, POV synchronization and standalone packaging
-remain planned in the
-[roadmap](../ROADMAP.md); [export contracts](../implementation/VIDEO_EXPORT.md)
-and [deployment limits](07_deployment_view.md) define the current boundary.
+from export. POV synchronization remains in external editing software and is outside
+project scope. The [roadmap](../ROADMAP.md) owns remaining work;
+[export contracts](../implementation/VIDEO_EXPORT.md) and
+[deployment limits](07_deployment_view.md) define the current boundary.

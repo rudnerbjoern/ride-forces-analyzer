@@ -1,12 +1,15 @@
 """Binary packages preserve notices, reject private data and verify supplied sources."""
 
-# cspell:words filevers prodvers
+# cspell:words filevers prodvers qpdf libqpdf imageformats qjpeg qwindows qtbase hiddenimports datas
 
 import ast
 import json
 from pathlib import Path
+import runpy
 import subprocess
+import sys
 from tempfile import TemporaryDirectory
+from types import ModuleType
 from zipfile import ZipFile
 
 import pytest
@@ -14,6 +17,34 @@ import pytest
 from scripts import build_windows
 from scripts.check_windows_packages import validate_zip
 from ride_forces_analyzer.rendering import encoding
+
+
+def test_qt_gui_hook_excludes_only_pdf_plugins(monkeypatch: pytest.MonkeyPatch) -> None:
+    binaries = [
+        ("plugins/imageformats/qpdf.dll", "PySide6/plugins/imageformats"),
+        ("plugins/imageformats/libqpdf.so", "PySide6/Qt/plugins/imageformats"),
+        ("plugins/imageformats/libqpdf.dylib", "PySide6/Qt/plugins/imageformats"),
+        ("plugins/imageformats/qjpeg.dll", "PySide6/plugins/imageformats"),
+        ("plugins/platforms/qwindows.dll", "PySide6/plugins/platforms"),
+    ]
+    hook = (
+        Path(build_windows.__file__).resolve().parents[1] / "packaging/hooks/hook-PySide6.QtGui.py"
+    )
+
+    def dependencies(
+        filename: str,
+    ) -> tuple[list[str], list[tuple[str, str]], list[tuple[str, str]]]:
+        assert Path(filename) == hook
+        return ["PySide6.QtCore"], binaries, [("translations/qtbase_de.qm", "translations")]
+
+    qt_hook = ModuleType("PyInstaller.utils.hooks.qt")
+    monkeypatch.setattr(qt_hook, "add_qt6_dependencies", dependencies, raising=False)
+    monkeypatch.setitem(sys.modules, "PyInstaller", None)
+    monkeypatch.setitem(sys.modules, qt_hook.__name__, qt_hook)
+    result = runpy.run_path(str(hook))
+    assert result["binaries"] == binaries[3:]
+    assert result["hiddenimports"] == ["PySide6.QtCore"]
+    assert result["datas"] == [("translations/qtbase_de.qm", "translations")]
 
 
 @pytest.mark.parametrize("version,flags", [("1.2.3", 0), ("1.2.3rc2", 2)])
@@ -93,6 +124,9 @@ def test_release_build_outputs_only_windows_downloads_and_checksums(
 
         def run(arguments: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
             if "PyInstaller" in arguments:
+                assert arguments[arguments.index("--additional-hooks-dir") + 1] == str(
+                    root / "packaging/hooks",
+                )
                 assert Path(arguments[arguments.index("--icon") + 1]).read_bytes()[:4] == (
                     b"\x00\x00\x01\x00"
                 )
@@ -134,9 +168,8 @@ def test_standard_zip_rejects_unsafe_private_or_encoder_content(unexpected: str)
             validate_zip(archive, complete=False)
 
 
-def test_binary_release_allows_documented_gaps_but_rejects_changed_sources(
+def test_binary_release_validates_sources_and_rejects_changes(
     monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
 ) -> None:
     with TemporaryDirectory(dir=".tmp") as directory:
         root = Path(directory).resolve()
@@ -144,17 +177,16 @@ def test_binary_release_allows_documented_gaps_but_rejects_changed_sources(
         monkeypatch.setattr(build_windows, "ROOT", root)
         manifest = root / "redistribution.json"
         manifest.write_text(
-            '{"status":"pending","source_archives":[],"open_items":["Provider sources unavailable"]}',
+            '{"status":"accepted","source_archives":[]}',
             encoding="utf-8",
         )
         build_windows.validate_redistribution(manifest)
-        assert "Provider sources unavailable" in capsys.readouterr().out
         source = root / ".tmp/source.zip"
         source.write_bytes(b"synthetic source archive")
         manifest.write_text(
             json.dumps(
                 {
-                    "status": "pending",
+                    "status": "accepted",
                     "source_archives": [
                         {"path": ".tmp/source.zip", "sha256": build_windows.digest(source)},
                     ],

@@ -8,10 +8,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 import json
 from pathlib import Path
+import sys
 from time import monotonic, sleep
 import traceback
 
 from PySide6.QtCore import QThreadPool
+from PySide6.QtGui import QImageReader
 from PySide6.QtWidgets import QApplication
 
 from ride_forces_analyzer import __version__
@@ -34,6 +36,9 @@ def smoke_test(
     window: ExplorerWindow | None = None
     result: dict[str, object] = {"version": __version__, "passed": False}
     try:
+        if getattr(sys, "frozen", False):
+            assert b"pdf" not in QImageReader.supportedImageFormats()
+            result["pdf_plugin_absent"] = True
         window = ExplorerWindow(AppSettings(language="en"))
         window.show()
         deadline = monotonic() + 10

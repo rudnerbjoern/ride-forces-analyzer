@@ -12,7 +12,7 @@ Read the [image reference guide](../../../docs/images/README.md) and
 
 ## Choose and refresh the images
 
-When asked to refresh all screenshots, run all three commands sequentially.
+When asked to refresh all screenshots, run all four commands sequentially.
 For a narrower request, run only the corresponding generator. Keep GUI capture
 separate from other GUI tests or capture processes.
 
@@ -23,13 +23,16 @@ uv run --locked python scripts/capture_app_reference.py
 # Voltron airtime, Taron force cards, Manta smoothing; readme-reference.json
 uv run --locked python scripts/capture_app_reference.py --details
 
-# Five Manta layouts, their detail crops and comparison sheet; manta-reference.json
+# Appearance gallery; appearance-reference.json
+uv run --locked python scripts/capture_app_reference.py --themes
+
+# Five Voltron Nevera layouts, their detail crops and comparison sheet; voltron-reference.json
 uv run --locked python scripts/render_export_reference.py
 ```
 
 The default destination is `docs/images`. To review first without replacing
 tracked images, append `--output .tmp/screenshot-review` to the applicable command.
-All three generators can share that directory because their output names differ.
+All commands can share that directory because their output names differ.
 
 Preserve the fixed recordings, source hashes, sample indices, intervals, language
 and settings defined by the generators and their manifests. Never search for a

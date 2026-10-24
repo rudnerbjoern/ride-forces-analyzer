@@ -41,6 +41,9 @@ def test_native_builder_preserves_version_notices_and_archive_layout(
 
     def run(arguments: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
         if "PyInstaller" in arguments:
+            assert arguments[arguments.index("--additional-hooks-dir") + 1] == str(
+                root / "packaging/hooks",
+            )
             assert f"{build_posix.ICON_SOURCE}:ride_forces_analyzer/ui" in arguments
             if target.startswith("macos-"):
                 icon = Path(arguments[arguments.index("--icon") + 1])

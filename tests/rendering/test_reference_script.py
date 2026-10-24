@@ -14,8 +14,8 @@ import pytest
 
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
-SOURCE = REAL_FIXTURE_DIRECTORY / "Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.forces"
-SOURCE_SHA256 = "1d06e636b0cd26c7634503bf3f5f93e1906791ce47028c129af1c1828c7b268c"
+SOURCE = REAL_FIXTURE_DIRECTORY / "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
+SOURCE_SHA256 = "f48157cadbfeb374eeadf48112b0bbfc1e8b47c580cb303342cf65977054ad04"
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts/render_export_reference.py"
 
 
@@ -60,12 +60,17 @@ def test_reference_cli_uses_fixed_sample_from_another_directory(reference_direct
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert result.stdout.count("sample 4782, replay 00:40.32") == 5
-    manifest = json.loads((output / "manta-reference.json").read_text(encoding="utf-8"))
-    assert manifest["sample"] == 4782
+    assert result.stdout.count("sample 8575, replay 02:20.04") == 5
+    manifest = json.loads((output / "voltron-reference.json").read_text(encoding="utf-8"))
+    assert b"\r" not in (output / "voltron-reference.json").read_bytes()
+    assert manifest["recording"] == "Voltron Nevera"
+    assert manifest["source_file"] == SOURCE.name
+    assert manifest["sample"] == 8575
     assert manifest["smoothing"] == 11
-    assert manifest["replay"] == "00:40.32"
-    assert manifest["recording_seconds"] == 95.64
+    assert manifest["replay"] == "02:20.04"
+    assert manifest["replay_seconds"] == 140.08
+    assert manifest["recording_seconds"] == 171.5
+    assert (manifest["first"], manifest["last"]) == (1571, 10374)
     assert manifest["source_sha256"] == SOURCE_SHA256
     assert manifest["language"] == "en" and manifest["aspect"] == "landscape"
     assert manifest["profile_window_seconds"] == {
@@ -75,11 +80,14 @@ def test_reference_cli_uses_fixed_sample_from_another_directory(reference_direct
         "orbit": 12.0,
         "column": 12.0,
     }
-    assert manifest["values"][0] == pytest.approx(-3.5516046708080875)
+    assert manifest["values"] == pytest.approx(
+        [4.365497903276147, -0.6689254689866224, -0.420851349258314],
+    )
+    assert manifest["orientation_degrees"] == pytest.approx(62.85439946067607)
     assert len(list(output.glob("*.png"))) == 11
     for layout in ("ribbon", "corners", "hud", "orbit", "column"):
-        with Image.open(output / f"manta-{layout}.png") as image:
+        with Image.open(output / f"voltron-{layout}.png") as image:
             assert image.size == (3840, 2160)
-        with Image.open(output / f"manta-{layout}-detail.png") as image:
+        with Image.open(output / f"voltron-{layout}-detail.png") as image:
             assert max(image.size) <= 1440
     assert sha256(SOURCE.read_bytes()).hexdigest() == SOURCE_SHA256

@@ -8,14 +8,14 @@
   scans do not cover them automatically. Recheck new content; past scans give no continuing guarantee.
 - Björn Rudner authorizes publication of his name and existing personal commit email.
   The [recording catalog](docs/development/RECORDINGS.md) owns permission for the
-  five complete recordings, including GPS/metadata.
+  authorized reference files, including GPS/metadata.
 - These permissions cover neither additional private data nor third-party rights.
   Repository publication requires separate explicit owner authorization.
 
 ## Supported versions
 
 - Security fixes target latest `main` on the documented
-  [Windows platform](docs/architecture/02_architecture_constraints.md#technical-constraints).
+  [supported platforms](docs/architecture/02_architecture_constraints.md#technical-constraints).
 - The project remains in development; package versions promise no maintained
   release line or backports for older commits, forks or separate release branches.
 - Check current `main` and locked dependencies when assessing whether an issue is fixed.
@@ -34,7 +34,7 @@
 
 Include:
 
-- Affected revision/version, Windows version and relevant dependency/FFmpeg version.
+- Affected revision/version, operating system and relevant dependency/FFmpeg version.
 - Reproduction, expected/actual behavior and likely security impact.
 - Minimal synthetic example where possible; suggested mitigation if available.
 

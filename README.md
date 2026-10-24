@@ -14,7 +14,7 @@ an Onride video. Ride Forces Analyzer turns `.forces` and compressed `.zforces` 
 interactive charts and video overlays on Windows, Linux and macOS.
 
 **[Download](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)**
-· **[Watch the Manta demo](https://youtu.be/tsRzD416voU)**
+· **[Watch the Manta demo](https://youtu.be/0sGiE6F8YlI)**
 · **[User guides](docs/README.md#for-users)**
 
 Free and open source · Offline processing · English, German and French · Light and dark themes
@@ -62,7 +62,7 @@ See [Explore a recording](docs/user/EXPLORER.md) for navigation and selection.
 
 Click **Export video…**, choose a layout and check the preview. Export a transparent
 MOV for your video editor or an MP4 with a solid background. Align the overlay
-with your footage in the editor; automatic video synchronization is not available yet.
+with your footage in the editor.
 The [video export guide](docs/user/VIDEO_EXPORT.md) takes you through each step.
 
 Your recordings stay on your computer. Opening, analyzing and exporting work
@@ -124,10 +124,11 @@ the original samples remain unchanged.*
 
 ## Bring the ride into your videos
 
-**[Watch G-Orbit over Manta Onride footage](https://youtu.be/tsRzD416voU)**
-to see an exported overlay in use.
+**[Watch the Manta overlay demo](https://youtu.be/0sGiE6F8YlI)**
+to see all five layouts in turn over Onride footage: Four-panel column,
+Flow Ribbon, G-Orbit, HUD and Corner Instruments.
 
-![All five export layouts compared at Manta's strong negative vertical-force peak](docs/images/manta-export-themes.png)
+![All five export layouts compared at Voltron Nevera's vertical-force peak with simultaneous lateral and braking forces](docs/images/voltron-export-themes.png)
 
 | Layout                 | Look and placement                                      |
 | :--------------------- | :------------------------------------------------------ |
@@ -175,8 +176,9 @@ overlay and place it above your footage.
 
 ## Make the workspace yours
 
-Choose **English, German or French** and **Dark, Light, System, Falcons Flight, Loch Ness, Manta, Red Force, Slinky Dog Dash, Taron, Top Thrill 2 or Verbolten** appearance in
-**Settings → Application**. Your saved choices are remembered. The chart adapts
+Choose **English, German or French** and a light, dark or ride-inspired theme in
+**Settings → Application**. [Compare the themes](docs/user/APPEARANCE.md).
+Your saved choices are remembered. The chart adapts
 to the available window space; smaller windows let you switch between the chart
 and inspector.
 
@@ -231,4 +233,4 @@ Reuse terms for supplied recordings are in the
 are in the [central image guide](docs/images/README.md). These grants do not
 automatically apply to your own recordings or exports. Dependencies retain their
 own licenses; see [third-party notices](THIRD_PARTY_NOTICES.md) for their terms
-and unresolved redistribution requirements.
+and documented distribution limits.

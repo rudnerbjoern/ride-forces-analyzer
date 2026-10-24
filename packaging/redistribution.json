@@ -1,5 +1,5 @@
 {
-  "status": "pending",
+  "status": "accepted",
   "source_archives": [
     {
       "path": ".tmp/qt-everywhere-src-6.12.0.tar.xz",
@@ -12,8 +12,7 @@
       "sha256": "099c1a597cf33c1b000e11cf68a0b82d216fb802bf81726efc720394f10c7751"
     }
   ],
-  "open_items": [
-    "Qt PDF sources and notices are still needed for the PDF plugin collected by the existing packager; the prepared Qt everywhere archive does not contain Qt WebEngine/PDF",
-    "Exact corresponding source and build instructions for GyanD FFmpeg 9.0.2 and every statically linked library"
+  "limitations": [
+    "Complete corresponding sources and build instructions for bundled FFmpeg and its linked libraries have not been independently verified."
   ]
 }

@@ -32,7 +32,7 @@ snapshot's existing configuration, regardless of workspace display mode or later
   A confirmed export starts a Qt worker. Progress/cancellation and completion/errors
   return on the UI thread. Closing the main window requests cancellation.
 - Successful completion remembers the existing shared export directory. Failure
-  or cancellation preserves it. No preset/batch format changes or new dependencies.
+  or cancellation preserves it.
 
 ## Columns
 

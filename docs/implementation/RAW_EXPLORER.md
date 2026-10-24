@@ -162,10 +162,10 @@ No vertical zoom.
 | Native caption       | Blue gradient/white force-trace icon with subtle depth; loaded ride name; application name not repeated in toolbar; native controls intact; unsupported caption colors use system defaults             |
 | Status bar           | Application version permanently at bottom right                                                                                                                                                        |
 
-Settings → Application selects Dark/Light/System and UI language. Save applies and
-persists both; Cancel preserves choices. Startup restores saved choices, otherwise
-OS language (German, English fallback) and System appearance; `AppSettings` can
-explicitly override language.
+Settings → Application selects a workspace theme and UI language. Appearance previews
+immediately; Save persists the choices and Cancel restores the previous theme.
+Startup restores valid saved choices, otherwise the registered OS language (English
+fallback) and System appearance. `AppSettings` can explicitly override language.
 
 - Shared palette/styles cover controls, disabled/selected states, tables, lists,
   tooltips, dialogs and GPS. Charts have scheme-specific backgrounds, axes,

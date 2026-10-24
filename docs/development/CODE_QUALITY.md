@@ -110,61 +110,18 @@ interpretation or UI integration. Cover new branches without weakening the gate.
 
 ## Test design
 
-Test responsibilities at their own boundaries. Keep exhaustive cheap parser,
-numerical-edge, source-preservation and translation-placeholder cases. Check
-geometry, glyph bounds and alpha for every layout/aspect; test video-rate mapping
-separately from repeated full-frame rendering.
-
-| Scope                                | Representative coverage                                                                                      |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| GUI loading                          | Manta with gravity/GPS; Iron Gwazi without                                                                   |
-| Shared zoom/wheel/selection          | Once with Manta; fixture-wide import/scientific cases remain in dedicated suites                             |
-| Import ownership                     | Full imports cover five originals once; adapter equivalence, repeatability and concurrency use one recording |
-| Export/palette/language interactions | 8 × 8 test frames with actual preview workers, compositing and UI updates                                    |
-| Production frames                    | Dedicated rendering/preview suites and two native 4K scaling checks                                          |
-| Real encoder                         | Eight codec × aspect × CPU/GPU-preference cases; every layout represented, including German examples         |
-| GPU behavior                         | CPU fallback allowed; command-contract tests verify GPU options independently of hardware                    |
-| Real batches                         | Two jobs with different rides/formats; pure queue tests cover the ride/preset cross-product                  |
-| Progress/cancellation                | Shared GUI flow once; layout controls in existing interaction checks                                         |
-| Parallel rendering                   | Equal pixels, ordered/bounded frames, worker ownership and cleanup; real HUD encoding and cancellation       |
-| Compact layouts                      | Targeted navigation/scrolling regressions, not another full workflow matrix                                  |
-
-Add variants for distinct risks, without multiplying independent options through
-expensive end-to-end workflows. Timing observations/run logs belong in `.tmp/`.
-
-Shared preparation and isolation:
-
-- Source-app screenshot tests prepare each recording once for all independent
-  replay references; extrema matrices prepare each window once for raw/calibrated
-  views, retaining all recordings/windows/selections.
-- Localization/rendering share immutable Manta data per module. Language, patches,
-  renderers, settings, derived snapshots and outputs remain test-local. Real 4K
-  glyph/language/pixel checks, independent imports and encoder checks remain.
-- GPS dialog covers Voltron/Manta replacement and Iron Gwazi removal; pure GPS
-  keeps all five recordings. Decoder/motion/optional corpus tests check each
-  original value once; service Path/bytes repeatability owns repeated full parsing.
-  Concurrent, fresh-process and cheap synthetic guards retain independent setup.
-- Same-scene FFmpeg Browse, raw/calibrated click/theme and language/appearance
-  variants share a window, retaining assertions and resetting layout and viewport.
-  Worker/error and native DPI/startup cases keep separate isolation.
-- Theme selection/save/cancel/restart uses one representative custom theme.
-  Shared light/dark dialog palettes, native captions, GPS and export preview
-  preservation share one setup; no per-theme GUI matrix. Enum persistence and
-  color contracts remain inexpensive independent checks.
-- Arrow tests drive the hold clock before/at thresholds while preserving native
-  press, auto-repeat, release and keyboard checks for both fields/directions,
-  without repeated five-second holds. CI runs UI serially on its own runner,
-  concurrently with non-UI checks; see [CI routing](CI.md).
-- Explorer gesture, overlay, metadata and responsive-layout checks share windows
-  within related workflows. Arrow directions, marker defaults, recording formats,
-  languages and playback modes run as successive variants in those workflows.
-  Reset controls and viewport between variants instead of recreating the window.
-- Export source/range, layout, preview and portrait-preset checks share one Explorer
-  session; preview/format changes retain the same assistant. CSV and both JSON
-  formats share one loaded recording and check cancellation/overwrite against the
-  previous dialog and saved folder. Worker failures and parent closure remain
-  covered; independent windows, fresh-process startup and screenshot repeatability
-  retain isolation.
+- Put exhaustive parser, numerical-edge, source-preservation and translation cases
+  at their inexpensive subsystem boundaries.
+- Reuse a loaded recording/window for related GUI assertions. Reset view state
+  between variants; use separate processes/windows only for lifecycle or isolation risks.
+- Keep full-resolution geometry, glyph and alpha checks in rendering suites.
+  GUI workflow tests can use small frames while exercising real worker transport.
+- Exercise real encoders with representative codecs, layouts, aspects and backend
+  preferences. Keep command-contract and numerical timing tests independent.
+- Verify ordered/bounded parallel frames, worker ownership, cancellation and cleanup.
+  Batch tests distinguish queue behavior from per-frame parallel rendering.
+- Isolate preferences and output under `.tmp/`; never use personal application state.
+  Logs and timing observations belong there, not in tracked test histories.
 
 Desktop layout references model a 3840 × 2160 editing display:
 
