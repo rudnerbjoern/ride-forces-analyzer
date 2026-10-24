@@ -96,14 +96,15 @@ depends on calibration and smoothing; they are not a measurement of what a rider
 1. If FFmpeg was not found automatically, click **Browse…** next to **FFmpeg**
    and choose its executable (`ffmpeg.exe` on Windows, `ffmpeg` on Linux/macOS).
 2. Click **Review export →** and check the start/end times and settings.
-3. Click **Export video…**, choose a destination and a new file name, then save.
+3. Click **Export video…**, choose a destination and file name, then save.
 4. Wait for the export to finish. You can follow its progress or cancel it.
 
 The suggested file name includes the recording name and chosen overlay, for
 example `Manta - HUD.mov`.
 
-Existing videos are not overwritten; choose a different name if one already
-exists. Cancelling or a failed export leaves no incomplete video behind.
+If the video already exists, confirm replacement in the save dialog. The old video
+is replaced only after export succeeds. Cancellation or failure keeps the old video
+and removes incomplete output.
 
 The NVIDIA option uses supported hardware when available and falls back to the
 CPU otherwise. An NVIDIA graphics card is not required.

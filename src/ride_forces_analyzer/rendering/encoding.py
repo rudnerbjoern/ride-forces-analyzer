@@ -1,4 +1,4 @@
-"""Offline FFmpeg encoding with bounded memory, cancellation and exclusive publication.
+"""Offline FFmpeg encoding with bounded memory, cancellation and safe publication.
 
 Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
@@ -220,13 +220,14 @@ def export_video(
     progress: Callable[[int, int], None] | None = None,
     status: Callable[[str], None] | None = None,
     render_jobs: int = 1,
+    overwrite: bool = False,
 ) -> Path:
-    """Publish one complete video. Never overwrite existing files or source data."""
+    """Publish a complete video, atomically replacing only with explicit permission."""
     extension = ".mov" if timeline.settings.output == "transparent" else ".mp4"
     destination = destination.resolve()
     if destination.suffix.lower() != extension:
         raise ValueError(f"This output requires a {extension} filename")
-    if destination.exists():
+    if destination.exists() and not overwrite:
         raise ValueError("Output already exists; choose a new filename")
     render_jobs = effective_render_jobs(render_jobs)
     executable = find_ffmpeg(ffmpeg)
@@ -282,6 +283,10 @@ def export_video(
             raise ExportCancelled()
         if not target.is_file() or target.stat().st_size == 0:
             raise RuntimeError("Encoder produced no video")
+        if overwrite:
+            target.replace(destination)
+            published = True
+            return destination
         try:
             os.link(target, destination)
         except OSError as error:

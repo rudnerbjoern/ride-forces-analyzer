@@ -128,8 +128,9 @@ Layouts own named positions and geometry; previews, composition and encoder
 padding share the same regions. HUD exports native HD; other layouts export 4K.
 Previews use the exact cursor, while video frames follow an independent
 deterministic clock. The 59.94 option retains exact `60000/1001` timing.
-Transparent ProRes and opaque H.264 are separate outputs, published exclusively
-after successful encoding. Video alignment remains external.
+Transparent ProRes and opaque H.264 are separate outputs, published only after
+successful encoding. Existing videos require explicit replacement confirmation;
+failure or cancellation preserves them. Video alignment remains external.
 
 SQLite separates application preferences, versioned export definitions and map
 tiles. Preferences retain language/appearance, folders, restore/update consent,

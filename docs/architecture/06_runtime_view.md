@@ -190,7 +190,8 @@ renderers. Ordered prefetch preserves frame order. NVIDIA Vulkan/NVENC is used
 only after a successful probe; CPU remains the fallback.
 
 Cancellation joins active renders, cancels queued work and discards incomplete
-output. Successful encoding publishes a new file exclusively. The user aligns the
+output. Successful encoding publishes a new file exclusively or atomically replaces
+an existing video after save-dialog confirmation. The user aligns the
 overlay in their editor. [Video contracts](../implementation/VIDEO_EXPORT.md)
 define output, timing and publication details.
 

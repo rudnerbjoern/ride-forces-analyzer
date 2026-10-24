@@ -285,7 +285,7 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
 
         def destination(*args: object, **kwargs: object) -> tuple[str, str]:
             suggestions.append(str(args[2]))
-            return (str(output), "") if len(suggestions) == 1 else ("", "")
+            return (str(output), "") if len(suggestions) <= 2 else ("", "")
 
         monkeypatch.setattr(QFileDialog, "getSaveFileName", destination)
 
@@ -293,6 +293,8 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
             return Path(__file__)
 
         def export(*args: object, **kwargs: object) -> Path:
+            assert kwargs["overwrite"] is output.exists()
+            output.write_bytes(b"complete video")
             return output
 
         monkeypatch.setattr(ui_export, "find_ffmpeg", encoder)
@@ -301,13 +303,16 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
         wait_until(lambda: dialog.worker is None)
         assert Path(suggestions[0]).name == source.stem + " - Flow Ribbon.mov"
         assert Preferences(dialog.preferences.path).export_directory() == str(output.parent)
+        dialog.start.click()
+        wait_until(lambda: dialog.worker is None)
+        assert output.read_bytes() == b"complete video"
         dialog.back.click()
         dialog.layout_profile.setCurrentIndex(2)
         dialog.mode.setCurrentIndex(1)
         preview_ready(dialog)
         dialog.next.click()
         dialog.start.click()
-        assert Path(suggestions[1]) == output.parent / (source.stem + " - HUD.mp4")
+        assert Path(suggestions[2]) == output.parent / (source.stem + " - HUD.mp4")
         assert dialog.preferences.export_directory() == str(output.parent)
     dialog.close()
 
