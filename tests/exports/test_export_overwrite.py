@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from ride_forces_analyzer.data_export import DataExportFormat
-from ride_forces_analyzer.csv_export import CsvExportCancelled, export_csv
-from ride_forces_analyzer.json_export import JsonExportCancelled, export_json, export_analyzer_json
+from ride_forces_analyzer.exports.formats import DataExportFormat
+from ride_forces_analyzer.exports.csv import CsvExportCancelled, export_csv
+from ride_forces_analyzer.exports.json import JsonExportCancelled, export_json, export_analyzer_json
 from tests.exports.test_csv_export import snapshot
 
 

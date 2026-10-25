@@ -17,7 +17,7 @@ from ride_forces_analyzer.analysis.recording import (
     prepare_recording_analysis,
     source_app_configuration,
 )
-from ride_forces_analyzer.csv_export import CSV_COLUMNS, CsvExportCancelled, export_csv
+from ride_forces_analyzer.exports.csv import CSV_COLUMNS, CsvExportCancelled, export_csv
 from ride_forces_analyzer.i18n import Language, get_language, set_language
 from ride_forces_analyzer.importers import ImportSuccess, import_forces, import_forces_bytes
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY

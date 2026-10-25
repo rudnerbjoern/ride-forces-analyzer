@@ -13,7 +13,8 @@ from typing import Any, cast
 from PIL import ImageDraw
 import pytest
 
-from ride_forces_analyzer.explorer import ExplorerData, format_sample_time, load_recording
+from ride_forces_analyzer.time_format import format_sample_time
+from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.i18n import (
     LANGUAGES,
     LANGUAGE_CHOICES,

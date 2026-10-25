@@ -5,7 +5,7 @@
 
 ## API and lifecycle
 
-`ride_forces_analyzer.csv_export.export_csv(analysis, path, first, last, *, overwrite=False, cancelled, progress)`
+`ride_forces_analyzer.exports.csv.export_csv(analysis, path, first, last, *, overwrite=False, cancelled, progress)`
 accepts a bound `RecordingAnalysis`, a `.csv` destination and inclusive source indices.
 It returns the number of written data rows. The serializer validates the snapshot,
 reads `analysis.sample(index)` and never prepares or interpolates measurements.

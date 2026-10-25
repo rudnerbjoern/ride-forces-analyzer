@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 from math import ceil, floor, isclose, isfinite
 from pathlib import Path
 
+from ride_forces_analyzer.time_format import format_sample_time
 from ride_forces_analyzer.force_extrema import SelectionExtrema, calculate_extrema
 from ride_forces_analyzer.domain import RecordingFormat, SourceNumber
 from ride_forces_analyzer.importers import ImportFailure, ImportSuccess, import_forces
@@ -49,25 +50,6 @@ def _import_notes(source: ImportSuccess, error: str | None) -> str:
     if error:
         notes += tr("\nCALIBRATION_UNAVAILABLE: {0}. Raw recording remains available.", error)
     return notes
-
-
-def format_sample_time(offset: int, rate: float) -> str:
-    """MM:SS.ff uses a sample counter; fractional rates retain explicit seconds.
-
-    Args:
-        offset: Position within the input representation.
-        rate: Sample or frame rate per second, as declared by this operation.
-
-    Returns:
-        Formatted sample time in the selected language.
-    """
-    if not rate.is_integer():
-        return f"{offset / rate:.3f} s"
-    whole, frame = divmod(abs(offset), int(rate))
-    minutes, seconds = divmod(whole, 60)
-    width = max(2, len(str(int(rate) - 1)))
-    sign = "-" if offset < 0 else ""
-    return f"{sign}{minutes:02}:{seconds:02}.{frame:0{width}}"
 
 
 @dataclass(frozen=True, slots=True)

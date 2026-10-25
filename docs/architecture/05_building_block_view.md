@@ -19,7 +19,7 @@ flowchart TB
     UI --> Playback["playback: monotonic sample clock"]
     UI --> GPS["gps_overview / map_background"]
     GPS --> Domain
-    UI --> Data["csv_export / json_export"]
+    UI --> Data["exports.csv / exports.json"]
     Data --> Analysis
     UI --> Rendering["rendering: layouts, previews and parallel frames"]
     Rendering --> Analysis
@@ -43,7 +43,7 @@ Arrows indicate dependencies. Domain/import/analysis code has no widget dependen
 | `analysis`, `force_extrema`                   | Prepared measurements, context/events, calibration and extrema                |
 | `explorer`, `playback`                        | View data, sample selection, formatting and monotonic playback                |
 | `gps_overview`, `map_background`              | Independent route geometry and optional bounded map requests                  |
-| `csv_export`, `json_export`, `_export_file`   | Sample serialization and safe confirmed replacement                           |
+| `exports`                                     | Sample serialization and safe confirmed replacement                           |
 | `rendering`                                   | Layouts, previews, ordered frame generation, encoding and batches             |
 | `storage`                                     | SQLite preferences, marker choices, export definitions and map tiles          |
 | `i18n`, `airtime_colors`                      | Shared language and semantic-color contracts                                  |
@@ -106,11 +106,13 @@ processors, with a one-job fallback. [Runtime](06_runtime_view.md) and
 
 ## Sample data export boundary
 
-`csv_export` and `json_export` serialize a bound snapshot and inclusive interval;
-they do not calculate analysis or depend on Qt/FFmpeg. `_export_file` owns exclusive
+`exports.csv` and `exports.json` serialize a bound snapshot and inclusive interval;
+they do not calculate analysis or depend on Qt/FFmpeg. `exports._file` owns exclusive
 creation and atomic replacement after explicit overwrite confirmation.
-`data_export.DataExportFormat` provides the shared `CSV`, `JSON` and `ANALYZER_JSON`
+`exports.formats.DataExportFormat` provides the shared `CSV`, `JSON` and `ANALYZER_JSON`
 identifiers with stable text values `csv`, `json` and `analyzer_json`.
+`time_format.format_sample_time` supplies the common replay labels for explorer,
+serializers and layout renderers without importing presentation or analysis code.
 `ui.data_export` captures input and transports progress/cancellation.
 
 [CSV](../implementation/CSV_EXPORT.md) and [JSON](../implementation/JSON_EXPORT.md)

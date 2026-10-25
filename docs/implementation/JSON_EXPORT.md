@@ -5,7 +5,7 @@
 
 ## API and lifecycle
 
-`ride_forces_analyzer.json_export.export_json(analysis, path, first, last, *, overwrite=False, cancelled, progress)`
+`ride_forces_analyzer.exports.json.export_json(analysis, path, first, last, *, overwrite=False, cancelled, progress)`
 accepts a bound `RecordingAnalysis`, a `.json` destination and inclusive source
 indices. It returns the exported sample count. It reads prepared sample views
 without recalculation, interpolation or rounding. Smoothing uses the full recording;
@@ -86,7 +86,7 @@ correspondence. Raw units and source-app physical interpretation retain the
 
 ## Analyzer JSON schema 1
 
-`ride_forces_analyzer.json_export.export_analyzer_json(analysis, path, first, last, *, overwrite=False, cancelled, progress)`
+`ride_forces_analyzer.exports.json.export_analyzer_json(analysis, path, first, last, *, overwrite=False, cancelled, progress)`
 uses the same validation, bound snapshot, inclusive interval, precision, progress,
 encoding, cancellation and atomic overwrite contract as `export_json`. It collects
 only measurement/context arrays; repeated timestamp and per-sample quality arrays

@@ -13,7 +13,7 @@ from .translation import bind, items, set_ui_language, system_ui_language
 from pathlib import Path
 from dataclasses import replace
 from typing import TYPE_CHECKING
-from ride_forces_analyzer.data_export import DataExportFormat
+from ride_forces_analyzer.exports.formats import DataExportFormat
 from importlib.util import find_spec
 from time import monotonic
 from math import ceil

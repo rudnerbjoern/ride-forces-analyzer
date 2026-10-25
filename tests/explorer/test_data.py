@@ -19,7 +19,8 @@ from ride_forces_analyzer.domain import (
     ValueOrigin,
     Vector3,
 )
-from ride_forces_analyzer.explorer import format_sample_time, present_recording
+from ride_forces_analyzer.time_format import format_sample_time
+from ride_forces_analyzer.explorer import present_recording
 from ride_forces_analyzer.importers import ImportSuccess, import_forces, import_forces_bytes
 from ride_forces_analyzer.i18n import Language, get_language, set_language
 from tests.support.recordings import RFDB_FIXTURE_DIRECTORY, RFDB_FIXTURES

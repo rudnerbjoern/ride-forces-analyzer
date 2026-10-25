@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 from math import ceil, floor
 import os
 from pathlib import Path
-from ride_forces_analyzer.explorer import format_sample_time
+from ride_forces_analyzer.time_format import format_sample_time
 from ride_forces_analyzer.i18n import tr
 from .common import ACCELERATION_COLOR, BRAKING_COLOR
 from .contracts import ExportLayout, LayoutPlugin, LayoutPosition, LayoutPositions

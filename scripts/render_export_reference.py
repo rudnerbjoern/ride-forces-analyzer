@@ -22,7 +22,7 @@ from ride_forces_analyzer.analysis.recording import (
     prepare_recording_analysis,
     source_app_configuration,
 )
-from ride_forces_analyzer.explorer import format_sample_time
+from ride_forces_analyzer.time_format import format_sample_time
 from ride_forces_analyzer.importers import ImportSuccess, import_forces
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts import export_region

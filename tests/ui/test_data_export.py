@@ -11,7 +11,7 @@ from threading import Event
 from PySide6.QtWidgets import QFileDialog, QMessageBox, QPushButton, QWidget
 import pytest
 
-from ride_forces_analyzer.data_export import DataExportFormat
+from ride_forces_analyzer.exports.formats import DataExportFormat
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.ui import data_export as data_ui, loading

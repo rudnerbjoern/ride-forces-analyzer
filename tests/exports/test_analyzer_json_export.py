@@ -14,7 +14,7 @@ from ride_forces_analyzer.analysis.recording import (
 from ride_forces_analyzer.domain import SourceNumber
 from ride_forces_analyzer.domain.models import Attribute
 from ride_forces_analyzer.importers import ImportSuccess, import_forces
-from ride_forces_analyzer.json_export import (
+from ride_forces_analyzer.exports.json import (
     JsonExportCancelled,
     export_analyzer_json,
     export_json,
