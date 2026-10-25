@@ -56,7 +56,13 @@ source = [
     "src/ride_forces_analyzer/i18n",
     "src/ride_forces_analyzer/formatting",
     "src/ride_forces_analyzer/playback",
-    "ride_forces_analyzer.runtime.error_reporting",
+    "src/ride_forces_analyzer/runtime",
+    "src/ride_forces_analyzer/gps",
+    "src/ride_forces_analyzer/domain",
+    "src/ride_forces_analyzer/importers",
+    "src/ride_forces_analyzer/rendering",
+    "src/ride_forces_analyzer/explorer",
+    "src/ride_forces_analyzer/exports",
 ]
 data_file = ".tmp/coverage/analysis/.coverage"
 
@@ -68,7 +74,13 @@ include = [
     "src/ride_forces_analyzer/i18n/*.py",
     "src/ride_forces_analyzer/formatting/*.py",
     "src/ride_forces_analyzer/playback/*.py",
-    "src/ride_forces_analyzer/runtime/error_reporting.py",
+    "src/ride_forces_analyzer/runtime/*.py",
+    "src/ride_forces_analyzer/gps/*.py",
+    "src/ride_forces_analyzer/domain/*.py",
+    "src/ride_forces_analyzer/importers/*.py",
+    "src/ride_forces_analyzer/rendering/**/*.py",
+    "src/ride_forces_analyzer/explorer/*.py",
+    "src/ride_forces_analyzer/exports/*.py",
 ]
 fail_under = 100
 show_missing = true

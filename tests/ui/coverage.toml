@@ -1,0 +1,17 @@
+[tool.coverage.run]
+branch = true
+patch = ["subprocess"]
+source = ["src/ride_forces_analyzer/ui"]
+data_file = ".tmp/coverage/ui/.coverage"
+
+[tool.coverage.report]
+include = ["src/ride_forces_analyzer/ui/**/*.py"]
+fail_under = 90
+show_missing = true
+precision = 2
+
+[tool.coverage.html]
+directory = ".tmp/coverage/ui/html"
+
+[tool.coverage.json]
+output = ".tmp/coverage/ui/coverage.json"

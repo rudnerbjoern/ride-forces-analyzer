@@ -500,6 +500,10 @@ print("Qt-free offline read-only import verified")
 """
     root = Path(__file__).resolve().parents[2]
     environment = {**os.environ, "PYTHONPATH": str(root / "src")}
+    # Instrumentation itself reads source and writes coverage data; keep the
+    # audited child pristine while measuring importer behavior in the other tests.
+    environment.pop("COVERAGE_PROCESS_CONFIG", None)
+    environment.pop("COVERAGE_PROCESS_START", None)
     process = subprocess.run(
         [sys.executable, "-c", script, adapter, str(path)],
         cwd=root,
@@ -512,3 +516,19 @@ print("Qt-free offline read-only import verified")
     assert process.returncode == 0, process.stdout + process.stderr
     assert process.stdout.strip() == "Qt-free offline read-only import verified"
     assert path.read_bytes() == raw and path.stat().st_mtime_ns == modified
+
+
+def test_full_import_propagates_an_explicit_optional_stage_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ride_forces_analyzer.importers import ImportDiagnostic, service
+
+    failure = ImportFailure(
+        (ImportDiagnostic("INVALID_OPTIONAL", Severity.ERROR, "", "Invalid optional data"),),
+    )
+
+    def failed_optional(source: SourceEnvelope, diagnostics: object) -> ImportFailure:
+        return failure
+
+    monkeypatch.setattr(service, "validate_optional_data", failed_optional)
+    assert import_forces_bytes(_document()) is failure

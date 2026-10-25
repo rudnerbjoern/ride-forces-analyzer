@@ -18,8 +18,8 @@ from ride_forces_analyzer.storage import map_tiles
 from ride_forces_analyzer.storage.map_tiles import TileCache, TileEntry
 
 
-def png() -> bytes:
-    image = QImage(256, 256, QImage.Format.Format_RGB32)
+def png(size: int = 256) -> bytes:
+    image = QImage(size, size, QImage.Format.Format_RGB32)
     image.fill(Qt.GlobalColor.cyan)
     buffer = QBuffer()
     buffer.open(QIODevice.OpenModeFlag.WriteOnly)
@@ -216,3 +216,102 @@ def test_map_cache_failures_and_expired_responses(
     assert len(calls) == 1
     if mode == "invalid-image":
         assert calls[0].get_header("If-none-match") is None
+
+
+def test_missing_geographic_route_and_outside_world_viewport_remain_unavailable() -> None:
+    assert maps.project_route(GpsOverview((((0, 0),),), 1, 1)) is None
+    with pytest.raises(maps.MapError, match="viewport exceeds request limit"):
+        maps.viewport_request((maps.WORLD_SIZE * 2, maps.WORLD_SIZE * 2), (0, 0, 1, 1), (100, 100))
+
+
+@pytest.mark.parametrize(
+    "map_request",
+    [
+        maps.MapRequest(20, 0, 0, 256, 256, (0, 0)),
+        maps.MapRequest(0, 0, 0, 0, 256, (0, 0)),
+        maps.MapRequest(0, 1024, 1024, 256, 256, (0, 0)),
+        maps.MapRequest(4, 1, 1, 2048, 2048, (0, 0)),
+    ],
+)
+def test_invalid_map_requests_are_rejected_before_loading(map_request: maps.MapRequest) -> None:
+    with pytest.raises(maps.MapError, match="Invalid map request"):
+        maps.load_background(map_request, Event())
+
+
+def test_cache_control_and_expiry_fallbacks_are_respected(
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from datetime import UTC, datetime
+
+    monkeypatch.setattr(map_tiles, "data_directory", lambda: export_directory)
+    monkeypatch.setattr(maps, "time", lambda: 1000.0)
+    expires = "Wed, 21 Oct 2026 07:28:00 GMT"
+    cache = TileCache()
+    for control, age, expected in (
+        ("no-cache", "0", 1000.0),
+        ("max-age=10", "invalid", datetime(2026, 10, 21, 7, 28, tzinfo=UTC).timestamp()),
+    ):
+        cache.clear()
+
+        def fetch(request: Request, *, timeout: float) -> Response:
+            response = Response(png(), control)
+            response.headers["Age"] = age
+            response.headers["Expires"] = expires
+            return response
+
+        monkeypatch.setattr(maps, "urlopen", fetch)
+        maps.load_background(maps.MapRequest(0, 0, 0, 256, 256, (0, 0)), Event())
+        entry = cache.get(maps.TILE_URL, 0, 0, 0)
+        assert entry is not None and entry.expires == expected
+
+
+def test_expired_tile_without_etag_uses_last_modified(
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(map_tiles, "data_directory", lambda: export_directory)
+    cache = TileCache()
+    cache.put(maps.TILE_URL, 0, 0, 0, TileEntry(png(), 0, "", "Wed, 21 Oct 2026 07:28:00 GMT"))
+
+    def fetch(request: Request, *, timeout: float) -> Response:
+        assert request.get_header("If-none-match") is None
+        assert request.get_header("If-modified-since") == "Wed, 21 Oct 2026 07:28:00 GMT"
+        return Response(png())
+
+    monkeypatch.setattr(maps, "urlopen", fetch)
+    assert not maps.load_background(
+        maps.MapRequest(0, 0, 0, 256, 256, (0, 0)),
+        Event(),
+    ).image.isNull()
+
+
+@pytest.mark.parametrize("mode", ["wrong-size", "http-error", "cancel-during-load", "deadline"])
+def test_tile_failures_and_late_cancellation_never_publish_a_background(
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mode: str,
+) -> None:
+    from unittest.mock import Mock
+
+    monkeypatch.setattr(map_tiles, "data_directory", lambda: export_directory)
+    cancelled = Event()
+    calls: list[Request] = []
+
+    def fetch(request: Request, *, timeout: float) -> Response:
+        calls.append(request)
+        if mode == "http-error":
+            raise HTTPError(request.full_url, 404, "Not found", HTTPMessage(), None)
+        if mode == "cancel-during-load":
+            cancelled.set()
+        return Response(png(128 if mode == "wrong-size" else 256))
+
+    monkeypatch.setattr(maps, "urlopen", fetch)
+    if mode == "deadline":
+        monkeypatch.setattr(maps, "monotonic", Mock(side_effect=[0.0, 21.0]))
+    with pytest.raises(
+        maps.MapError,
+        match="Invalid map tile|Map server unavailable|Map request stopped",
+    ):
+        maps.load_background(maps.MapRequest(0, 0, 0, 256, 256, (0, 0)), cancelled)
+    assert len(calls) == (0 if mode == "deadline" else 1)

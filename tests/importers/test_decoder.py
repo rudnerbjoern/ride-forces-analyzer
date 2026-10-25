@@ -543,3 +543,48 @@ def test_decoder_internal_failures_stay_structured(monkeypatch: pytest.MonkeyPat
         assert isinstance(result, ImportFailure)
         assert result.source is not None and result.source.root is None
         assert "unsafe" not in result.diagnostics[0].message
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [b'{"key" 1}', b'{"key":', b'{"key":-}', b'{"key":"\\ud800\\uZZZZ"}'],
+)
+def test_preflight_rejects_missing_separators_values_and_invalid_surrogates(payload: bytes) -> None:
+    result = decode_forces_bytes(payload)
+    assert isinstance(result, ImportFailure)
+    assert result.diagnostics[0].code == "INVALID_JSON"
+
+
+def test_high_surrogate_followed_by_non_low_escape_counts_as_two_characters() -> None:
+    payload = json.dumps(_BASE).removesuffix("}") + ',"extension":"\\ud800\\u0041"}'
+    result = decode_forces_bytes(payload.encode())
+    assert isinstance(result, DecodeSuccess)
+    assert result.source.root is not None and result.source.root["extension"] == "\ud800A"
+
+
+def test_decoder_adapter_independently_rejects_duplicates_and_constants() -> None:
+    from ride_forces_analyzer.importers._json_preflight import DecodeProblem
+
+    decode_tree = getattr(decoder, "_decode_tree")
+    for payload, code in (
+        ('{"a":1,"a":2}', "DUPLICATE_JSON_KEY"),
+        ('{"a":NaN}', "NON_JSON_NUMBER"),
+    ):
+        with pytest.raises(DecodeProblem) as error:
+            decode_tree(payload)
+        assert error.value.diagnostic.code == code
+
+
+def test_preflight_fails_closed_if_syntax_reporting_unexpectedly_returns(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ride_forces_analyzer.importers import _json_preflight as scanner
+
+    def returned(path: tuple[str | int, ...]) -> None:
+        pass
+
+    monkeypatch.setattr(scanner, "_syntax", returned)
+    with pytest.raises(AssertionError, match="unreachable"):
+        getattr(scanner, "_string_end")('"', 0, (), DEFAULT_LIMITS)
+    with pytest.raises(AssertionError, match="unreachable"):
+        scanner.preflight("-", DEFAULT_LIMITS)

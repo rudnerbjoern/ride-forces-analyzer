@@ -91,17 +91,20 @@ Source smoke checks do not replace [frozen-package qualification](RELEASE.md#win
 ## Coverage gate
 
 Locked `coverage.py`/`pytest-cov` measure lines and branches throughout `analysis`,
-`validation`, `storage`, `i18n`, `formatting`, `playback` and
-`runtime.error_reporting`. `[tool.coverage.*]` in `pyproject.toml` owns configuration.
+`validation`, `storage`, `i18n`, `formatting`, `playback`, `runtime`, `gps`,
+`domain`, `importers`, `rendering`, `explorer` and `exports`.
+`[tool.coverage.*]` in `pyproject.toml` owns configuration.
 Subprocess measurement includes isolated error-report lifecycle and exception-hook tests. Collection selects the declared sources without importing modules for discovery. Run from the repository root on native Windows:
 
 ```powershell
 uv run --locked pytest --cov --cov-report=term-missing `
     tests/analysis tests/tooling/test_validation.py tests/storage `
-    tests/rendering/test_batches.py tests/rendering/test_analysis_snapshots.py `
+    tests/rendering `
     tests/updates/test_releases.py tests/localization `
-    tests/explorer/test_data.py::test_replay_sample_counter_format tests/playback `
-    tests/support/test_error_reporting.py
+    tests/explorer tests/exports tests/playback `
+    tests/support tests/tooling/test_runtime_paths.py tests/tooling/test_settings.py `
+    tests/domain `
+    tests/importers
 uv run --locked coverage html
 uv run --locked coverage json
 ```
@@ -124,10 +127,47 @@ Localization coverage includes both translation catalogs, deferred text renderin
 language selection, numeric formatting and diagnostic fallbacks. Shared replay-time
 formatting covers sample counters, negative offsets and fractional sample rates.
 Playback coverage checks the clock, speed changes, seeking, pause/resume and
-recording boundaries independently of Qt. Error-report coverage includes process
-ownership, exception forwarding, cleanup and unavailable report storage/handlers.
+recording boundaries independently of Qt. Runtime coverage includes bootstrap
+settings, platform paths, CPU topology, support diagnostics, bounded release lookup,
+instance locking and local-socket requests, exception forwarding and report cleanup.
+Platform fallback branches use controlled test doubles on Windows; they do not
+replace native Linux/macOS package qualification. GPS coverage checks route gaps,
+projection, bounded viewport requests, HTTP/cache rules and cancellation using
+simulated tile responses without live network access. Domain coverage includes
+immutable source ownership, exact number tokens, constructor type checks and
+recording-component consistency without decoding or rewriting original recordings.
+Importer coverage includes bounded JSON/compressed decoding, diagnostic budgets,
+motion/optional parsing and full-service outcomes. The two strict subprocess
+file-access audits run without coverage instrumentation, whose own file I/O would
+violate their contract; the remaining tests measure the importer modules. Rendering
+coverage includes all layouts, gaps and fallback fonts, preview/timeline contracts,
+ordered frame generation, encoder discovery and safe output publication/cleanup.
+Explorer coverage checks raw/prepared presentation, context segments, localized
+details and inclusive selections without desktop windows. Data-export coverage
+checks CSV/JSON serialization, shared validation, atomic file replacement and
+sequential batch preparation, failure and cancellation.
 Behavior tests establish contracts; coverage percentage does not qualify physical
 interpretation or UI integration. Cover new branches without weakening the gate.
+
+### UI coverage
+
+<!-- cspell:words rcfile -->
+
+UI coverage uses [its own configuration](../../tests/ui/coverage.toml), with a
+90% combined line/branch threshold across the package. The other packages retain
+their 100% gate. Measure the existing native Windows interaction suite separately:
+
+```powershell
+uv run --locked pytest --cov --cov-config=tests/ui/coverage.toml --cov-report=term-missing tests/ui
+uv run --locked coverage html --rcfile=tests/ui/coverage.toml
+uv run --locked coverage json --rcfile=tests/ui/coverage.toml
+```
+
+Data and reports stay under `.tmp/coverage/ui/`. Prioritize user workflows,
+storage-error recovery, cancellation and stale worker deliveries. Related checks
+share application/widget lifetimes; controller tests need no visible windows.
+The threshold detects broad regressions without requiring every platform fallback
+or drawing branch. Coverage does not verify visual quality or native dialog contents.
 
 ## Test design
 

@@ -466,3 +466,44 @@ def test_all_bad_slots_produce_deterministic_safe_diagnostics_and_no_partial_suc
         "/sampleRate",
     }
     assert all("bad" not in item.message for item in result.diagnostics)
+
+
+def test_motion_guards_reject_error_results_invalid_limits_and_missing_required_indices() -> None:
+    from dataclasses import replace
+    from ride_forces_analyzer.importers import ImportDiagnostic, ImportLimits, motion
+    from ride_forces_analyzer.importers._diagnostic_budget import DiagnosticBudget
+
+    source = _source(_root())
+    parsed = parse_motion(source)
+    assert isinstance(parsed, MotionParseSuccess)
+    error = ImportDiagnostic("INVALID_INPUT", Severity.ERROR, "", "Invalid input")
+    with pytest.raises(ValueError, match="cannot contain error diagnostics"):
+        replace(parsed, diagnostics=(error,))
+    with pytest.raises(ValueError, match="limits must be an ImportLimits"):
+        parse_motion(source, limits=cast(ImportLimits, None))
+    budget = DiagnosticBudget(5)
+    assert getattr(motion, "_index")({}, "startIndex", 3, budget, required=True) is None
+    assert budget.records[0].code == "MISSING_REQUIRED_FIELD"
+    root = _root()
+    del root["endIndex"]
+    defaulted = parse_motion(_source(root))
+    assert isinstance(defaulted, MotionParseSuccess) and defaulted.indices.end == 2
+    root["accelerationSequence"] = []
+    assert isinstance(parse_motion(_source(root)), ImportFailure)
+
+
+def test_motion_conversion_failures_do_not_fabricate_numeric_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from unittest.mock import Mock
+    from ride_forces_analyzer.importers import motion
+
+    monkeypatch.setattr(
+        motion,
+        "float",
+        Mock(side_effect=OverflowError("Conversion failed")),
+        raising=False,
+    )
+    result = parse_motion(_source(_root()))
+    assert isinstance(result, ImportFailure)
+    assert any(item.severity is Severity.ERROR for item in result.diagnostics)

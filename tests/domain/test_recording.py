@@ -175,3 +175,84 @@ def test_gps_finite_heuristics_are_not_scientific_rejection() -> None:
         GpsFix(True, 0)
     with pytest.raises(ValueError):
         GpsFix(0, 0, timestamp=float("nan"))
+
+
+def test_scalar_motion_and_reference_types_are_strict() -> None:
+    with pytest.raises(ValueError, match="finite value"):
+        Vector3(10**400, 0, 0)
+    with pytest.raises(TypeError, match="Sample rate origin"):
+        SampleRate(50, cast(ValueOrigin, "source"))
+    with pytest.raises(ValueError, match="nonempty string"):
+        RidingPosition(" ", ValueOrigin.SOURCE)
+    with pytest.raises(TypeError, match="Riding position origin"):
+        RidingPosition("Seated", cast(ValueOrigin, "source"))
+    with pytest.raises(TypeError, match="Motion sample rate"):
+        MotionSequence([Vector3(0, 0, 1)], sample_rate=cast(SampleRate, 50))
+    with pytest.raises(ValueError, match="nonnegative integer index"):
+        RecordingIndices(-1, 0)
+    with pytest.raises(ValueError, match="Start index must not exceed"):
+        RecordingIndices(2, 1)
+    with pytest.raises(TypeError, match="Recording vectors must be Vector3"):
+        RecordingVectors(vertical_direction=cast(Vector3, (0, 0, 1)))
+    with pytest.raises(TypeError, match="Attribute id and label"):
+        Attribute(cast(str, 1), "Seat", None)
+    with pytest.raises(TypeError, match="GPS entry must contain a GpsFix"):
+        GpsEntry(0, cast(GpsFix, "unavailable"))
+
+
+@pytest.mark.parametrize(
+    "changes,message",
+    [
+        ({"device": 1}, "Metadata text"),
+        ({"advanced_recording": 1}, "Advanced recording"),
+        ({"date": 0}, "Date requires a source number"),
+        ({"riding_position": "Seated"}, "Riding position must expose"),
+    ],
+)
+def test_metadata_rejects_untyped_values(changes: dict[str, object], message: str) -> None:
+    with pytest.raises(TypeError, match=message):
+        replace(RecordingMetadata(), **changes)
+
+
+@pytest.mark.parametrize(
+    "changes,message",
+    [
+        ({"source_format": "ride_forces"}, "Recording format"),
+        ({"schema_version": ""}, "schema version must be a nonempty string"),
+        ({"source": None}, "retained source bytes and a source object"),
+        ({"motion": None}, "typed motion and indices"),
+        ({"indices": (0, 1)}, "typed motion and indices"),
+        ({"metadata": None}, "typed metadata and vectors"),
+        ({"vectors": None}, "typed metadata and vectors"),
+        ({"attributes": ("Seat",)}, "attributes must contain Attribute"),
+        ({"gps": ()}, "GPS must be a GpsSequence"),
+        ({"gps_status": "absent"}, "GPS status must agree"),
+        ({"smoothing_factor": 11}, "exact source numbers"),
+        ({"max_force": 1.0}, "exact source numbers"),
+        ({"min_force": -1.0}, "exact source numbers"),
+    ],
+)
+def test_recording_rejects_incompatible_components_without_changing_source(
+    synthetic_recording: Recording,
+    changes: dict[str, object],
+    message: str,
+) -> None:
+    original = synthetic_recording.source.original_bytes
+    with pytest.raises((TypeError, ValueError), match=message):
+        replace(synthetic_recording, **changes)
+    assert synthetic_recording.source.original_bytes == original
+
+
+def test_rfdb_schema_absence_and_retained_source_are_required(
+    synthetic_recording: Recording,
+) -> None:
+    from ride_forces_analyzer.domain import RecordingFormat, SourceEnvelope
+
+    rfdb = replace(synthetic_recording, source_format=RecordingFormat.RFDB, schema_version=None)
+    assert rfdb.schema_version is None
+    assert rfdb.source is synthetic_recording.source
+    with pytest.raises(ValueError, match="no declared schema version"):
+        replace(synthetic_recording, source_format=RecordingFormat.RFDB)
+    for source in (SourceEnvelope(b"retained"), SourceEnvelope(b"", {})):
+        with pytest.raises(ValueError, match="retained source bytes and a source object"):
+            replace(synthetic_recording, source=source)

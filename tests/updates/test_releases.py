@@ -184,3 +184,75 @@ def test_update_preferences_opt_in_daily_attempts_and_skipped_version_survive_re
         assert restored.automatic_updates() and restored.skipped_update() == "v0.3.1"
         assert not restored.update_check_due(186399)
         assert restored.update_check_due(186400)
+
+
+def test_malformed_release_entries_and_assets_are_ignored() -> None:
+    rows = [None, release("v2.0.0", assets=None), release("v3.0.0", assets=[None])]
+    assert updates.select_release(rows, "1.0.0") is None
+
+
+def test_release_redirects_reject_other_hosts_and_insecure_urls() -> None:
+    from http.client import HTTPMessage
+    from typing import cast
+    from urllib.request import HTTPRedirectHandler, Request
+
+    handler = cast(HTTPRedirectHandler, getattr(updates, "_GitHubRedirects")())
+    request = Request(updates.RELEASES_API)
+    for url in ("http://api.github.com/releases", "https://example.invalid/releases"):
+        with pytest.raises(updates.UpdateCheckError, match="Unexpected release API redirect"):
+            handler.redirect_request(request, Response(b""), 302, "Found", HTTPMessage(), url)
+    redirected = handler.redirect_request(
+        request,
+        Response(b""),
+        302,
+        "Found",
+        HTTPMessage(),
+        "https://api.github.com/releases?page=2",
+    )
+    assert redirected is not None
+    assert redirected.full_url == "https://api.github.com/releases?page=2"
+
+
+@pytest.mark.parametrize(
+    "mode",
+    ["before-request", "during-read", "after-read", "invalid", "pages"],
+)
+def test_release_transport_deadlines_shape_and_page_limits(
+    monkeypatch: pytest.MonkeyPatch,
+    mode: str,
+) -> None:
+    from unittest.mock import Mock
+
+    now = [0.0]
+    calls = [0]
+
+    def clock() -> float:
+        calls[0] += 1
+        return 0.0 if calls[0] == 1 else now[0]
+
+    class ControlledResponse(Response):
+        def read1(self, size: int | None = -1) -> bytes:
+            data = super().read1(size)
+            if mode == "after-read" and not data:
+                now[0] = updates.CHECK_TIMEOUT + 1
+            return data
+
+    class Opener:
+        def open(self, request: object, *, timeout: float) -> Response:
+            if mode == "during-read":
+                now[0] = updates.CHECK_TIMEOUT + 1
+            payload: dict[str, object] | list[dict[str, object]] = (
+                {} if mode == "invalid" else [release("v2.0.0")] * 100 if mode == "pages" else []
+            )
+            return ControlledResponse(json.dumps(payload).encode())
+
+    if mode == "before-request":
+        now[0] = updates.CHECK_TIMEOUT + 1
+    monkeypatch.setattr(updates, "monotonic", clock)
+    monkeypatch.setattr(updates, "build_opener", Mock(return_value=Opener()))
+    monkeypatch.setattr(updates, "MAX_PAGES", 2)
+    with pytest.raises(
+        updates.UpdateCheckError,
+        match="timed out|check limits|Invalid releases|page limit",
+    ):
+        updates.check_for_update("1.0.0")
