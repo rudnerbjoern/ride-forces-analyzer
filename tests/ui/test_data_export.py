@@ -75,8 +75,14 @@ def test_data_uses_selected_snapshot_range_and_remembers_only_success(
                 )
                 assert menu.activeAction() is action
                 geometry = menu.actionGeometry(action)
-                background = QPoint(geometry.right() - 8, geometry.center().y())
-                assert menu.grab().toImage().pixelColor(background) == QColor(window.theme.accent)
+                # Sample the empty leading margin, away from font-dependent label bounds,
+                # and allow the native popup/hover painting to finish.
+                background = QPoint(geometry.left() + 8, geometry.center().y())
+                wait_until(
+                    lambda: (
+                        menu.grab().toImage().pixelColor(background) == QColor(window.theme.accent)
+                    ),
+                )
         finally:
             menu.close()
     for format in DataExportFormat:
