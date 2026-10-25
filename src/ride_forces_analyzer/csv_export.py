@@ -73,6 +73,19 @@ def export_csv(
 
     Overwrite requires explicit opt-in and replaces the destination only after
     successful writing. Cancellation/failure preserves existing output.
+
+    Args:
+        analysis: Prepared recording-analysis snapshot used by this operation.
+        path: Filesystem path read or written by this operation.
+        first: First included source sample index.
+        last: Last included source sample index.
+        overwrite: Whether the caller explicitly permits replacing an existing
+            destination.
+        cancelled: Predicate returning True when cancellation has been requested.
+        progress: Callback receiving the number of source rows written.
+
+    Returns:
+        Number of exported source sample rows.
     """
     if not has_type(analysis, RecordingAnalysis):
         raise TypeError("CSV export requires RecordingAnalysis")

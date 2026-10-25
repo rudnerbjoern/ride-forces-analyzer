@@ -17,6 +17,20 @@ from scripts.build_windows import APP_NAME, ROOT, digest
 
 
 def validate_zip(path: Path, *, complete: bool) -> None:
+    """Validate Windows ZIP paths, required notices and package contents.
+
+    Args:
+        path: Filesystem path read or written by this operation.
+        complete: Whether the package is expected to include the bundled encoder.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: Duplicate package entries. Unsafe package entry. Private or
+            development data in package. Standard package unexpectedly bundles FFmpeg.
+            Missing executable or notices. Corrupt ZIP member.
+    """
     with ZipFile(path) as archive:
         names = archive.namelist()
         if len(names) != len(set(names)):
@@ -56,6 +70,22 @@ def validate_zip(path: Path, *, complete: bool) -> None:
 
 
 def check(assets: Path, recording: Path) -> None:
+    """Run the configured package or update checks and report their result.
+
+    Args:
+        assets: Directory containing the native package assets to verify.
+        recording: Path of the source recording.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: Choose an existing recording for package verification. Windows
+            artifact checksum mismatch. Duplicate checksum entry. Windows checksum
+            inventory is incomplete. Expected one EXE, standard ZIP and complete ZIP. If
+            the supplied settings or operation state are invalid.
+        OSError: If the required filesystem operation fails.
+    """
     if not recording.is_file():
         raise ValueError("Choose an existing recording for package verification")
     assets = assets.resolve()

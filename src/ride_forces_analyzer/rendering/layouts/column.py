@@ -73,7 +73,24 @@ CLOCK_TEXT_ANCHOR = "ma"  # Centered clock label anchor.
 
 
 class ColumnRenderer:
+    """Column renderer contract and owned data.
+
+    Attributes:
+        timeline: Bound video timeline containing the source interval and export settings.
+        font: Font used for regular layout text.
+        large: Font used for prominent values.
+        base: Prepared static layout image copied before per-frame drawing.
+    """
+
     def __init__(self, timeline: ExportTimeline) -> None:
+        """Initialize column renderer and its owned state.
+
+        Args:
+            timeline: Bound video timeline containing the source interval and export settings.
+
+        Returns:
+            None.
+        """
         self.timeline = timeline
         font = Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts" / FONT_FILE
         self.font = (
@@ -127,10 +144,28 @@ class ColumnRenderer:
 
     @staticmethod
     def plot_box(row: int) -> tuple[int, int, int, int]:
+        """Return the channel plot rectangle in layout pixels.
+
+        Args:
+            row: Channel or panel row selected for rendering.
+
+        Returns:
+            The channel plot rectangle in layout pixels.
+        """
         y = row * PANEL_HEIGHT
         return (PLOT_BOUNDS[0], y + PLOT_BOUNDS[1], PLOT_BOUNDS[2], y + PLOT_BOUNDS[3])
 
     def value_y(self, channel: ExportChannel, value: float, row: int) -> float:
+        """Map a channel value to its vertical layout coordinate.
+
+        Args:
+            channel: Prepared channel whose units, bounds and availability govern the result.
+            value: Candidate value to validate, format or store.
+            row: Channel or panel row selected for rendering.
+
+        Returns:
+            Vertical drawing coordinate for the supplied channel value.
+        """
         _, top, _, bottom = self.plot_box(row)
         fraction = (value - channel.low) / (channel.high - channel.low)
         if not channel.inverted:
@@ -138,6 +173,14 @@ class ColumnRenderer:
         return top + fraction * (bottom - top)
 
     def render_column(self, frame: int) -> Image.Image:
+        """Render the four-panel column at the requested source position.
+
+        Args:
+            frame: Zero-based output video frame index.
+
+        Returns:
+            The rendered image in the layout or canvas dimensions declared by the timeline.
+        """
         return self.render_position(self.timeline.sample_position(frame))
 
     def trace_point(
@@ -147,10 +190,32 @@ class ColumnRenderer:
         fraction: float,
         row: int,
     ) -> tuple[float, float]:
+        """Map a channel value and normalized time coordinate to a plotted point.
+
+        Args:
+            channel: Prepared channel whose units, bounds and availability govern the result.
+            value: Candidate value to validate, format or store.
+            fraction: Normalized time coordinate within the plotted interval.
+            row: Channel or panel row selected for rendering.
+
+        Returns:
+            Horizontal and vertical drawing coordinates of the plotted sample.
+        """
         left, _, right, _ = self.plot_box(row)
         return left + fraction * (right - left), self.value_y(channel, value, row)
 
     def render_position(self, position: float) -> Image.Image:
+        """Render the layout at a fractional source-sample position.
+
+        Args:
+            position: Fractional source-sample position.
+
+        Returns:
+            The rendered image in the layout or canvas dimensions declared by the timeline.
+
+        Raises:
+            AssertionError: If a required internal invariant does not hold.
+        """
         image = self.base.copy()
         draw = ImageDraw.Draw(image)
         rate = self.timeline.sample_rate

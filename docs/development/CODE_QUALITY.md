@@ -6,6 +6,16 @@ Architecture owns [platform constraints](../architecture/02_architecture_constra
 and [quality goals/acceptance boundaries](../architecture/10_quality_requirements.md).
 Installed checks work offline.
 
+## Python inline documentation
+
+Application and tool code use English Google-style documentation strings. Test code is exempt.
+Public functions and methods describe their purpose, parameters in `Args`, results
+in `Returns` or `Yields`, and expected exceptions in `Raises`. Describe units,
+missing values and side effects where they affect the contract; type annotations
+remain the source of parameter and return types. Class documentation describes stored
+fields in `Attributes`. Comment local variables only when their purpose or the
+reason for a calculation is not clear from the code.
+
 ## Runtime and static contracts
 
 | Contract               | Validation                                                                                                                                                               |

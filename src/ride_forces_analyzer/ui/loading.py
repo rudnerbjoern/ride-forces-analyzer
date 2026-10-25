@@ -18,12 +18,36 @@ from ride_forces_analyzer.importers import ImportFailure, Severity
 
 
 class LoadSignals(QObject):
+    """Load signals contract and owned data.
+
+    Attributes:
+        completed: Qt signal for completed notifications.
+        failed: Qt signal for failed notifications.
+    """
+
     completed = Signal(int, object)
     failed = Signal(int, str)
 
 
 class LoadWorker(QRunnable):
+    """Load worker contract and owned data.
+
+    Attributes:
+        path: Filesystem path read or written by this operation.
+        generation: Request generation used to reject late worker deliveries.
+        signals: Qt result, failure and progress signal transport owned by the worker.
+    """
+
     def __init__(self, path: Path, generation: int = 0) -> None:
+        """Initialize load worker and its owned state.
+
+        Args:
+            path: Filesystem path read or written by this operation.
+            generation: Request generation used to reject late worker deliveries.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.path = path
         self.generation = generation
@@ -31,6 +55,11 @@ class LoadWorker(QRunnable):
 
     @Slot()
     def run(self) -> None:
+        """Execute the worker task and deliver completion or failure through its signals.
+
+        Returns:
+            None.
+        """
         try:
             outcome = load_recording(self.path)
             if isinstance(outcome, ImportFailure):

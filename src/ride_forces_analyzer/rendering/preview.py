@@ -20,7 +20,13 @@ from .model import ExportLayout, ExportSettings, PROFILES, prepare_export
 
 
 class PreviewBackground(StrEnum):
-    """Preview-only backgrounds with stable UI values."""
+    """Preview-only backgrounds with stable UI values.
+
+    Attributes:
+        CHECKER: Named value for checker (`checker`).
+        LIGHT: Named value for light (`light`).
+        DARK: Named value for dark (`dark`).
+    """
 
     CHECKER = "checker"
     LIGHT = "light"
@@ -29,6 +35,14 @@ class PreviewBackground(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class ProfilePreview:
+    """Profile preview contract and owned data.
+
+    Attributes:
+        layout: Stable key selecting the overlay renderer.
+        title: Recording or layout title shown without interpreting its contents.
+        image: Prepared raster image in the format declared by its owning model.
+    """
+
     layout: ExportLayout
     title: str
     image: Image.Image
@@ -36,6 +50,14 @@ class ProfilePreview:
 
 @dataclass(frozen=True, slots=True)
 class ExportPreview:
+    """Export preview contract and owned data.
+
+    Attributes:
+        sample: Source sample index to inspect or present.
+        outside_range: Whether the selected preview sample is outside the export interval.
+        profiles: Preview images indexed by layout profile.
+    """
+
     sample: int
     outside_range: bool
     profiles: tuple[ProfilePreview, ...]
@@ -50,6 +72,23 @@ def build_previews(
     background: PreviewBackground = PreviewBackground.CHECKER,
     previous_positions: Mapping[ExportLayout, LayoutPosition] | None = None,
 ) -> ExportPreview:
+    """Build all layout previews from one bound analysis and exact source sample.
+
+    Args:
+        analysis: Prepared recording-analysis snapshot used by this operation.
+        settings: Validated settings controlling this operation.
+        first: First included source sample index.
+        last: Last included source sample index.
+        sample: Source sample index to inspect or present.
+        background: Preview background, excluded from exported overlays.
+        previous_positions: Previously selected positions keyed by layout.
+
+    Returns:
+        All selectable layout previews and selected-frame metadata.
+
+    Raises:
+        ValueError: Preview sample outside recording. Invalid export sample interval.
+    """
     count = len(analysis.time.source_indices)
     if not 0 <= sample < count:
         raise ValueError("Preview sample outside recording")

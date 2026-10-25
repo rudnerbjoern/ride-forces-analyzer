@@ -94,6 +94,14 @@ class SmoothingSlider(QSlider):
     """Right click restores the default 11-sample window (slider position five)."""
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
+        """Handle a mouse press and retain the state needed by the interaction.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         if event.button() == Qt.MouseButton.RightButton:
             self.setValue(5)
             event.accept()
@@ -102,13 +110,30 @@ class SmoothingSlider(QSlider):
 
 
 class SelectionSpinBox(QSpinBox):
-    """Use 1/5/10/20/50-sample steps after 0/1/2/3/5 seconds holding an arrow."""
+    """Use 1/5/10/20/50-sample steps after 0/1/2/3/5 seconds holding an arrow.
+
+    Attributes:
+        _hold_timer: Timer repeating the held sample-selection action.
+    """
 
     def __init__(self) -> None:
+        """Initialize selection spin box and its owned state.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self._hold_timer = QElapsedTimer()
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
+        """Handle a mouse press and retain the state needed by the interaction.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         self._hold_timer.invalidate()
         option = QStyleOptionSpinBox()
         self.initStyleOption(option)
@@ -126,10 +151,26 @@ class SelectionSpinBox(QSpinBox):
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        """Complete the active mouse interaction and release its state.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         self._hold_timer.invalidate()
         super().mouseReleaseEvent(event)
 
     def stepBy(self, steps: int) -> None:
+        """Step the sample control while respecting its range and hold behavior.
+
+        Args:
+            steps: Number of increments to apply.
+
+        Returns:
+            None.
+        """
         elapsed = self._hold_timer.elapsed() if self._hold_timer.isValid() else 0
         stride = (
             50
@@ -146,16 +187,42 @@ class SelectionSpinBox(QSpinBox):
 
 
 class TimeChartView(QChartView):
+    """Time chart view contract and owned data.
+
+    Attributes:
+        zoom_requested: Qt signal for zoom requested notifications.
+        sample_requested: Qt signal for sample requested notifications.
+        marker_menu_requested: Qt signal for marker menu requested notifications.
+        _press_position: Pointer position at the start of the current gesture.
+        _dragged: Whether pointer motion has become a drag gesture.
+    """
+
     zoom_requested = Signal(float, float)
     sample_requested = Signal(float)
     marker_menu_requested = Signal(float, QPoint)
 
     def __init__(self, chart: QChart) -> None:
+        """Initialize time chart view and its owned state.
+
+        Args:
+            chart: Chart owned by this view.
+
+        Returns:
+            None.
+        """
         super().__init__(chart)
         self._press_position: QPointF | None = None
         self._dragged = False
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
+        """Handle a mouse press and retain the state needed by the interaction.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         if event.button() == Qt.MouseButton.RightButton:
             self._press_position = None
             event.accept()
@@ -167,6 +234,14 @@ class TimeChartView(QChartView):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        """Update the active chart interaction for the pointer position.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         if self._press_position is not None:
             self._dragged |= (
                 event.position() - self._press_position
@@ -177,6 +252,14 @@ class TimeChartView(QChartView):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        """Complete the active mouse interaction and release its state.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         if event.button() == Qt.MouseButton.RightButton:
             chart = self.chart()
             point = chart.mapFromScene(self.mapToScene(event.position().toPoint()))
@@ -204,6 +287,14 @@ class TimeChartView(QChartView):
             self.sample_requested.emit((point.x() - plot.left()) / plot.width())
 
     def wheelEvent(self, event: QWheelEvent) -> None:
+        """Translate wheel input into the view's zoom or navigation request.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         chart = self.chart()
         point = chart.mapFromScene(self.mapToScene(event.position().toPoint()))
         plot = chart.plotArea()
@@ -217,10 +308,112 @@ class TimeChartView(QChartView):
 
 
 class ExplorerWindow(QMainWindow):
+    """Explorer window contract and owned data.
+
+    Attributes:
+        new_window_requested: Qt signal for new window requested notifications.
+        closed: Qt signal for closed notifications.
+        _application_title: Configured application title used in window captions.
+        preferences: Local application preference access for this window or controller.
+        _marker_save_failed: Whether the latest marker-persistence attempt failed.
+        updates: Update-check service used by this window.
+        ui_language: Selected interface language.
+        appearance_preference: Stored light, dark or system appearance choice.
+        theme: Application appearance palette.
+        data: Prepared view data, retained bytes or item payload owned by this object.
+        playback: Controller advancing the selected source sample.
+        _playback_position: Current fractional playback position in source samples.
+        _updating_playback: Guard against recursive playback-control updates.
+        _playback_button_playing: Playback state represented by the button icon.
+        playback_timer: Timer scheduling playback timer.
+        analysis_controller: Controller coordinating background analysis and view updates.
+        _accept_results: Whether the window still accepts asynchronous results.
+        _load_generation: Generation identifying the current recording-open request.
+        _worker: Current recording-import worker.
+        open_action: Action opening a recording in this window.
+        new_window_action: Action opening a separate explorer window.
+        gps_button: Button for gps button.
+        export_button: Button for export button.
+        data_export_button: Button for data export button.
+        csv_action: Action opening CSV export.
+        json_action: Action opening source-shaped JSON export.
+        analyzer_json_action: Action opening analyzer JSON export.
+        export_window: Open video-export assistant, when present.
+        data_export_window: Open data-export dialog, when present.
+        batch_window: Open batch-export dialog, when present.
+        batches_button: Button for batches button.
+        notes_button: Button for notes button.
+        inspector_button: Button for inspector button.
+        settings_action: Action opening application settings.
+        about_action: Action opening application information.
+        gps_window: Open GPS-context dialog, when present.
+        _wide_layout: Whether the workspace currently uses the wide arrangement.
+        heading: Label displaying heading.
+        header_summary: Label displaying header summary.
+        workspace: Container for the chart and recording controls.
+        plot_panel: Container for the force chart.
+        plot_scroll: Scrollable container for plot scroll.
+        chart_tools: Controls for chart navigation and playback.
+        reference_toggle: Checkbox controlling reference toggle.
+        reset_button: Button for reset button.
+        zoom_button: Button for zoom button.
+        visible_button: Button for visible button.
+        chart: Chart owned by this view.
+        chart_view: Interactive chart view.
+        selection_band: Overlay displaying the selected export interval.
+        axis_x: Layout coordinate for axis x in the owning view or renderer.
+        axis_y: Layout coordinate for axis y in the owning view or renderer.
+        series: Displayed chart series keyed by channel.
+        vertical_context_bars: Graphics items displaying vertical-force context.
+        vertical_context_ranges: Intervals represented by the context graphics.
+        visibility: Channel-visibility controls.
+        airtime_legend: Label displaying airtime legend.
+        source_marker_lines: Chart lines marking retained source references.
+        source_marker_labels: Labels identifying retained source references.
+        sample_cursor: Chart line marking the selected source sample.
+        slider: Slider controlling slider.
+        position: Requested source position or named layout placement, as declared by the
+            type.
+        play_button: Button for play button.
+        playback_speed: Choice control for playback speed.
+        time_readout: Label displaying time readout.
+        value_names: Labels naming the selected-sample readouts.
+        value_labels: Labels displaying selected-sample values.
+        value_hints: Labels explaining selected-sample availability.
+        inspector: Scrollable container for inspector.
+        availability: Label displaying availability.
+        smoothing_slider: Slider selecting the smoothing window.
+        smoothing_label: Label displaying smoothing label.
+        signs: Label displaying signs.
+        first: First included source index or the control selecting that bound.
+        last: Last included source index or the control selecting that bound.
+        selection_label: Label displaying selection label.
+        extrema_context: Label displaying extrema context.
+        extrema_labels: Labels displaying extrema over the selected interval.
+        ride_metadata: Label displaying ride metadata.
+        details_button: Button for details button.
+        details_body: Container widget for details body.
+        summary: Label displaying summary.
+        disclaimer: Label displaying disclaimer.
+        readout: Label displaying readout.
+        notes: Retained diagnostic text for the recording or current operation.
+        original_diagnostics: Checkbox controlling original diagnostics.
+        progress: Progress display for progress.
+    """
+
     new_window_requested = Signal(object)
     closed = Signal()
 
     def __init__(self, settings: AppSettings, *, restore_last_file: bool = True) -> None:
+        """Initialize explorer window and its owned state.
+
+        Args:
+            settings: Validated settings controlling this operation.
+            restore_last_file: Whether startup may reopen the last recording.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.setAcceptDrops(True)
         self._application_title = settings.window_title
@@ -718,6 +911,14 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(int)
     def set_ui_language(self, index: int) -> None:
+        """Apply the selected interface language while preserving recording state.
+
+        Args:
+            index: Source or collection index selected for this operation.
+
+        Returns:
+            None.
+        """
         application = QApplication.instance()
         if not isinstance(application, QApplication) or not 0 <= index < len(LANGUAGE_CHOICES):
             return
@@ -741,6 +942,14 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(int)
     def set_appearance(self, index: int) -> None:
+        """Apply the selected workspace appearance preference.
+
+        Args:
+            index: Source or collection index selected for this operation.
+
+        Returns:
+            None.
+        """
         self._preview_appearance(index)
         self.preferences.remember_appearance(self.appearance_preference)
 
@@ -756,7 +965,11 @@ class ExplorerWindow(QMainWindow):
             self.apply_appearance()
 
     def apply_appearance(self) -> None:
-        """Apply the selected appearance to all recording windows without saving it."""
+        """Apply the selected appearance to all recording windows without saving it.
+
+        Returns:
+            None.
+        """
         application = QApplication.instance()
         if isinstance(application, QApplication):
             self.theme = THEMES[
@@ -803,6 +1016,14 @@ class ExplorerWindow(QMainWindow):
         return panel, layout
 
     def resizeEvent(self, event: QResizeEvent) -> None:
+        """Update view geometry after a Qt resize event.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         super().resizeEvent(event)
         if hasattr(self, "workspace"):
             self._adapt_layout()
@@ -859,6 +1080,14 @@ class ExplorerWindow(QMainWindow):
             axis.setLinePen(QPen(QColor(self.theme.border), 1))
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        """Handle window closure while preserving the owned worker lifecycle.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         self._pause_playback()
         if self.batch_window is not None and self.batch_window.isVisible():
             self.batch_window.close()
@@ -913,14 +1142,29 @@ class ExplorerWindow(QMainWindow):
 
     @Slot()
     def show_csv_export(self) -> None:
+        """Open the CSV export flow for the current recording selection.
+
+        Returns:
+            None.
+        """
         self._show_data_export("csv")
 
     @Slot()
     def show_json_export(self) -> None:
+        """Open the app-shaped JSON export flow for the current selection.
+
+        Returns:
+            None.
+        """
         self._show_data_export("json")
 
     @Slot()
     def show_analyzer_json_export(self) -> None:
+        """Open the Analyzer JSON export flow for the current selection.
+
+        Returns:
+            None.
+        """
         self._show_data_export("analyzer_json")
 
     def _show_data_export(self, format: Literal["csv", "json", "analyzer_json"]) -> None:
@@ -1001,6 +1245,11 @@ class ExplorerWindow(QMainWindow):
 
     @Slot()
     def show_export(self) -> None:
+        """Open the video export assistant bound to the current analysis snapshot.
+
+        Returns:
+            None.
+        """
         if self.data is None or not self.data.calibration_available:
             return
         self._pause_playback()
@@ -1023,6 +1272,11 @@ class ExplorerWindow(QMainWindow):
 
     @Slot()
     def show_batches(self) -> None:
+        """Open the saved batch editor.
+
+        Returns:
+            None.
+        """
         from .batches import BatchDialog
         from ride_forces_analyzer.storage.exports import ExportStore, default_database_path
 
@@ -1034,6 +1288,11 @@ class ExplorerWindow(QMainWindow):
 
     @Slot()
     def show_settings(self) -> None:
+        """Open application and export preferences.
+
+        Returns:
+            None.
+        """
         previous_appearance = APPEARANCE_CHOICES.index(self.appearance_preference)
         dialog = SettingsDialog(self.preferences, self, language=self.ui_language)
         dialog.language_selected.connect(self.set_ui_language)
@@ -1044,6 +1303,11 @@ class ExplorerWindow(QMainWindow):
 
     @Slot()
     def show_about(self) -> None:
+        """Open application information and local diagnostics.
+
+        Returns:
+            None.
+        """
         dialog = self.findChild(AboutDialog, "aboutDialog")
         if dialog is None:
             dialog = AboutDialog(self, self.updates)
@@ -1053,6 +1317,14 @@ class ExplorerWindow(QMainWindow):
 
     @Slot()
     def choose_file(self, *, new_window: bool = False) -> None:
+        """Ask for a local recording path and schedule its import.
+
+        Args:
+            new_window: Whether to open a separate recording window.
+
+        Returns:
+            None.
+        """
         filename, _ = QFileDialog.getOpenFileName(
             self,
             tr("Open Ride Forces recording"),
@@ -1067,7 +1339,11 @@ class ExplorerWindow(QMainWindow):
 
     @property
     def recording_path(self) -> Path | None:
-        """Return the pending or loaded source path for external-open deduplication."""
+        """Return the pending or loaded source path for external-open deduplication.
+
+        Returns:
+            The pending or loaded source path for external-open deduplication.
+        """
         if self._worker is not None:
             return self._worker.path.resolve()
         if self.data is not None:
@@ -1101,12 +1377,28 @@ class ExplorerWindow(QMainWindow):
         return path
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        """Accept supported local recording-file drag payloads.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         if self._dropped_recording(event) is not None:
             event.acceptProposedAction()
         else:
             event.ignore()
 
     def dropEvent(self, event: QDropEvent) -> None:
+        """Open a supported recording from a local-file drop.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         path = self._dropped_recording(event)
         if path is None:
             event.ignore()
@@ -1115,6 +1407,14 @@ class ExplorerWindow(QMainWindow):
         event.acceptProposedAction()
 
     def open_path(self, path: Path) -> None:
+        """Schedule read-only import of a recording while retaining the previous view.
+
+        Args:
+            path: Filesystem path read or written by this operation.
+
+        Returns:
+            None.
+        """
         if self._worker is not None:
             return
         self._pause_playback()
@@ -1129,6 +1429,14 @@ class ExplorerWindow(QMainWindow):
         QThreadPool.globalInstance().start(worker)
 
     def showEvent(self, event: QShowEvent) -> None:
+        """Apply the view's startup geometry and appearance when it becomes visible.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         super().showEvent(event)
         if not self._accept_results:
             self._accept_results = True
@@ -1274,6 +1582,15 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(float, QPoint)
     def show_marker_menu(self, fraction: float, position: QPoint) -> None:
+        """Offer marker actions for the selected chart position.
+
+        Args:
+            fraction: Normalized time coordinate within the plotted interval.
+            position: Pointer position in widget coordinates.
+
+        Returns:
+            None.
+        """
         if (
             self.data is None
             or self.data.analysis is None
@@ -1339,6 +1656,11 @@ class ExplorerWindow(QMainWindow):
 
     @Slot()
     def show_gps(self) -> None:
+        """Open the current recording's independent GPS overview.
+
+        Returns:
+            None.
+        """
         if self.data is None:
             return
         overview = prepare_gps_overview(self.data.source.recording)
@@ -1459,6 +1781,14 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(int)
     def set_smoothing(self, position: int) -> None:
+        """Request the selected smoothing window through the analysis controller.
+
+        Args:
+            position: Source-sample position.
+
+        Returns:
+            None.
+        """
         if self.data is None or not self.data.calibrated_enabled:
             return
         if self.analysis_controller is not None and self.data.analysis is not None:
@@ -1539,6 +1869,14 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(bool)
     def set_reference_view(self, enabled: bool) -> None:
+        """Switch between available raw and calibrated presentation.
+
+        Args:
+            enabled: Whether the requested presentation or stored preference is enabled.
+
+        Returns:
+            None.
+        """
         if self.data is None:
             return
         self.data = self.data.with_calibration(enabled)
@@ -1608,6 +1946,14 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(int)
     def show_sample(self, index: int) -> None:
+        """Display the selected source sample without recalculating analysis.
+
+        Args:
+            index: Source or collection index selected for this operation.
+
+        Returns:
+            None.
+        """
         if self.data is None:
             return
         if self.playback is not None and not self._updating_playback:
@@ -1627,6 +1973,11 @@ class ExplorerWindow(QMainWindow):
 
     @Slot()
     def toggle_playback(self) -> None:
+        """Start or pause playback of the current recording.
+
+        Returns:
+            None.
+        """
         if self.playback is None:
             return
         if self.playback.playing:
@@ -1638,6 +1989,14 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(int)
     def set_playback_speed(self, index: int) -> None:
+        """Apply the selected replay speed to the monotonic playback clock.
+
+        Args:
+            index: Source or collection index selected for this operation.
+
+        Returns:
+            None.
+        """
         if self.playback is not None and 0 <= index < 3:
             self._playback_tick()
             self.playback.set_speed((0.5, 1.0, 2.0)[index])
@@ -1706,12 +2065,29 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(float)
     def select_chart_sample(self, fraction: float) -> None:
+        """Select the source sample corresponding to a chart interaction.
+
+        Args:
+            fraction: Normalized time coordinate within the plotted interval.
+
+        Returns:
+            None.
+        """
         if self.data is not None:
             low, high = self.axis_x.min(), self.axis_x.max()
             self.position.setValue(self.data.sample_at_time(low + fraction * (high - low)))
 
     @Slot(float, float)
     def zoom_wheel(self, fraction: float, steps: float) -> None:
+        """Apply the chart's wheel-zoom request around its anchor.
+
+        Args:
+            fraction: Normalized time coordinate within the plotted interval.
+            steps: Number of increments to apply.
+
+        Returns:
+            None.
+        """
         if self.data is None or self.data.duration <= 0:
             return
         low, high = self.axis_x.min(), self.axis_x.max()
@@ -1856,6 +2232,11 @@ class ExplorerWindow(QMainWindow):
 
     @Slot()
     def update_selection(self) -> None:
+        """Refresh the inclusive export selection and its displayed bounds.
+
+        Returns:
+            None.
+        """
         if self.data is None:
             return
         # Reassigning an unchanged range stops native spin-button auto-repeat.
@@ -1890,6 +2271,11 @@ class ExplorerWindow(QMainWindow):
 
     @Slot()
     def zoom_selection(self) -> None:
+        """Fit the chart viewport to the current inclusive selection.
+
+        Returns:
+            None.
+        """
         if self.data is not None:
             selected = self.data.select(self.first.value(), self.last.value())
             self.axis_x.setRange(
@@ -1901,6 +2287,11 @@ class ExplorerWindow(QMainWindow):
 
     @Slot()
     def select_visible(self) -> None:
+        """Select the source samples intersecting a visible time interval.
+
+        Returns:
+            None.
+        """
         if self.data is None:
             return
         selected = self.data.select_visible(self.axis_x.min(), self.axis_x.max())
@@ -1915,6 +2306,11 @@ class ExplorerWindow(QMainWindow):
 
     @Slot()
     def reset_view(self) -> None:
+        """Restore the recording's effective default chart interval.
+
+        Returns:
+            None.
+        """
         self.chart.zoomReset()
         if self.data is not None:
             self.axis_x.setRange(*self.data.default_time_range)

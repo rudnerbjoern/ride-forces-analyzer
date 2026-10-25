@@ -22,6 +22,20 @@ from .recording import (
 
 @dataclass(frozen=True, slots=True)
 class _Rules:
+    """Rules contract and owned data.
+
+    Attributes:
+        floater_bound_g: Vertical-force boundary for floater classification, in g.
+        strong_bound_g: Vertical-force boundary for strong-airtime classification, in g.
+        minimum_duration_seconds: Minimum event duration in seconds.
+        maximum_interruption_seconds: Maximum interruption bridged within an event, in
+            seconds.
+        onset_window_seconds: Time window for estimating onset, in seconds.
+        ejector_onset_g_per_second: Onset-rate threshold for ejector classification, in g
+            per second.
+        onset_memory_seconds: Duration for retaining onset evidence, in seconds.
+    """
+
     floater_bound_g: float = 0.25
     strong_bound_g: float = -0.5
     minimum_duration_seconds: float = 0.20
@@ -32,7 +46,18 @@ class _Rules:
 
 
 def event_rules(configuration: StageConfiguration) -> _Rules:
-    """Admit finite version-1 parameters or raise ValueError for unsupported rules."""
+    """Admit finite version-1 parameters or raise ValueError for unsupported rules.
+
+    Args:
+        configuration: Requested immutable analysis or export configuration.
+
+    Returns:
+        Validated thresholds and durations for the supported event-rule version.
+
+    Raises:
+        ValueError: Unsupported event algorithm/version. Unsupported event parameters.
+            Invalid event parameter bounds.
+    """
     if configuration.algorithm != "airtime-events" or configuration.version != "1":
         raise ValueError("Unsupported event algorithm/version")
     names = {field.name for field in fields(_Rules)}
@@ -63,6 +88,20 @@ def event_rules(configuration: StageConfiguration) -> _Rules:
 
 @dataclass(slots=True)
 class _Episode:
+    """Episode contract and owned data.
+
+    Attributes:
+        first: First included source index or the control selecting that bound.
+        last: Last included source index or the control selecting that bound.
+        minimum: Minimum retained value or extremum in the declared interval and units.
+        minimum_index: Source index of the minimum value within the episode.
+        start_incomplete: Whether the event begins before the admitted observation
+            interval.
+        count: Number of retained items or samples represented by this object.
+        onset: Measured onset rate for the episode.
+        ejector: Whether the episode meets the ejector criterion.
+    """
+
     first: int
     last: int
     minimum: float
@@ -73,6 +112,16 @@ class _Episode:
     ejector: bool = False
 
     def result(self, rate: float, rules: _Rules, incomplete: bool) -> AirtimeEvent:
+        """Create the classified event for this completed episode.
+
+        Args:
+            rate: Sample or frame rate per second, as declared by this operation.
+            rules: Threshold and duration rules used for classification.
+            incomplete: Whether the interval boundary is incomplete.
+
+        Returns:
+            The completed airtime event, including its category and boundary flags.
+        """
         category = (
             VerticalContext.EJECTOR_AIRTIME
             if self.ejector
@@ -110,6 +159,13 @@ def evaluate_events(
 
     Raises:
         ValueError: Rules/rate are unsupported or timing products are not finite.
+        AssertionError: If a required internal invariant does not hold.
+
+    Args:
+        source: Input recording, retained source representation or source path to read.
+        configuration: Requested immutable analysis or export configuration.
+        rate: Sample or frame rate per second, as declared by this operation.
+        provenance: Evidence identifying data and processing stages.
     """
     rules = event_rules(configuration) if configuration is not None else None
     channels = source.channels

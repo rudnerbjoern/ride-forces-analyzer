@@ -31,16 +31,38 @@ from .updates import UpdateController
 
 
 class _DiagnosticSignals(QObject):
+    """Diagnostic signals contract and owned data.
+
+    Attributes:
+        completed: Qt signal for completed notifications.
+    """
+
     completed = Signal(str)
 
 
 class _DiagnosticWorker(QRunnable):
+    """Diagnostic worker contract and owned data.
+
+    Attributes:
+        signals: Qt result, failure and progress signal transport owned by the worker.
+    """
+
     def __init__(self) -> None:
+        """Initialize diagnostic worker and its owned state.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.signals = _DiagnosticSignals()
 
     @Slot()
     def run(self) -> None:
+        """Execute the worker task and deliver completion or failure through its signals.
+
+        Returns:
+            None.
+        """
         try:
             report = collect_diagnostics()
         except Exception as error:
@@ -50,7 +72,27 @@ class _DiagnosticWorker(QRunnable):
 
 
 class AboutDialog(QDialog):
+    """About dialog contract and owned data.
+
+    Attributes:
+        automatic_updates: Checkbox controlling automatic updates.
+        check_updates: Button for check updates.
+        update_status: Label displaying update status.
+        diagnostic_worker: Background worker collecting diagnostic information.
+        copy_diagnostics: Button for copy diagnostics.
+        copy_reset: Timer scheduling copy reset.
+    """
+
     def __init__(self, parent: QWidget, updates: UpdateController) -> None:
+        """Initialize about dialog and its owned state.
+
+        Args:
+            parent: Qt parent that owns this object's lifetime.
+            updates: Update-check service used by this window.
+
+        Returns:
+            None.
+        """
         super().__init__(parent)
         self.setObjectName("aboutDialog")
         bind(self, tr("About Ride Forces Analyzer"), "windowTitle")

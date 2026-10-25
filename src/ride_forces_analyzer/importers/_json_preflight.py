@@ -24,7 +24,23 @@ _SPACE = frozenset(" \t\r\n")
 
 
 class DecodeProblem(Exception):
+    """Decode problem contract and owned data.
+
+    Attributes:
+        diagnostic: Structured diagnostic with code and source location.
+    """
+
     def __init__(self, code: str, path: JsonPath, message: str) -> None:
+        """Initialize decode problem and its owned state.
+
+        Args:
+            code: Stable diagnostic code used to select its localized explanation.
+            path: Filesystem path read or written by this operation.
+            message: Text or diagnostic message to present or validate.
+
+        Returns:
+            None.
+        """
         self.diagnostic = ImportDiagnostic(code, Severity.ERROR, json_pointer(*path), message)
         super().__init__(message)
 
@@ -75,6 +91,17 @@ def _string_end(text: str, start: int, path: JsonPath, limits: ImportLimits) -> 
 
 @dataclass(slots=True)
 class _Frame:
+    """Frame contract and owned data.
+
+    Attributes:
+        kind: Discriminator identifying the represented variant.
+        path: Filesystem path read or written by this operation.
+        state: Declared capability, request or parsing state for this object.
+        count: Number of retained items or samples represented by this object.
+        key: Lookup or presentation key used by the operation.
+        keys: Object keys encountered in the current parsing frame.
+    """
+
     kind: str
     path: JsonPath
     state: str
@@ -84,7 +111,19 @@ class _Frame:
 
 
 def preflight(text: str, limits: ImportLimits) -> None:
-    """Check all nodes, including unknown extensions, using a bounded explicit stack."""
+    """Check all nodes, including unknown extensions, using a bounded explicit stack.
+
+    Args:
+        text: Presentation text or source template to bind.
+        limits: Resource limits applied to the operation.
+
+    Returns:
+        None.
+
+    Raises:
+        DecodeProblem: DUPLICATE_JSON_KEY. NON_JSON_NUMBER. INVALID_JSON_NUMBER.
+        AssertionError: unreachable.
+    """
     stack: list[_Frame] = []
     index = 0
     nodes = 0

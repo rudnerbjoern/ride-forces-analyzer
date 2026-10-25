@@ -18,10 +18,22 @@ LINUX_CPU_PATH = Path("/sys/devices/system/cpu")
 
 @dataclass(frozen=True, slots=True)
 class CpuResources:
+    """Cpu resources contract and owned data.
+
+    Attributes:
+        physical_cores: Detected physical CPU-core count, or None when unavailable.
+        logical_processors: Detected logical processor count, or None when unavailable.
+    """
+
     physical_cores: int | None
     logical_processors: int | None
 
     def diagnostic_fields(self) -> dict[str, str]:
+        """Return CPU-topology fields suitable for local diagnostic information.
+
+        Returns:
+            Cpu-topology fields suitable for local diagnostic information.
+        """
         return {
             "Physical CPU cores": str(self.physical_cores) if self.physical_cores else "Unknown",
             "Logical processors": (
@@ -36,6 +48,9 @@ def detect_cpu_resources() -> CpuResources:
     Logical counts respect Python's CPU-count override. Unknown physical topology
     never becomes logical/2.
     Native queries do not launch external programs or change thread settings.
+
+    Returns:
+        Detected physical and logical counts, with None for unavailable information.
     """
     physical = None
     try:
@@ -51,12 +66,26 @@ def detect_cpu_resources() -> CpuResources:
 
 
 def render_job_limit() -> int:
-    """Allow at least one render job, up to the reported logical processor count."""
+    """Allow at least one render job, up to the reported logical processor count.
+
+    Returns:
+        Maximum permitted renderer count, at least one.
+    """
     return max(1, detect_cpu_resources().logical_processors or 1)
 
 
 def effective_render_jobs(requested: int) -> int:
-    """Validate a requested count and fit it to this computer's available limit."""
+    """Validate a requested count and fit it to this computer's available limit.
+
+    Args:
+        requested: Requested number of concurrent frame renderers.
+
+    Returns:
+        Requested renderer count limited to the detected logical capacity.
+
+    Raises:
+        ValueError: Render jobs must be a positive integer.
+    """
     if type(requested) is not int or requested < 1:
         raise ValueError("Render jobs must be a positive integer")
     return min(requested, render_job_limit())

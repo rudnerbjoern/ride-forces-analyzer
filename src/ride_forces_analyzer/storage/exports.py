@@ -18,6 +18,11 @@ from ride_forces_analyzer.runtime_paths import data_directory
 
 
 def default_database_path() -> Path:
+    """Return the platform-local export-definition database path.
+
+    Returns:
+        The platform-local export-definition database path.
+    """
     return data_directory() / "exports.sqlite3"
 
 
@@ -26,7 +31,21 @@ class ExportStoreError(Exception):
 
 
 class ExportStore:
+    """Export store contract and owned data.
+
+    Attributes:
+        path: Filesystem path read or written by this operation.
+    """
+
     def __init__(self, path: Path) -> None:
+        """Initialize export store and its owned state.
+
+        Args:
+            path: Filesystem path read or written by this operation.
+
+        Returns:
+            None.
+        """
         self.path = path.resolve()
 
     @contextmanager
@@ -67,6 +86,11 @@ class ExportStore:
             raise ExportStoreError(f"Export database: {error}") from error
 
     def presets(self) -> tuple[SavedPreset, ...]:
+        """Read saved visual export presets from the local database.
+
+        Returns:
+            Saved visual presets in repository order.
+        """
         with self._connection() as db:
             return tuple(
                 SavedPreset.model_validate_json(row[0])
@@ -74,6 +98,11 @@ class ExportStore:
             )
 
     def batches(self) -> tuple[SavedBatch, ...]:
+        """Read saved batch definitions from the local database.
+
+        Returns:
+            Saved batch definitions in repository order.
+        """
         with self._connection() as db:
             return tuple(
                 SavedBatch.model_validate_json(row[0])
@@ -81,6 +110,19 @@ class ExportStore:
             )
 
     def save_preset(self, preset: SavedPreset, *, overwrite: bool = False) -> None:
+        """Persist a validated preset with explicit replacement policy.
+
+        Args:
+            preset: Validated immutable export preset to store or apply.
+            overwrite: Whether the caller explicitly permits replacing an existing
+                destination.
+
+        Returns:
+            None.
+
+        Raises:
+            ExportStoreError: The selected preset no longer exists.
+        """
         with self._connection() as db:
             if overwrite:
                 if (
@@ -98,6 +140,19 @@ class ExportStore:
                 )
 
     def save_batch(self, batch: SavedBatch, *, overwrite: bool = False) -> None:
+        """Persist a validated batch definition with explicit replacement policy.
+
+        Args:
+            batch: Validated saved batch definition.
+            overwrite: Whether the caller explicitly permits replacing an existing
+                destination.
+
+        Returns:
+            None.
+
+        Raises:
+            ExportStoreError: The selected batch no longer exists.
+        """
         with self._connection() as db:
             if overwrite:
                 if (
@@ -115,15 +170,42 @@ class ExportStore:
                 )
 
     def delete_preset(self, name: str) -> None:
+        """Delete the named saved preset from local storage.
+
+        Args:
+            name: Display name or identifier used to select the requested item.
+
+        Returns:
+            None.
+        """
         with self._connection() as db:
             db.execute("DELETE FROM presets WHERE name=?", (name,))
 
     def create_batch(self, name: str) -> SavedBatch:
+        """Create and persist an empty named batch.
+
+        Args:
+            name: Display name or identifier used to select the requested item.
+
+        Returns:
+            The newly persisted empty batch.
+        """
         batch = SavedBatch(name=name, schema_version=1, jobs=())
         self.save_batch(batch)
         return batch
 
     def batch(self, name: str) -> SavedBatch:
+        """Read the named saved batch from local storage.
+
+        Args:
+            name: Display name or identifier used to select the requested item.
+
+        Returns:
+            The matching saved batch definition.
+
+        Raises:
+            ExportStoreError: The selected batch no longer exists.
+        """
         with self._connection() as db:
             row = db.execute("SELECT payload FROM batches WHERE name=?", (name,)).fetchone()
             if row is None:
@@ -131,6 +213,18 @@ class ExportStore:
             return SavedBatch.model_validate_json(row[0])
 
     def append_jobs(self, name: str, jobs: tuple[BatchJob, ...]) -> None:
+        """Append immutable jobs to the named stored batch.
+
+        Args:
+            name: Display name or identifier used to select the requested item.
+            jobs: Immutable video jobs in their selected execution order.
+
+        Returns:
+            None.
+
+        Raises:
+            ExportStoreError: Choose or create a batch first.
+        """
         with self._connection() as db:
             row = db.execute("SELECT payload FROM batches WHERE name=?", (name,)).fetchone()
             if row is None:
@@ -143,6 +237,19 @@ class ExportStore:
             )
 
     def remove_jobs(self, name: str, indices: tuple[int, ...]) -> None:
+        """Remove the selected job rows from the named stored batch.
+
+        Args:
+            name: Display name or identifier used to select the requested item.
+            indices: Selected source or stored-row indices.
+
+        Returns:
+            None.
+
+        Raises:
+            ExportStoreError: The selected batch no longer exists.
+            ValueError: Invalid batch row.
+        """
         with self._connection() as db:
             row = db.execute("SELECT payload FROM batches WHERE name=?", (name,)).fetchone()
             if row is None:
@@ -163,5 +270,13 @@ class ExportStore:
             )
 
     def delete_batch(self, name: str) -> None:
+        """Delete the named batch definition from local storage.
+
+        Args:
+            name: Display name or identifier used to select the requested item.
+
+        Returns:
+            None.
+        """
         with self._connection() as db:
             db.execute("DELETE FROM batches WHERE name=?", (name,))

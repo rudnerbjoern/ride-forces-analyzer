@@ -12,7 +12,16 @@ MAX_WINDOW_DIMENSION = 16_777_215
 
 
 class AppSettings(BaseModel, frozen=True, strict=True, extra="forbid", validate_default=True):
-    """Immutable window settings with strict runtime and static typing."""
+    """Immutable window settings with strict runtime and static typing.
+
+    Attributes:
+        window_title: Configured application window title.
+        window_width: Layout dimension for window width, in native pixels unless specified
+            otherwise.
+        window_height: Layout dimension for window height, in native pixels unless
+            specified otherwise.
+        language: Registered language used to translate presentation text and numbers.
+    """
 
     window_title: str = Field(default="Ride Forces Analyzer", min_length=1)
     window_width: int = Field(default=1280, gt=0, le=MAX_WINDOW_DIMENSION)

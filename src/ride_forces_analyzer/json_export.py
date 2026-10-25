@@ -149,6 +149,19 @@ def export_json(
 
     Overwrite requires explicit opt-in and replaces the destination only after
     successful writing. Cancellation/failure preserves existing output.
+
+    Args:
+        analysis: Prepared recording-analysis snapshot used by this operation.
+        path: Filesystem path read or written by this operation.
+        first: First included source sample index.
+        last: Last included source sample index.
+        overwrite: Whether the caller explicitly permits replacing an existing
+            destination.
+        cancelled: Predicate returning True when cancellation has been requested.
+        progress: Callback receiving the number of source rows written.
+
+    Returns:
+        Number of exported source sample rows.
     """
     rate = _validate_export(analysis, path, first, last)
     arrays: dict[str, list[object]] = {key: [] for key in JSON_SAMPLE_KEYS}
@@ -250,6 +263,16 @@ def export_analyzer_json(
 
     Uses the same progress, cancellation and atomic overwrite contract as
     export_json. No calculation, interpolation or GPS alignment is performed.
+
+    Args:
+        analysis: Prepared recording-analysis snapshot used by this operation.
+        path: Filesystem path read or written by this operation.
+        first: First included source sample index.
+        last: Last included source sample index.
+        overwrite: Whether the caller explicitly permits replacing an existing
+            destination.
+        cancelled: Predicate returning True when cancellation has been requested.
+        progress: Callback receiving the number of source rows written.
     """
     rate = _validate_export(analysis, path, first, last)
     count = last - first + 1

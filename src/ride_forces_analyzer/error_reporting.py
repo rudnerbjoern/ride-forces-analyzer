@@ -31,11 +31,22 @@ _stream: TextIO | None = None
 
 
 class _CompleteTraceback(logging.Formatter):
+    """Complete traceback contract and owned data."""
+
     def formatException(
         self,
         ei: tuple[type[BaseException], BaseException, TracebackType | None]
         | tuple[None, None, None],
     ) -> str:
+        """Format exception information for the local error report.
+
+        Args:
+            ei: Exception type, value and traceback, or three None values when no exception is
+                active.
+
+        Returns:
+            Formatted exception traceback text.
+        """
         kind, error, trace = ei
         if kind is None or error is None:
             return ""
@@ -55,6 +66,14 @@ def record_error(area: str, error: BaseException | None = None, *, message: str 
 
     Exception messages and all available chained traceback frames are retained.
     Reporting must never replace an application's original error handling.
+
+    Args:
+        area: Area of the input under examination.
+        error: Failure to describe or transport.
+        message: Text or diagnostic message to present or validate.
+
+    Returns:
+        None.
     """
     _LOGGER.error("%s: %s", area, message or "Operation failed", exc_info=error)
 
@@ -92,6 +111,9 @@ def initialize_error_reporting() -> Path | None:
     Completed-run reports are removed on the next start; active instances retain
     independent files. No size/count limit, uploads, locals or source dumps.
     Unwritable support storage leaves normal application/error handling intact.
+
+    Returns:
+        Local error-report path, or None when the report cannot be written.
     """
     global _stream
     if _stream is not None:

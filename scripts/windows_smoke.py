@@ -30,6 +30,22 @@ def smoke_test(
     with_ffmpeg: bool,
     ffmpeg: Path | None = None,
 ) -> None:
+    """Exercise native GUI startup, reference import, rendering and optional encoding.
+
+    Args:
+        report: Path for the local JSON verification report.
+        recording: Optional recording path to open.
+        with_ffmpeg: Whether the smoke check must execute a real video encode.
+        ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
+
+    Returns:
+        None.
+
+    Raises:
+        OSError: If the required filesystem operation fails.
+        BaseException: If the underlying operation fails; the original error is
+            propagated.
+    """
     report = report.resolve()
     report.parent.mkdir(parents=True, exist_ok=True)
     application = QApplication([])

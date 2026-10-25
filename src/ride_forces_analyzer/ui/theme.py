@@ -88,7 +88,14 @@ ThemeName = Literal[
 
 
 def system_theme(application: QApplication) -> ThemeName:
-    """Follow the current effective OS scheme, including scheduled changes."""
+    """Follow the current effective OS scheme, including scheduled changes.
+
+    Args:
+        application: Native Qt application whose event loop owns the widgets.
+
+    Returns:
+        Effective light or dark system appearance.
+    """
     return (
         Appearance.LIGHT
         if application.styleHints().colorScheme() == Qt.ColorScheme.Light
@@ -98,6 +105,28 @@ def system_theme(application: QApplication) -> ThemeName:
 
 @dataclass(frozen=True, slots=True)
 class Theme:
+    """Theme contract and owned data.
+
+    Attributes:
+        name: Stable identifier or displayed name for this model or view.
+        background: Application background color.
+        panel: Background color for panels.
+        text: Presentation text or source template to bind.
+        muted: Color for secondary text.
+        grid: Color for chart grid lines.
+        border: Color for borders.
+        forces: Colors assigned to force channels.
+        raw: Colors assigned to retained source channels.
+        markers: Source-sample markers or their display colors, as declared by this class.
+        accent: Color highlighting the current selection.
+        link: Color used for links.
+        accent_text: Text color on accent backgrounds.
+        chart_background: Chart background color.
+        chart_foreground: Chart foreground color.
+        chart_forces: Force-channel colors on the chart background.
+        chart_raw: Source-channel colors on the chart background.
+    """
+
     name: ThemeName
     background: str
     panel: str
@@ -118,10 +147,20 @@ class Theme:
 
     @property
     def is_dark(self) -> bool:
+        """Return whether this workspace theme uses its dark palette.
+
+        Returns:
+            Whether this workspace theme uses its dark palette.
+        """
         return QColor(self.background).lightness() < 128
 
     @property
     def vertical_context_colors(self) -> dict[str, str]:
+        """Return the semantic vertical-force context colors for this theme.
+
+        Returns:
+            The semantic vertical-force context colors for this theme.
+        """
         if self.is_dark:
             return dict(VERTICAL_CONTEXT_COLORS)
         return {
@@ -136,6 +175,11 @@ class Theme:
 
     @property
     def stylesheet(self) -> str:
+        """Build the Qt stylesheet for the selected workspace palette.
+
+        Returns:
+            Qt stylesheet for the selected theme.
+        """
         sheet = STYLESHEET + CONTROL_STYLESHEET
         if self.name is Appearance.DARK:
             return sheet
@@ -617,7 +661,15 @@ THEMES: dict[ThemeName, Theme] = {
 
 
 def apply_theme(application: QApplication, theme: Theme) -> None:
-    """Palette covers native Qt surfaces not painted by the shared stylesheet."""
+    """Palette covers native Qt surfaces not painted by the shared stylesheet.
+
+    Args:
+        application: Native Qt application whose event loop owns the widgets.
+        theme: Application appearance palette.
+
+    Returns:
+        None.
+    """
     install_native_captions(application)
     palette = QPalette()
     for role, color in (

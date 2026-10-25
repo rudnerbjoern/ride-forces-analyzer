@@ -72,6 +72,23 @@ def make_job(
     first: int | None = None,
     last: int | None = None,
 ) -> BatchJob:
+    """Capture a source-bound immutable batch job from an analysis and preset.
+
+    Args:
+        analysis: Prepared recording-analysis snapshot used by this operation.
+        preset: Validated immutable export preset to store or apply.
+        range_mode: Policy selecting the export sample interval.
+        first: First included source sample index.
+        last: Last included source sample index.
+
+    Returns:
+        Immutable export job bound to the source identity and selected preset.
+
+    Raises:
+        ValueError: Only file-backed recordings can be queued. A selection preset needs
+            explicit bounds for this recording. Invalid export sample interval. If the
+            supplied settings or operation state are invalid.
+    """
     path = analysis.source.recording.source.provenance.path
     if path is None:
         raise ValueError("Only file-backed recordings can be queued")
@@ -112,6 +129,19 @@ def build_jobs(
     presets: Sequence[SavedPreset],
     range_mode: RangeMode,
 ) -> tuple[BatchJob, ...]:
+    """Build immutable jobs for the selected recordings and visual presets.
+
+    Args:
+        paths: Input paths to process.
+        presets: Selected immutable export presets used to build jobs.
+        range_mode: Policy selecting the export sample interval.
+
+    Returns:
+        Ordered export jobs for all selected recording/preset combinations.
+
+    Raises:
+        ValueError: Choose at least one recording and one preset.
+    """
     if not paths or not presets:
         raise ValueError("Choose at least one recording and one preset")
     jobs: list[BatchJob] = []
@@ -122,6 +152,18 @@ def build_jobs(
 
 
 class JobResult(BaseModel, frozen=True, strict=True):
+    """Job result contract and owned data.
+
+    Attributes:
+        batch: Validated saved batch definition.
+        job: Export job associated with this result.
+        ride: Recording name or resolved recording for this export job.
+        preset: Validated immutable export preset to store or apply.
+        status: Optional callback receiving the current processing status.
+        output: Output directory or path for generated artifacts.
+        error: Failure to describe or transport.
+    """
+
     batch: str
     job: int
     ride: str
@@ -132,11 +174,27 @@ class JobResult(BaseModel, frozen=True, strict=True):
 
 
 class BatchReport(BaseModel, frozen=True, strict=True):
+    """Batch report contract and owned data.
+
+    Attributes:
+        directory: Directory used by the operation.
+        results: Completed job results in processing order.
+    """
+
     directory: Path
     results: tuple[JobResult, ...]
 
 
 class _JobInfo(TypedDict):
+    """Job info contract and owned data.
+
+    Attributes:
+        batch: Validated saved batch definition.
+        job: Export job associated with this result.
+        ride: Recording name or resolved recording for this export job.
+        preset: Validated immutable export preset to store or apply.
+    """
+
     batch: str
     job: int
     ride: str
@@ -157,6 +215,26 @@ def run_batches(
     status: Callable[[str], None] | None = None,
     render_jobs: int = 1,
 ) -> BatchReport:
+    """Run saved video jobs sequentially and retain a report and completed outputs.
+
+    Args:
+        batches: Selected saved batches in execution order.
+        output_directory: Directory receiving completed outputs.
+        ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
+        cancelled: Cancellation event checked during the operation.
+        progress: Optional callback receiving job index, job count, completed frames,
+            total frames and status text.
+        status: Optional callback receiving the current processing status.
+        render_jobs: Requested concurrent frame-renderer count, bounded by local CPU
+            availability.
+
+    Returns:
+        Batch report containing per-job outcomes and completed output paths.
+
+    Raises:
+        ValueError: The selected batches contain no export jobs.
+        OSError: If the required filesystem operation fails.
+    """
     from ride_forces_analyzer.cpu_resources import effective_render_jobs
 
     render_jobs = effective_render_jobs(render_jobs)

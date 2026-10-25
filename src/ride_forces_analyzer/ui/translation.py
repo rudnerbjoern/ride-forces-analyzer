@@ -28,7 +28,11 @@ _qt_translator: QTranslator | None = None
 
 
 def system_ui_language() -> Language:
-    """Use the preferred OS display language, not Qt's mutable default locale."""
+    """Use the preferred OS display language, not Qt's mutable default locale.
+
+    Returns:
+        Supported language matched to the OS display preferences.
+    """
     languages = QLocale.system().uiLanguages()
     primary = languages[0].lower().replace("_", "-").split("-")[0] if languages else ""
     for language in LANGUAGES:
@@ -56,6 +60,16 @@ def _apply(widget: QObject, prop: str, value: str) -> None:
 
 
 def bind(widget: T, value: str, prop: str = "text") -> T:
+    """Bind translatable text to a Qt object's presentation property.
+
+    Args:
+        widget: Qt object whose presentation is being changed or captured.
+        value: Candidate value to validate, format or store.
+        prop: Qt property name receiving the bound presentation text.
+
+    Returns:
+        The supplied Qt object after its presentation property is bound.
+    """
     if isinstance(widget, QGraphicsSimpleTextItem):
         if prop == "toolTip":
             widget.setToolTip(str(value))
@@ -72,6 +86,15 @@ def bind(widget: T, value: str, prop: str = "text") -> T:
 
 
 def items(combo: QComboBox | QListWidget, values: Sequence[str]) -> None:
+    """Append translated choices to a combo box or list widget.
+
+    Args:
+        combo: Choice control to populate or read.
+        values: Values to format, validate or add in their supplied order.
+
+    Returns:
+        None.
+    """
     if isinstance(combo, QComboBox):
         combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
     for value in values:
@@ -81,12 +104,30 @@ def items(combo: QComboBox | QListWidget, values: Sequence[str]) -> None:
 
 
 def headers(table: QTableWidget, values: Sequence[str]) -> None:
+    """Apply translatable column headers to a table widget.
+
+    Args:
+        table: Table control containing the displayed rows.
+        values: Values to format, validate or add in their supplied order.
+
+    Returns:
+        None.
+    """
     table.setHorizontalHeaderLabels([str(value) for value in values])
     for index, value in enumerate(values):
         bind(table, value, f"header:{index}")
 
 
 def set_ui_language(application: QApplication, language: Language) -> None:
+    """Apply the selected interface language while preserving recording state.
+
+    Args:
+        application: Native Qt application whose event loop owns the widgets.
+        language: Registered language used to translate presentation text and numbers.
+
+    Returns:
+        None.
+    """
     global _qt_translator
     set_language(language)
     locale = QLocale(LANGUAGES[language].locale)

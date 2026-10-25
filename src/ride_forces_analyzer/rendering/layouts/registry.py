@@ -27,6 +27,17 @@ REGIONS = {
 
 
 def export_region(settings: ExportSettings) -> Region:
+    """Return the selected layout region as x, y, width and height in pixels.
+
+    Args:
+        settings: Validated settings controlling this operation.
+
+    Returns:
+        The selected layout region as x, y, width and height in pixels.
+
+    Raises:
+        ValueError: Unsupported export position for layout and format.
+    """
     plugin = PLUGINS[settings.layout]
     positions = plugin.landscape if settings.aspect == "landscape" else plugin.portrait
     position = positions.default if settings.position is None else settings.position
@@ -36,4 +47,12 @@ def export_region(settings: ExportSettings) -> Region:
 
 
 def create_renderer(timeline: ExportTimeline) -> LayoutRenderer:
+    """Construct the production renderer for the bound export timeline.
+
+    Args:
+        timeline: Bound video timeline containing the source interval and export settings.
+
+    Returns:
+        Production layout renderer bound to the supplied timeline.
+    """
     return PLUGINS[timeline.settings.layout].create(timeline)

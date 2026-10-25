@@ -35,6 +35,20 @@ SMOOTHING = 11
 
 
 def load_reference(source: Path = SOURCE) -> RecordingAnalysis:
+    """Load the hash-guarded recording and fixed layout-reference analysis.
+
+    Args:
+        source: Input recording, retained source representation or source path to read.
+
+    Returns:
+        Analysis prepared from the fixed, hash-verified reference recording.
+
+    Raises:
+        OSError: If the required filesystem operation fails.
+        ValueError: Voltron Nevera source hash differs from the fixed reference recording.
+            Cannot import the Voltron Nevera reference recording. If the supplied settings
+            or operation state are invalid.
+    """
     if sha256(source.read_bytes()).hexdigest() != SOURCE_SHA256:
         raise ValueError("Voltron Nevera source hash differs from the fixed reference recording")
     imported = import_forces(source)
@@ -58,6 +72,20 @@ def load_reference(source: Path = SOURCE) -> RecordingAnalysis:
 
 
 def render_reference(output: Path) -> None:
+    """Render the fixed layout images, detail crops and reference manifest.
+
+    Args:
+        output: Output directory or path for generated artifacts.
+
+    Returns:
+        None.
+
+    Raises:
+        AssertionError: If a required internal invariant does not hold.
+        ValueError: Voltron Nevera reference sample unavailable. If the supplied settings
+            or operation state are invalid.
+        OSError: If the required filesystem operation fails.
+    """
     analysis = load_reference()
     first, last = analysis.source.recording.indices.start, analysis.source.recording.indices.end
     rate = analysis.time.basis.sample_rate
@@ -164,6 +192,11 @@ def render_reference(output: Path) -> None:
 
 
 def main() -> None:
+    """Run this module's application or command-line entry point.
+
+    Returns:
+        None.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--output",

@@ -14,6 +14,18 @@ import tomllib
 
 
 def is_prerelease(tag: str, version: str) -> bool:
+    """Classify a matching supported version tag under the release policy.
+
+    Args:
+        tag: Version tag selected for lookup, validation or suppression.
+        version: Version string to format or validate.
+
+    Returns:
+        True when the requested check succeeds or the event is handled; otherwise False.
+
+    Raises:
+        ValueError: Tag must match a supported project.version.
+    """
     match = re.fullmatch(r"(0|[1-9]\d*)\.\d+\.\d+((?:a|b|rc)\d+)?", version)
     if match is None or tag != f"v{version}":
         raise ValueError("Tag must match a supported project.version")
@@ -21,6 +33,19 @@ def is_prerelease(tag: str, version: str) -> bool:
 
 
 def verify_main_ancestry(root: Path, commit: str) -> None:
+    """Require a full commit identity contained in remote main.
+
+    Args:
+        root: Checkout or data root used to resolve the operation's paths.
+        commit: Full commit SHA selected for ancestry or release validation.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: Expected a full commit SHA.
+        subprocess.CalledProcessError: If the checked subprocess exits unsuccessfully.
+    """
     if not re.fullmatch(r"[a-f0-9]{40}", commit):
         raise ValueError("Expected a full commit SHA")
     subprocess.run(
@@ -33,6 +58,19 @@ def verify_main_ancestry(root: Path, commit: str) -> None:
 
 
 def verify_merged_prs(value: object, repository: str) -> None:
+    """Require an associated merged pull request targeting the selected main branch.
+
+    Args:
+        value: Candidate value to validate, format or store.
+        repository: GitHub owner/repository identity expected to match origin.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: Invalid associated PR response. Release commit requires an associated
+            merged PR targeting main.
+    """
     if not isinstance(value, list):
         raise ValueError("Invalid associated PR response")
     for pr in value:

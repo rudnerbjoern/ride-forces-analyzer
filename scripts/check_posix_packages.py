@@ -25,7 +25,19 @@ from scripts.build_windows import APP_NAME, ROOT, digest
 
 
 def validate_member(name: str, target: str | None = None) -> None:
-    """Reject escaping archive paths, links and recording/development data."""
+    """Reject escaping archive paths, links and recording/development data.
+
+    Args:
+        name: Display name or identifier used to select the requested item.
+        target: Destination of the requested operation.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: Unsafe or private package member. Package link escapes its extraction
+            directory.
+    """
     path = PurePosixPath(name)
     if (
         path.is_absolute()
@@ -49,7 +61,20 @@ def validate_member(name: str, target: str | None = None) -> None:
 
 
 def extract(archive: Path, destination: Path) -> None:
-    """Preserve executable permissions and app-framework links on the native OS."""
+    """Preserve executable permissions and app-framework links on the native OS.
+
+    Args:
+        archive: Archive path to inspect or produce.
+        destination: Requested output path; replacement follows the explicit overwrite
+            policy.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: Duplicate package member.
+        subprocess.CalledProcessError: If the checked subprocess exits unsuccessfully.
+    """
     if archive.name.endswith(".tar.gz"):
         with tarfile.open(archive) as source:
             members = source.getmembers()
@@ -78,7 +103,25 @@ def extract(archive: Path, destination: Path) -> None:
 
 
 def check(assets: Path, recording: Path, *, expected_target: str | None = None) -> None:
-    """Check hashes, notices, native GUI/import/rendering and an external CPU encode."""
+    """Check hashes, notices, native GUI/import/rendering and an external CPU encode.
+
+    Args:
+        assets: Directory containing the native package assets to verify.
+        recording: Path of the source recording.
+        expected_target: Expected destination used to validate the operation.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: Check on native Linux x64 or macOS x64/arm64. Package target does not
+            match the native checker. Choose an existing recording. Native package
+            checksum mismatch. Install an external FFmpeg for the native package encode
+            check. Extracted executable or its execute permission is missing. If the
+            supplied settings or operation state are invalid. Native app icon is missing.
+        OSError: If the required filesystem operation fails.
+        subprocess.CalledProcessError: If the checked subprocess exits unsuccessfully.
+    """
     target = runtime_target()
     if target not in ("linux-x64", "macos-x64", "macos-arm64"):
         raise ValueError("Check on native Linux x64 or macOS x64/arm64")

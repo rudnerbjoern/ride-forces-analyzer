@@ -12,7 +12,14 @@ from ride_forces_analyzer.domain import Recording
 
 @dataclass(frozen=True, slots=True)
 class GpsOverview:
-    """North-up local WGS84 approximation, with unavailable slots/gaps disconnected."""
+    """North-up local WGS84 approximation, with unavailable slots/gaps disconnected.
+
+    Attributes:
+        segments: Contiguous route segments without connecting across missing positions.
+        count: Number of retained items or samples represented by this object.
+        total: Total retained GPS entry count.
+        geographic_segments: Route segments in geographic coordinates.
+    """
 
     segments: tuple[tuple[tuple[float, float], ...], ...]
     count: int
@@ -21,11 +28,23 @@ class GpsOverview:
 
     @property
     def points(self) -> tuple[tuple[float, float], ...]:
+        """Return retained route points in their display order.
+
+        Returns:
+            Retained route points in display order.
+        """
         return tuple(point for segment in self.segments for point in segment)
 
 
 def prepare_gps_overview(recording: Recording) -> GpsOverview | None:
-    """Preserve source order; omit unusable positions without bridging missing fixes."""
+    """Preserve source order; omit unusable positions without bridging missing fixes.
+
+    Args:
+        recording: Validated recording whose original source data remains unchanged.
+
+    Returns:
+        Prepared route overview, or None when no usable geographic positions exist.
+    """
     gps = recording.gps
     if gps is None:
         return None

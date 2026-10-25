@@ -15,6 +15,9 @@ def data_directory() -> Path:
 
     Preserve the Windows location; use Application Support on macOS and an
     absolute XDG_DATA_HOME (or its standard fallback) on Linux.
+
+    Returns:
+        The application data directory without creating it.
     """
     if sys.platform == "win32":
         local = os.environ.get("LOCALAPPDATA")
@@ -28,12 +31,20 @@ def data_directory() -> Path:
 
 
 def ffmpeg_name() -> str:
-    """Return the native encoder filename."""
+    """Return the native encoder filename.
+
+    Returns:
+        The native encoder filename.
+    """
     return "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg"
 
 
 def runtime_target() -> str | None:
-    """Identify the supported native distribution; never infer emulation support."""
+    """Identify the supported native distribution; never infer emulation support.
+
+    Returns:
+        Supported native distribution target, or None for an unsupported runtime.
+    """
     machine = platform.machine().lower()
     if machine in ("amd64", "x86_64"):
         return {"win32": "windows-x64", "linux": "linux-x64", "darwin": "macos-x64"}.get(

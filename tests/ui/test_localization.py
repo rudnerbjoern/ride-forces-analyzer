@@ -1,7 +1,7 @@
 """Native language switching and localized layouts over unchanged recording data."""
 
 # cspell:words Aufnahme öffnen Ansicht zurücksetzen Kalibrierte Kräfte Reihe Fahrtzeit Messpunkte zurück Abbrechen prüfen Bahn Schließen Hochformat Meine Vorgabe exportieren Quellwert bleibt erhalten
-# cspell:words Oben Unten rechts Schwerkraftmarkierung Neigungsmarkierung Startmarkierung Endmarkierung Schwerkraft hier setzen Original Neigung
+# cspell:words Oben Unten rechts Schwerkraftmarkierung Neigungsmarkierung Startmarkierung Endmarkierung Schwerkraft hier setzen Original Neigung einschließlich
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -306,6 +306,10 @@ def test_german_export_and_batch_dialogs_fit_and_save_language(
             assert dialog.position.count() == 4
             assert "Oben rechts" in [dialog.position.itemText(i) for i in range(4)]
             assert_combo_text_fits(dialog.position)
+            for language in (2, 0, 1):
+                window.set_ui_language(language)
+                QCoreApplication.processEvents()
+                assert_combo_text_fits(dialog.position)
             dialog.layout_profile.setCurrentIndex(0)
             assert dialog.position.count() == 2
             assert dialog.next.text() == "Export prüfen →"
@@ -336,8 +340,8 @@ def test_german_export_and_batch_dialogs_fit_and_save_language(
                 profile.image.size == (540, 960) for profile in dialog.preview_result.profiles
             )
             dialog.next.click()
-            assert "Messpunkte" in dialog.summary.text()
-            assert "2160×3840" in dialog.summary.text()
+            assert dialog.review_fields["samples"].text().endswith("(einschließlich)")
+            assert dialog.review_fields["resolution"].text() == "2160×3840"
             assert dialog.start.text() == "Video exportieren…"
             assert all(label.text() != "Overlay language" for label in dialog.findChildren(QLabel))
             dialog.close()

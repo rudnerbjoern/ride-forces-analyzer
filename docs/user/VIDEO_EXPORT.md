@@ -34,6 +34,9 @@ the two sample fields before opening the assistant and choose **Current selectio
 
 ## 2. Choose the look and output
 
+The first page groups export settings, force display and encoding on the left,
+with a large preview on the right. Presets and layout thumbnails stay above them.
+
 Click a layout thumbnail and check the large preview.
 [Compare all five layouts](EXPORT_LAYOUTS.md) to find a suitable position for
 your footage.
@@ -95,7 +98,8 @@ depends on calibration and smoothing; they are not a measurement of what a rider
 
 1. If FFmpeg was not found automatically, click **Browse…** next to **FFmpeg**
    and choose its executable (`ffmpeg.exe` on Windows, `ffmpeg` on Linux/macOS).
-2. Click **Review export →** and check the start/end times and settings.
+2. Click **Review export →**. Check the settings and estimated file size on the left
+   and the large preview on the right. Use **Back** to change the layout or settings.
 3. Click **Export video…**, choose a destination and file name, then save.
 4. Wait for the export to finish. You can follow its progress or cancel it.
 
@@ -123,7 +127,8 @@ In a video editor that supports transparent ProRes 4444, such as DaVinci Resolve
 
 The analyzer does not load your footage or synchronize it automatically.
 [Watch the Manta example](https://youtu.be/0sGiE6F8YlI) for all five overlays
-shown in turn over Onride footage.
+shown in turn over Onride footage. An additional
+[Manta HUD example](https://youtu.be/JGcNPKoKU1Q) shows only the HUD layout.
 
 ## Reuse settings
 

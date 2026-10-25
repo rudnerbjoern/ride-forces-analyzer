@@ -128,6 +128,10 @@ the original samples remain unchanged.*
 to see all five layouts in turn over Onride footage: Four-panel column,
 Flow Ribbon, G-Orbit, HUD and Corner Instruments.
 
+**[Watch the Manta HUD demo](https://youtu.be/JGcNPKoKU1Q)**
+to see the HUD overlay over Onride footage, recorded in row 3, seat 3.
+It uses the supplied [Manta reference recording](docs/development/RECORDINGS.md#manta).
+
 ![All five export layouts compared at Voltron Nevera's vertical-force peak with simultaneous lateral and braking forces](docs/images/voltron-export-themes.png)
 
 | Layout                 | Look and placement                                      |

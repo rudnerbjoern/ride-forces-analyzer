@@ -61,7 +61,24 @@ EFFECT_MARGIN = 24  # Keep tile bloom/shadows away from clipped edges.
 
 @dataclass(frozen=True, slots=True)
 class HudGeometry:
-    """Format-specific native pixel geometry; the center has no painted background."""
+    """Format-specific native pixel geometry; the center has no painted background.
+
+    Attributes:
+        size: Required dimensions or capacity.
+        title_y: Layout coordinate for title y in the owning view or renderer.
+        value_y: Layout coordinate for value y in the owning view or renderer.
+        context_y: Layout coordinate for context y in the owning view or renderer.
+        scale_top: Layout coordinate for scale top in the owning view or renderer.
+        scale_bottom: Layout coordinate for scale bottom in the owning view or renderer.
+        left_axis: Geometry of the left vertical-force instrument.
+        right_axis: Geometry of the right acceleration instrument.
+        lateral_y: Layout coordinate for lateral y in the owning view or renderer.
+        lateral_left: Layout coordinate for lateral left in the owning view or renderer.
+        lateral_right: Layout coordinate for lateral right in the owning view or renderer.
+        history_top: Layout coordinate for history top in the owning view or renderer.
+        history_left: Layout coordinate for history left in the owning view or renderer.
+        history_row: Geometry of the force-history rows.
+    """
 
     size: tuple[int, int]
     title_y: int
@@ -164,6 +181,32 @@ def _ticks(
 
 
 class HudRenderer(Drawing):
+    """Hud renderer contract and owned data.
+
+    Attributes:
+        font_file: Font resource used for the layout's main labels and values.
+        tick_font_file: Font resource used for scale ticks.
+        label_size: Layout dimension for label size, in native pixels unless specified
+            otherwise.
+        number_size: Layout dimension for number size, in native pixels unless specified
+            otherwise.
+        small_size: Layout dimension for small size, in native pixels unless specified
+            otherwise.
+        tick_size: Layout dimension for tick size, in native pixels unless specified
+            otherwise.
+        text_stroke_width: Layout dimension for text stroke width, in native pixels unless
+            specified otherwise.
+        geometry: Aspect-specific positions and dimensions for layout drawing.
+        portrait: Whether the selected layout uses portrait geometry.
+        history_label: Font used for force-history labels.
+        orientation_tick: Font used for orientation-scale labels.
+        scales: Fixed instrument ranges fitted to the selected export interval.
+        history_scales: Fixed per-channel ranges used to draw force histories.
+        peaks: Prepared source-time peak envelopes, independent of render query order.
+        base: Prepared static layout image copied before per-frame drawing.
+        orientation_base: Prepared static orientation-scale image.
+    """
+
     font_file = FONT_FILE
     tick_font_file = FONT_FILE
     label_size = LABEL_SIZE
@@ -173,6 +216,14 @@ class HudRenderer(Drawing):
     text_stroke_width = 0
 
     def __init__(self, timeline: ExportTimeline) -> None:
+        """Initialize hud renderer and its owned state.
+
+        Args:
+            timeline: Bound video timeline containing the source interval and export settings.
+
+        Returns:
+            None.
+        """
         self.geometry = PORTRAIT if timeline.settings.aspect == "portrait" else LANDSCAPE
         super().__init__(timeline, *self.geometry.size)
         if isinstance(self.number, ImageFont.FreeTypeFont) and self._font_path().is_file():
@@ -243,7 +294,14 @@ class HudRenderer(Drawing):
 
     @staticmethod
     def effects(ink: Image.Image) -> Image.Image:
-        """Composite soft black shadow, colored bloom and crisp ink, preserving alpha."""
+        """Composite soft black shadow, colored bloom and crisp ink, preserving alpha.
+
+        Args:
+            ink: RGBA image containing the sharp foreground drawing.
+
+        Returns:
+            RGBA image containing the composited glow, shadow and sharp ink.
+        """
         alpha = ink.getchannel("A")
         shadow_mask = Image.new("L", ink.size)
         shadow_mask.paste(
@@ -269,7 +327,16 @@ class HudRenderer(Drawing):
         ink: Image.Image,
         position: tuple[int, int],
     ) -> None:
-        """Filter painted pixels and their halo, preserving the original tile's clipping."""
+        """Filter painted pixels and their halo, preserving the original tile's clipping.
+
+        Args:
+            image: Raster image to inspect or draw into.
+            ink: RGBA image containing the sharp foreground drawing.
+            position: Horizontal and vertical drawing origin in pixels.
+
+        Returns:
+            None.
+        """
         bounds = ink.getbbox()
         if bounds is None:
             return
@@ -283,7 +350,14 @@ class HudRenderer(Drawing):
         )
 
     def vertical_y(self, value: float) -> float:
-        """Negative lifting is above zero by default; honor the vertical display override."""
+        """Negative lifting is above zero by default; honor the vertical display override.
+
+        Args:
+            value: Measured value in the selected instrument's declared units.
+
+        Returns:
+            Vertical drawing coordinate on the vertical-force scale.
+        """
         g = self.geometry
         low, high, _ = self.scales[0]
         fraction = (value - low) / (high - low)
@@ -292,24 +366,56 @@ class HudRenderer(Drawing):
         return g.scale_top + fraction * (g.scale_bottom - g.scale_top)
 
     def longitudinal_y(self, value: float) -> float:
+        """Map longitudinal force to the HUD's acceleration/braking scale.
+
+        Args:
+            value: Measured value in the selected instrument's declared units.
+
+        Returns:
+            Vertical drawing coordinate on the acceleration scale.
+        """
         g = self.geometry
         return (g.scale_top + g.scale_bottom) / 2 - (
             value / self.scales[2][1] * (g.scale_bottom - g.scale_top) / 2
         )
 
     def orientation_y(self, value: float) -> float:
-        """Map the prepared tilt from 0° at the top to 180° at the bottom."""
+        """Map the prepared tilt from 0° at the top to 180° at the bottom.
+
+        Args:
+            value: Measured value in the selected instrument's declared units.
+
+        Returns:
+            Vertical drawing coordinate on the orientation scale.
+        """
         g = self.geometry
         return g.scale_top + value / 180 * (g.scale_bottom - g.scale_top)
 
     def lateral_x(self, value: float) -> float:
+        """Map lateral force to its layout coordinate and direction policy.
+
+        Args:
+            value: Measured value in the selected instrument's declared units.
+
+        Returns:
+            Horizontal drawing coordinate on the lateral-force scale.
+        """
         g = self.geometry
         return (g.lateral_left + g.lateral_right) / 2 + (
             value / self.scales[1][1] * (g.lateral_right - g.lateral_left) / 2
         )
 
     def history_point(self, row: int, value: float, fraction: float) -> tuple[float, float]:
-        """Center the shared source-time axis on the lateral instrument's zero."""
+        """Center the shared source-time axis on the lateral instrument's zero.
+
+        Args:
+            row: Channel or panel row selected for rendering.
+            value: Measured value in the selected instrument's declared units.
+            fraction: Normalized time coordinate within the plotted interval.
+
+        Returns:
+            Horizontal and vertical drawing coordinates on the force-history chart.
+        """
         g = self.geometry
         top = g.history_top + row * g.history_row
         amplitude = g.history_row * (0.32 if self.portrait else 0.36)
@@ -637,6 +743,14 @@ class HudRenderer(Drawing):
         self.composite_effects(image, tile, (0, top))
 
     def render_position(self, position: float) -> Image.Image:
+        """Render the layout at a fractional source-sample position.
+
+        Args:
+            position: Fractional source-sample position.
+
+        Returns:
+            The rendered image in the layout or canvas dimensions declared by the timeline.
+        """
         image = self.base.copy()
         self._histories(image, position)
         self._gauges(image, position)

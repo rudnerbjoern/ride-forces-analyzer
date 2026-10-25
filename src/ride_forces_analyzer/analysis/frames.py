@@ -44,11 +44,24 @@ class OrthonormalFrame:
     Right-handed axes only. Inputs are never normalized, completed or repaired.
     For RIDER: x forward, y left, z rider-up is an explicit project convention.
     Construction establishes matrix geometry, not a physical source mapping.
+
+    Attributes:
+        rows: Ordered basis vectors forming the frame transformation.
     """
 
     rows: tuple[Vector3, Vector3, Vector3]
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Frame requires three explicit typed basis vectors. Frame axes must be
+                unit length and mutually orthogonal. Frame must be right-handed with
+                determinant +1.
+        """
         rows = tuple(self.rows)
         if len(rows) != 3 or any(not has_type(row, Vector3) for row in rows):
             raise ValueError("Frame requires three explicit typed basis vectors")
@@ -61,16 +74,44 @@ class OrthonormalFrame:
 
     @property
     def matrix(self) -> NDArray[np.float64]:
-        """Return an independent matrix; editing it cannot change this frame."""
+        """Return an independent matrix; editing it cannot change this frame.
+
+        Returns:
+            An independent matrix; editing it cannot change this frame.
+        """
         return np.array([(row.x, row.y, row.z) for row in self.rows], dtype=np.float64)
 
 
 class _Rotation(Protocol):
-    def apply(self, vectors: NDArray[np.float64], *, inverse: bool) -> NDArray[np.float64]: ...
+    """Typed subset of a validated three-dimensional rotation."""
+
+    def apply(self, vectors: NDArray[np.float64], *, inverse: bool) -> NDArray[np.float64]:
+        """Transform vectors using this rotation or its inverse.
+
+        Args:
+            vectors: Vectors in the declared coordinate frame.
+            inverse: Whether to apply the inverse transformation.
+
+        Returns:
+            Transformed vectors in the requested direction.
+        """
+        ...
 
 
 class _RotationFactory(Protocol):
-    def from_matrix(self, matrix: NDArray[np.float64], *, assume_valid: bool) -> _Rotation: ...
+    """Construct rotations without repairing already validated frame matrices."""
+
+    def from_matrix(self, matrix: NDArray[np.float64], *, assume_valid: bool) -> _Rotation:
+        """Construct a rotation from the supplied matrix.
+
+        Args:
+            matrix: Transformation matrix in the declared axis order.
+            assume_valid: Whether the caller has already validated the values.
+
+        Returns:
+            Rotation represented by the supplied matrix.
+        """
+        ...
 
 
 _ROTATION = cast(_RotationFactory, getattr(import_module("scipy.spatial.transform"), "Rotation"))
@@ -83,7 +124,22 @@ def rotate_vectors(
     *,
     inverse: bool = False,
 ) -> SampleValues:
-    """Passive target components, or inverse target-to-device; no unit assignment."""
+    """Passive target components, or inverse target-to-device; no unit assignment.
+
+    Args:
+        samples: Sample values in the declared source or analysis representation.
+        frame: Validated orthonormal target frame.
+        inverse: Whether to apply the inverse transformation.
+
+    Returns:
+        Owned transformed vectors with source validity preserved.
+
+    Raises:
+        TypeError: Rotation requires owned samples and a validated frame. Inverse
+            selection must be boolean.
+        ValueError: Rotation requires three component columns. Frame conversion exceeded
+            finite float64 range.
+    """
     if not has_type(samples, SampleValues) or not has_type(frame, OrthonormalFrame):
         raise TypeError("Rotation requires owned samples and a validated frame")
     if type(inverse) is not bool:
@@ -104,13 +160,30 @@ def rotate_vectors(
 
 @dataclass(frozen=True, slots=True)
 class RiderCalibration:
-    """Source-bound exploratory mapping, never a certificate of rider calibration."""
+    """Source-bound exploratory mapping, never a certificate of rider calibration.
+
+    Attributes:
+        source_sha256: SHA-256 identity of the original recording bytes.
+        basis: Reference basis used by this model.
+        references: Resolved calibration references and their evidence.
+    """
 
     source_sha256: str
     basis: OrthonormalFrame
     references: tuple[str, ...]
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Calibration requires a lowercase source SHA-256. Calibration requires
+                nonempty independent references.
+            TypeError: Calibration requires an explicit validated basis. Calibration
+                references must be a collection.
+        """
         if not has_type(self.source_sha256, str) or not re.fullmatch(
             r"[0-9a-f]{64}",
             self.source_sha256,
@@ -139,6 +212,25 @@ def analyze_rider_frame(
 
     No source vector, marker, pose, gravity direction or default implies a mapping.
     Quantity/unit gates are inherited independently from device analysis.
+
+    Args:
+        source: Input recording, retained source representation or source path to read.
+        calculation_time: Aware timestamp recorded in calculation provenance.
+        calibration: Selected calibration basis and reference evidence.
+        profile: Explicit processing or export profile.
+        acceleration_contract: Unit and quantity evidence for source acceleration.
+        gravity_contract: Unit and quantity evidence for source gravity.
+
+    Returns:
+        Exploratory rider vectors or explicit exclusions, never verified rider g.
+
+    Raises:
+        TypeError: Frame analysis requires full M2 import success. Calibration must be
+            typed or absent.
+        ValueError: Frame analysis requires the rider_calibrated profile. Calibration does
+            not match this source. Exploratory frame projection requires explicit
+            provisional permission.
+        AssertionError: If a required internal invariant does not hold.
     """
     if not has_type(source, ImportSuccess):
         raise TypeError("Frame analysis requires full M2 import success")

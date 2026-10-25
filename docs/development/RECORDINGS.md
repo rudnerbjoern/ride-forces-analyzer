@@ -47,6 +47,8 @@ updating the tests and this catalog together.
 - Size: 783028 bytes.
 - SHA-256: `1d06e636b0cd26c7634503bf3f5f93e1906791ce47028c129af1c1828c7b268c`.
 - 9638 acceleration and gravity samples and 145 GPS points.
+- Owner-confirmed [Manta HUD demo](https://youtu.be/JGcNPKoKU1Q): row 3, seat 3,
+  created from this reference recording.
 
 ### Taron
 

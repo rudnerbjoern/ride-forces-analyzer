@@ -40,6 +40,18 @@ def write_version_info(destination: Path, version: str) -> Path:
 
     Release components fill the four 16-bit binary fields; the full version text
     retains prerelease suffixes. Reject values Windows cannot represent.
+
+    Args:
+        destination: Requested output path; replacement follows the explicit overwrite
+            policy.
+        version: Version string to format or validate.
+
+    Returns:
+        Path to the generated Windows version-resource file.
+
+    Raises:
+        ValueError: Version exceeds Windows resource limits.
+        OSError: If the required filesystem operation fails.
     """
     parsed = Version(version)
     if len(parsed.release) > 4 or any(part > 65535 for part in parsed.release):
@@ -69,6 +81,17 @@ def write_version_info(destination: Path, version: str) -> Path:
 
 
 def digest(path: Path) -> str:
+    """Calculate a file's SHA-256 digest using bounded reads.
+
+    Args:
+        path: Filesystem path read or written by this operation.
+
+    Returns:
+        Hexadecimal SHA-256 digest of the file.
+
+    Raises:
+        OSError: If the required filesystem operation fails.
+    """
     result = sha256()
     with path.open("rb") as stream:
         while chunk := stream.read(1024 * 1024):
@@ -77,7 +100,11 @@ def digest(path: Path) -> str:
 
 
 def runtime_distributions() -> list[metadata.Distribution]:
-    """Collect notices for the declared runtime/extras, never the dev environment."""
+    """Collect notices for the declared runtime/extras, never the dev environment.
+
+    Returns:
+        Installed distributions belonging to the declared runtime dependency set.
+    """
     pending = ["ride-forces-analyzer", "pyinstaller"]
     seen: set[str] = set()
     result: list[metadata.Distribution] = []
@@ -103,6 +130,19 @@ def runtime_distributions() -> list[metadata.Distribution]:
 
 
 def collect_notices(destination: Path) -> None:
+    """Collect the shipped runtime license notices and their inventory.
+
+    Args:
+        destination: Requested output path; replacement follows the explicit overwrite
+            policy.
+
+    Returns:
+        None.
+
+    Raises:
+        OSError: If the required filesystem operation fails.
+        ValueError: Python runtime license is missing.
+    """
     destination.mkdir(parents=True, exist_ok=True)
     inventory: list[dict[str, object]] = []
     for distribution in runtime_distributions():
@@ -150,6 +190,20 @@ def collect_notices(destination: Path) -> None:
 
 
 def acquire_ffmpeg(work: Path) -> Path:
+    """Verify and extract the configured publisher's FFmpeg binary archive.
+
+    Args:
+        work: Temporary build directory inside the repository's temporary area.
+
+    Returns:
+        Path to the verified, extracted encoder executable.
+
+    Raises:
+        OSError: If the required filesystem operation fails.
+        ValueError: FFmpeg publisher archive checksum mismatch. FFmpeg archive must
+            contain exactly one encoder.
+        subprocess.CalledProcessError: If the checked subprocess exits unsuccessfully.
+    """
     configuration = json.loads((ROOT / "ffmpeg.json").read_text(encoding="utf-8"))
     archive = ROOT / ".tmp/ffmpeg-full.7z"
     if not archive.is_file() or digest(archive) != configuration["sha256"]:
@@ -168,6 +222,15 @@ def acquire_ffmpeg(work: Path) -> Path:
 
 
 def write_zip(folder: Path, output: Path) -> None:
+    """Write the prepared package directory as a ZIP archive.
+
+    Args:
+        folder: Directory to inspect.
+        output: Output directory or path for generated artifacts.
+
+    Returns:
+        None.
+    """
     with ZipFile(output, "w", compression=ZIP_DEFLATED, compresslevel=6) as archive:
         for path in sorted(folder.rglob("*")):
             if path.is_file():
@@ -175,7 +238,19 @@ def write_zip(folder: Path, output: Path) -> None:
 
 
 def validate_redistribution(manifest: Path) -> None:
-    """Verify the supplied source archives against the manifest."""
+    """Verify the supplied source archives against the manifest.
+
+    Args:
+        manifest: Manifest describing the package contents.
+
+    Returns:
+        None.
+
+    Raises:
+        OSError: If the required filesystem operation fails.
+        ValueError: Source archives must be a list. Corresponding-source downloads must
+            stay under .tmp. Corresponding-source archive is missing or changed.
+    """
     value = json.loads(manifest.read_text(encoding="utf-8"))
     sources = value.get("source_archives")
     if not isinstance(sources, list):
@@ -197,6 +272,22 @@ def validate_redistribution(manifest: Path) -> None:
 
 
 def build(work: Path, *, release: bool = False) -> Path:
+    """Build the platform's native release package and checksum inventory.
+
+    Args:
+        work: Temporary build directory inside the repository's temporary area.
+        release: Whether to apply the release source-archive verification gate.
+
+    Returns:
+        Path to the generated distribution artifact.
+
+    Raises:
+        ValueError: Build on native Windows x64. Build outputs must stay under .tmp. If
+            the supplied settings or operation state are invalid. Non-redistributable
+            FFmpeg build.
+        OSError: If the required filesystem operation fails.
+        subprocess.CalledProcessError: If the checked subprocess exits unsuccessfully.
+    """
     if sys.platform != "win32" or platform.machine().lower() not in ("amd64", "x86_64"):
         raise ValueError("Build on native Windows x64")
     work = work.resolve()

@@ -16,6 +16,13 @@ def source_directions(
 
     The observed RFDB profile uses calibration Y/X/Z for the same source-app
     axes. Admission and normalization remain in project_directions.
+
+    Args:
+        recording: Validated recording whose original source data remains unchanged.
+
+    Returns:
+        The tuple[Vector3 | None, Vector3 | None, Vector3 | None] result of the operation
+        described above.
     """
     vectors = recording.vectors
     if recording.source_format is RecordingFormat.RFDB:
@@ -27,7 +34,20 @@ def project_directions(
     samples: tuple[Vector3, ...],
     directions: tuple[Vector3, Vector3, Vector3],
 ) -> tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]:
-    """Normalize rounded source directions explicitly, then dot-project, without rotation repair."""
+    """Normalize rounded source directions explicitly, then dot-project, without rotation repair.
+
+    Args:
+        samples: Sample values in the declared source or analysis representation.
+        directions: Projection directions in the source frame.
+
+    Returns:
+        The tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]] result of the
+        operation described above.
+
+    Raises:
+        ValueError: Directions exceed the declared rounded-basis admission bounds.
+            Direction projection exceeds finite display range.
+    """
     import numpy as np
 
     rows = np.array([(v.x, v.y, v.z) for v in directions], dtype=np.float64)

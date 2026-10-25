@@ -23,6 +23,16 @@ def render_region_bytes(timeline: ExportTimeline, jobs: int = 1) -> Generator[by
     timeline; each owns its Pillow images and fonts. The submission buffer is
     limited to the worker count, plus the frame currently being yielded.
     Closing the iterator cancels queued work and joins active frame renders.
+
+    Args:
+        timeline: Bound video timeline containing the source interval and export settings.
+        jobs: Requested number of concurrent frame renderers.
+
+    Yields:
+        Raw image bytes for each rendered frame, in output-frame order.
+
+    Raises:
+        ValueError: The requested renderer count is not a positive integer.
     """
     jobs = min(effective_render_jobs(jobs), timeline.frame_count)
     if jobs == 1:

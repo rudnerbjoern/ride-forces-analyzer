@@ -53,7 +53,17 @@ from .smoothing import centered_mean, combined_force
 
 
 class AnalysisStage(StrEnum):
-    """Stable identifiers for independently reusable or invalidated analysis stages."""
+    """Stable identifiers for independently reusable or invalidated analysis stages.
+
+    Attributes:
+        TIME: Named value for time (`time`).
+        CALIBRATION: Named value for calibration (`calibration`).
+        PROJECTION: Named value for projection (`projection`).
+        SMOOTHING: Named value for smoothing (`smoothing`).
+        ORIENTATION: Named value for orientation (`orientation`).
+        CONTEXT: Named value for context (`context`).
+        EVENTS: Named value for events (`events`).
+    """
 
     TIME = "time"
     CALIBRATION = "calibration"
@@ -68,6 +78,10 @@ class AvailabilityState(StrEnum):
     """Payload presence, independent of scientific quality and pending requests.
 
     AVAILABLE requires a payload; UNAVAILABLE requires a reason and no payload.
+
+    Attributes:
+        AVAILABLE: Named value for available (`available`).
+        UNAVAILABLE: Named value for unavailable (`unavailable`).
     """
 
     AVAILABLE = "available"
@@ -79,6 +93,10 @@ class EventEvaluationState(StrEnum):
 
     EVALUATED permits an empty event tuple. NOT_EVALUATED requires a reason
     and an absent event collection, not an empty one.
+
+    Attributes:
+        EVALUATED: Named value for evaluated (`evaluated`).
+        NOT_EVALUATED: Named value for not evaluated (`not_evaluated`).
     """
 
     EVALUATED = "evaluated"
@@ -90,6 +108,12 @@ class RequestStatus(StrEnum):
 
     This status describes the service request, not the retained snapshot's age
     or scientific capabilities. A failed request can retain an older snapshot.
+
+    Attributes:
+        IDLE: Named value for idle (`idle`).
+        PENDING: Named value for pending (`pending`).
+        READY: Named value for ready (`ready`).
+        FAILED: Named value for failed (`failed`).
     """
 
     IDLE = "idle"
@@ -103,6 +127,16 @@ class VerticalContext(StrEnum):
 
     UNAVAILABLE denotes a missing/invalid sample in an otherwise prepared
     context series. It does not establish a whole stage's availability.
+
+    Attributes:
+        HEAVY_GS: Named value for heavy gs (`heavy_gs`).
+        NORMAL_GS: Named value for normal gs (`normal_gs`).
+        LIGHT_GS: Named value for light gs (`light_gs`).
+        FLOATER_AIRTIME: Named value for floater airtime (`floater_airtime`).
+        AIRTIME: Named value for airtime (`airtime`).
+        STRONG_AIRTIME: Named value for strong airtime (`strong_airtime`).
+        EJECTOR_AIRTIME: Named value for ejector airtime (`ejector_airtime`).
+        UNAVAILABLE: Named value for unavailable (`unavailable`).
     """
 
     HEAVY_GS = "heavy_gs"
@@ -478,6 +512,7 @@ class RecordingAnalysis:
             ValueError: Field values, payloads or source/stage relationships
                 contradict the declared model. This check does not certify
                 projection math, filtering, event rules or physical accuracy.
+            AssertionError: If a required internal invariant does not hold.
         """
         for value, kind in (
             (self.source, ImportSuccess),
@@ -639,13 +674,21 @@ class RecordingAnalysis:
 
     @property
     def ride_bounds(self) -> tuple[int, int]:
-        """Return inclusive effective markers, retaining source markers separately."""
+        """Return inclusive effective markers, retaining source markers separately.
+
+        Returns:
+            Inclusive effective markers, retaining source markers separately.
+        """
         indices = self.source.recording.indices
         return self.configuration.ride_bounds or (indices.start, indices.end)
 
     @property
     def replay_origin(self) -> int:
-        """Return effective replay zero; time.replay_origin retains source provenance."""
+        """Return effective replay zero; time.replay_origin retains source provenance.
+
+        Returns:
+            Effective replay zero; time.replay_origin retains source provenance.
+        """
         return self.ride_bounds[0]
 
     def sample(self, index: int) -> AnalyzedSample:
