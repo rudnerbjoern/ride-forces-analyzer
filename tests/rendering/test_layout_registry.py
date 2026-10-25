@@ -35,10 +35,19 @@ from ride_forces_analyzer.rendering.layouts.corners import CornersRenderer
 
 def test_every_persisted_profile_has_registered_geometry() -> None:
     assert tuple(PLUGINS) == tuple(key for key, _ in PROFILES)
+    assert set(PLUGINS) == set(ExportLayout)
+    assert all(type(key) is ExportLayout for key in PLUGINS)
+    assert ExportSettings().layout is ExportLayout.COLUMN
+    with pytest.raises(ValueError):
+        ExportLayout("unregistered")
     with pytest.raises(ValueError, match="Unknown export layout"):
         ExportSettings(layout=cast(ExportLayout, "unregistered"))
+    with pytest.raises(ValueError, match="Unknown export layout"):
+        ExportSettings(layout=cast(ExportLayout, "hud"))
     for key, plugin in PLUGINS.items():
         assert plugin.key == key
+        with pytest.raises(ValueError, match="Unknown export layout"):
+            replace(plugin, key=cast(ExportLayout, key.value))
         for aspect, positions in (
             (VideoAspect.LANDSCAPE, plugin.landscape),
             (VideoAspect.PORTRAIT, plugin.portrait),
@@ -57,28 +66,28 @@ def test_every_persisted_profile_has_registered_geometry() -> None:
     ("key", "default", "supported", "landscape", "portrait"),
     [
         (
-            "ribbon",
+            ExportLayout.RIBBON,
             LayoutPosition.BOTTOM,
             {LayoutPosition.TOP, LayoutPosition.BOTTOM},
             (384, 1692, 3072, 360),
             (240, 1360, 1680, 2240),
         ),
         (
-            "hud",
+            ExportLayout.HUD,
             LayoutPosition.FULL_SCREEN,
             {LayoutPosition.FULL_SCREEN},
             (0, 0, 1920, 1080),
             (0, 0, 1080, 1920),
         ),
         (
-            "column",
+            ExportLayout.COLUMN,
             LayoutPosition.RIGHT,
             {LayoutPosition.LEFT, LayoutPosition.RIGHT},
             (2880, 0, 960, 2160),
             (612, 300, 1440, 3240),
         ),
         (
-            "corners",
+            ExportLayout.CORNERS,
             LayoutPosition.TOP_RIGHT,
             {
                 LayoutPosition.TOP_LEFT,
@@ -90,7 +99,7 @@ def test_every_persisted_profile_has_registered_geometry() -> None:
             (372, 240, 1680, 2240),
         ),
         (
-            "orbit",
+            ExportLayout.ORBIT,
             LayoutPosition.BOTTOM_LEFT,
             {
                 LayoutPosition.TOP_LEFT,
@@ -130,7 +139,7 @@ def test_layout_owns_positions_sizes_and_defaults_independently_per_format() -> 
         {LayoutPosition.LEFT: (100, 200, 300, 400)},
         default=LayoutPosition.LEFT,
     )
-    plugin = replace(PLUGINS["orbit"], landscape=landscape, portrait=portrait)
+    plugin = replace(PLUGINS[ExportLayout.ORBIT], landscape=landscape, portrait=portrait)
     regions[LayoutPosition.TOP] = (0, 0, 1, 1)
     assert plugin.landscape.regions[LayoutPosition.TOP] == (10, 20, 30, 40)
     assert plugin.landscape.regions[LayoutPosition.BOTTOM] == (50, 60, 70, 80)
@@ -209,7 +218,7 @@ def test_layout_metadata_requires_enum_keys_and_default() -> None:
 def test_all_position_regions_must_fit_their_format_canvas(aspect: VideoAspect) -> None:
     width, height = (3840, 2160) if aspect is VideoAspect.LANDSCAPE else (2160, 3840)
     exact = LayoutPositions({LayoutPosition.TOP: (0, 0, width, height)}, default=LayoutPosition.TOP)
-    plugin = PLUGINS["orbit"]
+    plugin = PLUGINS[ExportLayout.ORBIT]
     if aspect is VideoAspect.LANDSCAPE:
         assert replace(plugin, landscape=exact).landscape == exact
     else:
@@ -232,7 +241,7 @@ def test_compositor_accepts_a_registered_renderer_without_layout_branches(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     assert manta.analysis is not None
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3601)
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.ORBIT), 3600, 3601)
     positions: list[float] = []
 
     class CustomRenderer:
@@ -250,8 +259,8 @@ def test_compositor_accepts_a_registered_renderer_without_layout_branches(
         "PLUGINS",
         MappingProxyType(
             {
-                "orbit": LayoutPlugin(
-                    "orbit",
+                ExportLayout.ORBIT: LayoutPlugin(
+                    ExportLayout.ORBIT,
                     LayoutPositions({LayoutPosition.TOP: region}, default=LayoutPosition.TOP),
                     LayoutPositions({LayoutPosition.TOP: region}, default=LayoutPosition.TOP),
                     create,
@@ -276,7 +285,7 @@ def test_individual_chart_style_applies_in_both_aspects_without_leaking(
     monkeypatch.setattr(RibbonRenderer, "label_size", 42)
     for aspect in (VideoAspect.LANDSCAPE, VideoAspect.PORTRAIT):
         settings = ExportSettings(
-            layout="ribbon",
+            layout=ExportLayout.RIBBON,
             aspect=aspect,
         )
         timeline = prepare_export(manta.analysis, settings, 3600, 3601)

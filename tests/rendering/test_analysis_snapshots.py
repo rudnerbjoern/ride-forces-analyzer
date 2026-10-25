@@ -22,6 +22,7 @@ from ride_forces_analyzer.importers import ImportSuccess
 from ride_forces_analyzer.rendering import batches
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.model import (
+    ExportLayout,
     ExportSettings,
     ExportTimeline,
     ExportValues,
@@ -169,7 +170,12 @@ def test_export_reuses_buffers_orientation_and_full_history_context(
         "prepare",
         Mock(side_effect=AssertionError("Repeated context")),
     )
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="ribbon"), 3600, 3700)
+    timeline = prepare_export(
+        manta.analysis,
+        ExportSettings(layout=ExportLayout.RIBBON),
+        3600,
+        3700,
+    )
     assert timeline.analysis is snapshot
     for channel, samples in zip(
         timeline.channels[:3],

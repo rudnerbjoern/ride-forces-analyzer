@@ -24,7 +24,12 @@ from ride_forces_analyzer.rendering.layouts.hud import (
     WHITE,
     YELLOW,
 )
-from ride_forces_analyzer.rendering.model import VideoAspect, ExportSettings, prepare_export
+from ride_forces_analyzer.rendering.model import (
+    ExportLayout,
+    VideoAspect,
+    ExportSettings,
+    prepare_export,
+)
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
 
@@ -43,7 +48,7 @@ def test_detailed_scales_and_signed_directions(
     assert manta.analysis is not None
     timeline = prepare_export(
         manta.analysis,
-        ExportSettings(layout="hud", aspect=aspect),
+        ExportSettings(layout=ExportLayout.HUD, aspect=aspect),
         3600,
         3699,
     )
@@ -90,7 +95,7 @@ def test_right_scale_fits_actual_selected_peaks_with_a_one_point_five_g_minimum(
     assert manta.analysis is not None
     timeline = prepare_export(
         manta.analysis,
-        ExportSettings(layout="hud", aspect=aspect),
+        ExportSettings(layout=ExportLayout.HUD, aspect=aspect),
         3600,
         3699,
     )
@@ -135,7 +140,7 @@ def test_lateral_scale_fits_actual_peaks_in_fixed_half_g_steps(
     assert manta.analysis is not None
     timeline = prepare_export(
         manta.analysis,
-        ExportSettings(layout="hud", aspect=aspect),
+        ExportSettings(layout=ExportLayout.HUD, aspect=aspect),
         3600,
         3699,
     )
@@ -196,7 +201,7 @@ def test_vertical_range_uses_source_posture_and_independent_bounds(
     assert posture is not None and posture.value == ("Flying" if flying else "Seated")
     timeline = prepare_export(
         data.analysis,
-        ExportSettings(layout="hud", aspect=aspect, invert_vertical=inverted),
+        ExportSettings(layout=ExportLayout.HUD, aspect=aspect, invert_vertical=inverted),
         3600,
         3699,
     )
@@ -240,7 +245,7 @@ def test_only_vertical_uses_whole_g_labels_and_three_tick_lengths(
     timeline = prepare_export(
         data.analysis,
         ExportSettings(
-            layout="hud",
+            layout=ExportLayout.HUD,
             aspect=aspect,
             invert_vertical=inverted,
             language=Language.ENGLISH,
@@ -305,7 +310,7 @@ def test_fullscreen_hud_has_open_center_and_is_independent_of_seek_order(
     assert manta.analysis is not None
     timeline = prepare_export(
         manta.analysis,
-        ExportSettings(layout="hud", aspect=aspect, language=language),
+        ExportSettings(layout=ExportLayout.HUD, aspect=aspect, language=language),
         3600,
         3699,
     )
@@ -342,7 +347,7 @@ def test_fullscreen_hud_has_open_center_and_is_independent_of_seek_order(
 
 def test_each_missing_force_hides_only_its_marker(manta: ExplorerData) -> None:
     assert manta.analysis is not None
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="hud"), 3600, 3601)
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.HUD), 3600, 3601)
     channels = tuple(replace(channel, values=(1.0,) * manta.count) for channel in timeline.channels)
     complete = replace(timeline, channels=channels)
     renderer = HudRenderer(complete)
@@ -379,7 +384,7 @@ def test_orientation_edge_scale_tracks_degrees_and_disappears_in_gaps(
     assert manta.analysis is not None
     timeline = prepare_export(
         manta.analysis,
-        ExportSettings(layout="hud", aspect=aspect),
+        ExportSettings(layout=ExportLayout.HUD, aspect=aspect),
         3600,
         3606,
     )
@@ -464,7 +469,7 @@ def test_scale_bars_hold_both_peaks_and_release_while_markers_stay_current(
     assert manta.analysis is not None
     timeline = prepare_export(
         manta.analysis,
-        ExportSettings(layout="hud", aspect=aspect),
+        ExportSettings(layout=ExportLayout.HUD, aspect=aspect),
         3600,
         3799,
     )
@@ -495,7 +500,7 @@ def test_scale_peak_bars_reset_at_missing_samples(
     assert manta.analysis is not None
     timeline = prepare_export(
         manta.analysis,
-        ExportSettings(layout="hud", aspect=aspect),
+        ExportSettings(layout=ExportLayout.HUD, aspect=aspect),
         3600,
         3799,
     )
@@ -524,7 +529,7 @@ def test_history_time_zero_aligns_exactly_with_lateral_zero(
     assert manta.analysis is not None
     timeline = prepare_export(
         manta.analysis,
-        ExportSettings(layout="hud", aspect=aspect),
+        ExportSettings(layout=ExportLayout.HUD, aspect=aspect),
         3600,
         3699,
     )
@@ -544,7 +549,7 @@ def test_histories_share_time_axis_and_do_not_bridge_missing_samples(manta: Expl
     assert manta.analysis is not None
     timeline = prepare_export(
         manta.analysis,
-        ExportSettings(layout="hud", window_seconds=2),
+        ExportSettings(layout=ExportLayout.HUD, window_seconds=2),
         3600,
         3699,
     )
@@ -585,7 +590,7 @@ def test_histories_fit_each_selected_channel_without_changing_instruments(
     assert manta.analysis is not None
     timeline = prepare_export(
         manta.analysis,
-        ExportSettings(layout="hud", aspect=aspect, window_seconds=30),
+        ExportSettings(layout=ExportLayout.HUD, aspect=aspect, window_seconds=30),
         3600,
         3699,
     )
@@ -622,7 +627,7 @@ def test_histories_fit_each_selected_channel_without_changing_instruments(
 
 def test_history_ranges_remain_usable_for_zero_missing_and_tiny_values(manta: ExplorerData) -> None:
     assert manta.analysis is not None
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="hud"), 3600, 3699)
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.HUD), 3600, 3699)
     channels = tuple(
         replace(channel, values=(value,) * manta.count)
         for channel, value in zip(timeline.channels[:3], (0.0, None, -0.01))
@@ -679,7 +684,12 @@ def test_history_background_fades_to_black_and_leaves_center_clear(
 ) -> None:
     assert manta.analysis is not None
     renderer = HudRenderer(
-        prepare_export(manta.analysis, ExportSettings(layout="hud", aspect=aspect), 3600, 3699),
+        prepare_export(
+            manta.analysis,
+            ExportSettings(layout=ExportLayout.HUD, aspect=aspect),
+            3600,
+            3699,
+        ),
     )
     image = renderer.render_position(3650)
     top = renderer.geometry.history_top - 40

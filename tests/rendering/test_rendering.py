@@ -164,15 +164,15 @@ def test_cancel_and_existing_destination_preserve_files(
 @pytest.mark.parametrize(
     "layout,mode,aspect,prefer_gpu,language",
     [
-        ("column", "transparent", VideoAspect.LANDSCAPE, False, "en"),
-        ("ribbon", "transparent", VideoAspect.LANDSCAPE, True, "en"),
-        ("corners", "transparent", VideoAspect.PORTRAIT, False, "de"),
-        ("orbit", "transparent", VideoAspect.PORTRAIT, True, "en"),
-        ("hud", "opaque", VideoAspect.LANDSCAPE, False, "en"),
-        ("column", "opaque", VideoAspect.LANDSCAPE, True, "de"),
-        ("orbit", "opaque", VideoAspect.PORTRAIT, False, "en"),
-        ("ribbon", "opaque", VideoAspect.PORTRAIT, True, "en"),
-        ("hud", "transparent", VideoAspect.PORTRAIT, False, "fr"),
+        (ExportLayout.COLUMN, "transparent", VideoAspect.LANDSCAPE, False, "en"),
+        (ExportLayout.RIBBON, "transparent", VideoAspect.LANDSCAPE, True, "en"),
+        (ExportLayout.CORNERS, "transparent", VideoAspect.PORTRAIT, False, "de"),
+        (ExportLayout.ORBIT, "transparent", VideoAspect.PORTRAIT, True, "en"),
+        (ExportLayout.HUD, "opaque", VideoAspect.LANDSCAPE, False, "en"),
+        (ExportLayout.COLUMN, "opaque", VideoAspect.LANDSCAPE, True, "de"),
+        (ExportLayout.ORBIT, "opaque", VideoAspect.PORTRAIT, False, "en"),
+        (ExportLayout.RIBBON, "opaque", VideoAspect.PORTRAIT, True, "en"),
+        (ExportLayout.HUD, "transparent", VideoAspect.PORTRAIT, False, "fr"),
     ],
 )
 def test_native_encoder_produces_layout_resolution_with_verified_alpha(
@@ -180,7 +180,13 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
     export_directory: Path,
     mode: str,
     prefer_gpu: bool,
-    layout: Literal["column", "ribbon", "corners", "hud", "orbit"],
+    layout: Literal[
+        ExportLayout.COLUMN,
+        ExportLayout.RIBBON,
+        ExportLayout.CORNERS,
+        ExportLayout.HUD,
+        ExportLayout.ORBIT,
+    ],
     aspect: VideoAspect,
     language: Literal["en", "de"],
 ) -> None:
@@ -210,7 +216,7 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
             output,
             ffmpeg=ffmpeg,
             progress=lambda a, b: progress.append((a, b)),
-            render_jobs=2 if layout == "hud" else 1,
+            render_jobs=2 if layout == ExportLayout.HUD else 1,
         )
     # One encoder process, plus the optional GPU capability probe.
     assert processes.call_count == 1 + int(prefer_gpu)
@@ -261,10 +267,14 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
     assert isinstance(left, tuple) and isinstance(right, tuple)
     assert left[3] == (0 if mode == "transparent" else 255)
     expected_alpha = (
-        255 if mode == "opaque" or layout == "column" else 0 if layout == "hud" else 210
+        255
+        if mode == "opaque" or layout == ExportLayout.COLUMN
+        else 0
+        if layout == ExportLayout.HUD
+        else 210
     )
     assert abs(right[3] - expected_alpha) <= 2
-    if layout == "hud" and mode == "transparent":
+    if layout == ExportLayout.HUD and mode == "transparent":
         alpha = image.getchannel("A").histogram()
         assert alpha[0] > 0 and alpha[255] > 0
         assert sum(alpha[1:255]) > 0  # Glow/shadow opacity survives real ProRes encoding.
@@ -314,10 +324,10 @@ def test_cancel_during_real_encoding_leaves_no_output(
     assert not output.exists()
 
 
-@pytest.mark.parametrize("layout", ["ribbon", "corners"])
+@pytest.mark.parametrize("layout", [ExportLayout.RIBBON, ExportLayout.CORNERS])
 def test_compact_profiles_preserve_alpha_color_and_force_scales(
     manta: ExplorerData,
-    layout: Literal["ribbon", "corners"],
+    layout: Literal[ExportLayout.RIBBON, ExportLayout.CORNERS],
 ) -> None:
     assert manta.analysis is not None
     timeline = prepare_export(
@@ -370,10 +380,10 @@ def test_vertical_force_direction_and_manual_override(
     for timeline in (default, reversed_direction):
         vertical = timeline.channels[0]
         renderer = OverlayRenderer(timeline)
-        if layout == "hud":
+        if layout == ExportLayout.HUD:
             assert isinstance(renderer.renderer, HudRenderer)
             ys = [renderer.renderer.vertical_y(value) for value in (-1, 0, 1)]
-        elif layout == "orbit":
+        elif layout == ExportLayout.ORBIT:
             assert isinstance(renderer.renderer, OrbitRenderer)
             ys = [sin(radians(renderer.renderer.orbit_angle(value))) for value in (-1, 0, 1)]
             assert renderer.renderer.orbit_angle(0) == 180
@@ -403,7 +413,7 @@ def test_lateral_direction_and_time_follow_layout_axes(
     assert left < zero == 100 < right
     assert zero - left == pytest.approx(right - zero)
     assert lateral_x(replace(channel, inverted=False), -1, 0, 200) == left
-    if layout in ("orbit", "hud"):
+    if layout in (ExportLayout.ORBIT, ExportLayout.HUD):
         return
     renderer = OverlayRenderer(timeline)
     chart = renderer.renderer
@@ -411,7 +421,7 @@ def test_lateral_direction_and_time_follow_layout_axes(
     points = [chart.trace_point(channel, value, 0.5, 1) for value in (-1, 0, 1)]
     earlier = chart.trace_point(channel, 0, 0.25, 1)
     later = chart.trace_point(channel, 0, 0.75, 1)
-    if layout == "column":
+    if layout == ExportLayout.COLUMN:
         assert points[0][0] == points[1][0] == points[2][0]
         assert points[0][1] < points[1][1] < points[2][1]
         assert earlier[0] < later[0] and earlier[1] == later[1]
@@ -435,11 +445,11 @@ def test_longitudinal_acceleration_up_and_braking_down(
     channel = timeline.channels[2]
     assert not channel.inverted
     renderer = OverlayRenderer(timeline)
-    if layout == "hud":
+    if layout == ExportLayout.HUD:
         assert isinstance(renderer.renderer, HudRenderer)
         ys = [renderer.renderer.longitudinal_y(value) for value in (-1, 0, 1)]
         assert ys[2] < ys[1] < ys[0]
-    elif layout != "orbit":
+    elif layout != ExportLayout.ORBIT:
         chart = renderer.renderer
         assert isinstance(chart, (ChartRenderer, ColumnRenderer))
         braking, zero, acceleration = [
@@ -453,7 +463,7 @@ def test_longitudinal_acceleration_up_and_braking_down(
         assert sin(radians(renderer.renderer.orbit_angle(-1, 2))) > 0
 
 
-@pytest.mark.parametrize("layout", ["column", "ribbon", "corners"])
+@pytest.mark.parametrize("layout", [ExportLayout.COLUMN, ExportLayout.RIBBON, ExportLayout.CORNERS])
 def test_longitudinal_trace_changes_color_at_zero(
     manta: ExplorerData,
     layout: ExportLayout,
@@ -482,7 +492,7 @@ def test_longitudinal_trace_changes_color_at_zero(
 @pytest.mark.parametrize("row", [0, 1, 2])
 def test_orbit_signed_arcs_paint_physical_directions(manta: ExplorerData, row: int) -> None:
     assert manta.analysis is not None
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3601)
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.ORBIT), 3600, 3601)
     for value in (-1.0, 1.0):
         channels = tuple(
             replace(channel, values=(value,) * manta.count, low=-1.05, high=1.05)
@@ -516,7 +526,7 @@ def test_orbit_orientation_keeps_real_degrees() -> None:
 
 def test_orbit_peak_hold_shading_and_markers(manta: ExplorerData) -> None:
     assert manta.analysis is not None
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3700)
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.ORBIT), 3600, 3700)
     values = tuple(0.8 if index == 3600 else 0.0 for index in range(manta.count))
     longitudinal = replace(timeline.channels[2], values=values, low=-1.05, high=1.05)
     renderer = OrbitRenderer(
@@ -539,7 +549,7 @@ def test_orbit_peak_hold_shading_and_markers(manta: ExplorerData) -> None:
 
 def test_orbit_lateral_stroke_grows_outward_with_shifted_scale(manta: ExplorerData) -> None:
     assert manta.analysis is not None
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3601)
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.ORBIT), 3600, 3601)
     lateral = replace(timeline.channels[1], values=(1.0,) * manta.count, low=-1.05, high=1.05)
     renderer = OrbitRenderer(
         replace(timeline, channels=(timeline.channels[0], lateral, *timeline.channels[2:])),
@@ -570,7 +580,7 @@ def test_orbit_force_stroke_thickens_inward(
     inner: int,
 ) -> None:
     assert manta.analysis is not None
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3601)
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.ORBIT), 3600, 3601)
     channels = tuple(
         replace(channel, values=(1.0,) * manta.count, low=-1.05, high=1.05)
         if index == row
@@ -595,7 +605,7 @@ def test_orbit_force_stroke_thickens_inward(
 
 def test_orbit_orientation_marker_is_omitted_when_unavailable(manta: ExplorerData) -> None:
     assert manta.analysis is not None
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3601)
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.ORBIT), 3600, 3601)
     for value in (45.0, None):
         orientation = replace(timeline.channels[3], values=(value,) * manta.count)
         renderer = OrbitRenderer(
@@ -612,7 +622,12 @@ def test_orbit_orientation_marker_is_omitted_when_unavailable(manta: ExplorerDat
 def test_orbit_preserves_negative_forces_and_absent_orientation(manta: ExplorerData) -> None:
     assert manta.analysis is not None
     start = 4782  # Original app CSV: replay 00:40.32, negative vertical load.
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), start, start + 1)
+    timeline = prepare_export(
+        manta.analysis,
+        ExportSettings(layout=ExportLayout.ORBIT),
+        start,
+        start + 1,
+    )
     assert timeline.value_at(timeline.channels[0], start) == pytest.approx(-3.55, abs=0.01)
     orientation = replace(timeline.channels[3], values=(None,) * manta.count)
     timeline = replace(timeline, channels=(*timeline.channels[:3], orientation))

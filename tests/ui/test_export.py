@@ -1,6 +1,6 @@
 """Native export-dialog interaction and background worker lifecycle."""
 
-from ride_forces_analyzer.rendering.model import VideoAspect
+from ride_forces_analyzer.rendering.model import ExportLayout, VideoAspect
 from ride_forces_analyzer.analysis.recording import source_app_configuration
 
 # cspell:words getpixel
@@ -116,34 +116,34 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     dialog.position.setCurrentIndex(dialog.position.findData("top"))
     assert dialog.preview_result is None
     assert dialog.position.currentData() == LayoutPosition.TOP
-    choose_layout("hud")
+    choose_layout(ExportLayout.HUD)
     assert choices() == ["full_screen"]
     assert dialog.position.currentData() == LayoutPosition.FULL_SCREEN
     assert dialog.seconds.value() == 30
     dialog.seconds.setValue(20)
     assert dialog.seconds.value() == 20
-    choose_layout("column")
+    choose_layout(ExportLayout.COLUMN)
     assert choices() == ["left", "right"]
     assert dialog.position.currentData() == LayoutPosition.RIGHT
-    choose_layout("orbit")
+    choose_layout(ExportLayout.ORBIT)
     assert set(choices()) == {"top_left", "top_right", "bottom_left", "bottom_right"}
     assert dialog.position.currentData() == LayoutPosition.TOP_RIGHT
     dialog.position.setCurrentIndex(dialog.position.findData("top_right"))
-    choose_layout("corners")
+    choose_layout(ExportLayout.CORNERS)
     assert dialog.position.currentData() == LayoutPosition.TOP_RIGHT
-    choose_layout("ribbon")
+    choose_layout(ExportLayout.RIBBON)
     dialog.position.setCurrentIndex(dialog.position.findData("bottom"))
-    assert dialog.preview_positions["orbit"] is LayoutPosition.BOTTOM_RIGHT
-    assert dialog.preview_positions["corners"] is LayoutPosition.BOTTOM_RIGHT
-    choose_layout("orbit")
+    assert dialog.preview_positions[ExportLayout.ORBIT] is LayoutPosition.BOTTOM_RIGHT
+    assert dialog.preview_positions[ExportLayout.CORNERS] is LayoutPosition.BOTTOM_RIGHT
+    choose_layout(ExportLayout.ORBIT)
     assert dialog.position.currentData() == LayoutPosition.BOTTOM_RIGHT
     dialog.position.setCurrentIndex(dialog.position.findData("top_right"))
-    choose_layout("corners")
+    choose_layout(ExportLayout.CORNERS)
     dialog.aspect.setCurrentIndex(1)
     assert dialog.position.currentData() == LayoutPosition.TOP_RIGHT
 
     original_plugins = registry.PLUGINS
-    plugin = registry.PLUGINS["corners"]
+    plugin = registry.PLUGINS[ExportLayout.CORNERS]
     portrait = LayoutPositions(
         regions={LayoutPosition.BOTTOM_LEFT: plugin.portrait.regions[LayoutPosition.BOTTOM_LEFT]},
         default=LayoutPosition.BOTTOM_LEFT,
@@ -151,7 +151,7 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     monkeypatch.setattr(
         registry,
         "PLUGINS",
-        {**registry.PLUGINS, "corners": replace(plugin, portrait=portrait)},
+        {**registry.PLUGINS, ExportLayout.CORNERS: replace(plugin, portrait=portrait)},
     )
     dialog.aspect.setCurrentIndex(0)
     dialog.aspect.setCurrentIndex(1)
@@ -353,7 +353,7 @@ def test_export_worker_progress_cancel_and_gui_recovery(
         from ride_forces_analyzer.rendering.model import ExportTimeline
 
         assert isinstance(args[0], ExportTimeline)
-        assert args[0].settings.layout == "orbit"
+        assert args[0].settings.layout == ExportLayout.ORBIT
         assert kwargs["render_jobs"] == window.preferences.render_jobs()
         started.set()
         cancelled = kwargs["cancelled"]
@@ -447,7 +447,7 @@ def test_stale_preview_is_discarded_after_fast_profile_changes(
     finally:
         release.set()
     wait_until(lambda: dialog.preview_result is not None)
-    assert calls == [("ribbon", 50), ("orbit", 30)]
+    assert calls == [(ExportLayout.RIBBON, 50), (ExportLayout.ORBIT, 30)]
     assert dialog.layout_profile.currentText() == "G-Orbit"
     assert "Preview: graph sample" in dialog.preview_caption.text()
     assert dialog.next.isEnabled() and dialog.worker is None
@@ -493,12 +493,12 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     dialog.queue.click()
     saved = dialog.store.batch("Weekend")
     assert len(saved.jobs) == 2
-    assert saved.jobs[0].preset.settings.layout == "orbit"
+    assert saved.jobs[0].preset.settings.layout == ExportLayout.ORBIT
     assert saved.jobs[0].preset.settings.fps == "60000/1001"
     assert saved.jobs[0].preset.settings.position is LayoutPosition.TOP_RIGHT
     assert saved.jobs[0].preset.smoothing_window == 3
     assert saved.jobs[0].preset.analysis_configuration is not None
-    assert saved.jobs[1].preset.settings.layout == "ribbon"
+    assert saved.jobs[1].preset.settings.layout == ExportLayout.RIBBON
     dialog.fps.setCurrentText("25")
     dialog.update_preset.click()
     assert dialog.store.batch("Weekend").jobs[1].preset.settings.fps == 50
@@ -537,7 +537,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     store.save_preset(
         SavedPreset(
             name="Ribbon",
-            settings=ExportSettings(layout="ribbon"),
+            settings=ExportSettings(layout=ExportLayout.RIBBON),
             analysis_configuration=source_app_configuration(),
             schema_version=1,
             smoothing_window=11,
@@ -547,7 +547,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     store.save_preset(
         SavedPreset(
             name="Orbit",
-            settings=ExportSettings(layout="orbit"),
+            settings=ExportSettings(layout=ExportLayout.ORBIT),
             analysis_configuration=source_app_configuration(),
             schema_version=1,
             smoothing_window=11,

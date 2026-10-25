@@ -1111,7 +1111,7 @@ class ExportDialog(QDialog):
     @Slot(int)
     def _layout_changed(self, index: int) -> None:
         self._refresh_positions()
-        if PROFILES[index][0] == "hud":
+        if PROFILES[index][0] == ExportLayout.HUD:
             self.seconds.setValue(30.0)
         self.flip_vertical.setChecked(True)
         self.flip_lateral.setChecked(False)

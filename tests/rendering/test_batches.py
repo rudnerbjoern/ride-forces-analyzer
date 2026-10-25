@@ -17,7 +17,12 @@ import pytest
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.rendering.batches import build_jobs, make_job, run_batches
 from ride_forces_analyzer.rendering.encoding import ExportCancelled
-from ride_forces_analyzer.rendering.model import VideoAspect, ExportSettings, ExportTimeline
+from ride_forces_analyzer.rendering.model import (
+    ExportLayout,
+    VideoAspect,
+    ExportSettings,
+    ExportTimeline,
+)
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 from ride_forces_analyzer.storage.export_models import BatchJob, SavedBatch, SavedPreset
 from ride_forces_analyzer.storage.exports import ExportStore, ExportStoreError
@@ -32,7 +37,7 @@ def preset(name: str = "Ribbon", window: int = 11) -> SavedPreset:
     )
     return SavedPreset(
         name=name,
-        settings=ExportSettings(layout="ribbon", prefer_gpu=False),
+        settings=ExportSettings(layout=ExportLayout.RIBBON, prefer_gpu=False),
         smoothing_window=window,
         analysis_configuration=configuration,
         schema_version=1,
@@ -98,9 +103,9 @@ def test_portrait_and_landscape_persistence(
 def test_hud_preset_round_trip_and_removed_layout_rejection() -> None:
     from pydantic import ValidationError
 
-    chosen = preset().model_copy(update={"settings": ExportSettings(layout="hud")})
+    chosen = preset().model_copy(update={"settings": ExportSettings(layout=ExportLayout.HUD)})
     saved = SavedPreset.model_validate_json(chosen.model_dump_json())
-    assert saved.settings.layout == "hud"
+    assert saved.settings.layout == ExportLayout.HUD
     assert saved.settings.dimensions == (1920, 1080)
     assert replace(saved.settings, aspect=VideoAspect.PORTRAIT).dimensions == (1080, 1920)
     assert saved.settings.position is LayoutPosition.FULL_SCREEN
@@ -127,6 +132,15 @@ def test_video_aspect_preserves_saved_codes_and_requires_enum_members(
     payload["settings"]["aspect"] = "square"
     with pytest.raises(ValidationError):
         SavedPreset.model_validate_json(json.dumps(payload))
+
+
+@pytest.mark.parametrize("layout", list(ExportLayout))
+def test_layout_members_preserve_saved_text_keys(layout: ExportLayout) -> None:
+    assert ExportLayout(layout.value) is layout
+    chosen = preset().model_copy(update={"settings": ExportSettings(layout=layout)})
+    payload = json.loads(chosen.model_dump_json())
+    assert payload["settings"]["layout"] == layout.value
+    assert SavedPreset.model_validate_json(json.dumps(payload)).settings.layout is layout
 
 
 def short_job(data: ExplorerData, chosen: SavedPreset | None = None) -> BatchJob:
@@ -212,7 +226,7 @@ def test_multiple_rides_cross_multiple_presets_and_custom_bounds(manta: Explorer
     )
     chosen = (
         preset(),
-        preset("Orbit").model_copy(update={"settings": ExportSettings(layout="orbit")}),
+        preset("Orbit").model_copy(update={"settings": ExportSettings(layout=ExportLayout.ORBIT)}),
     )
     jobs = build_jobs(paths, chosen, "entire")
     assert len(jobs) == 4
@@ -333,7 +347,7 @@ def test_saved_batch_reopens_and_exports_different_rides_and_formats(
     presets = (
         SavedPreset(
             name="Ribbon",
-            settings=ExportSettings(layout="ribbon", prefer_gpu=False),
+            settings=ExportSettings(layout=ExportLayout.RIBBON, prefer_gpu=False),
             analysis_configuration=source_app_configuration(),
             schema_version=1,
             smoothing_window=11,
@@ -341,7 +355,7 @@ def test_saved_batch_reopens_and_exports_different_rides_and_formats(
         ),
         SavedPreset(
             name="Orbit opaque",
-            settings=ExportSettings(layout="orbit", output="opaque", prefer_gpu=False),
+            settings=ExportSettings(layout=ExportLayout.ORBIT, output="opaque", prefer_gpu=False),
             analysis_configuration=source_app_configuration(),
             schema_version=1,
             smoothing_window=11,

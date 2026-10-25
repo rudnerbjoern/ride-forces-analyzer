@@ -170,7 +170,7 @@ def test_saved_language_roundtrip_is_explicit(
     assert manta.analysis is not None
     chosen = SavedPreset(
         name=language,
-        settings=ExportSettings(language=language, layout="orbit"),
+        settings=ExportSettings(language=language, layout=ExportLayout.ORBIT),
         analysis_configuration=source_app_configuration(),
         schema_version=1,
         smoothing_window=11,
@@ -228,17 +228,17 @@ def test_overlay_labels_fit_and_language_is_reproducible(
         value = timeline.value_at(channel, 3600)
         assert value is not None
         expected = tr(
-            "{0:.1f} {1}" if layout == "column" else "{0:+.1f} g",
+            "{0:.1f} {1}" if layout == ExportLayout.COLUMN else "{0:+.1f} g",
             value,
             "g",
             language=language,
         )
         assert str(expected) in texts
-    if layout == "column":
+    if layout == ExportLayout.COLUMN:
         angle = timeline.value_at(timeline.channels[3], 3600)
         assert angle is not None
         assert str(tr("{0:.2f} {1}", angle, "°", language=language)) in texts
-    if layout == "hud":
+    if layout == ExportLayout.HUD:
         assert not any("Neigung" in text or "Inclinaison" in text for text, _, _ in calls)
         context = timeline.context_at(3600)
         assert any(tr(context, language=language).upper() == text for text, _, _ in calls)
@@ -248,7 +248,7 @@ def test_overlay_labels_fit_and_language_is_reproducible(
         )
     assert not any("Hz" in text or "fps" in text for text, _, _ in calls)
     assert not any("G-ORBIT" in text for text, _, _ in calls)
-    if layout == "orbit":
+    if layout == ExportLayout.ORBIT:
         assert not any("Replay" in text or "Fahrtzeit" in text for text, _, _ in calls)
         assert not any(
             text

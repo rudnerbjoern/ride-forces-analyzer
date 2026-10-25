@@ -8,7 +8,7 @@ from fractions import Fraction
 from math import ceil
 
 from .layouts import export_region
-from .model import ExportSettings
+from .model import ExportLayout, ExportSettings
 
 # Bytes per pixel per frame: uniform canvas plus active overlay. These broad
 # planning assumptions are not calibrated against every recording or GPU.
@@ -48,7 +48,7 @@ def estimate_size_bytes(
         raise ValueError("A positive sample count and sample rate are required")
     frames = ceil(Fraction(sample_count) * settings.frame_rate / Fraction(str(sample_rate)))
     width, height = settings.dimensions
-    if settings.layout == "hud" and (settings.output == "opaque" or settings.prefer_gpu):
+    if settings.layout == ExportLayout.HUD and (settings.output == "opaque" or settings.prefer_gpu):
         low_rate, high_rate = HUD_H264 if settings.output == "opaque" else HUD_GPU_PRORES
         pixels = frames * width * height
         return ceil(pixels * low_rate), ceil(pixels * high_rate)

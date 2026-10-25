@@ -15,18 +15,18 @@ from ride_forces_analyzer.analysis.models import SampleValues
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, RecordingAnalysis
 from ride_forces_analyzer.i18n import Language
 from .layouts.contracts import LayoutPosition
+from .layouts.contracts import ExportLayout as ExportLayout
 from .layouts.contracts import VideoAspect as VideoAspect
 
 FrameRate = int | Literal["60000/1001"]
 EXPORT_FRAME_RATES: tuple[FrameRate, ...] = (24, 25, 30, 50, "60000/1001", 60)
 
-ExportLayout = Literal["column", "ribbon", "corners", "hud", "orbit"]
 PROFILES: tuple[tuple[ExportLayout, str], ...] = (
-    ("ribbon", "Flow Ribbon"),
-    ("corners", "Corner Instruments"),
-    ("hud", "HUD"),
-    ("orbit", "G-Orbit"),
-    ("column", "Four-panel column"),
+    (ExportLayout.RIBBON, "Flow Ribbon"),
+    (ExportLayout.CORNERS, "Corner Instruments"),
+    (ExportLayout.HUD, "HUD"),
+    (ExportLayout.ORBIT, "G-Orbit"),
+    (ExportLayout.COLUMN, "Four-panel column"),
 )
 
 
@@ -43,7 +43,7 @@ class ExportSettings:
             direction.
         invert_lateral: Whether the layout uses its supported lateral direction override.
         prefer_gpu: Whether encoding prefers a probed NVIDIA backend with CPU fallback.
-        layout: Stable key selecting the overlay renderer.
+        layout: ExportLayout member selecting the renderer; JSON retains its text key.
         aspect: VideoAspect member selecting the canvas; JSON retains its text value.
         language: Language member used for overlay text; saved JSON retains its text code.
         position: Requested source position or named layout placement, as declared by the
@@ -56,7 +56,7 @@ class ExportSettings:
     invert_vertical: bool = True
     invert_lateral: bool = True
     prefer_gpu: bool = True
-    layout: ExportLayout = "column"
+    layout: ExportLayout = ExportLayout.COLUMN
     aspect: VideoAspect = VideoAspect.LANDSCAPE
     language: Language = Language.ENGLISH
     position: LayoutPosition | None = None
@@ -68,7 +68,7 @@ class ExportSettings:
         Returns:
             The layout's output canvas width and height in pixels.
         """
-        if self.layout == "hud":
+        if self.layout == ExportLayout.HUD:
             from .layouts.hud import LANDSCAPE, PORTRAIT
 
             return (PORTRAIT if self.aspect is VideoAspect.PORTRAIT else LANDSCAPE).size
@@ -113,7 +113,7 @@ class ExportSettings:
             raise ValueError("Visible time window must be from 1 to 60 seconds")
         if self.output not in ("transparent", "opaque"):
             raise ValueError("Unknown export output mode")
-        if self.layout not in tuple(key for key, _ in PROFILES):
+        if type(self.layout) is not ExportLayout:
             raise ValueError("Unknown export layout")
         from .layouts.registry import export_region
 

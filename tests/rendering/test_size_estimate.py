@@ -5,14 +5,14 @@ from typing import Literal
 
 import pytest
 
-from ride_forces_analyzer.rendering.model import ExportSettings
+from ride_forces_analyzer.rendering.model import ExportLayout, ExportSettings
 from ride_forces_analyzer.rendering.size_estimate import estimate_size_bytes
 
 
-@pytest.mark.parametrize("layout", ["orbit", "hud"])
+@pytest.mark.parametrize("layout", [ExportLayout.ORBIT, ExportLayout.HUD])
 @pytest.mark.parametrize("prefer_gpu", [False, True])
 def test_estimate_scales_with_duration_and_frame_rate_and_distinguishes_codec(
-    layout: Literal["orbit", "hud"],
+    layout: Literal[ExportLayout.ORBIT, ExportLayout.HUD],
     prefer_gpu: bool,
 ) -> None:
     settings = ExportSettings(layout=layout, prefer_gpu=prefer_gpu)
@@ -46,7 +46,7 @@ def test_hud_estimate_tracks_measured_exports(
     measured_bytes: int,
     tolerance: float,
 ) -> None:
-    settings = ExportSettings(layout="hud", fps="60000/1001", output=output)
+    settings = ExportSettings(layout=ExportLayout.HUD, fps="60000/1001", output=output)
     low, high = estimate_size_bytes(settings, sample_count, 50)
     assert measured_bytes * (1 - tolerance) <= low < measured_bytes < high
     assert high <= measured_bytes * (1 + tolerance)

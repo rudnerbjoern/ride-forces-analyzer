@@ -18,7 +18,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from ride_forces_analyzer.airtime_colors import VERTICAL_CONTEXT_COLORS
 from ..peaks import PeakEnvelope
 from .common import Drawing
-from .contracts import VideoAspect, LayoutPlugin, LayoutPosition, LayoutPositions
+from .contracts import ExportLayout, VideoAspect, LayoutPlugin, LayoutPosition, LayoutPositions
 
 if TYPE_CHECKING:
     from ..model import ExportChannel, ExportTimeline
@@ -758,4 +758,4 @@ class HudRenderer(Drawing):
         return image
 
 
-PLUGIN = LayoutPlugin("hud", LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, HudRenderer)
+PLUGIN = LayoutPlugin(ExportLayout.HUD, LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, HudRenderer)
