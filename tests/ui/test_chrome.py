@@ -51,8 +51,13 @@ def test_native_captions_follow_theme_for_all_application_windows(
     view = route.findChild(QGraphicsView)
     assert view is not None
     dialogs = (
-        SettingsDialog(window.preferences, window, language=window.ui_language),
-        AboutDialog(window, window.updates),
+        SettingsDialog(
+            window.preferences,
+            window,
+            language=window.ui_language,
+            updates=window.updates,
+        ),
+        AboutDialog(window),
         export,
         batches,
         route,

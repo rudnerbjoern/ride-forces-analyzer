@@ -14,7 +14,6 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QLabel,
     QPushButton,
-    QSpinBox,
     QVBoxLayout,
     QWidget,
 )
@@ -25,6 +24,7 @@ from ride_forces_analyzer.rendering.model import EXPORT_FRAME_RATES, ExportSetti
 from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 from ride_forces_analyzer.storage.map_tiles import TileCache
 from .translation import bind, items
+from .updates import UpdateController
 
 APPEARANCE_CHOICES = tuple(Appearance)
 
@@ -42,22 +42,32 @@ class SettingsDialog(QDialog):
         restore_last_file: Checkbox controlling restore last file.
         clear_map_cache: Button for clear map cache.
         frame_rate: Choice control for frame rate.
-        render_jobs: Requested concurrent frame-renderer count, bounded by local CPU
-            availability.
+        render_jobs: Choice of concurrent frame renderers from one to the local CPU limit.
         buttons: Dialog action buttons.
+        check_updates: Button starting a manual update check.
+        automatic_updates: Checkbox enabling the daily startup check when settings are saved.
+        update_status: Label displaying update-check progress and results.
     """
 
     language_selected = Signal(int)
     appearance_selected = Signal(int)
     appearance_previewed = Signal(int)
 
-    def __init__(self, preferences: Preferences, parent: QWidget, *, language: Language) -> None:
+    def __init__(
+        self,
+        preferences: Preferences,
+        parent: QWidget,
+        *,
+        language: Language,
+        updates: UpdateController,
+    ) -> None:
         """Initialize settings dialog and its owned state.
 
         Args:
             preferences: Local application preference access.
             parent: Qt parent that owns this object's lifetime.
             language: Registered language used to translate presentation text and numbers.
+            updates: Existing update controller owned by the explorer window.
 
         Returns:
             None.
@@ -107,9 +117,11 @@ class SettingsDialog(QDialog):
         )
         explanation.setWordWrap(True)
         form.addRow(explanation)
-        self.render_jobs = QSpinBox()
-        self.render_jobs.setRange(1, render_job_limit())
-        self.render_jobs.setValue(preferences.render_jobs())
+        self.render_jobs = QComboBox()
+        items(self.render_jobs, [str(jobs) for jobs in range(1, render_job_limit() + 1)])
+        self.render_jobs.setCurrentIndex(
+            min(preferences.render_jobs(), self.render_jobs.count()) - 1,
+        )
         bind(self.render_jobs, tr("Parallel render jobs"), "accessibleName")
         bind(
             self.render_jobs,
@@ -120,12 +132,44 @@ class SettingsDialog(QDialog):
         )
         form.addRow(bind(QLabel(), tr("Parallel render jobs")), self.render_jobs)
         layout.addWidget(group)
+        update_group = bind(QGroupBox(), tr("Updates"), "title")
+        update_layout = QVBoxLayout(update_group)
+        self.automatic_updates = bind(
+            QCheckBox(),
+            tr("Check for updates at startup (once per day)"),
+        )
+        self.automatic_updates.setChecked(preferences.automatic_updates())
+        update_layout.addWidget(self.automatic_updates)
+        self.check_updates = bind(QPushButton(), tr("Check for updates…"))
+        self.check_updates.setEnabled(updates.worker is None)
+        self.check_updates.clicked.connect(lambda: updates.check(manual=True))
+        updates.busy_changed.connect(self.check_updates.setDisabled)
+        update_layout.addWidget(self.check_updates)
+        self.update_status = QLabel()
+        self.update_status.setTextFormat(Qt.TextFormat.PlainText)
+        self.update_status.setWordWrap(True)
+        self.update_status.hide()
+        updates.status_changed.connect(self._update_status)
+        update_layout.addWidget(self.update_status)
+        privacy = bind(
+            QLabel(),
+            tr("Optional GitHub connection. No recordings, GPS data or file paths are sent."),
+        )
+        privacy.setWordWrap(True)
+        update_layout.addWidget(privacy)
+        layout.addWidget(update_group)
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
         )
         self.buttons.accepted.connect(self.save)
         self.buttons.rejected.connect(self.reject)
         layout.addWidget(self.buttons)
+
+    @Slot(object)
+    def _update_status(self, message: object) -> None:
+        if isinstance(message, str):
+            bind(self.update_status, message)
+            self.update_status.setVisible(bool(message))
 
     def changeEvent(self, event: QEvent) -> None:
         """Refresh translated or themed controls after a Qt change event.
@@ -211,8 +255,9 @@ class SettingsDialog(QDialog):
             None.
         """
         self.preferences.remember_restore_last_file(self.restore_last_file.isChecked())
+        self.preferences.remember_automatic_updates(self.automatic_updates.isChecked())
         self.preferences.remember_export_fps(EXPORT_FRAME_RATES[self.frame_rate.currentIndex()])
-        self.preferences.remember_render_jobs(self.render_jobs.value())
+        self.preferences.remember_render_jobs(self.render_jobs.currentIndex() + 1)
         self.language_selected.emit(self.language.currentIndex())
         self.appearance_selected.emit(
             APPEARANCE_CHOICES.index(Appearance(self.appearance.currentData())),

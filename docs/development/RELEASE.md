@@ -83,8 +83,9 @@ See [GitHub's automatic release notes](https://docs.github.com/en/repositories/r
 
 ## In-application update discovery
 
-The About dialog offers a manual release check and an opt-in startup check
-(disabled by default). Startup checks run in a worker at most once per 24 hours;
+Settings → Updates offers the manual release check and the opt-in startup check
+(disabled by default). Save applies the startup preference; Cancel preserves it.
+Startup checks run in a worker at most once per 24 hours;
 attempts, including failures, are recorded in `preferences.sqlite3`. It also stores
 the opt-in and one skipped tag. Manual checks bypass the interval and skipped tag.
 Only published releases with an uploaded application download for the running

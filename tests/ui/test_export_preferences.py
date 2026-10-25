@@ -74,34 +74,41 @@ def test_settings_save_cancel_and_new_exports_keep_independent_frame_rates(
     assert dialog is not None and dialog.isVisible()
     assert dialog.windowTitle() == "Einstellungen"
     assert dialog.frame_rate.currentText() == "50"
-    assert dialog.render_jobs.value() == 1
-    jobs = min(2, dialog.render_jobs.maximum())
-    dialog.render_jobs.setValue(jobs)
+    assert dialog.render_jobs.currentText() == "1"
+    assert [dialog.render_jobs.itemText(index) for index in range(dialog.render_jobs.count())] == [
+        str(jobs) for jobs in range(1, dialog.render_jobs.count() + 1)
+    ]
+    jobs = min(2, dialog.render_jobs.count())
+    dialog.render_jobs.setCurrentIndex(jobs - 1)
     dialog.frame_rate.setCurrentText("59.94")
+    dialog.automatic_updates.setChecked(True)
     dialog.language.setCurrentIndex(0)
     dialog.appearance.setCurrentIndex(dialog.appearance.findData(Appearance.DARK.value))
     dialog.buttons.button(QDialogButtonBox.StandardButton.Cancel).click()
     assert window.ui_language == "de" and window.appearance_preference is Appearance.LIGHT
     assert window.preferences.export_fps() == 50
     assert window.preferences.render_jobs() == 1
+    assert not window.preferences.automatic_updates()
     wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
 
     window.settings_action.trigger()
     dialog = window.findChild(SettingsDialog, "settingsDialog")
     assert dialog is not None
     dialog.frame_rate.setCurrentText("59.94")
-    dialog.render_jobs.setValue(jobs)
+    dialog.automatic_updates.setChecked(True)
+    dialog.render_jobs.setCurrentIndex(jobs - 1)
     dialog.language.setCurrentIndex(0)
     dialog.appearance.setCurrentIndex(dialog.appearance.findData(Appearance.DARK.value))
     dialog.buttons.button(QDialogButtonBox.StandardButton.Save).click()
     assert window.ui_language == "en" and window.appearance_preference is Appearance.DARK
     assert Preferences(window.preferences.path).export_fps() == "60000/1001"
     assert Preferences(window.preferences.path).render_jobs() == jobs
+    assert Preferences(window.preferences.path).automatic_updates()
     wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
     window.settings_action.trigger()
     dialog = window.findChild(SettingsDialog, "settingsDialog")
     assert dialog is not None and dialog.frame_rate.currentText() == "59.94"
-    assert dialog.render_jobs.value() == jobs
+    assert dialog.render_jobs.currentText() == str(jobs)
     dialog.frame_rate.setCurrentText("23.976")
     dialog.buttons.button(QDialogButtonBox.StandardButton.Save).click()
     assert Preferences(window.preferences.path).export_fps() == "24000/1001"

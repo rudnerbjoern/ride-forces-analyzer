@@ -8,7 +8,6 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, Qt, QTimer, Signal, Slot
 from PySide6.QtWidgets import (
-    QCheckBox,
     QApplication,
     QDialog,
     QFrame,
@@ -27,7 +26,6 @@ from ride_forces_analyzer.error_reporting import record_error
 
 from .translation import bind
 from .chrome import app_icon
-from .updates import UpdateController
 
 
 class _DiagnosticSignals(QObject):
@@ -75,20 +73,16 @@ class AboutDialog(QDialog):
     """About dialog contract and owned data.
 
     Attributes:
-        automatic_updates: Checkbox controlling automatic updates.
-        check_updates: Button for check updates.
-        update_status: Label displaying update status.
         diagnostic_worker: Background worker collecting diagnostic information.
         copy_diagnostics: Button for copy diagnostics.
         copy_reset: Timer scheduling copy reset.
     """
 
-    def __init__(self, parent: QWidget, updates: UpdateController) -> None:
+    def __init__(self, parent: QWidget) -> None:
         """Initialize about dialog and its owned state.
 
         Args:
             parent: Qt parent that owns this object's lifetime.
-            updates: Update-check service used by this window.
 
         Returns:
             None.
@@ -96,7 +90,7 @@ class AboutDialog(QDialog):
         super().__init__(parent)
         self.setObjectName("aboutDialog")
         bind(self, tr("About Ride Forces Analyzer"), "windowTitle")
-        self.resize(660, 520)
+        self.resize(660, 360)
         self.setStyleSheet(
             "QLabel#aboutTitle { font-size: 22px; font-weight: 600; }"
             "QLabel#aboutFinePrint { font-size: 8pt; }",
@@ -148,40 +142,6 @@ class AboutDialog(QDialog):
         links.setWordWrap(True)
         links.setOpenExternalLinks(True)
         content.addWidget(links)
-        separator = QFrame()
-        separator.setFrameShape(QFrame.Shape.HLine)
-        content.addWidget(separator)
-        heading = bind(QLabel(), tr("Updates"))
-        heading.setObjectName("SectionTitle")
-        content.addWidget(heading)
-        self.automatic_updates = bind(
-            QCheckBox(),
-            tr("Check for updates at startup (once per day)"),
-        )
-        self.automatic_updates.setChecked(updates.preferences.automatic_updates())
-        self.automatic_updates.toggled.connect(updates.preferences.remember_automatic_updates)
-        content.addWidget(self.automatic_updates)
-        privacy = bind(
-            QLabel(),
-            tr("Optional GitHub connection. No recordings, GPS data or file paths are sent."),
-        )
-        privacy.setWordWrap(True)
-        self.check_updates = bind(QPushButton(), tr("Check for updates…"))
-        self.check_updates.setEnabled(updates.worker is None)
-        self.check_updates.clicked.connect(lambda: updates.check(manual=True))
-        updates.busy_changed.connect(self.check_updates.setDisabled)
-        update_actions = QHBoxLayout()
-        update_actions.addWidget(self.check_updates)
-        update_actions.addStretch()
-        content.addLayout(update_actions)
-        self.update_status = QLabel()
-        self.update_status.setTextFormat(Qt.TextFormat.PlainText)
-        self.update_status.setWordWrap(True)
-        self.update_status.hide()
-        updates.status_changed.connect(self._update_status)
-        content.addWidget(self.update_status)
-        privacy.setObjectName("aboutFinePrint")
-        content.addWidget(privacy)
         separator = QFrame()
         separator.setFrameShape(QFrame.Shape.HLine)
         content.addWidget(separator)
@@ -242,8 +202,3 @@ class AboutDialog(QDialog):
     @Slot()
     def _reset_copy_label(self) -> None:
         bind(self.copy_diagnostics, tr("Copy diagnostic information"))
-
-    def _update_status(self, message: object) -> None:
-        if isinstance(message, str):
-            bind(self.update_status, message)
-            self.update_status.setVisible(bool(message))

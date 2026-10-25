@@ -1299,7 +1299,12 @@ class ExplorerWindow(QMainWindow):
             None.
         """
         previous_appearance = APPEARANCE_CHOICES.index(self.appearance_preference)
-        dialog = SettingsDialog(self.preferences, self, language=self.ui_language)
+        dialog = SettingsDialog(
+            self.preferences,
+            self,
+            language=self.ui_language,
+            updates=self.updates,
+        )
         dialog.language_selected.connect(self.set_ui_language)
         dialog.appearance_previewed.connect(self._preview_appearance)
         dialog.rejected.connect(lambda: self._preview_appearance(previous_appearance))
@@ -1315,7 +1320,7 @@ class ExplorerWindow(QMainWindow):
         """
         dialog = self.findChild(AboutDialog, "aboutDialog")
         if dialog is None:
-            dialog = AboutDialog(self, self.updates)
+            dialog = AboutDialog(self)
         dialog.show()
         dialog.raise_()
         dialog.activateWindow()
