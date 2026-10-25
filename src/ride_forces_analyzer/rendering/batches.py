@@ -4,6 +4,8 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
+from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
+
 from collections.abc import Callable, Sequence
 from datetime import datetime, UTC
 from dataclasses import replace
@@ -211,8 +213,7 @@ def run_batches(
     *,
     ffmpeg: Path | None = None,
     cancelled: Event | None = None,
-    progress: Callable[[int, int, int, int, str], None] | None = None,
-    status: Callable[[str], None] | None = None,
+    progress: Callable[[int, int, ExportProgress | None, str], None] | None = None,
     render_jobs: int = 1,
 ) -> BatchReport:
     """Run saved video jobs sequentially and retain a report and completed outputs.
@@ -222,9 +223,8 @@ def run_batches(
         output_directory: Directory receiving completed outputs.
         ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
         cancelled: Cancellation event checked during the operation.
-        progress: Optional callback receiving job index, job count, completed frames,
-            total frames and status text.
-        status: Optional callback receiving the current processing status.
+        progress: Callback receiving job index/count, export status and label. None status
+            marks a settled job, including failure, without fabricating frame progress.
         render_jobs: Requested concurrent frame-renderer count, bounded by local CPU
             availability.
 
@@ -266,8 +266,8 @@ def run_batches(
                 )
             else:
                 try:
-                    if status:
-                        status(f"Job {ordinal}/{total}: {label}")
+                    if progress:
+                        progress(ordinal, total, ExportProgress(ExportPhase.PREPARING), label)
                     analysis = _load_analysis(
                         job.recording_path,
                         job.preset.analysis_configuration,
@@ -289,9 +289,9 @@ def run_batches(
                         / f"{job_number:03d}-{_safe_name(job.ride)}--{_safe_name(job.preset.name)}{suffix}"
                     )
 
-                    def on_progress(frame: int, frames: int) -> None:
+                    def on_progress(update: ExportProgress) -> None:
                         if progress:
-                            progress(ordinal, total, frame, frames, label)
+                            progress(ordinal, total, update, label)
 
                     export_video(
                         timeline,
@@ -299,7 +299,6 @@ def run_batches(
                         ffmpeg=ffmpeg,
                         cancelled=cancel,
                         progress=on_progress,
-                        status=status,
                         render_jobs=render_jobs,
                     )
                     result = JobResult(**common, status="completed", output=target)
@@ -317,5 +316,5 @@ def run_batches(
                 encoding="utf-8",
             )
             if progress and not cancel.is_set():
-                progress(ordinal, total, 1, 1, label)
+                progress(ordinal, total, None, label)
     return BatchReport(directory=directory, results=tuple(results))

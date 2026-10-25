@@ -236,12 +236,19 @@ encoding; presets and compact layout thumbnails remain directly accessible.
 
 ### Estimates and progress
 
-| Estimate             | Contract and limits                                                                                                                      |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| File size            | Live approximate MiB range in settings/review, using rounded frame count, canvas/overlay area and codec; no FFmpeg or trial rendering    |
-| Size uncertainty     | HUD H.264 and GPU-preferred ProRes use measured references; other combinations use a generic heuristic. Neither guarantees bounds        |
-| Remaining frame time | Single-video export, 2 s timer; elapsed monotonic time per submitted frame × pending count; min:sec, including startup overhead          |
-| ETA states           | Estimating before first frame; finalization after last frame has no predicted duration; cancel/failure/completion clears ETA             |
+| Estimate             | Contract and limits                                                                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| File size            | Live approximate MiB range in settings/review, using rounded frame count, canvas/overlay area and codec; no FFmpeg or trial rendering           |
+| Size uncertainty     | HUD H.264 and GPU-preferred ProRes use measured references; other combinations use a generic heuristic. Neither guarantees bounds               |
+| Remaining frame time | Single and batch exports share `ExportProgress`; monotonic elapsed time per submitted frame × pending count; min:sec, including encoder startup |
+| ETA states           | Estimating before first frame; finalization after last frame has no predicted duration; cancel/failure/completion clears ETA                    |
+
+`export_video` emits immutable `ExportProgress` snapshots through its callback:
+preparing, rendering, finalizing and completed. They carry submitted/total frame
+counts, monotonic elapsed time, the actual CPU/GPU backend and a shared
+remaining-frame estimate. Completion follows successful file publication. Frame
+counts measure input submitted to FFmpeg, not encoded output. Qt workers transport
+these snapshots; neither dialog owns a clock or estimates throughput.
 
 The owner-provided HUD references use 1920×1080 and 60000/1001 fps:
 

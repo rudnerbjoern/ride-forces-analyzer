@@ -102,7 +102,10 @@ depends on calibration and smoothing; they are not a measurement of what a rider
 2. Click **Review export →**. Check the settings and estimated file size on the left
    and the large preview on the right. Use **Back** to change the layout or settings.
 3. Click **Export video…**, choose a destination and file name, then save.
-4. Wait for the export to finish. You can follow its progress or cancel it.
+4. Wait for the export to finish. The progress bar counts frames passed to the
+   encoder; the remaining time estimates pending frames. **Finalizing video…**
+   means the encoder is finishing the file, with no duration estimate. You can
+   cancel the export.
 
 The suggested file name includes the recording name and chosen overlay, for
 example `Manta - HUD.mov`.

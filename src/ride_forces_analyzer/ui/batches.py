@@ -34,6 +34,8 @@ from PySide6.QtWidgets import (
 
 from ride_forces_analyzer.rendering.batches import BatchReport, build_jobs, run_batches
 from ride_forces_analyzer.rendering.encoding import find_ffmpeg
+from ride_forces_analyzer.rendering.progress import ExportProgress
+from .export_progress import show_export_progress
 from ride_forces_analyzer.storage.export_models import SavedBatch, SavedPreset, RangeMode
 from ride_forces_analyzer.storage.exports import ExportStore, ExportStoreError
 from ride_forces_analyzer.storage.preferences import Preferences
@@ -45,14 +47,12 @@ class BatchSignals(QObject):
     Attributes:
         finished: Qt signal for finished notifications.
         failed: Qt signal for failed notifications.
-        status: Qt signal for status notifications.
         progress: Qt signal for progress notifications.
     """
 
     finished = Signal(object)
     failed = Signal(str)
-    status = Signal(str)
-    progress = Signal(int, int, int, int, str)
+    progress = Signal(int, int, object, str)
 
 
 class BuildWorker(QRunnable):
@@ -162,7 +162,6 @@ class BatchWorker(QRunnable):
                 ffmpeg=self.ffmpeg,
                 cancelled=self.cancelled,
                 progress=self.signals.progress.emit,
-                status=self.signals.status.emit,
                 render_jobs=self.render_jobs,
             )
         except Exception as error:
@@ -192,7 +191,9 @@ class BatchDialog(QDialog):
         encoder: Text input for encoder.
         browse: Button for browse.
         current_job: Label displaying current job.
-        progress: Progress display for progress.
+        progress: Overall equally weighted job progress.
+        export_progress: Submitted-frame progress of the current video.
+        eta: Remaining-frame estimate for the current video.
         status: Label displaying status.
         run_selected: Button for run selected.
         run_all: Button for run all.
@@ -298,8 +299,15 @@ class BatchDialog(QDialog):
         self.current_job.setWordWrap(True)
         self.current_job.setTextFormat(Qt.TextFormat.PlainText)
         root.addWidget(self.current_job)
+        root.addWidget(bind(QLabel(), tr("Overall batch")))
         self.progress = QProgressBar()
         root.addWidget(self.progress)
+        root.addWidget(bind(QLabel(), tr("Current export")))
+        self.export_progress = QProgressBar()
+        root.addWidget(self.export_progress)
+        self.eta = QLabel()
+        self.eta.setWordWrap(True)
+        root.addWidget(self.eta)
         self.status = bind(
             QLabel(),
             tr(
@@ -411,10 +419,6 @@ class BatchDialog(QDialog):
             self._show_batch(
                 self.batch_list.currentItem().text() if self.batch_list.currentRow() >= 0 else "",
             )
-
-    @Slot(str)
-    def _status_message(self, message: str) -> None:
-        bind(self.status, tr(message))
 
     @Slot()
     def _new(self) -> None:
@@ -545,12 +549,14 @@ class BatchDialog(QDialog):
                 render_jobs=Preferences().render_jobs(),
             )
             worker.signals.progress.connect(self._progress)
-            worker.signals.status.connect(self._status_message)
             worker.signals.finished.connect(self._finished)
             worker.signals.failed.connect(self._failed)
             self.worker = worker
             self.last_report = None
             self.progress.setValue(0)
+            self.export_progress.setValue(0)
+            self.export_progress.setFormat("%p%")
+            bind(self.eta, "", "text")
             self._busy(True)
             bind(self.close_button, tr("Cancel remaining exports"), "text")
             QThreadPool.globalInstance().start(worker)
@@ -562,13 +568,27 @@ class BatchDialog(QDialog):
         for control in self.controls:
             control.setEnabled(not busy)
 
-    @Slot(int, int, int, int, str)
-    def _progress(self, job: int, total: int, frame: int, frames: int, label: str) -> None:
-        self.progress.setValue(int(((job - 1) + frame / max(1, frames)) / total * 100))
+    @Slot(int, int, object, str)
+    def _progress(
+        self,
+        job: int,
+        total: int,
+        update: ExportProgress | None,
+        label: str,
+    ) -> None:
+        if self.worker is None or self.worker.cancelled.is_set():
+            return
+        fraction = 1.0 if update is None else update.percent / 100
+        self.progress.setValue(int(((job - 1) + fraction) / total * 100))
         bind(self.current_job, tr("Job {0}/{1}: {2}", job, total, label), "text")
+        if update is not None:
+            show_export_progress(update, self.export_progress, self.status, self.eta)
+        else:
+            bind(self.eta, "", "text")
 
     @Slot(object)
     def _finished(self, result: object) -> None:
+        bind(self.eta, "", "text")
         self.worker = None
         self._busy(False)
         bind(self.close_button, tr("Close"), "text")
@@ -591,6 +611,7 @@ class BatchDialog(QDialog):
 
     @Slot(str)
     def _failed(self, message: str) -> None:
+        bind(self.eta, "", "text")
         self.worker = None
         self.builder = None
         self._busy(False)
@@ -601,6 +622,7 @@ class BatchDialog(QDialog):
     def _close_or_cancel(self) -> None:
         if self.worker is not None:
             self.worker.cancelled.set()
+            bind(self.eta, "", "text")
             bind(self.status, tr("Cancelling current job; completed exports remain saved."), "text")
         else:
             self.close()

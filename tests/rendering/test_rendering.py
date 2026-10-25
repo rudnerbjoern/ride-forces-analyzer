@@ -20,6 +20,7 @@ from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.rendering.encoding import ExportCancelled, encoder_command, export_video
 from ride_forces_analyzer.rendering.frames import COLUMN_X, WIDTH, OverlayRenderer
 from ride_forces_analyzer.i18n import Language
+from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.rendering.model import (
     VideoOutput,
     FrameRate,
@@ -214,7 +215,7 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
     )
     timeline = prepare_export(manta.analysis, settings, 3600, 3603)
     output = export_directory / ("overlay.mov" if mode == VideoOutput.TRANSPARENT else "opaque.mp4")
-    progress: list[tuple[int, int]] = []
+    progress: list[ExportProgress] = []
     with patch(
         "ride_forces_analyzer.rendering.encoding.subprocess.Popen",
         wraps=subprocess.Popen,
@@ -223,12 +224,16 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
             timeline,
             output,
             ffmpeg=ffmpeg,
-            progress=lambda a, b: progress.append((a, b)),
+            progress=progress.append,
             render_jobs=2 if layout == ExportLayout.HUD else 1,
         )
     # One encoder process, plus the optional GPU capability probe.
     assert processes.call_count == 1 + int(prefer_gpu)
-    assert progress[-1] == (timeline.frame_count, timeline.frame_count)
+    assert progress[0].phase is ExportPhase.PREPARING
+    assert progress[-2].phase is ExportPhase.FINALIZING
+    assert progress[-1].phase is ExportPhase.COMPLETED
+    assert progress[-1].completed_frames == timeline.frame_count
+    assert progress[-1].total_frames == timeline.frame_count
     probe = subprocess.run(
         [
             str(ffmpeg.with_name("ffprobe.exe")),
@@ -321,8 +326,9 @@ def test_cancel_during_real_encoding_leaves_no_output(
     timeline = prepare_export(manta.analysis, ExportSettings(prefer_gpu=False), 3600, 3699)
     cancelled = Event()
 
-    def cancel_after_frame(current: int, total: int) -> None:
-        cancelled.set()
+    def cancel_after_frame(update: ExportProgress) -> None:
+        if update.completed_frames:
+            cancelled.set()
 
     output = export_directory / "cancel.mov"
     with pytest.raises(ExportCancelled):

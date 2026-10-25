@@ -4,6 +4,7 @@ from ride_forces_analyzer.analysis.recording import source_app_configuration
 
 # cspell:words Xnotes
 
+from collections.abc import Callable
 from dataclasses import replace
 from contextlib import closing
 from pathlib import Path
@@ -17,6 +18,7 @@ import pytest
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.rendering.batches import build_jobs, make_job, run_batches
 from ride_forces_analyzer.rendering.encoding import ExportCancelled
+from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.rendering.model import (
     VideoOutput,
     FrameRate,
@@ -291,7 +293,11 @@ def test_batch_continues_after_changed_recording_and_preserves_outputs(
 
     def fake_export(timeline: ExportTimeline, target: Path, **kwargs: object) -> Path:
         calls.append(target)
+        callback = cast(Callable[[ExportProgress], None], kwargs["progress"])
+        callback(ExportProgress(ExportPhase.RENDERING, 1, 2, 10, True))
+        callback(ExportProgress(ExportPhase.FINALIZING, 2, 2, 20, True))
         target.write_bytes(b"completed")
+        callback(ExportProgress(ExportPhase.COMPLETED, 2, 2, 20, True))
         assert timeline.smoothing_window == 3
         return target
 
@@ -305,7 +311,21 @@ def test_batch_continues_after_changed_recording_and_preserves_outputs(
         SavedBatch(name="A", jobs=(job, changed, missing), schema_version=1),
         SavedBatch(name="B", jobs=(job,), schema_version=1),
     )
-    result = run_batches(saved, export_directory)
+    updates: list[tuple[int, ExportProgress | None]] = []
+    result = run_batches(
+        saved,
+        export_directory,
+        progress=lambda job, total, update, label: updates.append((job, update)),
+    )
+    assert [job for job, update in updates if update is None] == [1, 2, 3, 4]
+    for job_index in range(1, 5):
+        events = [update for job, update in updates if job == job_index and update is not None]
+        assert events[0] == ExportProgress(ExportPhase.PREPARING)
+        if job_index in (1, 4):
+            assert [event.phase for event in events] == list(ExportPhase)
+            assert events[1].remaining_seconds == 10 and events[1].use_gpu is True
+        else:
+            assert len(events) == 1
     assert [item.status for item in result.results] == [
         "completed",
         "failed",

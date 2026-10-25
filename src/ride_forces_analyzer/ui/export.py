@@ -15,7 +15,6 @@ from typing import cast
 from dataclasses import replace
 from functools import partial
 from threading import Event
-from time import monotonic
 
 from PySide6.QtCore import (
     QEvent,
@@ -55,7 +54,8 @@ from PIL import Image
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering.encoding import ExportCancelled, export_video, find_ffmpeg
-from ride_forces_analyzer.rendering.progress import remaining_seconds
+from ride_forces_analyzer.rendering.progress import ExportProgress
+from .export_progress import show_export_progress
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.rendering.model import (
     VideoOutput,
@@ -234,14 +234,12 @@ class ExportSignals(QObject):
         progress: Qt signal for progress notifications.
         finished: Qt signal for finished notifications.
         failed: Qt signal for failed notifications.
-        status: Qt signal for status notifications.
     """
 
     saved = Signal(str)
-    progress = Signal(int, int)
+    progress = Signal(object)
     finished = Signal(str)
     failed = Signal(str)
-    status = Signal(str)
 
 
 class ExportWorker(QRunnable):
@@ -307,7 +305,6 @@ class ExportWorker(QRunnable):
                 ffmpeg=self.ffmpeg,
                 cancelled=self.cancelled,
                 progress=self.signals.progress.emit,
-                status=self.signals.status.emit,
                 render_jobs=self.render_jobs,
                 overwrite=self.overwrite,
             )
@@ -376,10 +373,6 @@ class ExportDialog(QDialog):
         progress: Progress display for progress.
         status: Label displaying status.
         eta: Label displaying eta.
-        eta_timer: Timer scheduling eta timer.
-        _export_started: Monotonic time at which export began.
-        _completed_frames: Number of frames reported complete by the encoder.
-        _total_frames: Total output frame count used for progress reporting.
         back: Button for back.
         next: Button for next.
         start: Button for start.
@@ -685,12 +678,6 @@ class ExportDialog(QDialog):
         self.status = bind(QLabel(), tr("Ready. Original recording remains unchanged."))
         self.eta = QLabel()
         self.eta.setWordWrap(True)
-        self.eta_timer = QTimer(self)
-        self.eta_timer.setInterval(2000)
-        self.eta_timer.timeout.connect(self._update_eta)
-        self._export_started = 0.0
-        self._completed_frames = 0
-        self._total_frames = 0
         self.status.setWordWrap(True)
         self.status.setTextFormat(Qt.TextFormat.PlainText)
         status_row = QHBoxLayout()
@@ -1200,16 +1187,11 @@ class ExportDialog(QDialog):
             overwrite=Path(filename).exists(),
         )
         worker.signals.progress.connect(self._progress)
-        worker.signals.status.connect(self._status_message)
         worker.signals.finished.connect(self._finished)
         worker.signals.failed.connect(self._finished)
         worker.signals.saved.connect(self._export_saved)
         self.worker = worker
-        self._export_started = monotonic()
-        self._completed_frames = 0
-        self._total_frames = timeline.frame_count
-        self._update_eta()
-        self.eta_timer.start()
+        bind(self.eta, tr("Remaining frame time: estimating…"), "text")
         self.progress.setValue(0)
         self.progress.show()
         for control in self.controls:
@@ -1224,43 +1206,13 @@ class ExportDialog(QDialog):
     def _export_saved(self, path: str) -> None:
         self.preferences.remember_export(Path(path))
 
-    @Slot(str)
-    def _status_message(self, message: str) -> None:
-        bind(self.status, tr(message))
-
-    @Slot(int, int)
-    def _progress(self, current: int, total: int) -> None:
-        self._completed_frames, self._total_frames = current, total
-        self.progress.setValue(current * 100 // total)
-        if current == total:
-            bind(self.status, tr("Finalizing video…"), "text")
-            self._update_eta()
-
-    @Slot()
-    def _update_eta(self) -> None:
-        if self._total_frames > 0 and self._completed_frames >= self._total_frames:
-            bind(self.eta, tr("Frames complete · finalizing video…"))
-            return
-        seconds = remaining_seconds(
-            monotonic() - self._export_started,
-            self._completed_frames,
-            self._total_frames,
-        )
-        if seconds is None:
-            bind(self.eta, tr("Remaining frame time: estimating…"))
-        else:
-            bind(
-                self.eta,
-                tr(
-                    "Remaining frame time: about {0}:{1:02d} (min:sec)",
-                    seconds // 60,
-                    seconds % 60,
-                ),
-            )
+    @Slot(object)
+    def _progress(self, update: ExportProgress) -> None:
+        if self.worker is not None and not self.worker.cancelled.is_set():
+            show_export_progress(update, self.progress, self.status, self.eta)
 
     @Slot(str)
     def _finished(self, message: str) -> None:
-        self.eta_timer.stop()
         bind(self.eta, "")
         self.worker = None
         for control in self.controls:
@@ -1276,7 +1228,6 @@ class ExportDialog(QDialog):
     def _cancel(self) -> None:
         if self.worker is not None:
             self.worker.cancelled.set()
-            self.eta_timer.stop()
             bind(self.eta, "")
             bind(self.status, tr("Cancelling export…"), "text")
         else:

@@ -67,7 +67,10 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
 - Each run creates a unique output directory, numbered batch folders and safe,
   numbered recording/preset filenames. Never overwrite earlier outputs.
 - Incrementally persist completed/failed/cancelled/skipped job states in `run-report.json`.
-  Progress distinguishes current job and final result counts.
+  Progress wraps the shared `ExportProgress` with job index/count and label.
+  Separate bars show the equally weighted overall queue and the current video's
+  submitted frames. A new job resets video progress and its estimate; settled jobs,
+  including failures, advance the queue without fabricating frame counts.
 - Cancellation stops the active encode and skips remaining jobs; remove incomplete
   output, preserve completed videos. Parent close/Escape cannot abandon an active export.
 - Definitions survive restart, without embedded sensor data or automatic relocated-file

@@ -1,6 +1,7 @@
 """Native export-dialog interaction and background worker lifecycle."""
 
 from ride_forces_analyzer.rendering.model import ExportLayout, VideoAspect
+from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.analysis.recording import source_app_configuration
 
 # cspell:words getpixel
@@ -346,8 +347,6 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     wait_until(lambda: dialog.preview_result is not None)
     dialog.next.click()
     started = Event()
-    clock = 0.0
-    monkeypatch.setattr(ui_export, "monotonic", lambda: clock)
 
     def fake_export(*args: object, **kwargs: object) -> Path:
         from ride_forces_analyzer.rendering.model import ExportTimeline
@@ -376,12 +375,10 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     wait_until(started.is_set)
     assert isinstance(dialog.worker, ExportWorker)
     assert not dialog.start.isEnabled()
-    clock = 10.0
-    dialog.worker.signals.progress.emit(100, 1000)
+    dialog.worker.signals.progress.emit(ExportProgress(ExportPhase.RENDERING, 100, 1000, 10))
     wait_until(lambda: dialog.progress.value() == 10)
-    assert dialog.eta_timer.interval() == 2000
     wait_until(lambda: "1:30" in dialog.eta.text())
-    dialog.worker.signals.progress.emit(1000, 1000)
+    dialog.worker.signals.progress.emit(ExportProgress(ExportPhase.FINALIZING, 1000, 1000, 100))
     wait_until(lambda: dialog.eta.text() == "Frames complete · finalizing video…")
     dialog.reject()
     assert dialog.isVisible()
@@ -390,7 +387,7 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     QThreadPool.globalInstance().waitForDone()
     assert dialog.start.isEnabled()
     assert "cancelled" in dialog.status.text()
-    assert not dialog.eta_timer.isActive() and dialog.eta.text() == ""
+    assert dialog.eta.text() == ""
     dialog.close()
 
 
@@ -614,13 +611,40 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     wait_until(started.is_set)
     assert names == ["Day1", "Day2"]
     assert dialog.worker is not None
-    dialog.worker.signals.progress.emit(1, 5, 1, 2, "Day1 · Manta · Orbit")
+    dialog.worker.signals.progress.emit(
+        1,
+        5,
+        ExportProgress(ExportPhase.RENDERING, 1, 2, 10),
+        "Day1 · Manta · Orbit",
+    )
     wait_until(lambda: dialog.progress.value() == 10)
     assert "Manta" in dialog.current_job.text()
+    assert dialog.export_progress.value() == 50
+    assert "0:10" in dialog.eta.text()
+    dialog.worker.signals.progress.emit(
+        1,
+        5,
+        ExportProgress(ExportPhase.FINALIZING, 2, 2, 20),
+        "Day1 · Manta · Orbit",
+    )
+    wait_until(lambda: "finalizing" in dialog.eta.text())
+    dialog.worker.signals.progress.emit(1, 5, None, "Day1 · Manta · Orbit")
+    wait_until(lambda: dialog.progress.value() == 20)
+    assert dialog.eta.text() == ""
+    dialog.worker.signals.progress.emit(
+        2,
+        5,
+        ExportProgress(ExportPhase.PREPARING),
+        "Day1 · Kraken · Orbit",
+    )
+    wait_until(lambda: dialog.export_progress.value() == 0)
+    assert dialog.progress.value() == 20
+    assert "estimating" in dialog.eta.text()
     assert not window.close()
     wait_until(lambda: dialog.worker is None)
     assert dialog.last_report is not None and len(dialog.last_report.results) == 5
     assert "5 cancelled" in dialog.status.text()
+    assert dialog.eta.text() == ""
     assert len(store.batch("Day1").jobs) == 4
     dialog.table.selectAll()
     dialog.remove.click()

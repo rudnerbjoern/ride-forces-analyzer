@@ -126,7 +126,9 @@ prepares deterministic source-time peak envelopes for HUD and G-Orbit.
 
 `parallel` uses one serial renderer or independent thread-owned renderers, images
 and fonts. Only the immutable timeline is shared. `encoding` probes backends,
-streams ordered region bytes and publishes completed output. `ui.export` owns
+streams ordered region bytes and publishes completed output. `progress` defines
+immutable export status, phases and remaining-frame estimates shared by both
+export paths; Qt workers transport them to the dialogs. `ui.export` owns
 assistant controls, debounced preview transport and cancellation.
 
 `storage.export_models` defines immutable presets/jobs; `storage.exports` owns
