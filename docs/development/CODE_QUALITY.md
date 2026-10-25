@@ -92,7 +92,7 @@ Source smoke checks do not replace [frozen-package qualification](RELEASE.md#win
 
 Locked `coverage.py`/`pytest-cov` measure lines and branches throughout `analysis`,
 `validation`, `storage`, `i18n`, `formatting`, `playback` and
-`runtime.error_reporting`. `[tool.coverage.*]` in `pyproject.toml` owns configuration.
+`runtime`. `[tool.coverage.*]` in `pyproject.toml` owns configuration.
 Subprocess measurement includes isolated error-report lifecycle and exception-hook tests. Collection selects the declared sources without importing modules for discovery. Run from the repository root on native Windows:
 
 ```powershell
@@ -101,7 +101,7 @@ uv run --locked pytest --cov --cov-report=term-missing `
     tests/rendering/test_batches.py tests/rendering/test_analysis_snapshots.py `
     tests/updates/test_releases.py tests/localization `
     tests/explorer/test_data.py::test_replay_sample_counter_format tests/playback `
-    tests/support/test_error_reporting.py
+    tests/support tests/tooling/test_runtime_paths.py tests/tooling/test_settings.py
 uv run --locked coverage html
 uv run --locked coverage json
 ```
@@ -124,8 +124,11 @@ Localization coverage includes both translation catalogs, deferred text renderin
 language selection, numeric formatting and diagnostic fallbacks. Shared replay-time
 formatting covers sample counters, negative offsets and fractional sample rates.
 Playback coverage checks the clock, speed changes, seeking, pause/resume and
-recording boundaries independently of Qt. Error-report coverage includes process
-ownership, exception forwarding, cleanup and unavailable report storage/handlers.
+recording boundaries independently of Qt. Runtime coverage includes bootstrap
+settings, platform paths, CPU topology, support diagnostics, bounded release lookup,
+instance locking and local-socket requests, exception forwarding and report cleanup.
+Platform fallback branches use controlled test doubles on Windows; they do not
+replace native Linux/macOS package qualification.
 Behavior tests establish contracts; coverage percentage does not qualify physical
 interpretation or UI integration. Cover new branches without weakening the gate.
 

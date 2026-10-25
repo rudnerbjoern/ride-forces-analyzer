@@ -56,7 +56,7 @@ source = [
     "src/ride_forces_analyzer/i18n",
     "src/ride_forces_analyzer/formatting",
     "src/ride_forces_analyzer/playback",
-    "ride_forces_analyzer.runtime.error_reporting",
+    "src/ride_forces_analyzer/runtime",
 ]
 data_file = ".tmp/coverage/analysis/.coverage"
 
@@ -68,7 +68,7 @@ include = [
     "src/ride_forces_analyzer/i18n/*.py",
     "src/ride_forces_analyzer/formatting/*.py",
     "src/ride_forces_analyzer/playback/*.py",
-    "src/ride_forces_analyzer/runtime/error_reporting.py",
+    "src/ride_forces_analyzer/runtime/*.py",
 ]
 fail_under = 100
 show_missing = true

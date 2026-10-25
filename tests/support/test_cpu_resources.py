@@ -143,3 +143,17 @@ def test_unavailable_cpu_information_is_reported_as_unknown(
         raising=False,
     )
     assert cpu.detect_cpu_resources() == cpu.CpuResources(None, None)
+
+
+def test_invalid_linux_core_identifiers_do_not_report_partial_topology(
+    monkeypatch: pytest.MonkeyPatch,
+    export_directory: Path,
+) -> None:
+    topology = export_directory / "cpu0" / "topology"
+    topology.mkdir(parents=True)
+    (topology / "physical_package_id").write_text("-1", encoding="ascii")
+    (topology / "core_id").write_text("0", encoding="ascii")
+    monkeypatch.setattr(cpu.sys, "platform", "linux")
+    monkeypatch.setattr(cpu, "LINUX_CPU_PATH", export_directory)
+    monkeypatch.setattr(cpu.os, "cpu_count", lambda: 4)
+    assert cpu.detect_cpu_resources() == cpu.CpuResources(None, 4)

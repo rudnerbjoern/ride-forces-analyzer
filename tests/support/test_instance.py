@@ -1,10 +1,16 @@
 """Real local sockets forward requests between native processes."""
 
+# cspell:words qapp qtbot pytestqt msleep
+
 import json
 from pathlib import Path
 import subprocess
 import sys
 from time import monotonic, sleep
+
+import pytest
+from PySide6.QtWidgets import QApplication
+from pytestqt.qtbot import QtBot
 
 
 def test_secondary_forwards_request_and_owner_releases_lock(export_directory: Path) -> None:
@@ -125,3 +131,117 @@ broker.close()
         if process.poll() is None:
             process.kill()
             process.communicate(timeout=10)
+
+
+def test_instance_startup_failures_never_create_a_competing_owner(
+    qapp: "QApplication",
+    export_directory: Path,
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    from itertools import count
+    from unittest.mock import Mock
+
+    from PySide6.QtCore import QByteArray, QLockFile
+    from ride_forces_analyzer.runtime import instance
+
+    monkeypatch.setattr(instance, "data_directory", lambda: export_directory)
+    broker = instance.InstanceBroker(qapp)
+    broker.close()  # No lock was acquired, so this is a no-op.
+    lock, server = Mock(), Mock()
+    monkeypatch.setattr(broker, "lock", lock)
+    monkeypatch.setattr(broker, "server", server)
+    lock.tryLock.return_value = True
+    server.listen.return_value = False
+    server.errorString.return_value = "Unavailable socket"
+    with pytest.raises(RuntimeError, match="Unable to start local file-open service"):
+        broker.start_or_forward(instance.OpenRequest())
+    lock.unlock.assert_called_once()
+    lock.tryLock.return_value = False
+    lock.error.return_value = QLockFile.LockError.PermissionError
+    with pytest.raises(RuntimeError, match="Unable to acquire application instance lock"):
+        broker.start_or_forward(instance.OpenRequest())
+    lock.error.return_value = QLockFile.LockError.LockFailedError
+
+    def skip_sleep(delay: int) -> None:
+        pass
+
+    monkeypatch.setattr(instance.QThread, "msleep", skip_sleep)
+    for mode, message in (
+        ("rejected", "rejected the file-open request"),
+        ("unacknowledged", "did not acknowledge"),
+        ("unavailable", "Unable to contact"),
+    ):
+        ticks = count(0, 2)
+        monkeypatch.setattr(instance, "monotonic", lambda: float(next(ticks)))
+        socket = Mock()
+        socket.waitForConnected.return_value = mode != "unavailable"
+        socket.readAll.return_value = QByteArray(b"ERROR\n" if mode == "rejected" else b"")
+        monkeypatch.setattr(instance, "QLocalSocket", Mock(return_value=socket))
+        with pytest.raises(RuntimeError, match=message):
+            broker.start_or_forward(instance.OpenRequest(path="ride.forces"))
+        if mode == "unavailable":
+            socket.abort.assert_called()
+    assert lock.unlock.call_count == 1
+
+
+def test_owner_rejects_invalid_and_oversized_messages_and_accepts_fragments(
+    qapp: "QApplication",
+    qtbot: "QtBot",
+    export_directory: Path,
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    from PySide6.QtNetwork import QLocalSocket
+    from ride_forces_analyzer.runtime import instance
+
+    monkeypatch.setattr(instance, "data_directory", lambda: export_directory)
+    broker = instance.InstanceBroker(qapp)
+    received: list[instance.OpenRequest] = []
+    broker.requested.connect(received.append)
+    assert broker.start_or_forward(instance.OpenRequest())
+    try:
+        for payload, response in ((b'{"unknown":true}\n', b"ERROR\n"), (b"x" * (256 * 1024), b"")):
+            client = QLocalSocket()
+            client.connectToServer(broker.name)
+            assert client.waitForConnected(1000)
+            client.write(payload)
+            client.flush()
+            qtbot.waitUntil(
+                lambda: client.state() == QLocalSocket.LocalSocketState.UnconnectedState,
+            )
+            assert bytes(client.readAll().data()) == response
+        assert received == []
+        client = QLocalSocket()
+        client.connectToServer(broker.name)
+        assert client.waitForConnected(1000)
+        client.write(b'{"path":')
+        client.flush()
+        qapp.processEvents()
+        assert not received
+        client.write(b'"ride.forces"}\n')
+        client.flush()
+        qtbot.waitUntil(lambda: bool(received))
+        qtbot.waitUntil(lambda: client.bytesAvailable() > 0)
+        assert bytes(client.readAll().data()) == b"OK\n"
+        assert received == [instance.OpenRequest(path="ride.forces")]
+    finally:
+        broker.close()
+        broker.close()
+
+
+def test_posix_socket_path_is_prepared_in_a_private_directory(
+    qapp: "QApplication",
+    export_directory: Path,
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    from ride_forces_analyzer.runtime import instance
+
+    monkeypatch.setattr(instance, "data_directory", lambda: export_directory / "data")
+    monkeypatch.setattr(instance, "gettempdir", lambda: str(export_directory))
+    with monkeypatch.context() as patch:
+        patch.setattr(instance.sys, "platform", "linux")
+        broker = instance.InstanceBroker(qapp)
+    socket = Path(broker.name)
+    assert socket.name == "socket"
+    assert socket.parent.parent == export_directory
+    assert socket.parent.is_dir()
+    broker.close()
