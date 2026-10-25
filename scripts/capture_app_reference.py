@@ -156,7 +156,9 @@ def capture_details(application: QApplication, window: ExplorerWindow, output: P
                 "smoothing": SMOOTHING,
             }
             if name == "VoltronNevera":
-                bounds = window.plot.chart_view.geometry().united(window.plot.airtime_legend.geometry())
+                bounds = window.plot.chart_view.geometry().united(
+                    window.plot.airtime_legend.geometry(),
+                )
                 parent = window.plot.chart_view.parentWidget()
                 if parent is None or not parent.grab(bounds).save(
                     str(output / "voltron-airtime-detail.png"),
@@ -271,13 +273,20 @@ def capture_details(application: QApplication, window: ExplorerWindow, output: P
                 raise ValueError("Original detail recording changed during capture")
 
 
-def capture_reference(output: Path, *, details: bool = False, themes: bool = False) -> None:
+def capture_reference(
+    output: Path,
+    *,
+    details: bool = False,
+    themes: bool = False,
+    gps: bool = False,
+) -> None:
     """Capture the fixed native reference scene with isolated application state.
 
     Args:
         output: Output directory or path for generated artifacts.
         details: Whether to capture the fixed README detail scenes.
         themes: Whether to capture the fixed appearance gallery.
+        gps: Whether to capture Voltron GPS with an explicitly loaded OSM background.
 
     Returns:
         None.
@@ -331,6 +340,36 @@ def capture_reference(output: Path, *, details: bool = False, themes: bool = Fal
                 wait_for(application, window.open_action.isEnabled)
                 if window.data is None or not window.data.calibration_available:
                     raise RuntimeError("Cannot load calibrated Voltron reference")
+                if gps:
+                    output.mkdir(parents=True, exist_ok=True)
+                    window.gps_button.click()
+                    gps_window = window.gps_window
+                    if gps_window is None:
+                        raise RuntimeError("Voltron GPS overview is unavailable")
+                    wait_for(application, lambda: gps_window.worker is None)
+                    gps_window.load_map()
+                    wait_for(application, lambda: gps_window.worker is None)
+                    if gps_window.map_item is None:
+                        raise RuntimeError(gps_window.map_status.text())
+                    save_widget(application, gps_window, output / "voltron-gps-overview.png")
+                    (output / "gps-reference.json").write_text(
+                        json.dumps(
+                            {
+                                "source_sha256": SOURCE_SHA256,
+                                "language": "en",
+                                "font": "Segoe UI 9 pt",
+                                "scale_factor": 1,
+                                "dialog_size": [gps_window.width(), gps_window.height()],
+                                "map_provider": "OpenStreetMap",
+                                "image": "voltron-gps-overview.png",
+                            },
+                            indent=2,
+                        )
+                        + "\n",
+                        encoding="utf-8",
+                        newline="\n",
+                    )
+                    return
                 window.reference_toggle.setChecked(True)
                 window.inspector.smoothing_slider.setValue(SMOOTHING // 2)
                 window.inspector.first.setValue(SELECTION[0])
@@ -494,8 +533,18 @@ def main() -> None:
         action="store_true",
         help="Capture each workspace theme except System for the appearance guide instead",
     )
+    mode.add_argument(
+        "--gps",
+        action="store_true",
+        help="Capture the Voltron GPS dialog with its OpenStreetMap background instead",
+    )
     arguments = parser.parse_args()
-    capture_reference(arguments.output, details=arguments.details, themes=arguments.themes)
+    capture_reference(
+        arguments.output,
+        details=arguments.details,
+        themes=arguments.themes,
+        gps=arguments.gps,
+    )
 
 
 if __name__ == "__main__":

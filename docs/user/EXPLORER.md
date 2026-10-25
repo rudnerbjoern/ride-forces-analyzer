@@ -158,6 +158,11 @@ Only the visible area is requested, without an account or API key. This action
 contacts OpenStreetMap: it reveals your IP address and the requested geographic
 area, but does not upload the GPS track, timestamps or recording file.
 
+![Voltron Nevera GPS overview with the recorded route over an OpenStreetMap background, marking the first position in green and the last in red](../images/voltron-gps-overview.png)
+
+*Voltron Nevera's approximate recorded route with a map background. Green marks
+its first position; red marks its last. Map: © OpenStreetMap contributors.*
+
 After enlarging the window, click the button again to load more map detail.
 Previously viewed map areas are saved locally to avoid repeated downloads.
 If loading fails or the map does not cover the location, the route remains usable

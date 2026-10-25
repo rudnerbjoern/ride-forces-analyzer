@@ -1,0 +1,12 @@
+{
+  "source_sha256": "f48157cadbfeb374eeadf48112b0bbfc1e8b47c580cb303342cf65977054ad04",
+  "language": "en",
+  "font": "Segoe UI 9 pt",
+  "scale_factor": 1,
+  "dialog_size": [
+    850,
+    650
+  ],
+  "map_provider": "OpenStreetMap",
+  "image": "voltron-gps-overview.png"
+}
