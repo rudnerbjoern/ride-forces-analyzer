@@ -149,6 +149,26 @@ sequential batch preparation, failure and cancellation.
 Behavior tests establish contracts; coverage percentage does not qualify physical
 interpretation or UI integration. Cover new branches without weakening the gate.
 
+### UI coverage
+
+<!-- cspell:words rcfile -->
+
+UI coverage uses [its own configuration](../../tests/ui/coverage.toml), with a
+90% combined line/branch threshold across the package. The other packages retain
+their 100% gate. Measure the existing native Windows interaction suite separately:
+
+```powershell
+uv run --locked pytest --cov --cov-config=tests/ui/coverage.toml --cov-report=term-missing tests/ui
+uv run --locked coverage html --rcfile=tests/ui/coverage.toml
+uv run --locked coverage json --rcfile=tests/ui/coverage.toml
+```
+
+Data and reports stay under `.tmp/coverage/ui/`. Prioritize user workflows,
+storage-error recovery, cancellation and stale worker deliveries. Related checks
+share application/widget lifetimes; controller tests need no visible windows.
+The threshold detects broad regressions without requiring every platform fallback
+or drawing branch. Coverage does not verify visual quality or native dialog contents.
+
 ## Test design
 
 - Put exhaustive parser, numerical-edge, source-preservation and translation cases
