@@ -55,7 +55,8 @@ Choose these settings:
 - **Output:** **Transparent overlay · ProRes 4444 MOV** to place the graphics
   over footage in an editor; **Opaque video · H.264 MP4** for a black background.
 - **Video frame rate:** match your footage and editing timeline. Choices are
-  24, 25, 30, 50, 59.94 and 60 fps. For 59.94 footage, choose 59.94 rather than 60.
+  23.976, 24, 25, 30, 50, 59.94 and 60 fps. Choose 23.976 or 59.94 for footage
+  recorded at that rate, rather than rounding to 24 or 60.
 
 Transparent MOV files can be much larger than MP4 files. The size estimate is
 only a rough guide. To remember a frame rate for future exports, use

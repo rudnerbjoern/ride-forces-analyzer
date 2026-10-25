@@ -11,6 +11,7 @@ from .translation import bind, items
 # cspell:words pixmap Deutsch
 
 from pathlib import Path
+from typing import cast
 from dataclasses import replace
 from functools import partial
 from threading import Event
@@ -60,6 +61,7 @@ from ride_forces_analyzer.rendering.model import (
     VideoOutput,
     VideoAspect,
     EXPORT_FRAME_RATES,
+    FrameRate,
     ExportLayout,
     ExportSettings,
     ExportTimeline,
@@ -536,6 +538,8 @@ class ExportDialog(QDialog):
         form.addRow(bind(QLabel(), tr("Output")), self.mode)
         self.fps = QComboBox()
         items(self.fps, [ExportSettings(fps=rate).fps_label for rate in EXPORT_FRAME_RATES])
+        for index, rate in enumerate(EXPORT_FRAME_RATES):
+            self.fps.setItemData(index, rate)
         self.fps.setCurrentText(ExportSettings(fps=self.preferences.export_fps()).fps_label)
         form.addRow(bind(QLabel(), tr("Video frame rate")), self.fps)
         self.interval = QComboBox()
@@ -851,7 +855,7 @@ class ExportDialog(QDialog):
         )
         self.mode.setCurrentIndex(0 if settings.output == VideoOutput.TRANSPARENT else 1)
         if self.fps.findText(settings.fps_label) < 0:
-            self.fps.addItem(settings.fps_label)
+            self.fps.addItem(settings.fps_label, settings.fps)
         self.fps.setCurrentText(settings.fps_label)
         self.seconds.setValue(settings.window_seconds)
         self.smoothing.setCurrentIndex(preset.smoothing_window // 2)
@@ -928,7 +932,7 @@ class ExportDialog(QDialog):
             aspect=VideoAspect.LANDSCAPE
             if self.aspect.currentIndex() == 0
             else VideoAspect.PORTRAIT,
-            fps="60000/1001" if self.fps.currentText() == "59.94" else int(self.fps.currentText()),
+            fps=cast(FrameRate, self.fps.currentData()),
             window_seconds=float(self.seconds.value()),
             output=VideoOutput.TRANSPARENT if self.mode.currentIndex() == 0 else VideoOutput.OPAQUE,
             invert_vertical=self.flip_vertical.isChecked(),

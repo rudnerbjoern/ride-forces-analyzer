@@ -102,7 +102,9 @@ def test_settings_save_cancel_and_new_exports_keep_independent_frame_rates(
     dialog = window.findChild(SettingsDialog, "settingsDialog")
     assert dialog is not None and dialog.frame_rate.currentText() == "59.94"
     assert dialog.render_jobs.value() == jobs
-    dialog.reject()
+    dialog.frame_rate.setCurrentText("23.976")
+    dialog.buttons.button(QDialogButtonBox.StandardButton.Save).click()
+    assert Preferences(window.preferences.path).export_fps() == "24000/1001"
 
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
     wait_until(window.open_action.isEnabled)
@@ -119,14 +121,30 @@ def test_settings_save_cancel_and_new_exports_keep_independent_frame_rates(
                 range_mode="markers",
             ),
         )
+        store.save_preset(
+            SavedPreset(
+                name="Z custom rate",
+                settings=ExportSettings(fps=27),
+                analysis_configuration=source_app_configuration(),
+                schema_version=1,
+                smoothing_window=11,
+                range_mode="markers",
+            ),
+        )
         export = ExportDialog(window.data, 0, 10, window, store=store)
-        assert export.fps.currentText() == "59.94"
+        assert export.fps.currentText() == "23.976"
+        assert export.fps.currentData() == "24000/1001"
         export.fps.setCurrentText("60")
         export.close()
         reopened = ExportDialog(window.data, 0, 10, window, store=store)
-        assert reopened.fps.currentText() == "59.94"
+        assert reopened.fps.currentText() == "23.976"
         reopened.preset_selector.setCurrentIndex(1)
         reopened.load_preset.click()
         assert reopened.fps.currentText() == "25"
-        assert Preferences(window.preferences.path).export_fps() == "60000/1001"
+        reopened.preset_selector.setCurrentIndex(
+            reopened.preset_selector.findText("Z custom rate"),
+        )
+        reopened.load_preset.click()
+        assert reopened.fps.currentText() == "27" and reopened.fps.currentData() == 27
+        assert Preferences(window.preferences.path).export_fps() == "24000/1001"
         reopened.close()

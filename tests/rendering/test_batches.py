@@ -19,6 +19,7 @@ from ride_forces_analyzer.rendering.batches import build_jobs, make_job, run_bat
 from ride_forces_analyzer.rendering.encoding import ExportCancelled
 from ride_forces_analyzer.rendering.model import (
     VideoOutput,
+    FrameRate,
     ExportLayout,
     VideoAspect,
     ExportSettings,
@@ -172,15 +173,17 @@ def short_job(data: ExplorerData, chosen: SavedPreset | None = None) -> BatchJob
     )
 
 
+@pytest.mark.parametrize("fps", ["24000/1001", "60000/1001"])
 def test_sqlite_survives_reopen_with_snapshots_and_transaction_rollback(
     export_directory: Path,
     manta: ExplorerData,
+    fps: FrameRate,
 ) -> None:
     path = export_directory / "exports.sqlite3"
     store = ExportStore(path)
     chosen = SavedPreset(
         name="Ribbon",
-        settings=ExportSettings(fps="60000/1001"),
+        settings=ExportSettings(fps=fps),
         analysis_configuration=source_app_configuration(),
         schema_version=1,
         smoothing_window=11,
@@ -197,7 +200,7 @@ def test_sqlite_survives_reopen_with_snapshots_and_transaction_rollback(
         overwrite=True,
     )
     assert ExportStore(path).presets()[0].settings.fps == 30
-    assert ExportStore(path).batch("Weekend").jobs[0].preset.settings.fps == "60000/1001"
+    assert ExportStore(path).batch("Weekend").jobs[0].preset.settings.fps == fps
     with pytest.raises(ExportStoreError):
         store.save_preset(chosen.model_copy(update={"name": "ribbon"}))
     with pytest.raises(ExportStoreError):

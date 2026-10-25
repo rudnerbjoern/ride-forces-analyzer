@@ -29,7 +29,7 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 | Output             | One video per recording; transparent ProRes 4444 MOV (default) or independent opaque H.264 MP4             |
 | Canvas             | HUD: native 1920×1080 / 1080×1920; other profiles: 3840×2160 / 2160×3840                                   |
 | Profiles           | Flow Ribbon (assistant opening default), Corner Instruments, HUD, G-Orbit, four-panel column               |
-| Frame-rate choices | 24/25/30/50/59.94/60 fps; default 50 without a valid saved preference                                      |
+| Frame-rate choices | 23.976/24/25/30/50/59.94/60 fps; default 50 without a valid saved preference                               |
 | Context window     | 1–60 s, default 12; shared source position and centered cursor in time plots                               |
 | Alignment          | Manual in DaVinci Resolve; source-video ingestion/synchronization excluded                                 |
 
@@ -43,7 +43,7 @@ the supplied [Manta reference recording](../development/RECORDINGS.md#manta).
 
 - Settings → Export persists the default frame rate in `preferences.sqlite3`.
   Save changes it; Cancel and temporary assistant edits do not. Presets/batches
-  retain their own rates, including exact `60000/1001`.
+  retain their own rates, including exact `24000/1001` and `60000/1001`.
 - The local `render_jobs` preference defaults to 1 and accepts positive integers,
   capped at the detected logical processor count (1 if unavailable). Settings →
   Export applies it to newly started individual and batch exports. It is not part
@@ -105,8 +105,8 @@ encoding; presets and compact layout thumbnails remain directly accessible.
   Inclusive ranges include the final sample interval; duration rounds up to a frame.
 - Force readouts use one decimal place in every layout and production preview.
   Curves, pointers, analysis buffers and data exports retain their existing precision.
-- 59.94 uses exact `60000/1001` in timing, frame counts, FFmpeg and saved settings.
-  Use a matching 59.94 editing timeline for GoPro footage recorded at that rate.
+- 23.976 and 59.94 use exact `24000/1001` and `60000/1001` in timing, frame counts,
+  FFmpeg and saved settings. Match the recording and editing timeline's frame rate.
 - Default interval uses effective start/end markers; current selection and entire
   recording are alternatives. Plot context outside the exported interval is blank.
 - Replay labels retain sample-counter notation. Graphics omit Hz/fps; neither

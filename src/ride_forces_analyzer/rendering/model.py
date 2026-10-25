@@ -32,8 +32,8 @@ class VideoOutput(StrEnum):
     OPAQUE = "opaque"
 
 
-FrameRate = int | Literal["60000/1001"]
-EXPORT_FRAME_RATES: tuple[FrameRate, ...] = (24, 25, 30, 50, "60000/1001", 60)
+FrameRate = int | Literal["24000/1001", "60000/1001"]
+EXPORT_FRAME_RATES: tuple[FrameRate, ...] = ("24000/1001", 24, 25, 30, 50, "60000/1001", 60)
 
 PROFILES: tuple[tuple[ExportLayout, str], ...] = (
     (ExportLayout.RIBBON, "Flow Ribbon"),
@@ -49,8 +49,7 @@ class ExportSettings:
     """Export settings contract and owned data.
 
     Attributes:
-        fps: Selected output frame rate; 59.94 retains its exact fractional
-            representation.
+        fps: Selected output rate; 23.976 and 59.94 retain their exact fractional values.
         window_seconds: Width of the visible source-time context in seconds.
         output: VideoOutput member selecting transparency, codec and container.
         invert_vertical: Whether the vertical plot uses the selected inverted display
@@ -90,7 +89,7 @@ class ExportSettings:
 
     @property
     def frame_rate(self) -> Fraction:
-        """Exact encoder rate; retain the fractional ratio rather than rounding to 59.94.
+        """Return the exact encoder rate without rounding fractional frame rates.
 
         Returns:
             Exact output frames per second as a rational number.
@@ -99,11 +98,13 @@ class ExportSettings:
 
     @property
     def fps_label(self) -> str:
-        """Return the user-facing frame-rate choice, including exact 59.94 notation.
+        """Return the display label for an integer or supported fractional frame rate.
 
         Returns:
-            The user-facing frame-rate choice, including exact 59.94 notation.
+            Integer rate text, or 23.976/59.94 for the corresponding exact fraction.
         """
+        if self.fps == "24000/1001":
+            return "23.976"
         return "59.94" if self.fps == "60000/1001" else str(self.fps)
 
     def __post_init__(self) -> None:
@@ -114,15 +115,20 @@ class ExportSettings:
 
         Raises:
             ValueError: Unsupported overlay language. Unknown export aspect ratio. Frame rate
-                must be an integer from 1 to 120 or 60000/1001. Visible time window must be
+                must be an integer from 1 to 120, 24000/1001 or 60000/1001. Visible time window must be
                 from 1 to 60 seconds. Unknown export output mode. Unknown export layout.
         """
         if type(self.language) is not Language:
             raise ValueError("Unsupported overlay language")
         if type(self.aspect) is not VideoAspect:
             raise ValueError("Unknown export aspect ratio")
-        if not (type(self.fps) is int and 1 <= self.fps <= 120) and self.fps != "60000/1001":
-            raise ValueError("Frame rate must be an integer from 1 to 120 or 60000/1001")
+        if not (type(self.fps) is int and 1 <= self.fps <= 120) and self.fps not in (
+            "24000/1001",
+            "60000/1001",
+        ):
+            raise ValueError(
+                "Frame rate must be an integer from 1 to 120, 24000/1001 or 60000/1001",
+            )
         if not isfinite(self.window_seconds) or not 1 <= self.window_seconds <= 60:
             raise ValueError("Visible time window must be from 1 to 60 seconds")
         if type(self.output) is not VideoOutput:

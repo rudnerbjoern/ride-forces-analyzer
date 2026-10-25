@@ -13,6 +13,7 @@ from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 from ride_forces_analyzer.rendering.model import (
     VideoOutput,
+    FrameRate,
     ExportLayout,
     VideoAspect,
     ExportSettings,
@@ -166,10 +167,10 @@ def test_edge_choice_moves_corner_previews_to_equivalent_side(
     )
 
 
-@pytest.mark.parametrize("fps", [30, 50, 60, "60000/1001"])
+@pytest.mark.parametrize("fps", [30, 50, 60, "24000/1001", "60000/1001"])
 def test_preview_sample_is_independent_of_video_rate(
     manta: ExplorerData,
-    fps: int | Literal["60000/1001"],
+    fps: FrameRate,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     assert manta.analysis is not None

@@ -76,6 +76,8 @@ def test_recording_markers_tolerate_unavailable_storage(tmp_path: Path) -> None:
         ("remember_export_fps", True),
         ("remember_export_fps", 50.0),
         ("remember_export_fps", "50"),
+        ("remember_export_fps", 23.976),
+        ("remember_export_fps", "23.976"),
         ("remember_export_fps", 0),
         ("remember_render_jobs", True),
         ("remember_render_jobs", 2.0),
@@ -262,9 +264,10 @@ def test_default_export_rate_survives_restart_and_invalid_storage_falls_back() -
         preferences = Preferences(database)
         assert preferences.export_fps() == 50
         preferences.remember_language(Language.GERMAN)
-        preferences.remember_export_fps("60000/1001")
-        restored = Preferences(database)
-        assert restored.export_fps() == "60000/1001" and restored.language() == "de"
+        for rate in ("24000/1001", "60000/1001"):
+            preferences.remember_export_fps(rate)
+            restored = Preferences(database)
+            assert restored.export_fps() == rate and restored.language() == "de"
         restored.remember_export_fps(60)
         assert Preferences(database).export_fps() == 60
         with closing(sqlite3.connect(database)) as connection, connection:

@@ -3,12 +3,13 @@
 # cspell:words ffprobe frombytes getcolor getcolors getrgb getpixel getchannel getextrema hwupload prores qscale rawvideo libx
 
 from dataclasses import replace
+from fractions import Fraction
 from math import radians, sin, cos
 from pathlib import Path
 import json
 import subprocess
 from threading import Event
-from typing import Literal
+from typing import Literal, cast
 from unittest.mock import patch
 
 from PIL import Image, ImageColor
@@ -21,6 +22,7 @@ from ride_forces_analyzer.rendering.frames import COLUMN_X, WIDTH, OverlayRender
 from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.rendering.model import (
     VideoOutput,
+    FrameRate,
     VideoAspect,
     ExportLayout,
     ExportSettings,
@@ -657,18 +659,29 @@ def test_orbit_preserves_negative_forces_and_absent_orientation(manta: ExplorerD
     )
 
 
+@pytest.mark.parametrize(
+    "fps,label,numerator",
+    [("24000/1001", "23.976", 24000), ("60000/1001", "59.94", 60000)],
+)
 def test_fractional_frame_rate_keeps_exact_duration_and_source_positions(
     manta: ExplorerData,
+    fps: FrameRate,
+    label: str,
+    numerator: int,
 ) -> None:
     assert manta.analysis is not None
-    settings = ExportSettings(fps="60000/1001")
+    settings = ExportSettings(fps=fps)
     timeline = prepare_export(manta.analysis, settings, 100, 149)
-    assert settings.fps_label == "59.94"
-    assert timeline.frame_count == 60
-    assert timeline.sample_position(1) == pytest.approx(100 + 50 * 1001 / 60000)
+    assert settings.fps_label == label
+    assert settings.frame_rate == Fraction(numerator, 1001)
+    assert timeline.frame_count == numerator // 1000
+    assert timeline.sample_position(1) == pytest.approx(100 + 50 * 1001 / numerator)
     # Isolate clock arithmetic over 1001 seconds without rendering or inventing sensor data.
     clock = replace(timeline, first=0, last=50 * 1001 - 1)
-    assert clock.frame_count == 60000
-    assert clock.sample_position(30000) == 25025
+    assert clock.frame_count == numerator
+    assert clock.sample_position(numerator // 2) == 25025
     command = encoder_command(Path("ffmpeg.exe"), timeline, Path("out.mov"), use_gpu=False)
-    assert command[command.index("-framerate") + 1] == "60000/1001"
+    assert command[command.index("-framerate") + 1] == fps
+    for rounded in (label, float(label)):
+        with pytest.raises(ValueError, match="Frame rate"):
+            ExportSettings(fps=cast(FrameRate, rounded))
