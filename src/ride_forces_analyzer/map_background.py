@@ -43,7 +43,18 @@ class MapError(Exception):
 
 
 def project(latitude: float, longitude: float) -> tuple[float, float]:
-    """Return north-up Web Mercator coordinates with scene y increasing southward."""
+    """Return north-up Web Mercator coordinates with scene y increasing southward.
+
+    Args:
+        latitude: Latitude in geographic degrees.
+        longitude: Longitude in geographic degrees.
+
+    Returns:
+        North-up web mercator coordinates with scene y increasing southward.
+
+    Raises:
+        MapError: Position outside Web Mercator coverage.
+    """
     if not -MAX_LATITUDE <= latitude <= MAX_LATITUDE or not -180 <= longitude <= 180:
         raise MapError("Position outside Web Mercator coverage")
     return 6378137 * radians(longitude), -6378137 * asinh(tan(radians(latitude)))
@@ -51,12 +62,27 @@ def project(latitude: float, longitude: float) -> tuple[float, float]:
 
 @dataclass(frozen=True, slots=True)
 class MapRoute:
+    """Map route contract and owned data.
+
+    Attributes:
+        origin: Origin marker distinguishing retained source data from an admitted
+            default.
+        segments: Contiguous route segments without connecting across missing positions.
+    """
+
     origin: tuple[float, float]
     segments: tuple[tuple[tuple[float, float], ...], ...]
 
 
 def project_route(overview: GpsOverview) -> MapRoute | None:
-    """Preserve source gaps/order; polar coordinates keep the original offline view."""
+    """Preserve source gaps/order; polar coordinates keep the original offline view.
+
+    Args:
+        overview: Prepared recording or route summary.
+
+    Returns:
+        Projected route preserving source gaps, or None when projection is unavailable.
+    """
     if not overview.geographic_segments:
         return None
     try:
@@ -72,7 +98,17 @@ def project_route(overview: GpsOverview) -> MapRoute | None:
 
 @dataclass(frozen=True, slots=True)
 class MapRequest:
-    """Only visible pixels and their tile coordinates; never a GPS track payload."""
+    """Only visible pixels and their tile coordinates; never a GPS track payload.
+
+    Attributes:
+        zoom: Map zoom level.
+        left: Left boundary in the layout's coordinate system.
+        top: Upper boundary in the layout's coordinate system.
+        width: Width in the pixel or coordinate units declared by this operation.
+        height: Height in the pixel or coordinate units declared by this operation.
+        origin: Origin marker distinguishing retained source data from an admitted
+            default.
+    """
 
     zoom: int
     left: int
@@ -83,10 +119,20 @@ class MapRequest:
 
     @property
     def pixel_scale(self) -> float:
+        """Return the map pixel scale for the selected zoom.
+
+        Returns:
+            Map scale in pixels for the selected zoom level.
+        """
         return WORLD_SIZE / (TILE_SIZE * (1 << self.zoom))
 
     @property
     def scene_position(self) -> tuple[float, float]:
+        """Map geographic coordinates to the route scene.
+
+        Returns:
+            Horizontal and vertical scene coordinates.
+        """
         return (
             self.left * self.pixel_scale - WORLD_SIZE / 2 - self.origin[0],
             self.top * self.pixel_scale - WORLD_SIZE / 2 - self.origin[1],
@@ -94,6 +140,11 @@ class MapRequest:
 
     @property
     def tiles(self) -> tuple[tuple[int, int], ...]:
+        """Return tile coordinates intersecting the requested viewport.
+
+        Returns:
+            Tile column and row coordinates intersecting the viewport.
+        """
         return tuple(
             (x, y)
             for y in range(
@@ -112,7 +163,19 @@ def viewport_request(
     bounds: tuple[float, float, float, float],
     size: tuple[int, int],
 ) -> MapRequest:
-    """Choose one fitting zoom and request only tiles intersecting the visible area."""
+    """Choose one fitting zoom and request only tiles intersecting the visible area.
+
+    Args:
+        origin: Horizontal and vertical origin of the visible map viewport.
+        bounds: Left, top, right and bottom limits in scene coordinates.
+        size: Required dimensions or capacity.
+
+    Returns:
+        Zoom and tile request covering the visible route area.
+
+    Raises:
+        MapError: Invalid map viewport. Map viewport exceeds request limit.
+    """
     x, y, width, height = bounds
     if not all(isfinite(value) for value in (*origin, *bounds)) or min(width, height, *size) <= 0:
         raise MapError("Invalid map viewport")
@@ -218,12 +281,30 @@ def _tile(zoom: int, x: int, y: int, cache: TileCache) -> QImage:
 
 @dataclass(frozen=True, slots=True)
 class MapBackground:
+    """Map background contract and owned data.
+
+    Attributes:
+        request: Request carrying the inputs and context for this operation.
+        image: Prepared raster image in the format declared by its owning model.
+    """
+
     request: MapRequest
     image: QImage
 
 
 def load_background(request: MapRequest, cancelled: Event) -> MapBackground:
-    """Load a single viewport with bounded sequential HTTPS, cache and cancellation."""
+    """Load a single viewport with bounded sequential HTTPS, cache and cancellation.
+
+    Args:
+        request: Request carrying the inputs and context for this operation.
+        cancelled: Cancellation event checked during the operation.
+
+    Returns:
+        Prepared viewport background and attribution information.
+
+    Raises:
+        MapError: Invalid map request. Map request stopped. Map could not be loaded.
+    """
     if (
         not 0 <= request.zoom <= 19
         or not 0 < request.width <= MAX_IMAGE_SIZE

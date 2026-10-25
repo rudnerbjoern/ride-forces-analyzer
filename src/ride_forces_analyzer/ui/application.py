@@ -14,9 +14,25 @@ from ride_forces_analyzer.i18n import get_language
 
 
 class RecordingApplication(QApplication):
-    """Keep analysis/view state in separate windows within one application."""
+    """Keep analysis/view state in separate windows within one application.
+
+    Attributes:
+        windows: Open explorer windows owned by the application.
+        pending_requests: Recording-open requests awaiting application readiness.
+        ready: Callback invoked when initialization completes.
+        settings: Validated settings controlling this operation.
+        delivery_timer: Timer scheduling delivery timer.
+    """
 
     def __init__(self, arguments: list[str]) -> None:
+        """Initialize recording application and its owned state.
+
+        Args:
+            arguments: Command-line arguments to interpret.
+
+        Returns:
+            None.
+        """
         self.windows: list[ExplorerWindow] = []
         self.pending_requests: deque[OpenRequest] = deque()
         self.ready = False
@@ -27,6 +43,14 @@ class RecordingApplication(QApplication):
         self.delivery_timer.timeout.connect(self.deliver_requests)
 
     def event(self, event: QEvent) -> bool:
+        """Handle application file-open events and delegate other events to Qt.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            True when the requested check succeeds or the event is handled; otherwise False.
+        """
         if isinstance(event, QFileOpenEvent) and event.url().isLocalFile():
             self.pending_requests.append(OpenRequest(path=event.url().toLocalFile()))
             if hasattr(self, "delivery_timer"):
@@ -35,7 +59,14 @@ class RecordingApplication(QApplication):
         return super().event(event)
 
     def start(self, request: OpenRequest) -> None:
-        """Create the initial window; explicit requests precede restoration."""
+        """Create the initial window; explicit requests precede restoration.
+
+        Args:
+            request: Request carrying the inputs and context for this operation.
+
+        Returns:
+            None.
+        """
         self.create_window(
             Path(request.path) if request.path is not None else None,
             restore_last_file=request.path is None
@@ -51,6 +82,15 @@ class RecordingApplication(QApplication):
         *,
         restore_last_file: bool = False,
     ) -> ExplorerWindow:
+        """Create and register an independently owned recording window.
+
+        Args:
+            path: Filesystem path read or written by this operation.
+            restore_last_file: Whether startup may reopen the last recording.
+
+        Returns:
+            Registered explorer window owned by the application.
+        """
         appearance = self.windows[0].appearance_preference if self.windows else None
         settings = (
             self.settings.model_copy(update={"language": get_language()})
@@ -81,6 +121,14 @@ class RecordingApplication(QApplication):
 
     @Slot(object)
     def receive_request(self, request: object) -> None:
+        """Queue a file-open request received from the local instance broker.
+
+        Args:
+            request: Request carrying the inputs and context for this operation.
+
+        Returns:
+            None.
+        """
         if isinstance(request, OpenRequest):
             self.pending_requests.append(request)
             self.deliver_requests()
@@ -93,7 +141,11 @@ class RecordingApplication(QApplication):
         window.activateWindow()
 
     def deliver_requests(self) -> None:
-        """Retain requests while an existing target window is importing."""
+        """Retain requests while an existing target window is importing.
+
+        Returns:
+            None.
+        """
         if not self.ready:
             self.delivery_timer.start()
             return

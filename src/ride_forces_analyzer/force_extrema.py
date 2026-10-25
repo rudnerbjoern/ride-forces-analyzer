@@ -23,6 +23,14 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class Extremum:
+    """Extremum contract and owned data.
+
+    Attributes:
+        value: Candidate value to validate, format or store.
+        index: Source or collection index selected for this operation.
+        recording_seconds: Time since the recording origin, in seconds.
+    """
+
     value: float
     index: int
     recording_seconds: float
@@ -30,6 +38,14 @@ class Extremum:
 
 @dataclass(frozen=True, slots=True)
 class ChannelExtrema:
+    """Channel extrema contract and owned data.
+
+    Attributes:
+        name: Stable identifier or displayed name for this model or view.
+        minimum: Minimum retained value or extremum in the declared interval and units.
+        maximum: Maximum retained value or configured resource limit.
+    """
+
     name: str
     minimum: Extremum
     maximum: Extremum
@@ -37,6 +53,27 @@ class ChannelExtrema:
 
 @dataclass(frozen=True, slots=True)
 class SelectionExtrema:
+    """Selection extrema contract and owned data.
+
+    Attributes:
+        source_sha256: SHA-256 identity of the original recording bytes.
+        first: First included source index or the control selecting that bound.
+        last: Last included source index or the control selecting that bound.
+        sample_rate: Effective source samples per second, retaining its origin separately.
+        rate_origin: Evidence identifying the sample-rate source.
+        mode: Selected operation mode.
+        unit: Declared unit and its evidence; unknown source units remain unknown.
+        smoothing_window: Odd number of source samples used for smoothing.
+        source_algorithm: Algorithm associated with the original retained values.
+        capability: Scientific capability status limited to the declared evidence scope.
+        channels: Prepared channels to inspect or display.
+        calculation_time: Aware timestamp recorded in calculation provenance.
+        algorithm: Identifier of the algorithm used by the stage.
+        time_basis: Time representation and evidence associated with this data product.
+        quality: Quality and availability information accompanying the prepared values.
+        provenance: Source identity, processing configuration and calculation evidence.
+    """
+
     source_sha256: str
     first: int
     last: int
@@ -57,6 +94,11 @@ class SelectionExtrema:
 
     @property
     def count(self) -> int:
+        """Return the number of retained samples or items represented by this object.
+
+        Returns:
+            The number of retained samples or items represented by this object.
+        """
         return self.last - self.first + 1
 
 
@@ -84,6 +126,7 @@ def calculate_extrema(
     Raises:
         ValueError: Invalid interval/time, mismatched or unavailable stage,
             incomplete channels or missing/non-finite selected samples.
+        AssertionError: If a required internal invariant does not hold.
     """
     calculated = calculation_time if calculation_time is not None else datetime.now(UTC)
     if calculated.utcoffset() is None:

@@ -19,6 +19,9 @@ def collect_diagnostics() -> str:
 
     Executable paths and raw encoder output/errors are never included. Call outside
     the UI thread. Only a numeric version is extracted from FFmpeg output.
+
+    Returns:
+        English support fields; limit the external encoder probe to 3 seconds.
     """
     fields = {
         "Ride Forces Analyzer": __version__,

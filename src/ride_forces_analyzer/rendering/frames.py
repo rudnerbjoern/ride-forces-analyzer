@@ -15,11 +15,34 @@ COLUMN_X = WIDTH - COLUMN_WIDTH
 
 
 class OverlayRenderer:
+    """Overlay renderer contract and owned data.
+
+    Attributes:
+        timeline: Bound video timeline containing the source interval and export settings.
+        renderer: Layout renderer bound to this object's immutable video timeline.
+    """
+
     def __init__(self, timeline: ExportTimeline) -> None:
+        """Initialize overlay renderer and its owned state.
+
+        Args:
+            timeline: Bound video timeline containing the source interval and export settings.
+
+        Returns:
+            None.
+        """
         self.timeline = timeline
         self.renderer = create_renderer(timeline)
 
     def render_region(self, frame: int) -> Image.Image:
+        """Render the active overlay region for an output frame.
+
+        Args:
+            frame: Zero-based output video frame index.
+
+        Returns:
+            The rendered image in the layout or canvas dimensions declared by the timeline.
+        """
         return self._render_region_at(self.timeline.sample_position(frame))
 
     def _render_region_at(self, position: float) -> Image.Image:
@@ -33,9 +56,28 @@ class OverlayRenderer:
         return image
 
     def render_frame(self, frame: int) -> Image.Image:
+        """Render an output frame on the complete transparent or opaque canvas.
+
+        Args:
+            frame: Zero-based output video frame index.
+
+        Returns:
+            The rendered image in the layout or canvas dimensions declared by the timeline.
+        """
         return self.render_sample(self.timeline.sample_position(frame))
 
     def render_sample(self, position: float) -> Image.Image:
+        """Render a production image at an exact source sample.
+
+        Args:
+            position: Fractional source-sample position.
+
+        Returns:
+            The rendered image in the layout or canvas dimensions declared by the timeline.
+
+        Raises:
+            ValueError: Preview sample outside prepared interval.
+        """
         if not self.timeline.first <= position <= self.timeline.last:
             raise ValueError("Preview sample outside prepared interval")
         alpha = 0 if self.timeline.settings.output == "transparent" else 255

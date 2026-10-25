@@ -21,6 +21,15 @@ class NativeCaptionFilter(QObject):
     """Apply native colors after Qt finishes showing or restyling an app window."""
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        """Apply native caption styling when the observed widget changes.
+
+        Args:
+            watched: Qt object whose event is being observed.
+            event: Qt event delivered to this handler.
+
+        Returns:
+            True when the requested check succeeds or the event is handled; otherwise False.
+        """
         if isinstance(watched, (QDialog, QMainWindow)) and event.type() in (
             QEvent.Type.Show,
             QEvent.Type.PaletteChange,
@@ -40,14 +49,25 @@ class NativeCaptionFilter(QObject):
 
 
 def install_native_captions(application: QApplication) -> None:
-    """Install one Windows caption observer for Qt-managed application windows."""
+    """Install one Windows caption observer for Qt-managed application windows.
+
+    Args:
+        application: Native Qt application whose event loop owns the widgets.
+
+    Returns:
+        None.
+    """
     if sys.platform == "win32" and application.findChild(NativeCaptionFilter) is None:
         observer = NativeCaptionFilter(application)
         application.installEventFilter(observer)
 
 
 def app_icon() -> QIcon:
-    """Draw a lightly raised force trace over a blue gradient at native icon sizes."""
+    """Draw a lightly raised force trace over a blue gradient at native icon sizes.
+
+    Returns:
+        Application icon containing the generated native-size variants.
+    """
     icon = QIcon()
     for size in ICON_SIZES:
         icon.addPixmap(QPixmap.fromImage(render_icon(size)))
@@ -55,7 +75,15 @@ def app_icon() -> QIcon:
 
 
 def style_native_caption(window_id: int, *, palette: QPalette) -> None:
-    """Use supported DWM attributes, allowing older Windows to retain defaults."""
+    """Use supported DWM attributes, allowing older Windows to retain defaults.
+
+    Args:
+        window_id: Identifier of the owning application window.
+        palette: Palette to apply to the view.
+
+    Returns:
+        None.
+    """
     if sys.platform != "win32":
         return
     try:

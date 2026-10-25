@@ -31,7 +31,17 @@ from datetime import UTC, datetime
 
 @dataclass(slots=True)
 class _Binding:
-    """Identity and UI-intent generation for one imported recording."""
+    """Identity and UI-intent generation for one imported recording.
+
+    Attributes:
+        service: Analysis service bound to the current recording.
+        markers: Last persisted ride bounds and calibration references.
+        generation: Request generation used to reject late worker deliveries.
+        running_generation: Generation identifying the active background computation.
+        subscription: Handle identifying the active analysis subscription.
+        active: Whether this recording binding accepts results.
+        save_markers: Whether changed analysis markers should be persisted.
+    """
 
     service: AnalysisService
     markers: tuple[tuple[int, int] | None, CalibrationOverrides]
@@ -44,12 +54,30 @@ class _Binding:
 
 @dataclass(frozen=True, slots=True)
 class _Delivery:
+    """Delivery contract and owned data.
+
+    Attributes:
+        binding: Binding identifying the active recording and analysis service.
+        generation: Request generation used to reject late worker deliveries.
+        value: Candidate value to validate, format or store.
+    """
+
     binding: _Binding
     generation: int
     value: AnalysisDelivery
 
 
 class _SmoothingWorker(QRunnable):
+    """Smoothing worker contract and owned data.
+
+    Attributes:
+        binding: Binding identifying the active recording and analysis service.
+        generation: Request generation used to reject late worker deliveries.
+        window: Odd number of samples in the centered smoothing window.
+        report: Path for the local JSON verification report.
+        configuration: Requested immutable analysis or export configuration.
+    """
+
     def __init__(
         self,
         binding: _Binding,
@@ -58,6 +86,18 @@ class _SmoothingWorker(QRunnable):
         report: Callable[[object], None],
         configuration: AnalysisConfiguration | None = None,
     ) -> None:
+        """Initialize smoothing worker and its owned state.
+
+        Args:
+            binding: Binding identifying the active recording and analysis service.
+            generation: Request generation used to reject late worker deliveries.
+            window: Odd number of source samples in the smoothing window.
+            report: Path for the local JSON verification report.
+            configuration: Requested immutable analysis or export configuration.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.binding, self.generation, self.window = binding, generation, window
         self.report = report
@@ -65,6 +105,11 @@ class _SmoothingWorker(QRunnable):
 
     @Slot()
     def run(self) -> None:
+        """Execute the worker task and deliver completion or failure through its signals.
+
+        Returns:
+            None.
+        """
         binding = self.binding
         if not binding.active or binding.generation != self.generation:
             return
@@ -85,6 +130,14 @@ class _SmoothingWorker(QRunnable):
 
 @dataclass(frozen=True, slots=True)
 class _WorkerFailure:
+    """Worker failure contract and owned data.
+
+    Attributes:
+        binding: Binding identifying the active recording and analysis service.
+        generation: Request generation used to reject late worker deliveries.
+        message: Text or diagnostic message to present or validate.
+    """
+
     binding: _Binding
     generation: int
     message: str
@@ -97,6 +150,18 @@ class AnalysisController(QObject):
     skipped. A generation also rejects already queued deliveries when a newer UI
     request has not reached the service yet. Service revisions/status and binding
     identity are checked again in the queued UI slot before any consumer signal.
+
+    Attributes:
+        snapshot_ready: Qt signal for snapshot ready notifications.
+        failed: Qt signal for failed notifications.
+        markers_saved: Qt signal for markers saved notifications.
+        pending_changed: Qt signal for pending changed notifications.
+        _received: Qt signal for received notifications.
+        _binding: Current recording and analysis-service binding.
+        _closed: Whether the service or controller has stopped accepting work.
+        _pending: Pending analysis deliveries.
+        preferences: Local application preference access for this window or controller.
+        pool: Thread pool used for background analysis.
     """
 
     snapshot_ready = Signal(object)
@@ -111,6 +176,15 @@ class AnalysisController(QObject):
         *,
         preferences: Preferences | None = None,
     ) -> None:
+        """Initialize analysis controller and its owned state.
+
+        Args:
+            parent: Qt parent that owns this object's lifetime.
+            preferences: Local application preference access.
+
+        Returns:
+            None.
+        """
         super().__init__(parent)
         self._binding: _Binding | None = None
         self._closed = False
@@ -122,10 +196,22 @@ class AnalysisController(QObject):
 
     @property
     def pending(self) -> bool:
+        """Return whether analysis work is pending.
+
+        Returns:
+            Whether analysis work is pending.
+        """
         return self._pending
 
     def bind_snapshot(self, snapshot: RecordingAnalysis | None) -> None:
-        """Activate a worker-prepared import, also after an explicit close/reopen."""
+        """Activate a worker-prepared import, also after an explicit close/reopen.
+
+        Args:
+            snapshot: Immutable analysis snapshot for this operation.
+
+        Returns:
+            None.
+        """
         self._closed = False
         self._release()
         if snapshot is None:
@@ -142,7 +228,14 @@ class AnalysisController(QObject):
         )
 
     def request_smoothing(self, window: int) -> None:
-        """Schedule the latest UI intent while retaining the last complete view."""
+        """Schedule the latest UI intent while retaining the last complete view.
+
+        Args:
+            window: Odd number of source samples in the smoothing window.
+
+        Returns:
+            None.
+        """
         binding = self._binding
         if self._closed or binding is None:
             return
@@ -173,7 +266,15 @@ class AnalysisController(QObject):
         bounds: tuple[int, int] | None,
         calibration: CalibrationOverrides,
     ) -> None:
-        """Change all four choices through the same revision-guarded worker queue."""
+        """Change all four choices through the same revision-guarded worker queue.
+
+        Args:
+            bounds: Selected inclusive source-sample bounds.
+            calibration: Selected calibration basis and reference evidence.
+
+        Returns:
+            None.
+        """
         binding = self._binding
         if self._closed or binding is None:
             return
@@ -259,6 +360,10 @@ class AnalysisController(QObject):
         self._set_pending(False)
 
     def close(self) -> None:
-        """Reject pending UI deliveries and release service/registration ownership."""
+        """Reject pending UI deliveries and release service/registration ownership.
+
+        Returns:
+            None.
+        """
         self._closed = True
         self._release()

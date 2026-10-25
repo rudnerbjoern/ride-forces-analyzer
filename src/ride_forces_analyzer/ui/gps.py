@@ -40,18 +40,49 @@ from ride_forces_analyzer.map_background import (
 
 
 class MapSignals(QObject):
+    """Map signals contract and owned data.
+
+    Attributes:
+        completed: Qt signal for completed notifications.
+        failed: Qt signal for failed notifications.
+    """
+
     completed = Signal(int, object)
     failed = Signal(int)
 
 
 class MapWorker(QRunnable):
+    """Map worker contract and owned data.
+
+    Attributes:
+        request: Request carrying the inputs and context for this operation.
+        revision: Monotonically increasing identity used to reject superseded work.
+        cancelled: Event used to request cancellation without publishing partial output.
+        signals: Qt result, failure and progress signal transport owned by the worker.
+    """
+
     def __init__(self, request: MapRequest, revision: int, cancelled: Event) -> None:
+        """Initialize map worker and its owned state.
+
+        Args:
+            request: Request carrying the inputs and context for this operation.
+            revision: Monotonically increasing identity used to reject superseded work.
+            cancelled: Cancellation event checked during the operation.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.request, self.revision, self.cancelled = request, revision, cancelled
         self.signals = MapSignals()
 
     @Slot()
     def run(self) -> None:
+        """Execute the worker task and deliver completion or failure through its signals.
+
+        Returns:
+            None.
+        """
         try:
             result = load_background(self.request, self.cancelled)
         except Exception as error:
@@ -62,9 +93,23 @@ class MapWorker(QRunnable):
 
 
 class GpsView(QGraphicsView):
+    """Gps view contract and owned data.
+
+    Attributes:
+        map_visible: Whether the optional background map is shown.
+    """
+
     map_visible = False
 
     def changeEvent(self, event: QEvent) -> None:
+        """Refresh translated or themed controls after a Qt change event.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         super().changeEvent(event)
         if event.type() in (
             QEvent.Type.PaletteChange,
@@ -74,6 +119,11 @@ class GpsView(QGraphicsView):
             self.style_route()
 
     def style_route(self) -> None:
+        """Apply the current theme to route and map presentation items.
+
+        Returns:
+            None.
+        """
         scene = self.scene()
         dark = self.palette().base().color().lightness() < 128 and not self.map_visible
         colors = ("#4e9bff", "#35f58a", "#ff687a") if dark else ("#2563eb", "#08783b", "#bc2339")
@@ -91,17 +141,50 @@ class GpsView(QGraphicsView):
                 item.setBrush(color)
 
     def resizeEvent(self, event: QResizeEvent) -> None:
+        """Update view geometry after a Qt resize event.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         super().resizeEvent(event)
         self.fitInView(self.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
 
 
 class GpsDialog(QDialog):
+    """Gps dialog contract and owned data.
+
+    Attributes:
+        view: View displaying the GPS route.
+        map_button: Control toggling the optional background map.
+        map_status: Label displaying map-loading status.
+        attribution: Label displaying the map-provider attribution.
+        revision: Monotonically increasing identity used to reject superseded work.
+        stopped: Whether this controller has stopped accepting worker results.
+        cancelled: Event used to request cancellation without publishing partial output.
+        worker: Current background worker, or None when no task is active.
+        route: Prepared geographic route for display.
+        map_item: Graphics item displaying the background map.
+    """
+
     view: GpsView
     map_button: QPushButton
     map_status: QLabel
     attribution: QLabel
 
     def __init__(self, overview: GpsOverview, title: str, parent: QWidget) -> None:
+        """Initialize gps dialog and its owned state.
+
+        Args:
+            overview: Prepared recording or route summary.
+            title: Window or recording title.
+            parent: Qt parent that owns this object's lifetime.
+
+        Returns:
+            None.
+        """
         super().__init__(parent)
         self.revision = 0
         self.stopped = False
@@ -113,6 +196,11 @@ class GpsDialog(QDialog):
 
     @Slot()
     def load_map(self) -> None:
+        """Request the optional background for the currently visible GPS area.
+
+        Returns:
+            None.
+        """
         if self.stopped or self.worker is not None or self.route is None:
             return
         bounds = self.view.mapToScene(self.view.viewport().rect()).boundingRect()
@@ -139,6 +227,15 @@ class GpsDialog(QDialog):
 
     @Slot(int, object)
     def map_ready(self, revision: int, result: object) -> None:
+        """Adopt a map result only when it belongs to the active request.
+
+        Args:
+            revision: Monotonically increasing identity used to reject superseded work.
+            result: Completed operation result.
+
+        Returns:
+            None.
+        """
         if self.stopped or revision != self.revision or not isinstance(result, MapBackground):
             return
         self.worker = None
@@ -159,6 +256,14 @@ class GpsDialog(QDialog):
 
     @Slot(int)
     def map_failed(self, revision: int) -> None:
+        """Display an active map-request failure while retaining the route.
+
+        Args:
+            revision: Monotonically increasing identity used to reject superseded work.
+
+        Returns:
+            None.
+        """
         if self.stopped or revision != self.revision:
             return
         self.worker = None
@@ -166,6 +271,14 @@ class GpsDialog(QDialog):
         bind(self.map_status, tr("Map unavailable. The GPS track remains usable."))
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        """Handle window closure while preserving the owned worker lifecycle.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         self.stopped = True
         self.revision += 1
         self.cancelled.set()
@@ -174,6 +287,14 @@ class GpsDialog(QDialog):
         super().closeEvent(event)
 
     def showEvent(self, event: QShowEvent) -> None:
+        """Apply the view's startup geometry and appearance when it becomes visible.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         self.stopped = False
         super().showEvent(event)
 
@@ -267,4 +388,14 @@ def _populate_dialog(dialog: GpsDialog, overview: GpsOverview, title: str) -> No
 
 
 def gps_dialog(overview: GpsOverview, title: str, parent: QWidget) -> GpsDialog:
+    """Create the independent GPS overview dialog for a recording.
+
+    Args:
+        overview: Prepared recording or route summary.
+        title: Window or recording title.
+        parent: Qt parent that owns this object's lifetime.
+
+    Returns:
+        Independent GPS-context dialog for the supplied recording.
+    """
     return GpsDialog(overview, title, parent)

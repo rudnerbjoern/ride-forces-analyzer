@@ -22,12 +22,34 @@ from .translation import bind
 
 
 class DataSignals(QObject):
+    """Data signals contract and owned data.
+
+    Attributes:
+        progress: Qt signal for progress notifications.
+        completed: Qt signal for completed notifications.
+        failed: Qt signal for failed notifications.
+    """
+
     progress = Signal(int)
     completed = Signal(object)
     failed = Signal(str)
 
 
 class DataWorker(QRunnable):
+    """Data worker contract and owned data.
+
+    Attributes:
+        analysis: Prepared recording-analysis snapshot used by this operation.
+        path: Filesystem path read or written by this operation.
+        first: First included source index or the control selecting that bound.
+        last: Last included source index or the control selecting that bound.
+        format: Selected output or numeric presentation format.
+        overwrite: Whether the caller explicitly permits replacing an existing
+            destination.
+        cancelled: Event used to request cancellation without publishing partial output.
+        signals: Qt result, failure and progress signal transport owned by the worker.
+    """
+
     def __init__(
         self,
         analysis: RecordingAnalysis,
@@ -37,6 +59,20 @@ class DataWorker(QRunnable):
         format: Literal["csv", "json", "analyzer_json"],
         overwrite: bool = False,
     ) -> None:
+        """Initialize data worker and its owned state.
+
+        Args:
+            analysis: Prepared recording-analysis snapshot used by this operation.
+            path: Filesystem path read or written by this operation.
+            first: First included source sample index.
+            last: Last included source sample index.
+            format: Selected output or numeric presentation format.
+            overwrite: Whether the caller explicitly permits replacing an existing
+                destination.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.analysis, self.path, self.first, self.last = analysis, path, first, last
         self.format = format
@@ -46,6 +82,11 @@ class DataWorker(QRunnable):
 
     @Slot()
     def run(self) -> None:
+        """Execute the worker task and deliver completion or failure through its signals.
+
+        Returns:
+            None.
+        """
         try:
             exporter = {
                 "csv": export_csv,
@@ -71,7 +112,14 @@ class DataWorker(QRunnable):
 
 
 class DataExportDialog(QProgressDialog):
-    """Keep a bound snapshot alive while writing, independent of workspace updates."""
+    """Keep a bound snapshot alive while writing, independent of workspace updates.
+
+    Attributes:
+        saved: Qt signal for saved notifications.
+        format: Selected output or numeric presentation format.
+        preferences: Local application preference access for this window or controller.
+        worker: Current background worker, or None when no task is active.
+    """
 
     saved = Signal(str)
 
@@ -86,6 +134,22 @@ class DataExportDialog(QProgressDialog):
         format: Literal["csv", "json", "analyzer_json"],
         overwrite: bool = False,
     ) -> None:
+        """Initialize data export dialog and its owned state.
+
+        Args:
+            analysis: Prepared recording-analysis snapshot used by this operation.
+            path: Filesystem path read or written by this operation.
+            first: First included source sample index.
+            last: Last included source sample index.
+            preferences: Local application preference access.
+            parent: Qt parent that owns this object's lifetime.
+            format: Selected output or numeric presentation format.
+            overwrite: Whether the caller explicitly permits replacing an existing
+                destination.
+
+        Returns:
+            None.
+        """
         super().__init__(parent)
         self.setObjectName(f"{format}ExportProgress")
         self.format = format
@@ -135,5 +199,13 @@ class DataExportDialog(QProgressDialog):
             )
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        """Handle window closure while preserving the owned worker lifecycle.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         self.worker.cancelled.set()
         super().closeEvent(event)

@@ -92,6 +92,22 @@ def _save_recording_calibration(
 
 
 class Appearance(StrEnum):
+    """Appearance contract and owned data.
+
+    Attributes:
+        DARK: Named value for dark (`dark`).
+        LIGHT: Named value for light (`light`).
+        SYSTEM: Named value for system (`system`).
+        VERBOLTEN: Named value for verbolten (`verbolten`).
+        MANTA: Named value for manta (`manta`).
+        FALCONS_FLIGHT: Named value for falcons flight (`falcons_flight`).
+        TARON: Named value for taron (`taron`).
+        RED_FORCE: Named value for red force (`red_force`).
+        LOCH_NESS: Named value for loch ness (`loch_ness`).
+        SLINKY_DOG_DASH: Named value for slinky dog dash (`slinky_dog_dash`).
+        TOP_THRILL_2: Named value for top thrill 2 (`top_thrill_2`).
+    """
+
     DARK = "dark"
     LIGHT = "light"
     SYSTEM = "system"
@@ -128,6 +144,12 @@ _TIMESTAMP = TypeAdapter(FiniteFloat)
 
 
 class Preferences:
+    """Preferences contract and owned data.
+
+    Attributes:
+        path: Filesystem path read or written by this operation.
+    """
+
     def remember_recording_markers(
         self,
         source: ImportSuccess,
@@ -138,6 +160,17 @@ class Preferences:
 
         Invalid choices raise before writing; storage failure leaves the previous
         transaction intact and returns False. Original source evidence is retained.
+
+        Args:
+            source: Input recording, retained source representation or source path to read.
+            bounds: Selected inclusive source-sample bounds.
+            calibration: Selected calibration basis and reference evidence.
+
+        Returns:
+            True when the requested check succeeds or the event is handled; otherwise False.
+
+        Raises:
+            ValueError: Ride markers outside recording.
         """
         if bounds is not None:
             bounds = _recording_bounds(bounds)
@@ -154,7 +187,14 @@ class Preferences:
             return False
 
     def recording_calibration(self, source_sha256: str) -> CalibrationOverrides | None:
-        """Read a versioned reference recipe; corrupt/unsupported rows stay untouched."""
+        """Read a versioned reference recipe; corrupt/unsupported rows stay untouched.
+
+        Args:
+            source_sha256: SHA-256 identity of the original recording bytes.
+
+        Returns:
+            Valid saved calibration overrides, or None when unavailable or unsupported.
+        """
         identifier = _recording_hash(source_sha256)
         try:
             if not self.path.is_file():
@@ -178,6 +218,13 @@ class Preferences:
 
         Invalid references raise before any database write. Storage errors return
         False. No original recording data or direction vectors are written here.
+
+        Args:
+            source: Input recording, retained source representation or source path to read.
+            calibration: Selected calibration basis and reference evidence.
+
+        Returns:
+            True when the requested check succeeds or the event is handled; otherwise False.
         """
         validate_calibration_references(source, calibration, calculation_time=datetime.now(UTC))
         identifier = source.source_sha256
@@ -201,6 +248,14 @@ class Preferences:
         Invalid optional entries are ignored independently and never deleted.
         Numerical stages remain owned by the caller's analysis service/snapshot.
         Saved jobs must use their bound recipe instead of this local lookup.
+
+        Args:
+            source: Input recording, retained source representation or source path to read.
+            configuration: Requested immutable analysis or export configuration.
+            calculation_time: Aware timestamp recorded in calculation provenance.
+
+        Returns:
+            Configuration with valid local markers applied to the imported source.
         """
         bounds = self.recording_bounds(source.source_sha256)
         if bounds is None or bounds[1] >= len(source.recording.motion.acceleration):
@@ -222,7 +277,14 @@ class Preferences:
         )
 
     def recording_bounds(self, source_sha256: str) -> tuple[int, int] | None:
-        """Read optional content-bound markers; missing/unreadable storage is ignored."""
+        """Read optional content-bound markers; missing/unreadable storage is ignored.
+
+        Args:
+            source_sha256: SHA-256 identity of the original recording bytes.
+
+        Returns:
+            Saved inclusive source bounds, or None when unavailable or unreadable.
+        """
         identifier = _recording_hash(source_sha256)
         try:
             if not self.path.is_file():
@@ -241,7 +303,15 @@ class Preferences:
         source_sha256: str,
         bounds: tuple[int, int] | None,
     ) -> bool:
-        """Save/reset local markers, returning False on storage failure; never write a source."""
+        """Save/reset local markers, returning False on storage failure; never write a source.
+
+        Args:
+            source_sha256: SHA-256 identity of the original recording bytes.
+            bounds: Selected inclusive source-sample bounds.
+
+        Returns:
+            True when the requested check succeeds or the event is handled; otherwise False.
+        """
         identifier = _recording_hash(source_sha256)
         if bounds is not None:
             bounds = _recording_bounds(bounds)
@@ -254,25 +324,61 @@ class Preferences:
             return False
 
     def __init__(self, path: Path | None = None) -> None:
+        """Initialize preferences and its owned state.
+
+        Args:
+            path: Filesystem path read or written by this operation.
+
+        Returns:
+            None.
+        """
         self.path = _PATH.validate_python(
             path if path is not None else default_database_path().with_name("preferences.sqlite3"),
             strict=True,
         )
 
     def recording_directory(self) -> str:
+        """Return the remembered directory used for recording-file selection.
+
+        Returns:
+            The remembered directory used for recording-file selection.
+        """
         return self._directory("recording_directory")
 
     def export_directory(self) -> str:
+        """Return the remembered destination directory for exports.
+
+        Returns:
+            The remembered destination directory for exports.
+        """
         return self._directory("export_directory")
 
     def restore_last_file(self) -> bool:
+        """Return whether startup may restore the last successfully opened file.
+
+        Returns:
+            Whether startup may restore the last successfully opened file.
+        """
         return self._read("restore_last_file") == "true"
 
     def remember_restore_last_file(self, enabled: bool) -> None:
+        """Persist the selected restore last file preference.
+
+        Args:
+            enabled: Whether the requested presentation or stored preference is enabled.
+
+        Returns:
+            None.
+        """
         enabled = _BOOLEAN.validate_python(enabled, strict=True)
         self._write("restore_last_file", "true" if enabled else "false")
 
     def last_recording(self) -> Path | None:
+        """Return the remembered recording path when it is usable.
+
+        Returns:
+            The remembered recording path when it is usable.
+        """
         value = self._read("last_recording_path")
         if value:
             try:
@@ -291,6 +397,14 @@ class Preferences:
             return ""
 
     def language(self, default: Language = "en") -> Language:
+        """Read a valid saved language or the caller's fallback.
+
+        Args:
+            default: Fallback value used when no valid stored value is available.
+
+        Returns:
+            Valid saved interface language, or the supplied fallback.
+        """
         default = _LANGUAGE.validate_python(default, strict=True)
         value = self._read("language")
         for language in LANGUAGES:
@@ -299,6 +413,11 @@ class Preferences:
         return default
 
     def appearance(self) -> Appearance:
+        """Read the saved workspace appearance preference.
+
+        Returns:
+            Saved appearance choice or its admitted default.
+        """
         value = self._read("appearance")
         try:
             return Appearance(value)
@@ -306,12 +425,33 @@ class Preferences:
             return Appearance.SYSTEM
 
     def remember_language(self, value: Language) -> None:
+        """Persist the selected language preference.
+
+        Args:
+            value: Candidate value to validate, format or store.
+
+        Returns:
+            None.
+        """
         self._write("language", _LANGUAGE.validate_python(value, strict=True))
 
     def remember_appearance(self, value: Appearance) -> None:
+        """Persist the selected appearance preference.
+
+        Args:
+            value: Candidate value to validate, format or store.
+
+        Returns:
+            None.
+        """
         self._write("appearance", _APPEARANCE.validate_python(value, strict=True).value)
 
     def export_fps(self) -> FrameRate:
+        """Read the default frame-rate choice for new video exports.
+
+        Returns:
+            Saved output frame rate or its admitted default.
+        """
         value = self._read("export_fps")
         for rate in EXPORT_FRAME_RATES:
             if str(rate) == value:
@@ -319,11 +459,27 @@ class Preferences:
         return 50
 
     def remember_export_fps(self, value: FrameRate) -> None:
+        """Persist the selected export fps preference.
+
+        Args:
+            value: Candidate value to validate, format or store.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Unsupported default export frame rate.
+        """
         if type(value) not in (int, str) or value not in EXPORT_FRAME_RATES:
             raise ValueError("Unsupported default export frame rate")
         self._write("export_fps", str(value))
 
     def render_jobs(self) -> int:
+        """Read the locally permitted number of concurrent frame renderers.
+
+        Returns:
+            Saved renderer count fitted to the local CPU limit.
+        """
         from ride_forces_analyzer.cpu_resources import effective_render_jobs
 
         value = self._read("render_jobs")
@@ -333,18 +489,47 @@ class Preferences:
             return 1
 
     def remember_render_jobs(self, value: int) -> None:
+        """Persist the selected render jobs preference.
+
+        Args:
+            value: Candidate value to validate, format or store.
+
+        Returns:
+            None.
+        """
         from ride_forces_analyzer.cpu_resources import effective_render_jobs
 
         self._write("render_jobs", str(effective_render_jobs(value)))
 
     def automatic_updates(self) -> bool:
+        """Return whether optional startup update checks are enabled.
+
+        Returns:
+            Whether optional startup update checks are enabled.
+        """
         return self._read("automatic_updates") == "true"
 
     def remember_automatic_updates(self, enabled: bool) -> None:
+        """Persist the selected automatic updates preference.
+
+        Args:
+            enabled: Whether the requested presentation or stored preference is enabled.
+
+        Returns:
+            None.
+        """
         enabled = _BOOLEAN.validate_python(enabled, strict=True)
         self._write("automatic_updates", "true" if enabled else "false")
 
     def update_check_due(self, now: float) -> bool:
+        """Check whether an enabled startup update lookup is due.
+
+        Args:
+            now: Current timestamp used by the operation's time comparison.
+
+        Returns:
+            True when the requested check succeeds or the event is handled; otherwise False.
+        """
         now = _TIMESTAMP.validate_python(now, strict=True)
         if not self.automatic_updates():
             return False
@@ -355,12 +540,33 @@ class Preferences:
         return not isfinite(last) or now < last or now - last >= 86400
 
     def remember_update_check(self, now: float) -> None:
+        """Persist the selected update check preference.
+
+        Args:
+            now: Current timestamp used by the operation's time comparison.
+
+        Returns:
+            None.
+        """
         self._write("update_checked_at", str(_TIMESTAMP.validate_python(now, strict=True)))
 
     def skipped_update(self) -> str:
+        """Return the saved release tag suppressed by the user.
+
+        Returns:
+            The saved release tag suppressed by the user.
+        """
         return self._read("skipped_update")
 
     def skip_update(self, tag: str) -> None:
+        """Remember a release tag that the user chose to suppress.
+
+        Args:
+            tag: Version tag selected for lookup, validation or suppression.
+
+        Returns:
+            None.
+        """
         self._write("skipped_update", _TEXT.validate_python(tag, strict=True))
 
     def _read(self, key: PreferenceKey) -> str:
@@ -377,9 +583,25 @@ class Preferences:
             return ""
 
     def remember_recording(self, path: Path) -> None:
+        """Remember a successfully opened recording and its directory.
+
+        Args:
+            path: Filesystem path read or written by this operation.
+
+        Returns:
+            None.
+        """
         self._remember("recording_directory", path)
 
     def remember_export(self, path: Path) -> None:
+        """Remember the directory of a successfully completed export.
+
+        Args:
+            path: Filesystem path read or written by this operation.
+
+        Returns:
+            None.
+        """
         self._remember("export_directory", path)
 
     def _remember(self, key: DirectoryKey, path: Path) -> None:

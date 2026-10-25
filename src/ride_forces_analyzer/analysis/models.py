@@ -40,6 +40,15 @@ def _enum(value: object, kind: type[StrEnum]) -> None:
 
 
 class CapabilityState(StrEnum):
+    """Capability state contract and owned data.
+
+    Attributes:
+        VERIFIED: Named value for verified (`verified`).
+        PROVISIONAL: Named value for provisional (`provisional`).
+        UNAVAILABLE: Named value for unavailable (`unavailable`).
+        INVALID: Named value for invalid (`invalid`).
+    """
+
     VERIFIED = "verified"
     PROVISIONAL = "provisional"
     UNAVAILABLE = "unavailable"
@@ -47,6 +56,23 @@ class CapabilityState(StrEnum):
 
 
 class QuantityKind(StrEnum):
+    """Quantity kind contract and owned data.
+
+    Attributes:
+        SOURCE_VALUES: Named value for source values (`source_values`).
+        SPECIFIC_FORCE: Named value for specific force (`specific_force`).
+        GRAVITY: Named value for gravity (`gravity`).
+        KINEMATIC_ACCELERATION: Named value for kinematic acceleration
+            (`kinematic_acceleration`).
+        DEVICE_VECTOR_MAGNITUDE: Named value for device vector magnitude
+            (`device_vector_magnitude`).
+        LOAD_FACTOR: Named value for load factor (`load_factor`).
+        DISTANCE: Named value for distance (`distance`).
+        SPEED: Named value for speed (`speed`).
+        ALTITUDE: Named value for altitude (`altitude`).
+        ANGLE: Named value for angle (`angle`).
+    """
+
     SOURCE_VALUES = "source_values"
     SPECIFIC_FORCE = "specific_force"
     GRAVITY = "gravity"
@@ -60,6 +86,17 @@ class QuantityKind(StrEnum):
 
 
 class UnitLabel(StrEnum):
+    """Unit label contract and owned data.
+
+    Attributes:
+        UNKNOWN: Named value for unknown (`unknown`).
+        ACCELERATION_SI: Named value for acceleration si (`m/s^2`).
+        DIMENSIONLESS: Named value for dimensionless (`dimensionless`).
+        METERS: Named value for meters (`m`).
+        METERS_PER_SECOND: Named value for meters per second (`m/s`).
+        DEGREES: Named value for degrees (`deg`).
+    """
+
     UNKNOWN = "unknown"
     ACCELERATION_SI = "m/s^2"
     DIMENSIONLESS = "dimensionless"
@@ -69,12 +106,29 @@ class UnitLabel(StrEnum):
 
 
 class EvidenceState(StrEnum):
+    """Evidence state contract and owned data.
+
+    Attributes:
+        UNKNOWN: Named value for unknown (`unknown`).
+        ASSUMED: Named value for assumed (`assumed`).
+        VERIFIED: Named value for verified (`verified`).
+    """
+
     UNKNOWN = "unknown"
     ASSUMED = "assumed"
     VERIFIED = "verified"
 
 
 class FrameLabel(StrEnum):
+    """Frame label contract and owned data.
+
+    Attributes:
+        UNKNOWN: Named value for unknown (`unknown`).
+        DEVICE: Named value for device (`device`).
+        WORLD_GRAVITY: Named value for world gravity (`world_gravity`).
+        RIDER: Named value for rider (`rider`).
+    """
+
     UNKNOWN = "unknown"
     DEVICE = "device"
     WORLD_GRAVITY = "world_gravity"
@@ -82,17 +136,41 @@ class FrameLabel(StrEnum):
 
 
 class SourceSequence(StrEnum):
+    """Source sequence contract and owned data.
+
+    Attributes:
+        ACCELERATION: Named value for acceleration (`acceleration`).
+        GRAVITY: Named value for gravity (`gravity`).
+        GPS: Named value for gps (`gps`).
+    """
+
     ACCELERATION = "acceleration"
     GRAVITY = "gravity"
     GPS = "gps"
 
 
 class ProcessingKind(StrEnum):
+    """Processing kind contract and owned data.
+
+    Attributes:
+        RAW: Named value for raw (`raw`).
+        FILTERED: Named value for filtered (`filtered`).
+    """
+
     RAW = "raw"
     FILTERED = "filtered"
 
 
 class TimeBasisKind(StrEnum):
+    """Time basis kind contract and owned data.
+
+    Attributes:
+        SAMPLE_INDEX: Named value for sample index (`sample_index`).
+        INFERRED_UNIFORM: Named value for inferred uniform (`inferred_uniform`).
+        SOURCE_UNVERIFIED: Named value for source unverified (`source_unverified`).
+        VERIFIED_SECONDS: Named value for verified seconds (`verified_seconds`).
+    """
+
     SAMPLE_INDEX = "sample_index"
     INFERRED_UNIFORM = "inferred_uniform"
     SOURCE_UNVERIFIED = "source_unverified"
@@ -101,11 +179,28 @@ class TimeBasisKind(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class UnitAssignment:
+    """Unit assignment contract and owned data.
+
+    Attributes:
+        label: Human-readable label.
+        state: Declared capability, request or parsing state for this object.
+        evidence: Evidence supporting the declared value.
+    """
+
     label: UnitLabel = UnitLabel.UNKNOWN
     state: EvidenceState = EvidenceState.UNKNOWN
     evidence: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Unknown units and unknown evidence state must agree. Assigned units
+                require explicit evidence or assumption references.
+        """
         _enum(self.label, UnitLabel)
         _enum(self.state, EvidenceState)
         object.__setattr__(self, "evidence", _texts(self.evidence, "Unit evidence"))
@@ -117,12 +212,32 @@ class UnitAssignment:
 
 @dataclass(frozen=True, slots=True)
 class TimeBasis:
+    """Time basis contract and owned data.
+
+    Attributes:
+        kind: Discriminator identifying the represented variant.
+        sample_rate: Effective source samples per second, retaining its origin separately.
+        epoch: Optional epoch associated with the time representation.
+        evidence: Evidence supporting the declared value.
+    """
+
     kind: TimeBasisKind = TimeBasisKind.SAMPLE_INDEX
     sample_rate: SampleRate | None = None
     epoch: str | None = None
     evidence: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError: Time sample rate must retain the M2 value and origin.
+            ValueError: Inferred uniform time requires the effective sample rate. Verified
+                seconds require independent time evidence. An unverified or inferred time
+                basis cannot assign an epoch.
+        """
         _enum(self.kind, TimeBasisKind)
         object.__setattr__(self, "evidence", _texts(self.evidence, "Time evidence"))
         if self.sample_rate is not None and not has_type(self.sample_rate, SampleRate):
@@ -139,7 +254,13 @@ class TimeBasis:
 
 @dataclass(frozen=True, slots=True, init=False)
 class SampleValues:
-    """Own float64 bytes and explicit row validity; expose fresh read-only NumPy views."""
+    """Own float64 bytes and explicit row validity; expose fresh read-only NumPy views.
+
+    Attributes:
+        _data: Owned sample buffer.
+        shape: Dimensions of the retained sample buffer.
+        valid_rows: Validity mask distinguishing missing rows from numeric zero.
+    """
 
     _data: bytes = field(repr=False)
     shape: tuple[int, ...]
@@ -151,6 +272,22 @@ class SampleValues:
         *,
         valid_rows: Sequence[bool] | None = None,
     ) -> None:
+        """Initialize sample values and its owned state.
+
+        Args:
+            values: Values to format, validate or add in their supplied order.
+            valid_rows: Mask identifying present, valid sample rows.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError: Samples require a real numeric NumPy array, excluding booleans.
+            ValueError: Samples require a nonempty scalar or column array. Sample columns
+                cannot be empty. Validity must contain one explicit boolean per source row.
+                Valid rows must contain only finite numbers. Missing rows require explicit
+                NaN, never zero or hidden values.
+        """
         if not has_type(values, np.ndarray) or values.dtype.kind not in "iuf":
             raise TypeError("Samples require a real numeric NumPy array, excluding booleans")
         if values.ndim not in (1, 2) or values.shape[0] == 0:
@@ -172,7 +309,11 @@ class SampleValues:
 
     @property
     def values(self) -> NDArray[np.float64]:
-        """Metadata edits to this fresh view cannot change the owned model or data."""
+        """Metadata edits to this fresh view cannot change the owned model or data.
+
+        Returns:
+            A read-only view whose metadata can be changed without modifying the owned buffer.
+        """
         return np.frombuffer(self._data, dtype="<f8").reshape(self.shape)
 
 
@@ -180,6 +321,16 @@ type ParameterValue = None | bool | str | int | float
 
 
 class ProfileName(StrEnum):
+    """Profile name contract and owned data.
+
+    Attributes:
+        RAW_DEVICE_ONLY: Named value for raw device only (`raw_device_only`).
+        DEVICE_VECTORS: Named value for device vectors (`device_vectors`).
+        RIDER_CALIBRATED: Named value for rider calibrated (`rider_calibrated`).
+        GPS_EXPLORATORY: Named value for gps exploratory (`gps_exploratory`).
+        GPS_STRICT: Named value for gps strict (`gps_strict`).
+    """
+
     RAW_DEVICE_ONLY = "raw_device_only"
     DEVICE_VECTORS = "device_vectors"
     RIDER_CALIBRATED = "rider_calibrated"
@@ -189,6 +340,18 @@ class ProfileName(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class AnalysisProfile:
+    """Analysis profile contract and owned data.
+
+    Attributes:
+        name: Stable identifier or displayed name for this model or view.
+        schema_version: Version identifying the admitted source or stored document
+            contract.
+        configuration: Requested immutable analysis or export configuration.
+        policy_references: References supporting the selected scientific policy.
+        assumptions: Explicit assumptions admitted by this analysis profile.
+        allow_provisional: Whether the profile permits explicitly provisional results.
+    """
+
     name: ProfileName = ProfileName.RAW_DEVICE_ONLY
     schema_version: str = "1"
     configuration: Mapping[str, ParameterValue] = field(default_factory=dict[str, ParameterValue])
@@ -197,6 +360,19 @@ class AnalysisProfile:
     allow_provisional: bool = False
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError: Provisional permission must be explicit boolean. Profile configuration
+                must be a scalar-valued mapping. Configuration values must be immutable
+                scalars.
+            ValueError: Configuration numbers must be finite. The raw default cannot enable
+                assumptions or processing settings. Non-default profiles require explicit
+                reviewed-policy references. Provisional profiles require named assumptions.
+        """
         _enum(self.name, ProfileName)
         _text(self.schema_version, "Profile schema")
         if type(self.allow_provisional) is not bool:
@@ -225,6 +401,16 @@ class AnalysisProfile:
 
 @dataclass(frozen=True, slots=True)
 class AnalysisDiagnostic:
+    """Analysis diagnostic contract and owned data.
+
+    Attributes:
+        code: Stable diagnostic code used to select its localized explanation.
+        severity: Diagnostic severity.
+        message: Text or diagnostic message to present or validate.
+        channel_id: Identifier of the affected channel.
+        source_index: Original source-sequence index associated with the value.
+    """
+
     code: str
     severity: Severity
     message: str
@@ -232,6 +418,16 @@ class AnalysisDiagnostic:
     source_index: int | None = None
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Diagnostic code must be a stable uppercase identifier. Diagnostic
+                index must be a nonnegative integer. Indexed diagnostics require a
+                channel/sequence reference.
+        """
         if not has_type(self.code, str) or not re.fullmatch(r"[A-Z][A-Z0-9_]*", self.code):
             raise ValueError("Diagnostic code must be a stable uppercase identifier")
         _enum(self.severity, Severity)
@@ -247,6 +443,24 @@ class AnalysisDiagnostic:
 
 @dataclass(frozen=True, slots=True)
 class AnalysisChannel:
+    """Analysis channel contract and owned data.
+
+    Attributes:
+        identifier: Stable identifier of this channel or subscription.
+        quantity: Declared physical quantity, including an explicit unknown state.
+        state: Declared capability, request or parsing state for this object.
+        source_sequence: Source sequence from which the values originate.
+        unit: Declared unit and its evidence; unknown source units remain unknown.
+        frame: Declared coordinate frame, separate from physical mounting qualification.
+        frame_evidence: Evidence supporting the declared coordinate frame.
+        time_basis: Time representation and evidence associated with this data product.
+        processing: Whether the channel represents retained or filtered values.
+        samples: Owned sample buffer and validity information in the declared units.
+        source_indices: Original indices identifying rows in the source sequence.
+        columns: Names identifying the columns of the sample buffer.
+        reason: Explanation for a restricted, unavailable or invalid result.
+    """
+
     identifier: str
     quantity: QuantityKind
     state: CapabilityState
@@ -262,6 +476,21 @@ class AnalysisChannel:
     reason: str | None = None
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError: Channels require typed unit and time assignments.
+            ValueError: Source indices must be nonnegative integers. Excluded channels require
+                a reason and no fabricated samples. Available channels require samples and one
+                source index per row. Every sample column requires a distinct label. Raw
+                source values cannot assign physical units or rider/world frames. Physical
+                quantities require an explicit compatible canonical unit. Verified physical
+                values require verified unit evidence. Interpreted frames require explicit
+                independent evidence.
+        """
         _text(self.identifier, "Channel identifier")
         for value, kind in (
             (self.quantity, QuantityKind),
@@ -329,12 +558,31 @@ class AnalysisChannel:
 
 @dataclass(frozen=True, slots=True)
 class AnalysisProvenance:
+    """Analysis provenance contract and owned data.
+
+    Attributes:
+        source: Retained input identity or image; its original representation remains
+            owned.
+        engine_version: Version of the analysis engine producing the values.
+        algorithm: Identifier of the algorithm used by the stage.
+        calculation_time: Aware timestamp recorded in calculation provenance.
+    """
+
     source: SourceProvenance
     engine_version: str
     algorithm: str
     calculation_time: datetime
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError: Analysis requires retained M2 source provenance.
+            ValueError: Calculation time must be explicit timezone-aware UTC.
+        """
         if not has_type(self.source, SourceProvenance):
             raise TypeError("Analysis requires retained M2 source provenance")
         _text(self.engine_version, "Engine version")
@@ -347,6 +595,14 @@ class AnalysisProvenance:
 
 
 class ResultValidity(StrEnum):
+    """Result validity contract and owned data.
+
+    Attributes:
+        VALID: Named value for valid (`valid`).
+        RESTRICTED: Named value for restricted (`restricted`).
+        INVALID: Named value for invalid (`invalid`).
+    """
+
     VALID = "valid"
     RESTRICTED = "restricted"
     INVALID = "invalid"
@@ -354,6 +610,19 @@ class ResultValidity(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class AnalysisResult:
+    """Analysis result contract and owned data.
+
+    Attributes:
+        source: Retained input identity or image; its original representation remains
+            owned.
+        profile: Explicit analysis or codec profile selected for this data product.
+        provenance: Source identity, processing configuration and calculation evidence.
+        channels: Prepared channels to inspect or display.
+        diagnostics: Structured diagnostics retaining stable codes and source locations.
+        schema_version: Version identifying the admitted source or stored document
+            contract.
+    """
+
     source: ImportSuccess = field(repr=False)
     profile: AnalysisProfile
     provenance: AnalysisProvenance
@@ -362,6 +631,22 @@ class AnalysisResult:
     schema_version: str = "1"
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError: Analysis results require full M2 import success, not a subset or
+                failure. Analysis results require typed profile and provenance. Analysis
+                diagnostics must be typed values.
+            ValueError: Analysis provenance must match the complete M2 source. Result requires
+                nonempty typed channels. Channel identifiers must be unique. Channel indices
+                must be bounded independently by their source sequence. The raw default cannot
+                expose physical or filtered channels. Provisional channels require explicit
+                profile permission and assumptions. Diagnostic channel must exist in the
+                result. Diagnostic index exceeds its independent source sequence.
+        """
         if not has_type(self.source, ImportSuccess):
             raise TypeError(
                 "Analysis results require full M2 import success, not a subset or failure",
@@ -431,7 +716,11 @@ class AnalysisResult:
 
     @property
     def validity(self) -> ResultValidity:
-        """Structural result status, never blanket scientific certification."""
+        """Structural result status, never blanket scientific certification.
+
+        Returns:
+            Structural validity of the result, separate from scientific qualification.
+        """
         if any(item.severity is Severity.ERROR for item in self.diagnostics) or any(
             channel.state is CapabilityState.INVALID for channel in self.channels
         ):

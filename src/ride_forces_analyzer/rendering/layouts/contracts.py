@@ -19,7 +19,19 @@ Region = tuple[int, int, int, int]
 
 
 class LayoutPosition(StrEnum):
-    """Named overlay positions with stable values for storage and UI binding."""
+    """Named overlay positions with stable values for storage and UI binding.
+
+    Attributes:
+        TOP: Named value for top (`top`).
+        BOTTOM: Named value for bottom (`bottom`).
+        LEFT: Named value for left (`left`).
+        RIGHT: Named value for right (`right`).
+        TOP_LEFT: Named value for top left (`top_left`).
+        TOP_RIGHT: Named value for top right (`top_right`).
+        BOTTOM_LEFT: Named value for bottom left (`bottom_left`).
+        BOTTOM_RIGHT: Named value for bottom right (`bottom_right`).
+        FULL_SCREEN: Named value for full screen (`full_screen`).
+    """
 
     TOP = "top"
     BOTTOM = "bottom"
@@ -39,12 +51,26 @@ class LayoutPositions:
     Regions contain integer pixel coordinates and dimensions. Invalid keys,
     missing defaults, negative coordinates or zero/negative sizes raise ValueError.
     The caller's mapping is copied and exposed read-only.
+
+    Attributes:
+        regions: Named placement regions supported by the layout.
+        default: Fallback value used when no valid stored value is available.
     """
 
     regions: Mapping[LayoutPosition, Region]
     default: LayoutPosition
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Layout positions require a supported default. Unknown layout position.
+                Layout region must contain four integer pixel values. Layout region requires
+                nonnegative coordinates and positive size.
+        """
         regions = dict(self.regions)
         if type(self.default) is not LayoutPosition or not regions or self.default not in regions:
             raise ValueError("Layout positions require a supported default")
@@ -71,6 +97,16 @@ class LayoutPositions:
 
         For an edge-to-corner change, the previous position supplies the unspecified
         axis, falling back to the default.
+
+        Args:
+            preferred: Preferred option when available.
+            previous: Previously retained value or state.
+
+        Returns:
+            Inclusive selection admitted by this object's bounds or placement contract.
+
+        Raises:
+            AssertionError: If a required internal invariant does not hold.
         """
         if preferred in self.regions:
             assert preferred is not None
@@ -111,8 +147,17 @@ class LayoutPositions:
 
 
 class LayoutRenderer(Protocol):
+    """Layout renderer contract and owned data."""
+
     def render_position(self, position: float) -> Image.Image:
-        """Return the native RGBA region at an absolute source-sample position."""
+        """Return the native RGBA region at an absolute source-sample position.
+
+        Args:
+            position: Fractional source-sample position.
+
+        Returns:
+            The rendered image in the layout or canvas dimensions declared by the timeline.
+        """
         ...
 
 
@@ -122,6 +167,12 @@ class LayoutPlugin:
 
     HUD uses a smaller native-resolution canvas. Regions exceeding the maximum
     landscape/portrait bounds raise ValueError at registration.
+
+    Attributes:
+        key: Lookup or presentation key used by the operation.
+        landscape: Landscape dimensions supported by the layout.
+        portrait: Whether the selected layout uses portrait geometry.
+        create: Factory constructing a renderer bound to an export timeline.
     """
 
     key: ExportLayout
@@ -130,6 +181,14 @@ class LayoutPlugin:
     create: Callable[[ExportTimeline], LayoutRenderer]
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Layout region must fit within its export canvas.
+        """
         for positions, canvas in ((self.landscape, (3840, 2160)), (self.portrait, (2160, 3840))):
             for x, y, width, height in positions.regions.values():
                 if x + width > canvas[0] or y + height > canvas[1]:

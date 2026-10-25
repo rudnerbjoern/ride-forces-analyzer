@@ -36,6 +36,12 @@ class CalibrationOverrides:
     Raises:
         TypeError: An index is not an integer, including booleans.
         ValueError: An index is negative or the version/window is unsupported.
+
+    Attributes:
+        gravity_index: Source sample used as the gravity reference.
+        incline_index: Optional source sample used as the incline reference.
+        algorithm_version: Version of the algorithm interpreting the references.
+        window_samples: Odd number of source samples in the smoothing or reference window.
     """
 
     gravity_index: int | None = None
@@ -44,6 +50,16 @@ class CalibrationOverrides:
     window_samples: int = REFERENCE_WINDOW_SAMPLES
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Unsupported reference-calibration recipe. Calibration indices must be
+                nonnegative.
+            TypeError: Calibration indices must be integers, not booleans.
+        """
         if (
             self.algorithm_version != "1"
             or type(self.window_samples) is not int
@@ -59,14 +75,31 @@ class CalibrationOverrides:
 
     @property
     def active(self) -> bool:
-        """Whether at least one reference replaces a source direction."""
+        """Whether at least one reference replaces a source direction.
+
+        Returns:
+            True when the requested check succeeds or the event is handled; otherwise False.
+        """
         return self.gravity_index is not None or self.incline_index is not None
 
 
 class CalibrationReferenceError(ValueError):
-    """Reject a reference with a stable diagnostic rather than guessed axes."""
+    """Reject a reference with a stable diagnostic rather than guessed axes.
+
+    Attributes:
+        diagnostic: Structured diagnostic with code and source location.
+    """
 
     def __init__(self, code: str, message: str) -> None:
+        """Initialize calibration reference error and its owned state.
+
+        Args:
+            code: Stable diagnostic code used to select its localized explanation.
+            message: Text or diagnostic message to present or validate.
+
+        Returns:
+            None.
+        """
         self.diagnostic = AnalysisDiagnostic(code, Severity.ERROR, message, "calibration")
         super().__init__(message)
 
@@ -80,6 +113,18 @@ class CalibrationReferences:
     a retained source axis. Provenance retains the source hash and explicit UTC
     validation time. Factory validation establishes geometry only, not physical
     calibration, source-app equivalence or safe rider loading.
+
+    Attributes:
+        overrides: Explicit calibration reference overrides.
+        vertical_reference: Sample selected to establish the vertical reference.
+        longitudinal_reference: Sample selected to establish the longitudinal reference.
+        polarity_reference: Sample selected to establish axis polarity.
+        gravity_interval: Source interval used to estimate the gravity reference.
+        incline_interval: Source interval used to estimate the incline reference.
+        provenance: Source identity, processing configuration and calculation evidence.
+        algorithm_version: Version of the algorithm interpreting the references.
+        window_samples: Odd number of source samples in the smoothing or reference window.
+        capability: Scientific capability status limited to the declared evidence scope.
     """
 
     overrides: CalibrationOverrides
@@ -115,7 +160,11 @@ class CalibrationBasis:
 
     @property
     def directions(self) -> tuple[Vector3, Vector3, Vector3]:
-        """Return vertical/lateral/longitudinal rows for direct projection."""
+        """Return vertical/lateral/longitudinal rows for direct projection.
+
+        Returns:
+            Vertical/lateral/longitudinal rows for direct projection.
+        """
         return self.vertical_direction, self.lateral_direction, self.longitudinal_direction
 
 

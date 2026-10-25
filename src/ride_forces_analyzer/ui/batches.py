@@ -40,6 +40,15 @@ from ride_forces_analyzer.storage.preferences import Preferences
 
 
 class BatchSignals(QObject):
+    """Batch signals contract and owned data.
+
+    Attributes:
+        finished: Qt signal for finished notifications.
+        failed: Qt signal for failed notifications.
+        status: Qt signal for status notifications.
+        progress: Qt signal for progress notifications.
+    """
+
     finished = Signal(object)
     failed = Signal(str)
     status = Signal(str)
@@ -47,6 +56,16 @@ class BatchSignals(QObject):
 
 
 class BuildWorker(QRunnable):
+    """Build worker contract and owned data.
+
+    Attributes:
+        name: Stable identifier or displayed name for this model or view.
+        paths: Input paths to process.
+        presets: Selected immutable export presets used to build jobs.
+        mode: Selected operation mode.
+        signals: Qt result, failure and progress signal transport owned by the worker.
+    """
+
     def __init__(
         self,
         name: str,
@@ -54,6 +73,17 @@ class BuildWorker(QRunnable):
         presets: tuple[SavedPreset, ...],
         mode: RangeMode,
     ) -> None:
+        """Initialize build worker and its owned state.
+
+        Args:
+            name: Display name or identifier used to select the requested item.
+            paths: Input paths to process.
+            presets: Selected immutable export presets used to build jobs.
+            mode: Selected operation mode.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.name, self.paths, self.presets = name, paths, presets
         self.mode: RangeMode = mode
@@ -61,6 +91,11 @@ class BuildWorker(QRunnable):
 
     @Slot()
     def run(self) -> None:
+        """Execute the worker task and deliver completion or failure through its signals.
+
+        Returns:
+            None.
+        """
         try:
             result = SavedBatch(
                 name=self.name,
@@ -75,6 +110,18 @@ class BuildWorker(QRunnable):
 
 
 class BatchWorker(QRunnable):
+    """Batch worker contract and owned data.
+
+    Attributes:
+        batches: Selected saved batches in execution order.
+        directory: Directory used by the operation.
+        ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
+        render_jobs: Requested concurrent frame-renderer count, bounded by local CPU
+            availability.
+        cancelled: Event used to request cancellation without publishing partial output.
+        signals: Qt result, failure and progress signal transport owned by the worker.
+    """
+
     def __init__(
         self,
         batches: tuple[SavedBatch, ...],
@@ -83,6 +130,18 @@ class BatchWorker(QRunnable):
         *,
         render_jobs: int = 1,
     ) -> None:
+        """Initialize batch worker and its owned state.
+
+        Args:
+            batches: Selected saved batches in execution order.
+            directory: Directory used by the operation.
+            ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
+            render_jobs: Requested concurrent frame-renderer count, bounded by local CPU
+                availability.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.batches, self.directory, self.ffmpeg = batches, directory, ffmpeg
         self.render_jobs = render_jobs
@@ -91,6 +150,11 @@ class BatchWorker(QRunnable):
 
     @Slot()
     def run(self) -> None:
+        """Execute the worker task and deliver completion or failure through its signals.
+
+        Returns:
+            None.
+        """
         try:
             report = run_batches(
                 self.batches,
@@ -109,7 +173,43 @@ class BatchWorker(QRunnable):
 
 
 class BatchDialog(QDialog):
+    """Batch dialog contract and owned data.
+
+    Attributes:
+        store: Local export-definition repository used by this view or service.
+        worker: Current background worker, or None when no task is active.
+        builder: Background worker preparing the batch queue.
+        closing: Whether shutdown has started and late results must be ignored.
+        last_report: Result of the most recently completed batch.
+        batch_list: List of saved batch definitions.
+        table: Table control containing the displayed rows.
+        presets: Selected immutable export presets used to build jobs.
+        range_mode: Choice control for range mode.
+        new: Button for new.
+        add: Button for add.
+        remove: Button for remove.
+        delete: Button for delete.
+        encoder: Text input for encoder.
+        browse: Button for browse.
+        current_job: Label displaying current job.
+        progress: Progress display for progress.
+        status: Label displaying status.
+        run_selected: Button for run selected.
+        run_all: Button for run all.
+        close_button: Button for close button.
+        controls: Controls enabled or disabled together during background processing.
+    """
+
     def __init__(self, store: ExportStore, parent: QWidget) -> None:
+        """Initialize batch dialog and its owned state.
+
+        Args:
+            store: Local export-definition storage.
+            parent: Qt parent that owns this object's lifetime.
+
+        Returns:
+            None.
+        """
         super().__init__(parent)
         self.store = store
         self.worker: BatchWorker | None = None
@@ -238,6 +338,15 @@ class BatchDialog(QDialog):
         self.refresh()
 
     def refresh(self, select: str | None = None) -> None:
+        """Reload the displayed batch definitions from local storage.
+
+        Args:
+            select: Saved item name to select after refreshing, or None to retain the current
+                choice.
+
+        Returns:
+            None.
+        """
         try:
             batches, presets = self.store.batches(), self.store.presets()
         except ExportStoreError as error:
@@ -289,6 +398,14 @@ class BatchDialog(QDialog):
         return self.batch_list.currentItem().text()
 
     def changeEvent(self, event: QEvent) -> None:
+        """Refresh translated or themed controls after a Qt change event.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         super().changeEvent(event)
         if event.type() == QEvent.Type.LocaleChange and hasattr(self, "batch_list"):
             self._show_batch(
@@ -489,6 +606,14 @@ class BatchDialog(QDialog):
             self.close()
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        """Handle window closure while preserving the owned worker lifecycle.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         if self.worker is not None:
             self._close_or_cancel()
             event.ignore()
@@ -497,6 +622,11 @@ class BatchDialog(QDialog):
             super().closeEvent(event)
 
     def reject(self) -> None:
+        """Close the dialog through its cancellation and worker-cleanup path.
+
+        Returns:
+            None.
+        """
         if self.worker is not None:
             self._close_or_cancel()
         else:

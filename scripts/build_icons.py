@@ -15,7 +15,18 @@ from ride_forces_analyzer.ui.icons import ICON_SIZES, render_icon
 
 
 def build_icons(destination: Path) -> Path:
-    """Write multi-resolution ICO/ICNS and a 512-pixel PNG using existing Qt/Pillow."""
+    """Write multi-resolution ICO/ICNS and a 512-pixel PNG using existing Qt/Pillow.
+
+    Args:
+        destination: Requested output path; replacement follows the explicit overwrite
+            policy.
+
+    Returns:
+        Path to the generated Windows icon.
+
+    Raises:
+        OSError: If the required filesystem operation fails.
+    """
     destination.mkdir(parents=True, exist_ok=True)
     images: dict[int, Image.Image] = {}
     for size in ICON_SIZES:

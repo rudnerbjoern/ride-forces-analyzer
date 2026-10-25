@@ -11,6 +11,16 @@ from math import floor, isfinite
 
 @dataclass(frozen=True, slots=True)
 class PeakEnvelope:
+    """Hold positive and negative force peaks using deterministic source-time states.
+
+    Attributes:
+        first: First included source index or the control selecting that bound.
+        rate: Sample or frame rate per second, as declared by this operation.
+        states: Prepared peak states aligned with source time.
+        release_g_per_second: Rate in g per second at which a held peak returns toward the
+            measured value.
+    """
+
     first: int
     rate: float
     states: tuple[tuple[float, float, float, float] | None, ...]
@@ -27,6 +37,25 @@ class PeakEnvelope:
         hold_seconds: float = 1.5,
         release_g_per_second: float = 1.0,
     ) -> "PeakEnvelope":
+        """Prepare immutable source-time values for repeated presentation queries.
+
+        Args:
+            values: Values to format, validate or add in their supplied order.
+            first: First included source sample index.
+            last: Last included source sample index.
+            rate: Sample or frame rate per second, as declared by this operation.
+            hold_seconds: Duration in seconds for which a peak is retained.
+            release_g_per_second: Rate in g per second at which a held peak returns toward the
+                measured value.
+
+        Returns:
+            Immutable source-time states prepared for repeated queries over the selected
+            interval.
+
+        Raises:
+            ValueError: Peak hold duration must be finite and nonnegative. Peak release speed
+                must be finite and positive.
+        """
         if not isfinite(hold_seconds) or hold_seconds < 0:
             raise ValueError("Peak hold duration must be finite and nonnegative")
         if not isfinite(release_g_per_second) or release_g_per_second <= 0:
@@ -59,6 +88,16 @@ class PeakEnvelope:
         return cls(first, rate, tuple(states), release_g_per_second)
 
     def at(self, position: float, current: float | None) -> tuple[float, float]:
+        """Read the prepared state at the requested source-sample position.
+
+        Args:
+            position: Fractional source-sample position.
+            current: Current measured value or operation state.
+
+        Returns:
+            Prepared state at the requested source-sample position, adjusted according to the
+            query contract.
+        """
         if current is None:
             return 0.0, 0.0
         index = floor(position)

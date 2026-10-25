@@ -91,6 +91,94 @@ TOP_SCALE_ANCHOR = "ms"  # Centered baseline anchor above lateral plots.
 
 
 class CornersRenderer(ChartRenderer):
+    """Corners renderer contract and owned data.
+
+    Attributes:
+        left_text_anchor: Horizontal anchor for left-aligned text.
+        right_text_anchor: Horizontal anchor for right-aligned text.
+        top_scale_anchor: Upper anchor for the instrument scale.
+        native_size: Layout dimension for native size, in native pixels unless specified
+            otherwise.
+        plot_left: Layout coordinate for plot left in the owning view or renderer.
+        stacked: Whether force cards use a vertical arrangement.
+        font_file: Font resource used for the layout's main labels and values.
+        tick_font_file: Font resource used for scale ticks.
+        label_size: Layout dimension for label size, in native pixels unless specified
+            otherwise.
+        number_size: Layout dimension for number size, in native pixels unless specified
+            otherwise.
+        small_size: Layout dimension for small size, in native pixels unless specified
+            otherwise.
+        tick_size: Layout dimension for tick size, in native pixels unless specified
+            otherwise.
+        channel_colors: Drawing color or palette for channel colors.
+        panel_radius: Layout dimension for panel radius, in native pixels unless specified
+            otherwise.
+        panel_fill: Drawing color or palette for panel fill.
+        panel_outline: Drawing color or palette for panel outline.
+        panel_outline_width: Layout dimension for panel outline width, in native pixels
+            unless specified otherwise.
+        text_stroke_width: Layout dimension for text stroke width, in native pixels unless
+            specified otherwise.
+        text_stroke_color: Drawing color or palette for text stroke color.
+        card_spacing: Spacing between force cards in native pixels.
+        card_height: Layout dimension for card height, in native pixels unless specified
+            otherwise.
+        card_bottom_margin: Layout dimension for card bottom margin, in native pixels
+            unless specified otherwise.
+        plot_top: Layout coordinate for plot top in the owning view or renderer.
+        plot_right: Layout coordinate for plot right in the owning view or renderer.
+        plot_bottom: Layout coordinate for plot bottom in the owning view or renderer.
+        text_left: Layout coordinate for text left in the owning view or renderer.
+        title_top: Layout coordinate for title top in the owning view or renderer.
+        value_top: Layout coordinate for value top in the owning view or renderer.
+        hint_top: Layout coordinate for hint top in the owning view or renderer.
+        hint_color: Drawing color or palette for hint color.
+        separator_top: Layout coordinate for separator top in the owning view or renderer.
+        separator_bottom: Layout coordinate for separator bottom in the owning view or
+            renderer.
+        separator_color: Drawing color or palette for separator color.
+        rule_width: Layout dimension for rule width, in native pixels unless specified
+            otherwise.
+        grid_color: Drawing color or palette for grid color.
+        zero_grid_color: Drawing color or palette for zero grid color.
+        scale_color: Drawing color or palette for scale color.
+        scale_left_gap: Layout dimension for scale left gap, in native pixels unless
+            specified otherwise.
+        scale_top_gap: Layout dimension for scale top gap, in native pixels unless
+            specified otherwise.
+        cursor_color: Drawing color or palette for cursor color.
+        footer_panel_bottom: Layout coordinate for footer panel bottom in the owning view
+            or renderer.
+        footer_portrait_extra: Additional footer space for portrait output, in native
+            pixels.
+        footer_landscape_extra: Additional footer space for landscape output, in native
+            pixels.
+        footer_rule_inset: Layout dimension for footer rule inset, in native pixels unless
+            specified otherwise.
+        footer_rule_offset: Layout dimension for footer rule offset, in native pixels
+            unless specified otherwise.
+        footer_rule_color: Drawing color or palette for footer rule color.
+        footer_text_bottom: Layout coordinate for footer text bottom in the owning view or
+            renderer.
+        footer_text_color: Drawing color or palette for footer text color.
+        trace_outline_color: Drawing color or palette for trace outline color.
+        trace_outline_width: Layout dimension for trace outline width, in native pixels
+            unless specified otherwise.
+        trace_width: Layout dimension for trace width, in native pixels unless specified
+            otherwise.
+        marker_radius: Layout dimension for marker radius, in native pixels unless
+            specified otherwise.
+        marker_outline_color: Drawing color or palette for marker outline color.
+        marker_outline_width: Layout dimension for marker outline width, in native pixels
+            unless specified otherwise.
+        time_text_color: Drawing color or palette for time text color.
+        time_left_gap: Layout dimension for time left gap, in native pixels unless
+            specified otherwise.
+        time_bottom_gap: Layout dimension for time bottom gap, in native pixels unless
+            specified otherwise.
+    """
+
     left_text_anchor = LEFT_TEXT_ANCHOR
     right_text_anchor = RIGHT_TEXT_ANCHOR
     top_scale_anchor = TOP_SCALE_ANCHOR

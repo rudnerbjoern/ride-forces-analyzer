@@ -19,6 +19,74 @@ from .common import ACCELERATION_COLOR, BRAKING_COLOR, Drawing, lateral_x
 
 
 class ChartRenderer(Drawing):
+    """Chart renderer contract and owned data.
+
+    Attributes:
+        native_size: Layout dimension for native size, in native pixels unless specified
+            otherwise.
+        left_text_anchor: Horizontal anchor for left-aligned text.
+        right_text_anchor: Horizontal anchor for right-aligned text.
+        top_scale_anchor: Upper anchor for the instrument scale.
+        stacked: Whether force cards use a vertical arrangement.
+        plot_left: Layout coordinate for plot left in the owning view or renderer.
+        card_spacing: Spacing between force cards in native pixels.
+        card_height: Layout dimension for card height, in native pixels unless specified
+            otherwise.
+        card_bottom_margin: Layout dimension for card bottom margin, in native pixels
+            unless specified otherwise.
+        plot_top: Layout coordinate for plot top in the owning view or renderer.
+        plot_right: Layout coordinate for plot right in the owning view or renderer.
+        plot_bottom: Layout coordinate for plot bottom in the owning view or renderer.
+        text_left: Layout coordinate for text left in the owning view or renderer.
+        title_top: Layout coordinate for title top in the owning view or renderer.
+        value_top: Layout coordinate for value top in the owning view or renderer.
+        hint_top: Layout coordinate for hint top in the owning view or renderer.
+        hint_color: Drawing color or palette for hint color.
+        separator_top: Layout coordinate for separator top in the owning view or renderer.
+        separator_bottom: Layout coordinate for separator bottom in the owning view or
+            renderer.
+        separator_color: Drawing color or palette for separator color.
+        rule_width: Layout dimension for rule width, in native pixels unless specified
+            otherwise.
+        grid_color: Drawing color or palette for grid color.
+        zero_grid_color: Drawing color or palette for zero grid color.
+        scale_color: Drawing color or palette for scale color.
+        scale_left_gap: Layout dimension for scale left gap, in native pixels unless
+            specified otherwise.
+        scale_top_gap: Layout dimension for scale top gap, in native pixels unless
+            specified otherwise.
+        cursor_color: Drawing color or palette for cursor color.
+        footer_panel_bottom: Layout coordinate for footer panel bottom in the owning view
+            or renderer.
+        footer_portrait_extra: Additional footer space for portrait output, in native
+            pixels.
+        footer_landscape_extra: Additional footer space for landscape output, in native
+            pixels.
+        footer_rule_inset: Layout dimension for footer rule inset, in native pixels unless
+            specified otherwise.
+        footer_rule_offset: Layout dimension for footer rule offset, in native pixels
+            unless specified otherwise.
+        footer_rule_color: Drawing color or palette for footer rule color.
+        footer_text_bottom: Layout coordinate for footer text bottom in the owning view or
+            renderer.
+        footer_text_color: Drawing color or palette for footer text color.
+        trace_outline_color: Drawing color or palette for trace outline color.
+        trace_outline_width: Layout dimension for trace outline width, in native pixels
+            unless specified otherwise.
+        trace_width: Layout dimension for trace width, in native pixels unless specified
+            otherwise.
+        marker_radius: Layout dimension for marker radius, in native pixels unless
+            specified otherwise.
+        marker_outline_color: Drawing color or palette for marker outline color.
+        marker_outline_width: Layout dimension for marker outline width, in native pixels
+            unless specified otherwise.
+        time_text_color: Drawing color or palette for time text color.
+        time_left_gap: Layout dimension for time left gap, in native pixels unless
+            specified otherwise.
+        time_bottom_gap: Layout dimension for time bottom gap, in native pixels unless
+            specified otherwise.
+    """
+
     native_size: tuple[int, int]
     left_text_anchor: str
     right_text_anchor: str
@@ -65,6 +133,14 @@ class ChartRenderer(Drawing):
     time_bottom_gap: int
 
     def __init__(self, timeline: ExportTimeline) -> None:
+        """Initialize chart renderer and its owned state.
+
+        Args:
+            timeline: Bound video timeline containing the source interval and export settings.
+
+        Returns:
+            None.
+        """
         super().__init__(timeline, *self.native_size)
         draw = ImageDraw.Draw(self.base)
         if not self.stacked:
@@ -153,16 +229,42 @@ class ChartRenderer(Drawing):
             )
 
     def card_box(self, row: int) -> tuple[int, int, int, int]:
+        """Return the channel card rectangle in layout pixels.
+
+        Args:
+            row: Channel or panel row selected for rendering.
+
+        Returns:
+            The channel card rectangle in layout pixels.
+        """
         if self.stacked:
             return (0, row * self.card_spacing, self.width, self.card_height)
         return (row * (self.width // 3), 0, self.width // 3, self.height - self.card_bottom_margin)
 
     def plot_box(self, row: int) -> tuple[int, int, int, int]:
+        """Return the channel plot rectangle in layout pixels.
+
+        Args:
+            row: Channel or panel row selected for rendering.
+
+        Returns:
+            The channel plot rectangle in layout pixels.
+        """
         x, y, w, h = self.card_box(row)
         left = self.plot_left
         return (x + left, y + self.plot_top, x + w - self.plot_right, y + h - self.plot_bottom)
 
     def value_y(self, channel: ExportChannel, value: float, row: int) -> float:
+        """Map a channel value to its vertical layout coordinate.
+
+        Args:
+            channel: Prepared channel whose units, bounds and availability govern the result.
+            value: Candidate value to validate, format or store.
+            row: Channel or panel row selected for rendering.
+
+        Returns:
+            Vertical drawing coordinate for the supplied channel value.
+        """
         _, top, _, bottom = self.plot_box(row)
         fraction = (value - channel.low) / (channel.high - channel.low)
         return top + (fraction if channel.inverted else 1 - fraction) * (bottom - top)
@@ -174,12 +276,31 @@ class ChartRenderer(Drawing):
         fraction: float,
         row: int,
     ) -> tuple[float, float]:
+        """Map a channel value and normalized time coordinate to a plotted point.
+
+        Args:
+            channel: Prepared channel whose units, bounds and availability govern the result.
+            value: Candidate value to validate, format or store.
+            fraction: Normalized time coordinate within the plotted interval.
+            row: Channel or panel row selected for rendering.
+
+        Returns:
+            Horizontal and vertical drawing coordinates of the plotted sample.
+        """
         left, top, right, bottom = self.plot_box(row)
         if row == 1:
             return lateral_x(channel, value, left, right), bottom - fraction * (bottom - top)
         return left + fraction * (right - left), self.value_y(channel, value, row)
 
     def render_position(self, position: float) -> Image.Image:
+        """Render the layout at a fractional source-sample position.
+
+        Args:
+            position: Fractional source-sample position.
+
+        Returns:
+            The rendered image in the layout or canvas dimensions declared by the timeline.
+        """
         image = self.base.copy()
         draw = ImageDraw.Draw(image)
         half = self.timeline.settings.window_seconds * self.timeline.sample_rate / 2

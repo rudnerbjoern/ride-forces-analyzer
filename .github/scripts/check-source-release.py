@@ -37,6 +37,21 @@ REQUIRED_FILES = (
 
 
 def validate_archive(archive: Path, tag: str) -> None:
+    """Validate release source contents, version, notices and recording hashes.
+
+    Args:
+        archive: Archive path to inspect or produce.
+        tag: Version tag selected for lookup, validation or suppression.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: Source archive lacks required source/license files. Source archive
+            contains unexpected local/binary files. Release tag does not match
+            project.version. Unexpected project license. Recording inventory differs from
+            source archive. Original recording integrity check failed.
+    """
     with ZipFile(archive) as source:
         names = {name for name in source.namelist() if not name.endswith("/")}
         if not set(REQUIRED_FILES) <= names:

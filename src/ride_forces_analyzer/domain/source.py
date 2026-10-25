@@ -20,12 +20,26 @@ NUMBER_TOKEN = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?
 
 @dataclass(frozen=True, slots=True)
 class SourceNumber:
-    """A JSON number's exact token and decimal value, distinct from a string."""
+    """A JSON number's exact token and decimal value, distinct from a string.
+
+    Attributes:
+        token: Original numeric token retained for lossless export.
+        value: Candidate value to validate, format or store.
+    """
 
     token: str
     value: Decimal = field(init=False)
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: SourceNumber requires a JSON number token. SourceNumber requires a
+                finite decimal value.
+        """
         if not has_type(self.token, str) or not NUMBER_TOKEN.fullmatch(self.token):
             raise ValueError("SourceNumber requires a JSON number token")
         value = Decimal(self.token)
@@ -62,17 +76,42 @@ def _freeze(value: object, active: set[int]) -> SourceValue:
 
 
 def freeze_source_value(value: object) -> SourceValue:
-    """Own a source value without inferring types or decoding a document."""
+    """Own a source value without inferring types or decoding a document.
+
+    Args:
+        value: Candidate value to validate, format or store.
+
+    Returns:
+        Owned immutable representation of the supplied source value.
+    """
     return _freeze(value, set())
 
 
 @dataclass(frozen=True, slots=True)
 class SourceProvenance:
+    """Source provenance contract and owned data.
+
+    Attributes:
+        byte_count: Length of the original supplied source bytes.
+        sha256: SHA-256 digest identifying the original supplied source bytes.
+        path: Filesystem path read or written by this operation.
+    """
+
     byte_count: int
     sha256: str
     path: Path | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Source byte count must be a nonnegative integer. Source digest must be
+                a lowercase SHA-256 hex string.
+            TypeError: Source path must be a Path or None.
+        """
         if type(self.byte_count) is not int or self.byte_count < 0:
             raise ValueError("Source byte count must be a nonnegative integer")
         if not has_type(self.sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", self.sha256):
@@ -83,7 +122,13 @@ class SourceProvenance:
 
 @dataclass(frozen=True, slots=True, init=False)
 class SourceEnvelope:
-    """Snapshot caller-owned data without decoding bytes or touching a file."""
+    """Snapshot caller-owned data without decoding bytes or touching a file.
+
+    Attributes:
+        original_bytes: Owned original input bytes, preserved without rewriting.
+        root: Checkout or data root used to resolve the operation's paths.
+        provenance: Source identity, processing configuration and calculation evidence.
+    """
 
     original_bytes: bytes = field(repr=False)
     root: Mapping[str, SourceValue] | None = field(repr=False)
@@ -96,6 +141,21 @@ class SourceEnvelope:
         *,
         source_path: Path | None = None,
     ) -> None:
+        """Initialize source envelope and its owned state.
+
+        Args:
+            original_bytes: Unmodified original recording bytes.
+            root: Checkout or data root used to resolve the operation's paths.
+            source_path: Original input path, when available.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError: Source bytes must be bytes or bytearray. Source root must be an object
+                mapping or None.
+            AssertionError: If a required internal invariant does not hold.
+        """
         if not has_type(original_bytes, (bytes, bytearray)):
             raise TypeError("Source bytes must be bytes or bytearray")
         owned = bytes(original_bytes)

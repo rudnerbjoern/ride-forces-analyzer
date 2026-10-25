@@ -37,6 +37,18 @@ def _require_fields(value: object, required: set[str], label: str) -> None:
 
 
 class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
+    """Saved preset contract and owned data.
+
+    Attributes:
+        schema_version: Version identifying the admitted source or stored document
+            contract.
+        name: Stable identifier or displayed name for this model or view.
+        settings: Validated settings controlling this operation.
+        smoothing_window: Odd number of source samples used for smoothing.
+        range_mode: Policy selecting the export sample interval.
+        analysis_configuration: Analysis settings captured for the operation.
+    """
+
     schema_version: Literal[1]
     name: str = Field(min_length=1, max_length=120)
     settings: ExportSettings
@@ -47,13 +59,28 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
     @field_validator("settings", mode="before")
     @classmethod
     def complete_settings(cls, value: object) -> object:
+        """Require every persisted export setting to be explicitly present.
+
+        Args:
+            value: Candidate value to validate, format or store.
+
+        Returns:
+            Input unchanged after the persisted-settings completeness check.
+        """
         _require_fields(value, {item.name for item in fields(ExportSettings)}, "Export settings")
         return value
 
     @field_validator("settings")
     @classmethod
     def explicit_position(cls, value: ExportSettings) -> ExportSettings:
-        """Bind implicit placement to its current named default for saved snapshots."""
+        """Bind implicit placement to its current named default for saved snapshots.
+
+        Args:
+            value: Candidate value to validate, format or store.
+
+        Returns:
+            Export settings with the selected layout's default placement made explicit.
+        """
         if value.position is not None:
             return value
         plugin = registry.PLUGINS[value.layout]
@@ -63,6 +90,15 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
     @field_validator("analysis_configuration", mode="before")
     @classmethod
     def complete_configuration(cls, value: object, info: ValidationInfo) -> object:
+        """Require a complete persisted analysis configuration.
+
+        Args:
+            value: Candidate value to validate, format or store.
+            info: Prepared information for the operation.
+
+        Returns:
+            Input unchanged after the analysis-recipe completeness check.
+        """
         _require_fields(
             value,
             {item.name for item in fields(AnalysisConfiguration)} - {"ride_bounds"},
@@ -96,6 +132,14 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
 
     @model_validator(mode="after")
     def matching_window(self) -> Self:
+        """Require the saved smoothing window to match the analysis recipe.
+
+        Returns:
+            The validated preset itself.
+
+        Raises:
+            ValueError: Analysis configuration and smoothing window must match.
+        """
         window = dict(self.analysis_configuration.smoothing.parameters).get("window_samples", 11)
         if type(window) is not int or window != self.smoothing_window:
             raise ValueError("Analysis configuration and smoothing window must match")
@@ -106,7 +150,14 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
         self,
         value: AnalysisConfiguration,
     ) -> dict[str, object]:
-        """Serialize only the recipe; frozen profile mappings need an explicit JSON view."""
+        """Serialize only the recipe; frozen profile mappings need an explicit JSON view.
+
+        Args:
+            value: Candidate value to validate, format or store.
+
+        Returns:
+            JSON-compatible analysis configuration.
+        """
         profile = value.profile
         return {
             "profile": {
@@ -131,17 +182,49 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
     @field_validator("name", mode="before")
     @classmethod
     def clean_name(cls, value: object) -> object:
+        """Trim surrounding whitespace from a supplied name.
+
+        Args:
+            value: Candidate value to validate, format or store.
+
+        Returns:
+            Trimmed string, or the original value for subsequent type validation.
+        """
         return value.strip() if isinstance(value, str) else value
 
     @field_validator("smoothing_window")
     @classmethod
     def odd_window(cls, value: int) -> int:
+        """Require a positive odd smoothing-window size.
+
+        Args:
+            value: Candidate value to validate, format or store.
+
+        Returns:
+            Validated positive odd window size.
+
+        Raises:
+            ValueError: Smoothing must be an odd sample count.
+        """
         if value % 2 == 0:
             raise ValueError("Smoothing must be an odd sample count")
         return value
 
 
 class BatchJob(BaseModel, frozen=True, strict=True, extra="forbid"):
+    """Batch job contract and owned data.
+
+    Attributes:
+        recording_path: Path of the source recording used by the saved job.
+        source_sha256: SHA-256 identity of the original recording bytes.
+        ride: Recording name or resolved recording for this export job.
+        preset: Validated immutable export preset to store or apply.
+        range_mode: Policy selecting the export sample interval.
+        first_sample: First included source sample index, when the job uses explicit
+            bounds.
+        last_sample: Last included source sample index, when the job uses explicit bounds.
+    """
+
     recording_path: Path
     source_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     ride: str
@@ -152,6 +235,15 @@ class BatchJob(BaseModel, frozen=True, strict=True, extra="forbid"):
 
     @model_validator(mode="after")
     def ordered_range(self) -> Self:
+        """Require the final source sample to follow the first sample.
+
+        Returns:
+            The validated inclusive range itself.
+
+        Raises:
+            ValueError: Last sample must not precede first sample. Batch recordings require
+                absolute file paths.
+        """
         if self.last_sample < self.first_sample:
             raise ValueError("Last sample must not precede first sample")
         if not self.recording_path.is_absolute():
@@ -160,6 +252,15 @@ class BatchJob(BaseModel, frozen=True, strict=True, extra="forbid"):
 
 
 class SavedBatch(BaseModel, frozen=True, strict=True, extra="forbid"):
+    """Saved batch contract and owned data.
+
+    Attributes:
+        schema_version: Version identifying the admitted source or stored document
+            contract.
+        name: Stable identifier or displayed name for this model or view.
+        jobs: Immutable video jobs in their selected execution order.
+    """
+
     schema_version: Literal[1]
     name: str = Field(min_length=1, max_length=120)
     jobs: tuple[BatchJob, ...]
@@ -167,6 +268,14 @@ class SavedBatch(BaseModel, frozen=True, strict=True, extra="forbid"):
     @field_validator("name", mode="before")
     @classmethod
     def clean_name(cls, value: object) -> object:
+        """Trim surrounding whitespace from a supplied name.
+
+        Args:
+            value: Candidate value to validate, format or store.
+
+        Returns:
+            Trimmed string, or the original value for subsequent type validation.
+        """
         return value.strip() if isinstance(value, str) else value
 
 
@@ -177,6 +286,19 @@ def make_preset(
     range_mode: RangeMode,
     analysis_configuration: AnalysisConfiguration,
 ) -> SavedPreset:
+    """Capture visual settings and a portable analysis recipe in a named preset.
+
+    Args:
+        name: Display name or identifier used to select the requested item.
+        settings: Validated settings controlling this operation.
+        smoothing_window: Odd number of source samples used for smoothing.
+        range_mode: Policy selecting the export sample interval.
+        analysis_configuration: Analysis settings captured for the operation.
+
+    Returns:
+        Saved preset with recording-specific markers removed from its portable analysis
+        recipe.
+    """
     return SavedPreset(
         schema_version=1,
         name=name,

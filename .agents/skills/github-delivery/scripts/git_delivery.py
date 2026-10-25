@@ -18,12 +18,35 @@ class DeliveryError(RuntimeError):
 
 
 def mapping(value: object) -> dict[str, object]:
+    """Require a mapping-shaped operation or GitHub response value.
+
+    Args:
+        value: Candidate value to validate, format or store.
+
+    Returns:
+        The validated mapping, preserving its field values.
+
+    Raises:
+        DeliveryError: Expected a JSON object.
+    """
     if not isinstance(value, dict) or any(not isinstance(key, str) for key in value):
         raise DeliveryError("Expected a JSON object.")
     return cast(dict[str, object], value)
 
 
 def text_field(value: dict[str, object], name: str) -> str:
+    """Read a required nonempty textual operation field.
+
+    Args:
+        value: Candidate value to validate, format or store.
+        name: Display name or identifier used to select the requested item.
+
+    Returns:
+        The required nonempty field value.
+
+    Raises:
+        DeliveryError: If the supplied settings or operation state are invalid.
+    """
     item = value.get(name)
     if not isinstance(item, str) or not item:
         raise DeliveryError(f"Missing string field: {name}.")
@@ -31,16 +54,53 @@ def text_field(value: dict[str, object], name: str) -> str:
 
 
 def sha(value: str) -> str:
+    """Validate and return a full hexadecimal commit identity.
+
+    Args:
+        value: Candidate value to validate, format or store.
+
+    Returns:
+        The validated full commit identity.
+
+    Raises:
+        DeliveryError: Expected a full commit SHA.
+    """
     if not re.fullmatch(r"[a-f0-9]{40}", value):
         raise DeliveryError("Expected a full commit SHA.")
     return value
 
 
 class Delivery:
+    """Delivery contract and owned data.
+
+    Attributes:
+        root: Checkout or data root used to resolve the operation's paths.
+    """
+
     def __init__(self, root: Path) -> None:
+        """Initialize delivery and its owned state.
+
+        Args:
+            root: Checkout or data root used to resolve the operation's paths.
+
+        Returns:
+            None.
+        """
         self.root = root.resolve()
 
     def command(self, args: list[str], accepted: tuple[int, ...] = (0,)) -> str:
+        """Run a bounded native command and require an admitted exit status.
+
+        Args:
+            args: Command and arguments passed to the subprocess.
+            accepted: Process exit statuses admitted as successful.
+
+        Returns:
+            Captured standard output from the successful command.
+
+        Raises:
+            DeliveryError: If the supplied settings or operation state are invalid.
+        """
         result = subprocess.run(
             args,
             cwd=self.root,
@@ -54,9 +114,30 @@ class Delivery:
         return result.stdout
 
     def git(self, *args: str, accepted: tuple[int, ...] = (0,)) -> str:
+        """Run Git inside the selected checkout.
+
+        Args:
+            accepted: Process exit statuses admitted as successful.
+            *args: Additional positional arguments accepted by the callback.
+
+        Returns:
+            Captured standard output from Git.
+        """
         return self.command(["git", "--literal-pathspecs", "-C", str(self.root), *args], accepted)
 
     def gh(self, *args: str, accepted: tuple[int, ...] = (0,)) -> object:
+        """Run the GitHub CLI and decode its JSON response.
+
+        Args:
+            accepted: Process exit statuses admitted as successful.
+            *args: Additional positional arguments accepted by the callback.
+
+        Returns:
+            The decoded GitHub CLI JSON response.
+
+        Raises:
+            DeliveryError: GitHub returned no valid JSON; inspect state before retrying.
+        """
         output = self.command(["gh", *args], accepted)
         try:
             return json.loads(output)
@@ -66,6 +147,18 @@ class Delivery:
             ) from error
 
     def temporary_file(self, filename: str) -> Path:
+        """Resolve an existing operation file confined to the checkout's temporary area.
+
+        Args:
+            filename: Name of the requested input or output file.
+
+        Returns:
+            The existing file path inside the checkout temporary directory.
+
+        Raises:
+            DeliveryError: Operation files must be inside repository .tmp/. Operation file
+                does not exist.
+        """
         candidate = (self.root / filename).resolve()
         temporary = (self.root / ".tmp").resolve()
         if not temporary.is_relative_to(self.root) or not candidate.is_relative_to(temporary):
@@ -75,15 +168,34 @@ class Delivery:
         return candidate
 
     def staged_paths(self) -> list[str]:
+        """Return the exact paths currently staged for commit.
+
+        Returns:
+            The exact paths currently staged for commit.
+        """
         return [
             name for name in self.git("diff", "--cached", "--name-only", "-z").split("\0") if name
         ]
 
     def fingerprint(self) -> str:
+        """Hash the staged diff used to guard reviewed commit contents.
+
+        Returns:
+            SHA-256 digest of the staged diff.
+        """
         raw = self.git("diff", "--cached", "--raw", "--abbrev=40", "-z")
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
     def remote_url(self) -> str:
+        """Read the checkout's origin URL.
+
+        Returns:
+            The configured origin URL.
+
+        Raises:
+            DeliveryError: Origin must have exactly one push URL. Mirror remotes are
+                prohibited. Credential-bearing remote URLs are not supported.
+        """
         urls = self.git("remote", "get-url", "--push", "--all", "origin").splitlines()
         if len(urls) != 1:
             raise DeliveryError("Origin must have exactly one push URL.")
@@ -97,6 +209,18 @@ class Delivery:
         return urls[0]
 
     def branch_guard(self, request: dict[str, object]) -> str:
+        """Require the reviewed dedicated branch and local head identity.
+
+        Args:
+            request: Request carrying the inputs and context for this operation.
+
+        Returns:
+            The verified active branch name.
+
+        Raises:
+            DeliveryError: An authorized feature branch is required. Active branch does not
+                match the reviewed feature branch. HEAD changed after review.
+        """
         branch = text_field(request, "branch")
         if branch == "main" or branch.startswith("-"):
             raise DeliveryError("An authorized feature branch is required.")
@@ -108,10 +232,35 @@ class Delivery:
         return branch
 
     def remote_guard(self, request: dict[str, object]) -> None:
+        """Require the reviewed origin and safe explicit publication configuration.
+
+        Args:
+            request: Request carrying the inputs and context for this operation.
+
+        Returns:
+            None.
+
+        Raises:
+            DeliveryError: Origin URL changed after review.
+        """
         if self.remote_url() != text_field(request, "remote_url"):
             raise DeliveryError("Origin URL changed after review.")
 
     def scope(self, request: dict[str, object]) -> list[str]:
+        """Read and validate the exact authorized staged-file scope.
+
+        Args:
+            request: Request carrying the inputs and context for this operation.
+
+        Returns:
+            The exact authorized staged paths.
+
+        Raises:
+            OSError: If the required filesystem operation fails.
+            DeliveryError: A nonempty exact path array is required. Use exact
+                repository-relative paths with forward slashes. Invalid approved path.
+                Approved scope contains duplicate paths.
+        """
         value: object = json.loads(
             self.temporary_file(text_field(request, "scope_file")).read_text(encoding="utf-8"),
         )
@@ -135,6 +284,20 @@ class Delivery:
         return paths
 
     def validate_message(self, filename: str) -> str:
+        """Validate commit or PR title mechanics against the repository policy.
+
+        Args:
+            filename: Name of the requested input or output file.
+
+        Returns:
+            The message after mechanical title validation.
+
+        Raises:
+            OSError: If the required filesystem operation fails.
+            DeliveryError: Empty commit message. Commit title violates the project policy.
+                Separate title and body with a blank line. A substantive body requires Why:
+                followed by Changes:. Why: and Changes: must include substantive text.
+        """
         message = self.temporary_file(filename).read_text(encoding="utf-8")
         lines = message.splitlines()
         if not lines:
@@ -171,6 +334,18 @@ class Delivery:
         return message
 
     def repository(self, request: dict[str, object]) -> str:
+        """Require the selected GitHub repository to match the checkout's origin.
+
+        Args:
+            request: Request carrying the inputs and context for this operation.
+
+        Returns:
+            The verified GitHub repository name.
+
+        Raises:
+            DeliveryError: Invalid GitHub repository name. GitHub repository does not match
+                origin.
+        """
         self.remote_guard(request)
         repository = text_field(request, "repository")
         if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
@@ -185,6 +360,19 @@ class Delivery:
         return repository
 
     def pr(self, request: dict[str, object], expected: bool = True) -> dict[str, object]:
+        """Read and verify the selected pull request's repository, base and head.
+
+        Args:
+            request: Request carrying the inputs and context for this operation.
+            expected: Whether to enforce the reviewed remote head identity.
+
+        Returns:
+            Pull request metadata with a verified base and head.
+
+        Raises:
+            DeliveryError: A positive PR number is required. PR must target main. PR head must
+                belong to the selected repository. PR head changed after review.
+        """
         repository = self.repository(request)
         number = request.get("pr")
         if not isinstance(number, int) or isinstance(number, bool) or number < 1:
@@ -202,6 +390,17 @@ class Delivery:
         return value
 
     def checks(self, request: dict[str, object]) -> dict[str, object]:
+        """Classify the current PR checks and require the final CI gate for green status.
+
+        Args:
+            request: Request carrying the inputs and context for this operation.
+
+        Returns:
+            Check states and the resulting merge-gate status.
+
+        Raises:
+            DeliveryError: PR is not open for delivery. PR checks are unavailable.
+        """
         before = self.pr(request)
         if before.get("state") != "open" or before.get("merged"):
             raise DeliveryError("PR is not open for delivery.")
@@ -243,6 +442,20 @@ class Delivery:
         method: str,
         payload: dict[str, object],
     ) -> dict[str, object]:
+        """Send the authorized JSON mutation through the GitHub CLI.
+
+        Args:
+            endpoint: Service endpoint to query.
+            method: HTTP request method.
+            payload: Serialized request body.
+
+        Returns:
+            The decoded response to the authorized GitHub mutation.
+
+        Raises:
+            DeliveryError: Temporary directory leaves the repository.
+            OSError: If the required filesystem operation fails.
+        """
         temporary = self.root / ".tmp"
         if not temporary.resolve().is_relative_to(self.root):
             raise DeliveryError("Temporary directory leaves the repository.")
@@ -258,6 +471,37 @@ class Delivery:
         request: dict[str, object],
         authorized: bool = False,
     ) -> dict[str, object]:
+        """Dispatch one guarded inspection or explicitly authorized delivery operation.
+
+        Args:
+            action: Supported delivery or dialog action to dispatch.
+            request: Request carrying the inputs and context for this operation.
+            authorized: Whether the owner explicitly authorized this mutation and scope.
+
+        Returns:
+            Structured result of the requested operation.
+
+        Raises:
+            DeliveryError: Explicit owner authorization is required for this mutation. Select
+                the exact repository root. Preserve the owner-reviewed index; it must be empty
+                for staging. Approved scope must name files, not directories. Staged scope or
+                contents changed after review. Index changed while validating the message.
+                Commit occurred but a hook changed its reviewed message. Commit occurred but
+                committed contents differ from reviewed index. Staging changed the index but
+                scope verification failed; stop for review. Push occurred but remote SHA
+                verification failed; inspect remote state. PR branch has not been published at
+                the reviewed SHA. Ambiguous existing PR state. PR title must be nonempty and
+                contain no control characters. PR is not open for metadata updates. PR draft
+                status is unavailable. If the supplied settings or operation state are
+                invalid. If the underlying operation fails; the original error is propagated.
+                Unsupported PR merge method. Current PR checks are not green. Checks changed
+                after draft transition; merge stopped. Merge response requires remote-state
+                reconciliation; do not retry blindly. Only an already verified remote PR merge
+                may be synchronized. Preserve owner changes; synchronization requires a clean
+                checkout. Synchronization completed but final clean-state verification failed.
+                Unsupported delivery action.
+            OSError: If the required filesystem operation fails.
+        """
         if (
             action in {"stage", "commit", "push", "draft-pr", "update-pr", "merge-pr", "sync-main"}
             and not authorized
@@ -508,6 +752,11 @@ class Delivery:
 
 
 def main() -> int:
+    """Run this module's application or command-line entry point.
+
+    Returns:
+        Process exit status; zero indicates successful completion.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "action",

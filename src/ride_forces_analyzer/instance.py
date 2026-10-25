@@ -20,16 +20,41 @@ from ride_forces_analyzer.runtime_paths import data_directory
 
 
 class OpenRequest(BaseModel, frozen=True, strict=True, extra="forbid"):
+    """Open request contract and owned data.
+
+    Attributes:
+        path: Filesystem path read or written by this operation.
+        new_window: Whether to open a separate recording window.
+    """
+
     path: str | None = None
     new_window: bool = False
 
 
 class InstanceBroker(QObject):
-    """Hold a process lock or forward one acknowledged request to its owner."""
+    """Hold a process lock or forward one acknowledged request to its owner.
+
+    Attributes:
+        requested: Qt signal for requested notifications.
+        name: Stable identifier or displayed name for this model or view.
+        lock: Single-instance process lock.
+        server: Local server receiving open requests.
+    """
 
     requested = Signal(object)
 
     def __init__(self, parent: QObject) -> None:
+        """Initialize instance broker and its owned state.
+
+        Args:
+            parent: Qt parent that owns this object's lifetime.
+
+        Returns:
+            None.
+
+        Raises:
+            OSError: If the required filesystem operation fails.
+        """
         super().__init__(parent)
         directory = data_directory()
         directory.mkdir(parents=True, exist_ok=True)
@@ -51,6 +76,19 @@ class InstanceBroker(QObject):
 
         A bounded startup retry allows the lock owner to finish opening its server.
         Failure never starts a competing owner or removes another owner's socket.
+
+        Args:
+            request: Request carrying the inputs and context for this operation.
+
+        Returns:
+            True for the owner, false after acknowledged forwarding.
+
+        Raises:
+            RuntimeError: If the supplied settings or operation state are invalid. Unable to
+                acquire application instance lock. The running application rejected the
+                file-open request. The running application did not acknowledge the file-open
+                request. Unable to contact the running application; no second instance was
+                started.
         """
         if self.lock.tryLock(0):
             QLocalServer.removeServer(self.name)
@@ -125,7 +163,11 @@ class InstanceBroker(QObject):
         read()
 
     def close(self) -> None:
-        """Release only this broker's ownership after application shutdown."""
+        """Release only this broker's ownership after application shutdown.
+
+        Returns:
+            None.
+        """
         if self.server.isListening():
             self.server.close()
             self.lock.unlock()

@@ -32,11 +32,27 @@ class UpdateCheckError(Exception):
 
 @dataclass(frozen=True, slots=True)
 class AvailableRelease:
+    """Available release contract and owned data.
+
+    Attributes:
+        tag: Version tag selected for lookup, validation or suppression.
+        url: Release page or download URL retained from release metadata.
+    """
+
     tag: str
     url: str
 
 
 def version_key(value: str) -> tuple[int, int, int, int, int] | None:
+    """Parse a supported version into its release-order comparison key.
+
+    Args:
+        value: Candidate value to validate, format or store.
+
+    Returns:
+        Tuple of major, minor, patch, release-stage rank and stage number, or None for
+        unsupported text.
+    """
     match = VERSION_PATTERN.fullmatch(value)
     if match is None:
         return None
@@ -51,7 +67,18 @@ def version_key(value: str) -> tuple[int, int, int, int, int] | None:
 
 
 def select_release(releases: object, current: str) -> AvailableRelease | None:
-    """Choose the highest newer published version with a native application asset."""
+    """Choose the highest newer published version with a native application asset.
+
+    Args:
+        releases: Available release metadata.
+        current: Current measured value or operation state.
+
+    Returns:
+        Highest newer compatible release, or None when no candidate exists.
+
+    Raises:
+        UpdateCheckError: Invalid version or releases response.
+    """
     installed = version_key(current)
     if installed is None or not isinstance(releases, list):
         raise UpdateCheckError("Invalid version or releases response")
@@ -111,6 +138,8 @@ def select_release(releases: object, current: str) -> AvailableRelease | None:
 
 
 class _GitHubRedirects(HTTPRedirectHandler):
+    """Git hub redirects contract and owned data."""
+
     def redirect_request(
         self,
         req: Request,
@@ -120,6 +149,22 @@ class _GitHubRedirects(HTTPRedirectHandler):
         headers: HTTPMessage,
         newurl: str,
     ) -> Request | None:
+        """Follow only HTTPS redirects within the GitHub API host.
+
+        Args:
+            req: HTTP request being redirected.
+            fp: Response stream supplied by the redirect handler.
+            code: HTTP response status code.
+            msg: HTTP response status message.
+            headers: HTTP response headers.
+            newurl: Proposed redirect destination URL.
+
+        Returns:
+            Redirected request, or None when the base handler declines the redirect.
+
+        Raises:
+            UpdateCheckError: Unexpected release API redirect.
+        """
         target = urlsplit(newurl)
         if target.scheme != "https" or target.netloc != "api.github.com":
             raise UpdateCheckError("Unexpected release API redirect")
@@ -127,7 +172,19 @@ class _GitHubRedirects(HTTPRedirectHandler):
 
 
 def check_for_update(current: str) -> AvailableRelease | None:
-    """Bounded HTTPS requests with default certificate validation and no credentials."""
+    """Bounded HTTPS requests with default certificate validation and no credentials.
+
+    Args:
+        current: Current measured value or operation state.
+
+    Returns:
+        Newer compatible release, or None when the installed version is current.
+
+    Raises:
+        UpdateCheckError: Release check timed out. Release response exceeded check limits.
+            Invalid releases response. GitHub releases are unavailable. Release listing
+            exceeded the page limit.
+    """
     opener = build_opener(_GitHubRedirects())
     releases: list[object] = []
     deadline = monotonic() + CHECK_TIMEOUT

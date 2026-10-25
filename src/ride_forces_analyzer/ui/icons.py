@@ -22,6 +22,9 @@ def render_icon(size: int) -> QImage:
 
     Raises:
         ValueError: The bundled SVG cannot be loaded.
+
+    Args:
+        size: Required dimensions or capacity.
     """
     renderer = QSvgRenderer(str(ICON_SOURCE))
     if not renderer.isValid():

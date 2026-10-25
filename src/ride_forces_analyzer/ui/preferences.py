@@ -30,11 +30,38 @@ APPEARANCE_CHOICES = tuple(Appearance)
 
 
 class SettingsDialog(QDialog):
+    """Settings dialog contract and owned data.
+
+    Attributes:
+        language_selected: Qt signal for language selected notifications.
+        appearance_selected: Qt signal for appearance selected notifications.
+        appearance_previewed: Qt signal for appearance previewed notifications.
+        preferences: Local application preference access for this window or controller.
+        language: Choice control for language.
+        appearance: Choice control for appearance.
+        restore_last_file: Checkbox controlling restore last file.
+        clear_map_cache: Button for clear map cache.
+        frame_rate: Choice control for frame rate.
+        render_jobs: Requested concurrent frame-renderer count, bounded by local CPU
+            availability.
+        buttons: Dialog action buttons.
+    """
+
     language_selected = Signal(int)
     appearance_selected = Signal(int)
     appearance_previewed = Signal(int)
 
     def __init__(self, preferences: Preferences, parent: QWidget, *, language: Language) -> None:
+        """Initialize settings dialog and its owned state.
+
+        Args:
+            preferences: Local application preference access.
+            parent: Qt parent that owns this object's lifetime.
+            language: Registered language used to translate presentation text and numbers.
+
+        Returns:
+            None.
+        """
         super().__init__(parent)
         self.preferences = preferences
         self.setObjectName("settingsDialog")
@@ -101,6 +128,14 @@ class SettingsDialog(QDialog):
         layout.addWidget(self.buttons)
 
     def changeEvent(self, event: QEvent) -> None:
+        """Refresh translated or themed controls after a Qt change event.
+
+        Args:
+            event: Qt event delivered to this handler.
+
+        Returns:
+            None.
+        """
         super().changeEvent(event)
         if event.type() == QEvent.Type.LocaleChange and hasattr(self, "appearance"):
             self._populate_appearances()
@@ -138,12 +173,22 @@ class SettingsDialog(QDialog):
 
     @Slot()
     def preview_appearance(self) -> None:
+        """Preview an appearance choice without committing the settings dialog.
+
+        Returns:
+            None.
+        """
         self.appearance_previewed.emit(
             APPEARANCE_CHOICES.index(Appearance(self.appearance.currentData())),
         )
 
     @Slot()
     def clear_cached_maps(self) -> None:
+        """Clear the local map tile cache and report the outcome.
+
+        Returns:
+            None.
+        """
         if TileCache().clear():
             bind(self.clear_map_cache, tr("Map cache cleared."))
             self.clear_map_cache.setEnabled(False)
@@ -160,6 +205,11 @@ class SettingsDialog(QDialog):
 
     @Slot()
     def save(self) -> None:
+        """Validate and persist the selected application preferences.
+
+        Returns:
+            None.
+        """
         self.preferences.remember_restore_last_file(self.restore_last_file.isChecked())
         self.preferences.remember_export_fps(EXPORT_FRAME_RATES[self.frame_rate.currentIndex()])
         self.preferences.remember_render_jobs(self.render_jobs.value())

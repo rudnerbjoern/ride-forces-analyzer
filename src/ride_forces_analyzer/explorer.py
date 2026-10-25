@@ -52,7 +52,15 @@ def _import_notes(source: ImportSuccess, error: str | None) -> str:
 
 
 def format_sample_time(offset: int, rate: float) -> str:
-    """MM:SS.ff uses a sample counter; fractional rates retain explicit seconds."""
+    """MM:SS.ff uses a sample counter; fractional rates retain explicit seconds.
+
+    Args:
+        offset: Position within the input representation.
+        rate: Sample or frame rate per second, as declared by this operation.
+
+    Returns:
+        Formatted sample time in the selected language.
+    """
     if not rate.is_integer():
         return f"{offset / rate:.3f} s"
     whole, frame = divmod(abs(offset), int(rate))
@@ -64,18 +72,44 @@ def format_sample_time(offset: int, rate: float) -> str:
 
 @dataclass(frozen=True, slots=True)
 class SampleRange:
-    """Inclusive local selection; unrelated to source marker slicing semantics."""
+    """Inclusive local selection; unrelated to source marker slicing semantics.
+
+    Attributes:
+        first: First included source index or the control selecting that bound.
+        last: Last included source index or the control selecting that bound.
+    """
 
     first: int
     last: int
 
     @property
     def count(self) -> int:
+        """Return the number of retained samples or items represented by this object.
+
+        Returns:
+            The number of retained samples or items represented by this object.
+        """
         return self.last - self.first + 1
 
 
 @dataclass(frozen=True, slots=True)
 class ExplorerData:
+    """Explorer data contract and owned data.
+
+    Attributes:
+        source: Retained input identity or image; its original representation remains
+            owned.
+        channels: Prepared channels to inspect or display.
+        title: Recording or layout title shown without interpreting its contents.
+        summary: Prepared recording summary.
+        notes: Retained diagnostic text for the recording or current operation.
+        value_range: Visible force-value range.
+        calibrated_enabled: Whether calibrated channels are selected.
+        calibration_error: Reason calibration is unavailable, when present.
+        analysis: Prepared recording-analysis snapshot used by this operation.
+        _prepared_channels: Cached channels prepared for the explorer.
+    """
+
     source: ImportSuccess
     channels: tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]
     title: str
@@ -92,6 +126,14 @@ class ExplorerData:
     )
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Analysis belongs to another import.
+        """
         if self.analysis is not None and self.analysis.source is not self.source:
             raise ValueError("Analysis belongs to another import")
         channels = self.analysis.forces.smoothed.channels if self.analysis is not None else None
@@ -102,12 +144,23 @@ class ExplorerData:
 
     @property
     def calibration_available(self) -> bool:
-        """Whether the bound snapshot has a prepared calibrated force stage."""
+        """Whether the bound snapshot has a prepared calibrated force stage.
+
+        Returns:
+            True when the requested check succeeds or the event is handled; otherwise False.
+        """
         return self._prepared_channels is not None
 
     @property
     def smoothing_window(self) -> int:
-        """Read the snapshot recipe; 11 is the default before analysis is available."""
+        """Read the snapshot recipe; 11 is the default before analysis is available.
+
+        Returns:
+            Configured odd smoothing-window size in samples.
+
+        Raises:
+            AssertionError: If a required internal invariant does not hold.
+        """
         if self.analysis is None:
             return 11
         window = dict(self.analysis.configuration.smoothing.parameters).get("window_samples", 11)
@@ -115,7 +168,14 @@ class ExplorerData:
         return window
 
     def vertical_context_label(self, index: int) -> str | None:
-        """Format the prepared sample category without classifying forces again."""
+        """Format the prepared sample category without classifying forces again.
+
+        Args:
+            index: Source or collection index selected for this operation.
+
+        Returns:
+            Localized context label, or None when classification is unavailable.
+        """
         self.select(index, index)
         if not self.calibrated_enabled or self.analysis is None:
             return None
@@ -124,6 +184,11 @@ class ExplorerData:
 
     @property
     def localized_notes(self) -> str:
+        """Return localized diagnostic text while retaining original diagnostics.
+
+        Returns:
+            Localized diagnostic text while retaining original diagnostics.
+        """
         if get_language() == "en":
             return self.notes
         lines = [
@@ -137,12 +202,22 @@ class ExplorerData:
 
     @property
     def plotted_channels(self) -> "tuple[PlotChannel, PlotChannel, PlotChannel]":
+        """Return the three channels selected for raw or calibrated display.
+
+        Returns:
+            The three channels selected for raw or calibrated display.
+        """
         if self.calibrated_enabled and self._prepared_channels is not None:
             return self._prepared_channels
         return self.channels
 
     @property
     def channel_names(self) -> tuple[str, str, str]:
+        """Return the display names of the currently plotted channels.
+
+        Returns:
+            The display names of the currently plotted channels.
+        """
         return (
             (
                 tr("Vertical"),
@@ -155,7 +230,11 @@ class ExplorerData:
 
     @property
     def vertical_context_segments(self) -> tuple[tuple[str, int, int], ...]:
-        """Inclusive drawing ranges sharing boundary points, only for calibrated g."""
+        """Inclusive drawing ranges sharing boundary points, only for calibrated g.
+
+        Returns:
+            Context labels and inclusive source-index intervals for drawing.
+        """
         if not self.calibrated_enabled or self.analysis is None:
             return ()
         categories = self.analysis.context.labels
@@ -174,6 +253,14 @@ class ExplorerData:
         return tuple(segments)
 
     def with_calibration(self, enabled: bool) -> "ExplorerData":
+        """Create presentation data using the requested available force view.
+
+        Args:
+            enabled: Whether the requested presentation or stored preference is enabled.
+
+        Returns:
+            New explorer data using the selected calibrated or source force view.
+        """
         active = enabled and self.calibration_available
         channels = self._prepared_channels if active and self._prepared_channels else self.channels
         finite = [float(value) for axis in channels for value in axis if isfinite(value)]
@@ -186,6 +273,11 @@ class ExplorerData:
 
     @property
     def value_ticks(self) -> tuple[float, ...]:
+        """Return suitable value-axis ticks for the prepared display range.
+
+        Returns:
+            Suitable value-axis ticks for the prepared display range.
+        """
         low, high = self.value_range
         if self.calibrated_enabled and floor(high) - ceil(low) <= 20:
             ticks = {float(value) for value in range(ceil(low), floor(high) + 1)}
@@ -197,6 +289,11 @@ class ExplorerData:
 
     @property
     def smoothing_text(self) -> str:
+        """Return the localized description of the current smoothing window.
+
+        Returns:
+            The localized description of the current smoothing window.
+        """
         window = self.smoothing_window
         if window == 1:
             return tr("1 sample • Smoothing off")
@@ -204,6 +301,14 @@ class ExplorerData:
         return tr("{0} samples • ±{1:g} ms • Centered mean", window, half_ms)
 
     def with_smoothing(self, window: int) -> "ExplorerData":
+        """Create presentation data bound to the requested smoothing configuration.
+
+        Args:
+            window: Odd number of source samples in the smoothing window.
+
+        Returns:
+            New explorer data bound to the requested smoothing recipe.
+        """
         if self.analysis is None:
             return self
         return self.with_analysis(
@@ -215,7 +320,17 @@ class ExplorerData:
         )
 
     def with_analysis(self, analysis: "RecordingAnalysis") -> "ExplorerData":
-        """Adapt a matching completed snapshot without repeating numerical analysis."""
+        """Adapt a matching completed snapshot without repeating numerical analysis.
+
+        Args:
+            analysis: Prepared recording-analysis snapshot used by this operation.
+
+        Returns:
+            New explorer data bound to the matching completed analysis snapshot.
+
+        Raises:
+            ValueError: Analysis belongs to another import.
+        """
         if analysis.source is not self.source:
             raise ValueError("Analysis belongs to another import")
         reason = analysis.forces.smoothed.availability.reason
@@ -229,6 +344,11 @@ class ExplorerData:
 
     @property
     def metadata_fields(self) -> tuple[tuple[str, str], ...]:
+        """Return the recording metadata as localized label/value pairs.
+
+        Returns:
+            The recording metadata as localized label/value pairs.
+        """
         recording = self.source.recording
         fields = [
             ("Ride", recording.metadata.name),
@@ -246,14 +366,29 @@ class ExplorerData:
 
     @property
     def metadata_text(self) -> str:
+        """Return formatted recording metadata for the inspector.
+
+        Returns:
+            Formatted recording metadata for the inspector.
+        """
         return "  |  ".join(f"{tr(label)}: {value}" for label, value in self.metadata_fields)
 
     @property
     def metadata_rows_text(self) -> str:
+        """Return the recording's row, seat and train metadata when available.
+
+        Returns:
+            The recording's row, seat and train metadata when available.
+        """
         return "\n".join(f"{tr(label)}: {value}" for label, value in self.metadata_fields)
 
     @property
     def overview_text(self) -> str:
+        """Return the compact recording overview used by the workspace header.
+
+        Returns:
+            The compact recording overview used by the workspace header.
+        """
         recording = self.source.recording
         return tr(
             "{0} · {1:,} samples · {2:g} Hz",
@@ -264,6 +399,11 @@ class ExplorerData:
 
     @property
     def availability_text(self) -> str:
+        """Describe available calibration, gravity, GPS and time information.
+
+        Returns:
+            Localized description of available recording capabilities.
+        """
         gravity = (
             tr("available") if self.source.recording.motion.gravity is not None else tr("absent")
         )
@@ -274,6 +414,14 @@ class ExplorerData:
         )
 
     def sample_clock_text(self, index: int) -> str:
+        """Format recording and replay clocks for one source sample.
+
+        Args:
+            index: Source or collection index selected for this operation.
+
+        Returns:
+            Localized recording and replay clock text.
+        """
         self.select(index, index)
         return tr(
             "Replay {0} · Recording {1:.3f} s · {2:g} Hz",
@@ -283,6 +431,15 @@ class ExplorerData:
         )
 
     def sample_cards(self, index: int) -> tuple[tuple[str, str, str], ...]:
+        """Format the three force cards for one source sample.
+
+        Args:
+            index: Source or collection index selected for this operation.
+
+        Returns:
+            Three force readouts, each containing its name, formatted value and availability
+            hint.
+        """
         self.select(index, index)
         values_at_sample = self._sample_values(index)
         cards: list[tuple[str, str, str]] = []
@@ -307,6 +464,15 @@ class ExplorerData:
         return tuple(cards)
 
     def selection_extrema(self, first: int, last: int) -> SelectionExtrema:
+        """Read extrema from the prepared channels over an inclusive selection.
+
+        Args:
+            first: First included source sample index.
+            last: Last included source sample index.
+
+        Returns:
+            Extrema and source-time context for the inclusive selection.
+        """
         return calculate_extrema(
             self.source,
             first,
@@ -323,6 +489,16 @@ class ExplorerData:
         *,
         rich: bool = False,
     ) -> tuple[str, tuple[str, ...]]:
+        """Format the selected interval's extrema and calculation context.
+
+        Args:
+            first: First included source sample index.
+            last: Last included source sample index.
+            rich: Whether to emit supported rich-text formatting instead of plain text.
+
+        Returns:
+            Selection description and formatted per-channel extrema.
+        """
         result = self.selection_extrema(first, last)
         context = (
             tr("Calibrated · {0} samples smoothing · g", result.smoothing_window)
@@ -377,10 +553,20 @@ class ExplorerData:
 
     @property
     def count(self) -> int:
+        """Return the number of retained samples or items represented by this object.
+
+        Returns:
+            The number of retained samples or items represented by this object.
+        """
         return len(self.channels[0])
 
     @property
     def markers(self) -> tuple[tuple[str, int], ...]:
+        """Return named source or effective marker indices for chart presentation.
+
+        Returns:
+            Named source or effective marker indices for chart presentation.
+        """
         indices = self.source.recording.indices
         first, last = self.ride_bounds
         calibration = self.analysis.configuration.calibration if self.analysis is not None else None
@@ -421,6 +607,11 @@ class ExplorerData:
 
     @property
     def ride_bounds(self) -> tuple[int, int]:
+        """Return the effective inclusive ride interval.
+
+        Returns:
+            The effective inclusive ride interval.
+        """
         if self.analysis is not None:
             return self.analysis.ride_bounds
         indices = self.source.recording.indices
@@ -428,6 +619,11 @@ class ExplorerData:
 
     @property
     def default_time_range(self) -> tuple[float, float]:
+        """Return the default chart interval in recording seconds.
+
+        Returns:
+            The default chart interval in recording seconds.
+        """
         first, last = self.ride_bounds
         low, high = self.time_at(first), self.time_at(last)
         if low == high:
@@ -437,15 +633,29 @@ class ExplorerData:
 
     @property
     def sample_rate(self) -> float:
+        """Return the recording's effective source sample rate.
+
+        Returns:
+            The recording's effective source sample rate.
+        """
         return self.source.recording.motion.sample_rate.value
 
     @property
     def duration(self) -> float:
-        """Elapsed time of the final sample, not an extra acquisition interval."""
+        """Elapsed time of the final sample, not an extra acquisition interval.
+
+        Returns:
+            Elapsed recording time at the final source sample, in seconds.
+        """
         return self.time_at(self.count - 1)
 
     @property
     def replay_time_label(self) -> str:
+        """Return the localized label for the recording's replay time notation.
+
+        Returns:
+            The localized label for the recording's replay time notation.
+        """
         return (
             tr("Replay time (MM:SS.ff @ {0:g} Hz; ff = sample)", self.sample_rate)
             if self.sample_rate.is_integer()
@@ -453,25 +663,75 @@ class ExplorerData:
         )
 
     def replay_text(self, index: int) -> str:
+        """Format a source sample as start-relative replay time.
+
+        Args:
+            index: Source or collection index selected for this operation.
+
+        Returns:
+            Formatted replay time relative to the selected origin.
+        """
         self.select(index, index)
         return format_sample_time(index - self.ride_bounds[0], self.sample_rate)
 
     def time_at(self, index: int) -> float:
+        """Convert a source sample index to recording seconds.
+
+        Args:
+            index: Source or collection index selected for this operation.
+
+        Returns:
+            Time from the recording origin in seconds.
+        """
         self.select(index, index)
         return index / self.sample_rate
 
     def sample_at_time(self, seconds: float) -> int:
-        """Return the nearest sample, clamped to the recording bounds."""
+        """Return the nearest sample, clamped to the recording bounds.
+
+        Args:
+            seconds: Time in seconds in the clock or coordinate system used by this operation.
+
+        Returns:
+            The nearest sample, clamped to the recording bounds.
+
+        Raises:
+            ValueError: Sample time must be finite.
+        """
         if not isfinite(seconds):
             raise ValueError("Sample time must be finite")
         return round(min(self.count - 1, max(0.0, seconds * self.sample_rate)))
 
     def select(self, first: int, last: int) -> SampleRange:
+        """Create an inclusive selection from source sample indices.
+
+        Args:
+            first: First included source sample index.
+            last: Last included source sample index.
+
+        Returns:
+            Inclusive selection admitted by this object's bounds or placement contract.
+
+        Raises:
+            ValueError: Selection requires bounded, ordered sample indices.
+        """
         if type(first) is not int or type(last) is not int or not 0 <= first <= last < self.count:
             raise ValueError("Selection requires bounded, ordered sample indices")
         return SampleRange(first, last)
 
     def select_visible(self, low: float, high: float) -> SampleRange:
+        """Select the source samples intersecting a visible time interval.
+
+        Args:
+            low: Lower bound in the coordinate system declared by the operation.
+            high: Upper bound in the coordinate system declared by the operation.
+
+        Returns:
+            Inclusive source-sample interval intersecting the visible time range.
+
+        Raises:
+            ValueError: Visible range must be finite and ordered.
+        """
         if not isfinite(low) or not isfinite(high) or low > high:
             raise ValueError("Visible range must be finite and ordered")
 
@@ -491,6 +751,11 @@ class ExplorerData:
 
     @property
     def technical_summary(self) -> str:
+        """Return retained source and processing details for the technical inspector.
+
+        Returns:
+            Retained source and processing details for the technical inspector.
+        """
         recording = self.source.recording
         rate = recording.motion.sample_rate
         rows = (
@@ -526,6 +791,15 @@ class ExplorerData:
         return raw.x, raw.y, raw.z
 
     def sample_text(self, index: int, *, rich: bool = False) -> str:
+        """Format the available values and context for one source sample.
+
+        Args:
+            index: Source or collection index selected for this operation.
+            rich: Whether to emit supported rich-text formatting instead of plain text.
+
+        Returns:
+            Localized values and availability context for the source sample.
+        """
         self.select(index, index)
         if rich:
             rows = (
@@ -561,6 +835,19 @@ def present_recording(
     *,
     analysis: "RecordingAnalysis | None" = None,
 ) -> ExplorerData:
+    """Build explorer presentation data from a successful lossless import.
+
+    Args:
+        source: Input recording, retained source representation or source path to read.
+        analysis: Prepared recording-analysis snapshot used by this operation.
+
+    Returns:
+        Explorer data retaining the original recording and prepared analysis.
+
+    Raises:
+        ValueError: Source values exceed the chart display range. Analysis belongs to
+            another import.
+    """
     recording = source.recording
     motion = recording.motion
     channels = (
@@ -627,13 +914,27 @@ def present_recording(
 
 
 def load_recording(path: Path) -> ExplorerData | ImportFailure:
-    """Read an original using M2; keep source ownership and all warnings intact."""
+    """Read an original using M2; keep source ownership and all warnings intact.
+
+    Args:
+        path: Filesystem path read or written by this operation.
+
+    Returns:
+        Prepared explorer data on success, otherwise a structured import failure.
+    """
     source = import_forces(path)
     return source if isinstance(source, ImportFailure) else present_recording(source)
 
 
 def failure_text(failure: ImportFailure) -> str:
-    """Bounded field-oriented feedback, never an exception or recording payload."""
+    """Bounded field-oriented feedback, never an exception or recording payload.
+
+    Args:
+        failure: Structured failure information.
+
+    Returns:
+        Bounded diagnostic text suitable for display.
+    """
     items = failure.diagnostics[:5]
     return tr("Could not open recording. ") + "; ".join(
         f"{item.code}: {diagnostic_message(item.code, item.message)}" for item in items

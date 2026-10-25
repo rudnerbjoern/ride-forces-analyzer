@@ -31,6 +31,24 @@ PROFILES: tuple[tuple[ExportLayout, str], ...] = (
 
 @dataclass(frozen=True, slots=True)
 class ExportSettings:
+    """Export settings contract and owned data.
+
+    Attributes:
+        fps: Selected output frame rate; 59.94 retains its exact fractional
+            representation.
+        window_seconds: Width of the visible source-time context in seconds.
+        output: Output directory or path for generated artifacts.
+        invert_vertical: Whether the vertical plot uses the selected inverted display
+            direction.
+        invert_lateral: Whether the layout uses its supported lateral direction override.
+        prefer_gpu: Whether encoding prefers a probed NVIDIA backend with CPU fallback.
+        layout: Stable key selecting the overlay renderer.
+        aspect: Selected landscape or portrait output format.
+        language: Registered language used to translate presentation text and numbers.
+        position: Requested source position or named layout placement, as declared by the
+            type.
+    """
+
     fps: FrameRate = 50
     window_seconds: float = 12.0
     output: Literal["transparent", "opaque"] = "transparent"
@@ -44,6 +62,11 @@ class ExportSettings:
 
     @property
     def dimensions(self) -> tuple[int, int]:
+        """Return the layout's output canvas width and height in pixels.
+
+        Returns:
+            The layout's output canvas width and height in pixels.
+        """
         if self.layout == "hud":
             from .layouts.hud import LANDSCAPE, PORTRAIT
 
@@ -52,14 +75,33 @@ class ExportSettings:
 
     @property
     def frame_rate(self) -> Fraction:
-        """Exact encoder rate; retain the fractional ratio rather than rounding to 59.94."""
+        """Exact encoder rate; retain the fractional ratio rather than rounding to 59.94.
+
+        Returns:
+            Exact output frames per second as a rational number.
+        """
         return Fraction(self.fps)
 
     @property
     def fps_label(self) -> str:
+        """Return the user-facing frame-rate choice, including exact 59.94 notation.
+
+        Returns:
+            The user-facing frame-rate choice, including exact 59.94 notation.
+        """
         return "59.94" if self.fps == "60000/1001" else str(self.fps)
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Unsupported overlay language. Unknown export aspect ratio. Frame rate
+                must be an integer from 1 to 120 or 60000/1001. Visible time window must be
+                from 1 to 60 seconds. Unknown export output mode. Unknown export layout.
+        """
         if self.language not in LANGUAGES:
             raise ValueError("Unsupported overlay language")
         if self.aspect not in ("landscape", "portrait"):
@@ -79,11 +121,20 @@ class ExportSettings:
 
 @dataclass(frozen=True, slots=True)
 class ExportValues(Sequence[float | None]):
-    """Read-only scalar view of a shared stage buffer; invalid rows remain None."""
+    """Read-only scalar view of a shared stage buffer; invalid rows remain None.
+
+    Attributes:
+        samples: Owned sample buffer and validity information in the declared units.
+    """
 
     samples: SampleValues
 
     def __len__(self) -> int:
+        """Return the number of items represented by this object.
+
+        Returns:
+            The number of items represented by this object.
+        """
         return len(self.samples.valid_rows)
 
     @overload
@@ -93,6 +144,15 @@ class ExportValues(Sequence[float | None]):
     def __getitem__(self, index: slice) -> tuple[float | None, ...]: ...
 
     def __getitem__(self, index: int | slice) -> float | None | tuple[float | None, ...]:
+        """Read the requested item or slice without mutating the retained data.
+
+        Args:
+            index: Source or collection index selected for this operation.
+
+        Returns:
+            The float | None | tuple[float | None, ...] result of the operation described
+            above.
+        """
         if isinstance(index, slice):
             return tuple(self[i] for i in range(*index.indices(len(self))))
         return float(self.samples.values[index]) if self.samples.valid_rows[index] else None
@@ -102,7 +162,15 @@ def prepare_export_analysis(
     analysis: RecordingAnalysis,
     configuration: AnalysisConfiguration,
 ) -> RecordingAnalysis:
-    """Bind matching work or recalculate only changed stages, without changing the source."""
+    """Bind matching work or recalculate only changed stages, without changing the source.
+
+    Args:
+        analysis: Prepared recording-analysis snapshot used by this operation.
+        configuration: Requested immutable analysis or export configuration.
+
+    Returns:
+        Analysis matching the captured configuration, reusing compatible prepared stages.
+    """
     if configuration == analysis.configuration:
         return analysis
     return analysis.with_configuration(
@@ -114,6 +182,19 @@ def prepare_export_analysis(
 
 @dataclass(frozen=True, slots=True)
 class ExportChannel:
+    """Export channel contract and owned data.
+
+    Attributes:
+        name: Stable identifier or displayed name for this model or view.
+        unit: Declared unit and its evidence; unknown source units remain unknown.
+        color: Color assigned to this channel.
+        hint: Explanatory text associated with the channel.
+        values: Retained or prepared values in the owning object's declared units.
+        low: Lower bound in the coordinate system declared by the operation.
+        high: Upper bound in the coordinate system declared by the operation.
+        inverted: Whether the displayed channel direction is inverted.
+    """
+
     name: str
     unit: str
     color: str
@@ -125,6 +206,11 @@ class ExportChannel:
 
     @property
     def ticks(self) -> tuple[float, ...]:
+        """Return readable scale ticks within the channel's fixed display range.
+
+        Returns:
+            Readable scale ticks within the channel's fixed display range.
+        """
         if self.unit == "°":
             return (0.0, 90.0, 180.0)
         if ceil(self.high) - floor(self.low) <= 12:
@@ -134,6 +220,20 @@ class ExportChannel:
 
 @dataclass(frozen=True, slots=True)
 class ExportTimeline:
+    """Export timeline contract and owned data.
+
+    Attributes:
+        source_sha256: SHA-256 identity of the original recording bytes.
+        sample_rate: Effective source samples per second, retaining its origin separately.
+        replay_origin: Source index used as replay time zero.
+        first: First included source index or the control selecting that bound.
+        last: Last included source index or the control selecting that bound.
+        smoothing_window: Odd number of source samples used for smoothing.
+        channels: Prepared channels to inspect or display.
+        settings: Validated settings controlling this operation.
+        analysis: Prepared recording-analysis snapshot used by this operation.
+    """
+
     source_sha256: str
     sample_rate: float
     replay_origin: int
@@ -145,7 +245,17 @@ class ExportTimeline:
     analysis: RecordingAnalysis
 
     def context_at(self, position: float) -> str:
-        """Read the prepared full-history classification at the preceding source sample."""
+        """Read the prepared full-history classification at the preceding source sample.
+
+        Args:
+            position: Fractional source-sample position.
+
+        Returns:
+            Prepared context label at the preceding source sample.
+
+        Raises:
+            ValueError: Position outside airtime context.
+        """
         labels = self.analysis.context.labels
         if not isfinite(position) or not 0 <= position < len(self.analysis.time.source_indices):
             raise ValueError("Position outside airtime context")
@@ -154,6 +264,11 @@ class ExportTimeline:
     @property
     def frame_count(self) -> int:
         # Include the last selected source sample's complete sample interval.
+        """Return the rounded output-frame count including the final sample interval.
+
+        Returns:
+            The rounded output-frame count including the final sample interval.
+        """
         return ceil(
             Fraction(self.last - self.first + 1)
             * self.settings.frame_rate
@@ -161,6 +276,17 @@ class ExportTimeline:
         )
 
     def sample_position(self, frame: int) -> float:
+        """Map an output frame index to its fractional source-sample position.
+
+        Args:
+            frame: Zero-based output video frame index.
+
+        Returns:
+            Fractional source-sample position corresponding to the output frame.
+
+        Raises:
+            ValueError: Frame outside export interval.
+        """
         if not 0 <= frame < self.frame_count:
             raise ValueError("Frame outside export interval")
         return min(
@@ -169,6 +295,16 @@ class ExportTimeline:
         )
 
     def value_at(self, channel: ExportChannel, position: float) -> float | None:
+        """Read or interpolate a channel value without bridging missing samples.
+
+        Args:
+            channel: Prepared channel whose units, bounds and availability govern the result.
+            position: Fractional source-sample position.
+
+        Returns:
+            The channel value at the source position, or None when required samples are
+            missing.
+        """
         lower = max(self.first, min(self.last, floor(position)))
         upper = min(self.last, lower + 1)
         a, b = channel.values[lower], channel.values[upper]
@@ -184,6 +320,22 @@ def prepare_export(
     first: int,
     last: int,
 ) -> ExportTimeline:
+    """Bind prepared analysis and an inclusive interval into a video timeline.
+
+    Args:
+        analysis: Prepared recording-analysis snapshot used by this operation.
+        settings: Validated settings controlling this operation.
+        first: First included source sample index.
+        last: Last included source sample index.
+
+    Returns:
+        Immutable video timeline bound to prepared analysis and source bounds.
+
+    Raises:
+        ValueError: Invalid export sample interval. If the supplied settings or operation
+            state are invalid. Export requires a sample rate.
+        AssertionError: If a required internal invariant does not hold.
+    """
     count = len(analysis.time.source_indices)
     if type(first) is not int or type(last) is not int or not 0 <= first <= last < count:
         raise ValueError("Invalid export sample interval")

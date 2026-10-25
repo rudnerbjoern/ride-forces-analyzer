@@ -38,12 +38,55 @@ BRAKING_COLOR = "#ff4545"  # Negative longitudinal data.
 
 
 def lateral_x(channel: ExportChannel, value: float, left: float, right: float) -> float:
-    """Use equal left/right scale with negative forces left of the center."""
+    """Use equal left/right scale with negative forces left of the center.
+
+    Args:
+        channel: Prepared channel whose units, bounds and availability govern the result.
+        value: Candidate value to validate, format or store.
+        left: Left boundary in the layout's coordinate system.
+        right: Right boundary in the layout's coordinate system.
+
+    Returns:
+        Horizontal drawing coordinate on the lateral-force scale.
+    """
     extent = max(abs(channel.low), abs(channel.high))
     return (left + right) / 2 + value / extent * (right - left) / 2
 
 
 class Drawing:
+    """Share layout typography and alpha-preserving drawing effects.
+
+    Attributes:
+        font_file: Font resource used for the layout's main labels and values.
+        tick_font_file: Font resource used for scale ticks.
+        label_size: Layout dimension for label size, in native pixels unless specified
+            otherwise.
+        number_size: Layout dimension for number size, in native pixels unless specified
+            otherwise.
+        small_size: Layout dimension for small size, in native pixels unless specified
+            otherwise.
+        tick_size: Layout dimension for tick size, in native pixels unless specified
+            otherwise.
+        channel_colors: Drawing color or palette for channel colors.
+        panel_radius: Layout dimension for panel radius, in native pixels unless specified
+            otherwise.
+        panel_fill: Drawing color or palette for panel fill.
+        panel_outline: Drawing color or palette for panel outline.
+        panel_outline_width: Layout dimension for panel outline width, in native pixels
+            unless specified otherwise.
+        text_stroke_width: Layout dimension for text stroke width, in native pixels unless
+            specified otherwise.
+        text_stroke_color: Drawing color or palette for text stroke color.
+        timeline: Bound video timeline containing the source interval and export settings.
+        width: Width in the pixel or coordinate units declared by this operation.
+        height: Height in the pixel or coordinate units declared by this operation.
+        label: Human-readable label.
+        number: Font used for numeric readouts.
+        small: Font used for secondary text.
+        tick: Font used for scale ticks.
+        base: Prepared static layout image copied before per-frame drawing.
+    """
+
     font_file = FONT_FILE
     tick_font_file = TICK_FONT_FILE
     label_size = LABEL_FONT_SIZE
@@ -59,6 +102,16 @@ class Drawing:
     text_stroke_color = TEXT_OUTLINE_COLOR
 
     def __init__(self, timeline: ExportTimeline, width: int, height: int) -> None:
+        """Initialize drawing and its owned state.
+
+        Args:
+            timeline: Bound video timeline containing the source interval and export settings.
+            width: Width in the pixel or coordinate units declared by this operation.
+            height: Height in the pixel or coordinate units declared by this operation.
+
+        Returns:
+            None.
+        """
         self.timeline = timeline
         self.width, self.height = width, height
         font = Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts" / self.font_file
@@ -72,9 +125,29 @@ class Drawing:
         return tr(source, *values, language=self.timeline.settings.language)
 
     def render(self, frame: int) -> Image.Image:
+        """Render the overlay at the requested source position.
+
+        Args:
+            frame: Zero-based output video frame index.
+
+        Returns:
+            The rendered image in the layout or canvas dimensions declared by the timeline.
+        """
         return self.render_position(self.timeline.sample_position(frame))
 
     def render_position(self, position: float) -> Image.Image:
+        """Render the layout at a fractional source-sample position.
+
+        Args:
+            position: Fractional source-sample position.
+
+        Returns:
+            The rendered image in the layout or canvas dimensions declared by the timeline.
+
+        Raises:
+            NotImplementedError: If the concrete layout does not implement this rendering
+                operation.
+        """
         raise NotImplementedError
 
     @staticmethod

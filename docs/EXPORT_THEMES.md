@@ -4,7 +4,8 @@ For help choosing a layout and reading its instruments, see the
 [user layout guide](user/EXPORT_LAYOUTS.md).
 
 [Watch the Manta overlay demo](https://youtu.be/0sGiE6F8YlI) to see all five
-layouts in turn over Onride footage.
+layouts in turn over Onride footage. The additional
+[Manta HUD demo](https://youtu.be/JGcNPKoKU1Q) shows only the HUD layout.
 
 All five layouts show the same Voltron Nevera moment. Recording details, fixed settings,
 reproduction commands and image licensing are documented in the

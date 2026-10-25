@@ -54,7 +54,21 @@ _NEGATIVE_FIELDS = frozenset(
 
 @dataclass(frozen=True, slots=True)
 class OptionalParseSuccess:
-    """Optional-data subset only; success does not validate core motion or schema."""
+    """Optional-data subset only; success does not validate core motion or schema.
+
+    Attributes:
+        source: Retained input identity or image; its original representation remains
+            owned.
+        metadata: Retained recording metadata without reconstruction of absent fields.
+        attributes: Source attribute records, including retained labels and opaque values.
+        gps: Independent optional GPS sequence retained for spatial context.
+        gps_status: Availability status of the admitted optional GPS data.
+        smoothing_factor: Source smoothing setting retained as metadata.
+        max_force: Source maximum-force metadata.
+        min_force: Source minimum-force metadata.
+        diagnostics: Structured diagnostics retaining stable codes and source locations.
+        success: Discriminator identifying whether the import stage succeeded.
+    """
 
     source: SourceEnvelope = field(repr=False)
     metadata: RecordingMetadata = field(repr=False)
@@ -68,6 +82,16 @@ class OptionalParseSuccess:
     success: Literal[True] = field(default=True, init=False)
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Optional success cannot contain error diagnostics. GPS status must
+                agree with sequence availability.
+            TypeError: Optional attributes must contain Attribute values.
+        """
         ordered = ordered_diagnostics(self.diagnostics)
         if any(item.severity is Severity.ERROR for item in ordered):
             raise ValueError("Optional success cannot contain error diagnostics")
@@ -314,7 +338,15 @@ def validate_optional_data(
     source: SourceEnvelope,
     diagnostics: DiagnosticBudget,
 ) -> OptionalParseResult:
-    """Parse a decoded 2.2.0 envelope; no I/O, motion validation or scientific conversion."""
+    """Parse a decoded 2.2.0 envelope; no I/O, motion validation or scientific conversion.
+
+    Args:
+        source: Input recording, retained source representation or source path to read.
+        diagnostics: Structured diagnostics or their collector.
+
+    Returns:
+        Parsed optional data and diagnostics, or a structured failure.
+    """
     root = source.root
     if root is None:
         return ImportFailure(
@@ -352,7 +384,18 @@ def parse_optional_data(
     *,
     limits: ImportLimits = DEFAULT_LIMITS,
 ) -> OptionalParseResult:
-    """Parse optional accessors independently with a bounded diagnostic list and no I/O."""
+    """Parse optional accessors independently with a bounded diagnostic list and no I/O.
+
+    Args:
+        source: Input recording, retained source representation or source path to read.
+        limits: Resource limits applied to the operation.
+
+    Returns:
+        Parsed optional data and diagnostics, or a structured failure.
+
+    Raises:
+        ValueError: limits must be an ImportLimits instance.
+    """
     if not has_type(limits, ImportLimits):
         raise ValueError("limits must be an ImportLimits instance")
     diagnostics = DiagnosticBudget(limits.max_diagnostics)

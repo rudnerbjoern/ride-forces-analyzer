@@ -20,17 +20,40 @@ from .translation import bind
 
 
 class _Signals(QObject):
+    """Signals contract and owned data.
+
+    Attributes:
+        completed: Qt signal for completed notifications.
+        failed: Qt signal for failed notifications.
+    """
+
     completed = Signal(object)
     failed = Signal()
 
 
 class UpdateWorker(QRunnable):
+    """Update worker contract and owned data.
+
+    Attributes:
+        signals: Qt result, failure and progress signal transport owned by the worker.
+    """
+
     def __init__(self) -> None:
+        """Initialize update worker and its owned state.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.signals = _Signals()
 
     @Slot()
     def run(self) -> None:
+        """Execute the worker task and deliver completion or failure through its signals.
+
+        Returns:
+            None.
+        """
         try:
             result = check_for_update(__version__)
         except Exception as error:
@@ -41,10 +64,31 @@ class UpdateWorker(QRunnable):
 
 
 class UpdateController(QObject):
+    """Update controller contract and owned data.
+
+    Attributes:
+        busy_changed: Qt signal for busy changed notifications.
+        status_changed: Qt signal for status changed notifications.
+        window: Odd number of samples in the centered smoothing window.
+        preferences: Local application preference access for this window or controller.
+        worker: Current background worker, or None when no task is active.
+        manual: Whether the user explicitly requested the check.
+        stopped: Whether this controller has stopped accepting worker results.
+    """
+
     busy_changed = Signal(bool)
     status_changed = Signal(object)
 
     def __init__(self, parent: QWidget, preferences: Preferences) -> None:
+        """Initialize update controller and its owned state.
+
+        Args:
+            parent: Qt parent that owns this object's lifetime.
+            preferences: Local application preference access.
+
+        Returns:
+            None.
+        """
         super().__init__(parent)
         self.window = parent
         self.preferences = preferences
@@ -53,6 +97,14 @@ class UpdateController(QObject):
         self.stopped = False
 
     def check(self, *, manual: bool = True) -> None:
+        """Run the configured package or update checks and report their result.
+
+        Args:
+            manual: Whether the user explicitly requested the check.
+
+        Returns:
+            None.
+        """
         if self.stopped or self.worker is not None:
             return
         now = time()

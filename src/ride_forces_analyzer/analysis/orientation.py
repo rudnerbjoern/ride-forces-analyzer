@@ -20,6 +20,13 @@ def orientation_degrees(
 
     Absent/zero gravity remains gaps; this is never yaw or track heading.
     The optional effective axis changes no source data or force processing.
+
+    Args:
+        recording: Validated recording whose original source data remains unchanged.
+        vertical_direction: Vertical projection direction in the source frame.
+
+    Returns:
+        Tilt angles in degrees, with None for unavailable source positions.
     """
     gravity = recording.motion.gravity
     vertical = vertical_direction or source_directions(recording)[0]

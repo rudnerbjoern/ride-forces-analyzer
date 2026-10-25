@@ -110,6 +110,32 @@ TEXT_ANCHOR = "mm"  # Centered anchor for all instrument labels.
 
 
 class OrbitRenderer(Drawing):
+    """Orbit renderer contract and owned data.
+
+    Attributes:
+        font_file: Font resource used for the layout's main labels and values.
+        tick_font_file: Font resource used for scale ticks.
+        label_size: Layout dimension for label size, in native pixels unless specified
+            otherwise.
+        number_size: Layout dimension for number size, in native pixels unless specified
+            otherwise.
+        small_size: Layout dimension for small size, in native pixels unless specified
+            otherwise.
+        tick_size: Layout dimension for tick size, in native pixels unless specified
+            otherwise.
+        channel_colors: Drawing color or palette for channel colors.
+        panel_radius: Layout dimension for panel radius, in native pixels unless specified
+            otherwise.
+        panel_fill: Drawing color or palette for panel fill.
+        panel_outline: Drawing color or palette for panel outline.
+        panel_outline_width: Layout dimension for panel outline width, in native pixels
+            unless specified otherwise.
+        text_stroke_width: Layout dimension for text stroke width, in native pixels unless
+            specified otherwise.
+        text_stroke_color: Drawing color or palette for text stroke color.
+        peaks: Prepared source-time peak envelopes, independent of render query order.
+    """
+
     font_file = FONT_FILE
     tick_font_file = TICK_FONT_FILE
     label_size = LABEL_FONT_SIZE
@@ -125,6 +151,14 @@ class OrbitRenderer(Drawing):
     text_stroke_color = TEXT_OUTLINE_COLOR
 
     def __init__(self, timeline: ExportTimeline) -> None:
+        """Initialize orbit renderer and its owned state.
+
+        Args:
+            timeline: Bound video timeline containing the source interval and export settings.
+
+        Returns:
+            None.
+        """
         super().__init__(timeline, *NATIVE_SIZE)
         self.peaks = tuple(
             PeakEnvelope.prepare(
@@ -139,7 +173,15 @@ class OrbitRenderer(Drawing):
         )
 
     def orbit_angle(self, value: float, row: int = 0) -> float:
-        """Map signed forces to their physical display direction on shared rings."""
+        """Map signed forces to their physical display direction on shared rings.
+
+        Args:
+            value: Candidate value to validate, format or store.
+            row: Channel or panel row selected for rendering.
+
+        Returns:
+            Drawing angle for the signed force on its ring.
+        """
         channel = self.timeline.channels[row]
         if row == 1:
             return LATERAL_ZERO_ANGLE + QUADRANT_DEGREES * value / max(
@@ -154,10 +196,25 @@ class OrbitRenderer(Drawing):
 
     @staticmethod
     def orientation_angle(value: float) -> float:
-        """Keep measured 0–180 degrees on the right orientation semicircle."""
+        """Keep measured 0–180 degrees on the right orientation semicircle.
+
+        Args:
+            value: Candidate value to validate, format or store.
+
+        Returns:
+            Drawing angle for the measured tilt on the orientation semicircle.
+        """
         return value - QUADRANT_DEGREES
 
     def render_position(self, position: float) -> Image.Image:
+        """Render the layout at a fractional source-sample position.
+
+        Args:
+            position: Fractional source-sample position.
+
+        Returns:
+            The rendered image in the layout or canvas dimensions declared by the timeline.
+        """
         image = self.base.copy()
         draw = ImageDraw.Draw(image)
         draw.ellipse(

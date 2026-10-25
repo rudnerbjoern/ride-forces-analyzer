@@ -30,6 +30,18 @@ class ExportCancelled(Exception):
 
 
 def find_ffmpeg(explicit: Path | None = None) -> Path:
+    """Find an admitted external or bundled FFmpeg executable.
+
+    Args:
+        explicit: Explicit FFmpeg executable path, or None to use discovery.
+
+    Returns:
+        Path of the admitted FFmpeg executable.
+
+    Raises:
+        ValueError: Choose an existing FFmpeg executable. FFmpeg was not found. Choose an
+            FFmpeg executable in the export dialog.
+    """
     if explicit is not None:
         if not explicit.is_file():
             raise ValueError("Choose an existing FFmpeg executable")
@@ -48,7 +60,12 @@ def find_ffmpeg(explicit: Path | None = None) -> Path:
 
 
 def encoder_environment() -> dict[str, str]:
-    """Keep frozen Linux library paths out of an external system encoder."""
+    """Keep frozen Linux library paths out of an external system encoder.
+
+    Returns:
+        Environment for the encoder, excluding incompatible frozen-library paths where
+        required.
+    """
     environment = dict(os.environ)
     if sys.platform == "linux" and getattr(sys, "frozen", False):
         original = environment.get("LD_LIBRARY_PATH_ORIG")
@@ -66,6 +83,17 @@ def encoder_command(
     *,
     use_gpu: bool = False,
 ) -> list[str]:
+    """Build FFmpeg arguments for the selected codec, backend and padded canvas.
+
+    Args:
+        ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
+        timeline: Bound video timeline containing the source interval and export settings.
+        target: Destination of the requested operation.
+        use_gpu: Whether to request the supported GPU backend.
+
+    Returns:
+        Complete encoder argument vector for the selected output and backend.
+    """
     transparent = timeline.settings.output == "transparent"
     codec = (
         [
@@ -156,7 +184,15 @@ def encoder_command(
 
 
 def supports_nvidia(ffmpeg: Path, timeline: ExportTimeline) -> bool:
-    """Probe a real GPU encode; compiled-in codec names alone are not evidence."""
+    """Probe a real GPU encode; compiled-in codec names alone are not evidence.
+
+    Args:
+        ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
+        timeline: Bound video timeline containing the source interval and export settings.
+
+    Returns:
+        True when the requested check succeeds or the event is handled; otherwise False.
+    """
     if not timeline.settings.prefer_gpu:
         return False
     transparent = timeline.settings.output == "transparent"
@@ -222,7 +258,35 @@ def export_video(
     render_jobs: int = 1,
     overwrite: bool = False,
 ) -> Path:
-    """Publish a complete video, atomically replacing only with explicit permission."""
+    """Publish a complete video, atomically replacing only with explicit permission.
+
+    Args:
+        timeline: Bound video timeline containing the source interval and export settings.
+        destination: Requested output path; replacement follows the explicit overwrite
+            policy.
+        ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
+        cancelled: Cancellation event checked during the operation.
+        progress: Optional callback receiving completed and total frame counts.
+        status: Optional callback receiving the current processing status.
+        render_jobs: Requested concurrent frame-renderer count, bounded by local CPU
+            availability.
+        overwrite: Whether the caller explicitly permits replacing an existing
+            destination.
+
+    Returns:
+        The completed output video path after exclusive publication or confirmed
+        replacement.
+
+    Raises:
+        ValueError: If the supplied settings or operation state are invalid. Output
+            already exists; choose a new filename.
+        ExportCancelled: If cancellation is requested before publication.
+        OSError: If the required filesystem operation fails. If the underlying operation
+            fails; the original error is propagated.
+        AssertionError: If a required internal invariant does not hold.
+        RuntimeError: If the supplied settings or operation state are invalid. Encoder
+            produced no video.
+    """
     extension = ".mov" if timeline.settings.output == "transparent" else ".mp4"
     destination = destination.resolve()
     if destination.suffix.lower() != extension:

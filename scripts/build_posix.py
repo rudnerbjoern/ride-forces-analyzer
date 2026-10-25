@@ -33,7 +33,21 @@ from scripts.build_windows import (
 
 
 def build(work: Path, *, expected_target: str | None = None) -> Path:
-    """Build for the native target only; never attempt cross-compilation."""
+    """Build for the native target only; never attempt cross-compilation.
+
+    Args:
+        work: Temporary build directory inside the repository's temporary area.
+        expected_target: Expected destination used to validate the operation.
+
+    Returns:
+        Path to the generated distribution artifact.
+
+    Raises:
+        ValueError: Build on native Linux x64 or macOS x64/arm64. If the supplied settings
+            or operation state are invalid. Build outputs must stay under .tmp.
+        OSError: If the required filesystem operation fails.
+        subprocess.CalledProcessError: If the checked subprocess exits unsuccessfully.
+    """
     target = runtime_target()
     if target not in ("linux-x64", "macos-x64", "macos-arm64"):
         raise ValueError("Build on native Linux x64 or macOS x64/arm64")

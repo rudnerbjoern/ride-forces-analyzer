@@ -22,6 +22,16 @@ def main(
     recording: Path | None = None,
     new_window: bool = False,
 ) -> int:
+    """Run this module's application or command-line entry point.
+
+    Args:
+        settings: Validated settings controlling this operation.
+        recording: Optional recording path to open.
+        new_window: Whether to open a separate recording window.
+
+    Returns:
+        Process exit status; zero indicates successful completion.
+    """
     from ride_forces_analyzer.error_reporting import initialize_error_reporting
 
     initialize_error_reporting()

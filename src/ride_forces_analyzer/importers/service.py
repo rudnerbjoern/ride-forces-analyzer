@@ -49,10 +49,26 @@ def _complete(decoded: DecodeResult, limits: ImportLimits) -> ImportResult:
 
 
 def import_forces(path: Path, *, limits: ImportLimits = DEFAULT_LIMITS) -> ImportResult:
-    """Read a bounded local original without writes and import its available capabilities."""
+    """Read a bounded local original without writes and import its available capabilities.
+
+    Args:
+        path: Filesystem path read or written by this operation.
+        limits: Resource limits applied to the operation.
+
+    Returns:
+        Imported recording and capability diagnostics, or a structured import failure.
+    """
     return _complete(decode_forces(path, limits=limits), limits)
 
 
 def import_forces_bytes(data: bytes, *, limits: ImportLimits = DEFAULT_LIMITS) -> ImportResult:
-    """Import exact immutable bytes without filesystem or network access."""
+    """Import exact immutable bytes without filesystem or network access.
+
+    Args:
+        data: Input data in the representation declared by the parameter type.
+        limits: Resource limits applied to the operation.
+
+    Returns:
+        Imported recording and capability diagnostics, or a structured import failure.
+    """
     return _complete(decode_forces_bytes(data, limits=limits), limits)

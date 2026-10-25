@@ -16,6 +16,13 @@ def combined_force(samples: tuple[Vector3, ...], window: int) -> tuple[float | N
     Source-app g interpretation remains provisional. Raises ValueError for an
     invalid window, empty input or non-finite smoothing results. A non-finite
     magnitude is returned as None, without hiding the other force channels.
+
+    Args:
+        samples: Sample values in the declared source or analysis representation.
+        window: Odd number of source samples in the smoothing window.
+
+    Returns:
+        The norm of centered-mean device axes, before directional projection.
     """
     axes = tuple(
         centered_mean(axis, window)
@@ -30,7 +37,19 @@ def combined_force(samples: tuple[Vector3, ...], window: int) -> tuple[float | N
 
 
 def centered_mean(values: tuple[float, ...], window: int) -> tuple[float, ...]:
-    """Centered odd-window mean; truncate and renormalize at recording edges."""
+    """Centered odd-window mean; truncate and renormalize at recording edges.
+
+    Args:
+        values: Values to format, validate or add in their supplied order.
+        window: Odd number of source samples in the smoothing window.
+
+    Returns:
+        Smoothed values aligned with the input samples.
+
+    Raises:
+        ValueError: Smoothing window must be an odd integer from 1 through 51. Smoothing
+            requires samples. Smoothing exceeds finite display range.
+    """
     if type(window) is not int or window < 1 or window > 51 or window % 2 == 0:
         raise ValueError("Smoothing window must be an odd integer from 1 through 51")
     if not values:

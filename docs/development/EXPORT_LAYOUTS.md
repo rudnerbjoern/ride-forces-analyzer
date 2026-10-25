@@ -11,7 +11,8 @@ installation, network access or third-party code loading is involved.
 Public selection and saved-preset keys come from the explicit profile registry.
 
 For examples of all five rendered layouts in turn over Onride footage, watch the
-[Manta overlay demo on YouTube](https://youtu.be/0sGiE6F8YlI).
+[Manta overlay demo on YouTube](https://youtu.be/0sGiE6F8YlI). The additional
+[Manta HUD demo](https://youtu.be/JGcNPKoKU1Q) shows only HUD.
 
 ## Files and responsibilities
 

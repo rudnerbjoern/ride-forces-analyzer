@@ -72,12 +72,29 @@ class AirtimeContext:
     Only past/current samples contribute. Gaps reset event history. A rapid
     onset can qualify strong loading within 0.5 seconds; once qualified, the
     ejector label persists through the same strong-loading phase.
+
+    Attributes:
+        labels: Classification labels aligned with source samples.
     """
 
     labels: tuple[str, ...]
 
     @classmethod
     def prepare(cls, values: tuple[float | None, ...], rate: float) -> "AirtimeContext":
+        """Prepare immutable source-time values for repeated presentation queries.
+
+        Args:
+            values: Values to format, validate or add in their supplied order.
+            rate: Sample or frame rate per second, as declared by this operation.
+
+        Returns:
+            Immutable source-time states prepared for repeated queries over the selected
+            interval.
+
+        Raises:
+            ValueError: Sample rate must be finite and positive.
+            AssertionError: If a required internal invariant does not hold.
+        """
         if not isfinite(rate) or rate <= 0:
             raise ValueError("Sample rate must be finite and positive")
         window = max(1, round(ONSET_WINDOW_SECONDS * rate))
@@ -120,6 +137,18 @@ class AirtimeContext:
         return cls(_stabilize_context(values, labels, rate))
 
     def at(self, position: float) -> str:
+        """Read the prepared state at the requested source-sample position.
+
+        Args:
+            position: Fractional source-sample position.
+
+        Returns:
+            Prepared state at the requested source-sample position, adjusted according to the
+            query contract.
+
+        Raises:
+            ValueError: Position outside airtime context.
+        """
         if not isfinite(position) or not 0 <= position < len(self.labels):
             raise ValueError("Position outside airtime context")
         return self.labels[floor(position)]

@@ -10,7 +10,19 @@ from time import monotonic
 
 
 class SamplePlayback:
-    """Play existing integer samples at their inferred recording rate, without looping."""
+    """Play existing integer samples at their inferred recording rate, without looping.
+
+    Attributes:
+        _count: Number of source samples available for playback.
+        _rate: Source sample rate in samples per second.
+        _clock: Monotonic clock used for playback timing.
+        _sample: Current selected source sample.
+        _position: Current fractional source-sample position.
+        _origin: Source sample used as replay time zero.
+        _speed: Playback speed multiplier.
+        _anchor: Clock and sample reference used to advance playback.
+        _playing: Whether playback is active.
+    """
 
     def __init__(
         self,
@@ -19,7 +31,19 @@ class SamplePlayback:
         *,
         clock: Callable[[], float] = monotonic,
     ) -> None:
-        """Raise ValueError for empty recordings or rates that are not finite and positive."""
+        """Raise ValueError for empty recordings or rates that are not finite and positive.
+
+        Args:
+            sample_count: Number of source samples, including both interval endpoints.
+            sample_rate: Effective source samples per second.
+            clock: Monotonic clock returning seconds.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Playback requires samples and a finite positive sample rate.
+        """
         if sample_count < 1 or not isfinite(sample_rate) or sample_rate <= 0:
             raise ValueError("Playback requires samples and a finite positive sample rate")
         self._count = sample_count
@@ -34,18 +58,35 @@ class SamplePlayback:
 
     @property
     def playing(self) -> bool:
-        """Whether playback is active; reaching the last sample stops it."""
+        """Whether playback is active; reaching the last sample stops it.
+
+        Returns:
+            True when the requested check succeeds or the event is handled; otherwise False.
+        """
         return self._playing
 
     @property
     def speed(self) -> float:
-        """Playback multiplier, defaulting to normal recording speed."""
+        """Playback multiplier, defaulting to normal recording speed.
+
+        Returns:
+            Current playback multiplier relative to recording time.
+        """
         return self._speed
 
     def set_speed(self, speed: float) -> None:
         """Select 0.5×, 1× or 2× without moving the current position or changing pause state.
 
         Raise ValueError for unsupported multipliers.
+
+        Args:
+            speed: Playback speed multiplier.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Playback speed must be 0.5, 1 or 2.
         """
         if speed not in (0.5, 1.0, 2.0):
             raise ValueError("Playback speed must be 0.5, 1 or 2")
@@ -56,7 +97,14 @@ class SamplePlayback:
             self._speed = speed
 
     def play(self, index: int) -> int:
-        """Start at index, or restart at zero when already at the last sample."""
+        """Start at index, or restart at zero when already at the last sample.
+
+        Args:
+            index: Source or collection index selected for this operation.
+
+        Returns:
+            Source sample index at which playback starts.
+        """
         self.seek(index)
         if index == self._count - 1:
             self.seek(0)
@@ -67,12 +115,20 @@ class SamplePlayback:
         return self._sample
 
     def current_sample(self) -> int:
-        """Return the elapsed-time sample, skipping missed UI ticks and clamping at end."""
+        """Return the elapsed-time sample, skipping missed UI ticks and clamping at end.
+
+        Returns:
+            The elapsed-time sample, skipping missed ui ticks and clamping at end.
+        """
         self.current_position()
         return self._sample
 
     def current_position(self) -> float:
-        """Return continuous sample position for display motion, without interpolating data."""
+        """Return continuous sample position for display motion, without interpolating data.
+
+        Returns:
+            Continuous sample position for display motion, without interpolating data.
+        """
         return self._advance(self._clock())
 
     def _advance(self, now: float) -> float:
@@ -88,7 +144,11 @@ class SamplePlayback:
         return self._position
 
     def pause(self) -> int:
-        """Freeze at the current integer sample and return its index."""
+        """Freeze at the current integer sample and return its index.
+
+        Returns:
+            Source sample index at which playback stopped.
+        """
         index = self.current_sample()
         self._playing = False
         self._position = float(index)
@@ -99,6 +159,15 @@ class SamplePlayback:
 
         Raise ValueError outside the recording. Adopting the current sample does
         not reset the clock, allowing UI feedback without cumulative time drift.
+
+        Args:
+            index: Source or collection index selected for this operation.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Playback sample is outside the recording.
         """
         if not 0 <= index < self._count:
             raise ValueError("Playback sample is outside the recording")

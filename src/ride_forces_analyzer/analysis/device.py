@@ -38,7 +38,14 @@ from .models import (
 
 
 class DeviceAccelerationUnit(StrEnum):
-    """Supported common component units; bare 'g' is deliberately excluded."""
+    """Supported common component units; bare 'g' is deliberately excluded.
+
+    Attributes:
+        SI: Named value for si (`meter / second ** 2`).
+        CENTIMETERS: Named value for centimeters (`centimeter / second ** 2`).
+        FEET: Named value for feet (`foot / second ** 2`).
+        STANDARD_GRAVITY: Named value for standard gravity (`standard_gravity`).
+    """
 
     SI = "meter / second ** 2"
     CENTIMETERS = "centimeter / second ** 2"
@@ -59,6 +66,14 @@ class MotionUnitContract:
 
     References attest the common component unit and quantity independently.
     Synthetic references qualify only their synthetic source, not real recordings.
+
+    Attributes:
+        source_sha256: SHA-256 identity of the original recording bytes.
+        source_sequence: Source sequence from which the values originate.
+        unit: Declared unit and its evidence; unknown source units remain unknown.
+        quantity: Declared physical quantity, including an explicit unknown state.
+        unit_evidence: Evidence supporting the unit assignment.
+        quantity_evidence: Evidence supporting the quantity assignment.
     """
 
     source_sha256: str
@@ -69,6 +84,18 @@ class MotionUnitContract:
     quantity_evidence: tuple[str, ...]
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Contract requires a lowercase source SHA-256. Contract must identify a
+                motion sequence. Contract must distinguish the vector's physical quantity.
+                Validated units and quantities require independent references.
+            TypeError: A supported explicit acceleration unit is required. Evidence must be a
+                collection of reference strings.
+        """
         if (
             not has_type(self.source_sha256, str)
             or len(self.source_sha256) != 64
@@ -95,14 +122,43 @@ class MotionUnitContract:
 
 
 class _ConvertedQuantity(Protocol):
-    @property
-    def magnitude(self) -> object: ...
+    """Typed subset of a converted unit quantity."""
 
-    def to(self, units: str) -> "_ConvertedQuantity": ...
+    @property
+    def magnitude(self) -> object:
+        """Return the numeric magnitude of the represented quantity.
+
+        Returns:
+            Numeric magnitude in the quantity's current units.
+        """
+        ...
+
+    def to(self, units: str) -> "_ConvertedQuantity":
+        """Convert this quantity to the requested units.
+
+        Args:
+            units: Declared units associated with the values.
+
+        Returns:
+            A quantity expressed in the requested units.
+        """
+        ...
 
 
 class _Registry(Protocol):
-    def Quantity(self, magnitude: float, units: str) -> _ConvertedQuantity: ...
+    """Typed subset of the unit registry used for explicit conversions."""
+
+    def Quantity(self, magnitude: float, units: str) -> _ConvertedQuantity:
+        """Construct a quantity with an explicit magnitude and units.
+
+        Args:
+            magnitude: Vector magnitude in the declared units.
+            units: Declared units associated with the values.
+
+        Returns:
+            The quantity constructed from the supplied magnitude and units.
+        """
+        ...
 
 
 # Narrow the dynamically generated upstream API without exposing it to callers.
@@ -115,6 +171,18 @@ def convert_device_vectors(samples: SampleValues, contract: MotionUnitContract) 
 
     The import service checks the contract's source binding. This primitive checks
     the typed contract; it does not certify reference strings as empirical truth.
+
+    Args:
+        samples: Sample values in the declared source or analysis representation.
+        contract: Declared source-unit contract.
+
+    Returns:
+        Owned SI acceleration vectors with source-row validity preserved.
+
+    Raises:
+        TypeError: Conversion requires owned samples and a validated unit contract.
+        ValueError: Device conversion requires x/y/z rows. Pint returned an invalid
+            conversion factor. Unit conversion exceeded finite float64 range.
     """
     if not has_type(samples, SampleValues) or not has_type(contract, MotionUnitContract):
         raise TypeError("Conversion requires owned samples and a validated unit contract")
@@ -134,7 +202,19 @@ def convert_device_vectors(samples: SampleValues, contract: MotionUnitContract) 
 
 
 def device_vector_norm(channel: AnalysisChannel) -> AnalysisChannel:
-    """Euclidean DEVICE magnitude, never a rider axis or inferred force relationship."""
+    """Euclidean DEVICE magnitude, never a rider axis or inferred force relationship.
+
+    Args:
+        channel: Prepared channel whose units, bounds and availability govern the result.
+
+    Returns:
+        Device-vector magnitude channel with its unit and evidence metadata.
+
+    Raises:
+        TypeError: Norm requires a typed channel.
+        ValueError: Norm requires verified SI raw DEVICE x/y/z vectors. Device magnitude
+            exceeded finite float64 range.
+    """
     if not has_type(channel, AnalysisChannel):
         raise TypeError("Norm requires a typed channel")
     if (
@@ -175,6 +255,21 @@ def analyze_device_vectors(
 
     No source contracts are assigned automatically. No source timeline, calibration,
     GPS, load factor, sequence relationship or rider/world mapping is calculated.
+
+    Args:
+        source: Input recording, retained source representation or source path to read.
+        calculation_time: Aware timestamp recorded in calculation provenance.
+        acceleration_contract: Unit and quantity evidence for source acceleration.
+        gravity_contract: Unit and quantity evidence for source gravity.
+
+    Returns:
+        Independent si vectors/norms or structured capability exclusions.
+
+    Raises:
+        TypeError: Device analysis requires full M2 ImportSuccess. Motion contracts must
+            be typed or absent.
+        ValueError: Motion contract does not match this source and sequence.
+        AssertionError: If a required internal invariant does not hold.
     """
     if not has_type(source, ImportSuccess):
         raise TypeError("Device analysis requires full M2 ImportSuccess")

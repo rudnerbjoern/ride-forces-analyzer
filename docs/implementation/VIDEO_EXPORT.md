@@ -1,5 +1,7 @@
 # Ride overlay video export
 
+<!-- cspell:words libx -->
+
 For instructions on creating an overlay and using it in a video editor, see the
 [user guide](../user/VIDEO_EXPORT.md). This page defines the technical contracts.
 
@@ -32,6 +34,8 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 | Alignment          | Manual in DaVinci Resolve; source-video ingestion/synchronization excluded                                 |
 
 [Manta overlay demo](https://youtu.be/0sGiE6F8YlI): all five layouts in turn over Onride footage.
+The additional [Manta HUD demo](https://youtu.be/JGcNPKoKU1Q) shows HUD using
+the supplied [Manta reference recording](../development/RECORDINGS.md#manta).
 
 ## Contracts
 
@@ -60,16 +64,20 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 
 ### Assistant and previews
 
-| Interaction            | Contract                                                                                                                      |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Opening                | Two-step modal assistant binds current analysis, graph cursor and smoothing; does not follow workspace changes                |
-| Preview sample         | All five thumbnails and large preview use production RGBA at the exact source sample, independent of video-frame quantization |
-| Refresh                | Settings/background changes use a debounced worker; only latest revision applies                                              |
-| Background             | Checkerboard/light/dark are preview-only; preview needs neither FFmpeg nor encoding                                           |
-| Out-of-interval cursor | Retained unchanged; explicit full-recording-context warning                                                                   |
-| Review                 | Actual interval/settings; destination selection and full rendering require final Export video action                          |
-| Navigation             | Scrollable content, pinned navigation/export actions for smaller/high-DPI desktops and translated settings                    |
-| Close/Escape           | Preserve source sample while open; respect active-encoding cancellation                                                       |
+Both steps share a compact ride heading, labeled left-hand controls/summary and
+a large right-hand preview. Step one groups export settings, force display and
+encoding; presets and compact layout thumbnails remain directly accessible.
+
+| Interaction            | Contract                                                                                                                           |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Opening                | Two-step modal assistant binds current analysis, graph cursor and smoothing; does not follow workspace changes                     |
+| Preview sample         | All five thumbnails and large preview use production RGBA at the exact source sample, independent of video-frame quantization      |
+| Refresh                | Settings/background changes use a debounced worker; only latest revision applies                                                   |
+| Background             | Checkerboard/light/dark are preview-only; preview needs neither FFmpeg nor encoding                                                |
+| Out-of-interval cursor | Retained unchanged; explicit full-recording-context warning                                                                        |
+| Review                 | Labeled settings/size summary and large preview; presets/gallery stay on step one; final Export video action chooses destination   |
+| Navigation             | Scrollable content, pinned progress/status/ETA and navigation/export actions for smaller/high-DPI desktops and translated settings |
+| Close/Escape           | Preserve source sample while open; respect active-encoding cancellation                                                            |
 
 ### Analysis and time mapping
 
@@ -225,9 +233,28 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 | Estimate             | Contract and limits                                                                                                                      |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | File size            | Live approximate MiB range in settings/review, using rounded frame count, canvas/overlay area and codec; no FFmpeg or trial rendering    |
-| Size uncertainty     | Uncalibrated planning heuristic, not measured bitrate/guaranteed bounds; motion, detail, filtering and CPU/GPU encoding can exceed range |
+| Size uncertainty     | HUD H.264 and GPU-preferred ProRes use measured references; other combinations use a generic heuristic. Neither guarantees bounds        |
 | Remaining frame time | Single-video export, 2 s timer; elapsed monotonic time per submitted frame × pending count; min:sec, including startup overhead          |
 | ETA states           | Estimating before first frame; finalization after last frame has no predicted duration; cancel/failure/completion clears ETA             |
+
+The owner-provided HUD references use 1920×1080 and 60000/1001 fps:
+
+| Recording      | Output          | Encoder            | Frames | File bytes     |
+| -------------- | --------------- | ------------------ | ------ | -------------- |
+| Kraken         | ProRes 4444 MOV | `prores_ks_vulkan` | 9,862  | 15,301,686,528 |
+| Iron Gwazi     | ProRes 4444 MOV | `prores_ks_vulkan` | 8,546  | 13,004,672,088 |
+| Voltron Nevera | ProRes 4444 MOV | `prores_ks_vulkan` | 10,353 | 16,397,302,310 |
+| Kraken         | H.264 MP4       | `libx264`          | 9,862  | 17,181,504     |
+
+The ProRes observations span 0.734–0.764 bytes/pixel/frame; their frame-weighted
+mean is 0.74957, rounded to 0.75 with a ±10% planning allowance.
+H.264 uses 0.00085 with ±50%.
+These allowances are not guaranteed bounds. Rates include container overhead
+and scale by pixel count and encoded frames.
+HUD H.264 uses its CPU reference for both GPU preferences; NVENC output has not
+been measured. GPU availability is not probed for estimation. Other scenes,
+portrait output and ProRes CPU fallback remain unqualified by these references.
+CPU-only HUD ProRes and other layouts retain their existing heuristics.
 
 ### Encoding and FFmpeg
 

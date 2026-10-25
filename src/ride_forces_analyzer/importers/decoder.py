@@ -27,7 +27,16 @@ from .result import ImportFailure
 
 @dataclass(frozen=True, slots=True)
 class DecodeSuccess:
-    """A supported immutable source object, not a complete canonical recording."""
+    """A supported immutable source object, not a complete canonical recording.
+
+    Attributes:
+        source: Retained input identity or image; its original representation remains
+            owned.
+        source_format: Admitted recording profile, kept separate from scientific
+            qualification.
+        success: Discriminator identifying whether the import stage succeeded.
+        diagnostics: Structured diagnostics retaining stable codes and source locations.
+    """
 
     source: SourceEnvelope = field(repr=False)
     source_format: RecordingFormat = RecordingFormat.RIDE_FORCES
@@ -36,15 +45,30 @@ class DecodeSuccess:
 
     @property
     def schema_version(self) -> str | None:
+        """Return the retained declared or admitted source schema version.
+
+        Returns:
+            The retained declared or admitted source schema version.
+        """
         version = self.source.root.get("schemaVersion") if self.source.root is not None else None
         return version if isinstance(version, str) else None
 
     @property
     def byte_count(self) -> int:
+        """Return the original supplied source byte count.
+
+        Returns:
+            The original supplied source byte count.
+        """
         return self.source.provenance.byte_count
 
     @property
     def source_sha256(self) -> str:
+        """Return the SHA-256 identity of the original supplied source bytes.
+
+        Returns:
+            The sha-256 identity of the original supplied source bytes.
+        """
         return self.source.provenance.sha256
 
 
@@ -218,7 +242,19 @@ def _decode(data: bytes, limits: ImportLimits, path: Path | None = None) -> Deco
 
 
 def decode_forces_bytes(data: bytes, *, limits: ImportLimits = DEFAULT_LIMITS) -> DecodeResult:
-    """Decode exact immutable bytes without any path access or motion conversion."""
+    """Decode exact immutable bytes without any path access or motion conversion.
+
+    Args:
+        data: Input data in the representation declared by the parameter type.
+        limits: Resource limits applied to the operation.
+
+    Returns:
+        Decoded source envelope or structured failure with bounded diagnostics.
+
+    Raises:
+        ValueError: limits must be an ImportLimits instance.
+        TypeError: data must be immutable bytes.
+    """
     if not has_type(limits, ImportLimits):
         raise ValueError("limits must be an ImportLimits instance")
     if not has_type(data, bytes):
@@ -227,7 +263,19 @@ def decode_forces_bytes(data: bytes, *, limits: ImportLimits = DEFAULT_LIMITS) -
 
 
 def decode_forces(path: Path, *, limits: ImportLimits = DEFAULT_LIMITS) -> DecodeResult:
-    """Read a local regular file in binary mode with at most max_bytes + 1 bytes."""
+    """Read a local regular file in binary mode with at most max_bytes + 1 bytes.
+
+    Args:
+        path: Filesystem path read or written by this operation.
+        limits: Resource limits applied to the operation.
+
+    Returns:
+        Decoded source envelope or structured file/decode failure.
+
+    Raises:
+        ValueError: limits must be an ImportLimits instance.
+        TypeError: path must be a Path.
+    """
     if not has_type(limits, ImportLimits):
         raise ValueError("limits must be an ImportLimits instance")
     if not has_type(path, Path):

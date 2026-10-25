@@ -55,7 +55,7 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     wait_until(lambda dialog=dialog: dialog.preview_result is not None)
     assert dialog.preview_result is not None and dialog.preview_result.sample == sample
     assert all(not button.icon().isNull() for button in dialog.profile_buttons)
-    assert dialog.preview_caption.height() >= 2 * dialog.preview_caption.fontMetrics().height()
+    assert dialog.preview_caption.height() >= dialog.preview_caption.fontMetrics().height()
     dialog.profile_buttons[0].click()
     assert dialog.profile_buttons[0].isChecked()
     assert dialog.pages.currentIndex() == 0 and not dialog.start.isVisible()
@@ -68,9 +68,14 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     assert "OUTSIDE" in dialog.preview_note.text()
     dialog.next.click()
     assert dialog.pages.currentIndex() == 1 and dialog.start.isVisible()
-    assert f"{sample:,}" in dialog.summary.text()
+    assert f"{sample:,}" in dialog.preview_caption.text()
+    assert dialog.review_fields["layout"].text() == "Flow Ribbon"
+    assert dialog.review_fields["samples"].text() == "120–160 (inclusive)"
+    assert not dialog.presets_widget.isVisible() and not dialog.gallery.isVisible()
+    assert dialog.preview_note.isVisible()  # The out-of-range warning remains visible.
     dialog.back.click()
     assert dialog.pages.currentIndex() == 0
+    assert dialog.presets_widget.isVisible() and dialog.gallery.isVisible()
     dialog.layout_profile.setCurrentIndex(4)
     assert dialog.flip_vertical.isChecked() and not dialog.flip_lateral.isChecked()
     dialog.layout_profile.setCurrentIndex(3)
@@ -171,7 +176,7 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     dialog.background.setCurrentIndex(2)
     assert dialog.preview_result is None and not dialog.next.isEnabled()
     dark_preview = preview_ready(dialog)
-    assert dialog.current_sample == sample and "G-Orbit" in dialog.preview_caption.text()
+    assert dialog.current_sample == sample and dialog.layout_profile.currentText() == "G-Orbit"
     assert dark_preview.profiles[3].image.getpixel((0, 0)) == (22, 37, 51)
     dialog.mode.setCurrentIndex(1)
     opaque_preview = preview_ready(dialog)
@@ -179,10 +184,11 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     assert dialog.worker is None
     dialog.mode.setCurrentIndex(0)
     estimate = dialog.size_estimate.text()
-    assert "Estimated file size:" in estimate and "MiB" in estimate
+    assert estimate.endswith(" MiB")
+    assert estimate == dialog.review_size_estimate.text()
     dialog.mode.setCurrentIndex(1)
     assert dialog.size_estimate.text() != estimate
-    assert dialog.review_size_estimate.text() == dialog.size_estimate.text()
+    assert dialog.size_estimate.text().endswith(dialog.review_size_estimate.text())
     dialog.mode.setCurrentIndex(0)
     assert dialog.size_estimate.text() == estimate
     dialog.aspect.setCurrentIndex(1)
@@ -201,15 +207,20 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     assert dialog.aspect.currentIndex() == 1
     preview_ready(dialog)
     dialog.next.click()
-    assert "2160×3840" in dialog.summary.text()
+    assert dialog.review_fields["resolution"].text() == "2160×3840"
     dialog.back.click()
     dialog.layout_profile.setCurrentIndex(2)
     result = preview_ready(dialog)
     assert all(profile.image.size == (540, 960) for profile in result.profiles)
-    assert "1080×1920" in dialog.summary.text()
+    assert dialog.review_fields["resolution"].text() == "1080×1920"
     dialog.aspect.setCurrentIndex(0)
     preview_ready(dialog)
-    assert "1920×1080" in dialog.summary.text()
+    assert dialog.review_fields["resolution"].text() == "1920×1080"
+    dialog.interval.setCurrentIndex(2)
+    preview_ready(dialog)
+    dialog.next.click()
+    assert not dialog.preview_note.isVisible()
+    assert dialog.status.parentWidget() is dialog.progress.parentWidget()
     dialog.close()
 
 
@@ -436,7 +447,8 @@ def test_stale_preview_is_discarded_after_fast_profile_changes(
         release.set()
     wait_until(lambda: dialog.preview_result is not None)
     assert calls == [("ribbon", 50), ("orbit", 30)]
-    assert "G-Orbit" in dialog.preview_caption.text()
+    assert dialog.layout_profile.currentText() == "G-Orbit"
+    assert "Preview: graph sample" in dialog.preview_caption.text()
     assert dialog.next.isEnabled() and dialog.worker is None
     dialog.reject()
     assert dialog.closing and not dialog.isVisible()
@@ -501,7 +513,7 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     assert reopened.position.currentData() == LayoutPosition.TOP_RIGHT
     assert reopened.fps.currentText() == "59.94" and reopened.seconds.value() == 12.5
     assert reopened.smoothing.currentIndex() == 1 and reopened.interval.currentIndex() == 2
-    assert "3 samples" in reopened.preview_caption.text()
+    assert "3 samples" in reopened.smoothing.toolTip()
     assert window.data is not None and window.data.calibration_available
     assert window.data.smoothing_window == 11
     reopened.manage_batches.click()

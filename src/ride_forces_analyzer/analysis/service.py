@@ -56,7 +56,16 @@ class AnalysisSubscription:
 
 @dataclass(slots=True)
 class _Registration:
-    """Serialize one callback, retaining only current queued deliveries."""
+    """Serialize one callback, retaining only current queued deliveries.
+
+    Attributes:
+        handle: Handle identifying the observer registration.
+        callback: Callback invoked by the operation's documented delivery path.
+        stages: Stage interests or prepared stages selected for this operation.
+        queue: Pending observer deliveries.
+        pending_revision: Revision awaiting delivery.
+        delivering: Whether observer delivery is active.
+    """
 
     handle: AnalysisSubscription
     callback: AnalysisSubscriber
@@ -78,10 +87,25 @@ class AnalysisService:
     A later UI adapter must recheck source, revision, terminal status and active
     subscription when processing queued UI deliveries. This service has no Qt,
     database, executor or historical snapshot/configuration cache.
+
+    Attributes:
+        _lock: Lock protecting service state.
+        _state: Current retained analysis state.
+        _source: Retained source recording.
+        _subscriptions: Registered analysis observers.
+        _next_subscription: Next subscription identifier.
+        _closed: Whether the service or controller has stopped accepting work.
     """
 
     def __init__(self, snapshot: RecordingAnalysis | None = None) -> None:
-        """Own an optional validated completed snapshot without recalculating it."""
+        """Own an optional validated completed snapshot without recalculating it.
+
+        Args:
+            snapshot: Immutable analysis snapshot for this operation.
+
+        Returns:
+            None.
+        """
         self._lock = RLock()
         self._state = AnalysisState(None, None, None, 0, RequestStatus.IDLE)
         self._source: ImportSuccess | None = None
@@ -158,6 +182,9 @@ class AnalysisService:
         Raises:
             TypeError: Handle has the wrong type.
             ValueError: A matching number belongs to another handle object.
+
+        Returns:
+            None.
         """
         if not has_type(subscription, AnalysisSubscription):
             raise TypeError("Expected AnalysisSubscription")
@@ -329,6 +356,9 @@ class AnalysisService:
 
         Close is idempotent. Active calculations may finish but cannot publish.
         Independent consumers keep their own snapshot references.
+
+        Returns:
+            None.
         """
         with self._lock:
             if not self._closed:

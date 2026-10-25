@@ -43,6 +43,18 @@ EXPORT_SIZE = (1500, 1000)
 
 
 def wait_for(application: QApplication, ready: Callable[[], bool]) -> None:
+    """Process native Qt events until a capture condition succeeds or times out.
+
+    Args:
+        application: Native Qt application whose event loop owns the widgets.
+        ready: Predicate reporting whether the captured view has settled.
+
+    Returns:
+        None.
+
+    Raises:
+        RuntimeError: Native screenshot preparation timed out.
+    """
     deadline = monotonic() + 90
     while not ready():
         if monotonic() > deadline:
@@ -56,6 +68,19 @@ def wait_for(application: QApplication, ready: Callable[[], bool]) -> None:
 
 
 def save_widget(application: QApplication, widget: QWidget, target: Path) -> None:
+    """Capture the settled native widget to the requested PNG path.
+
+    Args:
+        application: Native Qt application whose event loop owns the widgets.
+        widget: Qt object whose presentation is being changed or captured.
+        target: Destination of the requested operation.
+
+    Returns:
+        None.
+
+    Raises:
+        RuntimeError: If the supplied settings or operation state are invalid.
+    """
     focus = application.focusWidget()
     if focus is not None:
         focus.clearFocus()
@@ -66,7 +91,25 @@ def save_widget(application: QApplication, widget: QWidget, target: Path) -> Non
 
 
 def capture_details(application: QApplication, window: ExplorerWindow, output: Path) -> None:
-    """Capture real chart/card crops from fixed scenes in three original recordings."""
+    """Capture real chart/card crops from fixed scenes in three original recordings.
+
+    Args:
+        application: Native Qt application whose event loop owns the widgets.
+        window: Explorer window whose current state is being captured.
+        output: Output directory or path for generated artifacts.
+
+    Returns:
+        None.
+
+    Raises:
+        OSError: If the required filesystem operation fails.
+        ValueError: Detail source hash differs from the fixed reference recording.
+            Original detail recording changed during capture.
+        RuntimeError: If the supplied settings or operation state are invalid. Cannot
+            capture airtime chart and legend. Missing force value card. Cannot capture
+            force cards. Missing calibrated force axis. Cannot capture smoothing
+            comparison.
+    """
     scenes = (
         ("VoltronNevera", 4960, (4500, 5250)),
         ("Taron", 3399, (3250, 3500)),
@@ -228,6 +271,25 @@ def capture_details(application: QApplication, window: ExplorerWindow, output: P
 
 
 def capture_reference(output: Path, *, details: bool = False, themes: bool = False) -> None:
+    """Capture the fixed native reference scene with isolated application state.
+
+    Args:
+        output: Output directory or path for generated artifacts.
+        details: Whether to capture the fixed README detail scenes.
+        themes: Whether to capture the fixed appearance gallery.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: If the supplied settings or operation state are invalid. Voltron
+            source hash differs from the fixed reference recording. Original Voltron
+            recording changed during capture.
+        RuntimeError: Capture requires native Windows with a desktop session. Run
+            screenshot capture in a separate Python process. Cannot load calibrated
+            Voltron reference.
+        OSError: If the required filesystem operation fails.
+    """
     with (ROOT / "pyproject.toml").open("rb") as stream:
         project_version = tomllib.load(stream)["project"]["version"]
     if __version__ != project_version:
@@ -408,6 +470,11 @@ def capture_reference(output: Path, *, details: bool = False, themes: bool = Fal
 
 
 def main() -> None:
+    """Run this module's application or command-line entry point.
+
+    Returns:
+        None.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--output",

@@ -42,7 +42,17 @@ _VECTOR_FIELDS = (
 
 @dataclass(frozen=True, slots=True)
 class MotionParseSuccess:
-    """Validated motion subset; never a complete recording/import success."""
+    """Validated motion subset; never a complete recording/import success.
+
+    Attributes:
+        source: Retained input identity or image; its original representation remains
+            owned.
+        motion: Validated source acceleration and optional gravity sequences.
+        indices: Source or effective sample markers associated with the recording.
+        vectors: Retained source direction or calibration vectors.
+        diagnostics: Structured diagnostics retaining stable codes and source locations.
+        success: Discriminator identifying whether the import stage succeeded.
+    """
 
     source: SourceEnvelope = field(repr=False)
     motion: MotionSequence = field(repr=False)
@@ -52,6 +62,14 @@ class MotionParseSuccess:
     success: Literal[True] = field(default=True, init=False)
 
     def __post_init__(self) -> None:
+        """Validate constructor fields and establish the documented model invariants.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Motion success cannot contain error diagnostics.
+        """
         ordered = ordered_diagnostics(self.diagnostics)
         if any(item.severity is Severity.ERROR for item in ordered):
             raise ValueError("Motion success cannot contain error diagnostics")
@@ -203,7 +221,18 @@ def _index(
 
 
 def validate_motion(source: SourceEnvelope, diagnostics: DiagnosticBudget) -> MotionParseResult:
-    """Validate a caller-supplied 2.2.0 source tree; no I/O, dispatch, GPS or time math."""
+    """Validate a caller-supplied 2.2.0 source tree; no I/O, dispatch, GPS or time math.
+
+    Args:
+        source: Input recording, retained source representation or source path to read.
+        diagnostics: Structured diagnostics or their collector.
+
+    Returns:
+        Validated motion data or a structured motion failure.
+
+    Raises:
+        AssertionError: If a required internal invariant does not hold.
+    """
     root = source.root
     if root is None:
         return ImportFailure(
@@ -308,7 +337,18 @@ def parse_motion(
     *,
     limits: ImportLimits = DEFAULT_LIMITS,
 ) -> MotionParseResult:
-    """Validate motion independently, with a bounded diagnostic list and no I/O."""
+    """Validate motion independently, with a bounded diagnostic list and no I/O.
+
+    Args:
+        source: Input recording, retained source representation or source path to read.
+        limits: Resource limits applied to the operation.
+
+    Returns:
+        Validated motion data or a structured motion failure.
+
+    Raises:
+        ValueError: limits must be an ImportLimits instance.
+    """
     if not has_type(limits, ImportLimits):
         raise ValueError("limits must be an ImportLimits instance")
     diagnostics = DiagnosticBudget(limits.max_diagnostics)
