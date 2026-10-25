@@ -26,7 +26,7 @@ from ride_forces_analyzer.error_reporting import record_error
 from ride_forces_analyzer.storage.export_models import BatchJob, RangeMode, SavedBatch, SavedPreset
 from ride_forces_analyzer.storage.preferences import Preferences
 from .encoding import ExportCancelled, export_video
-from .model import prepare_export
+from .model import VideoOutput, prepare_export
 
 
 def _load_analysis(
@@ -281,7 +281,9 @@ def run_batches(
                     )
                     folder = directory / f"{batch_number:03d}-{_safe_name(batch.name)}"
                     folder.mkdir(exist_ok=True)
-                    suffix = ".mov" if job.preset.settings.output == "transparent" else ".mp4"
+                    suffix = (
+                        ".mov" if job.preset.settings.output == VideoOutput.TRANSPARENT else ".mp4"
+                    )
                     target = (
                         folder
                         / f"{job_number:03d}-{_safe_name(job.ride)}--{_safe_name(job.preset.name)}{suffix}"

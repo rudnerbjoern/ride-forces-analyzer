@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words LANCZOS
 
 from PIL import Image
-from .model import ExportTimeline
+from .model import VideoOutput, ExportTimeline
 from .layouts import create_renderer, export_region
 
 WIDTH, HEIGHT, COLUMN_WIDTH = 3840, 2160, 960
@@ -50,7 +50,7 @@ class OverlayRenderer:
         _, _, width, height = export_region(self.timeline.settings)
         if image.size != (width, height):
             image = image.resize((width, height), Image.Resampling.LANCZOS)
-        if self.timeline.settings.output == "opaque":
+        if self.timeline.settings.output == VideoOutput.OPAQUE:
             background = Image.new("RGBA", image.size, (0, 0, 0, 255))
             return Image.alpha_composite(background, image)
         return image
@@ -80,7 +80,7 @@ class OverlayRenderer:
         """
         if not self.timeline.first <= position <= self.timeline.last:
             raise ValueError("Preview sample outside prepared interval")
-        alpha = 0 if self.timeline.settings.output == "transparent" else 255
+        alpha = 0 if self.timeline.settings.output == VideoOutput.TRANSPARENT else 255
         canvas = Image.new("RGBA", self.timeline.settings.dimensions, (0, 0, 0, alpha))
         x, y, _, _ = export_region(self.timeline.settings)
         canvas.alpha_composite(self._render_region_at(position), (x, y))

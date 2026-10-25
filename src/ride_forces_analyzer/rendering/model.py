@@ -7,6 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from enum import StrEnum
 from fractions import Fraction
 from math import ceil, floor, isfinite
 from typing import Literal, overload
@@ -17,6 +18,19 @@ from ride_forces_analyzer.i18n import Language
 from .layouts.contracts import LayoutPosition
 from .layouts.contracts import ExportLayout as ExportLayout
 from .layouts.contracts import VideoAspect as VideoAspect
+
+
+class VideoOutput(StrEnum):
+    """Video output modes with stable identifiers for saved export settings.
+
+    Attributes:
+        TRANSPARENT: Overlay with alpha in a ProRes 4444 MOV, stored as ``transparent``.
+        OPAQUE: Video on a black background in an H.264 MP4, stored as ``opaque``.
+    """
+
+    TRANSPARENT = "transparent"
+    OPAQUE = "opaque"
+
 
 FrameRate = int | Literal["60000/1001"]
 EXPORT_FRAME_RATES: tuple[FrameRate, ...] = (24, 25, 30, 50, "60000/1001", 60)
@@ -38,7 +52,7 @@ class ExportSettings:
         fps: Selected output frame rate; 59.94 retains its exact fractional
             representation.
         window_seconds: Width of the visible source-time context in seconds.
-        output: Output directory or path for generated artifacts.
+        output: VideoOutput member selecting transparency, codec and container.
         invert_vertical: Whether the vertical plot uses the selected inverted display
             direction.
         invert_lateral: Whether the layout uses its supported lateral direction override.
@@ -52,7 +66,7 @@ class ExportSettings:
 
     fps: FrameRate = 50
     window_seconds: float = 12.0
-    output: Literal["transparent", "opaque"] = "transparent"
+    output: VideoOutput = VideoOutput.TRANSPARENT
     invert_vertical: bool = True
     invert_lateral: bool = True
     prefer_gpu: bool = True
@@ -111,7 +125,7 @@ class ExportSettings:
             raise ValueError("Frame rate must be an integer from 1 to 120 or 60000/1001")
         if not isfinite(self.window_seconds) or not 1 <= self.window_seconds <= 60:
             raise ValueError("Visible time window must be from 1 to 60 seconds")
-        if self.output not in ("transparent", "opaque"):
+        if type(self.output) is not VideoOutput:
             raise ValueError("Unknown export output mode")
         if type(self.layout) is not ExportLayout:
             raise ValueError("Unknown export layout")

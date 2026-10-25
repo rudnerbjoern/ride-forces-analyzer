@@ -12,6 +12,7 @@ from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 from ride_forces_analyzer.rendering.model import (
+    VideoOutput,
     ExportLayout,
     VideoAspect,
     ExportSettings,
@@ -191,10 +192,10 @@ def test_preview_sample_is_independent_of_video_rate(
     assert positions == [sample] * len(PROFILES)
 
 
-@pytest.mark.parametrize("mode", ["transparent", "opaque"])
+@pytest.mark.parametrize("mode", [VideoOutput.TRANSPARENT, VideoOutput.OPAQUE])
 def test_outside_range_keeps_graph_sample_and_smoothing(
     manta: ExplorerData,
-    mode: Literal["transparent", "opaque"],
+    mode: VideoOutput,
 ) -> None:
     data = manta.with_smoothing(3)
     assert data.analysis is not None
@@ -206,7 +207,7 @@ def test_outside_range_keeps_graph_sample_and_smoothing(
     assert data.source.source_sha256 == original and data.calibration_available
     assert data.smoothing_window == 3
     assert all(
-        p.image.getpixel((0, 0)) == ((0, 0, 0) if mode == "opaque" else (228, 234, 240))
+        p.image.getpixel((0, 0)) == ((0, 0, 0) if mode == VideoOutput.OPAQUE else (228, 234, 240))
         for p in result.profiles
     )
     with pytest.raises(ValueError, match="outside"):

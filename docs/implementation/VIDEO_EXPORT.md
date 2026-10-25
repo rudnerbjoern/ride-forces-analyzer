@@ -59,6 +59,9 @@ the supplied [Manta reference recording](../development/RECORDINGS.md#manta).
 - Python callers select `VideoAspect.LANDSCAPE` or `VideoAspect.PORTRAIT` from
   `rendering.model`; `VideoAspect(value)` converts supported text values.
   Saved JSON retains `landscape` and `portrait`; existing presets need no migration.
+- `VideoOutput.TRANSPARENT` selects the alpha overlay in ProRes 4444 MOV;
+  `VideoOutput.OPAQUE` selects the black-background video in H.264 MP4.
+  Both come from `rendering.model`; saved JSON retains `transparent` and `opaque`.
 - Overlay language is English/German/French, initially following UI language but independently
   selectable. Production previews/frames share localized labels/numbers.
   Replay clocks, source values, geometry, signs and units remain unchanged.

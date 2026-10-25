@@ -57,6 +57,7 @@ from ride_forces_analyzer.rendering.encoding import ExportCancelled, export_vide
 from ride_forces_analyzer.rendering.progress import remaining_seconds
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.rendering.model import (
+    VideoOutput,
     VideoAspect,
     EXPORT_FRAME_RATES,
     ExportLayout,
@@ -848,7 +849,7 @@ class ExportDialog(QDialog):
         self.position.setCurrentIndex(
             self.position.findData((settings.position or positions.default).value),
         )
-        self.mode.setCurrentIndex(0 if settings.output == "transparent" else 1)
+        self.mode.setCurrentIndex(0 if settings.output == VideoOutput.TRANSPARENT else 1)
         if self.fps.findText(settings.fps_label) < 0:
             self.fps.addItem(settings.fps_label)
         self.fps.setCurrentText(settings.fps_label)
@@ -929,7 +930,7 @@ class ExportDialog(QDialog):
             else VideoAspect.PORTRAIT,
             fps="60000/1001" if self.fps.currentText() == "59.94" else int(self.fps.currentText()),
             window_seconds=float(self.seconds.value()),
-            output="transparent" if self.mode.currentIndex() == 0 else "opaque",
+            output=VideoOutput.TRANSPARENT if self.mode.currentIndex() == 0 else VideoOutput.OPAQUE,
             invert_vertical=self.flip_vertical.isChecked(),
             invert_lateral=self.flip_lateral.isChecked(),
             prefer_gpu=self.gpu.isChecked(),
@@ -1174,7 +1175,7 @@ class ExportDialog(QDialog):
             record_error("Export preparation", error)
             bind(self.status, tr(str(error)), "text")
             return
-        suffix = ".mov" if settings.output == "transparent" else ".mp4"
+        suffix = ".mov" if settings.output == VideoOutput.TRANSPARENT else ".mp4"
         source_path = self.data.source.recording.source.provenance.path
         stem = source_path.stem if source_path is not None else "ride-forces"
         name = f"{stem} - {self.layout_profile.currentText()}{suffix}"

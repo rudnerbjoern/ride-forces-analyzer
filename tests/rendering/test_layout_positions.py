@@ -4,7 +4,7 @@
 
 from dataclasses import replace
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 
 from PIL import Image
 import pytest
@@ -15,6 +15,7 @@ from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts import COLORS, registry
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition, LayoutPositions
 from ride_forces_analyzer.rendering.model import (
+    VideoOutput,
     ExportLayout,
     VideoAspect,
     ExportSettings,
@@ -92,12 +93,12 @@ def test_export_settings_validate_positions_for_each_format(
 
 
 @pytest.mark.parametrize("aspect", list(VideoAspect))
-@pytest.mark.parametrize("output", ["transparent", "opaque"])
+@pytest.mark.parametrize("output", [VideoOutput.TRANSPARENT, VideoOutput.OPAQUE])
 def test_selected_region_controls_frame_size_placement_and_encoder_padding(
     manta: ExplorerData,
     monkeypatch: pytest.MonkeyPatch,
     aspect: VideoAspect,
-    output: Literal["transparent", "opaque"],
+    output: VideoOutput,
 ) -> None:
     assert manta.analysis is not None
 
@@ -140,12 +141,14 @@ def test_selected_region_controls_frame_size_placement_and_encoder_padding(
     assert frame.crop((x, y, x + width, y + height)).tobytes() == region.tobytes()
     bounds = frame.getchannel("A").getbbox()
     assert bounds == (
-        (x, y, x + width, y + height) if output == "transparent" else (0, 0, *settings.dimensions)
+        (x, y, x + width, y + height)
+        if output == VideoOutput.TRANSPARENT
+        else (0, 0, *settings.dimensions)
     )
     command = encoder_command(Path("ffmpeg"), timeline, Path("output.mov"))
     assert command[command.index("-video_size") + 1] == f"{width}x{height}"
     canvas_width, canvas_height = settings.dimensions
     assert command[command.index("-vf") + 1] == (
         f"pad={canvas_width}:{canvas_height}:{x}:{y}:color=black@"
-        + ("0" if output == "transparent" else "1")
+        + ("0" if output == VideoOutput.TRANSPARENT else "1")
     )

@@ -19,7 +19,7 @@ from threading import Event
 from uuid import uuid4
 
 from .layouts import export_region
-from .model import ExportTimeline
+from .model import VideoOutput, ExportTimeline
 from .parallel import render_region_bytes
 from ride_forces_analyzer.cpu_resources import effective_render_jobs
 from ride_forces_analyzer.runtime_paths import ffmpeg_name
@@ -94,7 +94,7 @@ def encoder_command(
     Returns:
         Complete encoder argument vector for the selected output and backend.
     """
-    transparent = timeline.settings.output == "transparent"
+    transparent = timeline.settings.output == VideoOutput.TRANSPARENT
     codec = (
         [
             "-c:v",
@@ -195,7 +195,7 @@ def supports_nvidia(ffmpeg: Path, timeline: ExportTimeline) -> bool:
     """
     if not timeline.settings.prefer_gpu:
         return False
-    transparent = timeline.settings.output == "transparent"
+    transparent = timeline.settings.output == VideoOutput.TRANSPARENT
     device = (
         ["-init_hw_device", "vulkan=overlay_gpu:NVIDIA", "-filter_hw_device", "overlay_gpu"]
         if transparent
@@ -287,7 +287,7 @@ def export_video(
         RuntimeError: If the supplied settings or operation state are invalid. Encoder
             produced no video.
     """
-    extension = ".mov" if timeline.settings.output == "transparent" else ".mp4"
+    extension = ".mov" if timeline.settings.output == VideoOutput.TRANSPARENT else ".mp4"
     destination = destination.resolve()
     if destination.suffix.lower() != extension:
         raise ValueError(f"This output requires a {extension} filename")

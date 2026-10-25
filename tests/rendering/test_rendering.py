@@ -20,6 +20,7 @@ from ride_forces_analyzer.rendering.encoding import ExportCancelled, encoder_com
 from ride_forces_analyzer.rendering.frames import COLUMN_X, WIDTH, OverlayRenderer
 from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.rendering.model import (
+    VideoOutput,
     VideoAspect,
     ExportLayout,
     ExportSettings,
@@ -108,15 +109,20 @@ def test_all_originals_prepare_four_panels_without_source_writes(filename: str) 
     assert path.read_bytes() == original and path.stat().st_mtime_ns == modified
 
 
-@pytest.mark.parametrize("mode", ["transparent", "opaque"])
-def test_4k_canvas_has_single_right_column_and_all_panels(manta: ExplorerData, mode: str) -> None:
+@pytest.mark.parametrize("mode", [VideoOutput.TRANSPARENT, VideoOutput.OPAQUE])
+def test_4k_canvas_has_single_right_column_and_all_panels(
+    manta: ExplorerData,
+    mode: VideoOutput,
+) -> None:
     assert manta.analysis is not None
-    settings = ExportSettings(output="transparent" if mode == "transparent" else "opaque")
+    settings = ExportSettings(
+        output=VideoOutput.TRANSPARENT if mode == VideoOutput.TRANSPARENT else VideoOutput.OPAQUE,
+    )
     timeline = prepare_export(manta.analysis, settings, 3600, 3649)
     renderer = OverlayRenderer(timeline)
     frame = renderer.render_frame(0)
     assert frame.size == (3840, 2160) and frame.mode == "RGBA"
-    assert frame.getchannel("A").getpixel((0, 0)) == (0 if mode == "transparent" else 255)
+    assert frame.getchannel("A").getpixel((0, 0)) == (0 if mode == VideoOutput.TRANSPARENT else 255)
     assert frame.getpixel((COLUMN_X, 0)) == BACKGROUND_COLOR
     for row, channel in enumerate(timeline.channels):
         panel = frame.crop((COLUMN_X, row * 540, WIDTH, (row + 1) * 540))
@@ -164,21 +170,21 @@ def test_cancel_and_existing_destination_preserve_files(
 @pytest.mark.parametrize(
     "layout,mode,aspect,prefer_gpu,language",
     [
-        (ExportLayout.COLUMN, "transparent", VideoAspect.LANDSCAPE, False, "en"),
-        (ExportLayout.RIBBON, "transparent", VideoAspect.LANDSCAPE, True, "en"),
-        (ExportLayout.CORNERS, "transparent", VideoAspect.PORTRAIT, False, "de"),
-        (ExportLayout.ORBIT, "transparent", VideoAspect.PORTRAIT, True, "en"),
-        (ExportLayout.HUD, "opaque", VideoAspect.LANDSCAPE, False, "en"),
-        (ExportLayout.COLUMN, "opaque", VideoAspect.LANDSCAPE, True, "de"),
-        (ExportLayout.ORBIT, "opaque", VideoAspect.PORTRAIT, False, "en"),
-        (ExportLayout.RIBBON, "opaque", VideoAspect.PORTRAIT, True, "en"),
-        (ExportLayout.HUD, "transparent", VideoAspect.PORTRAIT, False, "fr"),
+        (ExportLayout.COLUMN, VideoOutput.TRANSPARENT, VideoAspect.LANDSCAPE, False, "en"),
+        (ExportLayout.RIBBON, VideoOutput.TRANSPARENT, VideoAspect.LANDSCAPE, True, "en"),
+        (ExportLayout.CORNERS, VideoOutput.TRANSPARENT, VideoAspect.PORTRAIT, False, "de"),
+        (ExportLayout.ORBIT, VideoOutput.TRANSPARENT, VideoAspect.PORTRAIT, True, "en"),
+        (ExportLayout.HUD, VideoOutput.OPAQUE, VideoAspect.LANDSCAPE, False, "en"),
+        (ExportLayout.COLUMN, VideoOutput.OPAQUE, VideoAspect.LANDSCAPE, True, "de"),
+        (ExportLayout.ORBIT, VideoOutput.OPAQUE, VideoAspect.PORTRAIT, False, "en"),
+        (ExportLayout.RIBBON, VideoOutput.OPAQUE, VideoAspect.PORTRAIT, True, "en"),
+        (ExportLayout.HUD, VideoOutput.TRANSPARENT, VideoAspect.PORTRAIT, False, "fr"),
     ],
 )
 def test_native_encoder_produces_layout_resolution_with_verified_alpha(
     manta: ExplorerData,
     export_directory: Path,
-    mode: str,
+    mode: VideoOutput,
     prefer_gpu: bool,
     layout: Literal[
         ExportLayout.COLUMN,
@@ -198,14 +204,14 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
         pytest.skip("Native FFmpeg integration requires installed export tools")
     settings = ExportSettings(
         fps="60000/1001" if not prefer_gpu and aspect is VideoAspect.LANDSCAPE else 25,
-        output="transparent" if mode == "transparent" else "opaque",
+        output=VideoOutput.TRANSPARENT if mode == VideoOutput.TRANSPARENT else VideoOutput.OPAQUE,
         prefer_gpu=prefer_gpu,
         layout=layout,
         aspect=aspect,
         language=Language(language),
     )
     timeline = prepare_export(manta.analysis, settings, 3600, 3603)
-    output = export_directory / ("overlay.mov" if mode == "transparent" else "opaque.mp4")
+    output = export_directory / ("overlay.mov" if mode == VideoOutput.TRANSPARENT else "opaque.mp4")
     progress: list[tuple[int, int]] = []
     with patch(
         "ride_forces_analyzer.rendering.encoding.subprocess.Popen",
@@ -239,7 +245,7 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
     assert (stream["width"], stream["height"]) == settings.dimensions
     assert stream["r_frame_rate"] == ("60000/1001" if settings.fps == "60000/1001" else "25/1")
     assert int(stream["nb_frames"]) == timeline.frame_count
-    assert stream["codec_name"] == ("prores" if mode == "transparent" else "h264")
+    assert stream["codec_name"] == ("prores" if mode == VideoOutput.TRANSPARENT else "h264")
     result = subprocess.run(
         [
             str(ffmpeg),
@@ -265,32 +271,37 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
     x, y, _, height = export_region(settings)
     right = image.getpixel((x + 18, y + height // 2))
     assert isinstance(left, tuple) and isinstance(right, tuple)
-    assert left[3] == (0 if mode == "transparent" else 255)
+    assert left[3] == (0 if mode == VideoOutput.TRANSPARENT else 255)
     expected_alpha = (
         255
-        if mode == "opaque" or layout == ExportLayout.COLUMN
+        if mode == VideoOutput.OPAQUE or layout == ExportLayout.COLUMN
         else 0
         if layout == ExportLayout.HUD
         else 210
     )
     assert abs(right[3] - expected_alpha) <= 2
-    if layout == ExportLayout.HUD and mode == "transparent":
+    if layout == ExportLayout.HUD and mode == VideoOutput.TRANSPARENT:
         alpha = image.getchannel("A").histogram()
         assert alpha[0] > 0 and alpha[255] > 0
         assert sum(alpha[1:255]) > 0  # Glow/shadow opacity survives real ProRes encoding.
 
 
-@pytest.mark.parametrize("mode", ["transparent", "opaque"])
-def test_encoder_commands_preserve_codec_specific_options(manta: ExplorerData, mode: str) -> None:
+@pytest.mark.parametrize("mode", [VideoOutput.TRANSPARENT, VideoOutput.OPAQUE])
+def test_encoder_commands_preserve_codec_specific_options(
+    manta: ExplorerData,
+    mode: VideoOutput,
+) -> None:
     assert manta.analysis is not None
-    settings = ExportSettings(output="transparent" if mode == "transparent" else "opaque")
+    settings = ExportSettings(
+        output=VideoOutput.TRANSPARENT if mode == VideoOutput.TRANSPARENT else VideoOutput.OPAQUE,
+    )
     timeline = prepare_export(manta.analysis, settings, 3600, 3603)
     cpu = encoder_command(Path("ffmpeg.exe"), timeline, Path("output"))
     gpu = encoder_command(Path("ffmpeg.exe"), timeline, Path("output"), use_gpu=True)
     for command in (cpu, gpu):
         assert "-an" in command and "-n" in command
     assert "-qscale:v" not in gpu  # This CPU option corrupts Vulkan 4444 output.
-    if mode == "transparent":
+    if mode == VideoOutput.TRANSPARENT:
         assert "prores_ks" in cpu and "-qscale:v" in cpu
         assert "prores_ks_vulkan" in gpu and "hwupload" in gpu[gpu.index("-vf") + 1]
     else:
@@ -358,7 +369,7 @@ def test_compact_profiles_preserve_alpha_color_and_force_scales(
         inverted = replace(channel, inverted=True)
         assert compact.value_y(inverted, 1, row) > compact.value_y(inverted, 0, row)
     opaque = OverlayRenderer(
-        replace(timeline, settings=replace(timeline.settings, output="opaque")),
+        replace(timeline, settings=replace(timeline.settings, output=VideoOutput.OPAQUE)),
     ).render_frame(0)
     assert opaque.getchannel("A").getextrema() == (255, 255)
 

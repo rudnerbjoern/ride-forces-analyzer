@@ -21,7 +21,12 @@ from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.config import AppSettings
 from ride_forces_analyzer.rendering.encoding import export_video, find_ffmpeg
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
-from ride_forces_analyzer.rendering.model import ExportLayout, ExportSettings, prepare_export
+from ride_forces_analyzer.rendering.model import (
+    VideoOutput,
+    ExportLayout,
+    ExportSettings,
+    prepare_export,
+)
 from ride_forces_analyzer.ui.window import ExplorerWindow
 
 
@@ -84,7 +89,7 @@ def smoke_test(
                     layout=ExportLayout.ORBIT,
                     language=Language.GERMAN,
                     prefer_gpu=False,
-                    output="opaque",
+                    output=VideoOutput.OPAQUE,
                     fps=25,
                 ),
                 0,

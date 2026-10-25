@@ -18,6 +18,7 @@ from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.rendering.batches import build_jobs, make_job, run_batches
 from ride_forces_analyzer.rendering.encoding import ExportCancelled
 from ride_forces_analyzer.rendering.model import (
+    VideoOutput,
     ExportLayout,
     VideoAspect,
     ExportSettings,
@@ -141,6 +142,22 @@ def test_layout_members_preserve_saved_text_keys(layout: ExportLayout) -> None:
     payload = json.loads(chosen.model_dump_json())
     assert payload["settings"]["layout"] == layout.value
     assert SavedPreset.model_validate_json(json.dumps(payload)).settings.layout is layout
+
+
+@pytest.mark.parametrize("output", list(VideoOutput))
+def test_video_output_preserves_saved_codes_and_requires_enum_members(
+    output: VideoOutput,
+) -> None:
+    assert ExportSettings().output is VideoOutput.TRANSPARENT
+    assert VideoOutput(output.value) is output
+    chosen = preset().model_copy(update={"settings": ExportSettings(output=output)})
+    payload = json.loads(chosen.model_dump_json())
+    assert payload["settings"]["output"] == output.value
+    assert SavedPreset.model_validate_json(json.dumps(payload)).settings.output is output
+    with pytest.raises(ValueError, match="Unknown export output mode"):
+        ExportSettings(output=cast(VideoOutput, output.value))
+    with pytest.raises(ValueError):
+        VideoOutput("other")
 
 
 def short_job(data: ExplorerData, chosen: SavedPreset | None = None) -> BatchJob:
@@ -355,7 +372,11 @@ def test_saved_batch_reopens_and_exports_different_rides_and_formats(
         ),
         SavedPreset(
             name="Orbit opaque",
-            settings=ExportSettings(layout=ExportLayout.ORBIT, output="opaque", prefer_gpu=False),
+            settings=ExportSettings(
+                layout=ExportLayout.ORBIT,
+                output=VideoOutput.OPAQUE,
+                prefer_gpu=False,
+            ),
             analysis_configuration=source_app_configuration(),
             schema_version=1,
             smoothing_window=11,

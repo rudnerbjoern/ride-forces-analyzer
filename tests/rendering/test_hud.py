@@ -25,6 +25,7 @@ from ride_forces_analyzer.rendering.layouts.hud import (
     YELLOW,
 )
 from ride_forces_analyzer.rendering.model import (
+    VideoOutput,
     ExportLayout,
     VideoAspect,
     ExportSettings,
@@ -340,7 +341,7 @@ def test_fullscreen_hud_has_open_center_and_is_independent_of_seek_order(
     assert region.size == image.size
     assert frame.getchannel("A").getpixel((0, 0)) == 0
     opaque = OverlayRenderer(
-        replace(timeline, settings=replace(timeline.settings, output="opaque")),
+        replace(timeline, settings=replace(timeline.settings, output=VideoOutput.OPAQUE)),
     )
     assert opaque.render_sample(3650.5).getchannel("A").getextrema() == (255, 255)
 

@@ -9,6 +9,7 @@ from tempfile import TemporaryDirectory
 import pytest
 from PySide6.QtCore import QEvent, QThreadPool
 from PySide6.QtWidgets import QApplication
+from ride_forces_analyzer.rendering.model import VideoOutput
 from ride_forces_analyzer.config import AppSettings
 from ride_forces_analyzer.i18n import Language, get_language, set_language
 from ride_forces_analyzer.ui.window import ExplorerWindow
@@ -61,7 +62,7 @@ def small_preview_frames(monkeypatch: pytest.MonkeyPatch) -> None:
 
     def render_sample(self: OverlayRenderer, position: float) -> Image.Image:
         assert self.timeline.first <= position <= self.timeline.last
-        alpha = 0 if self.timeline.settings.output == "transparent" else 255
+        alpha = 0 if self.timeline.settings.output == VideoOutput.TRANSPARENT else 255
         return Image.new("RGBA", (8, 8), (0, 0, 0, alpha))
 
     monkeypatch.setattr(OverlayRenderer, "render_sample", render_sample)

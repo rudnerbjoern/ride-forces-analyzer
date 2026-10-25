@@ -27,6 +27,7 @@ from ride_forces_analyzer.importers import ImportSuccess, import_forces
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts import export_region
 from ride_forces_analyzer.rendering.model import (
+    VideoOutput,
     VideoAspect,
     ExportSettings,
     PROFILES,
@@ -121,7 +122,7 @@ def render_reference(output: Path) -> None:
             aspect=VideoAspect.LANDSCAPE,
             fps=50,
             window_seconds=30.0 if layout == "hud" else 12.0,
-            output="transparent",
+            output=VideoOutput.TRANSPARENT,
             invert_vertical=True,
             invert_lateral=layout == "column",
         )
