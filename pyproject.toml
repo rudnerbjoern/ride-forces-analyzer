@@ -60,6 +60,7 @@ source = [
     "src/ride_forces_analyzer/gps",
     "src/ride_forces_analyzer/domain",
     "src/ride_forces_analyzer/importers",
+    "src/ride_forces_analyzer/rendering",
 ]
 data_file = ".tmp/coverage/analysis/.coverage"
 
@@ -75,6 +76,7 @@ include = [
     "src/ride_forces_analyzer/gps/*.py",
     "src/ride_forces_analyzer/domain/*.py",
     "src/ride_forces_analyzer/importers/*.py",
+    "src/ride_forces_analyzer/rendering/**/*.py",
 ]
 fail_under = 100
 show_missing = true
