@@ -29,8 +29,8 @@ from ride_forces_analyzer.importers import ImportSuccess, import_forces
 from ride_forces_analyzer.error_reporting import record_error
 from ride_forces_analyzer.storage.export_models import BatchJob, RangeMode, SavedBatch, SavedPreset
 from ride_forces_analyzer.storage.preferences import Preferences
-from .encoding import ExportCancelled, export_video
-from .model import VideoOutput, prepare_export
+from ride_forces_analyzer.rendering.encoding import ExportCancelled, export_video
+from ride_forces_analyzer.rendering.model import VideoOutput, prepare_export
 
 
 def _load_analysis(

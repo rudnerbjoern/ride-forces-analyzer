@@ -20,7 +20,7 @@ from typing import cast
 import pytest
 
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
-from ride_forces_analyzer.rendering.batches import build_jobs, make_job, run_batches
+from ride_forces_analyzer.exports.batches import build_jobs, make_job, run_batches
 from ride_forces_analyzer.rendering.encoding import ExportCancelled
 from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.rendering.model import (
@@ -58,7 +58,7 @@ def test_portrait_and_landscape_persistence(
     manta: ExplorerData,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from ride_forces_analyzer.rendering import batches
+    from ride_forces_analyzer.exports import batches
 
     chosen = SavedPreset(
         name="Portrait",
@@ -326,7 +326,7 @@ def test_batch_continues_after_changed_recording_and_preserves_outputs(
     manta: ExplorerData,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from ride_forces_analyzer.rendering import batches
+    from ride_forces_analyzer.exports import batches
 
     calls: list[Path] = []
 
@@ -385,7 +385,7 @@ def test_cancel_stops_remaining_jobs_and_keeps_completed_files(
     manta: ExplorerData,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from ride_forces_analyzer.rendering import batches
+    from ride_forces_analyzer.exports import batches
 
     calls = 0
     cancel = Event()

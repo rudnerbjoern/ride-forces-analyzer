@@ -72,7 +72,7 @@ from ride_forces_analyzer.rendering.model import (
 from ride_forces_analyzer.rendering.preview import ExportPreview, PreviewBackground, build_previews
 from ride_forces_analyzer.rendering.layouts import registry
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
-from ride_forces_analyzer.rendering.batches import make_job
+from ride_forces_analyzer.exports.batches import make_job
 from ride_forces_analyzer.storage.export_models import SavedPreset, make_preset
 from ride_forces_analyzer.storage.exports import (
     ExportStore,

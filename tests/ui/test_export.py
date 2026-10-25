@@ -535,7 +535,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     from ride_forces_analyzer.storage.exports import ExportStore, default_database_path
     from ride_forces_analyzer.storage.export_models import SavedBatch, SavedPreset
     from ride_forces_analyzer.rendering.model import ExportSettings
-    from ride_forces_analyzer.rendering.batches import BatchReport, JobResult
+    from ride_forces_analyzer.exports.batches import BatchReport, JobResult
 
     store = ExportStore(default_database_path())
     store.save_preset(

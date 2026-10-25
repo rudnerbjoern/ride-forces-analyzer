@@ -19,7 +19,7 @@ from ride_forces_analyzer.analysis.models import AnalysisProfile, SampleValues
 from ride_forces_analyzer.analysis.recording import AnalysisStage, StageConfiguration
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.importers import ImportSuccess
-from ride_forces_analyzer.rendering import batches
+from ride_forces_analyzer.exports import batches
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.model import (
     ExportLayout,

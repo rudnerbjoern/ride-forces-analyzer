@@ -38,7 +38,7 @@ from ride_forces_analyzer.translations_de import DIAGNOSTIC_GERMAN, GERMAN
 from ride_forces_analyzer.translations_fr import DIAGNOSTIC_FRENCH, FRENCH
 from ride_forces_analyzer.storage.export_models import SavedPreset, SavedBatch
 from ride_forces_analyzer.storage.exports import ExportStore
-from ride_forces_analyzer.rendering.batches import make_job
+from ride_forces_analyzer.exports.batches import make_job
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from pathlib import Path
 import ast

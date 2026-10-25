@@ -32,7 +32,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ride_forces_analyzer.rendering.batches import BatchReport, build_jobs, run_batches
+from ride_forces_analyzer.exports.batches import BatchReport, build_jobs, run_batches
 from ride_forces_analyzer.rendering.encoding import find_ffmpeg
 from ride_forces_analyzer.rendering.progress import ExportProgress
 from .export_progress import show_export_progress

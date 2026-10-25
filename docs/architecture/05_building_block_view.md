@@ -24,7 +24,7 @@ flowchart TB
     UI --> Rendering["rendering: layouts, previews and parallel frames"]
     Rendering --> Analysis
     Rendering --> Encoding["rendering.encoding: FFmpeg"]
-    UI --> Batches["rendering.batches: sequential jobs"]
+    UI --> Batches["exports.batches: sequential jobs"]
     Batches --> Importer
     Batches --> Rendering
     UI --> Storage["storage: preferences, recipes and tile cache"]
@@ -43,8 +43,8 @@ Arrows indicate dependencies. Domain/import/analysis code has no widget dependen
 | `analysis`, `force_extrema`                   | Prepared measurements, context/events, calibration and extrema                |
 | `explorer`, `playback`                        | View data, sample selection, formatting and monotonic playback                |
 | `gps_overview`, `map_background`              | Independent route geometry and optional bounded map requests                  |
-| `exports`                                     | Sample serialization and safe confirmed replacement                           |
-| `rendering`                                   | Layouts, previews, ordered frame generation, encoding and batches             |
+| `exports`                                     | Sample serialization, safe publication and sequential video jobs              |
+| `rendering`                                   | Layouts, previews, ordered frame generation and encoding                      |
 | `storage`                                     | SQLite preferences, marker choices, export definitions and map tiles          |
 | `i18n`, `airtime_colors`                      | Shared language and semantic-color contracts                                  |
 | `ui`                                          | Qt controls, dialogs, themes, icons and asynchronous transport                |
@@ -139,7 +139,7 @@ export paths; Qt workers transport them to the dialogs. `ui.export` owns
 assistant controls, debounced preview transport and cancellation.
 
 `storage.export_models` defines immutable presets/jobs; `storage.exports` owns
-SQLite schema and transactions. `rendering.batches` imports and checks each
+SQLite schema and transactions. `exports.batches` imports and checks each
 source before applying its saved recipe and running exports sequentially.
 `ui.batches` edits queues and transports results. Recordings and rendered media
 never enter SQLite.
