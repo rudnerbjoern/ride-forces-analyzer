@@ -6,10 +6,10 @@ from threading import Event
 import pytest
 
 from ride_forces_analyzer.i18n import Language
-from ride_forces_analyzer.ui import updates as ui_updates
-from ride_forces_analyzer.ui.about import AboutDialog
-from ride_forces_analyzer.ui.preferences import SettingsDialog
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.presentation import updates as ui_updates
+from ride_forces_analyzer.ui.dialogs.about import AboutDialog
+from ride_forces_analyzer.ui.dialogs.settings import SettingsDialog
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from ride_forces_analyzer.runtime.updates import AvailableRelease, REPOSITORY_URL
 from tests.ui.helpers import wait_until
 

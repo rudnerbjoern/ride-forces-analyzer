@@ -1,4 +1,4 @@
-"""Export dialog and Qt worker transport; rendering/encoding stay in their subsystem.
+"""Two-page video-export assistant coordinating previews and background jobs.
 
 Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from ride_forces_analyzer.i18n import LANGUAGE_CHOICES, LANGUAGES, get_language, tr
 from ride_forces_analyzer.runtime.error_reporting import record_error
-from .translation import bind, items
+from ride_forces_analyzer.ui.presentation.translation import bind, items
 
 # cspell:words pixmap Deutsch
 
@@ -14,21 +14,17 @@ from pathlib import Path
 from typing import cast
 from dataclasses import replace
 from functools import partial
-from threading import Event
 
 from PySide6.QtCore import (
     QEvent,
-    QObject,
-    QRunnable,
     QThreadPool,
     Qt,
-    Signal,
     Slot,
     QSize,
     QTimer,
     QSignalBlocker,
 )
-from PySide6.QtGui import QCloseEvent, QImage, QPixmap, QResizeEvent, QIcon
+from PySide6.QtGui import QCloseEvent, QIcon
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -49,13 +45,11 @@ from PySide6.QtWidgets import (
     QInputDialog,
     QDoubleSpinBox,
 )
-from PIL import Image
 
-from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from ride_forces_analyzer.explorer import ExplorerData
-from ride_forces_analyzer.rendering.encoding import ExportCancelled, export_video, find_ffmpeg
+from ride_forces_analyzer.rendering.encoding import find_ffmpeg
 from ride_forces_analyzer.rendering.progress import ExportProgress
-from .export_progress import show_export_progress
+from ride_forces_analyzer.ui.exports.progress import show_export_progress
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.rendering.model import (
     VideoOutput,
@@ -64,12 +58,11 @@ from ride_forces_analyzer.rendering.model import (
     StandardFrameRate,
     ExportLayout,
     ExportSettings,
-    ExportTimeline,
     PROFILES,
     prepare_export,
     prepare_export_analysis,
 )
-from ride_forces_analyzer.rendering.preview import ExportPreview, PreviewBackground, build_previews
+from ride_forces_analyzer.rendering.preview import ExportPreview, PreviewBackground
 from ride_forces_analyzer.rendering.layouts import registry
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 from ride_forces_analyzer.exports.batches import make_job
@@ -81,241 +74,8 @@ from ride_forces_analyzer.storage.exports import (
 )
 
 
-class PreviewSignals(QObject):
-    """Deliver preview completion and failure notifications to the owning dialog.
-
-    Attributes:
-        ready: Qt signal for ready notifications.
-        failed: Qt signal for failed notifications.
-    """
-
-    ready = Signal(int, object)
-    failed = Signal(int, str)
-
-
-class PreviewWorker(QRunnable):
-    """Build layout previews in the thread pool from one captured analysis snapshot.
-
-    Attributes:
-        revision: Monotonically increasing identity used to reject superseded work.
-        analysis: Prepared recording-analysis snapshot used by this operation.
-        settings: Validated settings controlling this operation.
-        first: First included source index or the control selecting that bound.
-        last: Last included source index or the control selecting that bound.
-        sample: Source sample index to inspect or present.
-        background: Preview background, excluded from exported overlays.
-        previous_positions: Previously selected positions keyed by layout.
-        signals: Qt result, failure and progress signal transport owned by the worker.
-    """
-
-    def __init__(
-        self,
-        revision: int,
-        analysis: RecordingAnalysis,
-        settings: ExportSettings,
-        first: int,
-        last: int,
-        sample: int,
-        background: PreviewBackground,
-        previous_positions: dict[ExportLayout, LayoutPosition],
-    ) -> None:
-        """Initialize preview worker and its owned state.
-
-        Args:
-            revision: Monotonically increasing identity used to reject superseded work.
-            analysis: Prepared recording-analysis snapshot used by this operation.
-            settings: Validated settings controlling this operation.
-            first: First included source sample index.
-            last: Last included source sample index.
-            sample: Source sample index to inspect or present.
-            background: Preview background, excluded from exported overlays.
-            previous_positions: Previously selected positions keyed by layout.
-
-        Returns:
-            None.
-        """
-        super().__init__()
-        self.revision, self.analysis, self.settings = revision, analysis, settings
-        self.first, self.last, self.sample, self.background = first, last, sample, background
-        self.previous_positions = previous_positions.copy()
-        self.signals = PreviewSignals()
-
-    @Slot()
-    def run(self) -> None:
-        """Execute the worker task and deliver completion or failure through its signals.
-
-        Returns:
-            None.
-        """
-        try:
-            result = build_previews(
-                self.analysis,
-                self.settings,
-                self.first,
-                self.last,
-                self.sample,
-                self.background,
-                self.previous_positions,
-            )
-        except Exception as error:
-            record_error("Export preview", error)
-            self.signals.failed.emit(self.revision, str(error))
-        else:
-            self.signals.ready.emit(self.revision, result)
-
-
-def _pixmap(image: Image.Image) -> QPixmap:
-    raw = image.tobytes()
-    return QPixmap.fromImage(
-        QImage(raw, image.width, image.height, image.width * 3, QImage.Format.Format_RGB888).copy(),
-    )
-
-
-class PreviewView(QLabel):
-    """Display an aspect-preserving preview image inside the available dialog space.
-
-    Attributes:
-        source: Retained input identity or image; its original representation remains
-            owned.
-    """
-
-    def __init__(self) -> None:
-        """Initialize preview view and its owned state.
-
-        Returns:
-            None.
-        """
-        super().__init__(tr("Preparing preview…"))
-        self.source = QPixmap()
-        self.setMinimumSize(440, 248)
-        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-
-    def show_image(self, image: Image.Image) -> None:
-        """Display a prepared preview image without changing its source pixels.
-
-        Args:
-            image: Raster image to inspect or draw into.
-
-        Returns:
-            None.
-        """
-        self.source = _pixmap(image)
-        self._fit()
-
-    def _fit(self) -> None:
-        if not self.source.isNull():
-            self.setPixmap(
-                self.source.scaled(
-                    self.size(),
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation,
-                ),
-            )
-
-    def resizeEvent(self, event: QResizeEvent) -> None:
-        """Update view geometry after a Qt resize event.
-
-        Args:
-            event: Qt event delivered to this handler.
-
-        Returns:
-            None.
-        """
-        super().resizeEvent(event)
-        self._fit()
-
-
-class ExportSignals(QObject):
-    """Deliver video-export progress, completion and failure notifications.
-
-    Attributes:
-        saved: Qt signal for saved notifications.
-        progress: Qt signal for progress notifications.
-        finished: Qt signal for finished notifications.
-        failed: Qt signal for failed notifications.
-    """
-
-    saved = Signal(str)
-    progress = Signal(object)
-    finished = Signal(str)
-    failed = Signal(str)
-
-
-class ExportWorker(QRunnable):
-    """Run the bound video export and transport its result through Qt signals.
-
-    Attributes:
-        timeline: Bound video timeline containing the source interval and export settings.
-        destination: Requested output path; replacement follows the explicit overwrite
-            policy.
-        ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
-        render_jobs: Requested concurrent frame-renderer count, bounded by local CPU
-            availability.
-        overwrite: Whether the caller explicitly permits replacing an existing
-            destination.
-        cancelled: Event used to request cancellation without publishing partial output.
-        signals: Qt result, failure and progress signal transport owned by the worker.
-    """
-
-    def __init__(
-        self,
-        timeline: ExportTimeline,
-        destination: Path,
-        ffmpeg: Path,
-        *,
-        render_jobs: int = 1,
-        overwrite: bool = False,
-    ) -> None:
-        """Initialize export worker and its owned state.
-
-        Args:
-            timeline: Bound video timeline containing the source interval and export settings.
-            destination: Requested output path; replacement follows the explicit overwrite
-                policy.
-            ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
-            render_jobs: Requested concurrent frame-renderer count, bounded by local CPU
-                availability.
-            overwrite: Whether the caller explicitly permits replacing an existing
-                destination.
-
-        Returns:
-            None.
-        """
-        super().__init__()
-        self.timeline = timeline
-        self.destination = destination
-        self.ffmpeg = ffmpeg
-        self.render_jobs = render_jobs
-        self.overwrite = overwrite
-        self.cancelled = Event()
-        self.signals = ExportSignals()
-
-    @Slot()
-    def run(self) -> None:
-        """Execute the worker task and deliver completion or failure through its signals.
-
-        Returns:
-            None.
-        """
-        try:
-            path = export_video(
-                self.timeline,
-                self.destination,
-                ffmpeg=self.ffmpeg,
-                cancelled=self.cancelled,
-                progress=self.signals.progress.emit,
-                render_jobs=self.render_jobs,
-                overwrite=self.overwrite,
-            )
-        except ExportCancelled:
-            self.signals.finished.emit(tr("Export cancelled. No incomplete output was kept."))
-        except Exception as error:
-            record_error("Video export", error)
-            self.signals.failed.emit(tr("Export failed: {0}", error))
-        else:
-            self.signals.saved.emit(str(path))
-            self.signals.finished.emit(tr("Saved {0}", path))
+from .workers import ExportWorker, PreviewWorker
+from .preview import PreviewView, preview_pixmap
 
 
 class ExportDialog(QDialog):
@@ -896,7 +656,7 @@ class ExportDialog(QDialog):
 
     @Slot()
     def _manage_batches(self) -> None:
-        from .batches import BatchDialog
+        from ride_forces_analyzer.ui.exports.batches import BatchDialog
 
         if self.batch_window is not None and self.batch_window.isVisible():
             self.batch_window.raise_()
@@ -988,7 +748,7 @@ class ExportDialog(QDialog):
         self.preview_result = result
         selected = self.layout_profile.currentIndex()
         for index, profile in enumerate(result.profiles):
-            self.profile_buttons[index].setIcon(QIcon(_pixmap(profile.image)))
+            self.profile_buttons[index].setIcon(QIcon(preview_pixmap(profile.image)))
             self.profile_buttons[index].setChecked(index == selected)
         self.preview_view.show_image(result.profiles[selected].image)
         self._update_preview_caption()

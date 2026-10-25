@@ -22,8 +22,8 @@ import pytest
 
 from ride_forces_analyzer.domain import Recording
 from ride_forces_analyzer.explorer import ExplorerData
-from ride_forces_analyzer.ui import loading
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.explorer import loading
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.ui.helpers import resize_workspace, wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
 
@@ -586,8 +586,8 @@ def test_actual_entry_point_closes_safely_during_background_import() -> None:
 import time
 from pathlib import Path
 from PySide6.QtCore import QTimer
-from ride_forces_analyzer.ui import loading
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.explorer import loading
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from ride_forces_analyzer.__main__ import main
 original_load = loading.load_recording
 def delayed(path):

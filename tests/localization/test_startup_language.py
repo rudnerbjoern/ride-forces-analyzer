@@ -9,7 +9,7 @@ import pytest
 
 from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.storage.preferences import Preferences
-from ride_forces_analyzer.ui import translation
+from ride_forces_analyzer.ui.presentation import translation
 
 
 @pytest.mark.parametrize(

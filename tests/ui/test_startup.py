@@ -32,7 +32,7 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
         from PySide6.QtWidgets import QApplication, QLabel, QMainWindow
         from ride_forces_analyzer import __version__
         from ride_forces_analyzer.i18n import tr
-        from ride_forces_analyzer.ui.translation import system_ui_language
+        from ride_forces_analyzer.ui.presentation.translation import system_ui_language
 
         original_show = QMainWindow.show
         original_exec = QApplication.exec

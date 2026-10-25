@@ -25,10 +25,10 @@ import pytest
 
 from ride_forces_analyzer.i18n import get_language
 from ride_forces_analyzer.storage.exports import ExportStore
-from ride_forces_analyzer.ui.batches import BatchDialog
-from ride_forces_analyzer.ui.export import ExportDialog
-from ride_forces_analyzer.ui.window import ExplorerWindow
-from ride_forces_analyzer.ui.preferences import SettingsDialog
+from ride_forces_analyzer.ui.exports.batches import BatchDialog
+from ride_forces_analyzer.ui.exports.video import ExportDialog
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
+from ride_forces_analyzer.ui.dialogs.settings import SettingsDialog
 from tests.ui.helpers import resize_workspace, wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
@@ -91,8 +91,8 @@ def test_localized_export_in_4k_workspace_keeps_controls_reachable(
         from ride_forces_analyzer.i18n import Language
         from ride_forces_analyzer.explorer import ExplorerData, load_recording
         from ride_forces_analyzer.storage.exports import ExportStore
-        from ride_forces_analyzer.ui.window import ExplorerWindow
-        from ride_forces_analyzer.ui.export import ExportDialog
+        from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
+        from ride_forces_analyzer.ui.exports.video import ExportDialog
         app = QApplication([])
         directory = TemporaryDirectory(dir='.tmp')
         window = ExplorerWindow(AppSettings(language=Language.GERMAN))

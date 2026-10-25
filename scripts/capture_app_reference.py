@@ -28,9 +28,9 @@ from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.storage.preferences import Appearance
-from ride_forces_analyzer.ui.export import ExportDialog
+from ride_forces_analyzer.ui.exports.video import ExportDialog
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "tests/fixtures/real/VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"

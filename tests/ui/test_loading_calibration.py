@@ -6,7 +6,7 @@ from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.importers import ImportSuccess, import_forces
 from ride_forces_analyzer.storage.preferences import Preferences
-from ride_forces_analyzer.ui.loading import LoadWorker
+from ride_forces_analyzer.ui.explorer.loading import LoadWorker
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
 

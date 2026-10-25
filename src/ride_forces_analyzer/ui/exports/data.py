@@ -18,7 +18,7 @@ from ride_forces_analyzer.exports.json import JsonExportCancelled, export_json, 
 from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.runtime.error_reporting import record_error
 from ride_forces_analyzer.storage.preferences import Preferences
-from .translation import bind
+from ride_forces_analyzer.ui.presentation.translation import bind
 
 
 class DataSignals(QObject):

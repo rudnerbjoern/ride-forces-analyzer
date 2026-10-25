@@ -14,9 +14,10 @@ import pytest
 from ride_forces_analyzer.exports.formats import DataExportFormat
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
-from ride_forces_analyzer.ui import data_export as data_ui, loading
-from ride_forces_analyzer.ui.data_export import DataExportDialog
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.exports import data as data_ui
+from ride_forces_analyzer.ui.explorer import loading
+from ride_forces_analyzer.ui.exports.data import DataExportDialog
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from tests.ui.helpers import wait_until
 

@@ -15,9 +15,9 @@ from PySide6.QtWidgets import (
 import pytest
 
 from ride_forces_analyzer.storage.preferences import Appearance
-from ride_forces_analyzer.ui.theme import THEMES, ThemeName
-from ride_forces_analyzer.ui.window import ExplorerWindow
-from ride_forces_analyzer.ui.preferences import SettingsDialog
+from ride_forces_analyzer.ui.presentation.theme import THEMES, ThemeName
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
+from ride_forces_analyzer.ui.dialogs.settings import SettingsDialog
 from tests.ui.helpers import wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from ride_forces_analyzer.runtime.config import AppSettings
@@ -27,7 +27,7 @@ def test_system_appearance_follows_changes_until_manually_selected(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from ride_forces_analyzer.ui import window as ui_window
+    from ride_forces_analyzer.ui.explorer import window as ui_window
 
     window = explorer_window
     effective_theme: ThemeName = Appearance.LIGHT

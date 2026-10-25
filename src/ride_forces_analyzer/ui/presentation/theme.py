@@ -12,7 +12,7 @@ from ride_forces_analyzer.storage.preferences import Appearance
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
-from .chrome import install_native_captions
+from ride_forces_analyzer.ui.presentation.chrome import install_native_captions
 
 
 # cspell:words Segoe gridline

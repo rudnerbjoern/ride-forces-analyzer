@@ -1,4 +1,4 @@
-"""First usable raw-recording explorer; Qt Charts owns interactive chart drawing.
+"""Recording explorer window with chart, playback and dialog coordination.
 
 Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
@@ -8,7 +8,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from ride_forces_analyzer import __version__
 from ride_forces_analyzer.i18n import LANGUAGE_CHOICES, Language, tr
-from .translation import bind, items, set_ui_language, system_ui_language
+from ride_forces_analyzer.ui.presentation.translation import (
+    bind,
+    items,
+    set_ui_language,
+    system_ui_language,
+)
 
 from pathlib import Path
 from dataclasses import replace
@@ -19,7 +24,7 @@ from time import monotonic
 from math import ceil
 
 from PySide6.QtCharts import QCategoryAxis, QChart, QChartView, QLineSeries, QValueAxis
-from PySide6.QtCore import QElapsedTimer, QPoint, QPointF, Qt, QThreadPool, QTimer, Signal, Slot
+from PySide6.QtCore import QPoint, QPointF, Qt, QThreadPool, QTimer, Signal, Slot
 from PySide6.QtGui import (
     QAction,
     QCloseEvent,
@@ -27,13 +32,11 @@ from PySide6.QtGui import (
     QDragEnterEvent,
     QDropEvent,
     QKeySequence,
-    QMouseEvent,
     QResizeEvent,
     QShowEvent,
     QShortcut,
     QPainter,
     QPen,
-    QWheelEvent,
 )
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
@@ -59,7 +62,6 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QStyle,
-    QStyleOptionSpinBox,
     QSplitter,
     QSpinBox,
     QToolBar,
@@ -77,235 +79,22 @@ from ride_forces_analyzer.playback import SamplePlayback
 
 from ride_forces_analyzer.gps.overview import prepare_gps_overview
 
-from .chrome import app_icon
-from .about import AboutDialog
-from .preferences import APPEARANCE_CHOICES, SettingsDialog
-from .updates import UpdateController
-from .gps import gps_dialog
-from .loading import LoadWorker
-from .theme import THEMES, apply_theme, system_theme
+from ride_forces_analyzer.ui.presentation.chrome import app_icon
+from ride_forces_analyzer.ui.dialogs.about import AboutDialog
+from ride_forces_analyzer.ui.dialogs.settings import APPEARANCE_CHOICES, SettingsDialog
+from ride_forces_analyzer.ui.presentation.updates import UpdateController
+from ride_forces_analyzer.ui.dialogs.gps import gps_dialog
+from ride_forces_analyzer.ui.explorer.loading import LoadWorker
+from ride_forces_analyzer.ui.presentation.theme import THEMES, apply_theme, system_theme
 
 
 if TYPE_CHECKING:
     from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
-    from .analysis import AnalysisController
+    from ride_forces_analyzer.ui.explorer.analysis import AnalysisController
 
 
-class SmoothingSlider(QSlider):
-    """Right click restores the default 11-sample window (slider position five)."""
-
-    def mousePressEvent(self, event: QMouseEvent) -> None:
-        """Handle a mouse press and retain the state needed by the interaction.
-
-        Args:
-            event: Qt event delivered to this handler.
-
-        Returns:
-            None.
-        """
-        if event.button() == Qt.MouseButton.RightButton:
-            self.setValue(5)
-            event.accept()
-            return
-        super().mousePressEvent(event)
-
-
-class SelectionSpinBox(QSpinBox):
-    """Use 1/5/10/20/50-sample steps after 0/1/2/3/5 seconds holding an arrow.
-
-    Attributes:
-        _hold_timer: Timer repeating the held sample-selection action.
-    """
-
-    def __init__(self) -> None:
-        """Initialize selection spin box and its owned state.
-
-        Returns:
-            None.
-        """
-        super().__init__()
-        self._hold_timer = QElapsedTimer()
-
-    def mousePressEvent(self, event: QMouseEvent) -> None:
-        """Handle a mouse press and retain the state needed by the interaction.
-
-        Args:
-            event: Qt event delivered to this handler.
-
-        Returns:
-            None.
-        """
-        self._hold_timer.invalidate()
-        option = QStyleOptionSpinBox()
-        self.initStyleOption(option)
-        button = self.style().hitTestComplexControl(
-            QStyle.ComplexControl.CC_SpinBox,
-            option,
-            event.position().toPoint(),
-            self,
-        )
-        if event.button() == Qt.MouseButton.LeftButton and button in (
-            QStyle.SubControl.SC_SpinBoxUp,
-            QStyle.SubControl.SC_SpinBoxDown,
-        ):
-            self._hold_timer.start()
-        super().mousePressEvent(event)
-
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        """Complete the active mouse interaction and release its state.
-
-        Args:
-            event: Qt event delivered to this handler.
-
-        Returns:
-            None.
-        """
-        self._hold_timer.invalidate()
-        super().mouseReleaseEvent(event)
-
-    def stepBy(self, steps: int) -> None:
-        """Step the sample control while respecting its range and hold behavior.
-
-        Args:
-            steps: Number of increments to apply.
-
-        Returns:
-            None.
-        """
-        elapsed = self._hold_timer.elapsed() if self._hold_timer.isValid() else 0
-        stride = (
-            50
-            if elapsed >= 5000
-            else 20
-            if elapsed >= 3000
-            else 10
-            if elapsed >= 2000
-            else 5
-            if elapsed >= 1000
-            else 1
-        )
-        super().stepBy(steps * stride)
-
-
-class TimeChartView(QChartView):
-    """Time chart view contract and owned data.
-
-    Attributes:
-        zoom_requested: Qt signal for zoom requested notifications.
-        sample_requested: Qt signal for sample requested notifications.
-        marker_menu_requested: Qt signal for marker menu requested notifications.
-        _press_position: Pointer position at the start of the current gesture.
-        _dragged: Whether pointer motion has become a drag gesture.
-    """
-
-    zoom_requested = Signal(float, float)
-    sample_requested = Signal(float)
-    marker_menu_requested = Signal(float, QPoint)
-
-    def __init__(self, chart: QChart) -> None:
-        """Initialize time chart view and its owned state.
-
-        Args:
-            chart: Chart owned by this view.
-
-        Returns:
-            None.
-        """
-        super().__init__(chart)
-        self._press_position: QPointF | None = None
-        self._dragged = False
-
-    def mousePressEvent(self, event: QMouseEvent) -> None:
-        """Handle a mouse press and retain the state needed by the interaction.
-
-        Args:
-            event: Qt event delivered to this handler.
-
-        Returns:
-            None.
-        """
-        if event.button() == Qt.MouseButton.RightButton:
-            self._press_position = None
-            event.accept()
-            return
-        self._press_position = (
-            event.position() if event.button() == Qt.MouseButton.LeftButton else None
-        )
-        self._dragged = False
-        super().mousePressEvent(event)
-
-    def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        """Update the active chart interaction for the pointer position.
-
-        Args:
-            event: Qt event delivered to this handler.
-
-        Returns:
-            None.
-        """
-        if self._press_position is not None:
-            self._dragged |= (
-                event.position() - self._press_position
-            ).manhattanLength() >= QApplication.startDragDistance()
-            if not self._dragged:
-                event.accept()
-                return
-        super().mouseMoveEvent(event)
-
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        """Complete the active mouse interaction and release its state.
-
-        Args:
-            event: Qt event delivered to this handler.
-
-        Returns:
-            None.
-        """
-        if event.button() == Qt.MouseButton.RightButton:
-            chart = self.chart()
-            point = chart.mapFromScene(self.mapToScene(event.position().toPoint()))
-            plot = chart.plotArea()
-            if plot.contains(point) and plot.width() > 0:
-                self.marker_menu_requested.emit(
-                    (point.x() - plot.left()) / plot.width(),
-                    self.mapToGlobal(event.position().toPoint()),
-                )
-            event.accept()
-            return
-        clicked = (
-            event.button() == Qt.MouseButton.LeftButton
-            and self._press_position is not None
-            and not self._dragged
-            and (event.position() - self._press_position).manhattanLength()
-            < QApplication.startDragDistance()
-        )
-        self._press_position = None
-        chart = self.chart()
-        point = chart.mapFromScene(self.mapToScene(event.position().toPoint()))
-        plot = chart.plotArea()
-        super().mouseReleaseEvent(event)
-        if clicked and plot.contains(point) and plot.width() > 0:
-            self.sample_requested.emit((point.x() - plot.left()) / plot.width())
-
-    def wheelEvent(self, event: QWheelEvent) -> None:
-        """Translate wheel input into the view's zoom or navigation request.
-
-        Args:
-            event: Qt event delivered to this handler.
-
-        Returns:
-            None.
-        """
-        chart = self.chart()
-        point = chart.mapFromScene(self.mapToScene(event.position().toPoint()))
-        plot = chart.plotArea()
-        delta = event.angleDelta().y()
-        if plot.contains(point) and plot.width() > 0 and delta:
-            fraction = (point.x() - plot.left()) / plot.width()
-            self.zoom_requested.emit(fraction, delta / 120)
-            event.accept()
-        else:
-            event.ignore()
+from .controls import SelectionSpinBox, SmoothingSlider
+from .chart_view import TimeChartView
 
 
 class ExplorerWindow(QMainWindow):
@@ -453,7 +242,7 @@ class ExplorerWindow(QMainWindow):
         self.playback_timer.timeout.connect(self._playback_tick)
         self.analysis_controller: AnalysisController | None = None
         if find_spec("numpy") is not None:
-            from .analysis import AnalysisController
+            from ride_forces_analyzer.ui.explorer.analysis import AnalysisController
 
             self.analysis_controller = AnalysisController(self, preferences=self.preferences)
             self.analysis_controller.snapshot_ready.connect(self._analysis_updated)
@@ -1222,7 +1011,7 @@ class ExplorerWindow(QMainWindow):
             return
         if self.data_export_window is not None:
             self.data_export_window.deleteLater()
-        from .data_export import DataExportDialog
+        from ride_forces_analyzer.ui.exports.data import DataExportDialog
 
         dialog = DataExportDialog(
             analysis,
@@ -1264,7 +1053,7 @@ class ExplorerWindow(QMainWindow):
             return
         if self.export_window is not None:
             self.export_window.deleteLater()
-        from .export import ExportDialog
+        from ride_forces_analyzer.ui.exports.video import ExportDialog
 
         self.export_window = ExportDialog(
             self.data,
@@ -1282,7 +1071,7 @@ class ExplorerWindow(QMainWindow):
         Returns:
             None.
         """
-        from .batches import BatchDialog
+        from ride_forces_analyzer.ui.exports.batches import BatchDialog
         from ride_forces_analyzer.storage.exports import ExportStore, default_database_path
 
         if self.batch_window is not None and self.batch_window.isVisible():

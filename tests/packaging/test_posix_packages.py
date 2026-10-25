@@ -44,7 +44,7 @@ def test_native_builder_preserves_version_notices_and_archive_layout(
             assert arguments[arguments.index("--additional-hooks-dir") + 1] == str(
                 root / "packaging/hooks",
             )
-            assert f"{build_posix.ICON_SOURCE}:ride_forces_analyzer/ui" in arguments
+            assert f"{build_posix.ICON_SOURCE}:ride_forces_analyzer/ui/presentation" in arguments
             if target.startswith("macos-"):
                 icon = Path(arguments[arguments.index("--icon") + 1])
                 assert icon.read_bytes()[:4] == b"icns"

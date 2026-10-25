@@ -23,8 +23,8 @@ from ride_forces_analyzer.runtime.cpu_resources import render_job_limit
 from ride_forces_analyzer.rendering.model import EXPORT_FRAME_RATES
 from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 from ride_forces_analyzer.storage.map_tiles import TileCache
-from .translation import bind, items
-from .updates import UpdateController
+from ride_forces_analyzer.ui.presentation.translation import bind, items
+from ride_forces_analyzer.ui.presentation.updates import UpdateController
 
 APPEARANCE_CHOICES = tuple(Appearance)
 

@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QLabel, QProgressBar
 
 from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
-from .translation import bind
+from ride_forces_analyzer.ui.presentation.translation import bind
 
 
 def show_export_progress(

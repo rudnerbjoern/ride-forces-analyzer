@@ -24,8 +24,8 @@ from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.runtime.diagnostics import collect_diagnostics
 from ride_forces_analyzer.runtime.error_reporting import record_error
 
-from .translation import bind
-from .chrome import app_icon
+from ride_forces_analyzer.ui.presentation.translation import bind
+from ride_forces_analyzer.ui.presentation.chrome import app_icon
 
 
 class _DiagnosticSignals(QObject):

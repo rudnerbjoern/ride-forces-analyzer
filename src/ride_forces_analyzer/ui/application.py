@@ -7,7 +7,7 @@ from PySide6.QtCore import QEvent, QTimer, Slot
 from PySide6.QtGui import QFileOpenEvent
 from PySide6.QtWidgets import QApplication
 
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.runtime.instance import OpenRequest
 from ride_forces_analyzer.i18n import get_language

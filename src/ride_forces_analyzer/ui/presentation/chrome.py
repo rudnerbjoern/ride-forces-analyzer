@@ -14,7 +14,7 @@ from PySide6.QtCore import QEvent, QObject, QTimer
 from PySide6.QtGui import QIcon, QPalette, QPixmap
 from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QWidget
 
-from .icons import ICON_SIZES, render_icon
+from ride_forces_analyzer.ui.presentation.icons import ICON_SIZES, render_icon
 
 
 class NativeCaptionFilter(QObject):

@@ -10,8 +10,9 @@ from PySide6.QtTest import QTest
 import pytest
 
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
-from ride_forces_analyzer.ui import loading, window as window_module
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.explorer import loading
+from ride_forces_analyzer.ui.explorer import window as window_module
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from tests.ui.helpers import resize_workspace, wait_until
 

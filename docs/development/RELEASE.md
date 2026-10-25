@@ -103,7 +103,7 @@ the notice, or saves the skipped tag. Nothing downloads or installs automaticall
 
 ## Shared application icon
 
-[`ui/app-icon.svg`](../../src/ride_forces_analyzer/ui/app-icon.svg) is the shared
+[`ui/presentation/app-icon.svg`](../../src/ride_forces_analyzer/ui/presentation/app-icon.svg) is the shared
 window/package artwork. [`scripts.build_icons`](../../scripts/build_icons.py)
 renders it with the existing Qt SVG renderer and writes ICO (16–256 px),
 ICNS (up to 1024 px) and PNG (512 px) under the build's temporary icon directory.

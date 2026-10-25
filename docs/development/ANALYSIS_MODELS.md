@@ -341,7 +341,7 @@ monotonic request revisions and service-specific subscription handles.
 - Delivery is serialized per registration; different registrations may progress
   concurrently. Callbacks run outside the lock; ordinary callback exceptions are
   logged and remove only that registration. Duplicate callbacks have independent handles.
-- [`AnalysisController`](../../src/ride_forces_analyzer/ui/analysis.py) owns workers
+- [`AnalysisController`](../../src/ride_forces_analyzer/ui/explorer/analysis.py) owns workers
   and guarded UI delivery. The [runtime sequence](../architecture/06_runtime_view.md#explorer-analysis-delivery)
   defines initial state, stale/failure handling and subscription cleanup.
 

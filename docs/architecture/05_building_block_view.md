@@ -10,7 +10,7 @@ flowchart TB
     Application --> UI["ui: widgets and worker transport"]
     UI --> Importer["importers: decode and validate"]
     Importer --> Domain["domain: immutable source and recording"]
-    UI --> Controller["ui.analysis: scheduling and delivery guards"]
+    UI --> Controller["ui.explorer.analysis: scheduling and delivery guards"]
     Controller --> Service["analysis.service: revisions and subscriptions"]
     Service --> Analysis["analysis.recording: immutable stages"]
     Analysis --> Domain
@@ -92,7 +92,7 @@ methods delegate lazily to preparation.
 
 `analysis.service.AnalysisService` owns current state, revisions and subscriptions.
 It computes in the caller's thread and invokes callbacks outside its state lock.
-`ui.analysis.AnalysisController` owns worker scheduling and guarded Qt delivery.
+`ui.explorer.analysis.AnalysisController` owns worker scheduling and guarded Qt delivery.
 Closed, rebound and superseded work cannot replace current state.
 
 The explicit `analysis.device` and `analysis.frames` APIs use source-bound
@@ -110,23 +110,30 @@ existing import and analysis services; the raw path remains NumPy-independent.
 Cursor, selection, viewport and curve visibility are view state.
 `SamplePlayback` maps monotonic time to source samples without recalculating analysis.
 
+The UI groups recording interactions in `ui.explorer`, export surfaces in
+`ui.exports`, auxiliary dialogs in `ui.dialogs` and shared Qt presentation in
+`ui.presentation`. `ui.application` composes the recording windows. Independent
+sample controls and chart gestures live in `ui.explorer.controls` and
+`ui.explorer.chart_view`. Export preview widgets and background jobs live in
+`ui.exports.preview` and `ui.exports.workers`; the video dialog owns their lifecycle.
+
 `RecordingApplication` owns windows and queued file-open requests.
 `InstanceBroker` owns local locking/IPC. Each recording window owns its analysis
 controller; language and appearance are shared application preferences.
 
 `gps.overview` prepares independent approximate route segments. `gps.map_background`
 projects route and tiles consistently and owns bounded HTTPS/image composition;
-`storage.map_tiles` owns the tile cache. `ui.gps` transports requests and rejects
+`storage.map_tiles` owns the tile cache. `ui.dialogs.gps` transports requests and rejects
 late results. GPS has no force-clock or selection dependency.
 
 The `i18n` package shares language registration and text/number formatting between
-UI and rendering, with separate German/French catalogs. `ui.translation` owns Qt
+UI and rendering, with separate German/French catalogs. `ui.presentation.translation` owns Qt
 bindings; the shared translation package has no Qt dependency.
 
 `runtime.diagnostics` collects offline system, CPU, Qt and encoder support fields;
-`ui.about` presents them and offers copying without including recording contents.
+`ui.dialogs.about` presents them and offers copying without including recording contents.
 
-`runtime.updates` performs bounded public release lookup; `ui.updates` schedules it and
+`runtime.updates` performs bounded public release lookup; `ui.presentation.updates` schedules it and
 presents results. `runtime.error_reporting` owns per-process local diagnostic files.
 The `runtime` package groups platform paths, CPU topology and local process
 ownership. Modules are imported explicitly; CPU and path helpers do not load Qt.
@@ -146,7 +153,7 @@ after explicit overwrite confirmation.
 identifiers with stable text values `csv`, `json` and `analyzer_json`.
 `formatting.time.format_sample_time` supplies the common replay labels for explorer,
 serializers and layout renderers without importing presentation or analysis code.
-`ui.data_export` captures input and transports progress/cancellation.
+`ui.exports.data` captures input and transports progress/cancellation.
 
 [CSV](../implementation/CSV_EXPORT.md) and [JSON](../implementation/JSON_EXPORT.md)
 define formats and lifecycle.
@@ -163,13 +170,13 @@ prepares deterministic source-time peak envelopes for HUD and G-Orbit.
 and fonts. Only the immutable timeline is shared. `encoding` probes backends,
 streams ordered region bytes and publishes completed output. `progress` defines
 immutable export status, phases and remaining-frame estimates shared by both
-export paths; Qt workers transport them to the dialogs. `ui.export` owns
+export paths; Qt workers transport them to the dialogs. `ui.exports.video` owns
 assistant controls, debounced preview transport and cancellation.
 
 `storage.export_models` defines immutable presets/jobs; `storage.exports` owns
 SQLite schema and transactions. `exports.batches` imports and checks each
 source before applying its saved recipe and running exports sequentially.
-`ui.batches` edits queues and transports results. Recordings and rendered media
+`ui.exports.batches` edits queues and transports results. Recordings and rendered media
 never enter SQLite.
 
 [Layout API](../development/EXPORT_LAYOUTS.md), [video contracts](../implementation/VIDEO_EXPORT.md)

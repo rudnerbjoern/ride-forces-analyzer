@@ -18,8 +18,10 @@ from PySide6.QtCore import QThreadPool
 from PySide6.QtWidgets import QFileDialog, QInputDialog, QPushButton
 import pytest
 
-from ride_forces_analyzer.ui.export import ExportDialog, ExportWorker
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.exports.video import ExportDialog
+from ride_forces_analyzer.ui.exports.workers import ExportWorker
+from ride_forces_analyzer.ui.exports import workers as ui_workers
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from ride_forces_analyzer.rendering.preview import ExportPreview, PreviewBackground
 from tests.ui.helpers import wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
@@ -284,7 +286,7 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
 
     dialog.close()
 
-    from ride_forces_analyzer.ui import export as ui_export
+    from ride_forces_analyzer.ui.exports import video as ui_export
     from ride_forces_analyzer.storage.preferences import Preferences
 
     window = explorer_window
@@ -315,7 +317,7 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
             return output
 
         monkeypatch.setattr(ui_export, "find_ffmpeg", encoder)
-        monkeypatch.setattr(ui_export, "export_video", export)
+        monkeypatch.setattr(ui_workers, "export_video", export)
         dialog.start.click()
         wait_until(lambda: dialog.worker is None)
         assert Path(suggestions[0]).name == source.stem + " - Flow Ribbon.mov"
@@ -338,7 +340,7 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from ride_forces_analyzer.ui import export as ui_export
+    from ride_forces_analyzer.ui.exports import video as ui_export
     from ride_forces_analyzer.rendering.encoding import ExportCancelled
 
     window = explorer_window
@@ -365,7 +367,7 @@ def test_export_worker_progress_cancel_and_gui_recovery(
             raise RuntimeError("Test cancellation was not delivered")
         raise ExportCancelled()
 
-    monkeypatch.setattr(ui_export, "export_video", fake_export)
+    monkeypatch.setattr(ui_workers, "export_video", fake_export)
 
     def encoder(_: Path | None = None) -> Path:
         return Path(__file__)
@@ -399,12 +401,11 @@ def test_stale_preview_is_discarded_after_fast_profile_changes(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from ride_forces_analyzer.ui import export as ui_export
     from ride_forces_analyzer.analysis.recording import RecordingAnalysis
     from ride_forces_analyzer.rendering.model import ExportLayout, ExportSettings
     from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 
-    original = ui_export.build_previews
+    original = ui_workers.build_previews
     started, release = Event(), Event()
     calls: list[tuple[str, int | str]] = []
 
@@ -433,7 +434,7 @@ def test_stale_preview_is_discarded_after_fast_profile_changes(
             previous_positions,
         )
 
-    monkeypatch.setattr(ui_export, "build_previews", delayed)
+    monkeypatch.setattr(ui_workers, "build_previews", delayed)
     window = explorer_window
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
     wait_until(window.open_action.isEnabled)
@@ -463,7 +464,7 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from ride_forces_analyzer.ui.batches import BatchDialog
+    from ride_forces_analyzer.ui.exports.batches import BatchDialog
     from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 
     window = explorer_window
@@ -531,7 +532,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from ride_forces_analyzer.ui import batches as ui_batches
+    from ride_forces_analyzer.ui.exports import batches as ui_batches
     from ride_forces_analyzer.storage.exports import ExportStore, default_database_path
     from ride_forces_analyzer.storage.export_models import SavedBatch, SavedPreset
     from ride_forces_analyzer.rendering.model import ExportSettings
@@ -668,7 +669,7 @@ def test_loading_analysis_recipe_keeps_workspace_snapshot_and_independent_stages
     from ride_forces_analyzer.analysis.recording import AnalysisStage
     from ride_forces_analyzer.storage.export_models import make_preset
     from ride_forces_analyzer.storage.exports import ExportStore
-    from ride_forces_analyzer.ui.export import default_database_path
+    from ride_forces_analyzer.ui.exports.video import default_database_path
     from ride_forces_analyzer.rendering.model import ExportSettings
 
     window = explorer_window

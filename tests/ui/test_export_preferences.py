@@ -19,9 +19,9 @@ from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 from ride_forces_analyzer.storage.map_tiles import TileCache, TileEntry
 from ride_forces_analyzer.i18n import tr
-from ride_forces_analyzer.ui.export import ExportDialog
-from ride_forces_analyzer.ui.preferences import SettingsDialog
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.exports.video import ExportDialog
+from ride_forces_analyzer.ui.dialogs.settings import SettingsDialog
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.ui.helpers import wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 

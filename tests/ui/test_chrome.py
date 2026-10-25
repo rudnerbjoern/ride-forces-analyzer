@@ -20,12 +20,12 @@ from PySide6.QtWidgets import (
 
 from ride_forces_analyzer.gps.overview import GpsOverview
 from ride_forces_analyzer.storage.exports import ExportStore
-from ride_forces_analyzer.ui.about import AboutDialog
-from ride_forces_analyzer.ui.batches import BatchDialog
-from ride_forces_analyzer.ui.export import ExportDialog
-from ride_forces_analyzer.ui.gps import gps_dialog
-from ride_forces_analyzer.ui.preferences import SettingsDialog
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.dialogs.about import AboutDialog
+from ride_forces_analyzer.ui.exports.batches import BatchDialog
+from ride_forces_analyzer.ui.exports.video import ExportDialog
+from ride_forces_analyzer.ui.dialogs.gps import gps_dialog
+from ride_forces_analyzer.ui.dialogs.settings import SettingsDialog
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from tests.ui.helpers import wait_until
 

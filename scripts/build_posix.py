@@ -18,7 +18,7 @@ import tarfile
 import tomllib
 
 from ride_forces_analyzer.runtime.paths import runtime_target
-from ride_forces_analyzer.ui.icons import ICON_SOURCE
+from ride_forces_analyzer.ui.presentation.icons import ICON_SOURCE
 from scripts.build_icons import build_icons
 from scripts.build_windows import (
     APP_NAME,
@@ -88,7 +88,7 @@ def build(work: Path, *, expected_target: str | None = None) -> Path:
         "--additional-hooks-dir",
         str(ROOT / "packaging/hooks"),
         "--add-data",
-        f"{ICON_SOURCE}:ride_forces_analyzer/ui",
+        f"{ICON_SOURCE}:ride_forces_analyzer/ui/presentation",
         "--add-data",
         f"{notices}:licenses/third-party",
         "--add-data",

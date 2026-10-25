@@ -7,8 +7,8 @@ from xml.etree.ElementTree import fromstring
 from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QScrollArea
 
 from ride_forces_analyzer import __version__
-from ride_forces_analyzer.ui.about import AboutDialog
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.dialogs.about import AboutDialog
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.ui.helpers import wait_until
 import pytest
 
@@ -58,7 +58,7 @@ def test_copy_diagnostics_uses_worker_and_localized_feedback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from PySide6.QtCore import QThread
-    from ride_forces_analyzer.ui import about
+    from ride_forces_analyzer.ui.dialogs import about
 
     application = QApplication.instance()
     assert application is not None

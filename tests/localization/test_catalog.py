@@ -98,7 +98,7 @@ def test_declared_diagnostics_and_literal_ui_templates_have_translations() -> No
     assert codes - {"DEFAULT_LIMITS"} <= DIAGNOSTIC_GERMAN.keys()
     assert DIAGNOSTIC_FRENCH.keys() == DIAGNOSTIC_GERMAN.keys()
     for path in [
-        *(root / "ui").glob("*.py"),
+        *(root / "ui").rglob("*.py"),
         *(root / "rendering").glob("*.py"),
         *(root / "explorer").glob("*.py"),
     ]:

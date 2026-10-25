@@ -15,7 +15,7 @@ Product scope belongs in the [roadmap](../ROADMAP.md).
 The Qt-independent `explorer` package separates bound presentation state,
 text/HTML formatting, inclusive selections and loading. Existing imports of
 `ExplorerData`, `SampleRange`, `load_recording`, `present_recording` and
-`failure_text` remain available from the package. Qt workers stay in `ui.loading`.
+`failure_text` remain available from the package. Qt workers stay in `ui.explorer.loading`.
 
 | Area                 | Contract                                                                                                                                                        |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |

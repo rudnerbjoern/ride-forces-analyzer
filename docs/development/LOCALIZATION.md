@@ -29,7 +29,7 @@ and export actions visible, including at 200% Windows scaling.
 
 The `i18n` package groups translation logic and catalogs. `i18n/__init__.py`
 retains the shared public imports, including `Language` and `tr`; the Qt-specific
-bindings remain in `ui.translation`.
+bindings remain in `ui.presentation.translation`.
 
 - `i18n.Language` is a `StrEnum` with `ENGLISH`, `GERMAN` and `FRENCH` members.
   Python APIs use enum members; `Language(code)` converts a supported text code
@@ -53,7 +53,7 @@ bindings remain in `ui.translation`.
 - Chart labels and tooltips use Start/End/Gravity/Incline marker names rather than
   JSON field names. German uses Start-/End-/Schwerkraft-/Neigungsmarkierung;
   menu actions and calibration explanations use Schwerkraft and Neigung consistently.
-- `ui.translation` binds Qt text properties, combo entries and table headers.
+- `ui.presentation.translation` binds Qt text properties, combo entries and table headers.
   Language changes update these bindings and the explorer's dynamic presentation,
   preserving data identity, smoothing, cursor, selections and viewport.
   The installed Qt catalog for the selected language supplies standard Qt

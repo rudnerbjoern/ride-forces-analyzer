@@ -12,8 +12,8 @@ from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from ride_forces_analyzer.analysis.service import AnalysisService
 from ride_forces_analyzer.explorer import ExplorerData, present_recording
 from ride_forces_analyzer.importers import ImportSuccess
-from ride_forces_analyzer.ui import loading
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.explorer import loading
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.analysis.test_recording_preparation import synthetic_source
 from tests.ui.helpers import wait_until
 

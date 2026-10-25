@@ -1,7 +1,7 @@
 """RFDB uses the normal asynchronous open path and unified snapshot."""
 
 from ride_forces_analyzer.domain import RecordingFormat
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.support.recordings import RFDB_FIXTURE_DIRECTORY, RFDB_FIXTURES
 from tests.ui.helpers import wait_until
 

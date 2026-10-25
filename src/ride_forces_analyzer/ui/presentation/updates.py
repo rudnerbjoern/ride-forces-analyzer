@@ -16,7 +16,7 @@ from ride_forces_analyzer.runtime.error_reporting import record_error
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.runtime.updates import AvailableRelease, check_for_update
 
-from .translation import bind
+from ride_forces_analyzer.ui.presentation.translation import bind
 
 
 class _Signals(QObject):

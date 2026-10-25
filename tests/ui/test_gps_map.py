@@ -10,8 +10,8 @@ from PySide6.QtWidgets import QApplication, QGraphicsPixmapItem
 import pytest
 
 from ride_forces_analyzer.gps.map_background import MapBackground, MapError, MapRequest
-from ride_forces_analyzer.ui import gps
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.dialogs import gps
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from tests.ui.helpers import wait_until
 

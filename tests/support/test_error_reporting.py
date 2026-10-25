@@ -158,7 +158,8 @@ def test_handled_import_and_export_worker_failures_reach_report(export_directory
     result = run_report(
         export_directory,
         """
-from ride_forces_analyzer.ui import loading, data_export
+from ride_forces_analyzer.ui.explorer import loading
+from ride_forces_analyzer.ui.exports import data as data_export
 path = reports.initialize_error_reporting()
 assert path is not None
 loading.LoadWorker(directory / "missing.forces").run()

@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.runtime.error_reporting import record_error
-from .translation import bind, items, headers
+from ride_forces_analyzer.ui.presentation.translation import bind, items, headers
 
 from pathlib import Path
 from threading import Event
@@ -35,7 +35,7 @@ from PySide6.QtWidgets import (
 from ride_forces_analyzer.exports.batches import BatchReport, build_jobs, run_batches
 from ride_forces_analyzer.rendering.encoding import find_ffmpeg
 from ride_forces_analyzer.rendering.progress import ExportProgress
-from .export_progress import show_export_progress
+from ride_forces_analyzer.ui.exports.progress import show_export_progress
 from ride_forces_analyzer.storage.export_models import SavedBatch, SavedPreset, RangeMode
 from ride_forces_analyzer.storage.exports import ExportStore, ExportStoreError
 from ride_forces_analyzer.storage.preferences import Preferences

@@ -27,7 +27,7 @@ from ride_forces_analyzer.rendering.model import (
     ExportSettings,
     prepare_export,
 )
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 
 
 def smoke_test(
