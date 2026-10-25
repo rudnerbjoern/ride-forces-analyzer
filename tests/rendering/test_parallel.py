@@ -10,7 +10,7 @@ from typing import cast
 from PIL import Image
 import pytest
 
-from ride_forces_analyzer import cpu_resources
+from ride_forces_analyzer.runtime import cpu_resources
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering import parallel
 from ride_forces_analyzer.rendering.model import (

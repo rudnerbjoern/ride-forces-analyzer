@@ -27,6 +27,10 @@ and export actions visible, including at 200% Windows scaling.
 
 ## Text ownership
 
+The `i18n` package groups translation logic and catalogs. `i18n/__init__.py`
+retains the shared public imports, including `Language` and `tr`; the Qt-specific
+bindings remain in `ui.translation`.
+
 - `i18n.Language` is a `StrEnum` with `ENGLISH`, `GERMAN` and `FRENCH` members.
   Python APIs use enum members; `Language(code)` converts a supported text code
   and rejects unknown codes. SQLite preferences and JSON presets retain the
@@ -34,12 +38,12 @@ and export actions visible, including at 200% Windows scaling.
   names, locales, number separators, application catalogs and diagnostic catalogs.
   Settings, OS-language matching, storage validation and export selectors use this
   shared registration; selector indices preserve English, German, French order.
-- English templates are stable keys. German uses `translations_de.py`; French uses
-  `translations_fr.py`. Entries use concise labels and matching positional
+- English templates are stable keys. German uses `i18n/de.py`; French uses
+  `i18n/fr.py`. Entries use concise labels and matching positional
   placeholders. `i18n.tr` separates text
   from opaque values, so recording names, paths and preset/batch names are never
   translated or interpreted as format strings.
-- CSpell checks `translations_de.py` with English/German and `translations_fr.py`
+- CSpell checks `i18n/de.py` with English/German and `i18n/fr.py`
   with English/French using locked dictionaries. Legitimate technical compounds
   are scoped to their catalog file. Catalog tests
   check completeness and placeholders independently of spelling.

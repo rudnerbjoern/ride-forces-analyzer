@@ -17,7 +17,7 @@ import sys
 import tarfile
 import tomllib
 
-from ride_forces_analyzer.runtime_paths import runtime_target
+from ride_forces_analyzer.runtime.paths import runtime_target
 from ride_forces_analyzer.ui.icons import ICON_SOURCE
 from scripts.build_icons import build_icons
 from scripts.build_windows import (

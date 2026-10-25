@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
 from typing import Literal
-from ride_forces_analyzer.airtime_colors import VERTICAL_CONTEXT_COLORS
+from ride_forces_analyzer.rendering.airtime_colors import VERTICAL_CONTEXT_COLORS
 from ride_forces_analyzer.storage.preferences import Appearance
 
 from PySide6.QtGui import QColor, QPalette

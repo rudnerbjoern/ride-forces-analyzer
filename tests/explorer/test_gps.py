@@ -5,7 +5,7 @@ from dataclasses import replace
 import pytest
 
 from ride_forces_analyzer.domain import GpsEntry, GpsFix, GpsSequence, GpsStatus, Recording
-from ride_forces_analyzer.gps_overview import prepare_gps_overview
+from ride_forces_analyzer.gps.overview import prepare_gps_overview
 from ride_forces_analyzer.importers import ImportSuccess, import_forces
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
 

@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ride_forces_analyzer.gps_overview import GpsOverview
+from ride_forces_analyzer.gps.overview import GpsOverview
 from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.ui.about import AboutDialog
 from ride_forces_analyzer.ui.batches import BatchDialog

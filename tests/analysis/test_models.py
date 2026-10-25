@@ -360,6 +360,19 @@ import builtins
 import os
 import socket
 import sys
+import ride_forces_analyzer.analysis as public
+assert "numpy" not in sys.modules
+assert "ride_forces_analyzer.analysis.models" not in sys.modules
+for name in public.__all__:
+    value = getattr(public, name)
+    assert value is getattr(public.models, name)
+    assert vars(public)[name] is value
+try:
+    public.unknown_model
+except AttributeError:
+    pass
+else:
+    raise AssertionError("Unknown model must raise AttributeError")
 from tests.analysis.test_models import _result
 assert not any(name.startswith(("PySide6", "scipy", "pint", "geographiclib")) for name in sys.modules)
 def deny(*args, **kwargs):

@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 import ride_forces_analyzer.__main__ as entry
 import ride_forces_analyzer.ui.application as application
-import ride_forces_analyzer.instance as instance
+import ride_forces_analyzer.runtime.instance as instance
 from types import SimpleNamespace
 class Finished(Exception):
     pass
@@ -62,7 +62,7 @@ from PySide6.QtCore import QTimer, QThreadPool
 from PySide6.QtGui import QFileOpenEvent
 from ride_forces_analyzer.config import AppSettings
 from ride_forces_analyzer.i18n import Language
-from ride_forces_analyzer.instance import OpenRequest
+from ride_forces_analyzer.runtime.instance import OpenRequest
 from ride_forces_analyzer.ui.application import RecordingApplication
 app = RecordingApplication([])
 path = Path(sys.argv[1])

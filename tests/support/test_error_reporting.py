@@ -14,7 +14,7 @@ def run_report(directory: Path, program: str) -> subprocess.CompletedProcess[str
 import os
 from pathlib import Path
 import sys
-from ride_forces_analyzer import error_reporting as reports
+from ride_forces_analyzer.runtime import error_reporting as reports
 directory = Path(sys.argv[1])
 reports.data_directory = lambda: directory
 """
@@ -55,7 +55,7 @@ def test_report_retains_every_error_and_replaces_completed_runs(export_directory
         export_directory,
         """
 support = directory / "support"
-from ride_forces_analyzer.cpu_resources import CpuResources
+from ride_forces_analyzer.runtime.cpu_resources import CpuResources
 reports.detect_cpu_resources = lambda: CpuResources(12, 24)
 support.mkdir()
 (support / "error-report-999999999.txt").write_text("obsolete")

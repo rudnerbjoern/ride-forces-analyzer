@@ -7,8 +7,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import dataclass
 from enum import StrEnum
 
-from .translations_de import DIAGNOSTIC_GERMAN, GERMAN
-from .translations_fr import DIAGNOSTIC_FRENCH, FRENCH
+from .de import DIAGNOSTIC_GERMAN, GERMAN
+from .fr import DIAGNOSTIC_FRENCH, FRENCH
 
 
 class Language(StrEnum):

@@ -19,7 +19,7 @@ from ride_forces_analyzer.domain import (
     ValueOrigin,
     Vector3,
 )
-from ride_forces_analyzer.time_format import format_sample_time
+from ride_forces_analyzer.formatting.time import format_sample_time
 from ride_forces_analyzer.explorer import present_recording
 from ride_forces_analyzer.importers import ImportSuccess, import_forces, import_forces_bytes
 from ride_forces_analyzer.i18n import Language, get_language, set_language
@@ -242,6 +242,14 @@ def test_raw_explorer_import_does_not_require_optional_numpy() -> None:
     script = """
 import sys
 from pathlib import Path
+from importlib.abc import MetaPathFinder
+
+class NoNumPy(MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "numpy" or fullname.startswith("numpy."):
+            raise ModuleNotFoundError("NumPy is intentionally unavailable")
+
+sys.meta_path.insert(0, NoNumPy())
 import ride_forces_analyzer.explorer as explorer
 from ride_forces_analyzer.importers import ImportSuccess, import_forces
 assert 'numpy' not in sys.modules

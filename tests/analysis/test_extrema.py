@@ -9,7 +9,7 @@ import pytest
 from ride_forces_analyzer.analysis.models import SampleValues
 from ride_forces_analyzer.analysis.recording import AvailabilityState, StageAvailability
 from ride_forces_analyzer.explorer import present_recording
-from ride_forces_analyzer.force_extrema import calculate_extrema
+from ride_forces_analyzer.analysis.extrema import calculate_extrema
 from ride_forces_analyzer.importers import ImportSuccess, import_forces, import_forces_bytes
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
 

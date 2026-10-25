@@ -21,9 +21,9 @@ from urllib.request import Request, urlopen
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QImage, QPainter
 
-from . import __version__
-from .gps_overview import GpsOverview
-from .storage.map_tiles import TileCache, TileEntry
+from .. import __version__
+from .overview import GpsOverview
+from ..storage.map_tiles import TileCache, TileEntry
 
 TILE_SIZE = 256
 WORLD_SIZE = 2 * pi * 6378137

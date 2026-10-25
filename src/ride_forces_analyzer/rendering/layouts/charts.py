@@ -14,8 +14,10 @@ if TYPE_CHECKING:
 
 from math import ceil, floor
 from .contracts import VideoAspect
-from ride_forces_analyzer.airtime_colors import VERTICAL_CONTEXT_COLORS as VERTICAL_CONTEXT_COLORS
-from ride_forces_analyzer.time_format import format_sample_time
+from ride_forces_analyzer.rendering.airtime_colors import (
+    VERTICAL_CONTEXT_COLORS as VERTICAL_CONTEXT_COLORS,
+)
+from ride_forces_analyzer.formatting.time import format_sample_time
 from .common import ACCELERATION_COLOR, BRAKING_COLOR, Drawing, lateral_x
 
 

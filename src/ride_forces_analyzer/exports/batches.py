@@ -26,7 +26,7 @@ from ride_forces_analyzer.analysis.preparation import (
 )
 from ride_forces_analyzer.analysis.service import AnalysisService
 from ride_forces_analyzer.importers import ImportSuccess, import_forces
-from ride_forces_analyzer.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_reporting import record_error
 from ride_forces_analyzer.storage.export_models import BatchJob, RangeMode, SavedBatch, SavedPreset
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.rendering.encoding import ExportCancelled, export_video
@@ -237,7 +237,7 @@ def run_batches(
         ValueError: The selected batches contain no export jobs.
         OSError: If the required filesystem operation fails.
     """
-    from ride_forces_analyzer.cpu_resources import effective_render_jobs
+    from ride_forces_analyzer.runtime.cpu_resources import effective_render_jobs
 
     render_jobs = effective_render_jobs(render_jobs)
     total = sum(len(batch.jobs) for batch in batches)

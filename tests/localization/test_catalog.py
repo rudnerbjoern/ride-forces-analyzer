@@ -15,7 +15,7 @@ from typing import Any, cast
 from PIL import ImageDraw
 import pytest
 
-from ride_forces_analyzer.time_format import format_sample_time
+from ride_forces_analyzer.formatting.time import format_sample_time
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.i18n import (
     LANGUAGES,
@@ -34,8 +34,8 @@ from ride_forces_analyzer.rendering.model import (
     PROFILES,
     prepare_export,
 )
-from ride_forces_analyzer.translations_de import DIAGNOSTIC_GERMAN, GERMAN
-from ride_forces_analyzer.translations_fr import DIAGNOSTIC_FRENCH, FRENCH
+from ride_forces_analyzer.i18n.de import DIAGNOSTIC_GERMAN, GERMAN
+from ride_forces_analyzer.i18n.fr import DIAGNOSTIC_FRENCH, FRENCH
 from ride_forces_analyzer.storage.export_models import SavedPreset, SavedBatch
 from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.exports.batches import make_job

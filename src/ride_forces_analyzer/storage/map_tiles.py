@@ -11,7 +11,7 @@ from pathlib import Path
 import sqlite3
 from time import time
 
-from ride_forces_analyzer.runtime_paths import data_directory
+from ride_forces_analyzer.runtime.paths import data_directory
 
 MAX_CACHE_BYTES = 100 * 1024 * 1024
 

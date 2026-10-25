@@ -23,8 +23,8 @@ from .layouts import export_region
 from .model import VideoOutput, ExportTimeline, frame_rate_value
 from .parallel import render_region_bytes
 from .progress import ExportPhase, ExportProgress
-from ride_forces_analyzer.cpu_resources import effective_render_jobs
-from ride_forces_analyzer.runtime_paths import ffmpeg_name
+from ride_forces_analyzer.runtime.cpu_resources import effective_render_jobs
+from ride_forces_analyzer.runtime.paths import ffmpeg_name
 
 
 class ExportCancelled(Exception):

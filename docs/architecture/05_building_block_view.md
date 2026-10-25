@@ -17,7 +17,7 @@ flowchart TB
     UI --> Presentation["explorer: view data, formatting and selections"]
     Presentation --> Analysis
     UI --> Playback["playback: monotonic sample clock"]
-    UI --> GPS["gps_overview / map_background"]
+    UI --> GPS["gps.overview / gps.map_background"]
     GPS --> Domain
     UI --> Data["exports.csv / exports.json"]
     Data --> Analysis
@@ -35,20 +35,20 @@ Arrows indicate dependencies. Domain/import/analysis code has no widget dependen
 
 ## Contained building blocks
 
-| Block                                         | Responsibility                                                                |
-| --------------------------------------------- | ----------------------------------------------------------------------------- |
-| `config`, `__main__`, `runtime_paths`         | Validated settings, startup and platform data paths                           |
-| `instance`, `ui.application`                  | Local process ownership, file-open requests and recording windows             |
-| `domain`, `importers`                         | Lossless source representation, bounded parsing and deterministic diagnostics |
-| `analysis`, `force_extrema`                   | Prepared measurements, context/events, calibration and extrema                |
-| `explorer`, `playback`                        | View data, sample selection, formatting and monotonic playback                |
-| `gps_overview`, `map_background`              | Independent route geometry and optional bounded map requests                  |
-| `exports`                                     | Sample serialization, safe publication and sequential video jobs              |
-| `rendering`                                   | Layouts, previews, ordered frame generation and encoding                      |
-| `storage`                                     | SQLite preferences, marker choices, export definitions and map tiles          |
-| `i18n`, `airtime_colors`                      | Shared language and semantic-color contracts                                  |
-| `ui`                                          | Qt controls, dialogs, themes, icons and asynchronous transport                |
-| `cpu_resources`, `updates`, `error_reporting` | CPU topology, optional release lookup and local support reports               |
+| Block                                                                 | Responsibility                                                                |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `config`, `__main__`, `runtime.paths`                                 | Validated settings, startup and platform data paths                           |
+| `runtime.instance`, `ui.application`                                  | Local process ownership, file-open requests and recording windows             |
+| `domain`, `importers`                                                 | Lossless source representation, bounded parsing and deterministic diagnostics |
+| `analysis`                                                            | Prepared measurements, context/events, calibration and extrema                |
+| `explorer`, `playback`                                                | View data, sample selection, formatting and monotonic playback                |
+| `gps.overview`, `gps.map_background`                                  | Independent route geometry and optional bounded map requests                  |
+| `exports`                                                             | Sample serialization, safe publication and sequential video jobs              |
+| `rendering`                                                           | Layouts, previews, ordered frame generation and encoding                      |
+| `storage`                                                             | SQLite preferences, marker choices, export definitions and map tiles          |
+| `i18n`, `rendering.airtime_colors`                                    | Shared language and semantic-color contracts                                  |
+| `ui`                                                                  | Qt controls, dialogs, themes, icons and asynchronous transport                |
+| `runtime.cpu_resources`, `runtime.updates`, `runtime.error_reporting` | CPU topology, optional release lookup and local support reports               |
 
 Source modules are under [ride_forces_analyzer](../../src/ride_forces_analyzer/).
 
@@ -69,6 +69,8 @@ and [domain models](../development/CANONICAL_MODELS.md) define exact contracts.
 `analysis.models` exposes immutable base contracts through explicit package exports.
 Its modules separate sample buffers, measurement channels, profiles and results;
 model construction retains validation, ownership and scientific-evidence checks.
+The analysis package resolves model exports on demand, keeping raw extrema and
+explorer imports independent of optional NumPy.
 
 `analysis.recording.RecordingAnalysis` binds the complete import to immutable source,
 time, calibration, projection, smoothing, orientation, context and event stages.
@@ -81,7 +83,7 @@ snapshot access, technical notifications and structural validators; existing
 imports remain explicit package exports. Event evaluation consumes these contracts; only the
 preparation module imports the event implementation. Snapshot reconfiguration
 methods delegate lazily to preparation.
-`force_extrema` operates on prepared channels without widget logic.
+`analysis.extrema` operates on prepared channels without widget logic.
 
 `analysis.service.AnalysisService` owns current state, revisions and subscriptions.
 It computes in the caller's thread and invokes callbacks outside its state lock.
@@ -103,14 +105,23 @@ Cursor, selection, viewport and curve visibility are view state.
 `InstanceBroker` owns local locking/IPC. Each recording window owns its analysis
 controller; language and appearance are shared application preferences.
 
-`gps_overview` prepares independent approximate route segments. `map_background`
+`gps.overview` prepares independent approximate route segments. `gps.map_background`
 projects route and tiles consistently and owns bounded HTTPS/image composition;
 `storage.map_tiles` owns the tile cache. `ui.gps` transports requests and rejects
 late results. GPS has no force-clock or selection dependency.
 
-`updates` performs bounded public release lookup; `ui.updates` schedules it and
-presents results. `error_reporting` owns per-process local diagnostic files.
-`cpu_resources` detects physical cores and logical processors; unknown topology
+The `i18n` package shares language registration and text/number formatting between
+UI and rendering, with separate German/French catalogs. `ui.translation` owns Qt
+bindings; the shared translation package has no Qt dependency.
+
+`runtime.diagnostics` collects offline system, CPU, Qt and encoder support fields;
+`ui.about` presents them and offers copying without including recording contents.
+
+`runtime.updates` performs bounded public release lookup; `ui.updates` schedules it and
+presents results. `runtime.error_reporting` owns per-process local diagnostic files.
+The `runtime` package groups platform paths, CPU topology and local process
+ownership. Modules are imported explicitly; CPU and path helpers do not load Qt.
+`runtime.cpu_resources` detects physical cores and logical processors; unknown topology
 stays unknown. Render-job validation caps positive counts at available logical
 processors, with a one-job fallback. [Runtime](06_runtime_view.md) and
 [deployment](07_deployment_view.md) describe integration.
@@ -122,7 +133,7 @@ they do not calculate analysis or depend on Qt/FFmpeg. `exports._file` owns excl
 creation and atomic replacement after explicit overwrite confirmation.
 `exports.formats.DataExportFormat` provides the shared `CSV`, `JSON` and `ANALYZER_JSON`
 identifiers with stable text values `csv`, `json` and `analyzer_json`.
-`time_format.format_sample_time` supplies the common replay labels for explorer,
+`formatting.time.format_sample_time` supplies the common replay labels for explorer,
 serializers and layout renderers without importing presentation or analysis code.
 `ui.data_export` captures input and transports progress/cancellation.
 

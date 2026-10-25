@@ -20,7 +20,7 @@ from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 
 from ride_forces_analyzer import __version__
-from ride_forces_analyzer.runtime_paths import runtime_target
+from ride_forces_analyzer.runtime.paths import runtime_target
 from scripts.build_windows import APP_NAME, ROOT, digest
 
 

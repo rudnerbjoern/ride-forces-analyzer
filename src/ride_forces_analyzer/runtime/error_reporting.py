@@ -23,8 +23,8 @@ from types import TracebackType
 from typing import TextIO
 
 from ride_forces_analyzer import __version__
-from ride_forces_analyzer.cpu_resources import detect_cpu_resources
-from ride_forces_analyzer.runtime_paths import data_directory
+from ride_forces_analyzer.runtime.cpu_resources import detect_cpu_resources
+from ride_forces_analyzer.runtime.paths import data_directory
 
 _LOGGER = logging.getLogger("ride_forces_analyzer.errors")
 _stream: TextIO | None = None

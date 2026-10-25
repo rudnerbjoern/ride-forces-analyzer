@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words Pixmap
 
 from ride_forces_analyzer.i18n import tr
-from ride_forces_analyzer.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_reporting import record_error
 from .translation import bind
 
 from threading import Event
@@ -28,8 +28,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ride_forces_analyzer.gps_overview import GpsOverview
-from ride_forces_analyzer.map_background import (
+from ride_forces_analyzer.gps.overview import GpsOverview
+from ride_forces_analyzer.gps.map_background import (
     MapBackground,
     MapError,
     MapRequest,

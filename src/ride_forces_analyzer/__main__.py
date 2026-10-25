@@ -32,14 +32,14 @@ def main(
     Returns:
         Process exit status; zero indicates successful completion.
     """
-    from ride_forces_analyzer.error_reporting import initialize_error_reporting
+    from ride_forces_analyzer.runtime.error_reporting import initialize_error_reporting
 
     initialize_error_reporting()
     from ride_forces_analyzer.config import AppSettings
     from PySide6.QtCore import QThreadPool
     from ride_forces_analyzer.ui.application import RecordingApplication
 
-    from ride_forces_analyzer.instance import InstanceBroker, OpenRequest
+    from ride_forces_analyzer.runtime.instance import InstanceBroker, OpenRequest
 
     settings = settings if settings is not None else AppSettings()
     application = RecordingApplication(sys.argv)

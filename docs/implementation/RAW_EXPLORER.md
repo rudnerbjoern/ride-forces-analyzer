@@ -195,7 +195,7 @@ fallback) and System appearance. `AppSettings` can explicitly override language.
 - **Load map background** explicitly requests only the currently visible OSM area;
   no startup, resize, prefetch or offline-download requests. The static background
   sits behind the route with visible linked © OpenStreetMap contributors attribution.
-- `map_background` selects one zoom (0–19) for the viewport's physical pixel size,
+- `gps.map_background` selects one zoom (0–19) for the viewport's physical pixel size,
   including display scaling, capped at 2048 pixels per image dimension and at most
   64 intersecting 256-pixel tiles. Raster scaling uses smooth transformation;
   resizing an existing image adds no map detail until explicitly reloaded.

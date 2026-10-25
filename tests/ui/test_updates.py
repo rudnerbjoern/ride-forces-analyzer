@@ -10,7 +10,7 @@ from ride_forces_analyzer.ui import updates as ui_updates
 from ride_forces_analyzer.ui.about import AboutDialog
 from ride_forces_analyzer.ui.preferences import SettingsDialog
 from ride_forces_analyzer.ui.window import ExplorerWindow
-from ride_forces_analyzer.updates import AvailableRelease, REPOSITORY_URL
+from ride_forces_analyzer.runtime.updates import AvailableRelease, REPOSITORY_URL
 from tests.ui.helpers import wait_until
 
 

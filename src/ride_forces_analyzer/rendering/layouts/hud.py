@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-from ride_forces_analyzer.airtime_colors import VERTICAL_CONTEXT_COLORS
+from ride_forces_analyzer.rendering.airtime_colors import VERTICAL_CONTEXT_COLORS
 from ..peaks import PeakEnvelope
 from .common import Drawing
 from .contracts import ExportLayout, VideoAspect, LayoutPlugin, LayoutPosition, LayoutPositions

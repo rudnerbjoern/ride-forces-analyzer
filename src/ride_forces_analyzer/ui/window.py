@@ -75,7 +75,7 @@ from ride_forces_analyzer.explorer import ExplorerData, failure_text
 from ride_forces_analyzer.importers import ImportFailure
 from ride_forces_analyzer.playback import SamplePlayback
 
-from ride_forces_analyzer.gps_overview import prepare_gps_overview
+from ride_forces_analyzer.gps.overview import prepare_gps_overview
 
 from .chrome import app_icon
 from .about import AboutDialog

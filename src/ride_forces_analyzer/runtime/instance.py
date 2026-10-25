@@ -16,7 +16,7 @@ from pydantic import BaseModel, ValidationError
 from PySide6.QtCore import QLockFile, QObject, QThread, QTimer, Signal
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 
-from ride_forces_analyzer.runtime_paths import data_directory
+from ride_forces_analyzer.runtime.paths import data_directory
 
 
 class OpenRequest(BaseModel, frozen=True, strict=True, extra="forbid"):

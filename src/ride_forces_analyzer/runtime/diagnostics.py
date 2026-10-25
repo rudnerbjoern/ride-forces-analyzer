@@ -10,7 +10,7 @@ import sys
 from PySide6.QtCore import qVersion
 
 from ride_forces_analyzer import __version__
-from ride_forces_analyzer.cpu_resources import detect_cpu_resources
+from ride_forces_analyzer.runtime.cpu_resources import detect_cpu_resources
 from ride_forces_analyzer.rendering.encoding import encoder_environment, find_ffmpeg
 
 

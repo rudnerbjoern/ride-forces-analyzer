@@ -19,7 +19,7 @@ def test_render_jobs_survive_restart_and_fit_the_current_computer(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from ride_forces_analyzer import cpu_resources
+    from ride_forces_analyzer.runtime import cpu_resources
 
     monkeypatch.setattr(cpu_resources, "render_job_limit", lambda: 24)
     path = tmp_path / "preferences.sqlite3"

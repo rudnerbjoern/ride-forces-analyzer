@@ -12,8 +12,8 @@ from PySide6.QtCore import QBuffer, QIODevice, Qt
 from PySide6.QtGui import QImage, QImageWriter
 import pytest
 
-from ride_forces_analyzer import map_background as maps
-from ride_forces_analyzer.gps_overview import GpsOverview
+from ride_forces_analyzer.gps import map_background as maps
+from ride_forces_analyzer.gps.overview import GpsOverview
 from ride_forces_analyzer.storage import map_tiles
 from ride_forces_analyzer.storage.map_tiles import TileCache, TileEntry
 

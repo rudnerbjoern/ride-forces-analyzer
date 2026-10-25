@@ -15,7 +15,7 @@ from urllib.parse import quote, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from http.client import HTTPMessage
 from typing import IO, cast
-from .runtime_paths import runtime_target
+from .paths import runtime_target
 
 REPOSITORY_URL = "https://github.com/rudnerbjoern/ride-forces-analyzer"
 RELEASES_API = "https://api.github.com/repos/rudnerbjoern/ride-forces-analyzer/releases"

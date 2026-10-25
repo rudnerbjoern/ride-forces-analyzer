@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 import sys
 from PySide6.QtCore import QCoreApplication, QTimer
-from ride_forces_analyzer import instance
+from ride_forces_analyzer.runtime import instance
 directory = Path(sys.argv[1])
 instance.data_directory = lambda: directory
 app = QCoreApplication([])

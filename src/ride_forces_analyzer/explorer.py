@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING
 from math import ceil, floor, isclose, isfinite
 from pathlib import Path
 
-from ride_forces_analyzer.time_format import format_sample_time
-from ride_forces_analyzer.force_extrema import SelectionExtrema, calculate_extrema
+from ride_forces_analyzer.formatting.time import format_sample_time
+from ride_forces_analyzer.analysis.extrema import SelectionExtrema, calculate_extrema
 from ride_forces_analyzer.domain import RecordingFormat, SourceNumber
 from ride_forces_analyzer.importers import ImportFailure, ImportSuccess, import_forces
 

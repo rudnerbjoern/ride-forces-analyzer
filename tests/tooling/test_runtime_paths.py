@@ -7,7 +7,7 @@ import os
 
 import pytest
 
-from ride_forces_analyzer import runtime_paths
+from ride_forces_analyzer.runtime import paths as runtime_paths
 from ride_forces_analyzer.storage.exports import default_database_path
 from ride_forces_analyzer.rendering import encoding
 

@@ -598,8 +598,9 @@ a separate contract.
 
 ## Selected-range extrema
 
-API: `ride_forces_analyzer.force_extrema.calculate_extrema(source, first, last, *, forces=None, calculation_time=None)`.
-Pure typed API outside the analysis package; raw use needs neither Qt nor NumPy.
+API: `ride_forces_analyzer.analysis.extrema.calculate_extrema(source, first, last, *, forces=None, calculation_time=None)`.
+Pure typed API; raw use needs neither Qt nor NumPy. The analysis package loads
+its public model exports on demand, preserving raw-only explorer operation.
 
 | Input / result          | Contract                                                                                                                                                                                    |
 | :---------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

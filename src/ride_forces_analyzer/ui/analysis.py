@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass, replace
 from collections.abc import Callable
-from ride_forces_analyzer.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_reporting import record_error
 
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, Qt, Signal, Slot
 

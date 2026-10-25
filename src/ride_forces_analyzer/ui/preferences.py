@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from ride_forces_analyzer.i18n import LANGUAGE_CHOICES, LANGUAGES, Language, tr
-from ride_forces_analyzer.cpu_resources import render_job_limit
+from ride_forces_analyzer.runtime.cpu_resources import render_job_limit
 from ride_forces_analyzer.rendering.model import EXPORT_FRAME_RATES
 from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 from ride_forces_analyzer.storage.map_tiles import TileCache

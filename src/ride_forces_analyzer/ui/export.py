@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 from ride_forces_analyzer.i18n import LANGUAGE_CHOICES, LANGUAGES, get_language, tr
-from ride_forces_analyzer.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_reporting import record_error
 from .translation import bind, items
 
 # cspell:words pixmap Deutsch

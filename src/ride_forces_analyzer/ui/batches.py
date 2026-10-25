@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 from ride_forces_analyzer.i18n import tr
-from ride_forces_analyzer.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_reporting import record_error
 from .translation import bind, items, headers
 
 from pathlib import Path

@@ -490,7 +490,7 @@ class Preferences:
         Returns:
             Saved renderer count fitted to the local CPU limit.
         """
-        from ride_forces_analyzer.cpu_resources import effective_render_jobs
+        from ride_forces_analyzer.runtime.cpu_resources import effective_render_jobs
 
         value = self._read("render_jobs")
         try:
@@ -507,7 +507,7 @@ class Preferences:
         Returns:
             None.
         """
-        from ride_forces_analyzer.cpu_resources import effective_render_jobs
+        from ride_forces_analyzer.runtime.cpu_resources import effective_render_jobs
 
         self._write("render_jobs", str(effective_render_jobs(value)))
 
