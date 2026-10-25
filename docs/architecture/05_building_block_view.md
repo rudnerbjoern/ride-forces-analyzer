@@ -97,7 +97,11 @@ unit/frame declarations; they do not certify physical sensor semantics.
 
 ## Presentation and application services
 
-`ExplorerData` formats shared snapshots, metadata, clocks, context and extrema.
+The `explorer` package preserves its public imports while separating presentation
+state (`model`), text/HTML (`text`), inclusive time/sample selections (`selection`)
+and import/analysis composition (`loading`). `ExplorerData` delegates presentation
+and selection work without repeating scientific preparation. Loading reuses the
+existing import and analysis services; the raw path remains NumPy-independent.
 Cursor, selection, viewport and curve visibility are view state.
 `SamplePlayback` maps monotonic time to source samples without recalculating analysis.
 

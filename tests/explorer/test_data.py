@@ -253,7 +253,8 @@ sys.meta_path.insert(0, NoNumPy())
 import ride_forces_analyzer.explorer as explorer
 from ride_forces_analyzer.importers import ImportSuccess, import_forces
 assert 'numpy' not in sys.modules
-explorer.find_spec = lambda name: None
+from ride_forces_analyzer.explorer import loading as explorer_loading
+explorer_loading.find_spec = lambda name: None
 source = import_forces(next(Path('tests/fixtures/real').glob('Manta-*.forces')))
 assert isinstance(source, ImportSuccess)
 view = explorer.present_recording(source)

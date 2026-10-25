@@ -100,7 +100,7 @@ def test_declared_diagnostics_and_literal_ui_templates_have_translations() -> No
     for path in [
         *(root / "ui").glob("*.py"),
         *(root / "rendering").glob("*.py"),
-        root / "explorer.py",
+        *(root / "explorer").glob("*.py"),
     ]:
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             if isinstance(node, ast.Call) and node.args:
