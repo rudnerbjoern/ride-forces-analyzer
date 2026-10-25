@@ -6,6 +6,8 @@
 
 The module and frozen entry points initialize local error reporting before UI
 imports. Settings are validated before creating recording windows.
+`RecordingApplication` selects Qt dialogs before constructing `QApplication`, so
+file-open, save and folder selection share the application palette and stylesheet.
 `InstanceBroker` acquires local process ownership or forwards the optional file
 path and `--new-window` request to the existing owner.
 
