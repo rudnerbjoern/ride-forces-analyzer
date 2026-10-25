@@ -13,6 +13,14 @@
 
 ## Public model shape
 
+`analysis.models` retains the shared public imports. Its implementation groups
+[sample buffers](../../src/ride_forces_analyzer/analysis/models/samples.py),
+[measurement channels](../../src/ride_forces_analyzer/analysis/models/channels.py),
+[profiles](../../src/ride_forces_analyzer/analysis/models/profiles.py) and
+[results with diagnostics/provenance](../../src/ride_forces_analyzer/analysis/models/results.py).
+Each model keeps its runtime validation; the package initializer explicitly exports
+the existing public names.
+
 | Model                | Contract                                                                                                                  |
 | :------------------- | :------------------------------------------------------------------------------------------------------------------------ |
 | `AnalysisProfile`    | Name/schema, frozen scalar configuration, policy/assumption references, explicit provisional permission                   |

@@ -66,6 +66,10 @@ and [domain models](../development/CANONICAL_MODELS.md) define exact contracts.
 
 ## Analysis boundary
 
+`analysis.models` exposes immutable base contracts through explicit package exports.
+Its modules separate sample buffers, measurement channels, profiles and results;
+model construction retains validation, ownership and scientific-evidence checks.
+
 `analysis.recording.RecordingAnalysis` binds the complete import to immutable source,
 time, calibration, projection, smoothing, orientation, context and event stages.
 `projection`, `smoothing`, `orientation`, `airtime`, `events` and `calibration`
