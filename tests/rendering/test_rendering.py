@@ -376,7 +376,9 @@ def test_compact_profiles_preserve_alpha_color_and_force_scales(
     compact = create_renderer(timeline)
     assert isinstance(compact, ChartRenderer)
     for row, channel in enumerate(timeline.channels[:3]):
-        assert {-1.0, 0.0, 1.0} <= set(channel.ticks)
+        expected_ticks = {channel.reference} if row == 0 else {-1.0, 0.0, 1.0}
+        assert expected_ticks <= set(channel.ticks)
+        assert all(channel.low <= tick <= channel.high for tick in channel.ticks)
         assert compact.value_y(channel, 1, row) < compact.value_y(channel, 0, row)
         inverted = replace(channel, inverted=True)
         assert compact.value_y(inverted, 1, row) > compact.value_y(inverted, 0, row)
@@ -409,7 +411,7 @@ def test_vertical_force_direction_and_manual_override(
         elif layout == ExportLayout.ORBIT:
             assert isinstance(renderer.renderer, OrbitRenderer)
             ys = [sin(radians(renderer.renderer.orbit_angle(value))) for value in (-1, 0, 1)]
-            assert renderer.renderer.orbit_angle(0) == 180
+            assert renderer.renderer.orbit_angle(1) == 180
         else:
             chart = renderer.renderer
             assert isinstance(chart, (ChartRenderer, ColumnRenderer))
@@ -517,18 +519,20 @@ def test_orbit_signed_arcs_paint_physical_directions(manta: ExplorerData, row: i
     assert manta.analysis is not None
     timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.ORBIT), 3600, 3601)
     for value in (-1.0, 1.0):
+        reference = timeline.channels[row].reference
         channels = tuple(
-            replace(channel, values=(value,) * manta.count, low=-1.05, high=1.05)
+            replace(channel, values=(reference + value,) * manta.count, low=-1.05, high=1.05)
             if index == row
             else channel
             for index, channel in enumerate(timeline.channels)
         )
         renderer = OrbitRenderer(replace(timeline, channels=channels))
         image = renderer.render_position(3600)
-        radius = 192 if row == 1 else 282
+        # Probe inside the force stroke, below the scale tick marks.
+        radius = 192 if row == 1 else 275
 
         def pixel(v: float) -> tuple[int, int]:
-            angle = radians(renderer.orbit_angle(v, row))
+            angle = radians(renderer.orbit_angle(reference + v, row))
             return round(400 + radius * cos(angle)), round(400 + radius * sin(angle))
 
         color = (
@@ -605,7 +609,7 @@ def test_orbit_force_stroke_thickens_inward(
     assert manta.analysis is not None
     timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.ORBIT), 3600, 3601)
     channels = tuple(
-        replace(channel, values=(1.0,) * manta.count, low=-1.05, high=1.05)
+        replace(channel, values=(channel.reference + 1.0,) * manta.count, low=-1.05, high=1.05)
         if index == row
         else channel
         for index, channel in enumerate(timeline.channels)

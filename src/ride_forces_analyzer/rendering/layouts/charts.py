@@ -171,7 +171,9 @@ class ChartRenderer(Drawing):
                     px = lateral_x(channel, tick, box[0], box[2])
                     draw.line(
                         (px, box[1], px, box[3]),
-                        fill=(self.zero_grid_color if tick == 0 else self.grid_color),
+                        fill=(
+                            self.zero_grid_color if tick == channel.reference else self.grid_color
+                        ),
                         width=self.rule_width,
                     )
                     self._text(
@@ -186,7 +188,7 @@ class ChartRenderer(Drawing):
                 py = self.value_y(channel, tick, row)
                 draw.line(
                     (box[0], py, box[2], py),
-                    fill=(self.zero_grid_color if tick == 0 else self.grid_color),
+                    fill=(self.zero_grid_color if tick == channel.reference else self.grid_color),
                     width=self.rule_width,
                 )
                 self._text(

@@ -12,6 +12,7 @@ from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts.hud import (
+    BASELINE_COLOR,
     CYAN,
     GREEN,
     HudRenderer,
@@ -39,6 +40,45 @@ def seated() -> ExplorerData:
     data = load_recording(next(REAL_FIXTURE_DIRECTORY.glob("Taron-*.forces")))
     assert isinstance(data, ExplorerData)
     return data
+
+
+@pytest.mark.parametrize("aspect", list(VideoAspect))
+@pytest.mark.parametrize("window_seconds", [30.0, 12.5])
+def test_history_time_axis_labels_five_seconds_and_ticks_each_second(
+    manta: ExplorerData,
+    aspect: VideoAspect,
+    window_seconds: float,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert manta.analysis is not None
+    timeline = prepare_export(
+        manta.analysis,
+        ExportSettings(layout=ExportLayout.HUD, aspect=aspect, window_seconds=window_seconds),
+        3600,
+        3699,
+    )
+    labels: set[str] = set()
+
+    def record_text(
+        _draw: ImageDraw.ImageDraw,
+        _xy: tuple[float, float],
+        text: str,
+        **_kwargs: Any,
+    ) -> None:
+        if text.endswith(" s"):
+            labels.add(text)
+
+    monkeypatch.setattr(ImageDraw.ImageDraw, "text", record_text)
+    renderer = HudRenderer(timeline)
+    expected = range(-15, 16, 5) if window_seconds == 30 else range(-5, 6, 5)
+    assert labels == {f"{seconds} s" for seconds in expected}
+    bottom = renderer.geometry.history_top + 3 * renderer.geometry.history_row
+    white = (*bytes.fromhex(WHITE[1:]), 255)
+    for seconds in range(-int(window_seconds / 2), int(window_seconds / 2) + 1):
+        fraction = 0.5 + seconds / window_seconds
+        x, _ = renderer.history_point(0, 0, fraction)
+        assert renderer.base.getpixel((int(x), bottom + 4)) == white
+        assert (renderer.base.getpixel((int(x), bottom + 9)) == white) == (seconds % 5 == 0)
 
 
 @pytest.mark.parametrize("aspect", list(VideoAspect))
@@ -77,17 +117,17 @@ def test_detailed_scales_and_signed_directions(
 @pytest.mark.parametrize(
     ("peak", "expected"),
     [
-        (None, 1.5),
-        (0.0, 1.5),
-        (1.49, 1.5),
-        (1.5, 1.5),
-        (-1.5, 1.5),
-        (1.50001, 2.0),
-        (-2.1, 2.5),
-        (3.344, 4.0),
+        (None, 1.0),
+        (0.0, 1.0),
+        (0.99, 1.0),
+        (1.0, 1.0),
+        (-1.0, 1.0),
+        (1.00001, 1.25),
+        (-2.1, 2.25),
+        (3.344, 3.5),
     ],
 )
-def test_right_scale_fits_actual_selected_peaks_with_a_one_point_five_g_minimum(
+def test_right_scale_fits_actual_selected_peaks_in_quarter_g_steps_with_a_one_g_minimum(
     manta: ExplorerData,
     aspect: VideoAspect,
     peak: float | None,
@@ -122,21 +162,22 @@ def test_right_scale_fits_actual_selected_peaks_with_a_one_point_five_g_minimum(
 @pytest.mark.parametrize(
     ("peak", "expected"),
     [
-        (None, 2.0),
-        (1.99, 2.0),
-        (2.0, 2.0),
-        (-2.05, 2.5),
-        (2.5, 2.5),
-        (2.50001, 3.0),
-        (3.01, 3.5),
-        (1000.01, 1000.5),
+        (None, 1.25),
+        (1.24999, 1.25),
+        (-1.25, 1.25),
+        (1.25001, 1.5),
+        (-1.50001, 1.75),
+        (1.75, 1.75),
+        (3.01, 3.25),
+        (1000.01, 1000.25),
     ],
 )
-def test_lateral_scale_fits_actual_peaks_in_fixed_half_g_steps(
+def test_lateral_scale_fits_actual_peaks_in_fixed_quarter_g_steps(
     manta: ExplorerData,
     aspect: VideoAspect,
     peak: float | None,
     expected: float,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     assert manta.analysis is not None
     timeline = prepare_export(
@@ -151,12 +192,25 @@ def test_lateral_scale_fits_actual_peaks_in_fixed_half_g_steps(
         high=9999.0,
         values=tuple(peak if 3600 <= index <= 3699 else 9999.0 for index in range(manta.count)),
     )
+    labels: list[str] = []
+
+    def record_text(
+        _draw: ImageDraw.ImageDraw,
+        _xy: tuple[float, float],
+        text: str,
+        **_kwargs: Any,
+    ) -> None:
+        labels.append(text)
+
+    monkeypatch.setattr(ImageDraw.ImageDraw, "text", record_text)
     renderer = HudRenderer(
         replace(timeline, channels=(timeline.channels[0], lateral, *timeline.channels[2:])),
     )
     low, high, step = renderer.scales[1]
     assert (low, high) == (-expected, expected)
     assert (high - low) / step <= 12
+    if aspect is VideoAspect.PORTRAIT:
+        assert {f"{-expected:+g}", f"{expected:+g}"} <= set(labels)
     if peak is not None:
         assert (
             renderer.geometry.lateral_left
@@ -166,7 +220,7 @@ def test_lateral_scale_fits_actual_peaks_in_fixed_half_g_steps(
     if peak == 3.01:
         for position in (3699, 3600):
             renderer.render_position(position)
-            assert renderer.scales[1][:2] == (-3.5, 3.5)
+            assert renderer.scales[1][:2] == (-3.25, 3.25)
 
 
 @pytest.mark.parametrize("aspect", list(VideoAspect))
@@ -349,12 +403,15 @@ def test_fullscreen_hud_has_open_center_and_is_independent_of_seek_order(
 def test_each_missing_force_hides_only_its_marker(manta: ExplorerData) -> None:
     assert manta.analysis is not None
     timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.HUD), 3600, 3601)
-    channels = tuple(replace(channel, values=(1.0,) * manta.count) for channel in timeline.channels)
+    channels = tuple(
+        replace(channel, values=(1.0 + channel.reference,) * manta.count)
+        for channel in timeline.channels
+    )
     complete = replace(timeline, channels=channels)
     renderer = HudRenderer(complete)
     g = renderer.geometry
     points = (
-        (g.left_axis + 9, round(renderer.vertical_y(1))),
+        (g.left_axis + 9, round(renderer.vertical_y(2))),
         (round(renderer.lateral_x(1)), g.lateral_y + 15),
         (g.right_axis - 9, round(renderer.longitudinal_y(1))),
     )
@@ -456,7 +513,7 @@ def _held_bar_point(renderer: HudRenderer, row: int, value: float) -> tuple[int,
 def _current_marker_points(renderer: HudRenderer) -> tuple[tuple[int, int], ...]:
     g = renderer.geometry
     return (
-        (g.left_axis + 14, round(renderer.vertical_y(0.25)) + 4),
+        (g.left_axis + 14, round(renderer.vertical_y(1.25)) + 4),
         (round(renderer.lateral_x(0.25)), g.lateral_y + 17),
         (g.right_axis - 14, round(renderer.longitudinal_y(0.25)) + 4),
     )
@@ -477,13 +534,20 @@ def test_scale_bars_hold_both_peaks_and_release_while_markers_stay_current(
     values = tuple(
         2.0 if index == 3600 else -1.0 if index == 3601 else 0.25 for index in range(manta.count)
     )
-    channels = tuple(replace(channel, values=values) for channel in timeline.channels[:3])
+    channels = tuple(
+        replace(channel, values=tuple(value + channel.reference for value in values))
+        for channel in timeline.channels[:3]
+    )
     renderer = HudRenderer(replace(timeline, channels=(*channels, timeline.channels[3])))
     snapshots = [renderer.render_position(position) for position in (3625, 3700, 3750)]
     assert renderer.render_position(3625).tobytes() == snapshots[0].tobytes()
     for row, colors in enumerate(((CYAN, CYAN), (YELLOW, YELLOW), (GREEN, RED))):
         positive, negative = [(*bytes.fromhex(color[1:]), 255) for color in colors]
-        a, b = _held_bar_point(renderer, row, 1.37), _held_bar_point(renderer, row, -0.67)
+        reference = renderer.references[row]
+        a, b = (
+            _held_bar_point(renderer, row, reference + 1.37),
+            _held_bar_point(renderer, row, reference - 0.67),
+        )
         assert snapshots[0].getpixel(a) == snapshots[1].getpixel(a) == positive
         assert snapshots[0].getpixel(b) == negative
         assert snapshots[1].getpixel(b) != negative
@@ -509,14 +573,20 @@ def test_scale_peak_bars_reset_at_missing_samples(
         None if index == 3650 else 2.0 if index == 3600 else -1.0 if index == 3601 else 0.25
         for index in range(manta.count)
     )
-    channels = tuple(replace(channel, values=values) for channel in timeline.channels[:3])
+    channels = tuple(
+        replace(
+            channel,
+            values=tuple(None if value is None else value + channel.reference for value in values),
+        )
+        for channel in timeline.channels[:3]
+    )
     renderer = HudRenderer(replace(timeline, channels=(*channels, timeline.channels[3])))
     renderer.render_position(3625)
     gap, after = renderer.render_position(3650), renderer.render_position(3651)
     for row, colors in enumerate(((CYAN, CYAN), (YELLOW, YELLOW), (GREEN, RED))):
         for value, color in zip((1.37, -0.67), colors):
             rgba = (*bytes.fromhex(color[1:]), 255)
-            point = _held_bar_point(renderer, row, value)
+            point = _held_bar_point(renderer, row, value + renderer.references[row])
             assert gap.getpixel(point) != rgba and after.getpixel(point) != rgba
     for point, color in zip(_current_marker_points(renderer), (CYAN, YELLOW, GREEN)):
         assert after.getpixel(point) == (*bytes.fromhex(color[1:]), 255)
@@ -602,7 +672,7 @@ def test_histories_fit_each_selected_channel_without_changing_instruments(
             values=tuple(
                 None
                 if index == 3602
-                else peak * (-1 if index % 2 else 1)
+                else channel.reference + peak * (-1 if index % 2 else 1)
                 if 3600 <= index <= 3699
                 else 999.0
                 for index in range(manta.count)
@@ -613,7 +683,17 @@ def test_histories_fit_each_selected_channel_without_changing_instruments(
     selected = replace(timeline, channels=(*channels, timeline.channels[3]))
     renderer = HudRenderer(selected)
     assert renderer.scales == instruments
-    assert renderer.history_scales == pytest.approx((0.3, 0.7, 0.1))
+    assert renderer.history_scales == pytest.approx((0.2, 0.6, 0.04))
+    assert renderer.vertical_history_bounds == pytest.approx((0.8, 1.2))
+    g = renderer.geometry
+    for row, peak in ((1, 0.6), (2, 0.04)):
+        center = g.history_top + (row + 0.5) * g.history_row
+        amplitude = g.history_row / 2 - 1
+        assert renderer.history_point(row, peak, 0.5)[1] == pytest.approx(center - amplitude)
+        assert renderer.history_point(row, -peak, 0.5)[1] == pytest.approx(center + amplitude)
+        assert renderer.history_point(row, peak / 2, 0.5)[1] == pytest.approx(
+            center - amplitude / 2,
+        )
     ranges = renderer.history_scales
     for position in (3699, 3600, 3650.5):
         renderer.render_position(position)
@@ -623,7 +703,8 @@ def test_histories_fit_each_selected_channel_without_changing_instruments(
     )
     assert shorter_window.history_scales == ranges
     including_outlier = HudRenderer(replace(selected, last=3700))
-    assert min(including_outlier.history_scales) > 999
+    assert including_outlier.vertical_history_bounds == pytest.approx((0.8, 999))
+    assert including_outlier.history_scales[1:] == (999, 999)
 
 
 def test_history_ranges_remain_usable_for_zero_missing_and_tiny_values(manta: ExplorerData) -> None:
@@ -634,11 +715,135 @@ def test_history_ranges_remain_usable_for_zero_missing_and_tiny_values(manta: Ex
         for channel, value in zip(timeline.channels[:3], (0.0, None, -0.01))
     )
     renderer = HudRenderer(replace(timeline, channels=(*channels, timeline.channels[3])))
-    assert renderer.history_scales == pytest.approx((0.1, 0.1, 0.1))
-    for row in range(3):
-        assert renderer.history_point(row, 0, 0.5)[1] == (
+    assert renderer.history_scales == pytest.approx((1.0, 1.0, 0.01))
+    assert renderer.vertical_history_bounds == (0, 1)
+    for row in (1, 2):
+        assert renderer.history_point(row, renderer.references[row], 0.5)[1] == (
             renderer.geometry.history_top + (row + 0.5) * renderer.geometry.history_row
         )
+    g = renderer.geometry
+    assert renderer.history_point(2, -0.01, 0.5)[1] == g.history_top + 3 * g.history_row - 1
+    zeros = HudRenderer(
+        replace(
+            timeline,
+            channels=tuple(
+                replace(channel, values=(0.0,) * manta.count) for channel in timeline.channels
+            ),
+        ),
+    )
+    assert zeros.history_scales[1:] == (1.0, 1.0)
+    for row in (1, 2):
+        assert zeros.history_point(row, 0, 0.5)[1] == g.history_top + (row + 0.5) * g.history_row
+
+
+@pytest.mark.parametrize("aspect", list(VideoAspect))
+@pytest.mark.parametrize("inverted", [True, False])
+@pytest.mark.parametrize("flying", [True, False])
+def test_vertical_history_fits_extrema_and_keeps_label_positions(
+    seated: ExplorerData,
+    manta: ExplorerData,
+    flying: bool,
+    aspect: VideoAspect,
+    inverted: bool,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    data = manta if flying else seated
+    assert data.analysis is not None
+    timeline = prepare_export(
+        data.analysis,
+        ExportSettings(
+            layout=ExportLayout.HUD,
+            aspect=aspect,
+            invert_vertical=inverted,
+        ),
+        3600,
+        3799,
+    )
+    values = tuple(
+        3.0 if index == 3600 else 0.4 if index == 3601 else 1.0 for index in range(data.count)
+    )
+    vertical = replace(timeline.channels[0], values=values)
+    labels: list[str] = []
+    label_positions: dict[str, tuple[float, float]] = {}
+    reference_lines: list[tuple[float, float, float, float]] = []
+    original_line = ImageDraw.ImageDraw.line
+
+    def record_line(draw: ImageDraw.ImageDraw, xy: Any, *args: Any, **kwargs: Any) -> None:
+        if kwargs.get("fill") == BASELINE_COLOR:
+            reference_lines.append(xy)
+        original_line(draw, xy, *args, **kwargs)
+
+    def record_text(
+        _draw: ImageDraw.ImageDraw,
+        _xy: tuple[float, float],
+        text: str,
+        **_kwargs: Any,
+    ) -> None:
+        labels.append(text)
+        label_positions[text] = _xy
+
+    monkeypatch.setattr(ImageDraw.ImageDraw, "text", record_text)
+    monkeypatch.setattr(ImageDraw.ImageDraw, "line", record_line)
+    renderer = HudRenderer(replace(timeline, channels=(vertical, *timeline.channels[1:])))
+    g = renderer.geometry
+    assert renderer.references == (1.0, 0.0, 0.0)
+    assert renderer.scales[0] == ((-4.0, 3.0, 1.0) if flying else (-1.5, 5.0, 1.0))
+    assert renderer.vertical_history_bounds == (0.4, 3)
+    upper, lower = g.history_top + 1, g.history_top + g.history_row - 1
+    assert renderer.history_point(0, 0.4, 0.5)[1] == (upper if inverted else lower)
+    assert renderer.history_point(0, 3, 0.5)[1] == (lower if inverted else upper)
+    center = renderer.history_point(0, 1, 0.5)[1]
+    expected = 0.6 / 2.6 if inverted else 2 / 2.6
+    assert center == pytest.approx(upper + expected * (lower - upper))
+    right = renderer.history_point(0, 1, 1)[0]
+    assert (g.history_left, center, right, center) in reference_lines
+    assert renderer.history_point(0, 0, 0.5)[1] - center == pytest.approx(
+        center - renderer.history_point(0, 2, 0.5)[1],
+    )
+    assert {"0", "+1", "1 g"} <= set(labels)
+    fixed_center = g.history_top + g.history_row / 2
+    assert label_positions["1 g"] == (g.history_left - 14, fixed_center)
+    assert label_positions["VERTICAL"] == (
+        40,
+        g.history_top - 10 if renderer.portrait else fixed_center,
+    )
+    if renderer.portrait:
+        sign = 1 if inverted else -1
+        assert label_positions["+0.4"] == (
+            g.history_left - 14,
+            fixed_center - sign * g.history_row * 0.32,
+        )
+        assert label_positions["+3.0"] == (
+            g.history_left - 14,
+            fixed_center + sign * g.history_row * 0.32,
+        )
+    white = (*bytes.fromhex(WHITE[1:]), 255)
+    assert renderer.base.getpixel((g.left_axis + 8, round(renderer.vertical_y(1)))) == white
+    before = renderer.render_position(3625)
+    assert "+1.0 g" in labels
+    cyan = (*bytes.fromhex(CYAN[1:]), 255)
+    for value in (2.37, 0.67):
+        assert before.getpixel(_held_bar_point(renderer, 0, value)) == cyan
+    assert renderer.peaks[0].at(3625, 1) == pytest.approx((3, 0.4))
+    renderer.render_position(3799)
+    assert renderer.render_position(3625).tobytes() == before.tobytes()
+    assert timeline.value_at(vertical, 3625) == 1.0
+
+    for value, bounds in ((1.0, (1, 1)), (None, (1, 1)), (0.0, (0, 1)), (2.0, (1, 2))):
+        current = HudRenderer(
+            replace(
+                timeline,
+                channels=(
+                    replace(vertical, values=(value,) * data.count),
+                    *timeline.channels[1:],
+                ),
+            ),
+        )
+        assert current.vertical_history_bounds == bounds
+        y = current.history_point(0, 1, 0.5)[1]
+        assert upper <= y <= lower
+        if bounds == (1, 1):
+            assert y == fixed_center
 
 
 def test_glow_and_shadow_have_soft_alpha_without_a_filled_panel() -> None:

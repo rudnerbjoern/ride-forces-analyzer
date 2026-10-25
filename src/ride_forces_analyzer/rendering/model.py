@@ -22,6 +22,7 @@ from ride_forces_analyzer.i18n import Language
 from .layouts.contracts import LayoutPosition
 from .layouts.contracts import ExportLayout as ExportLayout
 from .layouts.contracts import VideoAspect as VideoAspect
+from .scales import history_extent, lateral_scale, longitudinal_scale, selected_bounds
 
 
 class VideoOutput(StrEnum):
@@ -294,6 +295,15 @@ class ExportChannel:
     inverted: bool
 
     @property
+    def reference(self) -> float:
+        """Return the absolute neutral force level: 1 g vertically, zero otherwise.
+
+        Returns:
+            Neutral value in the channel's displayed units; original samples are unchanged.
+        """
+        return 1.0 if self.name == "Vertical" and self.unit == "g" else 0.0
+
+    @property
     def ticks(self) -> tuple[float, ...]:
         """Return readable scale ticks within the channel's fixed display range.
 
@@ -302,9 +312,26 @@ class ExportChannel:
         """
         if self.unit == "°":
             return (0.0, 90.0, 180.0)
+        if self.name in ("Lateral", "Longitudinal"):
+            scale = lateral_scale if self.name == "Lateral" else longitudinal_scale
+            _, _, step = scale(max(abs(self.low), abs(self.high)))
+            return tuple(
+                sorted(
+                    {self.low, self.high, 0.0}
+                    | {
+                        index * step
+                        for index in range(ceil(self.low / step), floor(self.high / step) + 1)
+                    },
+                ),
+            )
         if ceil(self.high) - floor(self.low) <= 12:
-            return tuple(float(i) for i in range(ceil(self.low), floor(self.high) + 1))
-        return tuple(sorted({self.low, -1.0, 0.0, 1.0, self.high}))
+            ticks = {float(i) for i in range(ceil(self.low), floor(self.high) + 1)}
+        else:
+            ticks = {self.low, -1.0, 0.0, 1.0, self.high}
+        if self.name == "Vertical":
+            ticks.update((self.low, self.high, self.reference))
+            ticks = {tick for tick in ticks if self.low <= tick <= self.high}
+        return tuple(sorted(ticks))
 
 
 @dataclass(frozen=True, slots=True)
@@ -440,8 +467,15 @@ def prepare_export(
     hints = ("Vertical force", "+ Right / − Left", "+ Acceleration / − Braking")
     for index, samples in enumerate(forces.channels):
         values = ExportValues(samples)
-        selected = tuple(value for value in values[first : last + 1] if value is not None)
-        low, high = min(-1.0, min(selected, default=-1.0)), max(1.0, max(selected, default=1.0))
+        reference = 1.0 if index == 0 else 0.0
+        low, high = selected_bounds(values, first, last, reference)
+        if index == 0:
+            extent = history_extent(max(abs(low - reference), abs(high - reference)))
+            low, high = reference - extent, reference + extent
+        elif index == 1:
+            low, high, _ = lateral_scale(max(abs(low), abs(high)))
+        else:
+            low, high, _ = longitudinal_scale(max(abs(low), abs(high)))
         channels.append(
             ExportChannel(
                 names[index],
@@ -449,8 +483,8 @@ def prepare_export(
                 colors[index],
                 hints[index],
                 values,
-                low * 1.05,
-                high * 1.05,
+                low,
+                high,
                 settings.invert_vertical
                 if index == 0
                 else settings.invert_lateral

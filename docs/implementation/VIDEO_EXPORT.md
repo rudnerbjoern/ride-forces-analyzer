@@ -115,6 +115,18 @@ encoding; presets and compact layout thumbnails remain directly accessible.
   FFmpeg and saved settings. Match the recording and editing timeline's frame rate.
 - Default interval uses effective start/end markers; current selection and entire
   recording are alternatives. Plot context outside the exported interval is blank.
+- All five layouts use a symmetric lateral instrument/chart scale starting at
+  ±1.25 g. The largest absolute valid value in the selected interval expands both
+  bounds to the next 0.25 g boundary, without extra padding. Ranges are fixed for
+  the entire export; endpoint labels retain quarter-g precision. HUD's separate
+  history curves retain their independently fitted ranges.
+- Longitudinal scales use the same symmetric quarter-g expansion with a ±1 g
+  minimum in all five layouts. Positive and negative peaks share the same extent;
+  for example, -1.01 g requires ±1.25 g and +1.26 g requires ±1.5 g.
+- All layouts use 1 g as the vertical display reference, including Flying. Numeric
+  values, source calibration and analysis remain absolute and unchanged. Vertical
+  history charts are symmetric around 1 g, with 5% headroom and a minimum ±0.1 g
+  deviation. Their reference line is highlighted; absolute endpoint labels are retained.
 - Replay labels retain sample-counter notation. Graphics omit Hz/fps; neither
   identifies the POV video's rate. Technical rates remain in settings/metadata/encoding.
 
@@ -179,35 +191,48 @@ encoding; presets and compact layout thumbnails remain directly accessible.
   medium and short tick marks respectively; wider ranges reduce tick density
   with an integer stride while preserving the exact endpoint marks.
 - Lateral and longitudinal instruments retain symmetric scales. Four minor ticks
-  separate major labels. Lateral uses at least ±2 g in both formats,
-  expanding to the next 0.5 g boundary from the largest absolute actual selected
-  peak (for example, 2.05 g → ±2.5 g), independently of major tick spacing.
+  separate major labels. Lateral uses at least ±1.25 g in both formats,
+  expanding both sides to the next 0.25 g boundary from the largest absolute actual selected
+  peak (for example, 1.26 g → ±1.5 g; 1.54 g → ±1.75 g), independently of major tick spacing.
   Longitudinal uses
-  ±1.5 g in both formats. Before frame generation, its actual valid selected
-  samples determine the largest absolute peak: only peaks exceeding 1.5 g expand
-  that scale outward. Padded chart bounds and samples outside the export interval
+  ±1 g in both formats. Before frame generation, its actual valid selected
+  samples determine the largest absolute peak: only peaks exceeding 1 g expand
+  that scale outward in 0.25 g steps. Padded chart bounds and samples outside the export interval
   do not affect instrument ranges. All ranges remain fixed for the
   entire export. Major tick
   spacing grows for wider ranges to retain readable density; values are never clipped.
 - Three thin, wide force histories share a centered time cursor aligned exactly
   with the lateral instrument's zero. Their left/right time spans have equal width
   around that line; baselines and time ticks use the same plot bounds. They use the
-  selected interval's independent per-channel scales. Each is symmetric around
-  zero, includes 5% headroom and rounds outward to 0.1 g (minimum ±0.1 g).
+  selected interval's independent per-channel scales. In every posture, vertical
+  history maps its selected minimum and maximum to the row boundaries, including
+  1 g in those bounds. Its 1 g reference line follows that linear mapping; equal
+  bounds remain centered. Text anchors stay fixed, including the vertical heading,
+  reference label and portrait endpoint labels. Lateral and longitudinal histories use
+  zero as their reference and each use their exact
+  largest absolute selected value as symmetric bounds, without padding, rounding
+  or a minimum force range. Their peaks reach the row boundary: ±31.5 native pixels
+  in landscape, ±47 pixels in portrait. Zero-only or missing channels stay on the
+  reference when drawn. Labels and readouts retain absolute g values.
   These ranges use valid selected samples, stay fixed during the entire export
   and do not change the large instrument scales. Curve heights therefore show
   variation within each channel, rather than equal g-per-pixel across channels.
   Histories use the
   selected time window. Selecting HUD in the assistant sets a 30-second window
   (15 seconds before/after the cursor), still editable; loaded presets retain their
-  saved window. Time advances left-to-right; vertical respects its inversion,
+  saved window. Time ticks appear every second, with labels every five seconds
+  (including `0 s`). Time advances left-to-right; vertical respects its inversion,
   lateral is positive-up, and longitudinal acceleration is above zero/braking below.
   Curves break at missing samples and omit context outside the export interval.
   Longitudinal segments change green/red exactly at their zero crossing.
 - Independent markers disappear for missing channels. Readouts use existing
   interpolation and prepared context; no speed, gears or vehicle attitude is invented.
-- Bright bars along all three instrument scales show independent positive/negative
-  held peaks: 1.5 seconds, then release toward zero at 1 g/s, as in G-Orbit.
+- Vertical instruments highlight 1 g as their neutral reference in every posture,
+  retaining 0 g, absolute values and the posture-dependent instrument bounds.
+- Bright bars along all three instrument scales hold peaks above/below their
+  reference: 1.5 seconds, then release toward the reference at 1 g/s. For
+  vertical this is 1 g, so unloading such as +0.4 g is held independently of higher
+  loading. Lateral and longitudinal channels retain zero as their reference.
   Larger peaks replace the held value immediately. Pointers, lateral dot and
   numeric readouts continue to show current values. Envelopes start at the first
   selected sample, reset at missing samples and use source time, independent of
@@ -224,8 +249,10 @@ encoding; presets and compact layout thumbnails remain directly accessible.
 ### G-Orbit
 
 - Independent signed concentric force arcs: vertical left, longitudinal right,
-  lateral upper inner semicircle. Vertical zero is at the left equator, signed
-  extremes bottom/top; numeric values sit inside arcs.
+  lateral upper inner semicircle. The vertical 1 g reference is at the left equator;
+  loading/unloading extend toward opposite ends, with absolute numbers inside arcs.
+  Vertical instrument bounds use the same Seated/Flying policy as HUD. Vertical
+  current arcs and held peaks start at 1 g; other force arcs retain zero.
 - Separate right orientation semicircle: measured-angle marker at 0° top, 90° right,
   180° bottom. No stretching/reconstructed attitude; missing tilt has no marker.
 - No replay footer. Square region with circular translucent background and fully

@@ -131,7 +131,11 @@ class ColumnRenderer:
             draw.rectangle(box, fill=PLOT_COLOR, outline=PLOT_OUTLINE_COLOR, width=RULE_WIDTH)
             for tick in channel.ticks:
                 py = self.value_y(channel, tick, row)
-                draw.line((box[0], py, box[2], py), fill=GRID_COLOR, width=RULE_WIDTH)
+                draw.line(
+                    (box[0], py, box[2], py),
+                    fill=SCALE_COLOR if row == 0 and tick == channel.reference else GRID_COLOR,
+                    width=RULE_WIDTH,
+                )
                 draw.text(
                     (box[0] - SCALE_LEFT_GAP, py),
                     f"{tick:g}{channel.unit}",
