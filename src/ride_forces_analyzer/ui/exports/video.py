@@ -4,14 +4,13 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-from ride_forces_analyzer.i18n import LANGUAGE_CHOICES, LANGUAGES, get_language, tr
+from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.runtime.error_reporting import record_error
 from ride_forces_analyzer.ui.presentation.translation import bind, items
 
 # cspell:words pixmap Deutsch
 
 from pathlib import Path
-from typing import cast
 from dataclasses import replace
 from functools import partial
 
@@ -21,19 +20,15 @@ from PySide6.QtCore import (
     Qt,
     Slot,
     QSize,
-    QTimer,
-    QSignalBlocker,
 )
 from PySide6.QtGui import QCloseEvent, QIcon
 from PySide6.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QDialog,
     QFileDialog,
     QFormLayout,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QProgressBar,
     QPushButton,
     QVBoxLayout,
@@ -41,9 +36,6 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QStackedWidget,
     QToolButton,
-    QSizePolicy,
-    QInputDialog,
-    QDoubleSpinBox,
 )
 
 from ride_forces_analyzer.explorer import ExplorerData
@@ -53,28 +45,22 @@ from ride_forces_analyzer.ui.exports.progress import show_export_progress
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.rendering.model import (
     VideoOutput,
-    VideoAspect,
-    EXPORT_FRAME_RATES,
-    StandardFrameRate,
-    ExportLayout,
-    ExportSettings,
     PROFILES,
     prepare_export,
     prepare_export_analysis,
 )
 from ride_forces_analyzer.rendering.preview import ExportPreview, PreviewBackground
-from ride_forces_analyzer.rendering.layouts import registry
-from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
-from ride_forces_analyzer.exports.batches import make_job
-from ride_forces_analyzer.storage.export_models import SavedPreset, make_preset
+from ride_forces_analyzer.storage.export_models import SavedPreset
 from ride_forces_analyzer.storage.exports import (
     ExportStore,
-    ExportStoreError,
     default_database_path,
 )
 
 
-from .workers import ExportWorker, PreviewWorker
+from .workers import ExportWorker
+from .form import ExportForm
+from .presets import ExportPresets
+from .preview_controller import PreviewController
 from .preview import PreviewView, preview_pixmap
 
 
@@ -83,46 +69,19 @@ class ExportDialog(QDialog):
 
     Attributes:
         analysis: Prepared recording-analysis snapshot used by this operation.
+        form: Export-input widget and retained layout placements.
+        presets: Preset persistence and batch-dialog component.
+        previews: Debounced preview-worker controller.
         data: Prepared view data, retained bytes or item payload owned by this object.
         first: First included source index or the control selecting that bound.
         last: Last included source index or the control selecting that bound.
         preferences: Local application preference access for this window or controller.
-        store: Local export-definition repository used by this view or service.
-        saved: Saved export presets available in this dialog.
-        batch_window: Open batch-export dialog, when present.
         current_sample: Exact source sample selected for the preview.
         worker: Current background worker, or None when no task is active.
-        preview_worker: Background worker preparing the preview images.
-        preview_result: Most recent accepted preview result.
-        preview_revision: Revision used to reject stale preview results.
-        preview_positions: Selected placement keyed by layout profile.
-        closing: Whether shutdown has started and late results must be ignored.
         step_label: Label displaying step label.
-        presets_widget: Container widget for presets widget.
-        preset_selector: Choice control for preset selector.
-        load_preset: Button for load preset.
-        save_preset: Button for save preset.
-        update_preset: Button for update preset.
-        queue: Button for queue.
-        manage_batches: Button for manage batches.
         profile_buttons: Layout-selection buttons keyed by profile.
         gallery: Container displaying the selectable layout previews.
         pages: Stacked pages for pages.
-        layout_profile: Choice control for layout profile.
-        position: Choice control for position.
-        aspect: Choice control for aspect.
-        overlay_language: Choice control for overlay language.
-        mode: Choice control for mode.
-        fps: Choice control for fps.
-        interval: Choice control for interval.
-        seconds: Numeric control for seconds.
-        smoothing: Choice control for smoothing.
-        flip_vertical: Checkbox controlling flip vertical.
-        flip_lateral: Checkbox controlling flip lateral.
-        gpu: Checkbox controlling gpu.
-        size_estimate: Label displaying size estimate.
-        size_note: Label displaying size note.
-        encoder: Text input for encoder.
         summary: Label displaying summary.
         review_fields: Value labels keyed by export-summary field.
         review_size_estimate: Label displaying review size estimate.
@@ -138,7 +97,6 @@ class ExportDialog(QDialog):
         start: Button for start.
         cancel: Button for cancel.
         controls: Controls enabled or disabled together during background processing.
-        preview_timer: Timer scheduling preview timer.
     """
 
     def __init__(
@@ -176,18 +134,24 @@ class ExportDialog(QDialog):
         self.analysis = data.analysis
         self.data, self.first, self.last = data, first, last
         self.preferences = Preferences()
-        self.store = store if store is not None else ExportStore(default_database_path())
-        self.saved: tuple[SavedPreset, ...] = ()
-        self.batch_window: QDialog | None = None
+        self.form = ExportForm(data, self.preferences, self)
+        self.presets = ExportPresets(
+            store if store is not None else ExportStore(default_database_path()),
+            self.form,
+            self.analysis,
+            first,
+            last,
+            self,
+        )
+        self.presets.selected.connect(self._load_preset)
+        self.presets.message.connect(self._preset_message)
+        self.previews = PreviewController(self)
+        self.previews.ready.connect(self._preview_ready)
+        self.previews.failed.connect(self._preview_failed)
         self.current_sample = (
             self.analysis.replay_origin if current_sample is None else current_sample
         )
         self.worker: ExportWorker | None = None
-        self.preview_worker: PreviewWorker | None = None
-        self.preview_result: ExportPreview | None = None
-        self.preview_revision = 0
-        self.preview_positions: dict[ExportLayout, LayoutPosition] = {}
-        self.closing = False
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         content_scroll = QScrollArea()
@@ -200,36 +164,7 @@ class ExportDialog(QDialog):
         self.step_label = bind(QLabel(), tr("1 · Set up export · {0}", data.title))
         self.step_label.setTextFormat(Qt.TextFormat.PlainText)
         layout.addWidget(self.step_label)
-        self.presets_widget = QWidget()
-        presets_layout = QVBoxLayout(self.presets_widget)
-        presets_layout.setContentsMargins(0, 0, 0, 0)
-        presets_row = QHBoxLayout()
-        presets_row.setContentsMargins(0, 0, 0, 0)
-        presets_row.addWidget(bind(QLabel(), tr("Saved preset")))
-        self.preset_selector = QComboBox()
-        presets_row.addWidget(self.preset_selector, 1)
-        self.load_preset = bind(QPushButton(), tr("Load"))
-        self.load_preset.clicked.connect(self._load_preset)
-        self.save_preset = bind(QPushButton(), tr("Save as…"))
-        self.save_preset.clicked.connect(self._save_preset)
-        self.update_preset = bind(QPushButton(), tr("Update selected"))
-        self.update_preset.clicked.connect(self._update_preset)
-        self.queue = bind(QPushButton(), tr("Add this export to batch…"))
-        self.queue.clicked.connect(self._queue)
-        self.manage_batches = bind(QPushButton(), tr("Saved batches…"))
-        self.manage_batches.clicked.connect(self._manage_batches)
-        presets_row.addWidget(self.load_preset)
-        presets_layout.addLayout(presets_row)
-        preset_actions = QHBoxLayout()
-        for preset_button in (
-            self.save_preset,
-            self.update_preset,
-            self.queue,
-            self.manage_batches,
-        ):
-            preset_actions.addWidget(preset_button)
-        presets_layout.addLayout(preset_actions)
-        layout.addWidget(self.presets_widget)
+        layout.addWidget(self.presets)
         self.profile_buttons: list[QToolButton] = []
         gallery = QScrollArea()
         self.gallery = gallery
@@ -251,112 +186,9 @@ class ExportDialog(QDialog):
         gallery.setWidget(strip)
         layout.addWidget(gallery)
         self.pages = QStackedWidget()
-        settings_page = QWidget()
-        settings_layout = QVBoxLayout(settings_page)
-        form = QFormLayout()
-        form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
-        section_font = self.font()
-        section_font.setBold(True)
-
-        def section(title: str) -> None:
-            label = bind(QLabel(), title)
-            label.setFont(section_font)
-            form.addRow(label)
-
-        section(tr("Export settings"))
-        self.layout_profile = QComboBox()
-        items(self.layout_profile, [tr(title) for _, title in PROFILES])
-        self.layout_profile.currentIndexChanged.connect(self._layout_changed)
-        layout_row = QHBoxLayout()
-        layout_row.addWidget(self.layout_profile, 1)
-        layout_row.addWidget(bind(QLabel(), tr("Position")))
-        self.position = QComboBox()
-        self.position.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-        layout_row.addWidget(self.position)
-        form.addRow(bind(QLabel(), tr("Layout profile")), layout_row)
-        self.aspect = QComboBox()
-        items(self.aspect, [tr("Landscape · 16:9"), tr("Portrait · 9:16")])
-        form.addRow(bind(QLabel(), tr("Video format")), self.aspect)
-        self.aspect.currentIndexChanged.connect(self._refresh_positions)
-        self._refresh_positions()
-        self.overlay_language = QComboBox()
-        items(self.overlay_language, [definition.name for definition in LANGUAGES.values()])
-        self.overlay_language.setCurrentIndex(LANGUAGE_CHOICES.index(get_language()))
-        form.addRow(bind(QLabel(), tr("Overlay language")), self.overlay_language)
-        self.mode = QComboBox()
-        items(
-            self.mode,
-            [tr("Transparent overlay · ProRes 4444 MOV"), tr("Opaque video · H.264 MP4")],
-        )
-        form.addRow(bind(QLabel(), tr("Output")), self.mode)
-        self.fps = QComboBox()
-        items(self.fps, [rate.label for rate in EXPORT_FRAME_RATES])
-        for index, rate in enumerate(EXPORT_FRAME_RATES):
-            self.fps.setItemData(index, rate.value)
-        self.fps.setCurrentText(self.preferences.export_fps().label)
-        form.addRow(bind(QLabel(), tr("Video frame rate")), self.fps)
-        self.interval = QComboBox()
-        items(
-            self.interval,
-            [tr("Start/end markers (default)"), tr("Current selection"), tr("Entire recording")],
-        )
-        form.addRow(bind(QLabel(), tr("Range")), self.interval)
-        section(tr("Force display"))
-        self.seconds = QDoubleSpinBox()
-        self.seconds.setDecimals(3)
-        self.seconds.setRange(1, 60)
-        self.seconds.setValue(12)
-        bind(self.seconds, " s", "suffix")
-        form.addRow(bind(QLabel(), tr("Visible time window")), self.seconds)
-        self.smoothing = QComboBox()
-        items(self.smoothing, [tr("{0} samples", count) for count in range(1, 52, 2)])
-        self.smoothing.setCurrentIndex(
-            data.smoothing_window // 2,
-        )
-        form.addRow(bind(QLabel(), tr("Smoothing")), self.smoothing)
-        self.flip_vertical = bind(
-            QCheckBox(),
-            tr("Positive values downward"),
-        )
-        bind(self.flip_vertical, tr("Positive values below zero, as in the reference"), "toolTip")
-        self.flip_vertical.setChecked(True)
-        form.addRow(bind(QLabel(), tr("Vertical")), self.flip_vertical)
-        self.flip_lateral = bind(QCheckBox(), tr("+ Right / − Left"))
-        self.flip_lateral.setChecked(False)
-        self.flip_lateral.setEnabled(False)
-        form.addRow(bind(QLabel(), tr("Lateral")), self.flip_lateral)
-        section(tr("Encoding"))
-        self.gpu = bind(QCheckBox(), tr("Use NVIDIA GPU"))
-        bind(self.gpu, tr("Use NVIDIA GPU when supported; CPU fallback otherwise"), "toolTip")
-        self.gpu.setChecked(True)
-        form.addRow(bind(QLabel(), tr("Acceleration")), self.gpu)
-        self.size_estimate = QLabel()
-        self.size_estimate.setWordWrap(True)
-        self.size_note = bind(
-            QLabel(),
-            tr(
-                "Rough planning range, not a guarantee. Actual size depends on motion, detail and CPU/GPU encoding.",
-            ),
-        )
-        self.size_note.setWordWrap(True)
-        self.encoder = QLineEdit()
-        try:
-            bind(self.encoder, str(find_ffmpeg()), "text")
-        except ValueError:
-            self.encoder.setPlaceholderText(tr("Choose installed FFmpeg executable"))
-        browse = bind(QPushButton(), tr("Browse…"))
-        browse.clicked.connect(self._browse)
-        encoder_row = QHBoxLayout()
-        encoder_row.addWidget(self.encoder)
-        encoder_row.addWidget(browse)
-        form.addRow("FFmpeg", encoder_row)
-        form.addRow(bind(QLabel(), tr("Estimated file size")), self.size_estimate)
-        form.addRow(self.size_note)
-        settings_layout.addLayout(form)
-        settings_layout.addStretch()
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setWidget(settings_page)
+        scroll.setWidget(self.form)
         self.pages.addWidget(scroll)
         review_page = QWidget()
         review_layout = QVBoxLayout(review_page)
@@ -427,7 +259,6 @@ class ExportDialog(QDialog):
         right.addWidget(self.preview_note)
         body.addLayout(right, 3)
         layout.addLayout(body, 1)
-        bind(self.smoothing, data.smoothing_text, "toolTip")
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.progress.setVisible(False)
@@ -466,114 +297,19 @@ class ExportDialog(QDialog):
         buttons.setContentsMargins(11, 0, 11, 11)
         outer.addLayout(buttons)
         self.controls = (
-            self.overlay_language,
-            self.aspect,
-            self.layout_profile,
-            self.position,
-            self.mode,
-            self.fps,
-            self.interval,
-            self.seconds,
-            self.flip_vertical,
-            self.flip_lateral,
-            self.encoder,
-            self.gpu,
-            browse,
+            *self.form.controls,
             self.background,
             *self.profile_buttons,
-            self.smoothing,
-            self.preset_selector,
-            self.load_preset,
-            self.save_preset,
-            self.update_preset,
-            self.queue,
-            self.manage_batches,
+            *self.presets.controls,
         )
-        self.preview_timer = QTimer(self)
-        self.preview_timer.setSingleShot(True)
-        self.preview_timer.setInterval(120)
-        self.preview_timer.timeout.connect(self._request_preview)
-        for combo in (
-            self.overlay_language,
-            self.layout_profile,
-            self.aspect,
-            self.position,
-            self.mode,
-            self.fps,
-            self.interval,
-            self.background,
-        ):
-            combo.currentIndexChanged.connect(self._schedule_preview)
-        self.seconds.valueChanged.connect(self._schedule_preview)
-        self.flip_vertical.toggled.connect(self._schedule_preview)
-        self.flip_lateral.toggled.connect(self._schedule_preview)
-        self.smoothing.currentIndexChanged.connect(self._smoothing_changed)
-        self._refresh_presets()
+        self.form.changed.connect(self._schedule_preview)
+        self.background.currentIndexChanged.connect(self._schedule_preview)
+        self.form.smoothing_changed.connect(self._smoothing_changed)
+        self.presets.refresh()
         self._schedule_preview()
 
-    def _refresh_presets(self, select: str | None = None) -> None:
-        try:
-            self.saved = self.store.presets()
-            self.preset_selector.clear()
-            items(self.preset_selector, [tr("Choose a saved preset…")])
-            items(self.preset_selector, [preset.name for preset in self.saved])
-            if select is not None:
-                self.preset_selector.setCurrentText(select)
-        except ExportStoreError as error:
-            record_error("Export configuration", error)
-            bind(self.status, tr(str(error)), "text")
-
-    def _preset(self, name: str) -> SavedPreset:
-        mode = ("markers", "selection", "entire")[self.interval.currentIndex()]
-        return make_preset(
-            name,
-            self._settings(),
-            self.smoothing.currentIndex() * 2 + 1,
-            "selection" if mode == "selection" else "entire" if mode == "entire" else "markers",
-            self.analysis.configuration,
-        )
-
-    @Slot()
-    def _save_preset(self) -> None:
-        name, accepted = QInputDialog.getText(self, tr("Save export preset"), tr("Preset name"))
-        if not accepted:
-            return
-        try:
-            preset = self._preset(name)
-            self.store.save_preset(preset)
-            self._refresh_presets(preset.name)
-            bind(self.status, tr("Saved preset: {0}", preset.name), "text")
-        except (ValueError, ExportStoreError) as error:
-            record_error("Export configuration", error)
-            bind(self.status, tr(str(error)), "text")
-
-    @Slot()
-    def _update_preset(self) -> None:
-        index = self.preset_selector.currentIndex() - 1
-        if not 0 <= index < len(self.saved):
-            bind(self.status, tr("Choose a saved preset to update"), "text")
-            return
-        try:
-            preset = self._preset(self.saved[index].name)
-            self.store.save_preset(preset, overwrite=True)
-            self._refresh_presets(preset.name)
-            bind(
-                self.status,
-                tr("Preset updated. Existing saved batch snapshots are unchanged."),
-                "text",
-            )
-        except (ValueError, ExportStoreError) as error:
-            record_error("Export configuration", error)
-            bind(self.status, tr(str(error)), "text")
-
-    @Slot()
-    def _load_preset(self) -> None:
-        index = self.preset_selector.currentIndex() - 1
-        if not 0 <= index < len(self.saved):
-            bind(self.status, tr("Choose a saved preset first"), "text")
-            return
-        preset = self.saved[index]
-        settings = preset.settings
+    @Slot(object)
+    def _load_preset(self, preset: SavedPreset) -> None:
         try:
             self.analysis = prepare_export_analysis(
                 self.analysis,
@@ -588,165 +324,51 @@ class ExportDialog(QDialog):
             record_error("Export configuration", error)
             bind(self.status, tr(str(error)), "text")
             return
-        self.overlay_language.setCurrentIndex(LANGUAGE_CHOICES.index(settings.language))
-        self.aspect.setCurrentIndex(0 if settings.aspect is VideoAspect.LANDSCAPE else 1)
-        self.layout_profile.setCurrentIndex(
-            next(i for i, (key, _) in enumerate(PROFILES) if key == settings.layout),
-        )
-        plugin = registry.PLUGINS[settings.layout]
-        positions = (
-            plugin.landscape if settings.aspect is VideoAspect.LANDSCAPE else plugin.portrait
-        )
-        self.position.setCurrentIndex(
-            self.position.findData((settings.position or positions.default).value),
-        )
-        self.mode.setCurrentIndex(0 if settings.output == VideoOutput.TRANSPARENT else 1)
-        if self.fps.findText(settings.fps_label) < 0:
-            self.fps.addItem(settings.fps_label, settings.fps)
-        self.fps.setCurrentText(settings.fps_label)
-        self.seconds.setValue(settings.window_seconds)
-        self.smoothing.setCurrentIndex(preset.smoothing_window // 2)
-        self.flip_vertical.setChecked(settings.invert_vertical)
-        self.flip_lateral.setChecked(False)
-        self.gpu.setChecked(settings.prefer_gpu)
-        self.interval.setCurrentIndex(("markers", "selection", "entire").index(preset.range_mode))
+        self.presets.set_analysis(self.analysis)
+        self.form.apply_preset(preset)
         self._schedule_preview()
         bind(self.status, tr("Loaded preset: {0}", preset.name), "text")
+
+    @Slot(object)
+    def _preset_message(self, message: str) -> None:
+        bind(self.status, message, "text")
 
     @Slot(int)
     def _smoothing_changed(self, index: int) -> None:
         self.data = self.data.with_smoothing(index * 2 + 1)
         assert self.data.analysis is not None
         self.analysis = self.data.analysis
-        bind(self.smoothing, self.data.smoothing_text, "toolTip")
+        self.presets.set_analysis(self.analysis)
+        bind(self.form.smoothing, self.data.smoothing_text, "toolTip")
         self._schedule_preview()
 
-    @Slot()
-    def _queue(self) -> None:
-        try:
-            names = tuple(batch.name for batch in self.store.batches())
-            name, accepted = QInputDialog.getItem(
-                self,
-                tr("Add to saved batch"),
-                tr("Choose an existing batch or enter a new name"),
-                names,
-                0,
-                True,
-            )
-            if not accepted:
-                return
-            preset_name = (
-                self.preset_selector.currentText()
-                if self.preset_selector.currentIndex() > 0
-                else self.layout_profile.currentText()
-            )
-            first, last = self._bounds()
-            job = make_job(self.analysis, self._preset(preset_name), first=first, last=last)
-            if name.strip() not in names:
-                name = self.store.create_batch(name).name
-            self.store.append_jobs(name, (job,))
-            bind(
-                self.status,
-                tr("Saved this recording/preset in batch: {0}. No video was rendered.", name),
-                "text",
-            )
-        except (ValueError, ExportStoreError) as error:
-            record_error("Export configuration", error)
-            bind(self.status, tr(str(error)), "text")
-
-    @Slot()
-    def _manage_batches(self) -> None:
-        from ride_forces_analyzer.ui.exports.batches import BatchDialog
-
-        if self.batch_window is not None and self.batch_window.isVisible():
-            self.batch_window.raise_()
-            return
-        self.batch_window = BatchDialog(self.store, self)
-        self.batch_window.show()
-
-    def _close_batches(self) -> bool:
-        if self.batch_window is not None and self.batch_window.isVisible():
-            self.batch_window.close()
-            return not self.batch_window.isVisible()
-        return True
-
     def _choose_profile(self, index: int, _checked: bool = False) -> None:
-        self.layout_profile.setCurrentIndex(index)
-
-    def _settings(self) -> ExportSettings:
-        rate = self.fps.currentData()
-        return ExportSettings(
-            language=LANGUAGE_CHOICES[self.overlay_language.currentIndex()],
-            aspect=VideoAspect.LANDSCAPE
-            if self.aspect.currentIndex() == 0
-            else VideoAspect.PORTRAIT,
-            fps=StandardFrameRate(rate) if isinstance(rate, str) else cast(int, rate),
-            window_seconds=float(self.seconds.value()),
-            output=VideoOutput.TRANSPARENT if self.mode.currentIndex() == 0 else VideoOutput.OPAQUE,
-            invert_vertical=self.flip_vertical.isChecked(),
-            invert_lateral=self.flip_lateral.isChecked(),
-            prefer_gpu=self.gpu.isChecked(),
-            layout=PROFILES[self.layout_profile.currentIndex()][0],
-            position=LayoutPosition(self.position.currentData()),
-        )
+        self.form.layout_profile.setCurrentIndex(index)
 
     def _bounds(self) -> tuple[int, int]:
-        return (self.analysis.ride_bounds, (self.first, self.last), (0, self.data.count - 1))[
-            self.interval.currentIndex()
-        ]
+        return self.form.bounds(self.analysis, (self.first, self.last))
 
     @Slot()
     def _schedule_preview(self) -> None:
-        settings = self._settings()
-        for key, plugin in registry.PLUGINS.items():
-            positions = (
-                plugin.landscape if settings.aspect is VideoAspect.LANDSCAPE else plugin.portrait
-            )
-            self.preview_positions[key] = positions.select(
-                settings.position,
-                self.preview_positions.get(key),
-            )
+        self.form.remember_positions()
         self._update_size_estimate()
-        self.preview_revision += 1
-        self.preview_result = None
-        self.next.setEnabled(False)
-        self.start.setEnabled(False)
-        bind(self.preview_note, tr("Updating all five previews…"), "text")
-        self.preview_timer.start()
-
-    @Slot()
-    def _request_preview(self) -> None:
-        if self.closing or self.preview_worker is not None or self.preview_result is not None:
-            return
-        self.preview_timer.stop()
         first, last = self._bounds()
-        worker = PreviewWorker(
-            self.preview_revision,
+        self.previews.schedule(
             self.analysis,
-            self._settings(),
+            self.form.settings(),
             first,
             last,
             self.current_sample,
             PreviewBackground(self.background.currentData()),
-            self.preview_positions,
+            self.form.positions,
         )
-        worker.signals.ready.connect(self._preview_ready)
-        worker.signals.failed.connect(self._preview_failed)
-        self.preview_worker = worker
-        QThreadPool.globalInstance().start(worker)
+        self.next.setEnabled(False)
+        self.start.setEnabled(False)
+        bind(self.preview_note, tr("Updating all five previews…"), "text")
 
-    @Slot(int, object)
-    def _preview_ready(self, revision: int, result: object) -> None:
-        self.preview_worker = None
-        if self.closing:
-            return
-        if revision != self.preview_revision:
-            self._request_preview()
-            return
-        if not isinstance(result, ExportPreview):
-            return
-        self.preview_result = result
-        selected = self.layout_profile.currentIndex()
+    @Slot(object)
+    def _preview_ready(self, result: ExportPreview) -> None:
+        selected = self.form.layout_profile.currentIndex()
         for index, profile in enumerate(result.profiles):
             self.profile_buttons[index].setIcon(QIcon(preview_pixmap(profile.image)))
             self.profile_buttons[index].setChecked(index == selected)
@@ -765,35 +387,29 @@ class ExportDialog(QDialog):
         self.start.setEnabled(self.worker is None)
         self._update_summary()
 
-    @Slot(int, str)
-    def _preview_failed(self, revision: int, message: str) -> None:
-        self.preview_worker = None
-        if self.closing:
-            return
-        if revision != self.preview_revision:
-            self._request_preview()
-            return
+    @Slot(str)
+    def _preview_failed(self, message: str) -> None:
         bind(self.preview_note, tr("Preview failed: {0}", message), "text")
 
     def _update_summary(self) -> None:
         self._update_size_estimate()
         first, last = self._bounds()
-        width, height = self._settings().dimensions
+        width, height = self.form.settings().dimensions
         values = {
-            "layout": self.layout_profile.currentText(),
-            "output": self.mode.currentText(),
+            "layout": self.form.layout_profile.currentText(),
+            "output": self.form.mode.currentText(),
             "resolution": f"{width}×{height}",
-            "fps": self.fps.currentText(),
+            "fps": self.form.fps.currentText(),
             "range": f"{self.data.replay_text(first)}–{self.data.replay_text(last)}",
             "samples": tr("{0:,}–{1:,} (inclusive)", first, last),
             "smoothing": self.data.smoothing_text,
-            "window": tr("{0} s", self.seconds.value()),
+            "window": tr("{0} s", self.form.seconds.value()),
         }
         for key, value in values.items():
             bind(self.review_fields[key], value)
 
     def _update_preview_caption(self) -> None:
-        result = self.preview_result
+        result = self.previews.result
         if result is None:
             return
         self.preview_note.setVisible(self.pages.currentIndex() == 0 or result.outside_range)
@@ -810,9 +426,13 @@ class ExportDialog(QDialog):
         from ride_forces_analyzer.rendering.size_estimate import estimate_size_bytes
 
         first, last = self._bounds()
-        low, high = estimate_size_bytes(self._settings(), last - first + 1, self.data.sample_rate)
+        low, high = estimate_size_bytes(
+            self.form.settings(),
+            last - first + 1,
+            self.data.sample_rate,
+        )
         bind(
-            self.size_estimate,
+            self.form.size_estimate,
             tr("{0:.0f}–{1:.0f} MiB", low / 2**20, high / 2**20),
         )
         bind(
@@ -830,17 +450,17 @@ class ExportDialog(QDialog):
             None.
         """
         super().changeEvent(event)
-        if event.type() == QEvent.Type.LocaleChange and hasattr(self, "preview_timer"):
+        if event.type() == QEvent.Type.LocaleChange and hasattr(self, "controls"):
             self._update_summary()
 
     @Slot()
     def _review(self) -> None:
-        if self.preview_result is None:
+        if self.previews.result is None:
             return
         self._update_summary()
         self.pages.setCurrentIndex(1)
         bind(self.step_label, tr("2 · Review export · {0}", self.data.title), "text")
-        for widget in (self.presets_widget, self.gallery):
+        for widget in (self.presets, self.gallery):
             widget.hide()
         self.pages.setMaximumWidth(420)
         self.preview_caption.setMinimumHeight(0)
@@ -852,7 +472,7 @@ class ExportDialog(QDialog):
     @Slot()
     def _back(self) -> None:
         self.pages.setCurrentIndex(0)
-        for widget in (self.presets_widget, self.gallery):
+        for widget in (self.presets, self.gallery):
             widget.show()
         self.pages.setMaximumWidth(500)
         self._update_preview_caption()
@@ -861,68 +481,21 @@ class ExportDialog(QDialog):
         self.next.setVisible(True)
         self.start.setVisible(False)
 
-    @Slot(int)
-    def _layout_changed(self, index: int) -> None:
-        self._refresh_positions()
-        if PROFILES[index][0] == ExportLayout.HUD:
-            self.seconds.setValue(30.0)
-        self.flip_vertical.setChecked(True)
-        self.flip_lateral.setChecked(False)
-        self.flip_vertical.setEnabled(True)
-        self.flip_lateral.setEnabled(False)
-
-    @Slot()
-    def _refresh_positions(self) -> None:
-        previous = self.position.currentData()
-        plugin = registry.PLUGINS[PROFILES[self.layout_profile.currentIndex()][0]]
-        positions = plugin.landscape if self.aspect.currentIndex() == 0 else plugin.portrait
-        labels = {
-            LayoutPosition.FULL_SCREEN: tr("Full screen"),
-            LayoutPosition.TOP: tr("Top"),
-            LayoutPosition.BOTTOM: tr("Bottom"),
-            LayoutPosition.LEFT: tr("Left"),
-            LayoutPosition.RIGHT: tr("Right"),
-            LayoutPosition.TOP_LEFT: tr("Top left"),
-            LayoutPosition.TOP_RIGHT: tr("Top right"),
-            LayoutPosition.BOTTOM_LEFT: tr("Bottom left"),
-            LayoutPosition.BOTTOM_RIGHT: tr("Bottom right"),
-        }
-        with QSignalBlocker(self.position):
-            self.position.clear()
-            items(self.position, [labels[position] for position in positions.regions])
-            for index, position in enumerate(positions.regions):
-                self.position.setItemData(index, position.value)
-            selected = positions.select(
-                LayoutPosition(previous) if previous is not None else None,
-                self.preview_positions.get(plugin.key),
-            )
-            self.position.setCurrentIndex(self.position.findData(selected.value))
-
-    @Slot()
-    def _browse(self) -> None:
-        configured = self.encoder.text().strip()
-        directory = ""
-        if configured:
-            candidate = Path(configured).expanduser()
-            directory = str((candidate if candidate.is_dir() else candidate.parent).resolve())
-        path, _ = QFileDialog.getOpenFileName(
-            self,
-            tr("Choose FFmpeg"),
-            directory,
-            tr("All files (*)"),
-        )
-        if path:
-            bind(self.encoder, path, "text")
-
     @Slot()
     def _start(self) -> None:
-        if self.worker is not None or self.pages.currentIndex() != 1 or self.preview_result is None:
+        if (
+            self.worker is not None
+            or self.pages.currentIndex() != 1
+            or self.previews.result is None
+        ):
             return
         try:
-            settings = self._settings()
+            settings = self.form.settings()
             first, last = self._bounds()
             timeline = prepare_export(self.analysis, settings, first, last)
-            encoder = find_ffmpeg(Path(self.encoder.text()) if self.encoder.text() else None)
+            encoder = find_ffmpeg(
+                Path(self.form.encoder.text()) if self.form.encoder.text() else None,
+            )
         except (ValueError, OSError) as error:
             record_error("Export preparation", error)
             bind(self.status, tr(str(error)), "text")
@@ -930,7 +503,7 @@ class ExportDialog(QDialog):
         suffix = ".mov" if settings.output == VideoOutput.TRANSPARENT else ".mp4"
         source_path = self.data.source.recording.source.provenance.path
         stem = source_path.stem if source_path is not None else "ride-forces"
-        name = f"{stem} - {self.layout_profile.currentText()}{suffix}"
+        name = f"{stem} - {self.form.layout_profile.currentText()}{suffix}"
         suggested = Path(self.preferences.export_directory()) / name
         filename, _ = QFileDialog.getSaveFileName(
             self,
@@ -978,8 +551,8 @@ class ExportDialog(QDialog):
         self.worker = None
         for control in self.controls:
             control.setEnabled(True)
-        self.flip_vertical.setEnabled(True)
-        self.flip_lateral.setEnabled(False)
+        self.form.flip_vertical.setEnabled(True)
+        self.form.flip_lateral.setEnabled(False)
         self.start.setEnabled(True)
         self.back.setEnabled(True)
         bind(self.cancel, tr("Close"), "text")
@@ -1003,7 +576,7 @@ class ExportDialog(QDialog):
         Returns:
             None.
         """
-        if not self._close_batches():
+        if not self.presets.close_batches():
             event.ignore()
             return
         if self.worker is not None:
@@ -1011,8 +584,7 @@ class ExportDialog(QDialog):
             bind(self.status, tr("Cancelling export; close after completion."), "text")
             event.ignore()
         else:
-            self.closing = True
-            self.preview_timer.stop()
+            self.previews.close()
             super().closeEvent(event)
 
     def reject(self) -> None:
@@ -1021,11 +593,10 @@ class ExportDialog(QDialog):
         Returns:
             None.
         """
-        if not self._close_batches():
+        if not self.presets.close_batches():
             return
         if self.worker is not None:
             self._cancel()
             return
-        self.closing = True
-        self.preview_timer.stop()
+        self.previews.close()
         super().reject()

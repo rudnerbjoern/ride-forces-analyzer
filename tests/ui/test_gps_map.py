@@ -45,8 +45,8 @@ def test_gps_map_requires_click_and_preserves_route_and_explorer_on_failure(
     assert not requests and dialog.map_item is None
     assert not dialog.attribution.isVisible()
     original = window.data
-    sample = window.slider.value()
-    bounds = (window.axis_x.min(), window.axis_x.max())
+    sample = window.navigation.slider.value()
+    bounds = (window.plot.axis_x.min(), window.plot.axis_x.max())
     route_items = tuple(dialog.view.scene().items())
     dialog.map_button.click()
     assert not dialog.map_button.isEnabled()
@@ -70,8 +70,8 @@ def test_gps_map_requires_click_and_preserves_route_and_explorer_on_failure(
     wait_until(lambda: dialog.worker is None)
     assert dialog.map_item is item and "unavailable" in dialog.map_status.text()
     assert dialog.map_button.isEnabled()
-    assert window.data is original and window.slider.value() == sample
-    assert (window.axis_x.min(), window.axis_x.max()) == bounds
+    assert window.data is original and window.navigation.slider.value() == sample
+    assert (window.plot.axis_x.min(), window.plot.axis_x.max()) == bounds
     window.set_ui_language(1)
     assert dialog.map_button.text() == "Kartenhintergrund laden"
 

@@ -114,8 +114,24 @@ The UI groups recording interactions in `ui.explorer`, export surfaces in
 `ui.exports`, auxiliary dialogs in `ui.dialogs` and shared Qt presentation in
 `ui.presentation`. `ui.application` composes the recording windows. Independent
 sample controls and chart gestures live in `ui.explorer.controls` and
-`ui.explorer.chart_view`. Export preview widgets and background jobs live in
-`ui.exports.preview` and `ui.exports.workers`; the video dialog owns their lifecycle.
+`ui.explorer.chart_view`. `ui.explorer.chart.ExplorerChart` owns curves, replaceable
+axes, replay/value labels, source markers, cursor, selection and vertical-context
+graphics. The window binds prepared snapshots and selections; navigation supplies
+cursor positions. The chart emits viewport and gesture notifications without
+referencing window controls.
+`ui.explorer.inspector.ExplorerInspector` owns selection/smoothing inputs and
+prepared metadata, diagnostics and extrema text; changes are reported through Qt
+signals. `ui.explorer.navigation.ExplorerNavigation` owns sample controls, force
+cards and timer transport for the existing `SamplePlayback` clock, including cursor
+and viewport following. The window composes these widgets, binds the same prepared
+snapshot to each component and coordinates import/analysis delivery.
+Export preview widgets and background jobs live in
+`ui.exports.preview` and `ui.exports.workers`. `ui.exports.form.ExportForm` owns
+export inputs and retained layout placements. `ui.exports.preview_controller` owns
+preview debounce, captured requests, worker revisions and stale-result rejection.
+`ui.exports.presets` owns saved-preset controls, persistence and the auxiliary batch
+dialog. `ui.exports.video` coordinates these components with review/start/cancellation;
+analysis changes for loaded recipes still use the existing preparation service.
 
 `RecordingApplication` owns windows and queued file-open requests.
 `InstanceBroker` owns local locking/IPC. Each recording window owns its analysis
@@ -153,7 +169,9 @@ after explicit overwrite confirmation.
 identifiers with stable text values `csv`, `json` and `analyzer_json`.
 `formatting.time.format_sample_time` supplies the common replay labels for explorer,
 serializers and layout renderers without importing presentation or analysis code.
-`ui.exports.data` captures input and transports progress/cancellation.
+`ui.exports.data_controller` owns destination suggestions, overwrite prompts and
+the source-bound data-export dialog lifetime. `ui.exports.data` transports the
+prepared export's progress/cancellation; serialization stays in `exports`.
 
 [CSV](../implementation/CSV_EXPORT.md) and [JSON](../implementation/JSON_EXPORT.md)
 define formats and lifecycle.
@@ -170,8 +188,8 @@ prepares deterministic source-time peak envelopes for HUD and G-Orbit.
 and fonts. Only the immutable timeline is shared. `encoding` probes backends,
 streams ordered region bytes and publishes completed output. `progress` defines
 immutable export status, phases and remaining-frame estimates shared by both
-export paths; Qt workers transport them to the dialogs. `ui.exports.video` owns
-assistant controls, debounced preview transport and cancellation.
+export paths; Qt workers transport them to the dialogs. `ui.exports.video`
+coordinates assistant pages and the video-export lifecycle.
 
 `storage.export_models` defines immutable presets/jobs; `storage.exports` owns
 SQLite schema and transactions. `exports.batches` imports and checks each

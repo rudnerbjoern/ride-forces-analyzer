@@ -77,9 +77,15 @@ def test_native_captions_follow_theme_for_all_application_windows(
     def assert_shared_palette() -> None:
         assert view is not None
         assert view.palette().base().color() == QColor(window.theme.panel)
-        assert export.seconds.palette().base().color() == window.position.palette().base().color()
-        assert batches.table.palette().base().color() == window.position.palette().base().color()
-        assert export.preview_result is preview
+        assert (
+            export.form.seconds.palette().base().color()
+            == window.navigation.position.palette().base().color()
+        )
+        assert (
+            batches.table.palette().base().color()
+            == window.navigation.position.palette().base().color()
+        )
+        assert export.previews.result is preview
         scene = view.scene()
         assert scene is not None and scene.backgroundBrush().style().value == 0
 
@@ -87,8 +93,8 @@ def test_native_captions_follow_theme_for_all_application_windows(
         window.set_appearance(0)
         for dialog in dialogs:
             dialog.show()
-        wait_until(lambda: export.preview_result is not None and export.preview_worker is None)
-        preview = export.preview_result
+        wait_until(lambda: export.previews.result is not None and export.previews.worker is None)
+        preview = export.previews.result
         QApplication.processEvents()
         for widget in (window, *dialogs):
             assert is_dark(widget), type(widget).__name__

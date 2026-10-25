@@ -6,11 +6,16 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # cspell:words Pixmap
 
+from ride_forces_analyzer.ui.presentation.translation import bind
+
 from PySide6.QtCore import QElapsedTimer, Qt
 from PySide6.QtGui import (
     QMouseEvent,
 )
 from PySide6.QtWidgets import (
+    QFrame,
+    QLabel,
+    QVBoxLayout,
     QSlider,
     QStyle,
     QStyleOptionSpinBox,
@@ -112,3 +117,24 @@ class SelectionSpinBox(QSpinBox):
             else 1
         )
         super().stepBy(steps * stride)
+
+
+def create_panel(title: str = "") -> tuple[QFrame, QVBoxLayout]:
+    """Create a consistently styled panel and its vertical content layout.
+
+    Args:
+        title: Optional translated section heading.
+
+    Returns:
+        The new panel and its content layout.
+    """
+    panel = QFrame()
+    panel.setObjectName("Panel")
+    layout = QVBoxLayout(panel)
+    layout.setContentsMargins(12, 10, 12, 10)
+    layout.setSpacing(6)
+    if title:
+        label = bind(QLabel(), title)
+        label.setObjectName("SectionTitle")
+        layout.addWidget(label)
+    return panel, layout

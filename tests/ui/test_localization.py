@@ -109,11 +109,11 @@ def test_localized_export_in_4k_workspace_keeps_controls_reachable(
         deadline = time.monotonic() + 20
         failures = []
         def inspect():
-            if dialog.preview_result is None and time.monotonic() < deadline:
+            if dialog.previews.result is None and time.monotonic() < deadline:
                 QTimer.singleShot(50, inspect)
                 return
             try:
-                assert dialog.preview_result is not None
+                assert dialog.previews.result is not None
                 scroll = dialog.findChild(QScrollArea, 'exportContentScroll')
                 assert (window.width(), window.height()) == WORKSPACE_SIZE
                 assert (dialog.width(), dialog.height()) == DIALOG_SIZE
@@ -186,18 +186,18 @@ def test_language_switch_preserves_state_and_source_metadata(
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))
     wait_until(window.open_action.isEnabled)
     assert window.data is not None
-    window.slider.setValue(3600)
-    window.first.setValue(3500)
-    window.last.setValue(3700)
+    window.navigation.slider.setValue(3600)
+    window.inspector.first.setValue(3500)
+    window.inspector.last.setValue(3700)
     window.zoom_button.click()
     window.visibility[1].setChecked(False)
     data = window.data
-    bounds = window.axis_x.min(), window.axis_x.max()
-    values = tuple(tuple(series.points()) for series in window.series)
+    bounds = window.plot.axis_x.min(), window.plot.axis_x.max()
+    values = tuple(tuple(series.points()) for series in window.plot.series)
 
     def assert_marker_names(names: tuple[str, ...], menu_texts: tuple[str, ...]) -> None:
         for (key, _index), name in zip(data.markers, names, strict=True):
-            label = window.source_marker_labels[key]
+            label = window.plot.source_marker_labels[key]
             assert label.text().startswith(name + " · ")
             assert label.toolTip().startswith(name + ": ")
 
@@ -227,25 +227,29 @@ def test_language_switch_preserves_state_and_source_metadata(
             ),
         )
         window.notes_button.click()
-        assert "GPS_NEGATIVE_VALUE" in window.notes.toPlainText()
-        assert "Quellwert bleibt erhalten" in window.notes.toPlainText()
-        window.original_diagnostics.setChecked(True)
-        assert window.notes.toPlainText() == data.notes
-        window.original_diagnostics.setChecked(False)
+        assert "GPS_NEGATIVE_VALUE" in window.inspector.notes.toPlainText()
+        assert "Quellwert bleibt erhalten" in window.inspector.notes.toPlainText()
+        window.inspector.original_diagnostics.setChecked(True)
+        assert window.inspector.notes.toPlainText() == data.notes
+        window.inspector.original_diagnostics.setChecked(False)
         window.notes_button.click()
-        assert "Reihe:" in window.ride_metadata.text()
-        assert "Voltron Nevera" in window.ride_metadata.text()
-        assert "Fahrtzeit" in window.time_readout.text()
-        assert "Messpunkte" in window.selection_label.text()
+        assert "Reihe:" in window.inspector.ride_metadata.text()
+        assert "Voltron Nevera" in window.inspector.ride_metadata.text()
+        assert "Fahrtzeit" in window.navigation.time_readout.text()
+        assert "Messpunkte" in window.inspector.selection_label.text()
         assert window.data is data
-        assert (window.first.value(), window.last.value(), window.slider.value()) == (
+        assert (
+            window.inspector.first.value(),
+            window.inspector.last.value(),
+            window.navigation.slider.value(),
+        ) == (
             3500,
             3700,
             3600,
         )
-        assert (window.axis_x.min(), window.axis_x.max()) == bounds
-        assert tuple(tuple(series.points()) for series in window.series) == values
-        assert not window.series[1].isVisible()
+        assert (window.plot.axis_x.min(), window.plot.axis_x.max()) == bounds
+        assert tuple(tuple(series.points()) for series in window.plot.series) == values
+        assert not window.plot.series[1].isVisible()
         assert "zurück" not in window.heading.text()  # Source names are opaque.
         assert QCoreApplication.translate("QPlatformTheme", "Cancel") == "Abbrechen"
         resize_workspace(window, 720, 480)
@@ -253,7 +257,7 @@ def test_language_switch_preserves_state_and_source_metadata(
         assert window.inspector_button.isVisible()
         window.set_ui_language(0)
         assert window.open_action.text() == "Open recording…"
-        assert "Row:" in window.ride_metadata.text()
+        assert "Row:" in window.inspector.ride_metadata.text()
         assert_marker_names(
             ("Start marker", "End marker", "Gravity marker", "Incline marker"),
             (
@@ -289,30 +293,32 @@ def test_german_export_and_batch_dialogs_fit_and_save_language(
                 store=store,
             )
             dialog.show()
-            wait_until(lambda: dialog.preview_result is not None)
-            assert dialog.overlay_language.currentIndex() == 1
-            assert dialog.aspect.itemText(1).startswith("Hochformat")
-            assert [dialog.position.itemText(i) for i in range(dialog.position.count())] == [
+            wait_until(lambda: dialog.previews.result is not None)
+            assert dialog.form.overlay_language.currentIndex() == 1
+            assert dialog.form.aspect.itemText(1).startswith("Hochformat")
+            assert [
+                dialog.form.position.itemText(i) for i in range(dialog.form.position.count())
+            ] == [
                 "Oben",
                 "Unten",
             ]
-            selected_position = dialog.position.currentData()
+            selected_position = dialog.form.position.currentData()
             window.set_ui_language(0)
-            assert dialog.position.currentText() == "Bottom"
+            assert dialog.form.position.currentText() == "Bottom"
             window.set_ui_language(1)
-            assert dialog.position.currentText() == "Unten"
-            assert dialog.position.currentData() == selected_position
-            dialog.layout_profile.setCurrentIndex(3)
+            assert dialog.form.position.currentText() == "Unten"
+            assert dialog.form.position.currentData() == selected_position
+            dialog.form.layout_profile.setCurrentIndex(3)
             QCoreApplication.processEvents()
-            assert dialog.position.count() == 4
-            assert "Oben rechts" in [dialog.position.itemText(i) for i in range(4)]
-            assert_combo_text_fits(dialog.position)
+            assert dialog.form.position.count() == 4
+            assert "Oben rechts" in [dialog.form.position.itemText(i) for i in range(4)]
+            assert_combo_text_fits(dialog.form.position)
             for language in (2, 0, 1):
                 window.set_ui_language(language)
                 QCoreApplication.processEvents()
-                assert_combo_text_fits(dialog.position)
-            dialog.layout_profile.setCurrentIndex(0)
-            assert dialog.position.count() == 2
+                assert_combo_text_fits(dialog.form.position)
+            dialog.form.layout_profile.setCurrentIndex(0)
+            assert dialog.form.position.count() == 2
             assert dialog.next.text() == "Export prüfen →"
             for combo in dialog.findChildren(QComboBox):
                 if combo.isVisible():
@@ -322,23 +328,23 @@ def test_german_export_and_batch_dialogs_fit_and_save_language(
                 return "Meine Vorgabe", True
 
             monkeypatch.setattr(QInputDialog, "getText", preset_name)
-            dialog.save_preset.click()
+            dialog.presets.save_preset.click()
             assert store.presets()[0].name == "Meine Vorgabe"
             assert store.presets()[0].settings.language == "de"
-            dialog.overlay_language.setCurrentIndex(0)
-            dialog.load_preset.click()
-            assert dialog.overlay_language.currentIndex() == 1
+            dialog.form.overlay_language.setCurrentIndex(0)
+            dialog.presets.load_preset.click()
+            assert dialog.form.overlay_language.currentIndex() == 1
             for button in dialog.findChildren(QPushButton):
                 if button.isVisible():
                     assert (
                         button.width() >= button.fontMetrics().horizontalAdvance(button.text()) + 12
                     ), button.text()
-            dialog.aspect.setCurrentIndex(1)
-            wait_until(lambda: dialog.preview_result is None)
-            wait_until(lambda: dialog.preview_result is not None)
-            assert dialog.preview_result is not None
+            dialog.form.aspect.setCurrentIndex(1)
+            wait_until(lambda: dialog.previews.result is None)
+            wait_until(lambda: dialog.previews.result is not None)
+            assert dialog.previews.result is not None
             assert all(
-                profile.image.size == (540, 960) for profile in dialog.preview_result.profiles
+                profile.image.size == (540, 960) for profile in dialog.previews.result.profiles
             )
             dialog.next.click()
             assert dialog.review_fields["samples"].text().endswith("(einschließlich)")

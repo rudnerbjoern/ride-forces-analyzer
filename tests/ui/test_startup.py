@@ -97,7 +97,7 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
                             filename = files.findChild(QLineEdit, "fileNameEdit")
                             assert filename is not None and filename.isVisible()
                             assert files.palette().window().color() == window.palette().window().color()
-                            assert filename.palette().base().color() == window.position.palette().base().color()
+                            assert filename.palette().base().color() == window.navigation.position.palette().base().color()
                 finally:
                     files.close()
                 window.resize(800, 500)

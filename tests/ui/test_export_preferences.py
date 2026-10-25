@@ -143,19 +143,19 @@ def test_settings_save_cancel_and_new_exports_keep_independent_frame_rates(
             ),
         )
         export = ExportDialog(window.data, 0, 10, window, store=store)
-        assert export.fps.currentText() == "23.976"
-        assert StandardFrameRate(export.fps.currentData()) is StandardFrameRate.FPS_23_976
-        export.fps.setCurrentText("60")
+        assert export.form.fps.currentText() == "23.976"
+        assert StandardFrameRate(export.form.fps.currentData()) is StandardFrameRate.FPS_23_976
+        export.form.fps.setCurrentText("60")
         export.close()
         reopened = ExportDialog(window.data, 0, 10, window, store=store)
-        assert reopened.fps.currentText() == "23.976"
-        reopened.preset_selector.setCurrentIndex(1)
-        reopened.load_preset.click()
-        assert reopened.fps.currentText() == "25"
-        reopened.preset_selector.setCurrentIndex(
-            reopened.preset_selector.findText("Z custom rate"),
+        assert reopened.form.fps.currentText() == "23.976"
+        reopened.presets.preset_selector.setCurrentIndex(1)
+        reopened.presets.load_preset.click()
+        assert reopened.form.fps.currentText() == "25"
+        reopened.presets.preset_selector.setCurrentIndex(
+            reopened.presets.preset_selector.findText("Z custom rate"),
         )
-        reopened.load_preset.click()
-        assert reopened.fps.currentText() == "27" and reopened.fps.currentData() == 27
+        reopened.presets.load_preset.click()
+        assert reopened.form.fps.currentText() == "27" and reopened.form.fps.currentData() == 27
         assert Preferences(window.preferences.path).export_fps() == "24000/1001"
         reopened.close()

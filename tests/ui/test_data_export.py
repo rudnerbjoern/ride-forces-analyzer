@@ -85,8 +85,8 @@ def test_data_uses_selected_snapshot_range_and_remembers_only_success(
             DataExportFormat.JSON: window.json_action,
             DataExportFormat.ANALYZER_JSON: window.analyzer_json_action,
         }[format]
-        window.first.setValue(5)
-        window.last.setValue(8)
+        window.inspector.first.setValue(5)
+        window.inspector.last.setValue(8)
         window.reference_toggle.setChecked(False)
         original = recording.source.recording.source.original_bytes
         selected = ""
@@ -98,17 +98,17 @@ def test_data_uses_selected_snapshot_range_and_remembers_only_success(
             return selected, ""
 
         monkeypatch.setattr(QFileDialog, "getSaveFileName", choose)
-        previous_dialog = window.data_export_window
+        previous_dialog = window.data_exports.dialog
         previous_directory = window.preferences.export_directory()
         action.trigger()
-        assert window.data_export_window is previous_dialog
+        assert window.data_exports.dialog is previous_dialog
         assert window.preferences.export_directory() == previous_directory
         selected = str(export_directory / f"selected-samples-{format}")
         window.set_ui_language(1)
-        window.toggle_playback()
+        window.navigation.toggle_playback()
         action.trigger()
-        assert not window.playback_timer.isActive()
-        dialog = window.data_export_window
+        assert not window.navigation.playback_timer.isActive()
+        dialog = window.data_exports.dialog
         assert isinstance(dialog, DataExportDialog)
         assert dialog.format is format and dialog.worker.format is format
         assert dialog.objectName() == f"{format.value}ExportProgress"
@@ -145,7 +145,7 @@ def test_data_uses_selected_snapshot_range_and_remembers_only_success(
                 assert suggestions[0].name.endswith(".analyzer.json")
         assert window.preferences.export_directory() == str(export_directory.resolve())
         assert str(output) in window.statusBar().currentMessage()
-        assert (window.first.value(), window.last.value()) == (5, 8)
+        assert (window.inspector.first.value(), window.inspector.last.value()) == (5, 8)
         assert recording.source.recording.source.original_bytes == original
         previous = output.read_bytes()
         questions: list[str] = []
@@ -169,13 +169,13 @@ def test_data_uses_selected_snapshot_range_and_remembers_only_success(
         for answer in (QMessageBox.StandardButton.No, QMessageBox.StandardButton.Cancel):
             action.trigger()
             assert str(output) in questions[-1]
-            assert window.data_export_window is dialog
+            assert window.data_exports.dialog is dialog
             assert output.read_bytes() == previous
         answer = QMessageBox.StandardButton.Yes
-        window.first.setValue(6)
-        window.last.setValue(7)
+        window.inspector.first.setValue(6)
+        window.inspector.last.setValue(7)
         action.trigger()
-        replacement = window.data_export_window
+        replacement = window.data_exports.dialog
         assert isinstance(replacement, DataExportDialog) and replacement is not dialog
         assert replacement.worker.overwrite
         wait_until(lambda replacement=replacement: not replacement.isVisible())
@@ -258,7 +258,7 @@ def test_data_cancellation_keeps_the_worker_snapshot_and_cleans_up(
         try:
             action.trigger()
             wait_until(started.is_set)
-            dialog = window.data_export_window
+            dialog = window.data_exports.dialog
             assert isinstance(dialog, DataExportDialog)
             assert dialog.worker.analysis is recording.analysis
             if close_parent:

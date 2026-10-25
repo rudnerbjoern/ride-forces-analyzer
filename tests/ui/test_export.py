@@ -31,8 +31,8 @@ pytestmark = pytest.mark.usefixtures("small_preview_frames")
 
 
 def preview_ready(dialog: ExportDialog) -> ExportPreview:
-    wait_until(lambda: dialog.preview_result is not None)
-    result = dialog.preview_result
+    wait_until(lambda: dialog.previews.result is not None)
+    result = dialog.previews.result
     assert result is not None
     return result
 
@@ -46,52 +46,52 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
     wait_until(window.open_action.isEnabled)
     assert window.export_button.isEnabled()
-    window.first.setValue(120)
-    window.last.setValue(160)
+    window.inspector.first.setValue(120)
+    window.inspector.last.setValue(160)
     assert window.data is not None
     sample = window.data.source.recording.indices.start + 72 * 50
-    window.slider.setValue(sample)
+    window.navigation.slider.setValue(sample)
     window.export_button.click()
     dialog = window.export_window
     assert isinstance(dialog, ExportDialog) and dialog.isVisible()
     assert (dialog.first, dialog.last) == (120, 160)
     assert "Manta" in dialog.windowTitle()
-    assert dialog.mode.currentIndex() == 0 and dialog.fps.currentText() == "50"
-    assert dialog.layout_profile.count() == 5
-    assert dialog.layout_profile.currentIndex() == 0
+    assert dialog.form.mode.currentIndex() == 0 and dialog.form.fps.currentText() == "50"
+    assert dialog.form.layout_profile.count() == 5
+    assert dialog.form.layout_profile.currentIndex() == 0
     assert dialog.current_sample == sample
-    wait_until(lambda dialog=dialog: dialog.preview_result is not None)
-    assert dialog.preview_result is not None and dialog.preview_result.sample == sample
+    wait_until(lambda dialog=dialog: dialog.previews.result is not None)
+    assert dialog.previews.result is not None and dialog.previews.result.sample == sample
     assert all(not button.icon().isNull() for button in dialog.profile_buttons)
     assert dialog.preview_caption.height() >= dialog.preview_caption.fontMetrics().height()
     dialog.profile_buttons[0].click()
     assert dialog.profile_buttons[0].isChecked()
     assert dialog.pages.currentIndex() == 0 and not dialog.start.isVisible()
-    assert dialog.flip_vertical.isChecked() and not dialog.flip_lateral.isChecked()
-    wait_until(lambda dialog=dialog: dialog.preview_result is not None)
-    dialog.interval.setCurrentIndex(1)
-    wait_until(lambda dialog=dialog: dialog.preview_result is not None)
-    assert dialog.preview_result is not None and dialog.preview_result.outside_range
-    assert dialog.preview_result.sample == sample
+    assert dialog.form.flip_vertical.isChecked() and not dialog.form.flip_lateral.isChecked()
+    wait_until(lambda dialog=dialog: dialog.previews.result is not None)
+    dialog.form.interval.setCurrentIndex(1)
+    wait_until(lambda dialog=dialog: dialog.previews.result is not None)
+    assert dialog.previews.result is not None and dialog.previews.result.outside_range
+    assert dialog.previews.result.sample == sample
     assert "OUTSIDE" in dialog.preview_note.text()
     dialog.next.click()
     assert dialog.pages.currentIndex() == 1 and dialog.start.isVisible()
     assert f"{sample:,}" in dialog.preview_caption.text()
     assert dialog.review_fields["layout"].text() == "Flow Ribbon"
     assert dialog.review_fields["samples"].text() == "120–160 (inclusive)"
-    assert not dialog.presets_widget.isVisible() and not dialog.gallery.isVisible()
+    assert not dialog.presets.isVisible() and not dialog.gallery.isVisible()
     assert dialog.preview_note.isVisible()  # The out-of-range warning remains visible.
     dialog.back.click()
     assert dialog.pages.currentIndex() == 0
-    assert dialog.presets_widget.isVisible() and dialog.gallery.isVisible()
-    dialog.layout_profile.setCurrentIndex(4)
-    assert dialog.flip_vertical.isChecked() and not dialog.flip_lateral.isChecked()
-    dialog.layout_profile.setCurrentIndex(3)
-    assert dialog.flip_vertical.isEnabled() and not dialog.flip_lateral.isEnabled()
-    assert dialog.flip_vertical.isChecked()
-    dialog.layout_profile.setCurrentIndex(0)
-    assert dialog.flip_vertical.isEnabled() and not dialog.flip_lateral.isEnabled()
-    assert dialog.flip_vertical.isChecked() and not dialog.flip_lateral.isChecked()
+    assert dialog.presets.isVisible() and dialog.gallery.isVisible()
+    dialog.form.layout_profile.setCurrentIndex(4)
+    assert dialog.form.flip_vertical.isChecked() and not dialog.form.flip_lateral.isChecked()
+    dialog.form.layout_profile.setCurrentIndex(3)
+    assert dialog.form.flip_vertical.isEnabled() and not dialog.form.flip_lateral.isEnabled()
+    assert dialog.form.flip_vertical.isChecked()
+    dialog.form.layout_profile.setCurrentIndex(0)
+    assert dialog.form.flip_vertical.isEnabled() and not dialog.form.flip_lateral.isEnabled()
+    assert dialog.form.flip_vertical.isChecked() and not dialog.form.flip_lateral.isChecked()
     dialog.close()
 
     # Check layout/position transitions in the same Explorer session.
@@ -111,43 +111,43 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     analysis = dialog.analysis
 
     def choose_layout(key: str) -> None:
-        dialog.layout_profile.setCurrentIndex(
+        dialog.form.layout_profile.setCurrentIndex(
             next(i for i, (name, _) in enumerate(PROFILES) if name == key),
         )
 
     def choices() -> list[str]:
-        return [dialog.position.itemData(i) for i in range(dialog.position.count())]
+        return [dialog.form.position.itemData(i) for i in range(dialog.form.position.count())]
 
     assert choices() == ["top", "bottom"]
-    assert dialog.position.currentData() == LayoutPosition.BOTTOM
-    dialog.position.setCurrentIndex(dialog.position.findData("top"))
-    assert dialog.preview_result is None
-    assert dialog.position.currentData() == LayoutPosition.TOP
+    assert dialog.form.position.currentData() == LayoutPosition.BOTTOM
+    dialog.form.position.setCurrentIndex(dialog.form.position.findData("top"))
+    assert dialog.previews.result is None
+    assert dialog.form.position.currentData() == LayoutPosition.TOP
     choose_layout(ExportLayout.HUD)
     assert choices() == ["full_screen"]
-    assert dialog.position.currentData() == LayoutPosition.FULL_SCREEN
-    assert dialog.seconds.value() == 30
-    dialog.seconds.setValue(20)
-    assert dialog.seconds.value() == 20
+    assert dialog.form.position.currentData() == LayoutPosition.FULL_SCREEN
+    assert dialog.form.seconds.value() == 30
+    dialog.form.seconds.setValue(20)
+    assert dialog.form.seconds.value() == 20
     choose_layout(ExportLayout.COLUMN)
     assert choices() == ["left", "right"]
-    assert dialog.position.currentData() == LayoutPosition.RIGHT
+    assert dialog.form.position.currentData() == LayoutPosition.RIGHT
     choose_layout(ExportLayout.ORBIT)
     assert set(choices()) == {"top_left", "top_right", "bottom_left", "bottom_right"}
-    assert dialog.position.currentData() == LayoutPosition.TOP_RIGHT
-    dialog.position.setCurrentIndex(dialog.position.findData("top_right"))
+    assert dialog.form.position.currentData() == LayoutPosition.TOP_RIGHT
+    dialog.form.position.setCurrentIndex(dialog.form.position.findData("top_right"))
     choose_layout(ExportLayout.CORNERS)
-    assert dialog.position.currentData() == LayoutPosition.TOP_RIGHT
+    assert dialog.form.position.currentData() == LayoutPosition.TOP_RIGHT
     choose_layout(ExportLayout.RIBBON)
-    dialog.position.setCurrentIndex(dialog.position.findData("bottom"))
-    assert dialog.preview_positions[ExportLayout.ORBIT] is LayoutPosition.BOTTOM_RIGHT
-    assert dialog.preview_positions[ExportLayout.CORNERS] is LayoutPosition.BOTTOM_RIGHT
+    dialog.form.position.setCurrentIndex(dialog.form.position.findData("bottom"))
+    assert dialog.form.positions[ExportLayout.ORBIT] is LayoutPosition.BOTTOM_RIGHT
+    assert dialog.form.positions[ExportLayout.CORNERS] is LayoutPosition.BOTTOM_RIGHT
     choose_layout(ExportLayout.ORBIT)
-    assert dialog.position.currentData() == LayoutPosition.BOTTOM_RIGHT
-    dialog.position.setCurrentIndex(dialog.position.findData("top_right"))
+    assert dialog.form.position.currentData() == LayoutPosition.BOTTOM_RIGHT
+    dialog.form.position.setCurrentIndex(dialog.form.position.findData("top_right"))
     choose_layout(ExportLayout.CORNERS)
-    dialog.aspect.setCurrentIndex(1)
-    assert dialog.position.currentData() == LayoutPosition.TOP_RIGHT
+    dialog.form.aspect.setCurrentIndex(1)
+    assert dialog.form.position.currentData() == LayoutPosition.TOP_RIGHT
 
     original_plugins = registry.PLUGINS
     plugin = registry.PLUGINS[ExportLayout.CORNERS]
@@ -160,47 +160,47 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
         "PLUGINS",
         {**registry.PLUGINS, ExportLayout.CORNERS: replace(plugin, portrait=portrait)},
     )
-    dialog.aspect.setCurrentIndex(0)
-    dialog.aspect.setCurrentIndex(1)
+    dialog.form.aspect.setCurrentIndex(0)
+    dialog.form.aspect.setCurrentIndex(1)
     assert choices() == ["bottom_left"]
-    assert dialog.position.currentData() == LayoutPosition.BOTTOM_LEFT
-    dialog.preview_timer.stop()
-    dialog.preview_timer.timeout.emit()
-    assert dialog.preview_worker is not None
-    assert dialog.preview_worker.settings.position is LayoutPosition.BOTTOM_LEFT
+    assert dialog.form.position.currentData() == LayoutPosition.BOTTOM_LEFT
+    dialog.previews.timer.stop()
+    dialog.previews.timer.timeout.emit()
+    assert dialog.previews.worker is not None
+    assert dialog.previews.worker.settings.position is LayoutPosition.BOTTOM_LEFT
     preview_ready(dialog)
     assert dialog.analysis is analysis
-    assert dialog.position in dialog.controls
+    assert dialog.form.position in dialog.controls
 
     monkeypatch.setattr(registry, "PLUGINS", original_plugins)
-    dialog.aspect.setCurrentIndex(0)
+    dialog.form.aspect.setCurrentIndex(0)
     preview_ready(dialog)
 
     # Keep the same assistant for preview settings and portrait preset loading.
     sample = dialog.current_sample
     dialog.profile_buttons[3].click()
-    dialog.fps.setCurrentText("30")
-    dialog.seconds.setValue(8)
+    dialog.form.fps.setCurrentText("30")
+    dialog.form.seconds.setValue(8)
     dialog.background.setCurrentIndex(2)
-    assert dialog.preview_result is None and not dialog.next.isEnabled()
+    assert dialog.previews.result is None and not dialog.next.isEnabled()
     dark_preview = preview_ready(dialog)
-    assert dialog.current_sample == sample and dialog.layout_profile.currentText() == "G-Orbit"
+    assert dialog.current_sample == sample and dialog.form.layout_profile.currentText() == "G-Orbit"
     assert dark_preview.profiles[3].image.getpixel((0, 0)) == (22, 37, 51)
-    dialog.mode.setCurrentIndex(1)
+    dialog.form.mode.setCurrentIndex(1)
     opaque_preview = preview_ready(dialog)
     assert all(profile.image.getpixel((0, 0)) == (0, 0, 0) for profile in opaque_preview.profiles)
     assert dialog.worker is None
-    dialog.mode.setCurrentIndex(0)
-    estimate = dialog.size_estimate.text()
+    dialog.form.mode.setCurrentIndex(0)
+    estimate = dialog.form.size_estimate.text()
     assert estimate.endswith(" MiB")
     assert estimate == dialog.review_size_estimate.text()
-    dialog.mode.setCurrentIndex(1)
-    assert dialog.size_estimate.text() != estimate
-    assert dialog.size_estimate.text().endswith(dialog.review_size_estimate.text())
-    dialog.mode.setCurrentIndex(0)
-    assert dialog.size_estimate.text() == estimate
-    dialog.aspect.setCurrentIndex(1)
-    wait_until(lambda dialog=dialog: dialog.preview_result is None)
+    dialog.form.mode.setCurrentIndex(1)
+    assert dialog.form.size_estimate.text() != estimate
+    assert dialog.form.size_estimate.text().endswith(dialog.review_size_estimate.text())
+    dialog.form.mode.setCurrentIndex(0)
+    assert dialog.form.size_estimate.text() == estimate
+    dialog.form.aspect.setCurrentIndex(1)
+    wait_until(lambda dialog=dialog: dialog.previews.result is None)
     result = preview_ready(dialog)
     assert all(profile.image.size == (540, 960) for profile in result.profiles)
 
@@ -208,23 +208,23 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
         return "Portrait", True
 
     monkeypatch.setattr(QInputDialog, "getText", preset_name)
-    dialog.save_preset.click()
-    assert dialog.store.presets()[0].settings.aspect is VideoAspect.PORTRAIT
-    dialog.aspect.setCurrentIndex(0)
-    dialog.load_preset.click()
-    assert dialog.aspect.currentIndex() == 1
+    dialog.presets.save_preset.click()
+    assert dialog.presets.store.presets()[0].settings.aspect is VideoAspect.PORTRAIT
+    dialog.form.aspect.setCurrentIndex(0)
+    dialog.presets.load_preset.click()
+    assert dialog.form.aspect.currentIndex() == 1
     preview_ready(dialog)
     dialog.next.click()
     assert dialog.review_fields["resolution"].text() == "2160×3840"
     dialog.back.click()
-    dialog.layout_profile.setCurrentIndex(2)
+    dialog.form.layout_profile.setCurrentIndex(2)
     result = preview_ready(dialog)
     assert all(profile.image.size == (540, 960) for profile in result.profiles)
     assert dialog.review_fields["resolution"].text() == "1080×1920"
-    dialog.aspect.setCurrentIndex(0)
+    dialog.form.aspect.setCurrentIndex(0)
     preview_ready(dialog)
     assert dialog.review_fields["resolution"].text() == "1920×1080"
-    dialog.interval.setCurrentIndex(2)
+    dialog.form.interval.setCurrentIndex(2)
     preview_ready(dialog)
     dialog.next.click()
     assert not dialog.preview_note.isVisible()
@@ -262,7 +262,7 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
                 if configured == "relative"
                 else str(executable)
             )
-            dialog.encoder.setText(original)
+            dialog.form.encoder.setText(original)
             starts: list[str] = []
             answer = [""]
 
@@ -273,16 +273,16 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
             monkeypatch.setattr(QFileDialog, "getOpenFileName", choose)
             browse.click()
             assert starts[-1] == ("" if configured == "empty" else str(folder))
-            assert dialog.encoder.text() == original
+            assert dialog.form.encoder.text() == original
             other = folder / "other"
             other.mkdir()
             answer[0] = str(other / "ffmpeg.exe")
             browse.click()
-            assert dialog.encoder.text() == answer[0]
+            assert dialog.form.encoder.text() == answer[0]
             answer[0] = ""
             browse.click()
             assert starts[-1] == str(other)
-            assert dialog.encoder.text() == str(other / "ffmpeg.exe")
+            assert dialog.form.encoder.text() == str(other / "ffmpeg.exe")
 
     dialog.close()
 
@@ -326,8 +326,8 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
         wait_until(lambda: dialog.worker is None)
         assert output.read_bytes() == b"complete video"
         dialog.back.click()
-        dialog.layout_profile.setCurrentIndex(2)
-        dialog.mode.setCurrentIndex(1)
+        dialog.form.layout_profile.setCurrentIndex(2)
+        dialog.form.mode.setCurrentIndex(1)
         preview_ready(dialog)
         dialog.next.click()
         dialog.start.click()
@@ -349,8 +349,8 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     window.export_button.click()
     dialog = window.export_window
     assert isinstance(dialog, ExportDialog)
-    dialog.layout_profile.setCurrentIndex(3)
-    wait_until(lambda: dialog.preview_result is not None)
+    dialog.form.layout_profile.setCurrentIndex(3)
+    wait_until(lambda: dialog.previews.result is not None)
     dialog.next.click()
     started = Event()
 
@@ -443,21 +443,21 @@ def test_stale_preview_is_discarded_after_fast_profile_changes(
     assert isinstance(dialog, ExportDialog)
     try:
         wait_until(started.is_set)
-        dialog.layout_profile.setCurrentIndex(3)
-        dialog.fps.setCurrentText("30")
-        assert dialog.preview_result is None and not dialog.next.isEnabled()
+        dialog.form.layout_profile.setCurrentIndex(3)
+        dialog.form.fps.setCurrentText("30")
+        assert dialog.previews.result is None and not dialog.next.isEnabled()
     finally:
         release.set()
-    wait_until(lambda: dialog.preview_result is not None)
+    wait_until(lambda: dialog.previews.result is not None)
     assert calls == [
         (ExportLayout.RIBBON, StandardFrameRate.FPS_50),
         (ExportLayout.ORBIT, StandardFrameRate.FPS_30),
     ]
-    assert dialog.layout_profile.currentText() == "G-Orbit"
+    assert dialog.form.layout_profile.currentText() == "G-Orbit"
     assert "Preview: graph sample" in dialog.preview_caption.text()
     assert dialog.next.isEnabled() and dialog.worker is None
     dialog.reject()
-    assert dialog.closing and not dialog.isVisible()
+    assert dialog.previews.closing and not dialog.isVisible()
 
 
 def test_saved_presets_and_recording_queue_survive_assistant_reopen(
@@ -483,20 +483,22 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
 
     monkeypatch.setattr(QInputDialog, "getText", name_dialog)
     monkeypatch.setattr(QInputDialog, "getItem", batch_dialog)
-    dialog.layout_profile.setCurrentIndex(3)
-    dialog.position.setCurrentIndex(dialog.position.findData(LayoutPosition.TOP_RIGHT.value))
-    dialog.fps.setCurrentText("59.94")
-    dialog.smoothing.setCurrentIndex(1)
-    dialog.seconds.setValue(12.5)
-    dialog.interval.setCurrentIndex(2)
-    dialog.save_preset.click()
-    dialog.queue.click()
-    dialog.layout_profile.setCurrentIndex(0)
-    dialog.fps.setCurrentText("50")
-    dialog.smoothing.setCurrentIndex(5)
-    dialog.save_preset.click()
-    dialog.queue.click()
-    saved = dialog.store.batch("Weekend")
+    dialog.form.layout_profile.setCurrentIndex(3)
+    dialog.form.position.setCurrentIndex(
+        dialog.form.position.findData(LayoutPosition.TOP_RIGHT.value),
+    )
+    dialog.form.fps.setCurrentText("59.94")
+    dialog.form.smoothing.setCurrentIndex(1)
+    dialog.form.seconds.setValue(12.5)
+    dialog.form.interval.setCurrentIndex(2)
+    dialog.presets.save_preset.click()
+    dialog.presets.queue.click()
+    dialog.form.layout_profile.setCurrentIndex(0)
+    dialog.form.fps.setCurrentText("50")
+    dialog.form.smoothing.setCurrentIndex(5)
+    dialog.presets.save_preset.click()
+    dialog.presets.queue.click()
+    saved = dialog.presets.store.batch("Weekend")
     assert len(saved.jobs) == 2
     assert saved.jobs[0].preset.settings.layout == ExportLayout.ORBIT
     assert saved.jobs[0].preset.settings.fps == "60000/1001"
@@ -504,27 +506,32 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     assert saved.jobs[0].preset.smoothing_window == 3
     assert saved.jobs[0].preset.analysis_configuration is not None
     assert saved.jobs[1].preset.settings.layout == ExportLayout.RIBBON
-    dialog.fps.setCurrentText("25")
-    dialog.update_preset.click()
-    assert dialog.store.batch("Weekend").jobs[1].preset.settings.fps is StandardFrameRate.FPS_50
+    dialog.form.fps.setCurrentText("25")
+    dialog.presets.update_preset.click()
+    assert (
+        dialog.presets.store.batch("Weekend").jobs[1].preset.settings.fps
+        is StandardFrameRate.FPS_50
+    )
     dialog.close()
     window.export_button.click()
     reopened = window.export_window
     assert isinstance(reopened, ExportDialog)
-    assert reopened.preset_selector.count() == 3
-    reopened.preset_selector.setCurrentText("Orbit5994")
-    reopened.load_preset.click()
+    assert reopened.presets.preset_selector.count() == 3
+    reopened.presets.preset_selector.setCurrentText("Orbit5994")
+    reopened.presets.load_preset.click()
     preview_ready(reopened)
-    assert reopened.layout_profile.currentIndex() == 3
-    assert reopened.position.currentData() == LayoutPosition.TOP_RIGHT
-    assert reopened.fps.currentText() == "59.94" and reopened.seconds.value() == 12.5
-    assert reopened.smoothing.currentIndex() == 1 and reopened.interval.currentIndex() == 2
-    assert "3 samples" in reopened.smoothing.toolTip()
+    assert reopened.form.layout_profile.currentIndex() == 3
+    assert reopened.form.position.currentData() == LayoutPosition.TOP_RIGHT
+    assert reopened.form.fps.currentText() == "59.94" and reopened.form.seconds.value() == 12.5
+    assert (
+        reopened.form.smoothing.currentIndex() == 1 and reopened.form.interval.currentIndex() == 2
+    )
+    assert "3 samples" in reopened.form.smoothing.toolTip()
     assert window.data is not None and window.data.calibration_available
     assert window.data.smoothing_window == 11
-    reopened.manage_batches.click()
-    assert isinstance(reopened.batch_window, BatchDialog)
-    assert reopened.batch_window.table.rowCount() == 2
+    reopened.presets.manage_batches.click()
+    assert isinstance(reopened.presets.batch_window, BatchDialog)
+    assert reopened.presets.batch_window.table.rowCount() == 2
     reopened.close()
 
 
@@ -683,8 +690,8 @@ def test_loading_analysis_recipe_keeps_workspace_snapshot_and_independent_stages
     window.export_button.click()
     dialog = window.export_window
     assert isinstance(dialog, ExportDialog) and dialog.data.analysis is snapshot
-    dialog.preset_selector.setCurrentText("Source context")
-    dialog.load_preset.click()
+    dialog.presets.preset_selector.setCurrentText("Source context")
+    dialog.presets.load_preset.click()
     changed = dialog.data.analysis
     assert changed is not None and changed.configuration == configuration
     assert changed.forces is snapshot.forces and changed.orientation is snapshot.orientation

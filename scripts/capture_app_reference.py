@@ -137,16 +137,16 @@ def capture_details(application: QApplication, window: ExplorerWindow, output: P
             if window.data is None or not window.data.calibration_available:
                 raise RuntimeError(f"Cannot load calibrated {name} reference")
             window.reference_toggle.setChecked(True)
-            window.slider.setValue(sample)
+            window.navigation.slider.setValue(sample)
             # Keep the selection highlight outside the illustrated interval.
-            window.last.setValue(0)
-            window.first.setValue(0)
+            window.inspector.last.setValue(0)
+            window.inspector.first.setValue(0)
             time_range = tuple(window.data.time_at(index) for index in interval)
-            window.axis_x.setRange(*time_range)
+            window.plot.axis_x.setRange(*time_range)
             wait_for(application, lambda: True)
             # Refresh labels once the compact layout has settled after the zoom.
-            window.axis_x.setRange(time_range[0] + 0.02, time_range[1])
-            window.axis_x.setRange(*time_range)
+            window.plot.axis_x.setRange(time_range[0] + 0.02, time_range[1])
+            window.plot.axis_x.setRange(*time_range)
             wait_for(application, lambda: True)
             details: dict[str, object] = {
                 "source_sha256": hashes[name],
@@ -156,8 +156,8 @@ def capture_details(application: QApplication, window: ExplorerWindow, output: P
                 "smoothing": SMOOTHING,
             }
             if name == "VoltronNevera":
-                bounds = window.chart_view.geometry().united(window.airtime_legend.geometry())
-                parent = window.chart_view.parentWidget()
+                bounds = window.plot.chart_view.geometry().united(window.plot.airtime_legend.geometry())
+                parent = window.plot.chart_view.parentWidget()
                 if parent is None or not parent.grab(bounds).save(
                     str(output / "voltron-airtime-detail.png"),
                 ):
@@ -171,7 +171,7 @@ def capture_details(application: QApplication, window: ExplorerWindow, output: P
                 )
             elif name == "Taron":
                 bounds = QRect()
-                for value_label in window.value_labels:
+                for value_label in window.navigation.value_labels:
                     card = value_label.parentWidget()
                     if card is None:
                         raise RuntimeError("Missing force value card")
@@ -187,7 +187,7 @@ def capture_details(application: QApplication, window: ExplorerWindow, output: P
                 force_range: tuple[float, float] | None = None
                 force_labels: list[tuple[str, float]] = []
                 for smoothing in (1, 11, 31):
-                    window.smoothing_slider.setValue(smoothing // 2)
+                    window.inspector.smoothing_slider.setValue(smoothing // 2)
                     wait_for(
                         application,
                         lambda: (
@@ -195,16 +195,16 @@ def capture_details(application: QApplication, window: ExplorerWindow, output: P
                         ),
                     )
                     if force_range is None:
-                        force_range = (window.axis_y.min(), window.axis_y.max())
-                        if not isinstance(window.axis_y, QCategoryAxis):
+                        force_range = (window.plot.axis_y.min(), window.plot.axis_y.max())
+                        if not isinstance(window.plot.axis_y, QCategoryAxis):
                             raise RuntimeError("Missing calibrated force axis")
                         force_labels = [
-                            (label, window.axis_y.endValue(label))
-                            for label in window.axis_y.categoriesLabels()
+                            (label, window.plot.axis_y.endValue(label))
+                            for label in window.plot.axis_y.categoriesLabels()
                         ]
                     # Lock the comparison scale, including category labels. The normal
                     # workspace intentionally rescales after a smoothing change.
-                    axis = window.axis_y
+                    axis = window.plot.axis_y
                     if not isinstance(axis, QCategoryAxis):
                         raise RuntimeError("Missing calibrated force axis")
                     axis.blockSignals(True)
@@ -217,15 +217,15 @@ def capture_details(application: QApplication, window: ExplorerWindow, output: P
                         axis.setRange(*force_range)
                     finally:
                         axis.blockSignals(False)
-                    window.axis_x.setRange(*time_range)
-                    window.sample_cursor.hide()
+                    window.plot.axis_x.setRange(*time_range)
+                    window.plot.sample_cursor.hide()
                     wait_for(application, lambda: True)
-                    panels.append(window.chart_view.grab())
+                    panels.append(window.plot.chart_view.grab())
                     scales.append(
                         {
                             "smoothing": smoothing,
                             "force_range": (axis.min(), axis.max()),
-                            "time_range": (window.axis_x.min(), window.axis_x.max()),
+                            "time_range": (window.plot.axis_x.min(), window.plot.axis_x.max()),
                         },
                     )
                 width = panels[0].width()
@@ -332,10 +332,10 @@ def capture_reference(output: Path, *, details: bool = False, themes: bool = Fal
                 if window.data is None or not window.data.calibration_available:
                     raise RuntimeError("Cannot load calibrated Voltron reference")
                 window.reference_toggle.setChecked(True)
-                window.smoothing_slider.setValue(SMOOTHING // 2)
-                window.first.setValue(SELECTION[0])
-                window.last.setValue(SELECTION[1])
-                window.slider.setValue(SAMPLE)
+                window.inspector.smoothing_slider.setValue(SMOOTHING // 2)
+                window.inspector.first.setValue(SELECTION[0])
+                window.inspector.last.setValue(SELECTION[1])
+                window.navigation.slider.setValue(SAMPLE)
                 window.reset_view()
                 output.mkdir(parents=True, exist_ok=True)
                 if themes:
@@ -404,29 +404,29 @@ def capture_reference(output: Path, *, details: bool = False, themes: bool = Fal
                 )
                 dialog.setMinimumSize(*EXPORT_SIZE)
                 dialog.resize(*EXPORT_SIZE)
-                dialog.layout_profile.setCurrentIndex(0)
-                dialog.position.setCurrentIndex(
-                    dialog.position.findData(LayoutPosition.BOTTOM.value),
+                dialog.form.layout_profile.setCurrentIndex(0)
+                dialog.form.position.setCurrentIndex(
+                    dialog.form.position.findData(LayoutPosition.BOTTOM.value),
                 )
-                dialog.aspect.setCurrentIndex(0)
-                dialog.overlay_language.setCurrentIndex(0)
-                dialog.mode.setCurrentIndex(0)
-                dialog.interval.setCurrentIndex(0)
-                dialog.smoothing.setCurrentIndex(SMOOTHING // 2)
-                dialog.flip_vertical.setChecked(True)
-                dialog.flip_lateral.setChecked(False)
-                dialog.gpu.setChecked(True)
+                dialog.form.aspect.setCurrentIndex(0)
+                dialog.form.overlay_language.setCurrentIndex(0)
+                dialog.form.mode.setCurrentIndex(0)
+                dialog.form.interval.setCurrentIndex(0)
+                dialog.form.smoothing.setCurrentIndex(SMOOTHING // 2)
+                dialog.form.flip_vertical.setChecked(True)
+                dialog.form.flip_lateral.setChecked(False)
+                dialog.form.gpu.setChecked(True)
                 dialog.background.setCurrentIndex(0)
-                dialog.fps.setCurrentText("50")
-                dialog.seconds.setValue(12)
-                dialog.encoder.setText(".tmp/ffmpeg/bin/ffmpeg.exe")
+                dialog.form.fps.setCurrentText("50")
+                dialog.form.seconds.setValue(12)
+                dialog.form.encoder.setText(".tmp/ffmpeg/bin/ffmpeg.exe")
                 dialog.show()
                 preview_dialog = dialog
                 wait_for(
                     application,
                     lambda: (
-                        preview_dialog.preview_result is not None
-                        and preview_dialog.preview_worker is None
+                        preview_dialog.previews.result is not None
+                        and preview_dialog.previews.worker is None
                     ),
                 )
                 save_widget(application, dialog, output / "export-preview.png")
@@ -442,7 +442,7 @@ def capture_reference(output: Path, *, details: bool = False, themes: bool = Fal
                     "workspace_size": WORKSPACE_SIZE,
                     "export_size": EXPORT_SIZE,
                     "layout": "ribbon",
-                    "position": dialog.position.currentData(),
+                    "position": dialog.form.position.currentData(),
                     "aspect": "landscape",
                     "output": "transparent",
                     "fps": 50,

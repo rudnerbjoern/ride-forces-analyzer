@@ -26,7 +26,7 @@ SOURCE = Path("tests/fixtures/real/VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC
 def trigger_marker(window: ExplorerWindow, sample: int, text: str) -> None:
     """Select a real menu action; the main test additionally owns mouse/zoom checks."""
     assert window.data is not None
-    window.axis_x.setRange(
+    window.plot.axis_x.setRange(
         (sample - 1) / window.data.sample_rate,
         (sample + 1) / window.data.sample_rate,
     )
@@ -38,8 +38,8 @@ def trigger_marker(window: ExplorerWindow, sample: int, text: str) -> None:
         menu.close()
 
     QTimer.singleShot(0, pick)
-    fraction = (window.data.time_at(sample) - window.axis_x.min()) / (
-        window.axis_x.max() - window.axis_x.min()
+    fraction = (window.data.time_at(sample) - window.plot.axis_x.min()) / (
+        window.plot.axis_x.max() - window.plot.axis_x.min()
     )
     window.show_marker_menu(fraction, window.mapToGlobal(window.rect().center()))
 
@@ -145,11 +145,16 @@ def test_chart_context_markers_save_reopen_and_reset_independently(
     gravity, incline = indices.gravity + 1, indices.incline + 1
 
     def choose(sample: int, text: str | None, *, enabled: bool = True) -> None:
-        window.axis_x.setRange((sample - 100) / data.sample_rate, (sample + 100) / data.sample_rate)
-        view = window.chart_view
-        point = view.mapFromScene(window.chart.mapToScene(window.chart.plotArea().center()))
-        viewport = window.axis_x.min(), window.axis_x.max()
-        selected = window.slider.value()
+        window.plot.axis_x.setRange(
+            (sample - 100) / data.sample_rate,
+            (sample + 100) / data.sample_rate,
+        )
+        view = window.plot.chart_view
+        point = view.mapFromScene(
+            window.plot.chart.mapToScene(window.plot.chart.plotArea().center()),
+        )
+        viewport = window.plot.axis_x.min(), window.plot.axis_x.max()
+        selected = window.navigation.slider.value()
 
         def pick() -> None:
             menu = QApplication.activePopupWidget()
@@ -177,8 +182,8 @@ def test_chart_context_markers_save_reopen_and_reset_independently(
         QTimer.singleShot(0, pick)
         QTest.mouseClick(view.viewport(), Qt.MouseButton.RightButton, pos=point)
         if text is None or not enabled:
-            assert (window.axis_x.min(), window.axis_x.max()) == viewport
-            assert window.slider.value() == selected
+            assert (window.plot.axis_x.min(), window.plot.axis_x.max()) == viewport
+            assert window.navigation.slider.value() == selected
 
     def expect(bounds: tuple[int, int]) -> None:
         wait_until(lambda: window.data is not None and window.data.ride_bounds == bounds)
@@ -222,7 +227,7 @@ def test_chart_context_markers_save_reopen_and_reset_independently(
     window.open_path(SOURCE)
     wait_until(lambda: window.data is not None and window.data.source is not data.source)
     expect((1700, 9000))
-    assert window.slider.value() == 1700
+    assert window.navigation.slider.value() == 1700
     assert window.data is not None and window.data.analysis is not None
     assert window.data.analysis.configuration.calibration == saved_calibration
     choose(5000, "Reset start to original")
