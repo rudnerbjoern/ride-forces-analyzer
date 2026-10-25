@@ -197,6 +197,9 @@ fallback) and System appearance. `AppSettings` can explicitly override language.
 - Recording replacement or main-window close closes the GPS dialog.
 - GPS does not control forces, timing or selection. No invented fixes or confirmed
   speed-color contract. The route remains usable offline.
+- Opening GPS restores the visible background automatically when all required
+  tiles are fresh in the persistent cache, including after application restart.
+  Missing or expired tiles leave the route visible without network access.
 - **Load map background** explicitly requests only the currently visible OSM area;
   no startup, resize, prefetch or offline-download requests. The static background
   sits behind the route with visible linked © OpenStreetMap contributors attribution.

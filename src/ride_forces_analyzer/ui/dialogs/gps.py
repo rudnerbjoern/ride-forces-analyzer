@@ -12,7 +12,7 @@ from ride_forces_analyzer.ui.presentation.translation import bind
 
 from threading import Event
 
-from PySide6.QtCore import QEvent, Qt, QObject, QRunnable, QThreadPool, Signal, Slot
+from PySide6.QtCore import QEvent, Qt, QObject, QRunnable, QThreadPool, QTimer, Signal, Slot
 from PySide6.QtGui import QColor, QPainter, QPen, QResizeEvent, QCloseEvent, QPixmap, QShowEvent
 from PySide6.QtWidgets import (
     QDialog,
@@ -59,21 +59,31 @@ class MapWorker(QRunnable):
         revision: Monotonically increasing identity used to reject superseded work.
         cancelled: Event used to request cancellation without publishing partial output.
         signals: Qt result, failure and progress signal transport owned by the worker.
+        cache_only: Whether loading must avoid all network access.
     """
 
-    def __init__(self, request: MapRequest, revision: int, cancelled: Event) -> None:
+    def __init__(
+        self,
+        request: MapRequest,
+        revision: int,
+        cancelled: Event,
+        *,
+        cache_only: bool = False,
+    ) -> None:
         """Initialize map worker and its owned state.
 
         Args:
             request: Request carrying the inputs and context for this operation.
             revision: Monotonically increasing identity used to reject superseded work.
             cancelled: Cancellation event checked during the operation.
+            cache_only: Read only fresh tiles from the persistent cache.
 
         Returns:
             None.
         """
         super().__init__()
         self.request, self.revision, self.cancelled = request, revision, cancelled
+        self.cache_only = cache_only
         self.signals = MapSignals()
 
     @Slot()
@@ -84,8 +94,15 @@ class MapWorker(QRunnable):
             None.
         """
         try:
-            result = load_background(self.request, self.cancelled)
+            result = (
+                load_background(self.request, self.cancelled, cache_only=True)
+                if self.cache_only
+                else load_background(self.request, self.cancelled)
+            )
         except Exception as error:
+            if self.cache_only:
+                self.signals.completed.emit(self.revision, None)
+                return
             record_error("Map background worker", error)
             self.signals.failed.emit(self.revision)
         else:
@@ -201,6 +218,13 @@ class GpsDialog(QDialog):
         Returns:
             None.
         """
+        self._start_map(cache_only=False)
+
+    def _load_cached_map(self) -> None:
+        if self.map_item is None:
+            self._start_map(cache_only=True)
+
+    def _start_map(self, *, cache_only: bool) -> None:
         if self.stopped or self.worker is not None or self.route is None:
             return
         bounds = self.view.mapToScene(self.view.viewport().rect()).boundingRect()
@@ -217,7 +241,7 @@ class GpsDialog(QDialog):
             return
         self.revision += 1
         self.cancelled = Event()
-        worker = MapWorker(request, self.revision, self.cancelled)
+        worker = MapWorker(request, self.revision, self.cancelled, cache_only=cache_only)
         worker.signals.completed.connect(self.map_ready)
         worker.signals.failed.connect(self.map_failed)
         self.worker = worker
@@ -236,10 +260,13 @@ class GpsDialog(QDialog):
         Returns:
             None.
         """
-        if self.stopped or revision != self.revision or not isinstance(result, MapBackground):
+        if self.stopped or revision != self.revision:
             return
         self.worker = None
         self.map_button.setEnabled(True)
+        if not isinstance(result, MapBackground):
+            self.map_status.clear()
+            return
         scene = self.view.scene()
         if self.map_item is not None:
             scene.removeItem(self.map_item)
@@ -297,6 +324,7 @@ class GpsDialog(QDialog):
         """
         self.stopped = False
         super().showEvent(event)
+        QTimer.singleShot(0, self._load_cached_map)
 
 
 def _populate_dialog(dialog: GpsDialog, overview: GpsOverview, title: str) -> None:

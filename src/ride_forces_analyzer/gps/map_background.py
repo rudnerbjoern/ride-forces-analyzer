@@ -231,7 +231,7 @@ def _image(data: bytes) -> QImage:
     return image
 
 
-def _tile(zoom: int, x: int, y: int, cache: TileCache) -> QImage:
+def _tile(zoom: int, x: int, y: int, cache: TileCache, cache_only: bool) -> QImage:
     entry = cache.get(TILE_URL, zoom, x, y)
     cached: QImage | None = None
     if entry is not None:
@@ -242,6 +242,8 @@ def _tile(zoom: int, x: int, y: int, cache: TileCache) -> QImage:
         except MapError:
             cache.delete(TILE_URL, zoom, x, y)
             entry = None
+    if cache_only:
+        raise MapError("Map tile is not fresh in cache")
     headers = {"User-Agent": USER_AGENT, "Accept": "image/png"}
     if entry is not None:
         if entry.etag:
@@ -292,18 +294,25 @@ class MapBackground:
     image: QImage
 
 
-def load_background(request: MapRequest, cancelled: Event) -> MapBackground:
+def load_background(
+    request: MapRequest,
+    cancelled: Event,
+    *,
+    cache_only: bool = False,
+) -> MapBackground:
     """Load a single viewport with bounded sequential HTTPS, cache and cancellation.
 
     Args:
         request: Request carrying the inputs and context for this operation.
         cancelled: Cancellation event checked during the operation.
+        cache_only: Read fresh cached tiles only; never contact the map provider.
 
     Returns:
         Prepared viewport background and attribution information.
 
     Raises:
-        MapError: Invalid map request. Map request stopped. Map could not be loaded.
+        MapError: Invalid, cancelled or unavailable viewport, including a cache miss
+            or expired tile when cache_only is enabled.
     """
     if (
         not 0 <= request.zoom <= 19
@@ -320,7 +329,7 @@ def load_background(request: MapRequest, cancelled: Event) -> MapBackground:
         for x, y in request.tiles:
             if cancelled.is_set() or monotonic() >= deadline:
                 raise MapError("Map request stopped")
-            tiles.append((x, y, _tile(request.zoom, x, y, cache)))
+            tiles.append((x, y, _tile(request.zoom, x, y, cache, cache_only)))
     except (OSError, URLError, ValueError) as error:
         raise MapError("Map could not be loaded") from error
     if cancelled.is_set():

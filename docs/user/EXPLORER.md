@@ -151,7 +151,9 @@ Gaps in the coordinates can break the route into sections.
 GPS is independent of force samples and does not move the chart selection.
 It provides approximate location context, not a force or speed measurement.
 
-Click **Load map background** to place an OpenStreetMap map behind the track.
+Previously cached maps appear automatically when you open the overview, including
+after restarting the app, if all tiles for the visible area are still valid.
+Click **Load map background** to load missing or expired OpenStreetMap tiles.
 Only the visible area is requested, without an account or API key. This action
 contacts OpenStreetMap: it reveals your IP address and the requested geographic
 area, but does not upload the GPS track, timestamps or recording file.
