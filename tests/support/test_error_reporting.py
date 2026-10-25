@@ -1,6 +1,6 @@
 """Isolated processes verify report lifetime and complete exception hooks."""
 
-# cspell:words getppid excepthook
+# cspell:words getppid excepthook unraisablehook
 
 from pathlib import Path
 import subprocess
@@ -14,7 +14,7 @@ def run_report(directory: Path, program: str) -> subprocess.CompletedProcess[str
 import os
 from pathlib import Path
 import sys
-from ride_forces_analyzer import error_reporting as reports
+from ride_forces_analyzer.runtime import error_reporting as reports
 directory = Path(sys.argv[1])
 reports.data_directory = lambda: directory
 """
@@ -55,7 +55,7 @@ def test_report_retains_every_error_and_replaces_completed_runs(export_directory
         export_directory,
         """
 support = directory / "support"
-from ride_forces_analyzer.cpu_resources import CpuResources
+from ride_forces_analyzer.runtime.cpu_resources import CpuResources
 reports.detect_cpu_resources = lambda: CpuResources(12, 24)
 support.mkdir()
 (support / "error-report-999999999.txt").write_text("obsolete")
@@ -158,7 +158,8 @@ def test_handled_import_and_export_worker_failures_reach_report(export_directory
     result = run_report(
         export_directory,
         """
-from ride_forces_analyzer.ui import loading, data_export
+from ride_forces_analyzer.ui.explorer import loading
+from ride_forces_analyzer.ui.exports import data as data_export
 path = reports.initialize_error_reporting()
 assert path is not None
 loading.LoadWorker(directory / "missing.forces").run()
@@ -177,3 +178,98 @@ assert "Data export:" in text and "OSError: export write failure" in text
 """,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_report_hooks_handle_empty_errors_and_preserve_replacement_hooks(
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import logging
+    from collections.abc import Callable
+    from types import SimpleNamespace
+    from typing import Any, cast
+
+    from ride_forces_analyzer.runtime import error_reporting as reports
+
+    callbacks: list[Callable[[], None]] = []
+    forwarded: list[object] = []
+    monkeypatch.setattr(reports, "_stream", None)
+    monkeypatch.setattr(reports, "data_directory", lambda: export_directory)
+    monkeypatch.setattr(reports.atexit, "register", callbacks.append)
+    monkeypatch.setattr(reports.faulthandler, "disable", lambda: None)
+
+    def forward_exception(*args: object) -> None:
+        forwarded.append(args)
+
+    monkeypatch.setattr(reports.sys, "excepthook", forward_exception)
+    monkeypatch.setattr(reports.threading, "excepthook", forwarded.append)
+    monkeypatch.setattr(reports.sys, "unraisablehook", forwarded.append)
+
+    def unavailable(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("Native fault handler unavailable")
+
+    monkeypatch.setattr(reports.faulthandler, "enable", unavailable)
+    support = export_directory / "support"
+    support.mkdir()
+    invalid = support / "error-report-invalid.txt"
+    invalid.write_text("Keep unknown report", encoding="utf-8")
+    before = tuple(logging.getLogger("ride_forces_analyzer").handlers)
+    path = reports.initialize_error_reporting()
+    assert path is not None
+    try:
+        assert reports.initialize_error_reporting() == path
+        assert invalid.read_text(encoding="utf-8") == "Keep unknown report"
+        handler = logging.getLogger("ride_forces_analyzer").handlers[-1]
+        assert handler.formatter is not None
+        assert handler.formatter.formatException((None, None, None)) == ""
+        empty = SimpleNamespace(exc_value=None, exc_traceback=None)
+        reports.threading.excepthook(cast(Any, empty))
+        reports.sys.unraisablehook(cast(Any, empty))
+        assert forwarded == [empty, empty]
+        assert "Native fault handler unavailable" in path.read_text(encoding="utf-8")
+
+        # A later hook owner must not be overwritten when this report closes.
+        def replacement(*args: object) -> None:
+            pass
+
+        reports.sys.excepthook = replacement
+        reports.threading.excepthook = replacement
+        reports.sys.unraisablehook = replacement
+        callbacks.pop()()
+        assert reports.sys.excepthook is replacement
+        assert reports.threading.excepthook is replacement
+        assert reports.sys.unraisablehook is replacement
+        assert tuple(logging.getLogger("ride_forces_analyzer").handlers) == before
+    finally:
+        for close in callbacks:
+            close()
+
+
+def test_process_probe_preserves_reports_when_process_access_is_denied(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from collections.abc import Callable
+    from typing import cast
+    from ride_forces_analyzer.runtime import error_reporting as reports
+
+    running = cast(Callable[[int], bool], getattr(reports, "_running"))
+    with monkeypatch.context() as patch:
+        patch.setattr(reports.sys, "platform", "linux")
+
+        def missing(pid: int, signal: int) -> None:
+            raise ProcessLookupError("No such process")
+
+        patch.setattr(reports.os, "kill", missing)
+        assert not running(123)
+
+        def denied(pid: int, signal: int) -> None:
+            raise PermissionError("Process access denied")
+
+        patch.setattr(reports.os, "kill", denied)
+        assert running(123)
+
+        def active(pid: int, signal: int) -> None:
+            pass
+
+        patch.setattr(reports.os, "kill", active)
+        assert running(123)

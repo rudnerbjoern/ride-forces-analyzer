@@ -10,21 +10,36 @@ from typing import cast
 from PIL import Image
 import pytest
 
-from ride_forces_analyzer import cpu_resources
+from ride_forces_analyzer.runtime import cpu_resources
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering import parallel
-from ride_forces_analyzer.rendering.model import ExportSettings, ExportTimeline, prepare_export
+from ride_forces_analyzer.rendering.model import (
+    VideoOutput,
+    ExportLayout,
+    VideoAspect,
+    ExportSettings,
+    ExportTimeline,
+    prepare_export,
+)
 
 
 @pytest.mark.parametrize(
     "settings",
     [
-        ExportSettings(layout="hud"),
-        ExportSettings(layout="hud", aspect="portrait", output="opaque"),
-        ExportSettings(layout="ribbon", output="opaque"),
-        ExportSettings(layout="corners", aspect="portrait"),
-        ExportSettings(layout="orbit"),
-        ExportSettings(layout="column", aspect="portrait", output="opaque"),
+        ExportSettings(layout=ExportLayout.HUD),
+        ExportSettings(
+            layout=ExportLayout.HUD,
+            aspect=VideoAspect.PORTRAIT,
+            output=VideoOutput.OPAQUE,
+        ),
+        ExportSettings(layout=ExportLayout.RIBBON, output=VideoOutput.OPAQUE),
+        ExportSettings(layout=ExportLayout.CORNERS, aspect=VideoAspect.PORTRAIT),
+        ExportSettings(layout=ExportLayout.ORBIT),
+        ExportSettings(
+            layout=ExportLayout.COLUMN,
+            aspect=VideoAspect.PORTRAIT,
+            output=VideoOutput.OPAQUE,
+        ),
     ],
     ids=lambda settings: f"{settings.layout}-{settings.aspect}-{settings.output}",
 )

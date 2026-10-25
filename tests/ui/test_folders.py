@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QFileDialog
 import pytest
 
 from ride_forces_analyzer.storage.preferences import Preferences
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.ui.helpers import wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 

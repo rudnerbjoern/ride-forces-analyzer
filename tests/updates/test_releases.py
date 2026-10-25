@@ -11,7 +11,7 @@ from urllib.error import URLError
 
 import pytest
 
-from ride_forces_analyzer import updates
+from ride_forces_analyzer.runtime import updates
 from ride_forces_analyzer.storage.preferences import Preferences
 
 

@@ -4,7 +4,7 @@
 
 from dataclasses import replace
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 
 from PIL import Image
 import pytest
@@ -14,40 +14,47 @@ from ride_forces_analyzer.rendering.encoding import encoder_command
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts import COLORS, registry
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition, LayoutPositions
-from ride_forces_analyzer.rendering.model import ExportSettings, ExportTimeline, prepare_export
+from ride_forces_analyzer.rendering.model import (
+    VideoOutput,
+    ExportLayout,
+    VideoAspect,
+    ExportSettings,
+    ExportTimeline,
+    prepare_export,
+)
 
 
 @pytest.mark.parametrize(
     ("layout", "preferred", "expected"),
     [
-        ("orbit", LayoutPosition.TOP, LayoutPosition.TOP_LEFT),
-        ("orbit", LayoutPosition.BOTTOM, LayoutPosition.BOTTOM_LEFT),
-        ("corners", LayoutPosition.BOTTOM, LayoutPosition.BOTTOM_RIGHT),
-        ("corners", LayoutPosition.TOP_LEFT, LayoutPosition.TOP_LEFT),
-        ("ribbon", LayoutPosition.TOP_LEFT, LayoutPosition.TOP),
-        ("ribbon", LayoutPosition.BOTTOM_RIGHT, LayoutPosition.BOTTOM),
-        ("column", LayoutPosition.TOP_LEFT, LayoutPosition.LEFT),
-        ("ribbon", LayoutPosition.LEFT, LayoutPosition.BOTTOM),
-        ("orbit", None, LayoutPosition.BOTTOM_LEFT),
-        ("hud", LayoutPosition.TOP_RIGHT, LayoutPosition.FULL_SCREEN),
-        ("hud", LayoutPosition.FULL_SCREEN, LayoutPosition.FULL_SCREEN),
-        ("orbit", LayoutPosition.FULL_SCREEN, LayoutPosition.BOTTOM_LEFT),
+        (ExportLayout.ORBIT, LayoutPosition.TOP, LayoutPosition.TOP_LEFT),
+        (ExportLayout.ORBIT, LayoutPosition.BOTTOM, LayoutPosition.BOTTOM_LEFT),
+        (ExportLayout.CORNERS, LayoutPosition.BOTTOM, LayoutPosition.BOTTOM_RIGHT),
+        (ExportLayout.CORNERS, LayoutPosition.TOP_LEFT, LayoutPosition.TOP_LEFT),
+        (ExportLayout.RIBBON, LayoutPosition.TOP_LEFT, LayoutPosition.TOP),
+        (ExportLayout.RIBBON, LayoutPosition.BOTTOM_RIGHT, LayoutPosition.BOTTOM),
+        (ExportLayout.COLUMN, LayoutPosition.TOP_LEFT, LayoutPosition.LEFT),
+        (ExportLayout.RIBBON, LayoutPosition.LEFT, LayoutPosition.BOTTOM),
+        (ExportLayout.ORBIT, None, LayoutPosition.BOTTOM_LEFT),
+        (ExportLayout.HUD, LayoutPosition.TOP_RIGHT, LayoutPosition.FULL_SCREEN),
+        (ExportLayout.HUD, LayoutPosition.FULL_SCREEN, LayoutPosition.FULL_SCREEN),
+        (ExportLayout.ORBIT, LayoutPosition.FULL_SCREEN, LayoutPosition.BOTTOM_LEFT),
     ],
 )
 def test_equivalent_position_keeps_shared_axis_and_uses_default_for_other_axis(
-    layout: str,
+    layout: ExportLayout,
     preferred: LayoutPosition | None,
     expected: LayoutPosition,
 ) -> None:
     from ride_forces_analyzer.rendering.model import ExportLayout
 
-    plugin = registry.PLUGINS[cast(ExportLayout, layout)]
+    plugin = registry.PLUGINS[ExportLayout(layout)]
     for positions in (plugin.landscape, plugin.portrait):
         assert positions.select(preferred) == expected
 
 
 def test_fullscreen_switch_preserves_the_previous_corner() -> None:
-    positions = registry.PLUGINS["orbit"].landscape
+    positions = registry.PLUGINS[ExportLayout.ORBIT].landscape
     assert (
         positions.select(LayoutPosition.FULL_SCREEN, LayoutPosition.TOP_RIGHT)
         is LayoutPosition.TOP_RIGHT
@@ -64,32 +71,34 @@ def test_export_settings_validate_positions_for_each_format(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     plugin = replace(
-        registry.PLUGINS["orbit"],
+        registry.PLUGINS[ExportLayout.ORBIT],
         landscape=LayoutPositions({LayoutPosition.TOP: (0, 0, 40, 30)}, LayoutPosition.TOP),
         portrait=LayoutPositions({LayoutPosition.BOTTOM: (10, 20, 30, 40)}, LayoutPosition.BOTTOM),
     )
-    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, "orbit": plugin})
-    settings = ExportSettings(layout="orbit", position=LayoutPosition.TOP)
+    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, ExportLayout.ORBIT: plugin})
+    settings = ExportSettings(layout=ExportLayout.ORBIT, position=LayoutPosition.TOP)
     assert registry.export_region(settings) == (0, 0, 40, 30)
-    assert registry.export_region(ExportSettings(layout="orbit", aspect="portrait")) == (
+    assert registry.export_region(
+        ExportSettings(layout=ExportLayout.ORBIT, aspect=VideoAspect.PORTRAIT),
+    ) == (
         10,
         20,
         30,
         40,
     )
     with pytest.raises(ValueError, match="export position"):
-        replace(settings, aspect="portrait")
+        replace(settings, aspect=VideoAspect.PORTRAIT)
     with pytest.raises(ValueError, match="export position"):
-        ExportSettings(layout="column", position=LayoutPosition.TOP)
+        ExportSettings(layout=ExportLayout.COLUMN, position=LayoutPosition.TOP)
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
-@pytest.mark.parametrize("output", ["transparent", "opaque"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
+@pytest.mark.parametrize("output", [VideoOutput.TRANSPARENT, VideoOutput.OPAQUE])
 def test_selected_region_controls_frame_size_placement_and_encoder_padding(
     manta: ExplorerData,
     monkeypatch: pytest.MonkeyPatch,
-    aspect: Literal["landscape", "portrait"],
-    output: Literal["transparent", "opaque"],
+    aspect: VideoAspect,
+    output: VideoOutput,
 ) -> None:
     assert manta.analysis is not None
 
@@ -101,7 +110,7 @@ def test_selected_region_controls_frame_size_placement_and_encoder_padding(
         return Renderer()
 
     plugin = replace(
-        registry.PLUGINS["orbit"],
+        registry.PLUGINS[ExportLayout.ORBIT],
         landscape=LayoutPositions(
             {LayoutPosition.TOP: (15, 25, 80, 60), LayoutPosition.BOTTOM: (200, 300, 40, 30)},
             LayoutPosition.BOTTOM,
@@ -112,9 +121,9 @@ def test_selected_region_controls_frame_size_placement_and_encoder_padding(
         ),
         create=create,
     )
-    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, "orbit": plugin})
+    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, ExportLayout.ORBIT: plugin})
     settings = ExportSettings(
-        layout="orbit",
+        layout=ExportLayout.ORBIT,
         aspect=aspect,
         output=output,
         position=LayoutPosition.TOP,
@@ -123,7 +132,7 @@ def test_selected_region_controls_frame_size_placement_and_encoder_padding(
     default = prepare_export(manta.analysis, replace(settings, position=None), 3600, 3601)
     assert timeline.analysis is default.analysis is manta.analysis
     assert timeline.analysis.context is default.analysis.context
-    x, y, width, height = (15, 25, 80, 60) if aspect == "landscape" else (25, 35, 60, 80)
+    x, y, width, height = (15, 25, 80, 60) if aspect is VideoAspect.LANDSCAPE else (25, 35, 60, 80)
     renderer = OverlayRenderer(timeline)
     region = renderer.render_region(0)
     frame = renderer.render_frame(0)
@@ -132,12 +141,14 @@ def test_selected_region_controls_frame_size_placement_and_encoder_padding(
     assert frame.crop((x, y, x + width, y + height)).tobytes() == region.tobytes()
     bounds = frame.getchannel("A").getbbox()
     assert bounds == (
-        (x, y, x + width, y + height) if output == "transparent" else (0, 0, *settings.dimensions)
+        (x, y, x + width, y + height)
+        if output == VideoOutput.TRANSPARENT
+        else (0, 0, *settings.dimensions)
     )
     command = encoder_command(Path("ffmpeg"), timeline, Path("output.mov"))
     assert command[command.index("-video_size") + 1] == f"{width}x{height}"
     canvas_width, canvas_height = settings.dimensions
     assert command[command.index("-vf") + 1] == (
         f"pad={canvas_width}:{canvas_height}:{x}:{y}:color=black@"
-        + ("0" if output == "transparent" else "1")
+        + ("0" if output == VideoOutput.TRANSPARENT else "1")
     )

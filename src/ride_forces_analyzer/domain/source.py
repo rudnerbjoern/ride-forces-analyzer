@@ -13,7 +13,7 @@ import re
 from types import MappingProxyType
 from typing import cast
 
-from ._validation import has_type
+from ride_forces_analyzer.validation.checks import has_type, validate_sha256
 
 NUMBER_TOKEN = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\Z")
 
@@ -114,8 +114,7 @@ class SourceProvenance:
         """
         if type(self.byte_count) is not int or self.byte_count < 0:
             raise ValueError("Source byte count must be a nonnegative integer")
-        if not has_type(self.sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", self.sha256):
-            raise ValueError("Source digest must be a lowercase SHA-256 hex string")
+        validate_sha256(self.sha256, "Source digest must be a lowercase SHA-256 hex string")
         if self.path is not None and not has_type(self.path, Path):
             raise TypeError("Source path must be a Path or None")
 

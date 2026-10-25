@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from math import isfinite
 
-from ._validation import has_type
+from ride_forces_analyzer.validation.checks import has_type
 from .source import SourceEnvelope, SourceNumber, SourceValue, freeze_source_value
 
 

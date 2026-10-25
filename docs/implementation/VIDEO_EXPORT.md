@@ -29,7 +29,7 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 | Output             | One video per recording; transparent ProRes 4444 MOV (default) or independent opaque H.264 MP4             |
 | Canvas             | HUD: native 1920×1080 / 1080×1920; other profiles: 3840×2160 / 2160×3840                                   |
 | Profiles           | Flow Ribbon (assistant opening default), Corner Instruments, HUD, G-Orbit, four-panel column               |
-| Frame-rate choices | 24/25/30/50/59.94/60 fps; default 50 without a valid saved preference                                      |
+| Frame-rate choices | 23.976/24/25/30/50/59.94/60 fps; default 50 without a valid saved preference                               |
 | Context window     | 1–60 s, default 12; shared source position and centered cursor in time plots                               |
 | Alignment          | Manual in DaVinci Resolve; source-video ingestion/synchronization excluded                                 |
 
@@ -43,7 +43,13 @@ the supplied [Manta reference recording](../development/RECORDINGS.md#manta).
 
 - Settings → Export persists the default frame rate in `preferences.sqlite3`.
   Save changes it; Cancel and temporary assistant edits do not. Presets/batches
-  retain their own rates, including exact `60000/1001`.
+  retain their own rates, including exact `24000/1001` and `60000/1001`.
+- `rendering.model.StandardFrameRate` owns standard rate values, display labels and
+  exact fractions. `EXPORT_FRAME_RATES` follows enum order; `DEFAULT_FRAME_RATE`
+  selects 50 fps. `FrameRate` also permits custom integers from 1 to 120.
+  Standard integers normalize to enum members in `ExportSettings`; Python callers
+  use enum members for fractional rates. Preset JSON and encoder metadata retain
+  integer whole rates and exact fractional strings, without a storage migration.
 - The local `render_jobs` preference defaults to 1 and accepts positive integers,
   capped at the detected logical processor count (1 if unavailable). Settings →
   Export applies it to newly started individual and batch exports. It is not part
@@ -56,6 +62,12 @@ the supplied [Manta reference recording](../development/RECORDINGS.md#manta).
 - Presets/immutable batch jobs explicitly retain aspect, overlay language, vertical
   direction and analysis recipe; incomplete saved settings are rejected.
   Mixed-aspect batches are supported.
+- Python callers select `VideoAspect.LANDSCAPE` or `VideoAspect.PORTRAIT` from
+  `rendering.model`; `VideoAspect(value)` converts supported text values.
+  Saved JSON retains `landscape` and `portrait`; existing presets need no migration.
+- `VideoOutput.TRANSPARENT` selects the alpha overlay in ProRes 4444 MOV;
+  `VideoOutput.OPAQUE` selects the black-background video in H.264 MP4.
+  Both come from `rendering.model`; saved JSON retains `transparent` and `opaque`.
 - Overlay language is English/German/French, initially following UI language but independently
   selectable. Production previews/frames share localized labels/numbers.
   Replay clocks, source values, geometry, signs and units remain unchanged.
@@ -99,8 +111,8 @@ encoding; presets and compact layout thumbnails remain directly accessible.
   Inclusive ranges include the final sample interval; duration rounds up to a frame.
 - Force readouts use one decimal place in every layout and production preview.
   Curves, pointers, analysis buffers and data exports retain their existing precision.
-- 59.94 uses exact `60000/1001` in timing, frame counts, FFmpeg and saved settings.
-  Use a matching 59.94 editing timeline for GoPro footage recorded at that rate.
+- 23.976 and 59.94 use exact `24000/1001` and `60000/1001` in timing, frame counts,
+  FFmpeg and saved settings. Match the recording and editing timeline's frame rate.
 - Default interval uses effective start/end markers; current selection and entire
   recording are alternatives. Plot context outside the exported interval is blank.
 - Replay labels retain sample-counter notation. Graphics omit Hz/fps; neither
@@ -230,12 +242,19 @@ encoding; presets and compact layout thumbnails remain directly accessible.
 
 ### Estimates and progress
 
-| Estimate             | Contract and limits                                                                                                                      |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| File size            | Live approximate MiB range in settings/review, using rounded frame count, canvas/overlay area and codec; no FFmpeg or trial rendering    |
-| Size uncertainty     | HUD H.264 and GPU-preferred ProRes use measured references; other combinations use a generic heuristic. Neither guarantees bounds        |
-| Remaining frame time | Single-video export, 2 s timer; elapsed monotonic time per submitted frame × pending count; min:sec, including startup overhead          |
-| ETA states           | Estimating before first frame; finalization after last frame has no predicted duration; cancel/failure/completion clears ETA             |
+| Estimate             | Contract and limits                                                                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| File size            | Live approximate MiB range in settings/review, using rounded frame count, canvas/overlay area and codec; no FFmpeg or trial rendering           |
+| Size uncertainty     | HUD H.264 and GPU-preferred ProRes use measured references; other combinations use a generic heuristic. Neither guarantees bounds               |
+| Remaining frame time | Single and batch exports share `ExportProgress`; monotonic elapsed time per submitted frame × pending count; min:sec, including encoder startup |
+| ETA states           | Estimating before first frame; finalization after last frame has no predicted duration; cancel/failure/completion clears ETA                    |
+
+`export_video` emits immutable `ExportProgress` snapshots through its callback:
+preparing, rendering, finalizing and completed. They carry submitted/total frame
+counts, monotonic elapsed time, the actual CPU/GPU backend and a shared
+remaining-frame estimate. Completion follows successful file publication. Frame
+counts measure input submitted to FFmpeg, not encoded output. Qt workers transport
+these snapshots; neither dialog owns a clock or estimates throughput.
 
 The owner-provided HUD references use 1920×1080 and 60000/1001 fps:
 

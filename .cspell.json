@@ -9,11 +9,11 @@
   ],
   "overrides": [
     {
-      "filename": "src/ride_forces_analyzer/translations_de.py",
+      "filename": "src/ride_forces_analyzer/i18n/de.py",
       "language": "en,de"
     },
     {
-      "filename": "src/ride_forces_analyzer/translations_fr.py",
+      "filename": "src/ride_forces_analyzer/i18n/fr.py",
       "language": "en,fr"
     }
   ],

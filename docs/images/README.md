@@ -24,6 +24,9 @@ Suggested attribution, adjusted for the filename and changes:
 
 This grant covers the owner's image rights, not third-party trademarks, fonts,
 external Ride Forces/Apple Maps screenshots or users' own recordings and exports.
+The map background in `voltron-gps-overview.png` is © OpenStreetMap contributors;
+retain its attribution and see [OpenStreetMap copyright](https://www.openstreetmap.org/copyright)
+for the map's terms.
 Program code has its own GPL license; supplied recordings have a separate
 [recording notice](../../tests/fixtures/real/README.md).
 
@@ -38,6 +41,7 @@ Source hashes and exact settings are retained in the linked generated manifests.
 | Images                                                | Content and fixed settings                                                                                                                                                                                                                               | Manifest                                 |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `workspace-dark.png`, `workspace-light.png`           | Voltron Nevera sample 4960, replay `01:07.39`, selection 4200–5100, 11-sample smoothing; 1600×1100 workspace.                                                                                                                                            | [Application](app-reference.json)        |
+| `voltron-gps-overview.png`                            | Voltron Nevera GPS dialog, 850×650, English, full recorded route with first/last markers and an explicitly loaded OpenStreetMap background. Map details may change over time.                                                                            | [GPS](gps-reference.json)                |
 | `export-preview.png`                                  | Same Voltron sample and smoothing; 1500×1000 assistant, Flow Ribbon selected at the bottom, five layout thumbnails, landscape transparent output, 50 fps, 12-second window.                                                                              | [Application](app-reference.json)        |
 | Voltron layout images and `voltron-export-themes.png` | All five layouts at sample 8575, replay `02:20.04` (140.08 s at 50 Hz; recording time 171.50 s), marker interval 1571–10374, 11-sample smoothing; 3840×2160 placement views and detail crops. HUD uses a 30-second window; other layouts use 12 seconds. | [Voltron Nevera](voltron-reference.json) |
 | `voltron-airtime-detail.png`                          | Voltron sample 4960, replay `01:07.39`, interval 4500–5250, 11-sample smoothing; force curves, context strip and legend.                                                                                                                                 | [README details](readme-reference.json)  |
@@ -59,6 +63,8 @@ Run the required command from the repository root in native Windows PowerShell:
 ```powershell
 # Workspace and export assistant
 .\.venv\Scripts\python.exe .\scripts\capture_app_reference.py
+# GPS overview with OpenStreetMap background (requires internet)
+.\.venv\Scripts\python.exe .\scripts\capture_app_reference.py --gps
 # README details
 .\.venv\Scripts\python.exe .\scripts\capture_app_reference.py --details
 # Appearance gallery

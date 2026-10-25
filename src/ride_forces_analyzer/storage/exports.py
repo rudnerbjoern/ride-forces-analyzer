@@ -14,7 +14,7 @@ import sqlite3
 from pydantic import ValidationError
 
 from .export_models import SavedBatch, SavedPreset, BatchJob
-from ride_forces_analyzer.runtime_paths import data_directory
+from ride_forces_analyzer.runtime.paths import data_directory
 
 
 def default_database_path() -> Path:

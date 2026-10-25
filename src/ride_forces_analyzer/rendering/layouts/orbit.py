@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 from math import cos, sin, radians
 from ..peaks import PeakEnvelope
 from .common import ACCELERATION_COLOR, BRAKING_COLOR, Drawing
-from .contracts import LayoutPlugin, LayoutPosition, LayoutPositions
+from .contracts import ExportLayout, LayoutPlugin, LayoutPosition, LayoutPositions
 
 
 FONT_FILE = "segoeui.ttf"  # Regular Windows font file.
@@ -377,4 +377,4 @@ class OrbitRenderer(Drawing):
         return image
 
 
-PLUGIN = LayoutPlugin("orbit", LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, OrbitRenderer)
+PLUGIN = LayoutPlugin(ExportLayout.ORBIT, LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, OrbitRenderer)

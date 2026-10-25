@@ -48,7 +48,13 @@ You can manage saved batches without opening a recording first.
 1. Check the **FFmpeg** field; use **Browse…** if the executable was not found.
 2. Select the batches you want and click **Run selected batches…**, or choose
    **Run ALL saved batches…**.
-3. Choose an output folder and follow the current-job progress and result counts.
+3. Choose an output folder and follow the two progress bars.
+
+**Overall batch** gives every job an equal share, regardless of video length.
+**Current export** shows the frames prepared for the current video and resets
+when the next job starts. The remaining time estimates those pending frames.
+Afterward, **Finalizing video…** means the encoder is still finishing the file;
+its remaining time is unknown.
 
 Frame generation uses **Settings → Export → Parallel render jobs** on this computer,
 as described in the [video export guide](VIDEO_EXPORT.md). Videos still run one

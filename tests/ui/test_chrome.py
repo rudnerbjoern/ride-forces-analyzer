@@ -18,14 +18,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ride_forces_analyzer.gps_overview import GpsOverview
+from ride_forces_analyzer.gps.overview import GpsOverview
 from ride_forces_analyzer.storage.exports import ExportStore
-from ride_forces_analyzer.ui.about import AboutDialog
-from ride_forces_analyzer.ui.batches import BatchDialog
-from ride_forces_analyzer.ui.export import ExportDialog
-from ride_forces_analyzer.ui.gps import gps_dialog
-from ride_forces_analyzer.ui.preferences import SettingsDialog
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.dialogs.about import AboutDialog
+from ride_forces_analyzer.ui.exports.batches import BatchDialog
+from ride_forces_analyzer.ui.exports.video import ExportDialog
+from ride_forces_analyzer.ui.dialogs.gps import gps_dialog
+from ride_forces_analyzer.ui.dialogs.settings import SettingsDialog
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from tests.ui.helpers import wait_until
 
@@ -51,8 +51,13 @@ def test_native_captions_follow_theme_for_all_application_windows(
     view = route.findChild(QGraphicsView)
     assert view is not None
     dialogs = (
-        SettingsDialog(window.preferences, window, language=window.ui_language),
-        AboutDialog(window, window.updates),
+        SettingsDialog(
+            window.preferences,
+            window,
+            language=window.ui_language,
+            updates=window.updates,
+        ),
+        AboutDialog(window),
         export,
         batches,
         route,
@@ -72,9 +77,15 @@ def test_native_captions_follow_theme_for_all_application_windows(
     def assert_shared_palette() -> None:
         assert view is not None
         assert view.palette().base().color() == QColor(window.theme.panel)
-        assert export.seconds.palette().base().color() == window.position.palette().base().color()
-        assert batches.table.palette().base().color() == window.position.palette().base().color()
-        assert export.preview_result is preview
+        assert (
+            export.form.seconds.palette().base().color()
+            == window.navigation.position.palette().base().color()
+        )
+        assert (
+            batches.table.palette().base().color()
+            == window.navigation.position.palette().base().color()
+        )
+        assert export.previews.result is preview
         scene = view.scene()
         assert scene is not None and scene.backgroundBrush().style().value == 0
 
@@ -82,8 +93,8 @@ def test_native_captions_follow_theme_for_all_application_windows(
         window.set_appearance(0)
         for dialog in dialogs:
             dialog.show()
-        wait_until(lambda: export.preview_result is not None and export.preview_worker is None)
-        preview = export.preview_result
+        wait_until(lambda: export.previews.result is not None and export.previews.worker is None)
+        preview = export.previews.result
         QApplication.processEvents()
         for widget in (window, *dialogs):
             assert is_dark(widget), type(widget).__name__

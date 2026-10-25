@@ -1,5 +1,7 @@
 """Actual export previews use exact graph samples, production frames and no encoder."""
 
+from ride_forces_analyzer.rendering.model import StandardFrameRate
+
 # cspell:words LANCZOS getpixel getchannel getbbox
 
 from dataclasses import replace
@@ -11,34 +13,41 @@ import pytest
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
-from ride_forces_analyzer.rendering.model import ExportSettings, PROFILES, prepare_export
+from ride_forces_analyzer.rendering.model import (
+    VideoOutput,
+    FrameRate,
+    ExportLayout,
+    VideoAspect,
+    ExportSettings,
+    PROFILES,
+    prepare_export,
+)
 from ride_forces_analyzer.rendering.preview import PreviewBackground, build_previews
 
 
 @pytest.mark.parametrize("layout", [profile[0] for profile in PROFILES])
-def test_portrait_contains_complete_region(manta: ExplorerData, layout: str) -> None:
+def test_portrait_contains_complete_region(manta: ExplorerData, layout: ExportLayout) -> None:
     assert manta.analysis is not None
-    from typing import cast
     from ride_forces_analyzer.rendering.model import ExportLayout
     from ride_forces_analyzer.rendering.layouts import export_region
 
-    settings = ExportSettings(layout=cast(ExportLayout, layout), aspect="portrait")
+    settings = ExportSettings(layout=ExportLayout(layout), aspect=VideoAspect.PORTRAIT)
     renderer = OverlayRenderer(prepare_export(manta.analysis, settings, 3500, 3700))
     frame = renderer.render_sample(3600)
     x, y, width, height = export_region(settings)
-    if layout == "hud":
+    if layout == ExportLayout.HUD:
         assert (x, y, width, height) == (0, 0, *frame.size)
     else:
         assert x > 0 and y > 0 and x + width < frame.width and y + height < frame.height
     region = renderer.render_region(0)
     assert region.size == (width, height)
     bounds = frame.getchannel("A").getbbox()
-    if layout == "hud":
+    if layout == ExportLayout.HUD:
         assert bounds is not None
         # The bottom gradient reaches the frame edges; the upper canvas stays open.
         assert bounds[0] == 0 and bounds[2:] == (width, height)
         assert 0 < bounds[1] < height
-    elif layout == "orbit":
+    elif layout == ExportLayout.ORBIT:
         assert width == height and bounds is not None
         assert x <= bounds[0] < x + 10 and y <= bounds[1] < y + 10
         assert x + width - 10 < bounds[2] <= x + width
@@ -58,19 +67,21 @@ def test_portrait_contains_complete_region(manta: ExplorerData, layout: str) -> 
     )
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
-@pytest.mark.parametrize("selected_layout", ["orbit", "hud"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
+@pytest.mark.parametrize("selected_layout", [ExportLayout.ORBIT, ExportLayout.HUD])
 def test_previews_match_production_at_exact_graph_sample(
     manta: ExplorerData,
-    aspect: Literal["landscape", "portrait"],
-    selected_layout: Literal["orbit", "hud"],
+    aspect: VideoAspect,
+    selected_layout: Literal[ExportLayout.ORBIT, ExportLayout.HUD],
 ) -> None:
     assert manta.analysis is not None
     sample = manta.source.recording.indices.start + 72 * 50 + 1
     settings = ExportSettings(
         layout=selected_layout,
         position=(
-            LayoutPosition.FULL_SCREEN if selected_layout == "hud" else LayoutPosition.TOP_RIGHT
+            LayoutPosition.FULL_SCREEN
+            if selected_layout == ExportLayout.HUD
+            else LayoutPosition.TOP_RIGHT
         ),
         fps=30,
         aspect=aspect,
@@ -90,16 +101,18 @@ def test_previews_match_production_at_exact_graph_sample(
                 settings,
                 layout=profile.layout,
                 position={
-                    "corners": LayoutPosition.TOP_RIGHT,
-                    "column": LayoutPosition.RIGHT,
-                    "ribbon": (
-                        LayoutPosition.BOTTOM if selected_layout == "hud" else LayoutPosition.TOP
+                    ExportLayout.CORNERS: LayoutPosition.TOP_RIGHT,
+                    ExportLayout.COLUMN: LayoutPosition.RIGHT,
+                    ExportLayout.RIBBON: (
+                        LayoutPosition.BOTTOM
+                        if selected_layout == ExportLayout.HUD
+                        else LayoutPosition.TOP
                     ),
-                    "hud": LayoutPosition.FULL_SCREEN,
-                    "orbit": LayoutPosition.BOTTOM_LEFT,
+                    ExportLayout.HUD: LayoutPosition.FULL_SCREEN,
+                    ExportLayout.ORBIT: LayoutPosition.BOTTOM_LEFT,
                 }[profile.layout],
                 invert_vertical=True,
-                invert_lateral=profile.layout == "column",
+                invert_lateral=profile.layout == ExportLayout.COLUMN,
             )
         )
         actual = OverlayRenderer(prepare_export(manta.analysis, chosen, first, last)).render_sample(
@@ -107,7 +120,10 @@ def test_previews_match_production_at_exact_graph_sample(
         )
         expected = (
             Image.alpha_composite(Image.new("RGBA", actual.size, "#162533"), actual)
-            .resize((540, 960) if aspect == "portrait" else (960, 540), Image.Resampling.LANCZOS)
+            .resize(
+                (540, 960) if aspect is VideoAspect.PORTRAIT else (960, 540),
+                Image.Resampling.LANCZOS,
+            )
             .convert("RGB")
         )
         assert profile.image.tobytes() == expected.tobytes()
@@ -133,17 +149,17 @@ def test_edge_choice_moves_corner_previews_to_equivalent_side(
     monkeypatch.setattr(OverlayRenderer, "render_sample", render)
     build_previews(
         manta.analysis,
-        ExportSettings(layout="ribbon", position=position),
+        ExportSettings(layout=ExportLayout.RIBBON, position=position),
         3500,
         3700,
         3600,
-        previous_positions={"orbit": previous},
+        previous_positions={ExportLayout.ORBIT: previous},
     )
-    assert settings_by_layout["corners"].position == (
+    assert settings_by_layout[ExportLayout.CORNERS].position == (
         LayoutPosition.TOP_RIGHT if position == LayoutPosition.TOP else LayoutPosition.BOTTOM_RIGHT
     )
     assert (
-        settings_by_layout["orbit"].position
+        settings_by_layout[ExportLayout.ORBIT].position
         == {
             (LayoutPosition.TOP, LayoutPosition.TOP_LEFT): LayoutPosition.TOP_LEFT,
             (LayoutPosition.BOTTOM, LayoutPosition.TOP_LEFT): LayoutPosition.BOTTOM_LEFT,
@@ -153,10 +169,13 @@ def test_edge_choice_moves_corner_previews_to_equivalent_side(
     )
 
 
-@pytest.mark.parametrize("fps", [30, 50, 60, "60000/1001"])
+@pytest.mark.parametrize(
+    "fps",
+    [30, 50, 60, StandardFrameRate.FPS_23_976, StandardFrameRate.FPS_59_94],
+)
 def test_preview_sample_is_independent_of_video_rate(
     manta: ExplorerData,
-    fps: int | Literal["60000/1001"],
+    fps: FrameRate,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     assert manta.analysis is not None
@@ -179,10 +198,10 @@ def test_preview_sample_is_independent_of_video_rate(
     assert positions == [sample] * len(PROFILES)
 
 
-@pytest.mark.parametrize("mode", ["transparent", "opaque"])
+@pytest.mark.parametrize("mode", [VideoOutput.TRANSPARENT, VideoOutput.OPAQUE])
 def test_outside_range_keeps_graph_sample_and_smoothing(
     manta: ExplorerData,
-    mode: Literal["transparent", "opaque"],
+    mode: VideoOutput,
 ) -> None:
     data = manta.with_smoothing(3)
     assert data.analysis is not None
@@ -194,7 +213,7 @@ def test_outside_range_keeps_graph_sample_and_smoothing(
     assert data.source.source_sha256 == original and data.calibration_available
     assert data.smoothing_window == 3
     assert all(
-        p.image.getpixel((0, 0)) == ((0, 0, 0) if mode == "opaque" else (228, 234, 240))
+        p.image.getpixel((0, 0)) == ((0, 0, 0) if mode == VideoOutput.OPAQUE else (228, 234, 240))
         for p in result.profiles
     )
     with pytest.raises(ValueError, match="outside"):

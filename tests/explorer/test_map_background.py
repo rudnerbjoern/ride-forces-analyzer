@@ -12,8 +12,8 @@ from PySide6.QtCore import QBuffer, QIODevice, Qt
 from PySide6.QtGui import QImage, QImageWriter
 import pytest
 
-from ride_forces_analyzer import map_background as maps
-from ride_forces_analyzer.gps_overview import GpsOverview
+from ride_forces_analyzer.gps import map_background as maps
+from ride_forces_analyzer.gps.overview import GpsOverview
 from ride_forces_analyzer.storage import map_tiles
 from ride_forces_analyzer.storage.map_tiles import TileCache, TileEntry
 
@@ -104,12 +104,15 @@ def test_tiles_cache_then_revalidate_and_crop_exact_viewport(
     first = maps.load_background(request, Event())
     assert (first.image.width(), first.image.height()) == (128, 128)
     assert first.image.pixelColor(0, 0) == QImage.fromData(data).pixelColor(64, 64)
-    maps.load_background(request, Event())
+    maps.load_background(request, Event(), cache_only=True)
     assert len(calls) == 1
     assert calls[0].full_url == "https://tile.openstreetmap.org/0/0/0.png"
     assert calls[0].data is None
     assert "Ride-Forces-Analyzer/" in str(calls[0].get_header("User-agent"))
     now[0] += 11
+    with pytest.raises(maps.MapError, match="fresh in cache"):
+        maps.load_background(request, Event(), cache_only=True)
+    assert len(calls) == 1
     maps.load_background(request, Event())
     assert len(calls) == 2
     assert calls[1].get_header("If-none-match") == '"tile-1"'

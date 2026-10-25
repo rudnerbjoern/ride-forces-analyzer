@@ -10,7 +10,7 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-from ride_forces_analyzer.analysis import airtime, recording
+from ride_forces_analyzer.analysis import airtime, preparation
 from ride_forces_analyzer.analysis.models import AnalysisProfile
 from ride_forces_analyzer.analysis.recording import (
     AnalysisConfiguration,
@@ -31,8 +31,8 @@ LATER = NOW + timedelta(seconds=1)
 def _spies(monkeypatch: pytest.MonkeyPatch) -> tuple[Mock, Mock, Mock, Mock]:
     calls: list[Mock] = []
     for name in ("project_directions", "centered_mean", "orientation_degrees"):
-        spy = Mock(wraps=getattr(recording, name))
-        monkeypatch.setattr(recording, name, spy)
+        spy = Mock(wraps=getattr(preparation, name))
+        monkeypatch.setattr(preparation, name, spy)
         calls.append(spy)
     context = Mock(wraps=airtime.AirtimeContext.prepare)
     monkeypatch.setattr(airtime.AirtimeContext, "prepare", context)

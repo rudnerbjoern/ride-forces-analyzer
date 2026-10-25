@@ -135,7 +135,7 @@ working directory is the repository root. npm and skill tests run separately.
 Pylance/Pyright share strict `[tool.pyright]` settings in `pyproject.toml`; Ruff
 uses the locked `.venv/Scripts/ruff.exe` and formats on save.
 **Run Tests with Coverage** uses the locked development dependency `pytest-cov`.
-See [coverage commands and limits](CODE_QUALITY.md#recording-model-and-service-coverage);
+See [coverage commands and limits](CODE_QUALITY.md#coverage-gate);
 after setup, select `.venv/Scripts/python.exe` and refresh test discovery.
 
 Only shared `.vscode/settings.json` and `extensions.json` are eligible for Git.

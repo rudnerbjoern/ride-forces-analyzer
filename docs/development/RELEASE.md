@@ -83,8 +83,9 @@ See [GitHub's automatic release notes](https://docs.github.com/en/repositories/r
 
 ## In-application update discovery
 
-The About dialog offers a manual release check and an opt-in startup check
-(disabled by default). Startup checks run in a worker at most once per 24 hours;
+Settings → Updates offers the manual release check and the opt-in startup check
+(disabled by default). Save applies the startup preference; Cancel preserves it.
+Startup checks run in a worker at most once per 24 hours;
 attempts, including failures, are recorded in `preferences.sqlite3`. It also stores
 the opt-in and one skipped tag. Manual checks bypass the interval and skipped tag.
 Only published releases with an uploaded application download for the running
@@ -102,7 +103,7 @@ the notice, or saves the skipped tag. Nothing downloads or installs automaticall
 
 ## Shared application icon
 
-[`ui/app-icon.svg`](../../src/ride_forces_analyzer/ui/app-icon.svg) is the shared
+[`ui/presentation/app-icon.svg`](../../src/ride_forces_analyzer/ui/presentation/app-icon.svg) is the shared
 window/package artwork. [`scripts.build_icons`](../../scripts/build_icons.py)
 renders it with the existing Qt SVG renderer and writes ICO (16–256 px),
 ICNS (up to 1024 px) and PNG (512 px) under the build's temporary icon directory.

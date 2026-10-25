@@ -8,7 +8,7 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-from ride_forces_analyzer.analysis import events as detection, recording
+from ride_forces_analyzer.analysis import events as detection, preparation
 from ride_forces_analyzer.analysis.models import CapabilityState, SampleValues
 from ride_forces_analyzer.analysis.recording import (
     AnalysisStage,
@@ -16,6 +16,8 @@ from ride_forces_analyzer.analysis.recording import (
     RecordingAnalysis,
     StageConfiguration,
     VerticalContext,
+)
+from ride_forces_analyzer.analysis.preparation import (
     source_app_configuration,
 )
 from ride_forces_analyzer.analysis.service import AnalysisService
@@ -261,7 +263,7 @@ def test_rules_and_context_changes_respect_independent_dependencies(
     detector = Mock(wraps=detection.evaluate_events)
     monkeypatch.setattr(detection, "evaluate_events", detector)
     monkeypatch.setattr(
-        recording,
+        preparation,
         "project_directions",
         Mock(side_effect=AssertionError("Projection")),
     )

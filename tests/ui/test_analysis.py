@@ -12,8 +12,8 @@ from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from ride_forces_analyzer.analysis.service import AnalysisService
 from ride_forces_analyzer.explorer import ExplorerData, present_recording
 from ride_forces_analyzer.importers import ImportSuccess
-from ride_forces_analyzer.ui import loading
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.explorer import loading
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.analysis.test_recording_preparation import synthetic_source
 from tests.ui.helpers import wait_until
 
@@ -62,25 +62,31 @@ def test_worker_keeps_ui_responsive_and_applies_snapshot_on_ui_thread(
 
     monkeypatch.setattr(AnalysisService, "request_smoothing", blocked)
     try:
-        window.smoothing_slider.setValue(2)
+        window.inspector.smoothing_slider.setValue(2)
         assert entered.wait(5)
         assert controller.pending and window.data is old
-        window.position.setValue(3)
-        window.first.setValue(1)
-        window.last.setValue(5)
-        window.axis_x.setRange(old.time_at(1), old.time_at(5))
+        window.navigation.position.setValue(3)
+        window.inspector.first.setValue(1)
+        window.inspector.last.setValue(5)
+        window.plot.axis_x.setRange(old.time_at(1), old.time_at(5))
         QApplication.processEvents()
-        assert window.position.value() == 3
+        assert window.navigation.position.value() == 3
     finally:
         release.set()
     wait_until(lambda: not controller.pending)
     data = window.data
     assert data is not None and data.analysis is not None and data.calibration_available
+    assert window.plot.data is data
+    assert window.inspector.data is data and window.navigation.data is data
     assert data.smoothing_window == 5
     assert data.analysis.forces.projected is old.analysis.forces.projected
     assert data.analysis.orientation is old.analysis.orientation
-    assert (window.first.value(), window.last.value(), window.position.value()) == (1, 5, 3)
-    assert (window.axis_x.min(), window.axis_x.max()) == (old.time_at(1), old.time_at(5))
+    assert (
+        window.inspector.first.value(),
+        window.inspector.last.value(),
+        window.navigation.position.value(),
+    ) == (1, 5, 3)
+    assert (window.plot.axis_x.min(), window.plot.axis_x.max()) == (old.time_at(1), old.time_at(5))
     assert all(thread != window.thread() for thread in worker_threads)
     assert delivered_threads and all(thread == window.thread() for thread in delivered_threads)
 
@@ -148,7 +154,7 @@ def test_analysis_failure_keeps_previous_values_and_recovers(
     QApplication.processEvents()
     controller.request_smoothing(2)
     wait_until(lambda: not controller.pending)
-    assert window.data is old and window.smoothing_slider.value() == 5
+    assert window.data is old and window.inspector.smoothing_slider.value() == 5
     assert window.statusBar().currentMessage().startswith("Analysis failed:")
     controller.request_smoothing(5)
     wait_until(lambda: not controller.pending)
@@ -228,5 +234,5 @@ def test_loaded_snapshot_restores_its_smoothing_window(
     assert explorer_window.data is not None
     assert explorer_window.data.analysis is data.analysis
     assert explorer_window.data.smoothing_window == 3
-    assert explorer_window.smoothing_slider.value() == 1
-    assert "3 samples" in explorer_window.smoothing_label.text()
+    assert explorer_window.inspector.smoothing_slider.value() == 1
+    assert "3 samples" in explorer_window.inspector.smoothing_label.text()

@@ -1,18 +1,35 @@
 import pytest
 from pydantic import ValidationError
 
-from ride_forces_analyzer.config import AppSettings
+from ride_forces_analyzer.runtime.config import AppSettings
+from ride_forces_analyzer.i18n import Language
 
 
 def test_default_settings() -> None:
     settings = AppSettings()
     assert settings.window_title == "Ride Forces Analyzer"
     assert (settings.window_width, settings.window_height) == (1280, 820)
+    assert settings.language is Language.ENGLISH
 
 
 def test_custom_settings_round_trip() -> None:
     settings = AppSettings(window_title="Custom window", window_width=800, window_height=500)
     assert AppSettings.model_validate_json(settings.model_dump_json()) == settings
+
+
+@pytest.mark.parametrize("language", list(Language))
+def test_language_members_preserve_json_codes_and_strict_python_validation(
+    language: Language,
+) -> None:
+    settings = AppSettings(language=language)
+    restored = AppSettings.model_validate_json(settings.model_dump_json())
+    assert restored.language is language
+    assert (
+        AppSettings.model_validate_json(f'{{"language":"{language.value}"}}').language is language
+    )
+    assert settings.model_dump(mode="json")["language"] == language.value
+    with pytest.raises(ValidationError):
+        AppSettings.model_validate({"language": language.value})
 
 
 @pytest.mark.parametrize("field", ["window_width", "window_height"])

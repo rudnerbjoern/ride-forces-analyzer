@@ -4,6 +4,8 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
+from ride_forces_analyzer.validation.checks import validate_sha256
+
 from contextlib import closing
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -13,11 +15,10 @@ import sqlite3
 from pydantic import FiniteFloat, TypeAdapter
 
 from .exports import default_database_path
-from ride_forces_analyzer.rendering.model import EXPORT_FRAME_RATES, FrameRate
+from ride_forces_analyzer.rendering.model import DEFAULT_FRAME_RATE, StandardFrameRate, FrameRate
 from ride_forces_analyzer.i18n import LANGUAGES, Language
 from typing import Literal
 from math import isfinite
-import re
 
 from ride_forces_analyzer.analysis.calibration import (
     CalibrationOverrides,
@@ -31,9 +32,7 @@ _RECORDING_BOUNDS = TypeAdapter(tuple[int, int])
 
 
 def _recording_hash(value: object) -> str:
-    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
-        raise ValueError("Expected a source SHA-256")
-    return value
+    return validate_sha256(value, "Expected a source SHA-256")
 
 
 def _recording_bounds(value: tuple[int, int]) -> tuple[int, int]:
@@ -396,7 +395,7 @@ class Preferences:
         except OSError, ValueError:
             return ""
 
-    def language(self, default: Language = "en") -> Language:
+    def language(self, default: Language = Language.ENGLISH) -> Language:
         """Read a valid saved language or the caller's fallback.
 
         Args:
@@ -404,6 +403,9 @@ class Preferences:
 
         Returns:
             Valid saved interface language, or the supplied fallback.
+
+        Raises:
+            ValueError: The fallback is not a Language member.
         """
         default = _LANGUAGE.validate_python(default, strict=True)
         value = self._read("language")
@@ -432,8 +434,11 @@ class Preferences:
 
         Returns:
             None.
+
+        Raises:
+            ValueError: The value is not a Language member; storage is unchanged.
         """
-        self._write("language", _LANGUAGE.validate_python(value, strict=True))
+        self._write("language", _LANGUAGE.validate_python(value, strict=True).value)
 
     def remember_appearance(self, value: Appearance) -> None:
         """Persist the selected appearance preference.
@@ -446,17 +451,17 @@ class Preferences:
         """
         self._write("appearance", _APPEARANCE.validate_python(value, strict=True).value)
 
-    def export_fps(self) -> FrameRate:
+    def export_fps(self) -> StandardFrameRate:
         """Read the default frame-rate choice for new video exports.
 
         Returns:
             Saved output frame rate or its admitted default.
         """
         value = self._read("export_fps")
-        for rate in EXPORT_FRAME_RATES:
-            if str(rate) == value:
-                return rate
-        return 50
+        try:
+            return StandardFrameRate(value)
+        except ValueError:
+            return DEFAULT_FRAME_RATE
 
     def remember_export_fps(self, value: FrameRate) -> None:
         """Persist the selected export fps preference.
@@ -470,9 +475,13 @@ class Preferences:
         Raises:
             ValueError: Unsupported default export frame rate.
         """
-        if type(value) not in (int, str) or value not in EXPORT_FRAME_RATES:
+        if type(value) not in (int, StandardFrameRate):
             raise ValueError("Unsupported default export frame rate")
-        self._write("export_fps", str(value))
+        try:
+            rate = StandardFrameRate(str(value))
+        except ValueError:
+            raise ValueError("Unsupported default export frame rate") from None
+        self._write("export_fps", rate.value)
 
     def render_jobs(self) -> int:
         """Read the locally permitted number of concurrent frame renderers.
@@ -480,7 +489,7 @@ class Preferences:
         Returns:
             Saved renderer count fitted to the local CPU limit.
         """
-        from ride_forces_analyzer.cpu_resources import effective_render_jobs
+        from ride_forces_analyzer.runtime.cpu_resources import effective_render_jobs
 
         value = self._read("render_jobs")
         try:
@@ -497,7 +506,7 @@ class Preferences:
         Returns:
             None.
         """
-        from ride_forces_analyzer.cpu_resources import effective_render_jobs
+        from ride_forces_analyzer.runtime.cpu_resources import effective_render_jobs
 
         self._write("render_jobs", str(effective_render_jobs(value)))
 

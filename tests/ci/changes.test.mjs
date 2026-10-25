@@ -24,7 +24,7 @@ for (const filename of ["README.md", "AGENTS.md", "docs/nested/PLAN.md",
 for (const filename of ["src/ride_forces_analyzer/importers/service.py", "tests/importers/test_decoder.py",
   "tests/types/recording.test.mjs", "tests/docs/documentation.test.mjs",
   "tests/fixtures/schema-inventory.json", "tests/fixtures/real/recording.forces",
-  "src/ride_forces_analyzer/translations_de.py", "src/ride_forces_analyzer/translations_fr.py",
+  "src/ride_forces_analyzer/i18n/de.py", "src/ride_forces_analyzer/i18n/fr.py",
   "tests/localization/test_catalog.py", "tests/ui/test_french.py",
   ".node-version", "ffmpeg.json", "package.json", "package-lock.json", ".vscode/settings.json", "tools/check.ps1"]) {
   test(`Application/shared tooling input selects application checks: ${filename}`, () => {

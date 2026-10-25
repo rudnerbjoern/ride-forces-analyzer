@@ -16,13 +16,15 @@ import shutil
 import subprocess
 import sys
 from threading import Event
+from time import monotonic
 from uuid import uuid4
 
 from .layouts import export_region
-from .model import ExportTimeline
+from .model import VideoOutput, ExportTimeline, frame_rate_value
 from .parallel import render_region_bytes
-from ride_forces_analyzer.cpu_resources import effective_render_jobs
-from ride_forces_analyzer.runtime_paths import ffmpeg_name
+from .progress import ExportPhase, ExportProgress
+from ride_forces_analyzer.runtime.cpu_resources import effective_render_jobs
+from ride_forces_analyzer.runtime.paths import ffmpeg_name
 
 
 class ExportCancelled(Exception):
@@ -94,7 +96,7 @@ def encoder_command(
     Returns:
         Complete encoder argument vector for the selected output and backend.
     """
-    transparent = timeline.settings.output == "transparent"
+    transparent = timeline.settings.output == VideoOutput.TRANSPARENT
     codec = (
         [
             "-c:v",
@@ -152,7 +154,7 @@ def encoder_command(
             {
                 "source_sha256": timeline.source_sha256,
                 "sample_rate": timeline.sample_rate,
-                "video_fps": timeline.settings.fps,
+                "video_fps": frame_rate_value(timeline.settings.fps),
                 "first_sample": timeline.first,
                 "last_sample_inclusive": timeline.last,
                 "replay_origin": timeline.replay_origin,
@@ -195,7 +197,7 @@ def supports_nvidia(ffmpeg: Path, timeline: ExportTimeline) -> bool:
     """
     if not timeline.settings.prefer_gpu:
         return False
-    transparent = timeline.settings.output == "transparent"
+    transparent = timeline.settings.output == VideoOutput.TRANSPARENT
     device = (
         ["-init_hw_device", "vulkan=overlay_gpu:NVIDIA", "-filter_hw_device", "overlay_gpu"]
         if transparent
@@ -253,8 +255,7 @@ def export_video(
     *,
     ffmpeg: Path | None = None,
     cancelled: Event | None = None,
-    progress: Callable[[int, int], None] | None = None,
-    status: Callable[[str], None] | None = None,
+    progress: Callable[[ExportProgress], None] | None = None,
     render_jobs: int = 1,
     overwrite: bool = False,
 ) -> Path:
@@ -266,8 +267,7 @@ def export_video(
             policy.
         ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
         cancelled: Cancellation event checked during the operation.
-        progress: Optional callback receiving completed and total frame counts.
-        status: Optional callback receiving the current processing status.
+        progress: Optional callback receiving immutable phase, frame, backend and timing status.
         render_jobs: Requested concurrent frame-renderer count, bounded by local CPU
             availability.
         overwrite: Whether the caller explicitly permits replacing an existing
@@ -287,24 +287,35 @@ def export_video(
         RuntimeError: If the supplied settings or operation state are invalid. Encoder
             produced no video.
     """
-    extension = ".mov" if timeline.settings.output == "transparent" else ".mp4"
+    extension = ".mov" if timeline.settings.output == VideoOutput.TRANSPARENT else ".mp4"
     destination = destination.resolve()
     if destination.suffix.lower() != extension:
         raise ValueError(f"This output requires a {extension} filename")
     if destination.exists() and not overwrite:
         raise ValueError("Output already exists; choose a new filename")
+    started = monotonic()
+    use_gpu: bool | None = None
+
+    def notify(phase: ExportPhase, completed: int = 0) -> None:
+        if progress is not None:
+            progress(
+                ExportProgress(
+                    phase,
+                    completed,
+                    timeline.frame_count,
+                    monotonic() - started,
+                    use_gpu,
+                ),
+            )
+
+    notify(ExportPhase.PREPARING)
     render_jobs = effective_render_jobs(render_jobs)
     executable = find_ffmpeg(ffmpeg)
     cancellation = cancelled if cancelled is not None else Event()
     if cancellation.is_set():
         raise ExportCancelled()
     use_gpu = supports_nvidia(executable, timeline)
-    if status is not None:
-        status(
-            "Encoding on NVIDIA GPU"
-            if use_gpu
-            else "Encoding on CPU (GPU unavailable or disabled)",
-        )
+    notify(ExportPhase.RENDERING)
     if cancellation.is_set():
         raise ExportCancelled()
     staging = destination.parent / f".ride-forces-export-{uuid4().hex}"
@@ -332,8 +343,8 @@ def export_video(
                         if cancellation.is_set():
                             raise ExportCancelled()
                         process.stdin.write(next(frames))
-                        if progress is not None:
-                            progress(frame + 1, timeline.frame_count)
+                        notify(ExportPhase.RENDERING, frame + 1)
+                notify(ExportPhase.FINALIZING, timeline.frame_count)
                 process.stdin.close()
                 code = process.wait(timeout=120)
             except BrokenPipeError as error:
@@ -350,6 +361,7 @@ def export_video(
         if overwrite:
             target.replace(destination)
             published = True
+            notify(ExportPhase.COMPLETED, timeline.frame_count)
             return destination
         try:
             os.link(target, destination)
@@ -358,6 +370,7 @@ def export_video(
                 raise
         else:
             published = True
+            notify(ExportPhase.COMPLETED, timeline.frame_count)
             return destination
         with destination.open("xb") as output:
             created_destination = True
@@ -367,6 +380,7 @@ def export_video(
                         raise ExportCancelled()
                     output.write(block)
         published = True
+        notify(ExportPhase.COMPLETED, timeline.frame_count)
         return destination
     finally:
         if process is not None:

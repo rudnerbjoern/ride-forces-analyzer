@@ -56,7 +56,7 @@ if __name__ == "__main__":
             # windowed bootloader traceback dialog and wait for user input.
             raise SystemExit(1) from None
     else:
-        from ride_forces_analyzer.error_reporting import initialize_error_reporting
+        from ride_forces_analyzer.runtime.error_reporting import initialize_error_reporting
 
         initialize_error_reporting()
         from ride_forces_analyzer.__main__ import main

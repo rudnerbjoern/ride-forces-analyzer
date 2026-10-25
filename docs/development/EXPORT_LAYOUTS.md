@@ -8,7 +8,11 @@ and extension of the renderers.
 
 Layouts are internal, explicitly registered plugins. No package discovery,
 installation, network access or third-party code loading is involved.
-Public selection and saved-preset keys come from the explicit profile registry.
+`ExportLayout` is a `StrEnum` exposed by `rendering.model`, with `COLUMN`, `RIBBON`,
+`CORNERS`, `HUD` and `ORBIT` members. `ExportLayout(value)` converts its stable text
+keys. Saved presets retain `column`, `ribbon`, `corners`, `hud` and `orbit`.
+The explicit profile registry binds these identifiers to renderers and geometry;
+`PROFILES` retains display names and the selector order.
 
 For examples of all five rendered layouts in turn over Onride footage, watch the
 [Manta overlay demo on YouTube](https://youtu.be/0sGiE6F8YlI). The additional
@@ -159,8 +163,8 @@ force interpolation or independent orientation buffers.
 
 1. Edit its module for geometry or drawing changes. Shared primitives belong in
    `common.py` or `charts.py` only when multiple layouts need them.
-2. For a new persisted profile, add its stable key/title to `ExportLayout` and
-   `PROFILES` in `rendering.model`. Existing keys must remain compatible with
+2. For a new persisted profile, add its member to `ExportLayout` in `contracts.py`
+   and its key/title to `PROFILES` in `rendering.model`. Existing keys must remain compatible with
    saved presets and batch jobs.
 3. Add the module's `PLUGIN` to `registry.py`. The composer, preview gallery and
    encoder consume the registration without layout-specific branches.

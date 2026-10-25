@@ -69,7 +69,7 @@ test("PR file labels cover documentation images, dependency locks and CI", () =>
 });
 
 test("PR type labels use anchored feature/fix branches and combine with file labels", () => {
-  const source = ["src/ride_forces_analyzer/json_export.py", "tests/exports/test_json_export.py"];
+  const source = ["src/ride_forces_analyzer/exports/json.py", "tests/exports/test_json_export.py"];
   for (const [branch, files, expected] of [
     ["feat/json-export", source, ["enhancement"]],
     ["feat/json-export", [...source, "docs/user/JSON_EXPORT.md"], ["documentation", "enhancement"]],

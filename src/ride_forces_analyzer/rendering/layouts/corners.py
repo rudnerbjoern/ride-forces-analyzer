@@ -8,7 +8,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import annotations
 from .charts import ChartRenderer
-from .contracts import LayoutPlugin, LayoutPosition, LayoutPositions
+from .contracts import ExportLayout, LayoutPlugin, LayoutPosition, LayoutPositions
 
 
 NATIVE_SIZE = (840, 1120)  # Native landscape drawing size in pixels.
@@ -238,4 +238,9 @@ class CornersRenderer(ChartRenderer):
     time_bottom_gap = TIME_BOTTOM_GAP
 
 
-PLUGIN = LayoutPlugin("corners", LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, CornersRenderer)
+PLUGIN = LayoutPlugin(
+    ExportLayout.CORNERS,
+    LANDSCAPE_POSITIONS,
+    PORTRAIT_POSITIONS,
+    CornersRenderer,
+)

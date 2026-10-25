@@ -9,6 +9,7 @@ import pytest
 
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering import encoding
+from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.rendering.model import ExportSettings, prepare_export
 
 
@@ -32,10 +33,19 @@ def test_confirmed_replacement_preserves_original_until_publication(
         Path(arguments[-1]).write_bytes(b"completed video")
         return process
 
-    def progress(done: int, total: int) -> None:
-        assert destination.read_bytes() == b"original video"
-        assert done == total == 1
-        if outcome == "cancel":
+    updates: list[ExportProgress] = []
+
+    def progress(update: ExportProgress) -> None:
+        updates.append(update)
+        if update.phase is ExportPhase.COMPLETED:
+            assert destination.read_bytes() == b"completed video"
+            assert update.remaining_seconds is None
+        else:
+            assert destination.read_bytes() == b"original video"
+        if update.phase is ExportPhase.FINALIZING:
+            assert update.completed_frames == update.total_frames == 1
+            assert update.remaining_seconds is None
+        if outcome == "cancel" and update.completed_frames:
             cancelled.set()
 
     def fail_replace(source: Path, target: Path) -> Path:
@@ -82,4 +92,10 @@ def test_confirmed_replacement_preserves_original_until_publication(
                 cancelled=cancelled,
             )
         assert destination.read_bytes() == b"original video"
+    phases = [update.phase for update in updates]
+    assert phases[:2] == [ExportPhase.PREPARING, ExportPhase.RENDERING]
+    assert updates[0].use_gpu is None
+    assert all(update.use_gpu is False for update in updates[1:])
+    assert all(update.elapsed_seconds >= 0 for update in updates)
+    assert (ExportPhase.COMPLETED in phases) == (outcome == "success")
     assert list(export_directory.iterdir()) == [destination]

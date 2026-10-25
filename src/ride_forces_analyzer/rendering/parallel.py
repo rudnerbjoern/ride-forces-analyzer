@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import local
 from typing import cast
 
-from ride_forces_analyzer.cpu_resources import effective_render_jobs
+from ride_forces_analyzer.runtime.cpu_resources import effective_render_jobs
 from .frames import OverlayRenderer
 from .model import ExportTimeline
 

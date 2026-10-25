@@ -87,3 +87,47 @@ def test_clear_removes_all_providers_and_allows_cache_reuse(export_directory: Pa
     cache.put("a", 2, 1, 3, entry)
     assert cache.get("a", 2, 1, 3) == entry
     assert cache.count() == 1
+
+
+def test_cache_budget_rejects_invalid_limits_and_evicts_multiple_tiles(
+    export_directory: Path,
+) -> None:
+    for limit in (0, -1):
+        with pytest.raises(ValueError, match="Cache limit must be positive"):
+            TileCache(export_directory / "tiles.sqlite3", max_bytes=limit)
+    cache = TileCache(export_directory / "tiles.sqlite3", max_bytes=8)
+    for x in range(3):
+        cache.put("a", 0, x, 0, TileEntry(b"12", 0, "", ""))
+    cache.put("a", 0, 3, 0, TileEntry(b"1234567", 0, "", ""))
+    assert cache.count() == 1
+    assert cache.get("a", 0, 3, 0) == TileEntry(b"1234567", 0, "", "")
+
+
+def test_eviction_handles_a_database_shrinking_after_its_size_lookup(
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import sqlite3
+
+    path = export_directory / "tiles.sqlite3"
+    cache = TileCache(path, max_bytes=4)
+    cache.put("a", 0, 0, 0, TileEntry(b"1234", 0, "", ""))
+    connect = sqlite3.connect
+    cleared: list[bool] = []
+
+    def shrinking_database(path: Path, *, timeout: float) -> sqlite3.Connection:
+        connection = connect(path, timeout=timeout)
+
+        def clear_before_eviction(statement: str) -> None:
+            # Inject a changed database between the size and eviction-row queries.
+            if statement.startswith("SELECT rowid, length(data)"):
+                connection.execute("DELETE FROM tiles")
+                cleared.append(True)
+
+        connection.set_trace_callback(clear_before_eviction)
+        return connection
+
+    monkeypatch.setattr(map_tiles.sqlite3, "connect", shrinking_database)
+    cache.put("b", 0, 0, 0, TileEntry(b"1234", 0, "", ""))
+    assert cleared == [True]
+    assert cache.count() == 0

@@ -24,7 +24,7 @@ from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 from packaging.version import Version
 
-from ride_forces_analyzer.ui.icons import ICON_SOURCE
+from ride_forces_analyzer.ui.presentation.icons import ICON_SOURCE
 from scripts.build_icons import build_icons
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -333,7 +333,7 @@ def build(work: Path, *, release: bool = False) -> Path:
             "--additional-hooks-dir",
             str(ROOT / "packaging/hooks"),
             "--add-data",
-            f"{ICON_SOURCE}:ride_forces_analyzer/ui",
+            f"{ICON_SOURCE}:ride_forces_analyzer/ui/presentation",
             "--add-data",
             f"{notices}:licenses/third-party",
             "--add-data",

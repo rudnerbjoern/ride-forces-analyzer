@@ -1,6 +1,10 @@
 """Explicit export defaults persist independently of temporary settings and presets."""
 
-from ride_forces_analyzer.analysis.recording import source_app_configuration
+from ride_forces_analyzer.rendering.model import StandardFrameRate
+
+from ride_forces_analyzer.analysis.preparation import (
+    source_app_configuration,
+)
 
 # cspell:words Einstellungen
 
@@ -15,9 +19,9 @@ from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 from ride_forces_analyzer.storage.map_tiles import TileCache, TileEntry
 from ride_forces_analyzer.i18n import tr
-from ride_forces_analyzer.ui.export import ExportDialog
-from ride_forces_analyzer.ui.preferences import SettingsDialog
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.exports.video import ExportDialog
+from ride_forces_analyzer.ui.dialogs.settings import SettingsDialog
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.ui.helpers import wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
@@ -74,35 +78,44 @@ def test_settings_save_cancel_and_new_exports_keep_independent_frame_rates(
     assert dialog is not None and dialog.isVisible()
     assert dialog.windowTitle() == "Einstellungen"
     assert dialog.frame_rate.currentText() == "50"
-    assert dialog.render_jobs.value() == 1
-    jobs = min(2, dialog.render_jobs.maximum())
-    dialog.render_jobs.setValue(jobs)
+    assert dialog.render_jobs.currentText() == "1"
+    assert [dialog.render_jobs.itemText(index) for index in range(dialog.render_jobs.count())] == [
+        str(jobs) for jobs in range(1, dialog.render_jobs.count() + 1)
+    ]
+    jobs = min(2, dialog.render_jobs.count())
+    dialog.render_jobs.setCurrentIndex(jobs - 1)
     dialog.frame_rate.setCurrentText("59.94")
+    dialog.automatic_updates.setChecked(True)
     dialog.language.setCurrentIndex(0)
     dialog.appearance.setCurrentIndex(dialog.appearance.findData(Appearance.DARK.value))
     dialog.buttons.button(QDialogButtonBox.StandardButton.Cancel).click()
     assert window.ui_language == "de" and window.appearance_preference is Appearance.LIGHT
-    assert window.preferences.export_fps() == 50
+    assert window.preferences.export_fps() is StandardFrameRate.FPS_50
     assert window.preferences.render_jobs() == 1
+    assert not window.preferences.automatic_updates()
     wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
 
     window.settings_action.trigger()
     dialog = window.findChild(SettingsDialog, "settingsDialog")
     assert dialog is not None
     dialog.frame_rate.setCurrentText("59.94")
-    dialog.render_jobs.setValue(jobs)
+    dialog.automatic_updates.setChecked(True)
+    dialog.render_jobs.setCurrentIndex(jobs - 1)
     dialog.language.setCurrentIndex(0)
     dialog.appearance.setCurrentIndex(dialog.appearance.findData(Appearance.DARK.value))
     dialog.buttons.button(QDialogButtonBox.StandardButton.Save).click()
     assert window.ui_language == "en" and window.appearance_preference is Appearance.DARK
     assert Preferences(window.preferences.path).export_fps() == "60000/1001"
     assert Preferences(window.preferences.path).render_jobs() == jobs
+    assert Preferences(window.preferences.path).automatic_updates()
     wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
     window.settings_action.trigger()
     dialog = window.findChild(SettingsDialog, "settingsDialog")
     assert dialog is not None and dialog.frame_rate.currentText() == "59.94"
-    assert dialog.render_jobs.value() == jobs
-    dialog.reject()
+    assert dialog.render_jobs.currentText() == str(jobs)
+    dialog.frame_rate.setCurrentText("23.976")
+    dialog.buttons.button(QDialogButtonBox.StandardButton.Save).click()
+    assert Preferences(window.preferences.path).export_fps() == "24000/1001"
 
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
     wait_until(window.open_action.isEnabled)
@@ -119,14 +132,30 @@ def test_settings_save_cancel_and_new_exports_keep_independent_frame_rates(
                 range_mode="markers",
             ),
         )
+        store.save_preset(
+            SavedPreset(
+                name="Z custom rate",
+                settings=ExportSettings(fps=27),
+                analysis_configuration=source_app_configuration(),
+                schema_version=1,
+                smoothing_window=11,
+                range_mode="markers",
+            ),
+        )
         export = ExportDialog(window.data, 0, 10, window, store=store)
-        assert export.fps.currentText() == "59.94"
-        export.fps.setCurrentText("60")
+        assert export.form.fps.currentText() == "23.976"
+        assert StandardFrameRate(export.form.fps.currentData()) is StandardFrameRate.FPS_23_976
+        export.form.fps.setCurrentText("60")
         export.close()
         reopened = ExportDialog(window.data, 0, 10, window, store=store)
-        assert reopened.fps.currentText() == "59.94"
-        reopened.preset_selector.setCurrentIndex(1)
-        reopened.load_preset.click()
-        assert reopened.fps.currentText() == "25"
-        assert Preferences(window.preferences.path).export_fps() == "60000/1001"
+        assert reopened.form.fps.currentText() == "23.976"
+        reopened.presets.preset_selector.setCurrentIndex(1)
+        reopened.presets.load_preset.click()
+        assert reopened.form.fps.currentText() == "25"
+        reopened.presets.preset_selector.setCurrentIndex(
+            reopened.presets.preset_selector.findText("Z custom rate"),
+        )
+        reopened.presets.load_preset.click()
+        assert reopened.form.fps.currentText() == "27" and reopened.form.fps.currentData() == 27
+        assert Preferences(window.preferences.path).export_fps() == "24000/1001"
         reopened.close()

@@ -131,7 +131,9 @@ def test_release_build_outputs_only_windows_downloads_and_checksums(
                 assert Path(arguments[arguments.index("--icon") + 1]).read_bytes()[:4] == (
                     b"\x00\x00\x01\x00"
                 )
-                assert f"{build_windows.ICON_SOURCE}:ride_forces_analyzer/ui" in arguments
+                assert (
+                    f"{build_windows.ICON_SOURCE}:ride_forces_analyzer/ui/presentation" in arguments
+                )
                 version_info = Path(arguments[arguments.index("--version-file") + 1])
                 assert "StringStruct('FileVersion', '1.2.3')" in version_info.read_text(
                     encoding="utf-8",

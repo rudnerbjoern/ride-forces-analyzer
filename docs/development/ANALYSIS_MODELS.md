@@ -13,6 +13,14 @@
 
 ## Public model shape
 
+`analysis.models` retains the shared public imports. Its implementation groups
+[sample buffers](../../src/ride_forces_analyzer/analysis/models/samples.py),
+[measurement channels](../../src/ride_forces_analyzer/analysis/models/channels.py),
+[profiles](../../src/ride_forces_analyzer/analysis/models/profiles.py) and
+[results with diagnostics/provenance](../../src/ride_forces_analyzer/analysis/models/results.py).
+Each model keeps its runtime validation; the package initializer explicitly exports
+the existing public names.
+
 | Model                | Contract                                                                                                                  |
 | :------------------- | :------------------------------------------------------------------------------------------------------------------------ |
 | `AnalysisProfile`    | Name/schema, frozen scalar configuration, policy/assumption references, explicit provisional permission                   |
@@ -40,8 +48,19 @@ the same selection; orientation still requires an available gravity sequence.
 Projection provenance records the RFDB interpretation as an assumption, not
 physical qualification. See [source evidence](../validation/APP_REFERENCE.md#rfdb-axis-interpretation).
 
-Module: [`analysis.recording`](../../src/ride_forces_analyzer/analysis/recording.py).
-Import its classes explicitly; package exports remain explicit.
+Module: [`analysis.recording`](../../src/ride_forces_analyzer/analysis/recording/__init__.py).
+Import its classes explicitly; package exports remain explicit. The package groups
+[configuration](../../src/ride_forces_analyzer/analysis/recording/configuration.py),
+[stages](../../src/ride_forces_analyzer/analysis/recording/stages.py),
+[snapshot access](../../src/ride_forces_analyzer/analysis/recording/snapshot.py),
+[notifications](../../src/ride_forces_analyzer/analysis/recording/notifications.py) and
+[structural validation](../../src/ride_forces_analyzer/analysis/recording/validation.py).
+`RecordingAnalysis.validate()` delegates to the structural validator; existing
+public imports remain available through `analysis.recording`.
+[`analysis.preparation`](../../src/ride_forces_analyzer/analysis/preparation.py)
+owns `source_app_configuration` and `prepare_recording_analysis`, numerical stage
+preparation and dependency-based reuse. Snapshot methods delegate reconfiguration
+to that module; the contracts retain structural validation and sample access.
 
 - `RecordingAnalysis` is a frozen snapshot: original import, configuration, time,
   force stages, independent orientation, context, events, quality and revision.
@@ -322,7 +341,7 @@ monotonic request revisions and service-specific subscription handles.
 - Delivery is serialized per registration; different registrations may progress
   concurrently. Callbacks run outside the lock; ordinary callback exceptions are
   logged and remove only that registration. Duplicate callbacks have independent handles.
-- [`AnalysisController`](../../src/ride_forces_analyzer/ui/analysis.py) owns workers
+- [`AnalysisController`](../../src/ride_forces_analyzer/ui/explorer/analysis.py) owns workers
   and guarded UI delivery. The [runtime sequence](../architecture/06_runtime_view.md#explorer-analysis-delivery)
   defines initial state, stale/failure handling and subscription cleanup.
 
@@ -339,7 +358,7 @@ monotonic request revisions and service-specific subscription handles.
 | Context label/strip                            | Format prepared categories without reclassification                                                                                           |
 | Extrema                                        | Read shared smoothed buffers with retained quality/provenance                                                                                 |
 | `prepare_export` / `build_previews`            | Require `RecordingAnalysis`, not explorer objects; UI captures snapshot before scheduling work                                                |
-| `csv_export` / `json_export`                   | Require bound `RecordingAnalysis`; serialize sample views, missingness and quality over an inclusive range                                    |
+| `exports.csv` / `exports.json`                 | Require bound `RecordingAnalysis`; serialize sample views, missingness and quality over an inclusive range                                    |
 | `ExportTimeline` / `ExportValues`              | Retain bound snapshot / expose shared scalar buffers as read-only sequences, with `None` for invalid rows                                     |
 | `prepare_export_analysis`                      | Equal configuration returns the identical snapshot; otherwise partial recalculation                                                           |
 | Presets/jobs                                   | Require full versioned `analysis_configuration`, matching window and all serialized aspect/language/dependency fields; no source bytes/arrays |
@@ -456,7 +475,7 @@ uv run --locked pytest tests/analysis/test_models.py
 - Preparation/recalculation: numerical primitives, sample views, shared-stage identity,
   calculation calls, unchanged retained export values and snapshot lifetime.
 - Service: initial/terminal state, filters, reentrant calls, competing requests, stale
-  success/failure, shutdown, callback isolation and ownership. [Coverage](CODE_QUALITY.md#recording-model-and-service-coverage)
+  success/failure, shutdown, callback isolation and ownership. [Coverage](CODE_QUALITY.md#coverage-gate)
   reports model/service modules and enforces the configured minimum.
 - [Source-app evidence tests](../../tests/analysis/test_source_app_evidence.py):
   original-file extrema and independent replay screenshots, including Kraken/Voltron
@@ -579,8 +598,9 @@ a separate contract.
 
 ## Selected-range extrema
 
-API: `ride_forces_analyzer.force_extrema.calculate_extrema(source, first, last, *, forces=None, calculation_time=None)`.
-Pure typed API outside the analysis package; raw use needs neither Qt nor NumPy.
+API: `ride_forces_analyzer.analysis.extrema.calculate_extrema(source, first, last, *, forces=None, calculation_time=None)`.
+Pure typed API; raw use needs neither Qt nor NumPy. The analysis package loads
+its public model exports on demand, preserving raw-only explorer operation.
 
 | Input / result          | Contract                                                                                                                                                                                    |
 | :---------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

@@ -1,14 +1,17 @@
 """Export clocks, source-bound orientation, real RGBA geometry and offline encoding."""
 
+from ride_forces_analyzer.rendering.model import StandardFrameRate
+
 # cspell:words ffprobe frombytes getcolor getcolors getrgb getpixel getchannel getextrema hwupload prores qscale rawvideo libx
 
 from dataclasses import replace
+from fractions import Fraction
 from math import radians, sin, cos
 from pathlib import Path
 import json
 import subprocess
 from threading import Event
-from typing import Literal
+from typing import Literal, cast
 from unittest.mock import patch
 
 from PIL import Image, ImageColor
@@ -18,7 +21,12 @@ from ride_forces_analyzer.analysis.orientation import orientation_degrees
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.rendering.encoding import ExportCancelled, encoder_command, export_video
 from ride_forces_analyzer.rendering.frames import COLUMN_X, WIDTH, OverlayRenderer
+from ride_forces_analyzer.i18n import Language
+from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.rendering.model import (
+    VideoOutput,
+    FrameRate,
+    VideoAspect,
     ExportLayout,
     ExportSettings,
     PROFILES,
@@ -67,7 +75,7 @@ def test_export_uses_real_duration_at_independent_video_rate(manta: ExplorerData
     assert timeline.frame_count == fps  # 50 complete source sample intervals = one second.
     assert timeline.sample_position(0) == 100
     assert timeline.sample_position(fps - 1) <= 149
-    assert timeline.settings.fps == fps
+    assert timeline.settings.frame_rate == fps
     with pytest.raises(ValueError):
         timeline.sample_position(fps)
     single = prepare_export(manta.analysis, ExportSettings(fps=fps), 100, 100)
@@ -106,15 +114,20 @@ def test_all_originals_prepare_four_panels_without_source_writes(filename: str) 
     assert path.read_bytes() == original and path.stat().st_mtime_ns == modified
 
 
-@pytest.mark.parametrize("mode", ["transparent", "opaque"])
-def test_4k_canvas_has_single_right_column_and_all_panels(manta: ExplorerData, mode: str) -> None:
+@pytest.mark.parametrize("mode", [VideoOutput.TRANSPARENT, VideoOutput.OPAQUE])
+def test_4k_canvas_has_single_right_column_and_all_panels(
+    manta: ExplorerData,
+    mode: VideoOutput,
+) -> None:
     assert manta.analysis is not None
-    settings = ExportSettings(output="transparent" if mode == "transparent" else "opaque")
+    settings = ExportSettings(
+        output=VideoOutput.TRANSPARENT if mode == VideoOutput.TRANSPARENT else VideoOutput.OPAQUE,
+    )
     timeline = prepare_export(manta.analysis, settings, 3600, 3649)
     renderer = OverlayRenderer(timeline)
     frame = renderer.render_frame(0)
     assert frame.size == (3840, 2160) and frame.mode == "RGBA"
-    assert frame.getchannel("A").getpixel((0, 0)) == (0 if mode == "transparent" else 255)
+    assert frame.getchannel("A").getpixel((0, 0)) == (0 if mode == VideoOutput.TRANSPARENT else 255)
     assert frame.getpixel((COLUMN_X, 0)) == BACKGROUND_COLOR
     for row, channel in enumerate(timeline.channels):
         panel = frame.crop((COLUMN_X, row * 540, WIDTH, (row + 1) * 540))
@@ -162,24 +175,30 @@ def test_cancel_and_existing_destination_preserve_files(
 @pytest.mark.parametrize(
     "layout,mode,aspect,prefer_gpu,language",
     [
-        ("column", "transparent", "landscape", False, "en"),
-        ("ribbon", "transparent", "landscape", True, "en"),
-        ("corners", "transparent", "portrait", False, "de"),
-        ("orbit", "transparent", "portrait", True, "en"),
-        ("hud", "opaque", "landscape", False, "en"),
-        ("column", "opaque", "landscape", True, "de"),
-        ("orbit", "opaque", "portrait", False, "en"),
-        ("ribbon", "opaque", "portrait", True, "en"),
-        ("hud", "transparent", "portrait", False, "fr"),
+        (ExportLayout.COLUMN, VideoOutput.TRANSPARENT, VideoAspect.LANDSCAPE, False, "en"),
+        (ExportLayout.RIBBON, VideoOutput.TRANSPARENT, VideoAspect.LANDSCAPE, True, "en"),
+        (ExportLayout.CORNERS, VideoOutput.TRANSPARENT, VideoAspect.PORTRAIT, False, "de"),
+        (ExportLayout.ORBIT, VideoOutput.TRANSPARENT, VideoAspect.PORTRAIT, True, "en"),
+        (ExportLayout.HUD, VideoOutput.OPAQUE, VideoAspect.LANDSCAPE, False, "en"),
+        (ExportLayout.COLUMN, VideoOutput.OPAQUE, VideoAspect.LANDSCAPE, True, "de"),
+        (ExportLayout.ORBIT, VideoOutput.OPAQUE, VideoAspect.PORTRAIT, False, "en"),
+        (ExportLayout.RIBBON, VideoOutput.OPAQUE, VideoAspect.PORTRAIT, True, "en"),
+        (ExportLayout.HUD, VideoOutput.TRANSPARENT, VideoAspect.PORTRAIT, False, "fr"),
     ],
 )
 def test_native_encoder_produces_layout_resolution_with_verified_alpha(
     manta: ExplorerData,
     export_directory: Path,
-    mode: str,
+    mode: VideoOutput,
     prefer_gpu: bool,
-    layout: Literal["column", "ribbon", "corners", "hud", "orbit"],
-    aspect: Literal["landscape", "portrait"],
+    layout: Literal[
+        ExportLayout.COLUMN,
+        ExportLayout.RIBBON,
+        ExportLayout.CORNERS,
+        ExportLayout.HUD,
+        ExportLayout.ORBIT,
+    ],
+    aspect: VideoAspect,
     language: Literal["en", "de"],
 ) -> None:
     # Cover codec × aspect × backend preference once; pure tests own layout/language geometry.
@@ -189,16 +208,18 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
     if not ffmpeg.is_file():
         pytest.skip("Native FFmpeg integration requires installed export tools")
     settings = ExportSettings(
-        fps="60000/1001" if not prefer_gpu and aspect == "landscape" else 25,
-        output="transparent" if mode == "transparent" else "opaque",
+        fps=StandardFrameRate.FPS_59_94
+        if not prefer_gpu and aspect is VideoAspect.LANDSCAPE
+        else 25,
+        output=VideoOutput.TRANSPARENT if mode == VideoOutput.TRANSPARENT else VideoOutput.OPAQUE,
         prefer_gpu=prefer_gpu,
         layout=layout,
         aspect=aspect,
-        language=language,
+        language=Language(language),
     )
     timeline = prepare_export(manta.analysis, settings, 3600, 3603)
-    output = export_directory / ("overlay.mov" if mode == "transparent" else "opaque.mp4")
-    progress: list[tuple[int, int]] = []
+    output = export_directory / ("overlay.mov" if mode == VideoOutput.TRANSPARENT else "opaque.mp4")
+    progress: list[ExportProgress] = []
     with patch(
         "ride_forces_analyzer.rendering.encoding.subprocess.Popen",
         wraps=subprocess.Popen,
@@ -207,12 +228,16 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
             timeline,
             output,
             ffmpeg=ffmpeg,
-            progress=lambda a, b: progress.append((a, b)),
-            render_jobs=2 if layout == "hud" else 1,
+            progress=progress.append,
+            render_jobs=2 if layout == ExportLayout.HUD else 1,
         )
     # One encoder process, plus the optional GPU capability probe.
     assert processes.call_count == 1 + int(prefer_gpu)
-    assert progress[-1] == (timeline.frame_count, timeline.frame_count)
+    assert progress[0].phase is ExportPhase.PREPARING
+    assert progress[-2].phase is ExportPhase.FINALIZING
+    assert progress[-1].phase is ExportPhase.COMPLETED
+    assert progress[-1].completed_frames == timeline.frame_count
+    assert progress[-1].total_frames == timeline.frame_count
     probe = subprocess.run(
         [
             str(ffmpeg.with_name("ffprobe.exe")),
@@ -231,7 +256,7 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
     assert (stream["width"], stream["height"]) == settings.dimensions
     assert stream["r_frame_rate"] == ("60000/1001" if settings.fps == "60000/1001" else "25/1")
     assert int(stream["nb_frames"]) == timeline.frame_count
-    assert stream["codec_name"] == ("prores" if mode == "transparent" else "h264")
+    assert stream["codec_name"] == ("prores" if mode == VideoOutput.TRANSPARENT else "h264")
     result = subprocess.run(
         [
             str(ffmpeg),
@@ -257,28 +282,37 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
     x, y, _, height = export_region(settings)
     right = image.getpixel((x + 18, y + height // 2))
     assert isinstance(left, tuple) and isinstance(right, tuple)
-    assert left[3] == (0 if mode == "transparent" else 255)
+    assert left[3] == (0 if mode == VideoOutput.TRANSPARENT else 255)
     expected_alpha = (
-        255 if mode == "opaque" or layout == "column" else 0 if layout == "hud" else 210
+        255
+        if mode == VideoOutput.OPAQUE or layout == ExportLayout.COLUMN
+        else 0
+        if layout == ExportLayout.HUD
+        else 210
     )
     assert abs(right[3] - expected_alpha) <= 2
-    if layout == "hud" and mode == "transparent":
+    if layout == ExportLayout.HUD and mode == VideoOutput.TRANSPARENT:
         alpha = image.getchannel("A").histogram()
         assert alpha[0] > 0 and alpha[255] > 0
         assert sum(alpha[1:255]) > 0  # Glow/shadow opacity survives real ProRes encoding.
 
 
-@pytest.mark.parametrize("mode", ["transparent", "opaque"])
-def test_encoder_commands_preserve_codec_specific_options(manta: ExplorerData, mode: str) -> None:
+@pytest.mark.parametrize("mode", [VideoOutput.TRANSPARENT, VideoOutput.OPAQUE])
+def test_encoder_commands_preserve_codec_specific_options(
+    manta: ExplorerData,
+    mode: VideoOutput,
+) -> None:
     assert manta.analysis is not None
-    settings = ExportSettings(output="transparent" if mode == "transparent" else "opaque")
+    settings = ExportSettings(
+        output=VideoOutput.TRANSPARENT if mode == VideoOutput.TRANSPARENT else VideoOutput.OPAQUE,
+    )
     timeline = prepare_export(manta.analysis, settings, 3600, 3603)
     cpu = encoder_command(Path("ffmpeg.exe"), timeline, Path("output"))
     gpu = encoder_command(Path("ffmpeg.exe"), timeline, Path("output"), use_gpu=True)
     for command in (cpu, gpu):
         assert "-an" in command and "-n" in command
     assert "-qscale:v" not in gpu  # This CPU option corrupts Vulkan 4444 output.
-    if mode == "transparent":
+    if mode == VideoOutput.TRANSPARENT:
         assert "prores_ks" in cpu and "-qscale:v" in cpu
         assert "prores_ks_vulkan" in gpu and "hwupload" in gpu[gpu.index("-vf") + 1]
     else:
@@ -296,8 +330,9 @@ def test_cancel_during_real_encoding_leaves_no_output(
     timeline = prepare_export(manta.analysis, ExportSettings(prefer_gpu=False), 3600, 3699)
     cancelled = Event()
 
-    def cancel_after_frame(current: int, total: int) -> None:
-        cancelled.set()
+    def cancel_after_frame(update: ExportProgress) -> None:
+        if update.completed_frames:
+            cancelled.set()
 
     output = export_directory / "cancel.mov"
     with pytest.raises(ExportCancelled):
@@ -312,10 +347,10 @@ def test_cancel_during_real_encoding_leaves_no_output(
     assert not output.exists()
 
 
-@pytest.mark.parametrize("layout", ["ribbon", "corners"])
+@pytest.mark.parametrize("layout", [ExportLayout.RIBBON, ExportLayout.CORNERS])
 def test_compact_profiles_preserve_alpha_color_and_force_scales(
     manta: ExplorerData,
-    layout: Literal["ribbon", "corners"],
+    layout: Literal[ExportLayout.RIBBON, ExportLayout.CORNERS],
 ) -> None:
     assert manta.analysis is not None
     timeline = prepare_export(
@@ -346,7 +381,7 @@ def test_compact_profiles_preserve_alpha_color_and_force_scales(
         inverted = replace(channel, inverted=True)
         assert compact.value_y(inverted, 1, row) > compact.value_y(inverted, 0, row)
     opaque = OverlayRenderer(
-        replace(timeline, settings=replace(timeline.settings, output="opaque")),
+        replace(timeline, settings=replace(timeline.settings, output=VideoOutput.OPAQUE)),
     ).render_frame(0)
     assert opaque.getchannel("A").getextrema() == (255, 255)
 
@@ -368,10 +403,10 @@ def test_vertical_force_direction_and_manual_override(
     for timeline in (default, reversed_direction):
         vertical = timeline.channels[0]
         renderer = OverlayRenderer(timeline)
-        if layout == "hud":
+        if layout == ExportLayout.HUD:
             assert isinstance(renderer.renderer, HudRenderer)
             ys = [renderer.renderer.vertical_y(value) for value in (-1, 0, 1)]
-        elif layout == "orbit":
+        elif layout == ExportLayout.ORBIT:
             assert isinstance(renderer.renderer, OrbitRenderer)
             ys = [sin(radians(renderer.renderer.orbit_angle(value))) for value in (-1, 0, 1)]
             assert renderer.renderer.orbit_angle(0) == 180
@@ -401,7 +436,7 @@ def test_lateral_direction_and_time_follow_layout_axes(
     assert left < zero == 100 < right
     assert zero - left == pytest.approx(right - zero)
     assert lateral_x(replace(channel, inverted=False), -1, 0, 200) == left
-    if layout in ("orbit", "hud"):
+    if layout in (ExportLayout.ORBIT, ExportLayout.HUD):
         return
     renderer = OverlayRenderer(timeline)
     chart = renderer.renderer
@@ -409,7 +444,7 @@ def test_lateral_direction_and_time_follow_layout_axes(
     points = [chart.trace_point(channel, value, 0.5, 1) for value in (-1, 0, 1)]
     earlier = chart.trace_point(channel, 0, 0.25, 1)
     later = chart.trace_point(channel, 0, 0.75, 1)
-    if layout == "column":
+    if layout == ExportLayout.COLUMN:
         assert points[0][0] == points[1][0] == points[2][0]
         assert points[0][1] < points[1][1] < points[2][1]
         assert earlier[0] < later[0] and earlier[1] == later[1]
@@ -433,11 +468,11 @@ def test_longitudinal_acceleration_up_and_braking_down(
     channel = timeline.channels[2]
     assert not channel.inverted
     renderer = OverlayRenderer(timeline)
-    if layout == "hud":
+    if layout == ExportLayout.HUD:
         assert isinstance(renderer.renderer, HudRenderer)
         ys = [renderer.renderer.longitudinal_y(value) for value in (-1, 0, 1)]
         assert ys[2] < ys[1] < ys[0]
-    elif layout != "orbit":
+    elif layout != ExportLayout.ORBIT:
         chart = renderer.renderer
         assert isinstance(chart, (ChartRenderer, ColumnRenderer))
         braking, zero, acceleration = [
@@ -451,7 +486,7 @@ def test_longitudinal_acceleration_up_and_braking_down(
         assert sin(radians(renderer.renderer.orbit_angle(-1, 2))) > 0
 
 
-@pytest.mark.parametrize("layout", ["column", "ribbon", "corners"])
+@pytest.mark.parametrize("layout", [ExportLayout.COLUMN, ExportLayout.RIBBON, ExportLayout.CORNERS])
 def test_longitudinal_trace_changes_color_at_zero(
     manta: ExplorerData,
     layout: ExportLayout,
@@ -480,7 +515,7 @@ def test_longitudinal_trace_changes_color_at_zero(
 @pytest.mark.parametrize("row", [0, 1, 2])
 def test_orbit_signed_arcs_paint_physical_directions(manta: ExplorerData, row: int) -> None:
     assert manta.analysis is not None
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3601)
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.ORBIT), 3600, 3601)
     for value in (-1.0, 1.0):
         channels = tuple(
             replace(channel, values=(value,) * manta.count, low=-1.05, high=1.05)
@@ -514,7 +549,7 @@ def test_orbit_orientation_keeps_real_degrees() -> None:
 
 def test_orbit_peak_hold_shading_and_markers(manta: ExplorerData) -> None:
     assert manta.analysis is not None
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3700)
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.ORBIT), 3600, 3700)
     values = tuple(0.8 if index == 3600 else 0.0 for index in range(manta.count))
     longitudinal = replace(timeline.channels[2], values=values, low=-1.05, high=1.05)
     renderer = OrbitRenderer(
@@ -537,7 +572,7 @@ def test_orbit_peak_hold_shading_and_markers(manta: ExplorerData) -> None:
 
 def test_orbit_lateral_stroke_grows_outward_with_shifted_scale(manta: ExplorerData) -> None:
     assert manta.analysis is not None
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3601)
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.ORBIT), 3600, 3601)
     lateral = replace(timeline.channels[1], values=(1.0,) * manta.count, low=-1.05, high=1.05)
     renderer = OrbitRenderer(
         replace(timeline, channels=(timeline.channels[0], lateral, *timeline.channels[2:])),
@@ -568,7 +603,7 @@ def test_orbit_force_stroke_thickens_inward(
     inner: int,
 ) -> None:
     assert manta.analysis is not None
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3601)
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.ORBIT), 3600, 3601)
     channels = tuple(
         replace(channel, values=(1.0,) * manta.count, low=-1.05, high=1.05)
         if index == row
@@ -593,7 +628,7 @@ def test_orbit_force_stroke_thickens_inward(
 
 def test_orbit_orientation_marker_is_omitted_when_unavailable(manta: ExplorerData) -> None:
     assert manta.analysis is not None
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), 3600, 3601)
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.ORBIT), 3600, 3601)
     for value in (45.0, None):
         orientation = replace(timeline.channels[3], values=(value,) * manta.count)
         renderer = OrbitRenderer(
@@ -610,7 +645,12 @@ def test_orbit_orientation_marker_is_omitted_when_unavailable(manta: ExplorerDat
 def test_orbit_preserves_negative_forces_and_absent_orientation(manta: ExplorerData) -> None:
     assert manta.analysis is not None
     start = 4782  # Original app CSV: replay 00:40.32, negative vertical load.
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="orbit"), start, start + 1)
+    timeline = prepare_export(
+        manta.analysis,
+        ExportSettings(layout=ExportLayout.ORBIT),
+        start,
+        start + 1,
+    )
     assert timeline.value_at(timeline.channels[0], start) == pytest.approx(-3.55, abs=0.01)
     orientation = replace(timeline.channels[3], values=(None,) * manta.count)
     timeline = replace(timeline, channels=(*timeline.channels[:3], orientation))
@@ -629,18 +669,34 @@ def test_orbit_preserves_negative_forces_and_absent_orientation(manta: ExplorerD
     )
 
 
+@pytest.mark.parametrize(
+    "fps,label,numerator",
+    [
+        (StandardFrameRate.FPS_23_976, "23.976", 24000),
+        (StandardFrameRate.FPS_59_94, "59.94", 60000),
+    ],
+)
 def test_fractional_frame_rate_keeps_exact_duration_and_source_positions(
     manta: ExplorerData,
+    fps: FrameRate,
+    label: str,
+    numerator: int,
 ) -> None:
     assert manta.analysis is not None
-    settings = ExportSettings(fps="60000/1001")
+    settings = ExportSettings(fps=fps)
     timeline = prepare_export(manta.analysis, settings, 100, 149)
-    assert settings.fps_label == "59.94"
-    assert timeline.frame_count == 60
-    assert timeline.sample_position(1) == pytest.approx(100 + 50 * 1001 / 60000)
+    assert settings.fps_label == label
+    assert settings.frame_rate == Fraction(numerator, 1001)
+    assert timeline.frame_count == numerator // 1000
+    assert timeline.sample_position(1) == pytest.approx(100 + 50 * 1001 / numerator)
     # Isolate clock arithmetic over 1001 seconds without rendering or inventing sensor data.
     clock = replace(timeline, first=0, last=50 * 1001 - 1)
-    assert clock.frame_count == 60000
-    assert clock.sample_position(30000) == 25025
+    assert clock.frame_count == numerator
+    assert clock.sample_position(numerator // 2) == 25025
     command = encoder_command(Path("ffmpeg.exe"), timeline, Path("out.mov"), use_gpu=False)
-    assert command[command.index("-framerate") + 1] == "60000/1001"
+    metadata = json.loads(command[command.index("-metadata") + 1].removeprefix("comment="))
+    assert metadata["video_fps"] == str(fps)
+    assert command[command.index("-framerate") + 1] == fps
+    for rounded in (label, float(label)):
+        with pytest.raises(ValueError, match="Frame rate"):
+            ExportSettings(fps=cast(FrameRate, rounded))

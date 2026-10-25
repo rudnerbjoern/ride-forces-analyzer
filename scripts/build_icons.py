@@ -11,7 +11,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from ride_forces_analyzer.ui.icons import ICON_SIZES, render_icon
+from ride_forces_analyzer.ui.presentation.icons import ICON_SIZES, render_icon
 
 
 def build_icons(destination: Path) -> Path:

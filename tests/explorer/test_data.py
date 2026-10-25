@@ -19,13 +19,14 @@ from ride_forces_analyzer.domain import (
     ValueOrigin,
     Vector3,
 )
-from ride_forces_analyzer.explorer import format_sample_time, present_recording
+from ride_forces_analyzer.formatting.time import format_sample_time
+from ride_forces_analyzer.explorer import present_recording
 from ride_forces_analyzer.importers import ImportSuccess, import_forces, import_forces_bytes
 from ride_forces_analyzer.i18n import Language, get_language, set_language
 from tests.support.recordings import RFDB_FIXTURE_DIRECTORY, RFDB_FIXTURES
 
 
-@pytest.mark.parametrize("language", ["en", "de"])
+@pytest.mark.parametrize("language", [Language.ENGLISH, Language.GERMAN])
 @pytest.mark.parametrize("source_format", [RecordingFormat.RIDE_FORCES, RecordingFormat.RFDB])
 def test_technical_details_identify_format_and_declared_schema(
     synthetic_recording: Recording,
@@ -241,10 +242,19 @@ def test_raw_explorer_import_does_not_require_optional_numpy() -> None:
     script = """
 import sys
 from pathlib import Path
+from importlib.abc import MetaPathFinder
+
+class NoNumPy(MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "numpy" or fullname.startswith("numpy."):
+            raise ModuleNotFoundError("NumPy is intentionally unavailable")
+
+sys.meta_path.insert(0, NoNumPy())
 import ride_forces_analyzer.explorer as explorer
 from ride_forces_analyzer.importers import ImportSuccess, import_forces
 assert 'numpy' not in sys.modules
-explorer.find_spec = lambda name: None
+from ride_forces_analyzer.explorer import loading as explorer_loading
+explorer_loading.find_spec = lambda name: None
 source = import_forces(next(Path('tests/fixtures/real').glob('Manta-*.forces')))
 assert isinstance(source, ImportSuccess)
 view = explorer.present_recording(source)
@@ -403,14 +413,14 @@ def test_snapshot_presentation_uses_shared_buffers_and_does_not_repeat_analysis(
 ) -> None:
     import numpy as np
     from unittest.mock import Mock
-    from ride_forces_analyzer.analysis import recording, airtime
+    from ride_forces_analyzer.analysis import preparation, airtime
     from tests.analysis.test_recording_preparation import synthetic_source
 
-    project = Mock(wraps=recording.project_directions)
-    mean = Mock(wraps=recording.centered_mean)
+    project = Mock(wraps=preparation.project_directions)
+    mean = Mock(wraps=preparation.centered_mean)
     context = Mock(wraps=airtime.AirtimeContext.prepare)
-    monkeypatch.setattr(recording, "project_directions", project)
-    monkeypatch.setattr(recording, "centered_mean", mean)
+    monkeypatch.setattr(preparation, "project_directions", project)
+    monkeypatch.setattr(preparation, "centered_mean", mean)
     monkeypatch.setattr(airtime.AirtimeContext, "prepare", context)
     view = present_recording(synthetic_source()).with_calibration(True)
     assert view.analysis is not None and view.analysis.forces.smoothed.channels is not None

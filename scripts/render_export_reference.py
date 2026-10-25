@@ -16,16 +16,25 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.analysis.recording import (
     RecordingAnalysis,
+)
+from ride_forces_analyzer.analysis.preparation import (
     prepare_recording_analysis,
     source_app_configuration,
 )
-from ride_forces_analyzer.explorer import format_sample_time
+from ride_forces_analyzer.formatting.time import format_sample_time
 from ride_forces_analyzer.importers import ImportSuccess, import_forces
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts import export_region
-from ride_forces_analyzer.rendering.model import ExportSettings, PROFILES, prepare_export
+from ride_forces_analyzer.rendering.model import (
+    VideoOutput,
+    VideoAspect,
+    ExportSettings,
+    PROFILES,
+    prepare_export,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "tests/fixtures/real/VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
@@ -111,11 +120,11 @@ def render_reference(output: Path) -> None:
     for index, (layout, title) in enumerate(PROFILES):
         settings = ExportSettings(
             layout=layout,
-            language="en",
-            aspect="landscape",
+            language=Language.ENGLISH,
+            aspect=VideoAspect.LANDSCAPE,
             fps=50,
             window_seconds=30.0 if layout == "hud" else 12.0,
-            output="transparent",
+            output=VideoOutput.TRANSPARENT,
             invert_vertical=True,
             invert_lateral=layout == "column",
         )

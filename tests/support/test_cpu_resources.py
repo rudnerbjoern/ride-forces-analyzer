@@ -11,7 +11,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from ride_forces_analyzer import cpu_resources as cpu
+from ride_forces_analyzer.runtime import cpu_resources as cpu
 
 
 def test_render_jobs_validate_and_follow_the_local_processor_limit(

@@ -24,14 +24,14 @@ for (const [language, correct, typo] of [
   ["fr", "échantillon", "échantilllon"],
 ]) {
   test(`CSpell checks the ${language} catalog, rejects typos and keeps its dictionary file-scoped`, async () => {
-    const filename = `src/ride_forces_analyzer/translations_${language}.py`;
+    const filename = `src/ride_forces_analyzer/i18n/${language}.py`;
     const root = new URL("../../", import.meta.url);
     const original = await readFile(new URL(filename, root), "utf8");
     const cli = fileURLToPath(import.meta.resolve("cspell/bin.mjs"));
     for (const [path, text, expected] of [
       [filename, original, 0],
       [filename, original + `\n# ${typo}\n`, 1],
-      ["src/ride_forces_analyzer/i18n.py", `# ${correct}\n`, 1],
+      ["src/ride_forces_analyzer/i18n/__init__.py", `# ${correct}\n`, 1],
     ]) {
       const result = spawnSync(process.execPath,
         [cli, "lint", `stdin://${path}`, "--config", ".cspell.json", "--no-progress"],

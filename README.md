@@ -190,7 +190,8 @@ and inspector.
 
 *The same ride and selected moment, in the light theme.*
 
-The **About…** dialog offers **Check for updates…**. Optional startup checks are
+**Settings → Application** offers **Check for updates…** and the optional daily
+startup check. Automatic checks are
 off by default. Checks contact GitHub without sending recordings, GPS data or
 file paths; downloads and installation remain manual. Offline processing does
 not require update checks.

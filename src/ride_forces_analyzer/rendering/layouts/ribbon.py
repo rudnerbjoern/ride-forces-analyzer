@@ -9,7 +9,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from .charts import ChartRenderer
-from .contracts import LayoutPlugin, LayoutPosition, LayoutPositions
+from .contracts import ExportLayout, VideoAspect, LayoutPlugin, LayoutPosition, LayoutPositions
 
 if TYPE_CHECKING:
     from ..model import ExportTimeline
@@ -264,9 +264,9 @@ def create_renderer(timeline: ExportTimeline) -> ChartRenderer:
     Returns:
         Production layout renderer bound to the supplied timeline.
     """
-    if timeline.settings.aspect == "portrait":
+    if timeline.settings.aspect is VideoAspect.PORTRAIT:
         return PortraitRibbonRenderer(timeline)
     return RibbonRenderer(timeline)
 
 
-PLUGIN = LayoutPlugin("ribbon", LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, create_renderer)
+PLUGIN = LayoutPlugin(ExportLayout.RIBBON, LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, create_renderer)

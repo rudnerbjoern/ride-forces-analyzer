@@ -13,9 +13,39 @@ from typing import TYPE_CHECKING, Protocol
 from PIL import Image
 
 if TYPE_CHECKING:
-    from ..model import ExportLayout, ExportTimeline
+    from ..model import ExportTimeline
 
 Region = tuple[int, int, int, int]
+
+
+class ExportLayout(StrEnum):
+    """Built-in overlay identifiers retained in saved export settings.
+
+    Attributes:
+        COLUMN: Four-panel column, stored as ``column``.
+        RIBBON: Flow Ribbon, stored as ``ribbon``.
+        CORNERS: Corner Instruments, stored as ``corners``.
+        HUD: Full-screen HUD, stored as ``hud``.
+        ORBIT: G-Orbit, stored as ``orbit``.
+    """
+
+    COLUMN = "column"
+    RIBBON = "ribbon"
+    CORNERS = "corners"
+    HUD = "hud"
+    ORBIT = "orbit"
+
+
+class VideoAspect(StrEnum):
+    """Video canvas orientation with stable values for saved export settings.
+
+    Attributes:
+        LANDSCAPE: Wide video canvas, stored as ``landscape``.
+        PORTRAIT: Tall video canvas, stored as ``portrait``.
+    """
+
+    LANDSCAPE = "landscape"
+    PORTRAIT = "portrait"
 
 
 class LayoutPosition(StrEnum):
@@ -169,7 +199,7 @@ class LayoutPlugin:
     landscape/portrait bounds raise ValueError at registration.
 
     Attributes:
-        key: Lookup or presentation key used by the operation.
+        key: ExportLayout member identifying the registered renderer.
         landscape: Landscape dimensions supported by the layout.
         portrait: Whether the selected layout uses portrait geometry.
         create: Factory constructing a renderer bound to an export timeline.
@@ -187,8 +217,10 @@ class LayoutPlugin:
             None.
 
         Raises:
-            ValueError: Layout region must fit within its export canvas.
+            ValueError: The key is not an ExportLayout member, or a region exceeds its canvas.
         """
+        if type(self.key) is not ExportLayout:
+            raise ValueError("Unknown export layout")
         for positions, canvas in ((self.landscape, (3840, 2160)), (self.portrait, (2160, 3840))):
             for x, y, width, height in positions.regions.values():
                 if x + width > canvas[0] or y + height > canvas[1]:

@@ -100,9 +100,10 @@ settings and GPS, or the [video export guide](VIDEO_EXPORT.md) to create an over
 
 ## Check for updates
 
-Open **About… → Check for updates…** to check for a newer release for your
-platform. **Check for updates at startup (once per day)** enables optional
-automatic checks; it is off by default. An unavailable check is not confirmation
+Open **Settings → Updates → Check for updates…** to check for a newer release for your
+platform. In the same section, **Check for updates at startup (once per day)** enables
+optional automatic checks after **Save**; **Cancel** preserves the previous choice.
+Automatic checks are off by default. An unavailable check is not confirmation
 that your version is current. You can retry later or visit GitHub Releases.
 
 Updates are not installed automatically. Close the application, download and

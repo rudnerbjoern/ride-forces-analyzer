@@ -3,13 +3,13 @@
 from collections import deque
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QTimer, Slot
+from PySide6.QtCore import QEvent, QTimer, Qt, Slot
 from PySide6.QtGui import QFileOpenEvent
 from PySide6.QtWidgets import QApplication
 
-from ride_forces_analyzer.ui.window import ExplorerWindow
-from ride_forces_analyzer.config import AppSettings
-from ride_forces_analyzer.instance import OpenRequest
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
+from ride_forces_analyzer.runtime.config import AppSettings
+from ride_forces_analyzer.runtime.instance import OpenRequest
 from ride_forces_analyzer.i18n import get_language
 
 
@@ -25,7 +25,7 @@ class RecordingApplication(QApplication):
     """
 
     def __init__(self, arguments: list[str]) -> None:
-        """Initialize recording application and its owned state.
+        """Select Qt dialogs and initialize the recording application and its state.
 
         Args:
             arguments: Command-line arguments to interpret.
@@ -36,6 +36,7 @@ class RecordingApplication(QApplication):
         self.windows: list[ExplorerWindow] = []
         self.pending_requests: deque[OpenRequest] = deque()
         self.ready = False
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_DontUseNativeDialogs)
         super().__init__(arguments)
         self.settings = AppSettings()
         self.delivery_timer = QTimer(self)

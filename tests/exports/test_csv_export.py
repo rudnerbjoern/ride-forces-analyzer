@@ -14,11 +14,13 @@ import pytest
 from ride_forces_analyzer.analysis.recording import (
     RecordingAnalysis,
     StageConfiguration,
+)
+from ride_forces_analyzer.analysis.preparation import (
     prepare_recording_analysis,
     source_app_configuration,
 )
-from ride_forces_analyzer.csv_export import CSV_COLUMNS, CsvExportCancelled, export_csv
-from ride_forces_analyzer.i18n import get_language, set_language
+from ride_forces_analyzer.exports.csv import CSV_COLUMNS, CsvExportCancelled, export_csv
+from ride_forces_analyzer.i18n import Language, get_language, set_language
 from ride_forces_analyzer.importers import ImportSuccess, import_forces, import_forces_bytes
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
@@ -191,9 +193,9 @@ def test_csv_is_locale_independent_and_retains_the_bound_snapshot(export_directo
     english, german = export_directory / "english.csv", export_directory / "german.csv"
     language = get_language()
     try:
-        set_language("en")
+        set_language(Language.ENGLISH)
         export_csv(analysis, english, 0, 5)
-        set_language("de")
+        set_language(Language.GERMAN)
         export_csv(analysis, german, 0, 5)
     finally:
         set_language(language)

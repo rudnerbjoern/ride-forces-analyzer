@@ -13,7 +13,7 @@ from typing import Protocol, cast
 import numpy as np
 import pint
 
-from ride_forces_analyzer.domain._validation import has_type
+from ride_forces_analyzer.validation.checks import has_type, validate_sha256
 from ride_forces_analyzer.importers import ImportSuccess, Severity
 
 from .models import (
@@ -96,12 +96,7 @@ class MotionUnitContract:
             TypeError: A supported explicit acceleration unit is required. Evidence must be a
                 collection of reference strings.
         """
-        if (
-            not has_type(self.source_sha256, str)
-            or len(self.source_sha256) != 64
-            or any(character not in "0123456789abcdef" for character in self.source_sha256)
-        ):
-            raise ValueError("Contract requires a lowercase source SHA-256")
+        validate_sha256(self.source_sha256, "Contract requires a lowercase source SHA-256")
         if not has_type(self.source_sequence, SourceSequence) or self.source_sequence not in (
             SourceSequence.ACCELERATION,
             SourceSequence.GRAVITY,

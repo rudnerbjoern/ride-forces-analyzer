@@ -151,10 +151,17 @@ Gaps in the coordinates can break the route into sections.
 GPS is independent of force samples and does not move the chart selection.
 It provides approximate location context, not a force or speed measurement.
 
-Click **Load map background** to place an OpenStreetMap map behind the track.
+Previously cached maps appear automatically when you open the overview, including
+after restarting the app, if all tiles for the visible area are still valid.
+Click **Load map background** to load missing or expired OpenStreetMap tiles.
 Only the visible area is requested, without an account or API key. This action
 contacts OpenStreetMap: it reveals your IP address and the requested geographic
 area, but does not upload the GPS track, timestamps or recording file.
+
+![Voltron Nevera GPS overview with the recorded route over an OpenStreetMap background, marking the first position in green and the last in red](../images/voltron-gps-overview.png)
+
+*Voltron Nevera's approximate recorded route with a map background. Green marks
+its first position; red marks its last. Map: © OpenStreetMap contributors.*
 
 After enlarging the window, click the button again to load more map detail.
 Previously viewed map areas are saved locally to avoid repeated downloads.

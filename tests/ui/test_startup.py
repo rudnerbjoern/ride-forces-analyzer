@@ -17,7 +17,7 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
     title = "Custom window" if custom_settings else "Ride Forces Analyzer"
     size = (720, 480) if custom_settings else (1280, 820)
     launch = (
-        "from ride_forces_analyzer.config import AppSettings\n"
+        "from ride_forces_analyzer.runtime.config import AppSettings\n"
         "from ride_forces_analyzer.__main__ import main\n"
         "raise SystemExit(main(AppSettings(window_title='Custom window', "
         "window_width=720, window_height=480)))"
@@ -28,11 +28,11 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
         import runpy
         import sys
 
-        from PySide6.QtCore import QTimer
-        from PySide6.QtWidgets import QApplication, QLabel, QMainWindow
+        from PySide6.QtCore import QTimer, Qt
+        from PySide6.QtWidgets import QApplication, QFileDialog, QLabel, QLineEdit, QMainWindow
         from ride_forces_analyzer import __version__
         from ride_forces_analyzer.i18n import tr
-        from ride_forces_analyzer.ui.translation import system_ui_language
+        from ride_forces_analyzer.ui.presentation.translation import system_ui_language
 
         original_show = QMainWindow.show
         original_exec = QApplication.exec
@@ -80,6 +80,26 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
                 ))
                 if sys.platform == "win32":
                     assert QApplication.platformName() == "windows"
+                assert QApplication.testAttribute(Qt.ApplicationAttribute.AA_DontUseNativeDialogs)
+                files = QFileDialog(window)
+                try:
+                    files.show()
+                    for appearance in (0, 1):
+                        window.set_appearance(appearance)
+                        for accept, mode in (
+                            (QFileDialog.AcceptMode.AcceptOpen, QFileDialog.FileMode.ExistingFile),
+                            (QFileDialog.AcceptMode.AcceptSave, QFileDialog.FileMode.AnyFile),
+                            (QFileDialog.AcceptMode.AcceptOpen, QFileDialog.FileMode.Directory),
+                        ):
+                            files.setAcceptMode(accept)
+                            files.setFileMode(mode)
+                            QApplication.processEvents()
+                            filename = files.findChild(QLineEdit, "fileNameEdit")
+                            assert filename is not None and filename.isVisible()
+                            assert files.palette().window().color() == window.palette().window().color()
+                            assert filename.palette().base().color() == window.navigation.position.palette().base().color()
+                finally:
+                    files.close()
                 window.resize(800, 500)
                 assert (window.width(), window.height()) == (800, 500)
                 inspected.append(True)

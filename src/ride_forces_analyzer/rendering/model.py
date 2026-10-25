@@ -4,28 +4,106 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
+from ride_forces_analyzer.validation.checks import validate_sample_range
+
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from enum import StrEnum
 from fractions import Fraction
 from math import ceil, floor, isfinite
-from typing import Literal, overload
+from typing import Annotated, overload
+
+from pydantic import PlainSerializer
 
 from ride_forces_analyzer.analysis.models import SampleValues
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, RecordingAnalysis
-from ride_forces_analyzer.i18n import LANGUAGES, Language
+from ride_forces_analyzer.i18n import Language
 from .layouts.contracts import LayoutPosition
+from .layouts.contracts import ExportLayout as ExportLayout
+from .layouts.contracts import VideoAspect as VideoAspect
 
-FrameRate = int | Literal["60000/1001"]
-EXPORT_FRAME_RATES: tuple[FrameRate, ...] = (24, 25, 30, 50, "60000/1001", 60)
 
-ExportLayout = Literal["column", "ribbon", "corners", "hud", "orbit"]
+class VideoOutput(StrEnum):
+    """Video output modes with stable identifiers for saved export settings.
+
+    Attributes:
+        TRANSPARENT: Overlay with alpha in a ProRes 4444 MOV, stored as ``transparent``.
+        OPAQUE: Video on a black background in an H.264 MP4, stored as ``opaque``.
+    """
+
+    TRANSPARENT = "transparent"
+    OPAQUE = "opaque"
+
+
+class StandardFrameRate(StrEnum):
+    """Standard video rates with exact encoder values and display labels.
+
+    Attributes:
+        FPS_23_976: Exact 24000/1001 frames per second, displayed as 23.976.
+        FPS_24: 24 frames per second.
+        FPS_25: 25 frames per second.
+        FPS_30: 30 frames per second.
+        FPS_50: 50 frames per second and the default for new exports.
+        FPS_59_94: Exact 60000/1001 frames per second, displayed as 59.94.
+        FPS_60: 60 frames per second.
+    """
+
+    FPS_23_976 = "24000/1001"
+    FPS_24 = "24"
+    FPS_25 = "25"
+    FPS_30 = "30"
+    FPS_50 = "50"
+    FPS_59_94 = "60000/1001"
+    FPS_60 = "60"
+
+    @property
+    def label(self) -> str:
+        """Return the frame rate's display label.
+
+        Returns:
+            Rounded display label for fractional rates, otherwise the integer text.
+        """
+        if self is StandardFrameRate.FPS_23_976:
+            return "23.976"
+        return "59.94" if self is StandardFrameRate.FPS_59_94 else self.value
+
+    @property
+    def fraction(self) -> Fraction:
+        """Return the exact video rate without rounding.
+
+        Returns:
+            Rational number of frames per second.
+        """
+        return Fraction(self.value)
+
+
+FrameRate = int | StandardFrameRate
+EXPORT_FRAME_RATES: tuple[StandardFrameRate, ...] = tuple(StandardFrameRate)
+DEFAULT_FRAME_RATE = StandardFrameRate.FPS_50
+
+
+def frame_rate_value(value: FrameRate) -> int | str:
+    """Preserve existing preset and encoder metadata values.
+
+    Args:
+        value: Standard frame rate or validated custom integer rate.
+
+    Returns:
+        Integer for whole rates, or the exact fractional string for fractional rates.
+    """
+    if isinstance(value, StandardFrameRate):
+        rate = value.fraction
+        return rate.numerator if rate.denominator == 1 else value.value
+    return value
+
+
 PROFILES: tuple[tuple[ExportLayout, str], ...] = (
-    ("ribbon", "Flow Ribbon"),
-    ("corners", "Corner Instruments"),
-    ("hud", "HUD"),
-    ("orbit", "G-Orbit"),
-    ("column", "Four-panel column"),
+    (ExportLayout.RIBBON, "Flow Ribbon"),
+    (ExportLayout.CORNERS, "Corner Instruments"),
+    (ExportLayout.HUD, "HUD"),
+    (ExportLayout.ORBIT, "G-Orbit"),
+    (ExportLayout.COLUMN, "Four-panel column"),
 )
 
 
@@ -34,30 +112,30 @@ class ExportSettings:
     """Export settings contract and owned data.
 
     Attributes:
-        fps: Selected output frame rate; 59.94 retains its exact fractional
-            representation.
+        fps: StandardFrameRate member or custom integer from 1 to 120; standard
+            integers are normalized to enum members, preserving exact fractional rates.
         window_seconds: Width of the visible source-time context in seconds.
-        output: Output directory or path for generated artifacts.
+        output: VideoOutput member selecting transparency, codec and container.
         invert_vertical: Whether the vertical plot uses the selected inverted display
             direction.
         invert_lateral: Whether the layout uses its supported lateral direction override.
         prefer_gpu: Whether encoding prefers a probed NVIDIA backend with CPU fallback.
-        layout: Stable key selecting the overlay renderer.
-        aspect: Selected landscape or portrait output format.
-        language: Registered language used to translate presentation text and numbers.
+        layout: ExportLayout member selecting the renderer; JSON retains its text key.
+        aspect: VideoAspect member selecting the canvas; JSON retains its text value.
+        language: Language member used for overlay text; saved JSON retains its text code.
         position: Requested source position or named layout placement, as declared by the
             type.
     """
 
-    fps: FrameRate = 50
+    fps: Annotated[FrameRate, PlainSerializer(frame_rate_value)] = DEFAULT_FRAME_RATE
     window_seconds: float = 12.0
-    output: Literal["transparent", "opaque"] = "transparent"
+    output: VideoOutput = VideoOutput.TRANSPARENT
     invert_vertical: bool = True
     invert_lateral: bool = True
     prefer_gpu: bool = True
-    layout: ExportLayout = "column"
-    aspect: Literal["landscape", "portrait"] = "landscape"
-    language: Language = "en"
+    layout: ExportLayout = ExportLayout.COLUMN
+    aspect: VideoAspect = VideoAspect.LANDSCAPE
+    language: Language = Language.ENGLISH
     position: LayoutPosition | None = None
 
     @property
@@ -67,29 +145,29 @@ class ExportSettings:
         Returns:
             The layout's output canvas width and height in pixels.
         """
-        if self.layout == "hud":
+        if self.layout == ExportLayout.HUD:
             from .layouts.hud import LANDSCAPE, PORTRAIT
 
-            return (PORTRAIT if self.aspect == "portrait" else LANDSCAPE).size
-        return (2160, 3840) if self.aspect == "portrait" else (3840, 2160)
+            return (PORTRAIT if self.aspect is VideoAspect.PORTRAIT else LANDSCAPE).size
+        return (2160, 3840) if self.aspect is VideoAspect.PORTRAIT else (3840, 2160)
 
     @property
     def frame_rate(self) -> Fraction:
-        """Exact encoder rate; retain the fractional ratio rather than rounding to 59.94.
+        """Return the exact encoder rate without rounding fractional frame rates.
 
         Returns:
             Exact output frames per second as a rational number.
         """
-        return Fraction(self.fps)
+        return self.fps.fraction if isinstance(self.fps, StandardFrameRate) else Fraction(self.fps)
 
     @property
     def fps_label(self) -> str:
-        """Return the user-facing frame-rate choice, including exact 59.94 notation.
+        """Return the display label for an integer or supported fractional frame rate.
 
         Returns:
-            The user-facing frame-rate choice, including exact 59.94 notation.
+            Integer rate text, or 23.976/59.94 for the corresponding exact fraction.
         """
-        return "59.94" if self.fps == "60000/1001" else str(self.fps)
+        return self.fps.label if isinstance(self.fps, StandardFrameRate) else str(self.fps)
 
     def __post_init__(self) -> None:
         """Validate constructor fields and establish the documented model invariants.
@@ -99,20 +177,31 @@ class ExportSettings:
 
         Raises:
             ValueError: Unsupported overlay language. Unknown export aspect ratio. Frame rate
-                must be an integer from 1 to 120 or 60000/1001. Visible time window must be
+                must be an integer from 1 to 120, 24000/1001 or 60000/1001. Visible time window must be
                 from 1 to 60 seconds. Unknown export output mode. Unknown export layout.
         """
-        if self.language not in LANGUAGES:
+        if type(self.language) is not Language:
             raise ValueError("Unsupported overlay language")
-        if self.aspect not in ("landscape", "portrait"):
+        if type(self.aspect) is not VideoAspect:
             raise ValueError("Unknown export aspect ratio")
-        if not (type(self.fps) is int and 1 <= self.fps <= 120) and self.fps != "60000/1001":
-            raise ValueError("Frame rate must be an integer from 1 to 120 or 60000/1001")
+        if type(self.fps) is not StandardFrameRate and not (
+            type(self.fps) is int and 1 <= self.fps <= 120
+        ):
+            raise ValueError(
+                "Frame rate must be an integer from 1 to 120, 24000/1001 or 60000/1001",
+            )
+        if type(self.fps) is int:
+            try:
+                standard = StandardFrameRate(str(self.fps))
+            except ValueError:
+                pass  # Custom integer rates remain integers.
+            else:
+                object.__setattr__(self, "fps", standard)
         if not isfinite(self.window_seconds) or not 1 <= self.window_seconds <= 60:
             raise ValueError("Visible time window must be from 1 to 60 seconds")
-        if self.output not in ("transparent", "opaque"):
+        if type(self.output) is not VideoOutput:
             raise ValueError("Unknown export output mode")
-        if self.layout not in tuple(key for key, _ in PROFILES):
+        if type(self.layout) is not ExportLayout:
             raise ValueError("Unknown export layout")
         from .layouts.registry import export_region
 
@@ -337,8 +426,7 @@ def prepare_export(
         AssertionError: If a required internal invariant does not hold.
     """
     count = len(analysis.time.source_indices)
-    if type(first) is not int or type(last) is not int or not 0 <= first <= last < count:
-        raise ValueError("Invalid export sample interval")
+    validate_sample_range(first, last, count, "Invalid export sample interval")
     forces = analysis.forces.smoothed
     if forces.channels is None:
         reason = forces.availability.reason

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from PIL import Image, IcoImagePlugin
 
-from ride_forces_analyzer.ui.icons import ICON_SIZES, render_icon
+from ride_forces_analyzer.ui.presentation.icons import ICON_SIZES, render_icon
 from scripts.build_icons import build_icons
 
 

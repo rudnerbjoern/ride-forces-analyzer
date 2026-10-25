@@ -9,9 +9,10 @@ from tempfile import TemporaryDirectory
 import pytest
 from PySide6.QtCore import QEvent, QThreadPool
 from PySide6.QtWidgets import QApplication
-from ride_forces_analyzer.config import AppSettings
-from ride_forces_analyzer.i18n import get_language, set_language
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.rendering.model import VideoOutput
+from ride_forces_analyzer.runtime.config import AppSettings
+from ride_forces_analyzer.i18n import Language, get_language, set_language
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.ui.helpers import resize_workspace, wait_until
 
 
@@ -35,7 +36,7 @@ def explorer_window() -> Iterator[ExplorerWindow]:
     if application is None:
         application = QApplication([])
     assert isinstance(application, QApplication)
-    window = ExplorerWindow(AppSettings(language="en"))
+    window = ExplorerWindow(AppSettings(language=Language.ENGLISH))
     window.show()
     wait_until(lambda: window.windowHandle().isExposed())
     # Test-controlled minimum size keeps interaction layout independent of the desktop.
@@ -61,7 +62,7 @@ def small_preview_frames(monkeypatch: pytest.MonkeyPatch) -> None:
 
     def render_sample(self: OverlayRenderer, position: float) -> Image.Image:
         assert self.timeline.first <= position <= self.timeline.last
-        alpha = 0 if self.timeline.settings.output == "transparent" else 255
+        alpha = 0 if self.timeline.settings.output == VideoOutput.TRANSPARENT else 255
         return Image.new("RGBA", (8, 8), (0, 0, 0, alpha))
 
     monkeypatch.setattr(OverlayRenderer, "render_sample", render_sample)

@@ -12,6 +12,11 @@ Product scope belongs in the [roadmap](../ROADMAP.md).
 
 ## Loading and presentation
 
+The Qt-independent `explorer` package separates bound presentation state,
+text/HTML formatting, inclusive selections and loading. Existing imports of
+`ExplorerData`, `SampleRange`, `load_recording`, `present_recording` and
+`failure_text` remain available from the package. Qt workers stay in `ui.explorer.loading`.
+
 | Area                 | Contract                                                                                                                                                        |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | About                | Version, purpose, copyright, licenses, app/RFDB links and independence; live English/German/French and appearance themes                                        |
@@ -192,10 +197,13 @@ fallback) and System appearance. `AppSettings` can explicitly override language.
 - Recording replacement or main-window close closes the GPS dialog.
 - GPS does not control forces, timing or selection. No invented fixes or confirmed
   speed-color contract. The route remains usable offline.
+- Opening GPS restores the visible background automatically when all required
+  tiles are fresh in the persistent cache, including after application restart.
+  Missing or expired tiles leave the route visible without network access.
 - **Load map background** explicitly requests only the currently visible OSM area;
   no startup, resize, prefetch or offline-download requests. The static background
   sits behind the route with visible linked © OpenStreetMap contributors attribution.
-- `map_background` selects one zoom (0–19) for the viewport's physical pixel size,
+- `gps.map_background` selects one zoom (0–19) for the viewport's physical pixel size,
   including display scaling, capped at 2048 pixels per image dimension and at most
   64 intersecting 256-pixel tiles. Raster scaling uses smooth transformation;
   resizing an existing image adds no map detail until explicitly reloaded.

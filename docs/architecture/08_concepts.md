@@ -127,7 +127,8 @@ own catalog and theme details.
 Layouts own named positions and geometry; previews, composition and encoder
 padding share the same regions. HUD exports native HD; other layouts export 4K.
 Previews use the exact cursor, while video frames follow an independent
-deterministic clock. The 59.94 option retains exact `60000/1001` timing.
+deterministic clock. The 23.976 and 59.94 options retain exact `24000/1001` and
+`60000/1001` timing.
 Transparent ProRes and opaque H.264 are separate outputs, published only after
 successful encoding. Existing videos require explicit replacement confirmation;
 failure or cancellation preserves them. Video alignment remains external.

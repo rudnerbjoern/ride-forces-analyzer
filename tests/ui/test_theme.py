@@ -15,19 +15,19 @@ from PySide6.QtWidgets import (
 import pytest
 
 from ride_forces_analyzer.storage.preferences import Appearance
-from ride_forces_analyzer.ui.theme import THEMES, ThemeName
-from ride_forces_analyzer.ui.window import ExplorerWindow
-from ride_forces_analyzer.ui.preferences import SettingsDialog
+from ride_forces_analyzer.ui.presentation.theme import THEMES, ThemeName
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
+from ride_forces_analyzer.ui.dialogs.settings import SettingsDialog
 from tests.ui.helpers import wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
-from ride_forces_analyzer.config import AppSettings
+from ride_forces_analyzer.runtime.config import AppSettings
 
 
 def test_system_appearance_follows_changes_until_manually_selected(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from ride_forces_analyzer.ui import window as ui_window
+    from ride_forces_analyzer.ui.explorer import window as ui_window
 
     window = explorer_window
     effective_theme: ThemeName = Appearance.LIGHT
@@ -141,18 +141,18 @@ def test_theme_switch_preserves_recording_and_chart_state(
     wait_until(window.open_action.isEnabled)
     for calibrated in (True, False):
         window.reference_toggle.setChecked(calibrated)
-        window.slider.setValue(3600)
-        window.first.setValue(3500)
-        window.last.setValue(3700)
+        window.navigation.slider.setValue(3600)
+        window.inspector.first.setValue(3500)
+        window.inspector.last.setValue(3700)
         window.zoom_button.click()
         window.visibility[1].setChecked(False)
         data = window.data
-        points = tuple(tuple(line.points()) for line in window.series)
+        points = tuple(tuple(line.points()) for line in window.plot.series)
         viewport = (
-            window.axis_x.min(),
-            window.axis_x.max(),
-            window.axis_y.min(),
-            window.axis_y.max(),
+            window.plot.axis_x.min(),
+            window.plot.axis_x.max(),
+            window.plot.axis_y.min(),
+            window.plot.axis_y.max(),
         )
         for index, name in (
             (1, Appearance.LIGHT),
@@ -163,39 +163,43 @@ def test_theme_switch_preserves_recording_and_chart_state(
             theme = THEMES[window.theme.name]
             assert window.theme.name == name
             assert window.data is data
-            assert tuple(tuple(line.points()) for line in window.series) == points
-            assert not window.series[1].isVisible()
-            assert (window.first.value(), window.last.value(), window.slider.value()) == (
+            assert tuple(tuple(line.points()) for line in window.plot.series) == points
+            assert not window.plot.series[1].isVisible()
+            assert (
+                window.inspector.first.value(),
+                window.inspector.last.value(),
+                window.navigation.slider.value(),
+            ) == (
                 3500,
                 3700,
                 3600,
             )
             assert viewport == (
-                window.axis_x.min(),
-                window.axis_x.max(),
-                window.axis_y.min(),
-                window.axis_y.max(),
+                window.plot.axis_x.min(),
+                window.plot.axis_x.max(),
+                window.plot.axis_y.min(),
+                window.plot.axis_y.max(),
             )
-            assert window.chart.backgroundBrush().color() == QColor(
+            assert window.plot.chart.backgroundBrush().color() == QColor(
                 theme.chart_background or theme.panel,
             )
-            assert window.axis_x.labelsBrush().color() == QColor(
+            assert window.plot.axis_x.labelsBrush().color() == QColor(
                 theme.chart_foreground or theme.muted,
             )
-            assert [line.pen().color().name() for line in window.series] == list(
+            assert [line.pen().color().name() for line in window.plot.series] == list(
                 (theme.chart_forces or theme.forces)
                 if calibrated
                 else (theme.chart_raw or theme.raw),
             )
             assert window.palette().color(QPalette.ColorRole.WindowText) == QColor(theme.text)
             for label, color in zip(
-                window.value_labels,
+                window.navigation.value_labels,
                 theme.forces if calibrated else theme.raw,
                 strict=True,
             ):
                 assert label.styleSheet() == f"color: {color};"
             assert [
-                label.brush().color().name() for label in window.source_marker_labels.values()
+                label.brush().color().name() for label in window.plot.source_marker_labels.values()
             ] == list(theme.markers)
 
 

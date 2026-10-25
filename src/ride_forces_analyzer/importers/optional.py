@@ -23,7 +23,7 @@ from ride_forces_analyzer.domain import (
     SourceValue,
     ValueOrigin,
 )
-from ride_forces_analyzer.domain._validation import has_type
+from ride_forces_analyzer.validation.checks import has_type
 
 from ._diagnostic_budget import DiagnosticBudget, DiagnosticBudgetExceeded
 from .diagnostics import ImportDiagnostic, Severity, ordered_diagnostics

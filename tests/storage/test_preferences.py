@@ -1,5 +1,7 @@
 """Local folder preferences survive restart and tolerate missing storage."""
 
+from ride_forces_analyzer.rendering.model import StandardFrameRate
+
 # cspell:words executemany
 
 from pathlib import Path
@@ -9,6 +11,7 @@ from typing import cast
 
 import pytest
 
+from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 
 
@@ -16,7 +19,7 @@ def test_render_jobs_survive_restart_and_fit_the_current_computer(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from ride_forces_analyzer import cpu_resources
+    from ride_forces_analyzer.runtime import cpu_resources
 
     monkeypatch.setattr(cpu_resources, "render_job_limit", lambda: 24)
     path = tmp_path / "preferences.sqlite3"
@@ -58,6 +61,7 @@ def test_recording_markers_tolerate_unavailable_storage(tmp_path: Path) -> None:
     ("method", "invalid"),
     [
         ("remember_language", "es"),
+        ("remember_language", "de"),
         ("remember_language", b"de"),
         ("remember_language", None),
         ("remember_appearance", "blue"),
@@ -74,6 +78,8 @@ def test_recording_markers_tolerate_unavailable_storage(tmp_path: Path) -> None:
         ("remember_export_fps", True),
         ("remember_export_fps", 50.0),
         ("remember_export_fps", "50"),
+        ("remember_export_fps", 23.976),
+        ("remember_export_fps", "23.976"),
         ("remember_export_fps", 0),
         ("remember_render_jobs", True),
         ("remember_render_jobs", 2.0),
@@ -92,6 +98,7 @@ def test_recording_markers_tolerate_unavailable_storage(tmp_path: Path) -> None:
         ("remember_export", "ride.mov"),
         ("remember_export", 123),
         ("language", "es"),
+        ("language", "de"),
         ("update_check_due", "100000"),
         ("update_check_due", float("nan")),
     ],
@@ -103,7 +110,7 @@ def test_invalid_preference_inputs_are_rejected_without_changing_storage(
     with TemporaryDirectory(dir=".tmp") as temporary:
         database = Path(temporary) / "preferences.sqlite3"
         preferences = Preferences(database)
-        preferences.remember_language("de")
+        preferences.remember_language(Language.GERMAN)
         before = database.read_bytes()
         call = cast(Callable[[object], object], getattr(preferences, method))
         with pytest.raises(ValueError):
@@ -124,7 +131,7 @@ def test_invalid_stored_preferences_keep_safe_defaults() -> None:
     with TemporaryDirectory(dir=".tmp") as temporary:
         database = Path(temporary) / "preferences.sqlite3"
         preferences = Preferences(database)
-        preferences.remember_language("de")
+        preferences.remember_language(Language.GERMAN)
         with closing(sqlite3.connect(database)) as connection, connection:
             connection.executemany(
                 "INSERT OR REPLACE INTO preferences (key, value) VALUES (?, ?)",
@@ -140,9 +147,9 @@ def test_invalid_stored_preferences_keep_safe_defaults() -> None:
                 ],
             )
         assert preferences.language() == "en"
-        assert preferences.language("de") == "de"
+        assert preferences.language(Language.GERMAN) == "de"
         assert preferences.appearance() is Appearance.SYSTEM
-        assert preferences.export_fps() == 50
+        assert preferences.export_fps() is StandardFrameRate.FPS_50
         assert preferences.render_jobs() == 1
         assert not preferences.automatic_updates()
         assert not preferences.restore_last_file()
@@ -158,7 +165,7 @@ def test_language_and_appearance_survive_restart_with_safe_defaults() -> None:
         database = Path(temporary) / "preferences.sqlite3"
         preferences = Preferences(database)
         assert preferences.language() == "en" and preferences.appearance() is Appearance.SYSTEM
-        preferences.remember_language("de")
+        preferences.remember_language(Language.GERMAN)
         preferences.remember_appearance(Appearance.LIGHT)
         restored = Preferences(database)
         assert restored.language() == "de" and restored.appearance() is Appearance.LIGHT
@@ -257,13 +264,59 @@ def test_default_export_rate_survives_restart_and_invalid_storage_falls_back() -
     with TemporaryDirectory(dir=".tmp") as temporary:
         database = Path(temporary) / "preferences.sqlite3"
         preferences = Preferences(database)
-        assert preferences.export_fps() == 50
-        preferences.remember_language("de")
-        preferences.remember_export_fps("60000/1001")
-        restored = Preferences(database)
-        assert restored.export_fps() == "60000/1001" and restored.language() == "de"
-        restored.remember_export_fps(60)
-        assert Preferences(database).export_fps() == 60
+        assert preferences.export_fps() is StandardFrameRate.FPS_50
+        preferences.remember_language(Language.GERMAN)
+        for rate in StandardFrameRate:
+            preferences.remember_export_fps(rate)
+            restored = Preferences(database)
+            assert restored.export_fps() == rate and restored.language() == "de"
+        preferences.remember_export_fps(60)
+        assert Preferences(database).export_fps() is StandardFrameRate.FPS_60
         with closing(sqlite3.connect(database)) as connection, connection:
             connection.execute("UPDATE preferences SET value = 'invalid' WHERE key = 'export_fps'")
-        assert Preferences(database).export_fps() == 50
+        assert Preferences(database).export_fps() is StandardFrameRate.FPS_50
+
+
+def test_inaccessible_paths_keep_saved_preferences_and_safe_fallbacks(
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    preferences = Preferences(export_directory / "preferences.sqlite3")
+    recording = export_directory / "ride.forces"
+    recording.write_bytes(b"recording")
+    preferences.remember_recording(recording)
+    before = preferences.path.read_bytes()
+    preferences.remember_export(export_directory / "missing" / "ride.mov")
+    assert preferences.path.read_bytes() == before
+
+    def inaccessible(path: Path) -> bool:
+        raise OSError("Path is inaccessible")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "is_dir", inaccessible)
+        assert preferences.recording_directory() == ""
+        preferences.remember_export(export_directory / "ride.mov")
+        assert preferences.path.read_bytes() == before
+    original_is_file = Path.is_file
+
+    def recording_inaccessible(path: Path) -> bool:
+        if path == recording.resolve():
+            raise OSError("Recording is inaccessible")
+        return original_is_file(path)
+
+    monkeypatch.setattr(Path, "is_file", recording_inaccessible)
+    assert preferences.last_recording() is None
+
+
+def test_corrupt_stored_ride_bounds_are_ignored_without_rewriting(export_directory: Path) -> None:
+    from contextlib import closing
+    import sqlite3
+
+    preferences = Preferences(export_directory / "preferences.sqlite3")
+    key = "a" * 64
+    assert preferences.remember_recording_bounds(key, (1, 3))
+    with closing(sqlite3.connect(preferences.path)) as connection, connection:
+        connection.execute("UPDATE recording_bounds SET last_sample = 0")
+    before = preferences.path.read_bytes()
+    assert preferences.recording_bounds(key) is None
+    assert preferences.path.read_bytes() == before

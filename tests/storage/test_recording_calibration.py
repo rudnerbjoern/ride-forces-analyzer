@@ -10,7 +10,9 @@ from ride_forces_analyzer.analysis.calibration import (
     CalibrationOverrides,
     CalibrationReferenceError,
 )
-from ride_forces_analyzer.analysis.recording import source_app_configuration
+from ride_forces_analyzer.analysis.preparation import (
+    source_app_configuration,
+)
 from ride_forces_analyzer.storage.preferences import Preferences
 from tests.analysis.test_recording_preparation import NOW, synthetic_source
 
@@ -110,3 +112,11 @@ def test_all_markers_save_and_reset_atomically(tmp_path: Path) -> None:
     assert preferences.remember_recording_markers(source, None, CalibrationOverrides())
     assert preferences.recording_bounds(source.source_sha256) is None
     assert preferences.recording_calibration(source.source_sha256) is None
+
+
+def test_out_of_source_ride_bounds_are_rejected_before_marker_writes(tmp_path: Path) -> None:
+    source = synthetic_source(accelerationSequence=[{"x": "0", "y": "1", "z": "1"}] * 7)
+    preferences = Preferences(tmp_path / "references.sqlite3")
+    with pytest.raises(ValueError, match="Ride markers outside recording"):
+        preferences.remember_recording_markers(source, (0, 7), CalibrationOverrides())
+    assert not preferences.path.exists()

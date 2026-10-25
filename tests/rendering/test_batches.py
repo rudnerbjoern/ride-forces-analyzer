@@ -1,9 +1,14 @@
 """SQLite persistence, immutable queue snapshots and real sequential export contracts."""
 
-from ride_forces_analyzer.analysis.recording import source_app_configuration
+from ride_forces_analyzer.rendering.model import StandardFrameRate
+
+from ride_forces_analyzer.analysis.preparation import (
+    source_app_configuration,
+)
 
 # cspell:words Xnotes
 
+from collections.abc import Callable
 from dataclasses import replace
 from contextlib import closing
 from pathlib import Path
@@ -15,9 +20,17 @@ from typing import cast
 import pytest
 
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
-from ride_forces_analyzer.rendering.batches import build_jobs, make_job, run_batches
+from ride_forces_analyzer.exports.batches import build_jobs, make_job, run_batches
 from ride_forces_analyzer.rendering.encoding import ExportCancelled
-from ride_forces_analyzer.rendering.model import ExportSettings, ExportTimeline
+from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
+from ride_forces_analyzer.rendering.model import (
+    VideoOutput,
+    FrameRate,
+    ExportLayout,
+    VideoAspect,
+    ExportSettings,
+    ExportTimeline,
+)
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 from ride_forces_analyzer.storage.export_models import BatchJob, SavedBatch, SavedPreset
 from ride_forces_analyzer.storage.exports import ExportStore, ExportStoreError
@@ -32,7 +45,7 @@ def preset(name: str = "Ribbon", window: int = 11) -> SavedPreset:
     )
     return SavedPreset(
         name=name,
-        settings=ExportSettings(layout="ribbon", prefer_gpu=False),
+        settings=ExportSettings(layout=ExportLayout.RIBBON, prefer_gpu=False),
         smoothing_window=window,
         analysis_configuration=configuration,
         schema_version=1,
@@ -45,11 +58,11 @@ def test_portrait_and_landscape_persistence(
     manta: ExplorerData,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from ride_forces_analyzer.rendering import batches
+    from ride_forces_analyzer.exports import batches
 
     chosen = SavedPreset(
         name="Portrait",
-        settings=ExportSettings(aspect="portrait", position=LayoutPosition.LEFT),
+        settings=ExportSettings(aspect=VideoAspect.PORTRAIT, position=LayoutPosition.LEFT),
         analysis_configuration=source_app_configuration(),
         schema_version=1,
         smoothing_window=11,
@@ -76,8 +89,8 @@ def test_portrait_and_landscape_persistence(
         LayoutPosition.BOTTOM,
     ]
     assert [job.preset.settings.aspect for job in reopened.batch("Mixed formats").jobs] == [
-        "portrait",
-        "landscape",
+        VideoAspect.PORTRAIT,
+        VideoAspect.LANDSCAPE,
     ]
     rendered: list[ExportSettings] = []
     renderer_counts: list[object] = []
@@ -98,16 +111,95 @@ def test_portrait_and_landscape_persistence(
 def test_hud_preset_round_trip_and_removed_layout_rejection() -> None:
     from pydantic import ValidationError
 
-    chosen = preset().model_copy(update={"settings": ExportSettings(layout="hud")})
+    chosen = preset().model_copy(update={"settings": ExportSettings(layout=ExportLayout.HUD)})
     saved = SavedPreset.model_validate_json(chosen.model_dump_json())
-    assert saved.settings.layout == "hud"
+    assert saved.settings.layout == ExportLayout.HUD
     assert saved.settings.dimensions == (1920, 1080)
-    assert replace(saved.settings, aspect="portrait").dimensions == (1080, 1920)
+    assert replace(saved.settings, aspect=VideoAspect.PORTRAIT).dimensions == (1080, 1920)
     assert saved.settings.position is LayoutPosition.FULL_SCREEN
     payload = json.loads(saved.model_dump_json())
     payload["settings"]["layout"] = "capsule"
     with pytest.raises(ValidationError):
         SavedPreset.model_validate_json(json.dumps(payload))
+
+
+@pytest.mark.parametrize("aspect", list(VideoAspect))
+def test_video_aspect_preserves_saved_codes_and_requires_enum_members(
+    aspect: VideoAspect,
+) -> None:
+    from pydantic import ValidationError
+
+    assert ExportSettings().aspect is VideoAspect.LANDSCAPE
+    assert VideoAspect(aspect.value) is aspect
+    chosen = preset().model_copy(update={"settings": ExportSettings(aspect=aspect)})
+    payload = json.loads(chosen.model_dump_json())
+    assert payload["settings"]["aspect"] == aspect.value
+    assert SavedPreset.model_validate_json(json.dumps(payload)).settings.aspect is aspect
+    with pytest.raises(ValueError, match="Unknown export aspect ratio"):
+        ExportSettings(aspect=cast(VideoAspect, aspect.value))
+    payload["settings"]["aspect"] = "square"
+    with pytest.raises(ValidationError):
+        SavedPreset.model_validate_json(json.dumps(payload))
+
+
+@pytest.mark.parametrize("layout", list(ExportLayout))
+def test_layout_members_preserve_saved_text_keys(layout: ExportLayout) -> None:
+    assert ExportLayout(layout.value) is layout
+    chosen = preset().model_copy(update={"settings": ExportSettings(layout=layout)})
+    payload = json.loads(chosen.model_dump_json())
+    assert payload["settings"]["layout"] == layout.value
+    assert SavedPreset.model_validate_json(json.dumps(payload)).settings.layout is layout
+
+
+@pytest.mark.parametrize("output", list(VideoOutput))
+def test_video_output_preserves_saved_codes_and_requires_enum_members(
+    output: VideoOutput,
+) -> None:
+    assert ExportSettings().output is VideoOutput.TRANSPARENT
+    assert VideoOutput(output.value) is output
+    chosen = preset().model_copy(update={"settings": ExportSettings(output=output)})
+    payload = json.loads(chosen.model_dump_json())
+    assert payload["settings"]["output"] == output.value
+    assert SavedPreset.model_validate_json(json.dumps(payload)).settings.output is output
+    with pytest.raises(ValueError, match="Unknown export output mode"):
+        ExportSettings(output=cast(VideoOutput, output.value))
+    with pytest.raises(ValueError):
+        VideoOutput("other")
+
+
+@pytest.mark.parametrize("rate", list(StandardFrameRate))
+def test_standard_rates_keep_existing_json_values_and_restore_enum_members(
+    rate: StandardFrameRate,
+) -> None:
+    expected: int | str = rate.value if "/" in rate.value else int(rate.value)
+    base = preset()
+    settings = replace(base.settings, fps=rate)
+    chosen = base.model_copy(update={"settings": settings})
+    payload = json.loads(chosen.model_dump_json())
+    assert payload["settings"]["fps"] == expected
+    assert type(payload["settings"]["fps"]) is type(expected)
+    restored = SavedPreset.model_validate_json(json.dumps(payload))
+    assert restored.settings.fps is rate
+    assert restored.settings.frame_rate == rate.fraction
+    assert restored.settings.fps_label == rate.label
+    assert restored == chosen
+    if type(expected) is int:
+        assert ExportSettings(fps=expected).fps is rate
+    with pytest.raises(ValueError, match="Frame rate"):
+        ExportSettings(fps=cast(FrameRate, rate.value))
+
+
+def test_custom_frame_rates_preserve_integer_storage_and_reject_invalid_values() -> None:
+    assert ExportSettings().fps is StandardFrameRate.FPS_50
+    for value in (1, 27, 120):
+        settings = ExportSettings(fps=value)
+        chosen = preset().model_copy(update={"settings": settings})
+        restored = SavedPreset.model_validate_json(chosen.model_dump_json())
+        assert type(restored.settings.fps) is int and restored.settings.fps == value
+        assert restored.settings.frame_rate == value
+    for value in (True, False, 0, 121, 50.0, "23.976", "59.94", "50"):
+        with pytest.raises(ValueError, match="Frame rate"):
+            ExportSettings(fps=cast(FrameRate, value))
 
 
 def short_job(data: ExplorerData, chosen: SavedPreset | None = None) -> BatchJob:
@@ -122,15 +214,17 @@ def short_job(data: ExplorerData, chosen: SavedPreset | None = None) -> BatchJob
     )
 
 
+@pytest.mark.parametrize("fps", [StandardFrameRate.FPS_23_976, StandardFrameRate.FPS_59_94])
 def test_sqlite_survives_reopen_with_snapshots_and_transaction_rollback(
     export_directory: Path,
     manta: ExplorerData,
+    fps: FrameRate,
 ) -> None:
     path = export_directory / "exports.sqlite3"
     store = ExportStore(path)
     chosen = SavedPreset(
         name="Ribbon",
-        settings=ExportSettings(fps="60000/1001"),
+        settings=ExportSettings(fps=fps),
         analysis_configuration=source_app_configuration(),
         schema_version=1,
         smoothing_window=11,
@@ -146,8 +240,8 @@ def test_sqlite_survives_reopen_with_snapshots_and_transaction_rollback(
         chosen.model_copy(update={"settings": replace(chosen.settings, fps=30)}),
         overwrite=True,
     )
-    assert ExportStore(path).presets()[0].settings.fps == 30
-    assert ExportStore(path).batch("Weekend").jobs[0].preset.settings.fps == "60000/1001"
+    assert ExportStore(path).presets()[0].settings.fps is StandardFrameRate.FPS_30
+    assert ExportStore(path).batch("Weekend").jobs[0].preset.settings.fps == fps
     with pytest.raises(ExportStoreError):
         store.save_preset(chosen.model_copy(update={"name": "ribbon"}))
     with pytest.raises(ExportStoreError):
@@ -193,7 +287,7 @@ def test_multiple_rides_cross_multiple_presets_and_custom_bounds(manta: Explorer
     )
     chosen = (
         preset(),
-        preset("Orbit").model_copy(update={"settings": ExportSettings(layout="orbit")}),
+        preset("Orbit").model_copy(update={"settings": ExportSettings(layout=ExportLayout.ORBIT)}),
     )
     jobs = build_jobs(paths, chosen, "entire")
     assert len(jobs) == 4
@@ -232,13 +326,17 @@ def test_batch_continues_after_changed_recording_and_preserves_outputs(
     manta: ExplorerData,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from ride_forces_analyzer.rendering import batches
+    from ride_forces_analyzer.exports import batches
 
     calls: list[Path] = []
 
     def fake_export(timeline: ExportTimeline, target: Path, **kwargs: object) -> Path:
         calls.append(target)
+        callback = cast(Callable[[ExportProgress], None], kwargs["progress"])
+        callback(ExportProgress(ExportPhase.RENDERING, 1, 2, 10, True))
+        callback(ExportProgress(ExportPhase.FINALIZING, 2, 2, 20, True))
         target.write_bytes(b"completed")
+        callback(ExportProgress(ExportPhase.COMPLETED, 2, 2, 20, True))
         assert timeline.smoothing_window == 3
         return target
 
@@ -252,7 +350,21 @@ def test_batch_continues_after_changed_recording_and_preserves_outputs(
         SavedBatch(name="A", jobs=(job, changed, missing), schema_version=1),
         SavedBatch(name="B", jobs=(job,), schema_version=1),
     )
-    result = run_batches(saved, export_directory)
+    updates: list[tuple[int, ExportProgress | None]] = []
+    result = run_batches(
+        saved,
+        export_directory,
+        progress=lambda job, total, update, label: updates.append((job, update)),
+    )
+    assert [job for job, update in updates if update is None] == [1, 2, 3, 4]
+    for job_index in range(1, 5):
+        events = [update for job, update in updates if job == job_index and update is not None]
+        assert events[0] == ExportProgress(ExportPhase.PREPARING)
+        if job_index in (1, 4):
+            assert [event.phase for event in events] == list(ExportPhase)
+            assert events[1].remaining_seconds == 10 and events[1].use_gpu is True
+        else:
+            assert len(events) == 1
     assert [item.status for item in result.results] == [
         "completed",
         "failed",
@@ -273,7 +385,7 @@ def test_cancel_stops_remaining_jobs_and_keeps_completed_files(
     manta: ExplorerData,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from ride_forces_analyzer.rendering import batches
+    from ride_forces_analyzer.exports import batches
 
     calls = 0
     cancel = Event()
@@ -314,7 +426,7 @@ def test_saved_batch_reopens_and_exports_different_rides_and_formats(
     presets = (
         SavedPreset(
             name="Ribbon",
-            settings=ExportSettings(layout="ribbon", prefer_gpu=False),
+            settings=ExportSettings(layout=ExportLayout.RIBBON, prefer_gpu=False),
             analysis_configuration=source_app_configuration(),
             schema_version=1,
             smoothing_window=11,
@@ -322,7 +434,11 @@ def test_saved_batch_reopens_and_exports_different_rides_and_formats(
         ),
         SavedPreset(
             name="Orbit opaque",
-            settings=ExportSettings(layout="orbit", output="opaque", prefer_gpu=False),
+            settings=ExportSettings(
+                layout=ExportLayout.ORBIT,
+                output=VideoOutput.OPAQUE,
+                prefer_gpu=False,
+            ),
             analysis_configuration=source_app_configuration(),
             schema_version=1,
             smoothing_window=11,

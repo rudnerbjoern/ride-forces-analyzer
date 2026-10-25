@@ -4,7 +4,7 @@ from collections.abc import Callable
 import time
 
 from PySide6.QtTest import QTest
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 
 
 def wait_until(predicate: Callable[[], bool], timeout: float = 15) -> None:

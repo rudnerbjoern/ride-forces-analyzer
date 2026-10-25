@@ -289,3 +289,24 @@ print('Offline passive frame processing passed')
     result = subprocess.run([sys.executable, "-B", "-c", script], capture_output=True, timeout=30)
     assert result.returncode == 0, result.stderr.decode()
     assert b"Offline passive frame processing passed" in result.stdout
+
+
+def test_frame_boundaries_reject_untyped_basis_transport_and_calibration() -> None:
+    from typing import Any, cast
+
+    source = _source()
+    values = SampleValues(np.ones((1, 3)))
+    with pytest.raises(ValueError, match="three explicit typed"):
+        OrthonormalFrame(cast(Any, (Vector3(1, 0, 0),)))
+    with pytest.raises(TypeError, match="owned samples"):
+        rotate_vectors(cast(Any, None), IDENTITY)
+    with pytest.raises(TypeError, match="Inverse selection"):
+        rotate_vectors(values, IDENTITY, inverse=cast(Any, 1))
+    with pytest.raises(TypeError, match="explicit validated basis"):
+        RiderCalibration(source.source_sha256, cast(Any, None), ("test",))
+    with pytest.raises(TypeError, match="references must be a collection"):
+        RiderCalibration(source.source_sha256, IDENTITY, cast(Any, "test"))
+    with pytest.raises(TypeError, match="full M2"):
+        analyze_rider_frame(cast(Any, None), calculation_time=NOW)
+    with pytest.raises(TypeError, match="typed or absent"):
+        analyze_rider_frame(source, calculation_time=NOW, calibration=cast(Any, IDENTITY))

@@ -4,6 +4,8 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
+from ride_forces_analyzer.validation.checks import validate_sample_range
+
 # cspell:words LANCZOS
 
 from dataclasses import dataclass, replace
@@ -16,7 +18,7 @@ from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from .frames import OverlayRenderer
 from .layouts import registry
 from .layouts.contracts import LayoutPosition
-from .model import ExportLayout, ExportSettings, PROFILES, prepare_export
+from .model import VideoAspect, ExportLayout, ExportSettings, PROFILES, prepare_export
 
 
 class PreviewBackground(StrEnum):
@@ -92,8 +94,7 @@ def build_previews(
     count = len(analysis.time.source_indices)
     if not 0 <= sample < count:
         raise ValueError("Preview sample outside recording")
-    if type(first) is not int or type(last) is not int or not 0 <= first <= last < count:
-        raise ValueError("Invalid export sample interval")
+    validate_sample_range(first, last, count, "Invalid export sample interval")
     outside = not first <= sample <= last
     timeline = prepare_export(
         analysis,
@@ -102,10 +103,12 @@ def build_previews(
         count - 1 if outside else last,
     )
     previews: list[ProfilePreview] = []
-    size = (540, 960) if settings.aspect == "portrait" else (960, 540)
+    size = (540, 960) if settings.aspect is VideoAspect.PORTRAIT else (960, 540)
     selected_plugin = registry.PLUGINS[settings.layout]
     selected_positions = (
-        selected_plugin.landscape if settings.aspect == "landscape" else selected_plugin.portrait
+        selected_plugin.landscape
+        if settings.aspect is VideoAspect.LANDSCAPE
+        else selected_plugin.portrait
     )
     selected_position = settings.position or selected_positions.default
     backdrop = Image.new(
@@ -121,7 +124,9 @@ def build_previews(
                     draw.rectangle((x, y, x + 29, y + 29), fill="#aebfce")
     for layout, title in PROFILES:
         plugin = registry.PLUGINS[layout]
-        positions = plugin.landscape if settings.aspect == "landscape" else plugin.portrait
+        positions = (
+            plugin.landscape if settings.aspect is VideoAspect.LANDSCAPE else plugin.portrait
+        )
         profile = (
             settings
             if layout == settings.layout
@@ -133,7 +138,7 @@ def build_previews(
                     previous_positions.get(layout) if previous_positions is not None else None,
                 ),
                 invert_vertical=True,
-                invert_lateral=layout == "column",
+                invert_lateral=layout == ExportLayout.COLUMN,
             )
         )
         channels = tuple(

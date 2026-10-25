@@ -17,10 +17,10 @@ if TYPE_CHECKING:
 from math import ceil, floor
 import os
 from pathlib import Path
-from ride_forces_analyzer.explorer import format_sample_time
+from ride_forces_analyzer.formatting.time import format_sample_time
 from ride_forces_analyzer.i18n import tr
 from .common import ACCELERATION_COLOR, BRAKING_COLOR
-from .contracts import LayoutPlugin, LayoutPosition, LayoutPositions
+from .contracts import ExportLayout, LayoutPlugin, LayoutPosition, LayoutPositions
 
 FONT_FILE = "segoeui.ttf"  # Regular Windows font file.
 FONT_SIZE = 25  # Hint, scale and clock text size.
@@ -306,4 +306,4 @@ class ColumnRenderer:
         return image
 
 
-PLUGIN = LayoutPlugin("column", LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, ColumnRenderer)
+PLUGIN = LayoutPlugin(ExportLayout.COLUMN, LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, ColumnRenderer)

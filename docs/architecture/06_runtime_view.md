@@ -6,6 +6,8 @@
 
 The module and frozen entry points initialize local error reporting before UI
 imports. Settings are validated before creating recording windows.
+`RecordingApplication` selects Qt dialogs before constructing `QApplication`, so
+file-open, save and folder selection share the application palette and stylesheet.
 `InstanceBroker` acquires local process ownership or forwards the optional file
 path and `--new-window` request to the existing owner.
 
@@ -49,7 +51,7 @@ error. Exception messages may contain personal paths; nothing is uploaded.
 ## Optional update discovery
 
 A worker performs an opt-in startup check at most once per day or an explicit
-About-dialog check. The Qt-independent service uses bounded HTTPS reads; the UI
+check from Settings → Application. The Qt-independent service uses bounded HTTPS reads; the UI
 discards late results after closure. Manual failures show a retry message,
 automatic failures remain silent. Download and installation stay manual.
 [Release discovery](../development/RELEASE.md#in-application-update-discovery)

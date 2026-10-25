@@ -55,7 +55,8 @@ Choose these settings:
 - **Output:** **Transparent overlay · ProRes 4444 MOV** to place the graphics
   over footage in an editor; **Opaque video · H.264 MP4** for a black background.
 - **Video frame rate:** match your footage and editing timeline. Choices are
-  24, 25, 30, 50, 59.94 and 60 fps. For 59.94 footage, choose 59.94 rather than 60.
+  23.976, 24, 25, 30, 50, 59.94 and 60 fps. Choose 23.976 or 59.94 for footage
+  recorded at that rate, rather than rounding to 24 or 60.
 
 Transparent MOV files can be much larger than MP4 files. The size estimate is
 only a rough guide. To remember a frame rate for future exports, use
@@ -101,7 +102,10 @@ depends on calibration and smoothing; they are not a measurement of what a rider
 2. Click **Review export →**. Check the settings and estimated file size on the left
    and the large preview on the right. Use **Back** to change the layout or settings.
 3. Click **Export video…**, choose a destination and file name, then save.
-4. Wait for the export to finish. You can follow its progress or cancel it.
+4. Wait for the export to finish. The progress bar counts frames passed to the
+   encoder; the remaining time estimates pending frames. **Finalizing video…**
+   means the encoder is finishing the file, with no duration estimate. You can
+   cancel the export.
 
 The suggested file name includes the recording name and chosen overlay, for
 example `Manta - HUD.mov`.

@@ -21,6 +21,26 @@ const shared = JSON.parse(configuration.stdout);
 
 const cases = [
   {
+    name: "typed export aspect accepts enum members",
+    source: "from ride_forces_analyzer.rendering.model import ExportSettings, VideoAspect\nsettings = AppSettings()\nvideo = ExportSettings(aspect=VideoAspect.PORTRAIT)\n",
+    rule: null,
+  },
+  {
+    name: "typed export aspect rejects unconverted strings",
+    source: "from ride_forces_analyzer.rendering.model import ExportSettings\nsettings = AppSettings()\nvideo = ExportSettings(aspect='portrait')\n",
+    rule: "reportArgumentType",
+  },
+  {
+    name: "typed language accepts enum members",
+    source: "from ride_forces_analyzer.i18n import Language\nsettings = AppSettings(language=Language.GERMAN)\n",
+    rule: null,
+  },
+  {
+    name: "typed language rejects unconverted string codes",
+    source: "settings = AppSettings(language='de')\n",
+    rule: "reportArgumentType",
+  },
+  {
     name: "typed Pydantic constructor accepts valid settings",
     source: "settings = AppSettings(window_width=800, window_title='Custom window')\n",
     rule: null,
@@ -43,7 +63,7 @@ for (const { name, source, rule } of cases) {
     const temporary = await mkdtemp(path.join(root, ".tmp/typecheck-"));
     try {
       const filename = path.join(temporary, "contract.py");
-      await writeFile(filename, "from ride_forces_analyzer.config import AppSettings\n\n" + source);
+      await writeFile(filename, "from ride_forces_analyzer.runtime.config import AppSettings\n\n" + source);
       // The normal workspace excludes .tmp; explicitly include each temporary contract.
       const project = path.join(temporary, "pyrightconfig.json");
       await writeFile(project, JSON.stringify({

@@ -27,6 +27,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 
 ## Documentation: current state, never development history
 
+- MUST create and maintain English Google-style documentation strings for Python application and tool code, including new classes and public functions, methods and properties, following [inline documentation conventions](docs/development/CODE_QUALITY.md#python-inline-documentation). Describe purpose, parameters (`Args`), class attributes and enum members (`Attributes`), results (`Returns`/`Yields`) and expected errors (`Raises`) where applicable. Test code is exempt; comment local variables only when explanation is needed.
 - MUST describe the current behavior, contracts, relevant decisions, planned work and known limits. MUST update existing descriptions in place and consolidate superseded content. NEVER append sections for individual chat turns, UI adjustments, bug fixes or test reruns.
 - NEVER maintain development diaries, chronological implementation narratives, intermediate failure/fix reports or accumulating lists of historical test counts, revisions and commands in project documentation. An executed test or completed change alone NEVER justifies a documentation addition.
 - NEVER create or extend a validation report for routine changes unless the owner or applicable implementation/acceptance plan explicitly requires one. Ordinary changes need only relevant behavior/contract documentation and a concise validation result in the response; actual runner logs belong in `.tmp/`.

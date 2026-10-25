@@ -5,8 +5,9 @@ import subprocess
 
 import pytest
 
-from ride_forces_analyzer import __version__, diagnostics
-from ride_forces_analyzer.cpu_resources import CpuResources
+from ride_forces_analyzer import __version__
+from ride_forces_analyzer.runtime import diagnostics
+from ride_forces_analyzer.runtime.cpu_resources import CpuResources
 
 
 @pytest.mark.parametrize("state", ["available", "missing", "failure", "timeout"])

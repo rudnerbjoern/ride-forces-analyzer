@@ -8,10 +8,11 @@ from PySide6.QtCore import QEvent, QThreadPool
 from PySide6.QtWidgets import QApplication, QDialogButtonBox
 import pytest
 
-from ride_forces_analyzer.config import AppSettings
+from ride_forces_analyzer.i18n import Language
+from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.storage.preferences import Preferences
-from ride_forces_analyzer.ui.preferences import SettingsDialog
-from ride_forces_analyzer.ui.window import ExplorerWindow
+from ride_forces_analyzer.ui.dialogs.settings import SettingsDialog
+from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from tests.ui.helpers import wait_until
 
@@ -56,7 +57,7 @@ def test_successful_recording_restores_on_new_window_and_failed_open_keeps_path(
     assert window.data is not None
     assert window.preferences.last_recording() == source.resolve()
     window.preferences.remember_restore_last_file(True)
-    restored = ExplorerWindow(AppSettings(language="en"))
+    restored = ExplorerWindow(AppSettings(language=Language.ENGLISH))
     try:
         restored.show()
         wait_until(lambda: restored.data is not None and restored.open_action.isEnabled())
@@ -86,7 +87,7 @@ def test_startup_skips_disabled_or_missing_file_and_respects_manual_import(
         export_directory / "missing.forces" if case == "missing" else source,
     )
     preferences.remember_restore_last_file(case != "disabled")
-    restored = ExplorerWindow(AppSettings(language="en"))
+    restored = ExplorerWindow(AppSettings(language=Language.ENGLISH))
     try:
         if case == "manual":
             source = next(REAL_FIXTURE_DIRECTORY.glob("Taron-*.forces"))

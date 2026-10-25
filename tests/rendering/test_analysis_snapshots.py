@@ -12,15 +12,17 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from ride_forces_analyzer.analysis import recording
+from ride_forces_analyzer.i18n import Language
+from ride_forces_analyzer.analysis import preparation
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.analysis.models import AnalysisProfile, SampleValues
 from ride_forces_analyzer.analysis.recording import AnalysisStage, StageConfiguration
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.importers import ImportSuccess
-from ride_forces_analyzer.rendering import batches
+from ride_forces_analyzer.exports import batches
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.model import (
+    ExportLayout,
     ExportSettings,
     ExportTimeline,
     ExportValues,
@@ -140,7 +142,9 @@ def test_saved_calibration_recipe_requires_supported_explicit_parameters(
     field: str,
     value: str | int | None,
 ) -> None:
-    from ride_forces_analyzer.analysis.recording import source_app_configuration
+    from ride_forces_analyzer.analysis.preparation import (
+        source_app_configuration,
+    )
     from ride_forces_analyzer.storage.export_models import SavedPreset
 
     preset = make_preset("References", ExportSettings(), 11, "markers", source_app_configuration())
@@ -162,13 +166,22 @@ def test_export_reuses_buffers_orientation_and_full_history_context(
     assert snapshot is not None and snapshot.forces.smoothed.channels is not None
     assert snapshot.context.labels is not None and snapshot.orientation.values is not None
     for name in ("project_directions", "centered_mean", "orientation_degrees"):
-        monkeypatch.setattr(recording, name, Mock(side_effect=AssertionError("Repeated analysis")))
+        monkeypatch.setattr(
+            preparation,
+            name,
+            Mock(side_effect=AssertionError("Repeated analysis")),
+        )
     monkeypatch.setattr(
-        recording.airtime.AirtimeContext,
+        preparation.airtime.AirtimeContext,
         "prepare",
         Mock(side_effect=AssertionError("Repeated context")),
     )
-    timeline = prepare_export(manta.analysis, ExportSettings(layout="ribbon"), 3600, 3700)
+    timeline = prepare_export(
+        manta.analysis,
+        ExportSettings(layout=ExportLayout.RIBBON),
+        3600,
+        3700,
+    )
     assert timeline.analysis is snapshot
     for channel, samples in zip(
         timeline.channels[:3],
@@ -206,10 +219,10 @@ def test_export_reconfiguration_reuses_upstream_and_keeps_running_snapshot(
     assert snapshot is not None
     timeline = prepare_export(snapshot, ExportSettings(), 100, 149)
     before = tuple(timeline.channels[0].values)
-    mean = Mock(wraps=recording.centered_mean)
+    mean = Mock(wraps=preparation.centered_mean)
     orientation = Mock(side_effect=AssertionError("Orientation changed with smoothing"))
-    monkeypatch.setattr(recording, "centered_mean", mean)
-    monkeypatch.setattr(recording, "orientation_degrees", orientation)
+    monkeypatch.setattr(preparation, "centered_mean", mean)
+    monkeypatch.setattr(preparation, "orientation_degrees", orientation)
     assert prepare_export_analysis(snapshot, snapshot.configuration) is snapshot
     configuration = replace(
         snapshot.configuration,
@@ -237,7 +250,13 @@ def test_previews_bind_one_snapshot_across_layouts_settings_and_outside_range(
         return Image.new("RGBA", (8, 8))
 
     monkeypatch.setattr(OverlayRenderer, "render_sample", capture)
-    result = build_previews(manta.analysis, ExportSettings(fps=24, language="de"), 0, 100, 3600)
+    result = build_previews(
+        manta.analysis,
+        ExportSettings(fps=24, language=Language.GERMAN),
+        0,
+        100,
+        3600,
+    )
     assert result.outside_range
     assert len(seen) == 5 and all(timeline.analysis is manta.analysis for timeline in seen)
     assert all(timeline.first == 0 and timeline.last == manta.count - 1 for timeline in seen)
@@ -318,8 +337,8 @@ def test_batch_restores_complete_recipe_without_recomputing_independent_orientat
         return snapshot.source
 
     monkeypatch.setattr(batches, "import_forces", load)
-    orientation = Mock(wraps=recording.orientation_degrees)
-    monkeypatch.setattr(recording, "orientation_degrees", orientation)
+    orientation = Mock(wraps=preparation.orientation_degrees)
+    monkeypatch.setattr(preparation, "orientation_degrees", orientation)
     seen: list[ExportTimeline] = []
 
     def encode(timeline: ExportTimeline, target: Path, **kwargs: object) -> Path:
