@@ -22,6 +22,8 @@ from ride_forces_analyzer.analysis.recording import (
     RecordingAnalysis,
     RequestStatus,
     StageConfiguration,
+)
+from ride_forces_analyzer.analysis.preparation import (
     source_app_configuration,
     prepare_recording_analysis,
 )

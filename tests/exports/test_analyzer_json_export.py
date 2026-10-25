@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from ride_forces_analyzer.analysis.recording import (
+from ride_forces_analyzer.analysis.preparation import (
     prepare_recording_analysis,
     source_app_configuration,
 )
@@ -28,7 +28,9 @@ def test_custom_calibration_exports_keep_original_and_effective_evidence(
 ) -> None:
     from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
     from tests.analysis.test_recording_preparation import NOW, prepare_snapshot, synthetic_source
-    from ride_forces_analyzer.analysis.recording import source_app_configuration
+    from ride_forces_analyzer.analysis.preparation import (
+        source_app_configuration,
+    )
 
     source = synthetic_source(accelerationSequence=[{"x": "1", "y": "1", "z": "1"}] * 7)
     analysis = prepare_snapshot(

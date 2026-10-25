@@ -30,6 +30,8 @@ from .recording import (
     AnalysisUpdated,
     RecordingAnalysis,
     RequestStatus,
+)
+from .preparation import (
     prepare_recording_analysis,
 )
 

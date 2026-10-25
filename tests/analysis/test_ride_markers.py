@@ -6,7 +6,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from ride_forces_analyzer.analysis import recording
+from ride_forces_analyzer.analysis import preparation
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration
 from ride_forces_analyzer.analysis.service import AnalysisService
 from tests.analysis.test_recording_preparation import NOW, prepare_snapshot
@@ -21,7 +21,7 @@ def test_marker_request_reuses_stages_and_updates_replay_without_changing_source
     before = original.source.recording.source.original_bytes
     for name in ("project_directions", "centered_mean", "orientation_degrees"):
         monkeypatch.setattr(
-            recording,
+            preparation,
             name,
             Mock(side_effect=AssertionError("Repeated preparation")),
         )

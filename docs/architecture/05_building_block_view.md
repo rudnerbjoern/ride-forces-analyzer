@@ -70,6 +70,11 @@ and [domain models](../development/CANONICAL_MODELS.md) define exact contracts.
 time, calibration, projection, smoothing, orientation, context and event stages.
 `projection`, `smoothing`, `orientation`, `airtime`, `events` and `calibration`
 own their respective calculations. Sample views read existing buffers.
+`analysis.preparation` orchestrates those calculations and reuses compatible stages.
+`analysis.recording` owns snapshot/configuration/notification contracts, structural
+validation and sample access. Event evaluation consumes these contracts; only the
+preparation module imports the event implementation. Snapshot reconfiguration
+methods delegate lazily to preparation.
 `force_extrema` operates on prepared channels without widget logic.
 
 `analysis.service.AnalysisService` owns current state, revisions and subscriptions.

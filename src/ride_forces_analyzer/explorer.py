@@ -863,7 +863,9 @@ def present_recording(
     if analysis is not None and analysis.source is not source:
         raise ValueError("Analysis belongs to another import")
     if find_spec("numpy") is not None:
-        from ride_forces_analyzer.analysis.recording import source_app_configuration
+        from ride_forces_analyzer.analysis.preparation import (
+            source_app_configuration,
+        )
         from ride_forces_analyzer.analysis.service import AnalysisService
 
         if analysis is None:

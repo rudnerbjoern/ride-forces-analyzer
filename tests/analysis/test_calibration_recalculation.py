@@ -8,7 +8,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from ride_forces_analyzer.analysis import recording
+from ride_forces_analyzer.analysis import preparation
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.analysis.recording import (
     AnalysisFailed,
@@ -19,6 +19,8 @@ from ride_forces_analyzer.analysis.recording import (
     EventEvaluationState,
     RequestStatus,
     StageConfiguration,
+)
+from ride_forces_analyzer.analysis.preparation import (
     source_app_configuration,
 )
 from ride_forces_analyzer.analysis.service import AnalysisDelivery, AnalysisService
@@ -101,8 +103,8 @@ def test_service_rebuilds_only_affected_calibration_dependencies(
     service.subscribe(orientation_deliveries.append, stages=frozenset((AnalysisStage.ORIENTATION,)))
     calls: list[Mock] = []
     for name in ("prepare_calibration_basis", "project_directions", "orientation_degrees"):
-        spy = Mock(wraps=getattr(recording, name))
-        monkeypatch.setattr(recording, name, spy)
+        spy = Mock(wraps=getattr(preparation, name))
+        monkeypatch.setattr(preparation, name, spy)
         calls.append(spy)
     overrides = {
         "gravity": CalibrationOverrides(6, 10),

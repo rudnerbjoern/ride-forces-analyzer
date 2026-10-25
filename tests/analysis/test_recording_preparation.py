@@ -9,7 +9,7 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-from ride_forces_analyzer.analysis import airtime, recording
+from ride_forces_analyzer.analysis import airtime, preparation
 from ride_forces_analyzer.analysis.models import (
     AnalysisProfile,
     CapabilityState,
@@ -26,6 +26,8 @@ from ride_forces_analyzer.analysis.recording import (
     RecordingAnalysis,
     StageConfiguration,
     VerticalContext,
+)
+from ride_forces_analyzer.analysis.preparation import (
     prepare_recording_analysis,
 )
 from ride_forces_analyzer.analysis.projection import project_directions
@@ -68,7 +70,7 @@ def test_combined_uses_device_axes_and_is_prepared_with_the_smoothing_snapshot(
     with pytest.raises(ValueError):
         snapshot.forces.smoothed.combined.values.setflags(write=True)
     monkeypatch.setattr(
-        recording,
+        preparation,
         "combined_force",
         Mock(side_effect=AssertionError("Repeated Combined")),
     )
@@ -81,7 +83,7 @@ def test_combined_failure_preserves_directional_results_and_marks_missing_sample
 ) -> None:
     source = synthetic_source()
     expected = prepare_snapshot(configuration, source)
-    monkeypatch.setattr(recording, "combined_force", Mock(side_effect=ValueError("Invalid norm")))
+    monkeypatch.setattr(preparation, "combined_force", Mock(side_effect=ValueError("Invalid norm")))
     snapshot = prepare_snapshot(configuration, source)
     smoothed = snapshot.forces.smoothed
     assert smoothed.availability.state is AvailabilityState.AVAILABLE
@@ -266,7 +268,7 @@ def test_sample_access_does_not_repeat_preparation(
         pytest.fail("Sample access must read prepared values without recalculating")
 
     for name in ("project_directions", "centered_mean", "orientation_degrees"):
-        monkeypatch.setattr(recording, name, unexpected)
+        monkeypatch.setattr(preparation, name, unexpected)
     monkeypatch.setattr(airtime.AirtimeContext, "prepare", unexpected)
     for index in (0, 6, 2, 6):
         assert snapshot.sample(index).raw is snapshot.source.recording.motion.acceleration[index]

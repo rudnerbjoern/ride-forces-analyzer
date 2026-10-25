@@ -1,6 +1,8 @@
 """Catalog integrity, safe formatting and reproducible localized overlay labels."""
 
-from ride_forces_analyzer.analysis.recording import source_app_configuration
+from ride_forces_analyzer.analysis.preparation import (
+    source_app_configuration,
+)
 
 # cspell:words Messpunkte Fahrtzeit Vorgabe Deutsch Neigung geladen autouse textbbox Rechts Beschleunigung Bremsen
 # cspell:words Préréglage chargé Inclinaison

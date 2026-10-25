@@ -11,6 +11,8 @@ import pytest
 
 from ride_forces_analyzer.analysis.recording import (
     RecordingAnalysis,
+)
+from ride_forces_analyzer.analysis.preparation import (
     prepare_recording_analysis,
     source_app_configuration,
 )

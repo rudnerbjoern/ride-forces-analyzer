@@ -15,6 +15,8 @@ from ride_forces_analyzer.analysis.recording import (
     AnalysisConfiguration,
     AvailabilityState,
     StageConfiguration,
+)
+from ride_forces_analyzer.analysis.preparation import (
     prepare_recording_analysis,
 )
 from ride_forces_analyzer.importers import ImportSuccess, import_forces, import_forces_bytes

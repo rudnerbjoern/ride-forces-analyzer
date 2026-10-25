@@ -2,7 +2,9 @@
 
 from ride_forces_analyzer.rendering.model import StandardFrameRate
 
-from ride_forces_analyzer.analysis.recording import source_app_configuration
+from ride_forces_analyzer.analysis.preparation import (
+    source_app_configuration,
+)
 
 # cspell:words Einstellungen
 

@@ -20,6 +20,8 @@ from pydantic import BaseModel
 from ride_forces_analyzer.analysis.recording import (
     AnalysisConfiguration,
     RecordingAnalysis,
+)
+from ride_forces_analyzer.analysis.preparation import (
     source_app_configuration,
 )
 from ride_forces_analyzer.analysis.service import AnalysisService

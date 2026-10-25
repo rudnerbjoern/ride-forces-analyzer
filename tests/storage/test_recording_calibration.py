@@ -10,7 +10,9 @@ from ride_forces_analyzer.analysis.calibration import (
     CalibrationOverrides,
     CalibrationReferenceError,
 )
-from ride_forces_analyzer.analysis.recording import source_app_configuration
+from ride_forces_analyzer.analysis.preparation import (
+    source_app_configuration,
+)
 from ride_forces_analyzer.storage.preferences import Preferences
 from tests.analysis.test_recording_preparation import NOW, synthetic_source
 

@@ -18,7 +18,9 @@ from ride_forces_analyzer.analysis.calibration import (
     validate_calibration_references,
 )
 from ride_forces_analyzer.analysis.models import CapabilityState
-from ride_forces_analyzer.analysis.recording import source_app_configuration
+from ride_forces_analyzer.analysis.preparation import (
+    source_app_configuration,
+)
 from ride_forces_analyzer.domain import Vector3
 from ride_forces_analyzer.importers import ImportSuccess, Severity, import_forces
 from tests.analysis.test_recording_preparation import NOW, prepare_snapshot, synthetic_source

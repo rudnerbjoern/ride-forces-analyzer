@@ -42,6 +42,10 @@ physical qualification. See [source evidence](../validation/APP_REFERENCE.md#rfd
 
 Module: [`analysis.recording`](../../src/ride_forces_analyzer/analysis/recording.py).
 Import its classes explicitly; package exports remain explicit.
+[`analysis.preparation`](../../src/ride_forces_analyzer/analysis/preparation.py)
+owns `source_app_configuration` and `prepare_recording_analysis`, numerical stage
+preparation and dependency-based reuse. Snapshot methods delegate reconfiguration
+to that module; the contracts retain structural validation and sample access.
 
 - `RecordingAnalysis` is a frozen snapshot: original import, configuration, time,
   force stages, independent orientation, context, events, quality and revision.

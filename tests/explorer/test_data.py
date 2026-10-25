@@ -404,14 +404,14 @@ def test_snapshot_presentation_uses_shared_buffers_and_does_not_repeat_analysis(
 ) -> None:
     import numpy as np
     from unittest.mock import Mock
-    from ride_forces_analyzer.analysis import recording, airtime
+    from ride_forces_analyzer.analysis import preparation, airtime
     from tests.analysis.test_recording_preparation import synthetic_source
 
-    project = Mock(wraps=recording.project_directions)
-    mean = Mock(wraps=recording.centered_mean)
+    project = Mock(wraps=preparation.project_directions)
+    mean = Mock(wraps=preparation.centered_mean)
     context = Mock(wraps=airtime.AirtimeContext.prepare)
-    monkeypatch.setattr(recording, "project_directions", project)
-    monkeypatch.setattr(recording, "centered_mean", mean)
+    monkeypatch.setattr(preparation, "project_directions", project)
+    monkeypatch.setattr(preparation, "centered_mean", mean)
     monkeypatch.setattr(airtime.AirtimeContext, "prepare", context)
     view = present_recording(synthetic_source()).with_calibration(True)
     assert view.analysis is not None and view.analysis.forces.smoothed.channels is not None
