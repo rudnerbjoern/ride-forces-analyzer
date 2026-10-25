@@ -8,6 +8,7 @@ from typing import Any, Literal
 from PIL import Image, ImageColor, ImageDraw
 import pytest
 
+from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts.hud import (
@@ -238,7 +239,12 @@ def test_only_vertical_uses_whole_g_labels_and_three_tick_lengths(
     assert data.analysis is not None
     timeline = prepare_export(
         data.analysis,
-        ExportSettings(layout="hud", aspect=aspect, invert_vertical=inverted, language="en"),
+        ExportSettings(
+            layout="hud",
+            aspect=aspect,
+            invert_vertical=inverted,
+            language=Language.ENGLISH,
+        ),
         3600,
         3699,
     )
@@ -289,11 +295,11 @@ def test_only_vertical_uses_whole_g_labels_and_three_tick_lengths(
 
 
 @pytest.mark.parametrize("aspect", ["landscape", "portrait"])
-@pytest.mark.parametrize("language", ["en", "de", "fr"])
+@pytest.mark.parametrize("language", list(Language))
 def test_fullscreen_hud_has_open_center_and_is_independent_of_seek_order(
     manta: ExplorerData,
     aspect: Literal["landscape", "portrait"],
-    language: Literal["en", "de", "fr"],
+    language: Language,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     assert manta.analysis is not None

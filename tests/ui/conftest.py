@@ -10,7 +10,7 @@ import pytest
 from PySide6.QtCore import QEvent, QThreadPool
 from PySide6.QtWidgets import QApplication
 from ride_forces_analyzer.config import AppSettings
-from ride_forces_analyzer.i18n import get_language, set_language
+from ride_forces_analyzer.i18n import Language, get_language, set_language
 from ride_forces_analyzer.ui.window import ExplorerWindow
 from tests.ui.helpers import resize_workspace, wait_until
 
@@ -35,7 +35,7 @@ def explorer_window() -> Iterator[ExplorerWindow]:
     if application is None:
         application = QApplication([])
     assert isinstance(application, QApplication)
-    window = ExplorerWindow(AppSettings(language="en"))
+    window = ExplorerWindow(AppSettings(language=Language.ENGLISH))
     window.show()
     wait_until(lambda: window.windowHandle().isExposed())
     # Test-controlled minimum size keeps interaction layout independent of the desktop.

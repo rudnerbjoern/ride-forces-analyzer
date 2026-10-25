@@ -13,7 +13,7 @@ from typing import Literal, overload
 
 from ride_forces_analyzer.analysis.models import SampleValues
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, RecordingAnalysis
-from ride_forces_analyzer.i18n import LANGUAGES, Language
+from ride_forces_analyzer.i18n import Language
 from .layouts.contracts import LayoutPosition
 
 FrameRate = int | Literal["60000/1001"]
@@ -44,7 +44,7 @@ class ExportSettings:
         prefer_gpu: Whether encoding prefers a probed NVIDIA backend with CPU fallback.
         layout: Stable key selecting the overlay renderer.
         aspect: Selected landscape or portrait output format.
-        language: Registered language used to translate presentation text and numbers.
+        language: Language member used for overlay text; saved JSON retains its text code.
         position: Requested source position or named layout placement, as declared by the
             type.
     """
@@ -57,7 +57,7 @@ class ExportSettings:
     prefer_gpu: bool = True
     layout: ExportLayout = "column"
     aspect: Literal["landscape", "portrait"] = "landscape"
-    language: Language = "en"
+    language: Language = Language.ENGLISH
     position: LayoutPosition | None = None
 
     @property
@@ -102,7 +102,7 @@ class ExportSettings:
                 must be an integer from 1 to 120 or 60000/1001. Visible time window must be
                 from 1 to 60 seconds. Unknown export output mode. Unknown export layout.
         """
-        if self.language not in LANGUAGES:
+        if type(self.language) is not Language:
             raise ValueError("Unsupported overlay language")
         if self.aspect not in ("landscape", "portrait"):
             raise ValueError("Unknown export aspect ratio")

@@ -17,6 +17,7 @@ from PySide6.QtGui import QImageReader
 from PySide6.QtWidgets import QApplication
 
 from ride_forces_analyzer import __version__
+from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.config import AppSettings
 from ride_forces_analyzer.rendering.encoding import export_video, find_ffmpeg
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
@@ -55,7 +56,7 @@ def smoke_test(
         if getattr(sys, "frozen", False):
             assert b"pdf" not in QImageReader.supportedImageFormats()
             result["pdf_plugin_absent"] = True
-        window = ExplorerWindow(AppSettings(language="en"))
+        window = ExplorerWindow(AppSettings(language=Language.ENGLISH))
         window.show()
         deadline = monotonic() + 10
         while not window.windowHandle().isExposed() and monotonic() < deadline:
@@ -81,7 +82,7 @@ def smoke_test(
                 window.data.analysis,
                 ExportSettings(
                     layout="orbit",
-                    language="de",
+                    language=Language.GERMAN,
                     prefer_gpu=False,
                     output="opaque",
                     fps=25,

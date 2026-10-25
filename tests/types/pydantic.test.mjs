@@ -21,6 +21,16 @@ const shared = JSON.parse(configuration.stdout);
 
 const cases = [
   {
+    name: "typed language accepts enum members",
+    source: "from ride_forces_analyzer.i18n import Language\nsettings = AppSettings(language=Language.GERMAN)\n",
+    rule: null,
+  },
+  {
+    name: "typed language rejects unconverted string codes",
+    source: "settings = AppSettings(language='de')\n",
+    rule: "reportArgumentType",
+  },
+  {
     name: "typed Pydantic constructor accepts valid settings",
     source: "settings = AppSettings(window_width=800, window_title='Custom window')\n",
     rule: null,

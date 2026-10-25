@@ -17,11 +17,12 @@ import sys
 from PySide6.QtCore import QThreadPool
 from PySide6.QtWidgets import QFileDialog
 from ride_forces_analyzer.config import AppSettings
+from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.instance import OpenRequest
 from ride_forces_analyzer.ui.application import RecordingApplication
 from tests.ui.helpers import wait_until
 app = RecordingApplication([])
-app.settings = AppSettings(language="en")
+app.settings = AppSettings(language=Language.ENGLISH)
 app.start(OpenRequest(path=sys.argv[1]))
 first = app.windows[0]
 wait_until(lambda: first.data is not None and first.open_action.isEnabled())

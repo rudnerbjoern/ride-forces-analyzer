@@ -18,6 +18,7 @@ from ride_forces_analyzer.analysis.orientation import orientation_degrees
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.rendering.encoding import ExportCancelled, encoder_command, export_video
 from ride_forces_analyzer.rendering.frames import COLUMN_X, WIDTH, OverlayRenderer
+from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.rendering.model import (
     ExportLayout,
     ExportSettings,
@@ -194,7 +195,7 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
         prefer_gpu=prefer_gpu,
         layout=layout,
         aspect=aspect,
-        language=language,
+        language=Language(language),
     )
     timeline = prepare_export(manta.analysis, settings, 3600, 3603)
     output = export_directory / ("overlay.mov" if mode == "transparent" else "opaque.mp4")

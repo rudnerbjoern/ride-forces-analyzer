@@ -4,6 +4,7 @@ from PySide6.QtCore import QEvent, QUrl
 from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton
 import pytest
 
+from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.ui import updates as ui_updates
 from ride_forces_analyzer.ui.about import AboutDialog
 from ride_forces_analyzer.ui.window import ExplorerWindow
@@ -79,7 +80,7 @@ def test_opted_in_startup_checks_once_then_remains_quiet_for_the_day(
     monkeypatch.setattr(ui_updates, "check_for_update", available)
     preferences = explorer_window.preferences
     preferences.remember_automatic_updates(True)
-    restored = ExplorerWindow(AppSettings(language="en"))
+    restored = ExplorerWindow(AppSettings(language=Language.ENGLISH))
     try:
         wait_until(lambda: len(calls) == 1 and restored.updates.worker is None)
         restored.updates.check(manual=False)

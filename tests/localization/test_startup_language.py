@@ -2,9 +2,12 @@
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from contextlib import closing
+import sqlite3
 
 import pytest
 
+from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.ui import translation
 
@@ -36,16 +39,22 @@ def test_system_language_uses_preferred_display_language(
             return SystemLocale()
 
     monkeypatch.setattr(translation, "QLocale", Locale)
-    assert translation.system_ui_language() == expected
+    assert translation.system_ui_language() is Language(expected)
 
 
 def test_saved_language_takes_priority_over_os_fallback() -> None:
     with TemporaryDirectory(dir=".tmp") as temporary:
         preferences = Preferences(Path(temporary) / "preferences.sqlite3")
-        assert preferences.language("de") == "de"
-        preferences.remember_language("en")
-        assert preferences.language("de") == "en"
-        preferences.remember_language("de")
-        assert preferences.language("en") == "de"
-        preferences.remember_language("fr")
-        assert Preferences(preferences.path).language("en") == "fr"
+        assert preferences.language(Language.GERMAN) == "de"
+        preferences.remember_language(Language.ENGLISH)
+        assert preferences.language(Language.GERMAN) == "en"
+        preferences.remember_language(Language.GERMAN)
+        assert preferences.language(Language.ENGLISH) == "de"
+        preferences.remember_language(Language.FRENCH)
+        assert Preferences(preferences.path).language(Language.ENGLISH) is Language.FRENCH
+        with closing(sqlite3.connect(preferences.path)) as connection, connection:
+            assert connection.execute(
+                "SELECT value FROM preferences WHERE key = 'language'",
+            ).fetchone() == ("fr",)
+            connection.execute("UPDATE preferences SET value = 'de' WHERE key = 'language'")
+        assert Preferences(preferences.path).language() is Language.GERMAN

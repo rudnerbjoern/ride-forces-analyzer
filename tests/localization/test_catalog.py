@@ -8,7 +8,7 @@ from ride_forces_analyzer.analysis.recording import source_app_configuration
 from dataclasses import replace
 from collections.abc import Iterator
 from string import Formatter
-from typing import Any, Literal, get_args
+from typing import Any, Literal, cast
 
 from PIL import ImageDraw
 import pytest
@@ -72,8 +72,18 @@ def test_catalog_preserves_placeholders(catalog: dict[str, str]) -> None:
 
 
 def test_language_registration_matches_the_typed_public_contract() -> None:
-    assert set(LANGUAGES) == set(get_args(Language))
+    assert set(LANGUAGES) == set(Language)
     assert LANGUAGE_CHOICES == tuple(LANGUAGES)
+    assert all(isinstance(language, Language) for language in LANGUAGES)
+    assert tuple(language.value for language in LANGUAGE_CHOICES) == ("en", "de", "fr")
+    for language in Language:
+        assert Language(language.value) is language
+    with pytest.raises(ValueError):
+        Language("es")
+    with pytest.raises(ValueError, match="Unsupported application language"):
+        set_language(cast(Language, "de"))
+    with pytest.raises(ValueError, match="Unsupported overlay language"):
+        ExportSettings(language=cast(Language, "de"))
 
 
 def test_declared_diagnostics_and_literal_ui_templates_have_translations() -> None:
@@ -108,7 +118,7 @@ def test_declared_diagnostics_and_literal_ui_templates_have_translations() -> No
 
 
 def test_french_formatting_and_diagnostics_preserve_opaque_source_values() -> None:
-    set_language("fr")
+    set_language(Language.FRENCH)
     assert str(tr("{0:,}", 12345)) == "12\u202f345"
     assert str(tr("{0:+.2f} g", 1.234)) == "+1,23 g"
     assert str(tr("Loaded preset: {0}", "Name {0} 1.25")) == "Préréglage chargé : Name {0} 1.25"
@@ -121,14 +131,14 @@ def test_french_formatting_and_diagnostics_preserve_opaque_source_values() -> No
 
 
 def test_language_formats_numbers_but_preserves_source_values_and_clock() -> None:
-    set_language("en")
+    set_language(Language.ENGLISH)
     text = tr("{0} samples", 12345)
     nested = tr(
         "Calibrated forces · {0}\nAlign the exported clip with your Onride video in Resolve.",
         text,
     )
     assert str(text) == "12345 samples"
-    set_language("de")
+    set_language(Language.GERMAN)
     assert str(text) == "12345 Messpunkte"
     assert "12345 Messpunkte" in str(nested)
     assert tr("{0:+.2f} g", 1.234) == "+1,23 g"
@@ -141,16 +151,16 @@ def test_language_formats_numbers_but_preserves_source_values_and_clock() -> Non
 def test_diagnostic_translation_keeps_original_messages(manta: ExplorerData) -> None:
     original = manta.notes
     diagnostics = manta.source.diagnostics
-    set_language("de")
+    set_language(Language.GERMAN)
     localized = manta.localized_notes
     for item in diagnostics:
         assert item.code in localized and item.json_path in localized
     assert manta.notes == original and manta.source.diagnostics is diagnostics
-    set_language("en")
+    set_language(Language.ENGLISH)
     assert manta.localized_notes == original
 
 
-@pytest.mark.parametrize("language", ["de", "fr"])
+@pytest.mark.parametrize("language", [Language.GERMAN, Language.FRENCH])
 def test_saved_language_roundtrip_is_explicit(
     manta: ExplorerData,
     export_directory: Path,
@@ -170,13 +180,13 @@ def test_saved_language_roundtrip_is_explicit(
     store.save_batch(
         SavedBatch(name="Mixed", jobs=(make_job(manta.analysis, chosen),), schema_version=1),
     )
-    assert ExportStore(store.path).presets()[0].settings.language == language
-    assert ExportStore(store.path).batch("Mixed").jobs[0].preset.settings.language == language
+    assert ExportStore(store.path).presets()[0].settings.language is language
+    assert ExportStore(store.path).batch("Mixed").jobs[0].preset.settings.language is language
 
 
 @pytest.mark.parametrize("layout", [profile[0] for profile in PROFILES])
 @pytest.mark.parametrize("aspect", ["landscape", "portrait"])
-@pytest.mark.parametrize("language", ["de", "fr"])
+@pytest.mark.parametrize("language", [Language.GERMAN, Language.FRENCH])
 def test_overlay_labels_fit_and_language_is_reproducible(
     manta: ExplorerData,
     layout: ExportLayout,
@@ -202,9 +212,9 @@ def test_overlay_labels_fit_and_language_is_reproducible(
 
     monkeypatch.setattr(ImageDraw.ImageDraw, "text", checked_text)
     timeline = prepare_export(manta.analysis, settings, 3500, 3700)
-    set_language("en")
+    set_language(Language.ENGLISH)
     first = OverlayRenderer(timeline).render_sample(3600)
-    set_language("de")
+    set_language(Language.GERMAN)
     second = OverlayRenderer(timeline).render_sample(3600)
     first_pixels = first.tobytes()
     assert first_pixels == second.tobytes()
@@ -260,6 +270,6 @@ def test_overlay_labels_fit_and_language_is_reproducible(
             (width, height),
         )
     english = OverlayRenderer(
-        replace(timeline, settings=replace(settings, language="en")),
+        replace(timeline, settings=replace(settings, language=Language.ENGLISH)),
     ).render_sample(3600)
     assert first_pixels != english.tobytes()

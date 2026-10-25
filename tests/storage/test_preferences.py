@@ -9,6 +9,7 @@ from typing import cast
 
 import pytest
 
+from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 
 
@@ -58,6 +59,7 @@ def test_recording_markers_tolerate_unavailable_storage(tmp_path: Path) -> None:
     ("method", "invalid"),
     [
         ("remember_language", "es"),
+        ("remember_language", "de"),
         ("remember_language", b"de"),
         ("remember_language", None),
         ("remember_appearance", "blue"),
@@ -92,6 +94,7 @@ def test_recording_markers_tolerate_unavailable_storage(tmp_path: Path) -> None:
         ("remember_export", "ride.mov"),
         ("remember_export", 123),
         ("language", "es"),
+        ("language", "de"),
         ("update_check_due", "100000"),
         ("update_check_due", float("nan")),
     ],
@@ -103,7 +106,7 @@ def test_invalid_preference_inputs_are_rejected_without_changing_storage(
     with TemporaryDirectory(dir=".tmp") as temporary:
         database = Path(temporary) / "preferences.sqlite3"
         preferences = Preferences(database)
-        preferences.remember_language("de")
+        preferences.remember_language(Language.GERMAN)
         before = database.read_bytes()
         call = cast(Callable[[object], object], getattr(preferences, method))
         with pytest.raises(ValueError):
@@ -124,7 +127,7 @@ def test_invalid_stored_preferences_keep_safe_defaults() -> None:
     with TemporaryDirectory(dir=".tmp") as temporary:
         database = Path(temporary) / "preferences.sqlite3"
         preferences = Preferences(database)
-        preferences.remember_language("de")
+        preferences.remember_language(Language.GERMAN)
         with closing(sqlite3.connect(database)) as connection, connection:
             connection.executemany(
                 "INSERT OR REPLACE INTO preferences (key, value) VALUES (?, ?)",
@@ -140,7 +143,7 @@ def test_invalid_stored_preferences_keep_safe_defaults() -> None:
                 ],
             )
         assert preferences.language() == "en"
-        assert preferences.language("de") == "de"
+        assert preferences.language(Language.GERMAN) == "de"
         assert preferences.appearance() is Appearance.SYSTEM
         assert preferences.export_fps() == 50
         assert preferences.render_jobs() == 1
@@ -158,7 +161,7 @@ def test_language_and_appearance_survive_restart_with_safe_defaults() -> None:
         database = Path(temporary) / "preferences.sqlite3"
         preferences = Preferences(database)
         assert preferences.language() == "en" and preferences.appearance() is Appearance.SYSTEM
-        preferences.remember_language("de")
+        preferences.remember_language(Language.GERMAN)
         preferences.remember_appearance(Appearance.LIGHT)
         restored = Preferences(database)
         assert restored.language() == "de" and restored.appearance() is Appearance.LIGHT
@@ -258,7 +261,7 @@ def test_default_export_rate_survives_restart_and_invalid_storage_falls_back() -
         database = Path(temporary) / "preferences.sqlite3"
         preferences = Preferences(database)
         assert preferences.export_fps() == 50
-        preferences.remember_language("de")
+        preferences.remember_language(Language.GERMAN)
         preferences.remember_export_fps("60000/1001")
         restored = Preferences(database)
         assert restored.export_fps() == "60000/1001" and restored.language() == "de"

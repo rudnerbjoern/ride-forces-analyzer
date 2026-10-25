@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # cspell:words cellspacing
 
-from ride_forces_analyzer.i18n import diagnostic_message, get_language, tr
+from ride_forces_analyzer.i18n import Language, diagnostic_message, get_language, tr
 
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
@@ -189,7 +189,7 @@ class ExplorerData:
         Returns:
             Localized diagnostic text while retaining original diagnostics.
         """
-        if get_language() == "en":
+        if get_language() is Language.ENGLISH:
             return self.notes
         lines = [
             f"{item.severity.value.upper()} {item.code} {item.json_path}: "

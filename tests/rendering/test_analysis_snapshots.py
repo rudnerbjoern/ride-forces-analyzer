@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
+from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.analysis import recording
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.analysis.models import AnalysisProfile, SampleValues
@@ -237,7 +238,13 @@ def test_previews_bind_one_snapshot_across_layouts_settings_and_outside_range(
         return Image.new("RGBA", (8, 8))
 
     monkeypatch.setattr(OverlayRenderer, "render_sample", capture)
-    result = build_previews(manta.analysis, ExportSettings(fps=24, language="de"), 0, 100, 3600)
+    result = build_previews(
+        manta.analysis,
+        ExportSettings(fps=24, language=Language.GERMAN),
+        0,
+        100,
+        3600,
+    )
     assert result.outside_range
     assert len(seen) == 5 and all(timeline.analysis is manta.analysis for timeline in seen)
     assert all(timeline.first == 0 and timeline.last == manta.count - 1 for timeline in seen)

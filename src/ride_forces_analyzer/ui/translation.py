@@ -38,7 +38,7 @@ def system_ui_language() -> Language:
     for language in LANGUAGES:
         if primary == language:
             return language
-    return "en"
+    return Language.ENGLISH
 
 
 def _apply(widget: QObject, prop: str, value: str) -> None:
@@ -135,7 +135,7 @@ def set_ui_language(application: QApplication, language: Language) -> None:
     if _qt_translator is not None:
         application.removeTranslator(_qt_translator)
         _qt_translator = None
-    if language != "en":
+    if language is not Language.ENGLISH:
         translator = QTranslator(application)
         if translator.load(
             f"qtbase_{language}",

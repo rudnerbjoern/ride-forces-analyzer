@@ -88,13 +88,14 @@ def test_localized_export_in_4k_workspace_keeps_controls_reachable(
         from PySide6.QtCore import QTimer
         from PySide6.QtWidgets import QApplication, QComboBox, QScrollArea, QStyle, QStyleOptionComboBox
         from ride_forces_analyzer.config import AppSettings
+        from ride_forces_analyzer.i18n import Language
         from ride_forces_analyzer.explorer import ExplorerData, load_recording
         from ride_forces_analyzer.storage.exports import ExportStore
         from ride_forces_analyzer.ui.window import ExplorerWindow
         from ride_forces_analyzer.ui.export import ExportDialog
         app = QApplication([])
         directory = TemporaryDirectory(dir='.tmp')
-        window = ExplorerWindow(AppSettings(language='de'))
+        window = ExplorerWindow(AppSettings(language=Language.GERMAN))
         data = load_recording(next(Path('tests').rglob('Manta-*.forces')))
         assert isinstance(data, ExplorerData)
         window._loaded(data)

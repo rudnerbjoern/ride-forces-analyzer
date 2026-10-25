@@ -5,12 +5,24 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 from dataclasses import dataclass
-from typing import Literal
+from enum import StrEnum
 
 from .translations_de import DIAGNOSTIC_GERMAN, GERMAN
 from .translations_fr import DIAGNOSTIC_FRENCH, FRENCH
 
-Language = Literal["en", "de", "fr"]
+
+class Language(StrEnum):
+    """Supported interface and overlay languages with stable stored codes.
+
+    Attributes:
+        ENGLISH: English presentation, stored as ``en``.
+        GERMAN: German presentation, stored as ``de``.
+        FRENCH: French presentation, stored as ``fr``.
+    """
+
+    ENGLISH = "en"
+    GERMAN = "de"
+    FRENCH = "fr"
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,12 +47,33 @@ class LanguageDefinition:
 
 
 LANGUAGES: dict[Language, LanguageDefinition] = {
-    "en": LanguageDefinition("English", "en_US", ".", ",", {}, {}),
-    "de": LanguageDefinition("Deutsch", "de_DE", ",", ".", GERMAN, DIAGNOSTIC_GERMAN),
-    "fr": LanguageDefinition("Français", "fr_FR", ",", "\u202f", FRENCH, DIAGNOSTIC_FRENCH),
+    Language.ENGLISH: LanguageDefinition(
+        "English",
+        "en_US",
+        ".",
+        ",",
+        {},
+        {},
+    ),
+    Language.GERMAN: LanguageDefinition(
+        "Deutsch",
+        "de_DE",
+        ",",
+        ".",
+        GERMAN,
+        DIAGNOSTIC_GERMAN,
+    ),
+    Language.FRENCH: LanguageDefinition(
+        "Français",
+        "fr_FR",
+        ",",
+        "\u202f",
+        FRENCH,
+        DIAGNOSTIC_FRENCH,
+    ),
 }
 LANGUAGE_CHOICES = tuple(LANGUAGES)
-_language: Language = "en"
+_language: Language = Language.ENGLISH
 
 
 def get_language() -> Language:
@@ -65,7 +98,7 @@ def set_language(language: Language) -> None:
         ValueError: Unsupported application language.
     """
     global _language
-    if language not in LANGUAGES:
+    if type(language) is not Language:
         raise ValueError("Unsupported application language")
     _language = language
 
@@ -111,9 +144,11 @@ class _Number:
 def _render(source: str, values: tuple[object, ...], language: Language) -> str:
     template = LANGUAGES[language].catalog.get(source, source)
     arguments = tuple(
-        _Number(value, language)
-        if language != "en" and type(value) in (int, float) and isinstance(value, (int, float))
-        else value
+        (
+            _Number(value, language)
+            if language != "en" and type(value) in (int, float) and isinstance(value, (int, float))
+            else value
+        )
         for value in values
     )
     return template.format(*arguments) if values else template

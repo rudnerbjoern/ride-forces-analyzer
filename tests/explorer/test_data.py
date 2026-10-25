@@ -25,7 +25,7 @@ from ride_forces_analyzer.i18n import Language, get_language, set_language
 from tests.support.recordings import RFDB_FIXTURE_DIRECTORY, RFDB_FIXTURES
 
 
-@pytest.mark.parametrize("language", ["en", "de"])
+@pytest.mark.parametrize("language", [Language.ENGLISH, Language.GERMAN])
 @pytest.mark.parametrize("source_format", [RecordingFormat.RIDE_FORCES, RecordingFormat.RFDB])
 def test_technical_details_identify_format_and_declared_schema(
     synthetic_recording: Recording,

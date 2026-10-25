@@ -61,13 +61,14 @@ from pathlib import Path
 from PySide6.QtCore import QTimer, QThreadPool
 from PySide6.QtGui import QFileOpenEvent
 from ride_forces_analyzer.config import AppSettings
+from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.instance import OpenRequest
 from ride_forces_analyzer.ui.application import RecordingApplication
 app = RecordingApplication([])
 path = Path(sys.argv[1])
 assert app.event(QFileOpenEvent(str(path)))
 assert Path(app.pending_requests[0].path) == path
-app.settings = AppSettings(language="en")
+app.settings = AppSettings(language=Language.ENGLISH)
 app.start(OpenRequest())
 window = app.windows[0]
 timer = QTimer()

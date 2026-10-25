@@ -20,10 +20,10 @@ class AppSettings(BaseModel, frozen=True, strict=True, extra="forbid", validate_
             otherwise.
         window_height: Layout dimension for window height, in native pixels unless
             specified otherwise.
-        language: Registered language used to translate presentation text and numbers.
+        language: Language member used for presentation; JSON retains its stable text code.
     """
 
     window_title: str = Field(default="Ride Forces Analyzer", min_length=1)
     window_width: int = Field(default=1280, gt=0, le=MAX_WINDOW_DIMENSION)
     window_height: int = Field(default=820, gt=0, le=MAX_WINDOW_DIMENSION)
-    language: Language = "en"
+    language: Language = Language.ENGLISH

@@ -16,6 +16,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.analysis.recording import (
     RecordingAnalysis,
     prepare_recording_analysis,
@@ -111,7 +112,7 @@ def render_reference(output: Path) -> None:
     for index, (layout, title) in enumerate(PROFILES):
         settings = ExportSettings(
             layout=layout,
-            language="en",
+            language=Language.ENGLISH,
             aspect="landscape",
             fps=50,
             window_seconds=30.0 if layout == "hud" else 12.0,

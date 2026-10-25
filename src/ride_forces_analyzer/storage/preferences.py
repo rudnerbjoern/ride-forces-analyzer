@@ -396,7 +396,7 @@ class Preferences:
         except OSError, ValueError:
             return ""
 
-    def language(self, default: Language = "en") -> Language:
+    def language(self, default: Language = Language.ENGLISH) -> Language:
         """Read a valid saved language or the caller's fallback.
 
         Args:
@@ -404,6 +404,9 @@ class Preferences:
 
         Returns:
             Valid saved interface language, or the supplied fallback.
+
+        Raises:
+            ValueError: The fallback is not a Language member.
         """
         default = _LANGUAGE.validate_python(default, strict=True)
         value = self._read("language")
@@ -432,8 +435,11 @@ class Preferences:
 
         Returns:
             None.
+
+        Raises:
+            ValueError: The value is not a Language member; storage is unchanged.
         """
-        self._write("language", _LANGUAGE.validate_python(value, strict=True))
+        self._write("language", _LANGUAGE.validate_python(value, strict=True).value)
 
     def remember_appearance(self, value: Appearance) -> None:
         """Persist the selected appearance preference.

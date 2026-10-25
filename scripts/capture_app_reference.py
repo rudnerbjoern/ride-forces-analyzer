@@ -24,6 +24,7 @@ from PySide6.QtWidgets import QApplication, QWidget
 from PIL import ImageGrab
 
 from ride_forces_analyzer import __version__
+from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.config import AppSettings
 from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.storage.preferences import Appearance
@@ -315,7 +316,7 @@ def capture_reference(output: Path, *, details: bool = False, themes: bool = Fal
             arguments = ["capture_app_reference", "-platform", "windows:dpiawareness=0"]
             application = QApplication(arguments)
             application.setFont(QFont("Segoe UI", 9))
-            window = ExplorerWindow(AppSettings(language="en"))
+            window = ExplorerWindow(AppSettings(language=Language.ENGLISH))
             dialog: ExportDialog | None = None
             try:
                 window.setMinimumSize(*WORKSPACE_SIZE)
