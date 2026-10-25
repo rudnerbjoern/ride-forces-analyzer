@@ -61,6 +61,8 @@ source = [
     "src/ride_forces_analyzer/domain",
     "src/ride_forces_analyzer/importers",
     "src/ride_forces_analyzer/rendering",
+    "src/ride_forces_analyzer/explorer",
+    "src/ride_forces_analyzer/exports",
 ]
 data_file = ".tmp/coverage/analysis/.coverage"
 
@@ -77,6 +79,8 @@ include = [
     "src/ride_forces_analyzer/domain/*.py",
     "src/ride_forces_analyzer/importers/*.py",
     "src/ride_forces_analyzer/rendering/**/*.py",
+    "src/ride_forces_analyzer/explorer/*.py",
+    "src/ride_forces_analyzer/exports/*.py",
 ]
 fail_under = 100
 show_missing = true

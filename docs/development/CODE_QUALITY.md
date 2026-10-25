@@ -92,7 +92,8 @@ Source smoke checks do not replace [frozen-package qualification](RELEASE.md#win
 
 Locked `coverage.py`/`pytest-cov` measure lines and branches throughout `analysis`,
 `validation`, `storage`, `i18n`, `formatting`, `playback`, `runtime`, `gps`,
-`domain`, `importers` and `rendering`. `[tool.coverage.*]` in `pyproject.toml` owns configuration.
+`domain`, `importers`, `rendering`, `explorer` and `exports`.
+`[tool.coverage.*]` in `pyproject.toml` owns configuration.
 Subprocess measurement includes isolated error-report lifecycle and exception-hook tests. Collection selects the declared sources without importing modules for discovery. Run from the repository root on native Windows:
 
 ```powershell
@@ -100,9 +101,9 @@ uv run --locked pytest --cov --cov-report=term-missing `
     tests/analysis tests/tooling/test_validation.py tests/storage `
     tests/rendering `
     tests/updates/test_releases.py tests/localization `
-    tests/explorer/test_data.py::test_replay_sample_counter_format tests/playback `
+    tests/explorer tests/exports tests/playback `
     tests/support tests/tooling/test_runtime_paths.py tests/tooling/test_settings.py `
-    tests/explorer/test_gps.py tests/explorer/test_map_background.py tests/domain `
+    tests/domain `
     tests/importers
 uv run --locked coverage html
 uv run --locked coverage json
@@ -141,6 +142,10 @@ file-access audits run without coverage instrumentation, whose own file I/O woul
 violate their contract; the remaining tests measure the importer modules. Rendering
 coverage includes all layouts, gaps and fallback fonts, preview/timeline contracts,
 ordered frame generation, encoder discovery and safe output publication/cleanup.
+Explorer coverage checks raw/prepared presentation, context segments, localized
+details and inclusive selections without desktop windows. Data-export coverage
+checks CSV/JSON serialization, shared validation, atomic file replacement and
+sequential batch preparation, failure and cancellation.
 Behavior tests establish contracts; coverage percentage does not qualify physical
 interpretation or UI integration. Cover new branches without weakening the gate.
 
