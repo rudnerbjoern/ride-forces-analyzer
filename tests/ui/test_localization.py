@@ -87,7 +87,7 @@ def test_localized_export_in_4k_workspace_keeps_controls_reachable(
         import time
         from PySide6.QtCore import QTimer
         from PySide6.QtWidgets import QApplication, QComboBox, QScrollArea, QStyle, QStyleOptionComboBox
-        from ride_forces_analyzer.config import AppSettings
+        from ride_forces_analyzer.runtime.config import AppSettings
         from ride_forces_analyzer.i18n import Language
         from ride_forces_analyzer.explorer import ExplorerData, load_recording
         from ride_forces_analyzer.storage.exports import ExportStore

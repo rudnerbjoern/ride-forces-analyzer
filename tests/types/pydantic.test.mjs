@@ -63,7 +63,7 @@ for (const { name, source, rule } of cases) {
     const temporary = await mkdtemp(path.join(root, ".tmp/typecheck-"));
     try {
       const filename = path.join(temporary, "contract.py");
-      await writeFile(filename, "from ride_forces_analyzer.config import AppSettings\n\n" + source);
+      await writeFile(filename, "from ride_forces_analyzer.runtime.config import AppSettings\n\n" + source);
       // The normal workspace excludes .tmp; explicitly include each temporary contract.
       const project = path.join(temporary, "pyrightconfig.json");
       await writeFile(project, JSON.stringify({

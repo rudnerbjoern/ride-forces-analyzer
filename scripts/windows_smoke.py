@@ -18,7 +18,7 @@ from PySide6.QtWidgets import QApplication
 
 from ride_forces_analyzer import __version__
 from ride_forces_analyzer.i18n import Language
-from ride_forces_analyzer.config import AppSettings
+from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.rendering.encoding import export_video, find_ffmpeg
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.model import (

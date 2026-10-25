@@ -37,7 +37,7 @@ Arrows indicate dependencies. Domain/import/analysis code has no widget dependen
 
 | Block                                                                 | Responsibility                                                                |
 | --------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `config`, `__main__`, `runtime.paths`                                 | Validated settings, startup and platform data paths                           |
+| `runtime.config`, `__main__`, `runtime.paths`                         | Validated settings, startup and platform data paths                           |
 | `runtime.instance`, `ui.application`                                  | Local process ownership, file-open requests and recording windows             |
 | `domain`, `importers`                                                 | Lossless source representation, bounded parsing and deterministic diagnostics |
 | `analysis`                                                            | Prepared measurements, context/events, calibration and extrema                |

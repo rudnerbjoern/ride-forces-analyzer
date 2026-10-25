@@ -10,7 +10,7 @@ import pytest
 from PySide6.QtCore import QEvent, QThreadPool
 from PySide6.QtWidgets import QApplication
 from ride_forces_analyzer.rendering.model import VideoOutput
-from ride_forces_analyzer.config import AppSettings
+from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.i18n import Language, get_language, set_language
 from ride_forces_analyzer.ui.window import ExplorerWindow
 from tests.ui.helpers import resize_workspace, wait_until

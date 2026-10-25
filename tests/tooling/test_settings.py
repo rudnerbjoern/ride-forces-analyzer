@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from ride_forces_analyzer.config import AppSettings
+from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.i18n import Language
 
 

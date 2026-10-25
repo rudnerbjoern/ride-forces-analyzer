@@ -60,7 +60,7 @@ import sys
 from pathlib import Path
 from PySide6.QtCore import QTimer, QThreadPool
 from PySide6.QtGui import QFileOpenEvent
-from ride_forces_analyzer.config import AppSettings
+from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.runtime.instance import OpenRequest
 from ride_forces_analyzer.ui.application import RecordingApplication

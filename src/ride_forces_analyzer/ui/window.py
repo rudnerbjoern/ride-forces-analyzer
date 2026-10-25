@@ -69,7 +69,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ride_forces_analyzer.config import AppSettings
+from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 from ride_forces_analyzer.explorer import ExplorerData, failure_text
 from ride_forces_analyzer.importers import ImportFailure

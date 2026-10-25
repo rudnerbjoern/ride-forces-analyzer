@@ -20,7 +20,7 @@ from ride_forces_analyzer.ui.window import ExplorerWindow
 from ride_forces_analyzer.ui.preferences import SettingsDialog
 from tests.ui.helpers import wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
-from ride_forces_analyzer.config import AppSettings
+from ride_forces_analyzer.runtime.config import AppSettings
 
 
 def test_system_appearance_follows_changes_until_manually_selected(

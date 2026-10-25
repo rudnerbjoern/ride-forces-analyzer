@@ -18,12 +18,12 @@ reason for a calculation is not clear from the code.
 
 ## Runtime and static contracts
 
-| Contract               | Validation                                                                                                                                                               |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `config.AppSettings`   | Immutable, strict Pydantic model; validated defaults; rejects unknown keys, empty titles, type coercion and dimensions outside 1–16,777,215 (Qt widget limit)            |
-| Preferences            | Declared language/appearance choices; boolean update consent; finite numeric timestamps; string tags; `Path` directory inputs; supported export frame rates; no coercion |
-| Persistence            | Invalid setter inputs raise `ValueError` before writes; statically restricted keys; SQLite text values; invalid stored values/unavailable storage use safe defaults      |
-| Source/analysis models | Separate owned frozen dataclasses; [source contracts](CANONICAL_MODELS.md) and [analysis contracts](ANALYSIS_MODELS.md)                                                  |
+| Contract                     | Validation                                                                                                                                                               |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `runtime.config.AppSettings` | Immutable, strict Pydantic model; validated defaults; rejects unknown keys, empty titles, type coercion and dimensions outside 1–16,777,215 (Qt widget limit)            |
+| Preferences                  | Declared language/appearance choices; boolean update consent; finite numeric timestamps; string tags; `Path` directory inputs; supported export frame rates; no coercion |
+| Persistence                  | Invalid setter inputs raise `ValueError` before writes; statically restricted keys; SQLite text values; invalid stored values/unavailable storage use safe defaults      |
+| Source/analysis models       | Separate owned frozen dataclasses; [source contracts](CANONICAL_MODELS.md) and [analysis contracts](ANALYSIS_MODELS.md)                                                  |
 
 | Tool            | Configuration and limits                                                                                                                                                 |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

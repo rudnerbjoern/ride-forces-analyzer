@@ -25,7 +25,7 @@ from PIL import ImageGrab
 
 from ride_forces_analyzer import __version__
 from ride_forces_analyzer.i18n import Language
-from ride_forces_analyzer.config import AppSettings
+from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.storage.preferences import Appearance
 from ride_forces_analyzer.ui.export import ExportDialog

@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QApplication, QDialogButtonBox
 import pytest
 
 from ride_forces_analyzer.i18n import Language
-from ride_forces_analyzer.config import AppSettings
+from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.ui.preferences import SettingsDialog
 from ride_forces_analyzer.ui.window import ExplorerWindow

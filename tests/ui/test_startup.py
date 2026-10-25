@@ -17,7 +17,7 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
     title = "Custom window" if custom_settings else "Ride Forces Analyzer"
     size = (720, 480) if custom_settings else (1280, 820)
     launch = (
-        "from ride_forces_analyzer.config import AppSettings\n"
+        "from ride_forces_analyzer.runtime.config import AppSettings\n"
         "from ride_forces_analyzer.__main__ import main\n"
         "raise SystemExit(main(AppSettings(window_title='Custom window', "
         "window_width=720, window_height=480)))"

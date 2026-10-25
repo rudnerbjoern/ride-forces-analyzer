@@ -85,7 +85,7 @@ def test_opted_in_startup_checks_once_then_remains_quiet_for_the_day(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from ride_forces_analyzer.config import AppSettings
+    from ride_forces_analyzer.runtime.config import AppSettings
 
     calls: list[str] = []
 

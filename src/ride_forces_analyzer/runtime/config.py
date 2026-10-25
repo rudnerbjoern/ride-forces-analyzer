@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 from pydantic import BaseModel, Field
-from .i18n import Language
+from ride_forces_analyzer.i18n import Language
 
 # Qt's documented maximum widget size; reject unsupported sizes before startup.
 MAX_WINDOW_DIMENSION = 16_777_215

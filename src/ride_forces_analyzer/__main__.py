@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ride_forces_analyzer.config import AppSettings
+    from ride_forces_analyzer.runtime.config import AppSettings
 
 
 def main(
@@ -35,7 +35,7 @@ def main(
     from ride_forces_analyzer.runtime.error_reporting import initialize_error_reporting
 
     initialize_error_reporting()
-    from ride_forces_analyzer.config import AppSettings
+    from ride_forces_analyzer.runtime.config import AppSettings
     from PySide6.QtCore import QThreadPool
     from ride_forces_analyzer.ui.application import RecordingApplication
 
