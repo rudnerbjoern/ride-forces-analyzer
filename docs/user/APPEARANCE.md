@@ -14,7 +14,8 @@ The instructions below use the English interface labels.
 
 **Cancel**, Escape or closing the settings window brings back your previous theme.
 Trying a theme keeps your recording, selection, zoom and smoothing in place.
-File-open, save and folder-selection dialogs also follow the chosen theme.
+File-open, save and folder-selection dialogs use the operating system's native
+dialogs and appearance, including its locations and quick access entries.
 
 ## Find your style
 
