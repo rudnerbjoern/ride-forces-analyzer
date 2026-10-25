@@ -45,7 +45,7 @@ No Python installation is needed. The Windows Complete ZIP includes FFmpeg for
 video export; Linux and macOS need it installed separately. Windows EXE and
 Standard ZIP downloads are also available if you prefer to use your own FFmpeg.
 
-Version **1.0.0** is the first stable release. Windows and macOS may display a security warning
+Version **1.1.0** is a stable release. Windows and macOS may display a security warning
 when you first open the app.
 Follow the [installation guide](docs/user/INSTALLATION.md) for download
 verification, Linux prerequisites and first-launch instructions.

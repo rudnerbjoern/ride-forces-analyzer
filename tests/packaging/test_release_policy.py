@@ -19,13 +19,13 @@ verify_merged_prs = cast(Callable[[object, str], None], MODULE["verify_merged_pr
 
 @pytest.mark.parametrize(
     "version,preview",
-    [("0.1.0", True), ("1.0.0", False), ("1.0.0rc1", True)],
+    [("0.1.0", True), ("1.1.0", False), ("1.1.0rc1", True)],
 )
 def test_release_classification(version: str, preview: bool) -> None:
     assert is_prerelease(f"v{version}", version) is preview
 
 
-@pytest.mark.parametrize("tag,version", [("v0.3.1", "0.1.0"), ("v1.0.0", "invalid")])
+@pytest.mark.parametrize("tag,version", [("v0.3.1", "0.1.0"), ("v1.1.0", "invalid")])
 def test_bad_release_version_is_rejected(tag: str, version: str) -> None:
     with pytest.raises(ValueError, match="project.version"):
         is_prerelease(tag, version)

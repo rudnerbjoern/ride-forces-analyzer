@@ -23,8 +23,7 @@ policy, package construction and publication.
   be contained in `origin/main` and associated with a merged PR targeting this
   repository's `main`. Full CI, including mandatory Gitleaks history scanning,
   must pass for that same revision.
-- Version `1.0.0` is the first stable release. Stable releases use plain numeric
-  versions and are published as the latest release.
+- Stable releases use plain numeric versions and are published as the latest release.
 - Paid code signing and macOS notarization are not release gates; the
   [distribution constraints](../architecture/02_architecture_constraints.md#distribution-constraints)
   define the accepted signing limitations.
@@ -51,7 +50,7 @@ To retry publication of an existing tag after a workflow correction, dispatch th
 current workflow from `main` with the `tag` input, for example:
 
 ```powershell
-gh workflow run source-release.yml --ref main -f tag=v1.0.0
+gh workflow run source-release.yml --ref main -f tag=v1.1.0
 ```
 
 Quality checks use the current workflow definition and check out the resolved

@@ -33,6 +33,7 @@ Program code has its own GPL license; supplied recordings have a separate
 ## Image content and reproduction
 
 All images use the actual application or production renderer, in English.
+Workspace and appearance screenshots show version 1.1.0.
 Checkerboards illustrate transparency and are not part of exported videos.
 HUD placement views are enlarged to illustrate a 4K editing timeline; its video
 export retains the native 1920×1080 or 1080×1920 resolution.
