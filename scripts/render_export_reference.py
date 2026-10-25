@@ -26,7 +26,12 @@ from ride_forces_analyzer.explorer import format_sample_time
 from ride_forces_analyzer.importers import ImportSuccess, import_forces
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts import export_region
-from ride_forces_analyzer.rendering.model import ExportSettings, PROFILES, prepare_export
+from ride_forces_analyzer.rendering.model import (
+    VideoAspect,
+    ExportSettings,
+    PROFILES,
+    prepare_export,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "tests/fixtures/real/VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
@@ -113,7 +118,7 @@ def render_reference(output: Path) -> None:
         settings = ExportSettings(
             layout=layout,
             language=Language.ENGLISH,
-            aspect="landscape",
+            aspect=VideoAspect.LANDSCAPE,
             fps=50,
             window_seconds=30.0 if layout == "hud" else 12.0,
             output="transparent",

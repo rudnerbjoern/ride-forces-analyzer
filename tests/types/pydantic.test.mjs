@@ -21,6 +21,16 @@ const shared = JSON.parse(configuration.stdout);
 
 const cases = [
   {
+    name: "typed export aspect accepts enum members",
+    source: "from ride_forces_analyzer.rendering.model import ExportSettings, VideoAspect\nsettings = AppSettings()\nvideo = ExportSettings(aspect=VideoAspect.PORTRAIT)\n",
+    rule: null,
+  },
+  {
+    name: "typed export aspect rejects unconverted strings",
+    source: "from ride_forces_analyzer.rendering.model import ExportSettings\nsettings = AppSettings()\nvideo = ExportSettings(aspect='portrait')\n",
+    rule: "reportArgumentType",
+  },
+  {
     name: "typed language accepts enum members",
     source: "from ride_forces_analyzer.i18n import Language\nsettings = AppSettings(language=Language.GERMAN)\n",
     rule: null,

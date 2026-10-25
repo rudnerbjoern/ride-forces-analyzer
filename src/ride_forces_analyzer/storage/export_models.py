@@ -22,7 +22,7 @@ from pydantic import (
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, StageConfiguration
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.analysis.models import AnalysisProfile
-from ride_forces_analyzer.rendering.model import ExportSettings
+from ride_forces_analyzer.rendering.model import VideoAspect, ExportSettings
 from ride_forces_analyzer.rendering.layouts import registry
 
 RangeMode = Literal["markers", "selection", "entire"]
@@ -84,7 +84,7 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
         if value.position is not None:
             return value
         plugin = registry.PLUGINS[value.layout]
-        positions = plugin.landscape if value.aspect == "landscape" else plugin.portrait
+        positions = plugin.landscape if value.aspect is VideoAspect.LANDSCAPE else plugin.portrait
         return replace(value, position=positions.default)
 
     @field_validator("analysis_configuration", mode="before")

@@ -56,6 +56,9 @@ the supplied [Manta reference recording](../development/RECORDINGS.md#manta).
 - Presets/immutable batch jobs explicitly retain aspect, overlay language, vertical
   direction and analysis recipe; incomplete saved settings are rejected.
   Mixed-aspect batches are supported.
+- Python callers select `VideoAspect.LANDSCAPE` or `VideoAspect.PORTRAIT` from
+  `rendering.model`; `VideoAspect(value)` converts supported text values.
+  Saved JSON retains `landscape` and `portrait`; existing presets need no migration.
 - Overlay language is English/German/French, initially following UI language but independently
   selectable. Production previews/frames share localized labels/numbers.
   Replay clocks, source values, geometry, signs and units remain unchanged.

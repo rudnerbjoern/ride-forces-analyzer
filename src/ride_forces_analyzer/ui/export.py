@@ -57,6 +57,7 @@ from ride_forces_analyzer.rendering.encoding import ExportCancelled, export_vide
 from ride_forces_analyzer.rendering.progress import remaining_seconds
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.rendering.model import (
+    VideoAspect,
     EXPORT_FRAME_RATES,
     ExportLayout,
     ExportSettings,
@@ -836,12 +837,14 @@ class ExportDialog(QDialog):
             bind(self.status, tr(str(error)), "text")
             return
         self.overlay_language.setCurrentIndex(LANGUAGE_CHOICES.index(settings.language))
-        self.aspect.setCurrentIndex(0 if settings.aspect == "landscape" else 1)
+        self.aspect.setCurrentIndex(0 if settings.aspect is VideoAspect.LANDSCAPE else 1)
         self.layout_profile.setCurrentIndex(
             next(i for i, (key, _) in enumerate(PROFILES) if key == settings.layout),
         )
         plugin = registry.PLUGINS[settings.layout]
-        positions = plugin.landscape if settings.aspect == "landscape" else plugin.portrait
+        positions = (
+            plugin.landscape if settings.aspect is VideoAspect.LANDSCAPE else plugin.portrait
+        )
         self.position.setCurrentIndex(
             self.position.findData((settings.position or positions.default).value),
         )
@@ -921,7 +924,9 @@ class ExportDialog(QDialog):
     def _settings(self) -> ExportSettings:
         return ExportSettings(
             language=LANGUAGE_CHOICES[self.overlay_language.currentIndex()],
-            aspect="landscape" if self.aspect.currentIndex() == 0 else "portrait",
+            aspect=VideoAspect.LANDSCAPE
+            if self.aspect.currentIndex() == 0
+            else VideoAspect.PORTRAIT,
             fps="60000/1001" if self.fps.currentText() == "59.94" else int(self.fps.currentText()),
             window_seconds=float(self.seconds.value()),
             output="transparent" if self.mode.currentIndex() == 0 else "opaque",
@@ -941,7 +946,9 @@ class ExportDialog(QDialog):
     def _schedule_preview(self) -> None:
         settings = self._settings()
         for key, plugin in registry.PLUGINS.items():
-            positions = plugin.landscape if settings.aspect == "landscape" else plugin.portrait
+            positions = (
+                plugin.landscape if settings.aspect is VideoAspect.LANDSCAPE else plugin.portrait
+            )
             self.preview_positions[key] = positions.select(
                 settings.position,
                 self.preview_positions.get(key),

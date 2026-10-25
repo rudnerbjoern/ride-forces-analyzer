@@ -15,6 +15,7 @@ from ride_forces_analyzer.analysis.models import SampleValues
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, RecordingAnalysis
 from ride_forces_analyzer.i18n import Language
 from .layouts.contracts import LayoutPosition
+from .layouts.contracts import VideoAspect as VideoAspect
 
 FrameRate = int | Literal["60000/1001"]
 EXPORT_FRAME_RATES: tuple[FrameRate, ...] = (24, 25, 30, 50, "60000/1001", 60)
@@ -43,7 +44,7 @@ class ExportSettings:
         invert_lateral: Whether the layout uses its supported lateral direction override.
         prefer_gpu: Whether encoding prefers a probed NVIDIA backend with CPU fallback.
         layout: Stable key selecting the overlay renderer.
-        aspect: Selected landscape or portrait output format.
+        aspect: VideoAspect member selecting the canvas; JSON retains its text value.
         language: Language member used for overlay text; saved JSON retains its text code.
         position: Requested source position or named layout placement, as declared by the
             type.
@@ -56,7 +57,7 @@ class ExportSettings:
     invert_lateral: bool = True
     prefer_gpu: bool = True
     layout: ExportLayout = "column"
-    aspect: Literal["landscape", "portrait"] = "landscape"
+    aspect: VideoAspect = VideoAspect.LANDSCAPE
     language: Language = Language.ENGLISH
     position: LayoutPosition | None = None
 
@@ -70,8 +71,8 @@ class ExportSettings:
         if self.layout == "hud":
             from .layouts.hud import LANDSCAPE, PORTRAIT
 
-            return (PORTRAIT if self.aspect == "portrait" else LANDSCAPE).size
-        return (2160, 3840) if self.aspect == "portrait" else (3840, 2160)
+            return (PORTRAIT if self.aspect is VideoAspect.PORTRAIT else LANDSCAPE).size
+        return (2160, 3840) if self.aspect is VideoAspect.PORTRAIT else (3840, 2160)
 
     @property
     def frame_rate(self) -> Fraction:
@@ -104,7 +105,7 @@ class ExportSettings:
         """
         if type(self.language) is not Language:
             raise ValueError("Unsupported overlay language")
-        if self.aspect not in ("landscape", "portrait"):
+        if type(self.aspect) is not VideoAspect:
             raise ValueError("Unknown export aspect ratio")
         if not (type(self.fps) is int and 1 <= self.fps <= 120) and self.fps != "60000/1001":
             raise ValueError("Frame rate must be an integer from 1 to 120 or 60000/1001")

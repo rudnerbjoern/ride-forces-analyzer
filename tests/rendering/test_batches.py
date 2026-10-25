@@ -17,7 +17,7 @@ import pytest
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.rendering.batches import build_jobs, make_job, run_batches
 from ride_forces_analyzer.rendering.encoding import ExportCancelled
-from ride_forces_analyzer.rendering.model import ExportSettings, ExportTimeline
+from ride_forces_analyzer.rendering.model import VideoAspect, ExportSettings, ExportTimeline
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 from ride_forces_analyzer.storage.export_models import BatchJob, SavedBatch, SavedPreset
 from ride_forces_analyzer.storage.exports import ExportStore, ExportStoreError
@@ -49,7 +49,7 @@ def test_portrait_and_landscape_persistence(
 
     chosen = SavedPreset(
         name="Portrait",
-        settings=ExportSettings(aspect="portrait", position=LayoutPosition.LEFT),
+        settings=ExportSettings(aspect=VideoAspect.PORTRAIT, position=LayoutPosition.LEFT),
         analysis_configuration=source_app_configuration(),
         schema_version=1,
         smoothing_window=11,
@@ -76,8 +76,8 @@ def test_portrait_and_landscape_persistence(
         LayoutPosition.BOTTOM,
     ]
     assert [job.preset.settings.aspect for job in reopened.batch("Mixed formats").jobs] == [
-        "portrait",
-        "landscape",
+        VideoAspect.PORTRAIT,
+        VideoAspect.LANDSCAPE,
     ]
     rendered: list[ExportSettings] = []
     renderer_counts: list[object] = []
@@ -102,10 +102,29 @@ def test_hud_preset_round_trip_and_removed_layout_rejection() -> None:
     saved = SavedPreset.model_validate_json(chosen.model_dump_json())
     assert saved.settings.layout == "hud"
     assert saved.settings.dimensions == (1920, 1080)
-    assert replace(saved.settings, aspect="portrait").dimensions == (1080, 1920)
+    assert replace(saved.settings, aspect=VideoAspect.PORTRAIT).dimensions == (1080, 1920)
     assert saved.settings.position is LayoutPosition.FULL_SCREEN
     payload = json.loads(saved.model_dump_json())
     payload["settings"]["layout"] = "capsule"
+    with pytest.raises(ValidationError):
+        SavedPreset.model_validate_json(json.dumps(payload))
+
+
+@pytest.mark.parametrize("aspect", list(VideoAspect))
+def test_video_aspect_preserves_saved_codes_and_requires_enum_members(
+    aspect: VideoAspect,
+) -> None:
+    from pydantic import ValidationError
+
+    assert ExportSettings().aspect is VideoAspect.LANDSCAPE
+    assert VideoAspect(aspect.value) is aspect
+    chosen = preset().model_copy(update={"settings": ExportSettings(aspect=aspect)})
+    payload = json.loads(chosen.model_dump_json())
+    assert payload["settings"]["aspect"] == aspect.value
+    assert SavedPreset.model_validate_json(json.dumps(payload)).settings.aspect is aspect
+    with pytest.raises(ValueError, match="Unknown export aspect ratio"):
+        ExportSettings(aspect=cast(VideoAspect, aspect.value))
+    payload["settings"]["aspect"] = "square"
     with pytest.raises(ValidationError):
         SavedPreset.model_validate_json(json.dumps(payload))
 

@@ -3,7 +3,7 @@
 # cspell:words getchannel getpixel getextrema getcolor getcolors getbbox
 
 from dataclasses import replace
-from typing import Any, Literal
+from typing import Any
 
 from PIL import Image, ImageColor, ImageDraw
 import pytest
@@ -24,7 +24,7 @@ from ride_forces_analyzer.rendering.layouts.hud import (
     WHITE,
     YELLOW,
 )
-from ride_forces_analyzer.rendering.model import ExportSettings, prepare_export
+from ride_forces_analyzer.rendering.model import VideoAspect, ExportSettings, prepare_export
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
 
@@ -35,10 +35,10 @@ def seated() -> ExplorerData:
     return data
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
 def test_detailed_scales_and_signed_directions(
     manta: ExplorerData,
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
 ) -> None:
     assert manta.analysis is not None
     timeline = prepare_export(
@@ -67,7 +67,7 @@ def test_detailed_scales_and_signed_directions(
     )
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
 @pytest.mark.parametrize(
     ("peak", "expected"),
     [
@@ -83,7 +83,7 @@ def test_detailed_scales_and_signed_directions(
 )
 def test_right_scale_fits_actual_selected_peaks_with_a_one_point_five_g_minimum(
     manta: ExplorerData,
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
     peak: float | None,
     expected: float,
 ) -> None:
@@ -112,7 +112,7 @@ def test_right_scale_fits_actual_selected_peaks_with_a_one_point_five_g_minimum(
         )
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
 @pytest.mark.parametrize(
     ("peak", "expected"),
     [
@@ -128,7 +128,7 @@ def test_right_scale_fits_actual_selected_peaks_with_a_one_point_five_g_minimum(
 )
 def test_lateral_scale_fits_actual_peaks_in_fixed_half_g_steps(
     manta: ExplorerData,
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
     peak: float | None,
     expected: float,
 ) -> None:
@@ -163,7 +163,7 @@ def test_lateral_scale_fits_actual_peaks_in_fixed_half_g_steps(
             assert renderer.scales[1][:2] == (-3.5, 3.5)
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
 @pytest.mark.parametrize("inverted", [True, False])
 @pytest.mark.parametrize(
     ("flying", "low", "high", "expected"),
@@ -183,7 +183,7 @@ def test_lateral_scale_fits_actual_peaks_in_fixed_half_g_steps(
 def test_vertical_range_uses_source_posture_and_independent_bounds(
     manta: ExplorerData,
     seated: ExplorerData,
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
     inverted: bool,
     flying: bool,
     low: float | None,
@@ -224,13 +224,13 @@ def test_vertical_range_uses_source_posture_and_independent_bounds(
     )
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
 @pytest.mark.parametrize("inverted", [True, False])
 @pytest.mark.parametrize("flying", [True, False])
 def test_only_vertical_uses_whole_g_labels_and_three_tick_lengths(
     manta: ExplorerData,
     seated: ExplorerData,
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
     inverted: bool,
     flying: bool,
     monkeypatch: pytest.MonkeyPatch,
@@ -270,7 +270,7 @@ def test_only_vertical_uses_whole_g_labels_and_three_tick_lengths(
     monkeypatch.setattr(ImageDraw.ImageDraw, "text", record_text)
     renderer = HudRenderer(timeline)
     g = renderer.geometry
-    direction = 1 if aspect == "portrait" else -1
+    direction = 1 if aspect is VideoAspect.PORTRAIT else -1
     vertical_ticks = {
         y: abs(end_x - x) for x, y, end_x, end_y in lines if x == g.left_axis and y == end_y
     }
@@ -294,11 +294,11 @@ def test_only_vertical_uses_whole_g_labels_and_three_tick_lengths(
     assert {"-0.5", "+0.5"} <= right_labels
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
 @pytest.mark.parametrize("language", list(Language))
 def test_fullscreen_hud_has_open_center_and_is_independent_of_seek_order(
     manta: ExplorerData,
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
     language: Language,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -316,7 +316,7 @@ def test_fullscreen_hud_has_open_center_and_is_independent_of_seek_order(
     assert renderer.render_position(3650.5).tobytes() == image.tobytes()
     assert (
         image.mode == "RGBA"
-        and image.size == (PORTRAIT if aspect == "portrait" else LANDSCAPE).size
+        and image.size == (PORTRAIT if aspect is VideoAspect.PORTRAIT else LANDSCAPE).size
     )
     width, height = image.size
     center = image.crop(
@@ -370,10 +370,10 @@ def test_each_missing_force_hides_only_its_marker(manta: ExplorerData) -> None:
     assert absent.render_position(3600).size == g.size
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
 def test_orientation_edge_scale_tracks_degrees_and_disappears_in_gaps(
     manta: ExplorerData,
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     assert manta.analysis is not None
@@ -456,10 +456,10 @@ def _current_marker_points(renderer: HudRenderer) -> tuple[tuple[int, int], ...]
     )
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
 def test_scale_bars_hold_both_peaks_and_release_while_markers_stay_current(
     manta: ExplorerData,
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
 ) -> None:
     assert manta.analysis is not None
     timeline = prepare_export(
@@ -487,10 +487,10 @@ def test_scale_bars_hold_both_peaks_and_release_while_markers_stay_current(
             assert snapshot.getpixel(point) == (*bytes.fromhex(color[1:]), 255)
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
 def test_scale_peak_bars_reset_at_missing_samples(
     manta: ExplorerData,
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
 ) -> None:
     assert manta.analysis is not None
     timeline = prepare_export(
@@ -516,10 +516,10 @@ def test_scale_peak_bars_reset_at_missing_samples(
         assert after.getpixel(point) == (*bytes.fromhex(color[1:]), 255)
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
 def test_history_time_zero_aligns_exactly_with_lateral_zero(
     manta: ExplorerData,
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
 ) -> None:
     assert manta.analysis is not None
     timeline = prepare_export(
@@ -577,10 +577,10 @@ def test_histories_share_time_axis_and_do_not_bridge_missing_samples(manta: Expl
     assert gapped.render_position(3650).crop(box).tobytes() == blank
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
 def test_histories_fit_each_selected_channel_without_changing_instruments(
     manta: ExplorerData,
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
 ) -> None:
     assert manta.analysis is not None
     timeline = prepare_export(
@@ -672,10 +672,10 @@ def test_cropped_effects_preserve_pixels_and_tile_edges() -> None:
         assert ink.tobytes() == before
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
 def test_history_background_fades_to_black_and_leaves_center_clear(
     manta: ExplorerData,
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
 ) -> None:
     assert manta.analysis is not None
     renderer = HudRenderer(

@@ -18,6 +18,18 @@ if TYPE_CHECKING:
 Region = tuple[int, int, int, int]
 
 
+class VideoAspect(StrEnum):
+    """Video canvas orientation with stable values for saved export settings.
+
+    Attributes:
+        LANDSCAPE: Wide video canvas, stored as ``landscape``.
+        PORTRAIT: Tall video canvas, stored as ``portrait``.
+    """
+
+    LANDSCAPE = "landscape"
+    PORTRAIT = "portrait"
+
+
 class LayoutPosition(StrEnum):
     """Named overlay positions with stable values for storage and UI binding.
 

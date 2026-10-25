@@ -14,7 +14,12 @@ from ride_forces_analyzer.rendering.encoding import encoder_command
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts import COLORS, registry
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition, LayoutPositions
-from ride_forces_analyzer.rendering.model import ExportSettings, ExportTimeline, prepare_export
+from ride_forces_analyzer.rendering.model import (
+    VideoAspect,
+    ExportSettings,
+    ExportTimeline,
+    prepare_export,
+)
 
 
 @pytest.mark.parametrize(
@@ -71,24 +76,24 @@ def test_export_settings_validate_positions_for_each_format(
     monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, "orbit": plugin})
     settings = ExportSettings(layout="orbit", position=LayoutPosition.TOP)
     assert registry.export_region(settings) == (0, 0, 40, 30)
-    assert registry.export_region(ExportSettings(layout="orbit", aspect="portrait")) == (
+    assert registry.export_region(ExportSettings(layout="orbit", aspect=VideoAspect.PORTRAIT)) == (
         10,
         20,
         30,
         40,
     )
     with pytest.raises(ValueError, match="export position"):
-        replace(settings, aspect="portrait")
+        replace(settings, aspect=VideoAspect.PORTRAIT)
     with pytest.raises(ValueError, match="export position"):
         ExportSettings(layout="column", position=LayoutPosition.TOP)
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
 @pytest.mark.parametrize("output", ["transparent", "opaque"])
 def test_selected_region_controls_frame_size_placement_and_encoder_padding(
     manta: ExplorerData,
     monkeypatch: pytest.MonkeyPatch,
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
     output: Literal["transparent", "opaque"],
 ) -> None:
     assert manta.analysis is not None
@@ -123,7 +128,7 @@ def test_selected_region_controls_frame_size_placement_and_encoder_padding(
     default = prepare_export(manta.analysis, replace(settings, position=None), 3600, 3601)
     assert timeline.analysis is default.analysis is manta.analysis
     assert timeline.analysis.context is default.analysis.context
-    x, y, width, height = (15, 25, 80, 60) if aspect == "landscape" else (25, 35, 60, 80)
+    x, y, width, height = (15, 25, 80, 60) if aspect is VideoAspect.LANDSCAPE else (25, 35, 60, 80)
     renderer = OverlayRenderer(timeline)
     region = renderer.render_region(0)
     frame = renderer.render_frame(0)

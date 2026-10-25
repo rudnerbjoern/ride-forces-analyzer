@@ -20,6 +20,7 @@ from ride_forces_analyzer.rendering.encoding import ExportCancelled, encoder_com
 from ride_forces_analyzer.rendering.frames import COLUMN_X, WIDTH, OverlayRenderer
 from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.rendering.model import (
+    VideoAspect,
     ExportLayout,
     ExportSettings,
     PROFILES,
@@ -163,15 +164,15 @@ def test_cancel_and_existing_destination_preserve_files(
 @pytest.mark.parametrize(
     "layout,mode,aspect,prefer_gpu,language",
     [
-        ("column", "transparent", "landscape", False, "en"),
-        ("ribbon", "transparent", "landscape", True, "en"),
-        ("corners", "transparent", "portrait", False, "de"),
-        ("orbit", "transparent", "portrait", True, "en"),
-        ("hud", "opaque", "landscape", False, "en"),
-        ("column", "opaque", "landscape", True, "de"),
-        ("orbit", "opaque", "portrait", False, "en"),
-        ("ribbon", "opaque", "portrait", True, "en"),
-        ("hud", "transparent", "portrait", False, "fr"),
+        ("column", "transparent", VideoAspect.LANDSCAPE, False, "en"),
+        ("ribbon", "transparent", VideoAspect.LANDSCAPE, True, "en"),
+        ("corners", "transparent", VideoAspect.PORTRAIT, False, "de"),
+        ("orbit", "transparent", VideoAspect.PORTRAIT, True, "en"),
+        ("hud", "opaque", VideoAspect.LANDSCAPE, False, "en"),
+        ("column", "opaque", VideoAspect.LANDSCAPE, True, "de"),
+        ("orbit", "opaque", VideoAspect.PORTRAIT, False, "en"),
+        ("ribbon", "opaque", VideoAspect.PORTRAIT, True, "en"),
+        ("hud", "transparent", VideoAspect.PORTRAIT, False, "fr"),
     ],
 )
 def test_native_encoder_produces_layout_resolution_with_verified_alpha(
@@ -180,7 +181,7 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
     mode: str,
     prefer_gpu: bool,
     layout: Literal["column", "ribbon", "corners", "hud", "orbit"],
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
     language: Literal["en", "de"],
 ) -> None:
     # Cover codec × aspect × backend preference once; pure tests own layout/language geometry.
@@ -190,7 +191,7 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
     if not ffmpeg.is_file():
         pytest.skip("Native FFmpeg integration requires installed export tools")
     settings = ExportSettings(
-        fps="60000/1001" if not prefer_gpu and aspect == "landscape" else 25,
+        fps="60000/1001" if not prefer_gpu and aspect is VideoAspect.LANDSCAPE else 25,
         output="transparent" if mode == "transparent" else "opaque",
         prefer_gpu=prefer_gpu,
         layout=layout,

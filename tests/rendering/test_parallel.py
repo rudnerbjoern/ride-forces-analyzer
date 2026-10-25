@@ -13,18 +13,23 @@ import pytest
 from ride_forces_analyzer import cpu_resources
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering import parallel
-from ride_forces_analyzer.rendering.model import ExportSettings, ExportTimeline, prepare_export
+from ride_forces_analyzer.rendering.model import (
+    VideoAspect,
+    ExportSettings,
+    ExportTimeline,
+    prepare_export,
+)
 
 
 @pytest.mark.parametrize(
     "settings",
     [
         ExportSettings(layout="hud"),
-        ExportSettings(layout="hud", aspect="portrait", output="opaque"),
+        ExportSettings(layout="hud", aspect=VideoAspect.PORTRAIT, output="opaque"),
         ExportSettings(layout="ribbon", output="opaque"),
-        ExportSettings(layout="corners", aspect="portrait"),
+        ExportSettings(layout="corners", aspect=VideoAspect.PORTRAIT),
         ExportSettings(layout="orbit"),
-        ExportSettings(layout="column", aspect="portrait", output="opaque"),
+        ExportSettings(layout="column", aspect=VideoAspect.PORTRAIT, output="opaque"),
     ],
     ids=lambda settings: f"{settings.layout}-{settings.aspect}-{settings.output}",
 )

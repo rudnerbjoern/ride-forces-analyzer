@@ -13,6 +13,7 @@ import pytest
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.model import (
+    VideoAspect,
     ExportLayout,
     ExportSettings,
     ExportTimeline,
@@ -38,10 +39,13 @@ def test_every_persisted_profile_has_registered_geometry() -> None:
         ExportSettings(layout=cast(ExportLayout, "unregistered"))
     for key, plugin in PLUGINS.items():
         assert plugin.key == key
-        for aspect, positions in (("landscape", plugin.landscape), ("portrait", plugin.portrait)):
+        for aspect, positions in (
+            (VideoAspect.LANDSCAPE, plugin.landscape),
+            (VideoAspect.PORTRAIT, plugin.portrait),
+        ):
             settings = ExportSettings(
                 layout=key,
-                aspect="landscape" if aspect == "landscape" else "portrait",
+                aspect=aspect,
             )
             assert positions.default in positions.regions
             for x, y, width, height in positions.regions.values():
@@ -111,7 +115,9 @@ def test_builtin_positions_and_existing_default_placement(
         assert positions.default == default
         assert set(positions.regions) == supported
     assert registry.export_region(ExportSettings(layout=key)) == landscape
-    assert registry.export_region(ExportSettings(layout=key, aspect="portrait")) == portrait
+    assert (
+        registry.export_region(ExportSettings(layout=key, aspect=VideoAspect.PORTRAIT)) == portrait
+    )
 
 
 def test_layout_owns_positions_sizes_and_defaults_independently_per_format() -> None:
@@ -199,12 +205,12 @@ def test_layout_metadata_requires_enum_keys_and_default() -> None:
         LayoutPositions({LayoutPosition.TOP: (0, 0, 1, 1)}, default=raw)
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
-def test_all_position_regions_must_fit_their_format_canvas(aspect: str) -> None:
-    width, height = (3840, 2160) if aspect == "landscape" else (2160, 3840)
+@pytest.mark.parametrize("aspect", list(VideoAspect))
+def test_all_position_regions_must_fit_their_format_canvas(aspect: VideoAspect) -> None:
+    width, height = (3840, 2160) if aspect is VideoAspect.LANDSCAPE else (2160, 3840)
     exact = LayoutPositions({LayoutPosition.TOP: (0, 0, width, height)}, default=LayoutPosition.TOP)
     plugin = PLUGINS["orbit"]
-    if aspect == "landscape":
+    if aspect is VideoAspect.LANDSCAPE:
         assert replace(plugin, landscape=exact).landscape == exact
     else:
         assert replace(plugin, portrait=exact).portrait == exact
@@ -215,7 +221,7 @@ def test_all_position_regions_must_fit_their_format_canvas(aspect: str) -> None:
             default=LayoutPosition.TOP,
         )
         with pytest.raises(ValueError, match="fit within"):
-            if aspect == "landscape":
+            if aspect is VideoAspect.LANDSCAPE:
                 replace(plugin, landscape=positions)
             else:
                 replace(plugin, portrait=positions)
@@ -268,7 +274,7 @@ def test_individual_chart_style_applies_in_both_aspects_without_leaking(
     palette = ("#ff00ff", "#00ffff", "#ffff00")
     monkeypatch.setattr(RibbonRenderer, "channel_colors", palette)
     monkeypatch.setattr(RibbonRenderer, "label_size", 42)
-    for aspect in ("landscape", "portrait"):
+    for aspect in (VideoAspect.LANDSCAPE, VideoAspect.PORTRAIT):
         settings = ExportSettings(
             layout="ribbon",
             aspect=aspect,

@@ -1,5 +1,6 @@
 """Native export-dialog interaction and background worker lifecycle."""
 
+from ride_forces_analyzer.rendering.model import VideoAspect
 from ride_forces_analyzer.analysis.recording import source_app_configuration
 
 # cspell:words getpixel
@@ -201,7 +202,7 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
 
     monkeypatch.setattr(QInputDialog, "getText", preset_name)
     dialog.save_preset.click()
-    assert dialog.store.presets()[0].settings.aspect == "portrait"
+    assert dialog.store.presets()[0].settings.aspect is VideoAspect.PORTRAIT
     dialog.aspect.setCurrentIndex(0)
     dialog.load_preset.click()
     assert dialog.aspect.currentIndex() == 1

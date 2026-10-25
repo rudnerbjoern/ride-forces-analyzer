@@ -18,7 +18,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from ride_forces_analyzer.airtime_colors import VERTICAL_CONTEXT_COLORS
 from ..peaks import PeakEnvelope
 from .common import Drawing
-from .contracts import LayoutPlugin, LayoutPosition, LayoutPositions
+from .contracts import VideoAspect, LayoutPlugin, LayoutPosition, LayoutPositions
 
 if TYPE_CHECKING:
     from ..model import ExportChannel, ExportTimeline
@@ -224,11 +224,11 @@ class HudRenderer(Drawing):
         Returns:
             None.
         """
-        self.geometry = PORTRAIT if timeline.settings.aspect == "portrait" else LANDSCAPE
+        self.geometry = PORTRAIT if timeline.settings.aspect is VideoAspect.PORTRAIT else LANDSCAPE
         super().__init__(timeline, *self.geometry.size)
         if isinstance(self.number, ImageFont.FreeTypeFont) and self._font_path().is_file():
             self.number.set_variation_by_name("Bold")
-        self.portrait = timeline.settings.aspect == "portrait"
+        self.portrait = timeline.settings.aspect is VideoAspect.PORTRAIT
         self.history_label = self._font(
             self._font_path(),
             HISTORY_LABEL_SIZE,

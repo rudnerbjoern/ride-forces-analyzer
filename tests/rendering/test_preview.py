@@ -11,7 +11,12 @@ import pytest
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
-from ride_forces_analyzer.rendering.model import ExportSettings, PROFILES, prepare_export
+from ride_forces_analyzer.rendering.model import (
+    VideoAspect,
+    ExportSettings,
+    PROFILES,
+    prepare_export,
+)
 from ride_forces_analyzer.rendering.preview import PreviewBackground, build_previews
 
 
@@ -22,7 +27,7 @@ def test_portrait_contains_complete_region(manta: ExplorerData, layout: str) -> 
     from ride_forces_analyzer.rendering.model import ExportLayout
     from ride_forces_analyzer.rendering.layouts import export_region
 
-    settings = ExportSettings(layout=cast(ExportLayout, layout), aspect="portrait")
+    settings = ExportSettings(layout=cast(ExportLayout, layout), aspect=VideoAspect.PORTRAIT)
     renderer = OverlayRenderer(prepare_export(manta.analysis, settings, 3500, 3700))
     frame = renderer.render_sample(3600)
     x, y, width, height = export_region(settings)
@@ -58,11 +63,11 @@ def test_portrait_contains_complete_region(manta: ExplorerData, layout: str) -> 
     )
 
 
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
 @pytest.mark.parametrize("selected_layout", ["orbit", "hud"])
 def test_previews_match_production_at_exact_graph_sample(
     manta: ExplorerData,
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
     selected_layout: Literal["orbit", "hud"],
 ) -> None:
     assert manta.analysis is not None
@@ -107,7 +112,10 @@ def test_previews_match_production_at_exact_graph_sample(
         )
         expected = (
             Image.alpha_composite(Image.new("RGBA", actual.size, "#162533"), actual)
-            .resize((540, 960) if aspect == "portrait" else (960, 540), Image.Resampling.LANCZOS)
+            .resize(
+                (540, 960) if aspect is VideoAspect.PORTRAIT else (960, 540),
+                Image.Resampling.LANCZOS,
+            )
             .convert("RGB")
         )
         assert profile.image.tobytes() == expected.tobytes()

@@ -8,7 +8,7 @@ from ride_forces_analyzer.analysis.recording import source_app_configuration
 from dataclasses import replace
 from collections.abc import Iterator
 from string import Formatter
-from typing import Any, Literal, cast
+from typing import Any, cast
 
 from PIL import ImageDraw
 import pytest
@@ -25,6 +25,7 @@ from ride_forces_analyzer.i18n import (
 )
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.model import (
+    VideoAspect,
     ExportLayout,
     ExportSettings,
     PROFILES,
@@ -185,12 +186,12 @@ def test_saved_language_roundtrip_is_explicit(
 
 
 @pytest.mark.parametrize("layout", [profile[0] for profile in PROFILES])
-@pytest.mark.parametrize("aspect", ["landscape", "portrait"])
+@pytest.mark.parametrize("aspect", list(VideoAspect))
 @pytest.mark.parametrize("language", [Language.GERMAN, Language.FRENCH])
 def test_overlay_labels_fit_and_language_is_reproducible(
     manta: ExplorerData,
     layout: ExportLayout,
-    aspect: Literal["landscape", "portrait"],
+    aspect: VideoAspect,
     language: Language,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

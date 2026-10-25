@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from ..model import ExportChannel, ExportTimeline
 
 from math import ceil, floor
+from .contracts import VideoAspect
 from ride_forces_analyzer.airtime_colors import VERTICAL_CONTEXT_COLORS as VERTICAL_CONTEXT_COLORS
 from ride_forces_analyzer.explorer import format_sample_time
 from .common import ACCELERATION_COLOR, BRAKING_COLOR, Drawing, lateral_x
@@ -212,7 +213,7 @@ class ChartRenderer(Drawing):
         if self.stacked:
             top = footer - (
                 self.footer_portrait_extra
-                if timeline.settings.aspect == "portrait"
+                if timeline.settings.aspect is VideoAspect.PORTRAIT
                 else self.footer_landscape_extra
             )
             self._panel(draw, (0, top, self.width - 1, self.height - 1))

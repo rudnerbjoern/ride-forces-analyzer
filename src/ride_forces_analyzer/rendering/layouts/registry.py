@@ -13,7 +13,7 @@ from .corners import PLUGIN as CORNERS
 from .hud import PLUGIN as HUD
 from .orbit import PLUGIN as ORBIT
 from .column import PLUGIN as COLUMN
-from .contracts import LayoutPlugin, LayoutPosition, LayoutRenderer, Region
+from .contracts import VideoAspect, LayoutPlugin, LayoutPosition, LayoutRenderer, Region
 
 if TYPE_CHECKING:
     from ..model import ExportLayout, ExportSettings, ExportTimeline
@@ -39,7 +39,7 @@ def export_region(settings: ExportSettings) -> Region:
         ValueError: Unsupported export position for layout and format.
     """
     plugin = PLUGINS[settings.layout]
-    positions = plugin.landscape if settings.aspect == "landscape" else plugin.portrait
+    positions = plugin.landscape if settings.aspect is VideoAspect.LANDSCAPE else plugin.portrait
     position = positions.default if settings.position is None else settings.position
     if type(position) is not LayoutPosition or position not in positions.regions:
         raise ValueError("Unsupported export position for layout and format")
