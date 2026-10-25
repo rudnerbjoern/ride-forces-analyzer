@@ -90,7 +90,7 @@ Source smoke checks do not replace [frozen-package qualification](RELEASE.md#win
 
 ## Recording model and service coverage
 
-Locked `coverage.py`/`pytest-cov` measure lines/branches in `analysis.recording`,
+Locked `coverage.py`/`pytest-cov` measure lines/branches in all modules of `analysis.recording`,
 `analysis.preparation`, shared guards in `analysis._validation`, and `analysis.service`. `[tool.coverage.*]` in `pyproject.toml` owns configuration.
 Collection uses the analysis directory without importing modules for discovery.
 Run from the repository root on native Windows:

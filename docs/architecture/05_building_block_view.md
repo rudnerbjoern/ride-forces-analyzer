@@ -76,7 +76,9 @@ time, calibration, projection, smoothing, orientation, context and event stages.
 own their respective calculations. Sample views read existing buffers.
 `analysis.preparation` orchestrates those calculations and reuses compatible stages.
 `analysis.recording` owns snapshot/configuration/notification contracts, structural
-validation and sample access. Event evaluation consumes these contracts; only the
+validation and sample access. Its package separates configuration, stage models,
+snapshot access, technical notifications and structural validators; existing
+imports remain explicit package exports. Event evaluation consumes these contracts; only the
 preparation module imports the event implementation. Snapshot reconfiguration
 methods delegate lazily to preparation.
 `force_extrema` operates on prepared channels without widget logic.

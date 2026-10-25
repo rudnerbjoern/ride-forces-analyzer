@@ -48,8 +48,15 @@ the same selection; orientation still requires an available gravity sequence.
 Projection provenance records the RFDB interpretation as an assumption, not
 physical qualification. See [source evidence](../validation/APP_REFERENCE.md#rfdb-axis-interpretation).
 
-Module: [`analysis.recording`](../../src/ride_forces_analyzer/analysis/recording.py).
-Import its classes explicitly; package exports remain explicit.
+Module: [`analysis.recording`](../../src/ride_forces_analyzer/analysis/recording/__init__.py).
+Import its classes explicitly; package exports remain explicit. The package groups
+[configuration](../../src/ride_forces_analyzer/analysis/recording/configuration.py),
+[stages](../../src/ride_forces_analyzer/analysis/recording/stages.py),
+[snapshot access](../../src/ride_forces_analyzer/analysis/recording/snapshot.py),
+[notifications](../../src/ride_forces_analyzer/analysis/recording/notifications.py) and
+[structural validation](../../src/ride_forces_analyzer/analysis/recording/validation.py).
+`RecordingAnalysis.validate()` delegates to the structural validator; existing
+public imports remain available through `analysis.recording`.
 [`analysis.preparation`](../../src/ride_forces_analyzer/analysis/preparation.py)
 owns `source_app_configuration` and `prepare_recording_analysis`, numerical stage
 preparation and dependency-based reuse. Snapshot methods delegate reconfiguration
