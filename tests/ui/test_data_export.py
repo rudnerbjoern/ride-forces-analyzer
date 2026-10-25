@@ -11,6 +11,7 @@ from threading import Event
 from PySide6.QtWidgets import QFileDialog, QMessageBox, QPushButton, QWidget
 import pytest
 
+from ride_forces_analyzer.data_export import DataExportFormat
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.ui import data_export as data_ui, loading
@@ -49,11 +50,11 @@ def test_data_uses_selected_snapshot_range_and_remembers_only_success(
         window.json_action,
         window.analyzer_json_action,
     ]
-    for format in ("csv", "json", "analyzer_json"):
+    for format in DataExportFormat:
         action = {
-            "csv": window.csv_action,
-            "json": window.json_action,
-            "analyzer_json": window.analyzer_json_action,
+            DataExportFormat.CSV: window.csv_action,
+            DataExportFormat.JSON: window.json_action,
+            DataExportFormat.ANALYZER_JSON: window.analyzer_json_action,
         }[format]
         window.first.setValue(5)
         window.last.setValue(8)
@@ -80,21 +81,24 @@ def test_data_uses_selected_snapshot_range_and_remembers_only_success(
         assert not window.playback_timer.isActive()
         dialog = window.data_export_window
         assert isinstance(dialog, DataExportDialog)
+        assert dialog.format is format and dialog.worker.format is format
+        assert dialog.objectName() == f"{format.value}ExportProgress"
         cancel_button = dialog.findChild(QPushButton)
         assert cancel_button is not None and cancel_button.text() == "Abbrechen"
         assert dialog.worker.analysis is recording.analysis
         assert dialog.worker.first == 5 and dialog.worker.last == 8
         wait_until(lambda dialog=dialog: not dialog.isVisible())
         output = (
-            export_directory / f"selected-samples-{format}.{'csv' if format == 'csv' else 'json'}"
+            export_directory
+            / f"selected-samples-{format}.{'csv' if format is DataExportFormat.CSV else 'json'}"
         )
         with output.open(encoding="utf-8-sig", newline="") as stream:
-            if format == "csv":
+            if format == DataExportFormat.CSV:
                 result = list(csv.DictReader(stream))
                 assert [int(row["sample_index"]) for row in result] == [5, 6, 7, 8]
                 assert all(row["smoothing_window_samples"] == "11" for row in result)
                 assert all(row["Vertical Forces (g)"] != "" for row in result)
-            elif format == "json":
+            elif format == DataExportFormat.JSON:
                 payload = json.load(stream)
                 assert payload["sample_index"] == [5, 6, 7, 8]
                 assert payload["metadata"]["smoothing_window_samples"] == 11
@@ -149,9 +153,9 @@ def test_data_uses_selected_snapshot_range_and_remembers_only_success(
         assert suggestions[-1].parent.resolve() == export_directory.resolve()
         assert output.read_bytes() != previous
         with output.open(encoding="utf-8-sig", newline="") as stream:
-            if format == "csv":
+            if format == DataExportFormat.CSV:
                 assert [int(row["sample_index"]) for row in csv.DictReader(stream)] == [6, 7]
-            elif format == "json":
+            elif format == DataExportFormat.JSON:
                 assert json.load(stream)["sample_index"] == [6, 7]
             else:
                 time = json.load(stream)["time"]
@@ -173,14 +177,16 @@ def test_data_cancellation_keeps_the_worker_snapshot_and_cleans_up(
     monkeypatch.setattr(loading, "load_recording", load_sample)
     window.open_path(Path(".tmp/csv-recording.forces"))
     wait_until(window.open_action.isEnabled)
-    for format in ("csv", "json", "analyzer_json"):
-        close_parent = format == "analyzer_json"
+    for format in DataExportFormat:
+        close_parent = format is DataExportFormat.ANALYZER_JSON
         action = {
-            "csv": window.csv_action,
-            "json": window.json_action,
-            "analyzer_json": window.analyzer_json_action,
+            DataExportFormat.CSV: window.csv_action,
+            DataExportFormat.JSON: window.json_action,
+            DataExportFormat.ANALYZER_JSON: window.analyzer_json_action,
         }[format]
-        output = export_directory / f"cancelled.{'csv' if format == 'csv' else 'json'}"
+        output = (
+            export_directory / f"cancelled.{'csv' if format is DataExportFormat.CSV else 'json'}"
+        )
 
         def choose(*args: object, **kwargs: object) -> tuple[str, str]:
             return str(output), ""
@@ -188,9 +194,9 @@ def test_data_cancellation_keeps_the_worker_snapshot_and_cleans_up(
         monkeypatch.setattr(QFileDialog, "getSaveFileName", choose)
         started, release, finished = Event(), Event(), Event()
         original_export = {
-            "csv": data_ui.export_csv,
-            "json": data_ui.export_json,
-            "analyzer_json": data_ui.export_analyzer_json,
+            DataExportFormat.CSV: data_ui.export_csv,
+            DataExportFormat.JSON: data_ui.export_json,
+            DataExportFormat.ANALYZER_JSON: data_ui.export_analyzer_json,
         }[format]
 
         def controlled_export(

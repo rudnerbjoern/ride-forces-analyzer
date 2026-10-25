@@ -6,7 +6,6 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from pathlib import Path
 from threading import Event
-from typing import Literal
 
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, QTimer, Qt, Signal, Slot
 from PySide6.QtGui import QCloseEvent
@@ -14,6 +13,7 @@ from PySide6.QtWidgets import QMessageBox, QProgressDialog, QWidget
 
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from ride_forces_analyzer.csv_export import CsvExportCancelled, export_csv
+from ride_forces_analyzer.data_export import DataExportFormat
 from ride_forces_analyzer.json_export import JsonExportCancelled, export_json, export_analyzer_json
 from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.error_reporting import record_error
@@ -43,7 +43,7 @@ class DataWorker(QRunnable):
         path: Filesystem path read or written by this operation.
         first: First included source index or the control selecting that bound.
         last: Last included source index or the control selecting that bound.
-        format: Selected output or numeric presentation format.
+        format: DataExportFormat member selecting the serializer.
         overwrite: Whether the caller explicitly permits replacing an existing
             destination.
         cancelled: Event used to request cancellation without publishing partial output.
@@ -56,7 +56,7 @@ class DataWorker(QRunnable):
         path: Path,
         first: int,
         last: int,
-        format: Literal["csv", "json", "analyzer_json"],
+        format: DataExportFormat,
         overwrite: bool = False,
     ) -> None:
         """Initialize data worker and its owned state.
@@ -66,7 +66,7 @@ class DataWorker(QRunnable):
             path: Filesystem path read or written by this operation.
             first: First included source sample index.
             last: Last included source sample index.
-            format: Selected output or numeric presentation format.
+            format: DataExportFormat member selecting the serializer.
             overwrite: Whether the caller explicitly permits replacing an existing
                 destination.
 
@@ -89,9 +89,9 @@ class DataWorker(QRunnable):
         """
         try:
             exporter = {
-                "csv": export_csv,
-                "json": export_json,
-                "analyzer_json": export_analyzer_json,
+                DataExportFormat.CSV: export_csv,
+                DataExportFormat.JSON: export_json,
+                DataExportFormat.ANALYZER_JSON: export_analyzer_json,
             }[self.format]
             exporter(
                 self.analysis,
@@ -116,7 +116,7 @@ class DataExportDialog(QProgressDialog):
 
     Attributes:
         saved: Qt signal for saved notifications.
-        format: Selected output or numeric presentation format.
+        format: DataExportFormat member selecting the serializer and dialog title.
         preferences: Local application preference access for this window or controller.
         worker: Current background worker, or None when no task is active.
     """
@@ -131,7 +131,7 @@ class DataExportDialog(QProgressDialog):
         last: int,
         preferences: Preferences,
         parent: QWidget,
-        format: Literal["csv", "json", "analyzer_json"],
+        format: DataExportFormat,
         overwrite: bool = False,
     ) -> None:
         """Initialize data export dialog and its owned state.
@@ -143,7 +143,7 @@ class DataExportDialog(QProgressDialog):
             last: Last included source sample index.
             preferences: Local application preference access.
             parent: Qt parent that owns this object's lifetime.
-            format: Selected output or numeric presentation format.
+            format: DataExportFormat member selecting the serializer and dialog title.
             overwrite: Whether the caller explicitly permits replacing an existing
                 destination.
 
@@ -157,9 +157,9 @@ class DataExportDialog(QProgressDialog):
         bind(
             self,
             tr("Export Analyzer JSON")
-            if format == "analyzer_json"
+            if format is DataExportFormat.ANALYZER_JSON
             else tr("Export JSON")
-            if format == "json"
+            if format is DataExportFormat.JSON
             else tr("Export CSV"),
             "windowTitle",
         )
@@ -194,7 +194,9 @@ class DataExportDialog(QProgressDialog):
         if not cancelled and parent is not None and parent.isVisible():
             QMessageBox.warning(
                 parent,
-                tr("CSV export failed") if self.format == "csv" else tr("JSON export failed"),
+                tr("CSV export failed")
+                if self.format is DataExportFormat.CSV
+                else tr("JSON export failed"),
                 message,
             )
 

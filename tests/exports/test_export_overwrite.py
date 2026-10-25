@@ -4,19 +4,31 @@ from pathlib import Path
 
 import pytest
 
+from ride_forces_analyzer.data_export import DataExportFormat
 from ride_forces_analyzer.csv_export import CsvExportCancelled, export_csv
 from ride_forces_analyzer.json_export import JsonExportCancelled, export_json, export_analyzer_json
 from tests.exports.test_csv_export import snapshot
 
 
-@pytest.mark.parametrize("format", ["csv", "json", "analyzer_json"])
-def test_confirmed_overwrite_matches_new_export(export_directory: Path, format: str) -> None:
+def test_data_export_format_codes_remain_stable() -> None:
+    assert tuple(str(format) for format in DataExportFormat) == ("csv", "json", "analyzer_json")
+    for format in DataExportFormat:
+        assert DataExportFormat(format.value) is format
+    with pytest.raises(ValueError):
+        DataExportFormat("xml")
+
+
+@pytest.mark.parametrize("format", list(DataExportFormat))
+def test_confirmed_overwrite_matches_new_export(
+    export_directory: Path,
+    format: DataExportFormat,
+) -> None:
     exporter = {
-        "csv": export_csv,
-        "json": export_json,
-        "analyzer_json": export_analyzer_json,
+        DataExportFormat.CSV: export_csv,
+        DataExportFormat.JSON: export_json,
+        DataExportFormat.ANALYZER_JSON: export_analyzer_json,
     }[format]
-    suffix = "csv" if format == "csv" else "json"
+    suffix = "csv" if format is DataExportFormat.CSV else "json"
     path = export_directory / f"existing.{suffix}"
     path.write_bytes(b"previous export")
     expected = export_directory / f"new.{suffix}"
@@ -31,20 +43,20 @@ def test_confirmed_overwrite_matches_new_export(export_directory: Path, format: 
     assert set(export_directory.iterdir()) == {path, expected}
 
 
-@pytest.mark.parametrize("format", ["csv", "json", "analyzer_json"])
+@pytest.mark.parametrize("format", list(DataExportFormat))
 @pytest.mark.parametrize("failure", ["cancel", "write"])
 def test_failed_overwrite_keeps_previous_export(
     export_directory: Path,
-    format: str,
+    format: DataExportFormat,
     failure: str,
 ) -> None:
     exporter = {
-        "csv": export_csv,
-        "json": export_json,
-        "analyzer_json": export_analyzer_json,
+        DataExportFormat.CSV: export_csv,
+        DataExportFormat.JSON: export_json,
+        DataExportFormat.ANALYZER_JSON: export_analyzer_json,
     }[format]
-    suffix = "csv" if format == "csv" else "json"
-    cancellation = JsonExportCancelled if format != "csv" else CsvExportCancelled
+    suffix = "csv" if format is DataExportFormat.CSV else "json"
+    cancellation = JsonExportCancelled if format is not DataExportFormat.CSV else CsvExportCancelled
     path = export_directory / f"existing.{suffix}"
     path.write_bytes(b"previous export")
     cancel = False
@@ -70,18 +82,18 @@ def test_failed_overwrite_keeps_previous_export(
     assert list(export_directory.iterdir()) == [path]
 
 
-@pytest.mark.parametrize("format", ["csv", "json", "analyzer_json"])
+@pytest.mark.parametrize("format", list(DataExportFormat))
 def test_replacement_failure_keeps_previous_export(
     export_directory: Path,
     monkeypatch: pytest.MonkeyPatch,
-    format: str,
+    format: DataExportFormat,
 ) -> None:
     exporter = {
-        "csv": export_csv,
-        "json": export_json,
-        "analyzer_json": export_analyzer_json,
+        DataExportFormat.CSV: export_csv,
+        DataExportFormat.JSON: export_json,
+        DataExportFormat.ANALYZER_JSON: export_analyzer_json,
     }[format]
-    suffix = "csv" if format == "csv" else "json"
+    suffix = "csv" if format is DataExportFormat.CSV else "json"
     path = export_directory / f"existing.{suffix}"
     path.write_bytes(b"previous export")
 

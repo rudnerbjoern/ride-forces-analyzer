@@ -12,7 +12,8 @@ from .translation import bind, items, set_ui_language, system_ui_language
 
 from pathlib import Path
 from dataclasses import replace
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
+from ride_forces_analyzer.data_export import DataExportFormat
 from importlib.util import find_spec
 from time import monotonic
 from math import ceil
@@ -1147,7 +1148,7 @@ class ExplorerWindow(QMainWindow):
         Returns:
             None.
         """
-        self._show_data_export("csv")
+        self._show_data_export(DataExportFormat.CSV)
 
     @Slot()
     def show_json_export(self) -> None:
@@ -1156,7 +1157,7 @@ class ExplorerWindow(QMainWindow):
         Returns:
             None.
         """
-        self._show_data_export("json")
+        self._show_data_export(DataExportFormat.JSON)
 
     @Slot()
     def show_analyzer_json_export(self) -> None:
@@ -1165,9 +1166,9 @@ class ExplorerWindow(QMainWindow):
         Returns:
             None.
         """
-        self._show_data_export("analyzer_json")
+        self._show_data_export(DataExportFormat.ANALYZER_JSON)
 
-    def _show_data_export(self, format: Literal["csv", "json", "analyzer_json"]) -> None:
+    def _show_data_export(self, format: DataExportFormat) -> None:
         if self.data is None or self.data.analysis is None:
             return
         if self.data_export_window is not None and self.data_export_window.isVisible():
@@ -1177,9 +1178,9 @@ class ExplorerWindow(QMainWindow):
         analysis = self.data.analysis
         first, last = self.first.value(), self.last.value()
         source_path = analysis.source.recording.source.provenance.path
-        suffix = ".csv" if format == "csv" else ".json"
+        suffix = ".csv" if format is DataExportFormat.CSV else ".json"
         stem = source_path.stem if source_path else "recording"
-        name = f"{stem}{'.analyzer' if format == 'analyzer_json' else ''}{suffix}"
+        name = f"{stem}{'.analyzer' if format is DataExportFormat.ANALYZER_JSON else ''}{suffix}"
         directory = self.preferences.export_directory()
         suggested = (
             Path(directory) / name
@@ -1191,12 +1192,14 @@ class ExplorerWindow(QMainWindow):
         filename, _ = QFileDialog.getSaveFileName(
             self,
             tr("Export Analyzer JSON")
-            if format == "analyzer_json"
+            if format is DataExportFormat.ANALYZER_JSON
             else tr("Export JSON")
-            if format == "json"
+            if format is DataExportFormat.JSON
             else tr("Export CSV"),
             str(suggested),
-            tr("CSV files (*.csv)") if format == "csv" else tr("JSON files (*.json)"),
+            tr("CSV files (*.csv)")
+            if format is DataExportFormat.CSV
+            else tr("JSON files (*.json)"),
             options=QFileDialog.Option.DontConfirmOverwrite,
         )
         if not filename:
@@ -1231,7 +1234,9 @@ class ExplorerWindow(QMainWindow):
             format,
             overwrite,
         )
-        dialog.saved.connect(self._csv_saved if format == "csv" else self._json_saved)
+        dialog.saved.connect(
+            self._csv_saved if format is DataExportFormat.CSV else self._json_saved,
+        )
         self.data_export_window = dialog
         dialog.show()
 

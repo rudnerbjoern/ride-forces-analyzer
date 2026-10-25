@@ -109,6 +109,8 @@ processors, with a one-job fallback. [Runtime](06_runtime_view.md) and
 `csv_export` and `json_export` serialize a bound snapshot and inclusive interval;
 they do not calculate analysis or depend on Qt/FFmpeg. `_export_file` owns exclusive
 creation and atomic replacement after explicit overwrite confirmation.
+`data_export.DataExportFormat` provides the shared `CSV`, `JSON` and `ANALYZER_JSON`
+identifiers with stable text values `csv`, `json` and `analyzer_json`.
 `ui.data_export` captures input and transports progress/cancellation.
 
 [CSV](../implementation/CSV_EXPORT.md) and [JSON](../implementation/JSON_EXPORT.md)
