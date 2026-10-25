@@ -57,6 +57,8 @@ source = [
     "src/ride_forces_analyzer/formatting",
     "src/ride_forces_analyzer/playback",
     "src/ride_forces_analyzer/runtime",
+    "src/ride_forces_analyzer/gps",
+    "src/ride_forces_analyzer/domain",
 ]
 data_file = ".tmp/coverage/analysis/.coverage"
 
@@ -69,6 +71,8 @@ include = [
     "src/ride_forces_analyzer/formatting/*.py",
     "src/ride_forces_analyzer/playback/*.py",
     "src/ride_forces_analyzer/runtime/*.py",
+    "src/ride_forces_analyzer/gps/*.py",
+    "src/ride_forces_analyzer/domain/*.py",
 ]
 fail_under = 100
 show_missing = true

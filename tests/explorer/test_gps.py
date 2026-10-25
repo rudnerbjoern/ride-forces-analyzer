@@ -54,3 +54,19 @@ def test_gps_gaps_bad_positions_and_north_up(synthetic_recording: Recording) -> 
     assert overview.points[1][0] > 0 and overview.points[1][1] < 0
     empty = replace(recording, gps=GpsSequence([GpsEntry(0, None)]))
     assert prepare_gps_overview(empty) is None
+
+
+def test_leading_consecutive_and_trailing_missing_fixes_leave_no_empty_segments(
+    synthetic_recording: Recording,
+) -> None:
+    fixes = (None, None, GpsFix(48, 7, timestamp=1), None, None)
+    recording = replace(
+        synthetic_recording,
+        gps_status=GpsStatus.PRESENT,
+        gps=GpsSequence([GpsEntry(index, fix) for index, fix in enumerate(fixes)]),
+    )
+    overview = prepare_gps_overview(recording)
+    assert overview is not None
+    assert overview.segments == (((0.0, 0.0),),)
+    assert overview.geographic_segments == (((48, 7),),)
+    assert (overview.count, overview.total) == (1, 5)

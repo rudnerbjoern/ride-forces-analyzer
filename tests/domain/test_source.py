@@ -107,3 +107,26 @@ def test_source_envelope_equality_is_deterministic_and_byte_sensitive() -> None:
     first = SourceEnvelope(b'{"n":1.00}', {"n": SourceNumber("1.00")})
     assert first == SourceEnvelope(b'{"n":1.00}', {"n": SourceNumber("1.00")})
     assert first != SourceEnvelope(b' {"n":1.00}', {"n": SourceNumber("1.00")})
+
+
+def test_valid_numeric_token_with_unsupported_decimal_exponent_is_rejected() -> None:
+    from decimal import InvalidOperation, localcontext
+
+    with localcontext() as context:
+        context.traps[InvalidOperation] = False
+        with pytest.raises(ValueError, match="finite decimal value"):
+            SourceNumber("1e" + "9" * 30)
+
+
+def test_invalid_provenance_and_envelope_types_cannot_lose_source_identity() -> None:
+    from ride_forces_analyzer.domain.source import SourceProvenance
+
+    for count in (-1, True):
+        with pytest.raises(ValueError, match="nonnegative integer"):
+            SourceProvenance(count, "a" * 64)
+    with pytest.raises(TypeError, match="Source path must be a Path"):
+        SourceProvenance(1, "a" * 64, cast(Path, "ride.forces"))
+    with pytest.raises(TypeError, match="Source bytes must be bytes"):
+        SourceEnvelope(cast(bytes, "retained"))
+    with pytest.raises(TypeError, match="Source root must be an object mapping"):
+        SourceEnvelope(b"retained", cast(Mapping[str, object], []))

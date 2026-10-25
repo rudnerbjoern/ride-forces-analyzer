@@ -91,8 +91,8 @@ Source smoke checks do not replace [frozen-package qualification](RELEASE.md#win
 ## Coverage gate
 
 Locked `coverage.py`/`pytest-cov` measure lines and branches throughout `analysis`,
-`validation`, `storage`, `i18n`, `formatting`, `playback` and
-`runtime`. `[tool.coverage.*]` in `pyproject.toml` owns configuration.
+`validation`, `storage`, `i18n`, `formatting`, `playback`, `runtime`, `gps` and
+`domain`. `[tool.coverage.*]` in `pyproject.toml` owns configuration.
 Subprocess measurement includes isolated error-report lifecycle and exception-hook tests. Collection selects the declared sources without importing modules for discovery. Run from the repository root on native Windows:
 
 ```powershell
@@ -101,7 +101,8 @@ uv run --locked pytest --cov --cov-report=term-missing `
     tests/rendering/test_batches.py tests/rendering/test_analysis_snapshots.py `
     tests/updates/test_releases.py tests/localization `
     tests/explorer/test_data.py::test_replay_sample_counter_format tests/playback `
-    tests/support tests/tooling/test_runtime_paths.py tests/tooling/test_settings.py
+    tests/support tests/tooling/test_runtime_paths.py tests/tooling/test_settings.py `
+    tests/explorer/test_gps.py tests/explorer/test_map_background.py tests/domain
 uv run --locked coverage html
 uv run --locked coverage json
 ```
@@ -128,7 +129,11 @@ recording boundaries independently of Qt. Runtime coverage includes bootstrap
 settings, platform paths, CPU topology, support diagnostics, bounded release lookup,
 instance locking and local-socket requests, exception forwarding and report cleanup.
 Platform fallback branches use controlled test doubles on Windows; they do not
-replace native Linux/macOS package qualification.
+replace native Linux/macOS package qualification. GPS coverage checks route gaps,
+projection, bounded viewport requests, HTTP/cache rules and cancellation using
+simulated tile responses without live network access. Domain coverage includes
+immutable source ownership, exact number tokens, constructor type checks and
+recording-component consistency without decoding or rewriting original recordings.
 Behavior tests establish contracts; coverage percentage does not qualify physical
 interpretation or UI integration. Cover new branches without weakening the gate.
 
