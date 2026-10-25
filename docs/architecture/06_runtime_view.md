@@ -51,7 +51,7 @@ error. Exception messages may contain personal paths; nothing is uploaded.
 ## Optional update discovery
 
 A worker performs an opt-in startup check at most once per day or an explicit
-About-dialog check. The Qt-independent service uses bounded HTTPS reads; the UI
+check from Settings → Application. The Qt-independent service uses bounded HTTPS reads; the UI
 discards late results after closure. Manual failures show a retry message,
 automatic failures remain silent. Download and installation stay manual.
 [Release discovery](../development/RELEASE.md#in-application-update-discovery)

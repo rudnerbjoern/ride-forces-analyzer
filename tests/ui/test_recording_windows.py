@@ -36,13 +36,13 @@ wait_until(lambda: second.data is not None and second.open_action.isEnabled())
 assert first.data.analysis is original
 assert first.data.source.source_sha256 != second.data.source.source_sha256
 assert first.analysis_controller is not second.analysis_controller
-assert first.playback is not second.playback
-sample = second.slider.value()
-first.slider.setValue(first.slider.value() + 1)
-assert second.slider.value() == sample
-second_range = (second.axis_x.min(), second.axis_x.max())
-first.axis_x.setRange(first.axis_x.min() + 1, first.axis_x.max() - 1)
-assert (second.axis_x.min(), second.axis_x.max()) == second_range
+assert first.navigation.playback is not second.navigation.playback
+sample = second.navigation.slider.value()
+first.navigation.slider.setValue(first.navigation.slider.value() + 1)
+assert second.navigation.slider.value() == sample
+second_range = (second.plot.axis_x.min(), second.plot.axis_x.max())
+first.plot.axis_x.setRange(first.plot.axis_x.min() + 1, first.plot.axis_x.max() - 1)
+assert (second.plot.axis_x.min(), second.plot.axis_x.max()) == second_range
 app.receive_request(OpenRequest(path=sys.argv[1]))
 assert len(app.windows) == 2 and first.data.analysis is original
 first.set_ui_language(1)
