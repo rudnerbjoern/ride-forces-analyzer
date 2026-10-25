@@ -170,3 +170,24 @@ def test_originals_all_modes_windows_and_selections(filename: str) -> None:
                 assert result.source_sha256 == source.source_sha256
     assert path.read_bytes() == before and path.stat().st_mtime_ns == mtime
     assert source.recording.source.original_bytes == before
+
+
+def test_extrema_reject_corrupted_channel_lengths_and_non_finite_selected_values() -> None:
+    import numpy as np
+
+    source = sample_source()
+    snapshot = present_recording(source).analysis
+    assert snapshot is not None
+    stage = snapshot.forces.smoothed
+    for values, message in (
+        (np.zeros(2), "three complete source-length channels"),
+        (np.full(5, np.nan), "finite selected samples"),
+    ):
+        samples = SampleValues(
+            values,
+            valid_rows=tuple(False for _ in values) if np.isnan(values).all() else None,
+        )
+        # Deliberately corrupted owned test data exercises the consumer's guards.
+        object.__setattr__(samples, "valid_rows", (True,) * 5)
+        with pytest.raises(ValueError, match=message):
+            calculate_extrema(source, 0, 4, forces=replace(stage, channels=(samples,) * 3))

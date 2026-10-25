@@ -1,5 +1,6 @@
 """Analytic synthetic device tests; no fixture unit or axis claims."""
 
+# cspell:words finfo
 from dataclasses import FrozenInstanceError, replace
 from datetime import UTC, datetime
 from hashlib import sha256
@@ -335,3 +336,51 @@ def test_all_originals_fail_closed_without_units_and_retain_bytes(
     else:
         assert source.recording.motion.gravity is not None
         assert all(d.code == "SOURCE_UNIT_UNKNOWN" for d in result.diagnostics)
+
+
+def test_device_boundaries_reject_untyped_inputs_and_invalid_evidence() -> None:
+    from typing import Any
+
+    source = _source()
+    contract = _contract(source)
+    with pytest.raises(TypeError, match="collection of reference strings"):
+        replace(contract, unit_evidence=cast(Any, "reference"))
+    with pytest.raises(ValueError, match="independent references"):
+        replace(contract, unit_evidence=("",))
+    with pytest.raises(TypeError, match="owned samples"):
+        convert_device_vectors(cast(Any, None), contract)
+    with pytest.raises(TypeError, match="typed channel"):
+        device_vector_norm(cast(Any, None))
+    with pytest.raises(TypeError, match="full M2"):
+        analyze_device_vectors(cast(Any, None), calculation_time=NOW)
+    with pytest.raises(TypeError, match="typed or absent"):
+        analyze_device_vectors(source, calculation_time=NOW, acceleration_contract=cast(Any, "SI"))
+    with pytest.raises(ValueError, match="finite float64"):
+        convert_device_vectors(
+            SampleValues(np.full((1, 3), np.finfo(float).max)),
+            _contract(source, DeviceAccelerationUnit.STANDARD_GRAVITY),
+        )
+
+
+def test_device_conversion_rejects_invalid_external_conversion_factors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ride_forces_analyzer.analysis import device
+
+    class ConvertedQuantity:
+        magnitude: object = 0.0
+
+        def to(self, units: str) -> "ConvertedQuantity":
+            return self
+
+    class Registry:
+        def Quantity(self, magnitude: float, units: str) -> ConvertedQuantity:
+            return quantity
+
+    quantity = ConvertedQuantity()
+    monkeypatch.setattr(device, "_REGISTRY", Registry())
+    samples = SampleValues(np.ones((1, 3)))
+    for invalid in ("1", float("nan"), -1.0, 0.0):
+        quantity.magnitude = invalid
+        with pytest.raises(ValueError, match="invalid conversion factor"):
+            convert_device_vectors(samples, _contract(_source()))

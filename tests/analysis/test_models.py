@@ -435,3 +435,53 @@ def test_all_five_m2_sources_keep_exact_bytes_and_explicit_raw_capabilities(file
                 source=imported,
                 channels=(replace(channel, source_sequence=SourceSequence.GRAVITY),),
             )
+
+
+def test_models_reject_incompatible_runtime_assignments_and_missing_evidence() -> None:
+    from typing import Any
+
+    for changes, error in (
+        ({"allow_provisional": 1}, TypeError),
+        ({"configuration": ()}, TypeError),
+        (
+            {
+                "name": ProfileName.RIDER_CALIBRATED,
+                "policy_references": ("policy",),
+                "allow_provisional": True,
+            },
+            ValueError,
+        ),
+    ):
+        with pytest.raises(error):
+            replace(AnalysisProfile(), **cast(dict[str, Any], changes))
+    with pytest.raises(ValueError, match="explicit boolean"):
+        SampleValues(np.array([1.0]), valid_rows=cast(Any, (1,)))
+    with pytest.raises(TypeError, match="M2 value and origin"):
+        TimeBasis(TimeBasisKind.INFERRED_UNIFORM, sample_rate=cast(Any, 50))
+    time = TimeBasis(TimeBasisKind.VERIFIED_SECONDS, evidence=("independent clock",), epoch="UTC")
+    assert time.epoch == "UTC"
+    channel = _channel()
+    for changes, error in (
+        ({"unit": "unknown"}, TypeError),
+        ({"samples": SampleValues(np.array([1.0, 2.0]))}, ValueError),
+        ({"columns": ("x", "y")}, ValueError),
+    ):
+        with pytest.raises(error):
+            replace(channel, **cast(dict[str, Any], changes))
+    for changes in ({"source_index": -1}, {"source_index": 0, "channel_id": None}):
+        with pytest.raises(ValueError):
+            AnalysisDiagnostic("NOTE", Severity.INFO, "Message", **cast(dict[str, Any], changes))
+    result = _result()
+    with pytest.raises(TypeError, match="retained M2"):
+        replace(result.provenance, source=cast(Any, None))
+    for changes, error in (
+        ({"profile": None}, TypeError),
+        ({"channels": ()}, ValueError),
+        ({"diagnostics": ("NOTE",)}, TypeError),
+    ):
+        with pytest.raises(error):
+            replace(result, **cast(dict[str, Any], changes))
+    provisional = replace(channel, state=CapabilityState.PROVISIONAL)
+    profile = AnalysisProfile(ProfileName.RIDER_CALIBRATED, policy_references=("policy",))
+    with pytest.raises(ValueError, match="Provisional channels require"):
+        replace(result, profile=profile, channels=(provisional,))

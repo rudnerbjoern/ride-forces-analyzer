@@ -24,7 +24,7 @@ platform baselines and native validation.
 - Architecture owns [library roles/rationale](../architecture/09_architecture_decisions.md#analysis-models-and-libraries)
   and [runtime/rendering/storage dependencies](../architecture/07_deployment_view.md).
 - Development-only `coverage.py`/`pytest-cov` provide the
-  [recording/service coverage gate](CODE_QUALITY.md#recording-model-and-service-coverage)
+  [recording/service coverage gate](CODE_QUALITY.md#coverage-gate)
   and VS Code pytest coverage integration.
 - Standalone redistribution requires actual assembled notices;
   [third-party inventory](../../THIRD_PARTY_NOTICES.md) owns Qt Charts/FFmpeg terms,

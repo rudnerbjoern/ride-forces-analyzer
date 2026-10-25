@@ -86,3 +86,9 @@ def test_return_to_positive_load_immediately_clears_airtime() -> None:
 def test_invalid_rate_is_rejected(rate: float) -> None:
     with pytest.raises(ValueError):
         AirtimeContext.prepare((0.0,), rate)
+
+
+@pytest.mark.parametrize("position", [-1, 1, float("nan"), float("inf")])
+def test_context_lookup_rejects_outside_and_non_finite_positions(position: float) -> None:
+    with pytest.raises(ValueError, match="Position outside airtime context"):
+        AirtimeContext.prepare((1.0,), 50).at(position)

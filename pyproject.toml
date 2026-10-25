@@ -48,20 +48,27 @@ testpaths = ["tests"]
 
 [tool.coverage.run]
 branch = true
+patch = ["subprocess"]
 source = [
     "src/ride_forces_analyzer/analysis",
     "src/ride_forces_analyzer/validation",
     "src/ride_forces_analyzer/storage",
+    "src/ride_forces_analyzer/i18n",
+    "src/ride_forces_analyzer/formatting",
+    "src/ride_forces_analyzer/playback",
+    "ride_forces_analyzer.runtime.error_reporting",
 ]
 data_file = ".tmp/coverage/analysis/.coverage"
 
 [tool.coverage.report]
 include = [
-    "src/ride_forces_analyzer/analysis/recording/*.py",
-    "src/ride_forces_analyzer/analysis/preparation.py",
-    "src/ride_forces_analyzer/validation/checks.py",
-    "src/ride_forces_analyzer/analysis/service.py",
+    "src/ride_forces_analyzer/analysis/**/*.py",
+    "src/ride_forces_analyzer/validation/*.py",
     "src/ride_forces_analyzer/storage/*.py",
+    "src/ride_forces_analyzer/i18n/*.py",
+    "src/ride_forces_analyzer/formatting/*.py",
+    "src/ride_forces_analyzer/playback/*.py",
+    "src/ride_forces_analyzer/runtime/error_reporting.py",
 ]
 fail_under = 100
 show_missing = true

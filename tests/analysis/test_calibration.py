@@ -251,3 +251,25 @@ def test_missing_source_axes_and_naive_time_are_rejected() -> None:
             CalibrationOverrides(gravity_index=0),
             calculation_time=datetime(2026, 10, 23),
         )
+
+
+def test_calibration_rejects_untyped_inputs_and_non_finite_reference_mean(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from typing import Any
+    from ride_forces_analyzer.analysis import calibration
+
+    source = synthetic_source(accelerationSequence=[{"x": "0", "y": "1", "z": "1"}] * 7)
+    with pytest.raises(TypeError, match="import and typed overrides"):
+        validate_calibration_references(source, cast(Any, None), calculation_time=NOW)
+
+    def overflow(values: object) -> float:
+        raise OverflowError("Cannot represent reference mean")
+
+    monkeypatch.setattr(calibration, "fsum", overflow)
+    with pytest.raises(CalibrationReferenceError, match="Reference mean is not finite"):
+        validate_calibration_references(
+            source,
+            CalibrationOverrides(gravity_index=3),
+            calculation_time=NOW,
+        )

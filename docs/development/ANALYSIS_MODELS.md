@@ -475,7 +475,7 @@ uv run --locked pytest tests/analysis/test_models.py
 - Preparation/recalculation: numerical primitives, sample views, shared-stage identity,
   calculation calls, unchanged retained export values and snapshot lifetime.
 - Service: initial/terminal state, filters, reentrant calls, competing requests, stale
-  success/failure, shutdown, callback isolation and ownership. [Coverage](CODE_QUALITY.md#recording-model-and-service-coverage)
+  success/failure, shutdown, callback isolation and ownership. [Coverage](CODE_QUALITY.md#coverage-gate)
   reports model/service modules and enforces the configured minimum.
 - [Source-app evidence tests](../../tests/analysis/test_source_app_evidence.py):
   original-file extrema and independent replay screenshots, including Kraken/Voltron

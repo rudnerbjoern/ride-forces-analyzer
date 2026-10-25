@@ -88,23 +88,20 @@ uv run --locked pytest tests/rendering/test_reference_script.py tests/ui/test_re
 Outputs stay in `.tmp/`; fixtures remain unchanged and personal preferences isolated.
 Source smoke checks do not replace [frozen-package qualification](RELEASE.md#windows-packages).
 
-## Analysis, validation and storage coverage
+## Coverage gate
 
-Locked `coverage.py`/`pytest-cov` measure lines/branches in all modules of `analysis.recording`,
-`analysis.preparation`, shared guards in `validation.checks`, `analysis.service` and all
-`storage` modules. `[tool.coverage.*]` in `pyproject.toml` owns configuration.
-Collection uses source directories without importing modules for discovery.
-Run from the repository root on native Windows:
+Locked `coverage.py`/`pytest-cov` measure lines and branches throughout `analysis`,
+`validation`, `storage`, `i18n`, `formatting`, `playback` and
+`runtime.error_reporting`. `[tool.coverage.*]` in `pyproject.toml` owns configuration.
+Subprocess measurement includes isolated error-report lifecycle and exception-hook tests. Collection selects the declared sources without importing modules for discovery. Run from the repository root on native Windows:
 
 ```powershell
 uv run --locked pytest --cov --cov-report=term-missing `
-    tests/analysis/test_recording.py tests/analysis/test_recording_validation.py `
-    tests/analysis/test_recording_preparation.py tests/analysis/test_recording_recalculation.py `
-    tests/analysis/test_service.py tests/analysis/test_airtime_events.py `
-    tests/analysis/test_calibration_recalculation.py tests/analysis/test_ride_markers.py `
-    tests/analysis/test_rfdb.py tests/tooling/test_validation.py tests/storage `
+    tests/analysis tests/tooling/test_validation.py tests/storage `
     tests/rendering/test_batches.py tests/rendering/test_analysis_snapshots.py `
-    tests/updates/test_releases.py
+    tests/updates/test_releases.py tests/localization `
+    tests/explorer/test_data.py::test_replay_sample_counter_format tests/playback `
+    tests/support/test_error_reporting.py
 uv run --locked coverage html
 uv run --locked coverage json
 ```
@@ -118,10 +115,17 @@ uv run --locked coverage json
 | VS Code     | **Run Tests with Coverage** requires locked `pytest-cov` and `.venv/Scripts/python.exe`; partial test selection can miss the threshold |
 | Collection  | CLI `--cov` without a value preserves configured source directory; editor may choose another source                                    |
 
-Coverage includes snapshot validation, preparation, sample access, partial
-recalculation, event integration, service state, subscriptions and revision/errors.
+Analysis coverage includes models, device and rider frames, calibration, projection,
+smoothing, orientation, extrema, airtime/events, snapshot preparation and partial
+recalculation, service state, subscriptions and revision/errors.
 Storage coverage includes preferences and recording markers, immutable export
 definitions, transactional preset/batch persistence and the bounded map-tile cache.
+Localization coverage includes both translation catalogs, deferred text rendering,
+language selection, numeric formatting and diagnostic fallbacks. Shared replay-time
+formatting covers sample counters, negative offsets and fractional sample rates.
+Playback coverage checks the clock, speed changes, seeking, pause/resume and
+recording boundaries independently of Qt. Error-report coverage includes process
+ownership, exception forwarding, cleanup and unavailable report storage/handlers.
 Behavior tests establish contracts; coverage percentage does not qualify physical
 interpretation or UI integration. Cover new branches without weakening the gate.
 
