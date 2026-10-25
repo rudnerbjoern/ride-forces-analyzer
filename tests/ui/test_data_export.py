@@ -8,8 +8,10 @@ import json
 from pathlib import Path
 from threading import Event
 
-from PySide6.QtWidgets import QFileDialog, QMessageBox, QPushButton, QWidget
+from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox, QPushButton, QWidget
 import pytest
+from PySide6.QtCore import QEvent, QPoint, QPointF, Qt
+from PySide6.QtGui import QColor, QMouseEvent
 
 from ride_forces_analyzer.exports.formats import DataExportFormat
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
@@ -51,6 +53,32 @@ def test_data_uses_selected_snapshot_range_and_remembers_only_success(
         window.json_action,
         window.analyzer_json_action,
     ]
+    for appearance in (0, 1):
+        window.set_appearance(appearance)
+        menu.popup(
+            window.data_export_button.mapToGlobal(QPoint(0, window.data_export_button.height())),
+        )
+        wait_until(menu.isVisible)
+        try:
+            for action in menu.actions():
+                point = menu.actionGeometry(action).center()
+                QApplication.sendEvent(
+                    menu,
+                    QMouseEvent(
+                        QEvent.Type.MouseMove,
+                        QPointF(point),
+                        QPointF(menu.mapToGlobal(point)),
+                        Qt.MouseButton.NoButton,
+                        Qt.MouseButton.NoButton,
+                        Qt.KeyboardModifier.NoModifier,
+                    ),
+                )
+                assert menu.activeAction() is action
+                geometry = menu.actionGeometry(action)
+                background = QPoint(geometry.right() - 8, geometry.center().y())
+                assert menu.grab().toImage().pixelColor(background) == QColor(window.theme.accent)
+        finally:
+            menu.close()
     for format in DataExportFormat:
         action = {
             DataExportFormat.CSV: window.csv_action,
