@@ -2,7 +2,7 @@
 
 from ride_forces_analyzer.rendering.model import StandardFrameRate
 
-# cspell:words ffprobe frombytes getcolor getcolors getrgb getpixel getchannel getextrema hwupload prores qscale rawvideo libx
+# cspell:words ffprobe frombytes getcolor getcolors getrgb getpixel getchannel getextrema hwupload prores qscale rawvideo libx textbbox
 
 from dataclasses import replace
 from fractions import Fraction
@@ -14,7 +14,7 @@ from threading import Event
 from typing import Literal, cast
 from unittest.mock import patch
 
-from PIL import Image, ImageColor
+from PIL import Image, ImageColor, ImageDraw
 import pytest
 
 from ride_forces_analyzer.analysis.orientation import orientation_degrees
@@ -40,6 +40,29 @@ from ride_forces_analyzer.rendering.layouts.column import BACKGROUND_COLOR, Colu
 from ride_forces_analyzer.rendering.layouts.orbit import OrbitRenderer
 from ride_forces_analyzer.rendering.layouts.hud import HudRenderer
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
+
+
+def test_orbit_outer_scale_endpoint_labels_do_not_overlap(manta: ExplorerData) -> None:
+    assert manta.analysis is not None
+    timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.ORBIT), 3600, 3699)
+    renderer = OrbitRenderer(timeline)
+    with patch.object(OrbitRenderer, "_text") as text:
+        image = renderer.render_position(3600)
+    draw = ImageDraw.Draw(image)
+    labels = [call.args for call in text.call_args_list if call.args[5] in ("rm", "lm")]
+    assert len(labels) == 4
+    for vertical in (label for label in labels if label[5] == "rm"):
+        longitudinal = next(
+            label for label in labels if label[5] == "lm" and abs(label[1][1] - vertical[1][1]) < 1
+        )
+        left_box = draw.textbbox(vertical[1], vertical[2], font=vertical[3], anchor=vertical[5])
+        right_box = draw.textbbox(
+            longitudinal[1],
+            longitudinal[2],
+            font=longitudinal[3],
+            anchor=longitudinal[5],
+        )
+        assert left_box[2] < right_box[0]
 
 
 @pytest.mark.parametrize(

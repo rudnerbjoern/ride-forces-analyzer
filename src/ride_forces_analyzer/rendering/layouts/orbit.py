@@ -327,13 +327,19 @@ class OrbitRenderer(Drawing):
                     if row == 0 and tick == reference
                     else FORCE_TICK_WIDTH,
                 )
+                label_x, label_y = point(radius + FORCE_TICK_LABEL_OFFSET, a)
+                anchor = TEXT_ANCHOR
+                if row in (0, 2) and tick in (channel.low, channel.high):
+                    # Both outer scales meet at the poles; keep their labels on their own side.
+                    label_x += -12 if row == 0 else 12
+                    anchor = "rm" if row == 0 else "lm"
                 self._text(
                     draw,
-                    point(radius + FORCE_TICK_LABEL_OFFSET, a),
+                    (label_x, label_y),
                     f"{tick:g}",
                     self.tick,
                     SCALE_COLOR,
-                    TEXT_ANCHOR,
+                    anchor,
                 )
             x, y = READOUT_POSITIONS[row]
             self._text(

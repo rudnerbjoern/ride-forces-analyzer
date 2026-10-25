@@ -17,8 +17,8 @@ The overview preserves placement in the full 3840×2160 landscape canvas.
 Checkerboards illustrate transparent space and translucent panels; they are
 not exported. Detail views below enlarge each instrument region.
 These are actual production-renderer frames, not interface mockups.
-All layouts default to positive vertical forces below zero (seat pressure) and
-negative forces above zero (lifting), with unchanged signed readouts.
+All layouts default to increasing vertical forces downward and decreasing forces
+upward, using a 1 g reference with unchanged absolute readouts.
 Compact lateral histories advance upward in time and deflect left/right around a
 centered zero axis. G-Orbit shows the current lateral force on an upper inner
 semicircle: negative left, positive right, with equal scale in both directions.
