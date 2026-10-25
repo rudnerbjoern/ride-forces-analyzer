@@ -17,11 +17,17 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 from ride_forces_analyzer.rendering.airtime_colors import VERTICAL_CONTEXT_COLORS
 from ..peaks import PeakEnvelope
+from ..scales import (
+    lateral_scale,
+    longitudinal_scale,
+    selected_bounds,
+    vertical_scale,
+)
 from .common import Drawing
 from .contracts import ExportLayout, VideoAspect, LayoutPlugin, LayoutPosition, LayoutPositions
 
 if TYPE_CHECKING:
-    from ..model import ExportChannel, ExportTimeline
+    from ..model import ExportTimeline
 
 
 FONT_FILE = "bahnschrift.ttf"  # Native Windows technical typeface; Drawing retains its fallback.
@@ -43,11 +49,6 @@ SHADOW_OFFSET = 3  # Downward shadow displacement.
 SHADOW_ALPHA = tuple(round(value * 0.95) for value in range(256))
 EDGE_ALPHA = tuple(round(value * 0.35) for value in range(256))  # Fine dark contrast edge.
 HISTORY_SHADE_ALPHA = 105  # Soft bottom gradient behind the three histories.
-HISTORY_SCALE_STEP = 0.1  # Round independent history ranges outward in g, with this minimum.
-VERTICAL_SEATED = (-1.5, 5.0)  # Default vertical instrument range in g.
-VERTICAL_FLYING = (-4.0, 3.0)  # Flying posture uses a larger negative range.
-VERTICAL_RANGE_STEP = 0.5  # Expand the two bounds independently in g.
-VERTICAL_MAJOR_INTERVALS = 14  # Bound tick density for large vertical ranges.
 ORIENTATION_TICKS = (0, 45, 90, 135, 180)  # Fixed degrees down the outer right edge.
 ORIENTATION_TICK_SIZE = 12  # Compact labels beside the existing right instrument.
 ORIENTATION_STRIP_WIDTH = 48  # Native pixels reserved for the conditional edge scale.
@@ -138,29 +139,6 @@ PORTRAIT_POSITIONS = LayoutPositions(
 )
 
 
-def _scale(
-    extent: float,
-    minimum: float,
-    step: float,
-    *,
-    range_step: float | None = None,
-) -> tuple[float, float]:
-    """Round a symmetric scale outward, keeping major/minor tick density bounded."""
-    extent = max(minimum, extent)
-    step *= max(1, ceil(extent / (5 * step)))
-    rounding = step if range_step is None else range_step
-    return ceil(extent / rounding) * rounding, step
-
-
-def _selected_bounds(channel: ExportChannel, first: int, last: int) -> tuple[float, float]:
-    """Read valid selected extrema, including zero for empty or one-sided channels."""
-    low = high = 0.0
-    for value in channel.values[first : last + 1]:
-        if value is not None:
-            low, high = min(low, value), max(high, value)
-    return low, high
-
-
 def _ticks(
     low: float,
     high: float,
@@ -201,7 +179,9 @@ class HudRenderer(Drawing):
         history_label: Font used for force-history labels.
         orientation_tick: Font used for orientation-scale labels.
         scales: Fixed instrument ranges fitted to the selected export interval.
-        history_scales: Fixed per-channel ranges used to draw force histories.
+        references: Neutral force levels; vertical uses 1 g, other channels use zero.
+        history_scales: Fixed per-channel deviations around the neutral references.
+        vertical_history_bounds: Selected vertical extrema including the 1 g reference.
         peaks: Prepared source-time peak envelopes, independent of render query order.
         base: Prepared static layout image copied before per-frame drawing.
         orientation_base: Prepared static orientation-scale image.
@@ -234,36 +214,23 @@ class HudRenderer(Drawing):
             HISTORY_LABEL_SIZE,
         )
         self.orientation_tick = self._font(self._font_path(), ORIENTATION_TICK_SIZE)
-        bounds = tuple(
-            _selected_bounds(channel, timeline.first, timeline.last)
-            for channel in timeline.channels[:3]
-        )
-        peaks = tuple(max(abs(low), abs(high)) for low, high in bounds)
         posture = timeline.analysis.source.recording.metadata.riding_position
-        defaults = (
-            VERTICAL_FLYING
-            if posture is not None and posture.value == "Flying"
-            else VERTICAL_SEATED
+        self.references = tuple(channel.reference for channel in timeline.channels[:3])
+        bounds = tuple(
+            selected_bounds(channel.values, timeline.first, timeline.last, reference)
+            for channel, reference in zip(timeline.channels[:3], self.references, strict=True)
         )
-        vertical_low = (
-            floor(min(defaults[0], bounds[0][0]) / VERTICAL_RANGE_STEP) * VERTICAL_RANGE_STEP
+        peaks = tuple(
+            max(abs(low - reference), abs(high - reference))
+            for (low, high), reference in zip(bounds, self.references, strict=True)
         )
-        vertical_high = (
-            ceil(max(defaults[1], bounds[0][1]) / VERTICAL_RANGE_STEP) * VERTICAL_RANGE_STEP
-        )
-        vertical_step = float(
-            max(1, ceil((vertical_high - vertical_low) / VERTICAL_MAJOR_INTERVALS)),
-        )
-        lateral, lateral_step = _scale(peaks[1], 2.0, 0.5, range_step=0.5)
-        longitudinal, longitudinal_step = _scale(peaks[2], 1.5, 0.5)
         self.scales = (
-            (vertical_low, vertical_high, vertical_step),
-            (-lateral, lateral, lateral_step),
-            (-longitudinal, longitudinal, longitudinal_step),
+            vertical_scale(*bounds[0], flying=posture is not None and posture.value == "Flying"),
+            lateral_scale(peaks[1]),
+            longitudinal_scale(peaks[2]),
         )
-        self.history_scales = tuple(
-            max(1, ceil(peak * 1.05 / HISTORY_SCALE_STEP)) * HISTORY_SCALE_STEP for peak in peaks
-        )
+        self.history_scales = tuple(peak or 1.0 for peak in peaks)
+        self.vertical_history_bounds = bounds[0]
         self.peaks = tuple(
             PeakEnvelope.prepare(
                 channel.values,
@@ -272,8 +239,9 @@ class HudRenderer(Drawing):
                 timeline.sample_rate,
                 hold_seconds=PEAK_HOLD_SECONDS,
                 release_g_per_second=PEAK_RELEASE_G_PER_SECOND,
+                reference=reference,
             )
-            for channel in timeline.channels[:3]
+            for channel, reference in zip(timeline.channels[:3], self.references, strict=True)
         )
         self._draw_static(ImageDraw.Draw(self.base))
         ink = self.effects(self.base)
@@ -406,7 +374,12 @@ class HudRenderer(Drawing):
         )
 
     def history_point(self, row: int, value: float, fraction: float) -> tuple[float, float]:
-        """Center the shared source-time axis on the lateral instrument's zero.
+        """Map absolute forces around their neutral reference on the shared time axis.
+
+        Time zero aligns with the lateral instrument's zero; vertical history
+        fits its selected extrema including 1 g, while the other histories center on zero.
+        Lateral and longitudinal peaks fill their rows symmetrically without
+        headroom; a channel containing only zeros remains on its reference.
 
         Args:
             row: Channel or panel row selected for rendering.
@@ -418,18 +391,29 @@ class HudRenderer(Drawing):
         """
         g = self.geometry
         top = g.history_top + row * g.history_row
-        amplitude = g.history_row * (0.32 if self.portrait else 0.36)
         center = top + g.history_row / 2
-        sign = 1 if row == 0 and self.timeline.channels[0].inverted else -1
+        if row == 0:
+            low, high = self.vertical_history_bounds
+            relative = (value - low) / (high - low) if high != low else 0.5
+            if not self.timeline.channels[0].inverted:
+                relative = 1 - relative
+            y = top + 1 + relative * (g.history_row - 2)
+        else:
+            y = center - value / self.history_scales[row] * (g.history_row / 2 - 1)
         return (
             g.history_left + fraction * 2 * (self.lateral_x(0) - g.history_left),
-            center + sign * value / self.history_scales[row] * amplitude,
+            y,
         )
 
     def _tick_text(self, value: float) -> str:
         if abs(value) < 1e-10:
             return "0"
-        return self._tr("{0:+.1f}" if self.portrait else "{0:+g}", value)
+        if self.portrait:
+            return self._tr(
+                "{0:+.2f}" if abs(value - round(value, 1)) > 1e-9 else "{0:+.1f}",
+                value,
+            )
+        return self._tr("{0:+g}", value)
 
     def _draw_static(self, draw: ImageDraw.ImageDraw) -> None:
         x: float
@@ -483,7 +467,8 @@ class HudRenderer(Drawing):
                         WHITE if row == 0 else color,
                         "lm" if direction > 0 else "rm",
                     )
-            draw.line((x - 12, zero, x + 12, zero), fill=WHITE, width=LINE_WIDTH)
+            neutral = mapping(self.references[row])
+            draw.line((x - 12, neutral, x + 12, neutral), fill=WHITE, width=LINE_WIDTH)
 
         if self.portrait:
             self._text(
@@ -541,19 +526,42 @@ class HudRenderer(Drawing):
                 (CYAN, YELLOW, GREEN)[row],
                 "lt" if self.portrait else "lm",
             )
+            reference_y = self.history_point(row, self.references[row], 0)[1]
             draw.line(
-                (g.history_left, center, history_right, center),
+                (g.history_left, reference_y, history_right, reference_y),
                 fill=BASELINE_COLOR,
                 width=1,
             )
+            reference = self.references[row]
+            if reference != 0:
+                self._text(
+                    draw,
+                    (g.history_left - 14, center),
+                    f"{reference:g} g",
+                    self.history_label,
+                    WHITE,
+                    "rm",
+                )
             draw.line(
                 (g.history_left, top + g.history_row - 1, history_right, top + g.history_row - 1),
                 fill=BASELINE_COLOR,
                 width=1,
             )
             if self.portrait:
-                for value in (-self.history_scales[row], self.history_scales[row]):
-                    _, y = self.history_point(row, value, 0)
+                limits = (
+                    self.vertical_history_bounds
+                    if row == 0
+                    else (
+                        reference - self.history_scales[row],
+                        reference + self.history_scales[row],
+                    )
+                )
+                for index, value in enumerate(limits):
+                    if row == 0:
+                        sign = 1 if self.timeline.channels[0].inverted else -1
+                        y = center + sign * (2 * index - 1) * g.history_row * 0.32
+                    else:
+                        _, y = self.history_point(row, value, 0)
                     self._text(
                         draw,
                         (g.history_left - 14, y),
@@ -569,16 +577,17 @@ class HudRenderer(Drawing):
             fill=CYAN,
             width=LINE_WIDTH,
         )
-        for index in range(17):
-            fraction = index / 16
+        half_window = self.timeline.settings.window_seconds / 2
+        for seconds in range(ceil(-half_window), floor(half_window) + 1):
+            fraction = (seconds + half_window) / (2 * half_window)
             x, _ = self.history_point(0, 0, fraction)
-            draw.line((x, bottom, x, bottom + (10 if index % 4 == 0 else 5)), fill=WHITE, width=1)
-            if index % 4 == 0:
-                seconds = (fraction - 0.5) * self.timeline.settings.window_seconds
+            major = seconds % 5 == 0
+            draw.line((x, bottom, x, bottom + (10 if major else 5)), fill=WHITE, width=1)
+            if major:
                 self._text(
                     draw,
                     (x, bottom + 22),
-                    "0" if index == 8 else self._tr("{0:+g} s", seconds),
+                    f"{seconds} s",
                     self.tick,
                     WHITE,
                     "mt",
@@ -627,9 +636,10 @@ class HudRenderer(Drawing):
             if value is not None:
                 x = (g.left_axis if row == 0 else g.right_axis) - left
                 mapping = self.vertical_y if row == 0 else self.longitudinal_y
-                y, zero = mapping(value) - top, mapping(0) - top
+                reference = self.references[row]
+                y, zero = mapping(value) - top, mapping(reference) - top
                 for peak in self.peaks[row].at(position, value):
-                    if peak != 0:
+                    if peak != reference:
                         peak_color = CYAN if row == 0 else GREEN if peak > 0 else RED
                         draw.line((x, zero, x, mapping(peak) - top), fill=peak_color, width=4)
                 direction = 1 if row == 0 else -1

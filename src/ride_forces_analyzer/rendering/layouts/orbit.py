@@ -9,6 +9,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from dataclasses import replace
 from PIL import Image, ImageDraw
 
 if TYPE_CHECKING:
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
 
 from math import cos, sin, radians
 from ..peaks import PeakEnvelope
+from ..scales import selected_bounds, vertical_scale
 from .common import ACCELERATION_COLOR, BRAKING_COLOR, Drawing
 from .contracts import ExportLayout, LayoutPlugin, LayoutPosition, LayoutPositions
 
@@ -134,6 +136,7 @@ class OrbitRenderer(Drawing):
             specified otherwise.
         text_stroke_color: Drawing color or palette for text stroke color.
         peaks: Prepared source-time peak envelopes, independent of render query order.
+        vertical: Vertical instrument channel with posture-dependent absolute bounds.
     """
 
     font_file = FONT_FILE
@@ -160,6 +163,20 @@ class OrbitRenderer(Drawing):
             None.
         """
         super().__init__(timeline, *NATIVE_SIZE)
+        vertical = timeline.channels[0]
+        posture = timeline.analysis.source.recording.metadata.riding_position
+        low, high = selected_bounds(
+            vertical.values,
+            timeline.first,
+            timeline.last,
+            vertical.reference,
+        )
+        low, high, _ = vertical_scale(
+            low,
+            high,
+            flying=posture is not None and posture.value == "Flying",
+        )
+        self.vertical = replace(vertical, low=low, high=high)
         self.peaks = tuple(
             PeakEnvelope.prepare(
                 channel.values,
@@ -168,6 +185,7 @@ class OrbitRenderer(Drawing):
                 timeline.sample_rate,
                 hold_seconds=PEAK_HOLD_SECONDS,
                 release_g_per_second=PEAK_RELEASE_G_PER_SECOND,
+                reference=channel.reference,
             )
             for channel in timeline.channels[:3]
         )
@@ -182,14 +200,17 @@ class OrbitRenderer(Drawing):
         Returns:
             Drawing angle for the signed force on its ring.
         """
-        channel = self.timeline.channels[row]
+        channel = self.vertical if row == 0 else self.timeline.channels[row]
         if row == 1:
             return LATERAL_ZERO_ANGLE + QUADRANT_DEGREES * value / max(
                 abs(channel.low),
                 abs(channel.high),
             )
-        extent = channel.high if value >= 0 else -channel.low
-        angle = QUADRANT_DEGREES * value / extent
+        deviation = value - channel.reference
+        extent = (
+            channel.high - channel.reference if deviation >= 0 else channel.reference - channel.low
+        )
+        angle = QUADRANT_DEGREES * deviation / extent
         if row == 2:
             return -angle
         return VERTICAL_ZERO_ANGLE - angle if channel.inverted else VERTICAL_ZERO_ANGLE + angle
@@ -236,7 +257,8 @@ class OrbitRenderer(Drawing):
 
         # Two outer force halves and an upper inner half share one center.
         for row, radius, start, end in FORCE_ARCS:
-            channel = self.timeline.channels[row]
+            channel = self.vertical if row == 0 else self.timeline.channels[row]
+            reference = channel.reference
             circle = (cx - radius, cy - radius, cx + radius, cy + radius)
             # Pillow strokes inward from this bounding circle, preserving the outer radius.
             stroke = FORCE_STROKE_WIDTH
@@ -248,9 +270,9 @@ class OrbitRenderer(Drawing):
                 peak_layer = Image.new("RGBA", image.size)
                 peak_draw = ImageDraw.Draw(peak_layer)
                 for peak in peaks:
-                    if abs(peak) < PEAK_VISIBLE_THRESHOLD:
+                    if abs(peak - reference) < PEAK_VISIBLE_THRESHOLD:
                         continue
-                    a, b = sorted((self.orbit_angle(0, row), self.orbit_angle(peak, row)))
+                    a, b = sorted((self.orbit_angle(reference, row), self.orbit_angle(peak, row)))
                     color = (
                         (ACCELERATION_COLOR if peak >= 0 else BRAKING_COLOR)
                         if row == 2
@@ -259,7 +281,7 @@ class OrbitRenderer(Drawing):
                     peak_fill = (*bytes.fromhex(color[1:]), PEAK_FILL_ALPHA)
                     peak_draw.arc(circle, a, b, fill=peak_fill, width=stroke)
                 image.alpha_composite(peak_layer)
-                a, b = sorted((self.orbit_angle(0, row), self.orbit_angle(current, row)))
+                a, b = sorted((self.orbit_angle(reference, row), self.orbit_angle(current, row)))
                 color = (
                     (ACCELERATION_COLOR if current >= 0 else BRAKING_COLOR)
                     if row == 2
@@ -267,7 +289,7 @@ class OrbitRenderer(Drawing):
                 )
                 draw.arc(circle, a, b, fill=color, width=stroke)
                 for peak in peaks:
-                    if abs(peak) < PEAK_VISIBLE_THRESHOLD:
+                    if abs(peak - reference) < PEAK_VISIBLE_THRESHOLD:
                         continue
                     peak_angle = self.orbit_angle(peak, row)
                     marker = (
@@ -301,7 +323,9 @@ class OrbitRenderer(Drawing):
                 draw.line(
                     (*point(radius - FORCE_TICK_INSET, a), *point(radius + FORCE_TICK_OUTSET, a)),
                     fill=SCALE_COLOR,
-                    width=FORCE_TICK_WIDTH,
+                    width=FORCE_TICK_WIDTH * 2
+                    if row == 0 and tick == reference
+                    else FORCE_TICK_WIDTH,
                 )
                 self._text(
                     draw,

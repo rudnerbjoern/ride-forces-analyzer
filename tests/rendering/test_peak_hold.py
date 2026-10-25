@@ -59,3 +59,24 @@ def test_layout_can_configure_hold_duration_and_release_speed() -> None:
 def test_invalid_peak_configuration_is_rejected(hold: float, speed: float) -> None:
     with pytest.raises(ValueError, match="Peak"):
         PeakEnvelope.prepare((1.0,), 0, 0, 10, hold_seconds=hold, release_g_per_second=speed)
+
+
+def test_one_g_reference_holds_loading_and_positive_unloading_in_absolute_g() -> None:
+    values = (3.0, 0.4) + (1.0,) * 39
+    envelope = PeakEnvelope.prepare(values, 0, 40, 10, reference=1.0)
+    assert envelope.at(10, 1.0) == pytest.approx((3.0, 0.4))
+    assert envelope.at(20, 1.0) == pytest.approx((2.5, 0.8))
+    assert envelope.at(20.5, 0.3) == pytest.approx((2.45, 0.3))
+    assert envelope.at(40, 1.0) == (1.0, 1.0)
+    assert envelope.at(10, 1.0) == pytest.approx((3.0, 0.4))
+    selected = PeakEnvelope.prepare(values, 2, 40, 10, reference=1.0)
+    assert selected.at(2, 1.0) == (1.0, 1.0)
+    gap = PeakEnvelope.prepare((3.0, 0.4, None, 1.0), 0, 3, 10, reference=1.0)
+    assert gap.at(2, None) == gap.at(3, 1.0) == (1.0, 1.0)
+    assert gap.at(2, 0.7) == pytest.approx((1.0, 0.7))
+
+
+def test_peak_reference_must_be_finite() -> None:
+    for reference in (float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="reference force must be finite"):
+            PeakEnvelope.prepare((1.0,), 0, 0, 10, reference=reference)

@@ -11,20 +11,22 @@ from math import floor, isfinite
 
 @dataclass(frozen=True, slots=True)
 class PeakEnvelope:
-    """Hold positive and negative force peaks using deterministic source-time states.
+    """Hold force peaks above/below a reference using deterministic source-time states.
 
     Attributes:
         first: First included source index or the control selecting that bound.
         rate: Sample or frame rate per second, as declared by this operation.
-        states: Prepared peak states aligned with source time.
+        states: Prepared peak deviations and release times aligned with source time.
         release_g_per_second: Rate in g per second at which a held peak returns toward the
             measured value.
+        reference: Neutral force level in g; queries return absolute force values.
     """
 
     first: int
     rate: float
     states: tuple[tuple[float, float, float, float] | None, ...]
     release_g_per_second: float = 1.0
+    reference: float = 0.0
 
     @classmethod
     def prepare(
@@ -36,6 +38,7 @@ class PeakEnvelope:
         *,
         hold_seconds: float = 1.5,
         release_g_per_second: float = 1.0,
+        reference: float = 0.0,
     ) -> "PeakEnvelope":
         """Prepare immutable source-time values for repeated presentation queries.
 
@@ -47,6 +50,7 @@ class PeakEnvelope:
             hold_seconds: Duration in seconds for which a peak is retained.
             release_g_per_second: Rate in g per second at which a held peak returns toward the
                 measured value.
+            reference: Finite neutral force level in g separating held loading and unloading.
 
         Returns:
             Immutable source-time states prepared for repeated queries over the selected
@@ -55,11 +59,14 @@ class PeakEnvelope:
         Raises:
             ValueError: Peak hold duration must be finite and nonnegative. Peak release speed
                 must be finite and positive.
+                The reference force must be finite.
         """
         if not isfinite(hold_seconds) or hold_seconds < 0:
             raise ValueError("Peak hold duration must be finite and nonnegative")
         if not isfinite(release_g_per_second) or release_g_per_second <= 0:
             raise ValueError("Peak release speed must be finite and positive")
+        if not isfinite(reference):
+            raise ValueError("Peak reference force must be finite")
         states: list[tuple[float, float, float, float] | None] = []
         positive = negative = 0.0
         positive_release = negative_release = float(first)
@@ -70,6 +77,7 @@ class PeakEnvelope:
                 positive_release = negative_release = float(index)
                 states.append(None)
                 continue
+            value -= reference
             positive = max(
                 0.0,
                 positive
@@ -85,25 +93,26 @@ class PeakEnvelope:
             if value < 0 and -value >= negative:
                 negative, negative_release = -value, index + hold_seconds * rate
             states.append((positive, negative, positive_release, negative_release))
-        return cls(first, rate, tuple(states), release_g_per_second)
+        return cls(first, rate, tuple(states), release_g_per_second, reference)
 
     def at(self, position: float, current: float | None) -> tuple[float, float]:
         """Read the prepared state at the requested source-sample position.
 
         Args:
             position: Fractional source-sample position.
-            current: Current measured value or operation state.
+            current: Absolute current force in g, or None when the sample is missing.
 
         Returns:
-            Prepared state at the requested source-sample position, adjusted according to the
-            query contract.
+            Absolute held upper/lower force values in g. Missing current values return
+            the reference twice; gaps reset the hold before the next valid sample.
         """
         if current is None:
-            return 0.0, 0.0
+            return self.reference, self.reference
+        current -= self.reference
         index = floor(position)
         state = self.states[index - self.first]
         if state is None:
-            return max(0.0, current), min(0.0, current)
+            return self.reference + max(0.0, current), self.reference + min(0.0, current)
         positive, negative, positive_release, negative_release = state
         positive = max(
             0.0,
@@ -121,4 +130,4 @@ class PeakEnvelope:
             / self.rate
             * self.release_g_per_second,
         )
-        return positive, -negative
+        return self.reference + positive, self.reference - negative

@@ -179,6 +179,10 @@ define formats and lifecycle.
 ## Video export boundary
 
 `rendering.model` binds a snapshot, range and settings into an `ExportTimeline`.
+`rendering.scales` owns the lateral/longitudinal range policies shared by all
+layouts, shared history fitting and the HUD/G-Orbit posture-dependent vertical
+instrument ranges. Export channels carry a 1 g vertical presentation reference
+for every posture; lateral and longitudinal references remain zero.
 Layouts consume this timeline through one native-RGBA-region/source-position
 protocol. The registry owns layout metadata and validates supported geometry;
 `frames` composes regions, `preview` builds exact-sample previews and `peaks`
