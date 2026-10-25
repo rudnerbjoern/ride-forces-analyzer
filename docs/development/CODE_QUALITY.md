@@ -88,11 +88,12 @@ uv run --locked pytest tests/rendering/test_reference_script.py tests/ui/test_re
 Outputs stay in `.tmp/`; fixtures remain unchanged and personal preferences isolated.
 Source smoke checks do not replace [frozen-package qualification](RELEASE.md#windows-packages).
 
-## Recording model and service coverage
+## Analysis, validation and storage coverage
 
 Locked `coverage.py`/`pytest-cov` measure lines/branches in all modules of `analysis.recording`,
-`analysis.preparation`, shared guards in `validation.checks`, and `analysis.service`. `[tool.coverage.*]` in `pyproject.toml` owns configuration.
-Collection uses the analysis and validation directories without importing modules for discovery.
+`analysis.preparation`, shared guards in `validation.checks`, `analysis.service` and all
+`storage` modules. `[tool.coverage.*]` in `pyproject.toml` owns configuration.
+Collection uses source directories without importing modules for discovery.
 Run from the repository root on native Windows:
 
 ```powershell
@@ -101,7 +102,9 @@ uv run --locked pytest --cov --cov-report=term-missing `
     tests/analysis/test_recording_preparation.py tests/analysis/test_recording_recalculation.py `
     tests/analysis/test_service.py tests/analysis/test_airtime_events.py `
     tests/analysis/test_calibration_recalculation.py tests/analysis/test_ride_markers.py `
-    tests/analysis/test_rfdb.py tests/tooling/test_validation.py
+    tests/analysis/test_rfdb.py tests/tooling/test_validation.py tests/storage `
+    tests/rendering/test_batches.py tests/rendering/test_analysis_snapshots.py `
+    tests/updates/test_releases.py
 uv run --locked coverage html
 uv run --locked coverage json
 ```
@@ -117,6 +120,8 @@ uv run --locked coverage json
 
 Coverage includes snapshot validation, preparation, sample access, partial
 recalculation, event integration, service state, subscriptions and revision/errors.
+Storage coverage includes preferences and recording markers, immutable export
+definitions, transactional preset/batch persistence and the bounded map-tile cache.
 Behavior tests establish contracts; coverage percentage does not qualify physical
 interpretation or UI integration. Cover new branches without weakening the gate.
 

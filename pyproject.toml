@@ -48,7 +48,11 @@ testpaths = ["tests"]
 
 [tool.coverage.run]
 branch = true
-source = ["src/ride_forces_analyzer/analysis", "src/ride_forces_analyzer/validation"]
+source = [
+    "src/ride_forces_analyzer/analysis",
+    "src/ride_forces_analyzer/validation",
+    "src/ride_forces_analyzer/storage",
+]
 data_file = ".tmp/coverage/analysis/.coverage"
 
 [tool.coverage.report]
@@ -57,6 +61,7 @@ include = [
     "src/ride_forces_analyzer/analysis/preparation.py",
     "src/ride_forces_analyzer/validation/checks.py",
     "src/ride_forces_analyzer/analysis/service.py",
+    "src/ride_forces_analyzer/storage/*.py",
 ]
 fail_under = 100
 show_missing = true

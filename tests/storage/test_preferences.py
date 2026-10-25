@@ -275,3 +275,48 @@ def test_default_export_rate_survives_restart_and_invalid_storage_falls_back() -
         with closing(sqlite3.connect(database)) as connection, connection:
             connection.execute("UPDATE preferences SET value = 'invalid' WHERE key = 'export_fps'")
         assert Preferences(database).export_fps() is StandardFrameRate.FPS_50
+
+
+def test_inaccessible_paths_keep_saved_preferences_and_safe_fallbacks(
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    preferences = Preferences(export_directory / "preferences.sqlite3")
+    recording = export_directory / "ride.forces"
+    recording.write_bytes(b"recording")
+    preferences.remember_recording(recording)
+    before = preferences.path.read_bytes()
+    preferences.remember_export(export_directory / "missing" / "ride.mov")
+    assert preferences.path.read_bytes() == before
+
+    def inaccessible(path: Path) -> bool:
+        raise OSError("Path is inaccessible")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "is_dir", inaccessible)
+        assert preferences.recording_directory() == ""
+        preferences.remember_export(export_directory / "ride.mov")
+        assert preferences.path.read_bytes() == before
+    original_is_file = Path.is_file
+
+    def recording_inaccessible(path: Path) -> bool:
+        if path == recording.resolve():
+            raise OSError("Recording is inaccessible")
+        return original_is_file(path)
+
+    monkeypatch.setattr(Path, "is_file", recording_inaccessible)
+    assert preferences.last_recording() is None
+
+
+def test_corrupt_stored_ride_bounds_are_ignored_without_rewriting(export_directory: Path) -> None:
+    from contextlib import closing
+    import sqlite3
+
+    preferences = Preferences(export_directory / "preferences.sqlite3")
+    key = "a" * 64
+    assert preferences.remember_recording_bounds(key, (1, 3))
+    with closing(sqlite3.connect(preferences.path)) as connection, connection:
+        connection.execute("UPDATE recording_bounds SET last_sample = 0")
+    before = preferences.path.read_bytes()
+    assert preferences.recording_bounds(key) is None
+    assert preferences.path.read_bytes() == before
