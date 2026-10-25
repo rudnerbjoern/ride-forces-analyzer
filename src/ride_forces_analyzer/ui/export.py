@@ -514,6 +514,7 @@ class ExportDialog(QDialog):
         layout_row.addWidget(self.layout_profile, 1)
         layout_row.addWidget(bind(QLabel(), tr("Position")))
         self.position = QComboBox()
+        self.position.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         layout_row.addWidget(self.position)
         form.addRow(bind(QLabel(), tr("Layout profile")), layout_row)
         self.aspect = QComboBox()

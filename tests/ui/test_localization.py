@@ -306,6 +306,10 @@ def test_german_export_and_batch_dialogs_fit_and_save_language(
             assert dialog.position.count() == 4
             assert "Oben rechts" in [dialog.position.itemText(i) for i in range(4)]
             assert_combo_text_fits(dialog.position)
+            for language in (2, 0, 1):
+                window.set_ui_language(language)
+                QCoreApplication.processEvents()
+                assert_combo_text_fits(dialog.position)
             dialog.layout_profile.setCurrentIndex(0)
             assert dialog.position.count() == 2
             assert dialog.next.text() == "Export prüfen →"
