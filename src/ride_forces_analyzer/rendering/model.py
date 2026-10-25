@@ -10,7 +10,9 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from fractions import Fraction
 from math import ceil, floor, isfinite
-from typing import Literal, overload
+from typing import Annotated, overload
+
+from pydantic import PlainSerializer
 
 from ride_forces_analyzer.analysis.models import SampleValues
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, RecordingAnalysis
@@ -32,8 +34,67 @@ class VideoOutput(StrEnum):
     OPAQUE = "opaque"
 
 
-FrameRate = int | Literal["24000/1001", "60000/1001"]
-EXPORT_FRAME_RATES: tuple[FrameRate, ...] = ("24000/1001", 24, 25, 30, 50, "60000/1001", 60)
+class StandardFrameRate(StrEnum):
+    """Standard video rates with exact encoder values and display labels.
+
+    Attributes:
+        FPS_23_976: Exact 24000/1001 frames per second, displayed as 23.976.
+        FPS_24: 24 frames per second.
+        FPS_25: 25 frames per second.
+        FPS_30: 30 frames per second.
+        FPS_50: 50 frames per second and the default for new exports.
+        FPS_59_94: Exact 60000/1001 frames per second, displayed as 59.94.
+        FPS_60: 60 frames per second.
+    """
+
+    FPS_23_976 = "24000/1001"
+    FPS_24 = "24"
+    FPS_25 = "25"
+    FPS_30 = "30"
+    FPS_50 = "50"
+    FPS_59_94 = "60000/1001"
+    FPS_60 = "60"
+
+    @property
+    def label(self) -> str:
+        """Return the frame rate's display label.
+
+        Returns:
+            Rounded display label for fractional rates, otherwise the integer text.
+        """
+        if self is StandardFrameRate.FPS_23_976:
+            return "23.976"
+        return "59.94" if self is StandardFrameRate.FPS_59_94 else self.value
+
+    @property
+    def fraction(self) -> Fraction:
+        """Return the exact video rate without rounding.
+
+        Returns:
+            Rational number of frames per second.
+        """
+        return Fraction(self.value)
+
+
+FrameRate = int | StandardFrameRate
+EXPORT_FRAME_RATES: tuple[StandardFrameRate, ...] = tuple(StandardFrameRate)
+DEFAULT_FRAME_RATE = StandardFrameRate.FPS_50
+
+
+def frame_rate_value(value: FrameRate) -> int | str:
+    """Preserve existing preset and encoder metadata values.
+
+    Args:
+        value: Standard frame rate or validated custom integer rate.
+
+    Returns:
+        Integer for whole rates, or the exact fractional string for fractional rates.
+    """
+    if isinstance(value, StandardFrameRate):
+        rate = value.fraction
+        return rate.numerator if rate.denominator == 1 else value.value
+    return value
+
 
 PROFILES: tuple[tuple[ExportLayout, str], ...] = (
     (ExportLayout.RIBBON, "Flow Ribbon"),
@@ -49,7 +110,8 @@ class ExportSettings:
     """Export settings contract and owned data.
 
     Attributes:
-        fps: Selected output rate; 23.976 and 59.94 retain their exact fractional values.
+        fps: StandardFrameRate member or custom integer from 1 to 120; standard
+            integers are normalized to enum members, preserving exact fractional rates.
         window_seconds: Width of the visible source-time context in seconds.
         output: VideoOutput member selecting transparency, codec and container.
         invert_vertical: Whether the vertical plot uses the selected inverted display
@@ -63,7 +125,7 @@ class ExportSettings:
             type.
     """
 
-    fps: FrameRate = 50
+    fps: Annotated[FrameRate, PlainSerializer(frame_rate_value)] = DEFAULT_FRAME_RATE
     window_seconds: float = 12.0
     output: VideoOutput = VideoOutput.TRANSPARENT
     invert_vertical: bool = True
@@ -94,7 +156,7 @@ class ExportSettings:
         Returns:
             Exact output frames per second as a rational number.
         """
-        return Fraction(self.fps)
+        return self.fps.fraction if isinstance(self.fps, StandardFrameRate) else Fraction(self.fps)
 
     @property
     def fps_label(self) -> str:
@@ -103,9 +165,7 @@ class ExportSettings:
         Returns:
             Integer rate text, or 23.976/59.94 for the corresponding exact fraction.
         """
-        if self.fps == "24000/1001":
-            return "23.976"
-        return "59.94" if self.fps == "60000/1001" else str(self.fps)
+        return self.fps.label if isinstance(self.fps, StandardFrameRate) else str(self.fps)
 
     def __post_init__(self) -> None:
         """Validate constructor fields and establish the documented model invariants.
@@ -122,13 +182,19 @@ class ExportSettings:
             raise ValueError("Unsupported overlay language")
         if type(self.aspect) is not VideoAspect:
             raise ValueError("Unknown export aspect ratio")
-        if not (type(self.fps) is int and 1 <= self.fps <= 120) and self.fps not in (
-            "24000/1001",
-            "60000/1001",
+        if type(self.fps) is not StandardFrameRate and not (
+            type(self.fps) is int and 1 <= self.fps <= 120
         ):
             raise ValueError(
                 "Frame rate must be an integer from 1 to 120, 24000/1001 or 60000/1001",
             )
+        if type(self.fps) is int:
+            try:
+                standard = StandardFrameRate(str(self.fps))
+            except ValueError:
+                pass  # Custom integer rates remain integers.
+            else:
+                object.__setattr__(self, "fps", standard)
         if not isfinite(self.window_seconds) or not 1 <= self.window_seconds <= 60:
             raise ValueError("Visible time window must be from 1 to 60 seconds")
         if type(self.output) is not VideoOutput:

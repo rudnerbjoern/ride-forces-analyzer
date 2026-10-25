@@ -13,7 +13,7 @@ import sqlite3
 from pydantic import FiniteFloat, TypeAdapter
 
 from .exports import default_database_path
-from ride_forces_analyzer.rendering.model import EXPORT_FRAME_RATES, FrameRate
+from ride_forces_analyzer.rendering.model import DEFAULT_FRAME_RATE, StandardFrameRate, FrameRate
 from ride_forces_analyzer.i18n import LANGUAGES, Language
 from typing import Literal
 from math import isfinite
@@ -452,17 +452,17 @@ class Preferences:
         """
         self._write("appearance", _APPEARANCE.validate_python(value, strict=True).value)
 
-    def export_fps(self) -> FrameRate:
+    def export_fps(self) -> StandardFrameRate:
         """Read the default frame-rate choice for new video exports.
 
         Returns:
             Saved output frame rate or its admitted default.
         """
         value = self._read("export_fps")
-        for rate in EXPORT_FRAME_RATES:
-            if str(rate) == value:
-                return rate
-        return 50
+        try:
+            return StandardFrameRate(value)
+        except ValueError:
+            return DEFAULT_FRAME_RATE
 
     def remember_export_fps(self, value: FrameRate) -> None:
         """Persist the selected export fps preference.
@@ -476,9 +476,13 @@ class Preferences:
         Raises:
             ValueError: Unsupported default export frame rate.
         """
-        if type(value) not in (int, str) or value not in EXPORT_FRAME_RATES:
+        if type(value) not in (int, StandardFrameRate):
             raise ValueError("Unsupported default export frame rate")
-        self._write("export_fps", str(value))
+        try:
+            rate = StandardFrameRate(str(value))
+        except ValueError:
+            raise ValueError("Unsupported default export frame rate") from None
+        self._write("export_fps", rate.value)
 
     def render_jobs(self) -> int:
         """Read the locally permitted number of concurrent frame renderers.

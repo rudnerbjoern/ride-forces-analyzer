@@ -1,5 +1,7 @@
 """Local folder preferences survive restart and tolerate missing storage."""
 
+from ride_forces_analyzer.rendering.model import StandardFrameRate
+
 # cspell:words executemany
 
 from pathlib import Path
@@ -147,7 +149,7 @@ def test_invalid_stored_preferences_keep_safe_defaults() -> None:
         assert preferences.language() == "en"
         assert preferences.language(Language.GERMAN) == "de"
         assert preferences.appearance() is Appearance.SYSTEM
-        assert preferences.export_fps() == 50
+        assert preferences.export_fps() is StandardFrameRate.FPS_50
         assert preferences.render_jobs() == 1
         assert not preferences.automatic_updates()
         assert not preferences.restore_last_file()
@@ -262,14 +264,14 @@ def test_default_export_rate_survives_restart_and_invalid_storage_falls_back() -
     with TemporaryDirectory(dir=".tmp") as temporary:
         database = Path(temporary) / "preferences.sqlite3"
         preferences = Preferences(database)
-        assert preferences.export_fps() == 50
+        assert preferences.export_fps() is StandardFrameRate.FPS_50
         preferences.remember_language(Language.GERMAN)
-        for rate in ("24000/1001", "60000/1001"):
+        for rate in StandardFrameRate:
             preferences.remember_export_fps(rate)
             restored = Preferences(database)
             assert restored.export_fps() == rate and restored.language() == "de"
-        restored.remember_export_fps(60)
-        assert Preferences(database).export_fps() == 60
+        preferences.remember_export_fps(60)
+        assert Preferences(database).export_fps() is StandardFrameRate.FPS_60
         with closing(sqlite3.connect(database)) as connection, connection:
             connection.execute("UPDATE preferences SET value = 'invalid' WHERE key = 'export_fps'")
-        assert Preferences(database).export_fps() == 50
+        assert Preferences(database).export_fps() is StandardFrameRate.FPS_50

@@ -44,6 +44,12 @@ the supplied [Manta reference recording](../development/RECORDINGS.md#manta).
 - Settings → Export persists the default frame rate in `preferences.sqlite3`.
   Save changes it; Cancel and temporary assistant edits do not. Presets/batches
   retain their own rates, including exact `24000/1001` and `60000/1001`.
+- `rendering.model.StandardFrameRate` owns standard rate values, display labels and
+  exact fractions. `EXPORT_FRAME_RATES` follows enum order; `DEFAULT_FRAME_RATE`
+  selects 50 fps. `FrameRate` also permits custom integers from 1 to 120.
+  Standard integers normalize to enum members in `ExportSettings`; Python callers
+  use enum members for fractional rates. Preset JSON and encoder metadata retain
+  integer whole rates and exact fractional strings, without a storage migration.
 - The local `render_jobs` preference defaults to 1 and accepts positive integers,
   capped at the detected logical processor count (1 if unavailable). Settings →
   Export applies it to newly started individual and batch exports. It is not part

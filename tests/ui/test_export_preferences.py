@@ -1,5 +1,7 @@
 """Explicit export defaults persist independently of temporary settings and presets."""
 
+from ride_forces_analyzer.rendering.model import StandardFrameRate
+
 from ride_forces_analyzer.analysis.recording import source_app_configuration
 
 # cspell:words Einstellungen
@@ -86,7 +88,7 @@ def test_settings_save_cancel_and_new_exports_keep_independent_frame_rates(
     dialog.appearance.setCurrentIndex(dialog.appearance.findData(Appearance.DARK.value))
     dialog.buttons.button(QDialogButtonBox.StandardButton.Cancel).click()
     assert window.ui_language == "de" and window.appearance_preference is Appearance.LIGHT
-    assert window.preferences.export_fps() == 50
+    assert window.preferences.export_fps() is StandardFrameRate.FPS_50
     assert window.preferences.render_jobs() == 1
     assert not window.preferences.automatic_updates()
     wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
@@ -140,7 +142,7 @@ def test_settings_save_cancel_and_new_exports_keep_independent_frame_rates(
         )
         export = ExportDialog(window.data, 0, 10, window, store=store)
         assert export.fps.currentText() == "23.976"
-        assert export.fps.currentData() == "24000/1001"
+        assert StandardFrameRate(export.fps.currentData()) is StandardFrameRate.FPS_23_976
         export.fps.setCurrentText("60")
         export.close()
         reopened = ExportDialog(window.data, 0, 10, window, store=store)

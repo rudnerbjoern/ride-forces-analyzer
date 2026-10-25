@@ -61,7 +61,7 @@ from ride_forces_analyzer.rendering.model import (
     VideoOutput,
     VideoAspect,
     EXPORT_FRAME_RATES,
-    FrameRate,
+    StandardFrameRate,
     ExportLayout,
     ExportSettings,
     ExportTimeline,
@@ -530,10 +530,10 @@ class ExportDialog(QDialog):
         )
         form.addRow(bind(QLabel(), tr("Output")), self.mode)
         self.fps = QComboBox()
-        items(self.fps, [ExportSettings(fps=rate).fps_label for rate in EXPORT_FRAME_RATES])
+        items(self.fps, [rate.label for rate in EXPORT_FRAME_RATES])
         for index, rate in enumerate(EXPORT_FRAME_RATES):
-            self.fps.setItemData(index, rate)
-        self.fps.setCurrentText(ExportSettings(fps=self.preferences.export_fps()).fps_label)
+            self.fps.setItemData(index, rate.value)
+        self.fps.setCurrentText(self.preferences.export_fps().label)
         form.addRow(bind(QLabel(), tr("Video frame rate")), self.fps)
         self.interval = QComboBox()
         items(
@@ -914,12 +914,13 @@ class ExportDialog(QDialog):
         self.layout_profile.setCurrentIndex(index)
 
     def _settings(self) -> ExportSettings:
+        rate = self.fps.currentData()
         return ExportSettings(
             language=LANGUAGE_CHOICES[self.overlay_language.currentIndex()],
             aspect=VideoAspect.LANDSCAPE
             if self.aspect.currentIndex() == 0
             else VideoAspect.PORTRAIT,
-            fps=cast(FrameRate, self.fps.currentData()),
+            fps=StandardFrameRate(rate) if isinstance(rate, str) else cast(int, rate),
             window_seconds=float(self.seconds.value()),
             output=VideoOutput.TRANSPARENT if self.mode.currentIndex() == 0 else VideoOutput.OPAQUE,
             invert_vertical=self.flip_vertical.isChecked(),

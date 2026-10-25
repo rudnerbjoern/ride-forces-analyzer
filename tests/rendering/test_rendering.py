@@ -1,5 +1,7 @@
 """Export clocks, source-bound orientation, real RGBA geometry and offline encoding."""
 
+from ride_forces_analyzer.rendering.model import StandardFrameRate
+
 # cspell:words ffprobe frombytes getcolor getcolors getrgb getpixel getchannel getextrema hwupload prores qscale rawvideo libx
 
 from dataclasses import replace
@@ -73,7 +75,7 @@ def test_export_uses_real_duration_at_independent_video_rate(manta: ExplorerData
     assert timeline.frame_count == fps  # 50 complete source sample intervals = one second.
     assert timeline.sample_position(0) == 100
     assert timeline.sample_position(fps - 1) <= 149
-    assert timeline.settings.fps == fps
+    assert timeline.settings.frame_rate == fps
     with pytest.raises(ValueError):
         timeline.sample_position(fps)
     single = prepare_export(manta.analysis, ExportSettings(fps=fps), 100, 100)
@@ -206,7 +208,9 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
     if not ffmpeg.is_file():
         pytest.skip("Native FFmpeg integration requires installed export tools")
     settings = ExportSettings(
-        fps="60000/1001" if not prefer_gpu and aspect is VideoAspect.LANDSCAPE else 25,
+        fps=StandardFrameRate.FPS_59_94
+        if not prefer_gpu and aspect is VideoAspect.LANDSCAPE
+        else 25,
         output=VideoOutput.TRANSPARENT if mode == VideoOutput.TRANSPARENT else VideoOutput.OPAQUE,
         prefer_gpu=prefer_gpu,
         layout=layout,
@@ -667,7 +671,10 @@ def test_orbit_preserves_negative_forces_and_absent_orientation(manta: ExplorerD
 
 @pytest.mark.parametrize(
     "fps,label,numerator",
-    [("24000/1001", "23.976", 24000), ("60000/1001", "59.94", 60000)],
+    [
+        (StandardFrameRate.FPS_23_976, "23.976", 24000),
+        (StandardFrameRate.FPS_59_94, "59.94", 60000),
+    ],
 )
 def test_fractional_frame_rate_keeps_exact_duration_and_source_positions(
     manta: ExplorerData,
@@ -687,6 +694,8 @@ def test_fractional_frame_rate_keeps_exact_duration_and_source_positions(
     assert clock.frame_count == numerator
     assert clock.sample_position(numerator // 2) == 25025
     command = encoder_command(Path("ffmpeg.exe"), timeline, Path("out.mov"), use_gpu=False)
+    metadata = json.loads(command[command.index("-metadata") + 1].removeprefix("comment="))
+    assert metadata["video_fps"] == str(fps)
     assert command[command.index("-framerate") + 1] == fps
     for rounded in (label, float(label)):
         with pytest.raises(ValueError, match="Frame rate"):

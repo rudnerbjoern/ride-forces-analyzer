@@ -1,5 +1,7 @@
 """Planning estimates follow export length and codec without running an encoder."""
 
+from ride_forces_analyzer.rendering.model import StandardFrameRate
+
 from dataclasses import replace
 from typing import Literal
 
@@ -46,7 +48,11 @@ def test_hud_estimate_tracks_measured_exports(
     measured_bytes: int,
     tolerance: float,
 ) -> None:
-    settings = ExportSettings(layout=ExportLayout.HUD, fps="60000/1001", output=output)
+    settings = ExportSettings(
+        layout=ExportLayout.HUD,
+        fps=StandardFrameRate.FPS_59_94,
+        output=output,
+    )
     low, high = estimate_size_bytes(settings, sample_count, 50)
     assert measured_bytes * (1 - tolerance) <= low < measured_bytes < high
     assert high <= measured_bytes * (1 + tolerance)

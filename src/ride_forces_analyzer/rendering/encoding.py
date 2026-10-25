@@ -20,7 +20,7 @@ from time import monotonic
 from uuid import uuid4
 
 from .layouts import export_region
-from .model import VideoOutput, ExportTimeline
+from .model import VideoOutput, ExportTimeline, frame_rate_value
 from .parallel import render_region_bytes
 from .progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.cpu_resources import effective_render_jobs
@@ -154,7 +154,7 @@ def encoder_command(
             {
                 "source_sha256": timeline.source_sha256,
                 "sample_rate": timeline.sample_rate,
-                "video_fps": timeline.settings.fps,
+                "video_fps": frame_rate_value(timeline.settings.fps),
                 "first_sample": timeline.first,
                 "last_sample_inclusive": timeline.last,
                 "replay_origin": timeline.replay_origin,

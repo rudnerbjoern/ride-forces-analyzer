@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 
 from ride_forces_analyzer.i18n import LANGUAGE_CHOICES, LANGUAGES, Language, tr
 from ride_forces_analyzer.cpu_resources import render_job_limit
-from ride_forces_analyzer.rendering.model import EXPORT_FRAME_RATES, ExportSettings
+from ride_forces_analyzer.rendering.model import EXPORT_FRAME_RATES
 from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 from ride_forces_analyzer.storage.map_tiles import TileCache
 from .translation import bind, items
@@ -108,7 +108,7 @@ class SettingsDialog(QDialog):
         group = bind(QGroupBox(), tr("Export"), "title")
         form = QFormLayout(group)
         self.frame_rate = QComboBox()
-        items(self.frame_rate, [ExportSettings(fps=rate).fps_label for rate in EXPORT_FRAME_RATES])
+        items(self.frame_rate, [rate.label for rate in EXPORT_FRAME_RATES])
         self.frame_rate.setCurrentIndex(EXPORT_FRAME_RATES.index(preferences.export_fps()))
         form.addRow(bind(QLabel(), tr("Default video frame rate")), self.frame_rate)
         explanation = bind(

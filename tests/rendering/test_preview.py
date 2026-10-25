@@ -1,5 +1,7 @@
 """Actual export previews use exact graph samples, production frames and no encoder."""
 
+from ride_forces_analyzer.rendering.model import StandardFrameRate
+
 # cspell:words LANCZOS getpixel getchannel getbbox
 
 from dataclasses import replace
@@ -167,7 +169,10 @@ def test_edge_choice_moves_corner_previews_to_equivalent_side(
     )
 
 
-@pytest.mark.parametrize("fps", [30, 50, 60, "24000/1001", "60000/1001"])
+@pytest.mark.parametrize(
+    "fps",
+    [30, 50, 60, StandardFrameRate.FPS_23_976, StandardFrameRate.FPS_59_94],
+)
 def test_preview_sample_is_independent_of_video_rate(
     manta: ExplorerData,
     fps: FrameRate,

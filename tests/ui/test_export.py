@@ -1,5 +1,7 @@
 """Native export-dialog interaction and background worker lifecycle."""
 
+from ride_forces_analyzer.rendering.model import StandardFrameRate
+
 from ride_forces_analyzer.rendering.model import ExportLayout, VideoAspect
 from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.analysis.recording import source_app_configuration
@@ -444,7 +446,10 @@ def test_stale_preview_is_discarded_after_fast_profile_changes(
     finally:
         release.set()
     wait_until(lambda: dialog.preview_result is not None)
-    assert calls == [(ExportLayout.RIBBON, 50), (ExportLayout.ORBIT, 30)]
+    assert calls == [
+        (ExportLayout.RIBBON, StandardFrameRate.FPS_50),
+        (ExportLayout.ORBIT, StandardFrameRate.FPS_30),
+    ]
     assert dialog.layout_profile.currentText() == "G-Orbit"
     assert "Preview: graph sample" in dialog.preview_caption.text()
     assert dialog.next.isEnabled() and dialog.worker is None
@@ -498,7 +503,7 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     assert saved.jobs[1].preset.settings.layout == ExportLayout.RIBBON
     dialog.fps.setCurrentText("25")
     dialog.update_preset.click()
-    assert dialog.store.batch("Weekend").jobs[1].preset.settings.fps == 50
+    assert dialog.store.batch("Weekend").jobs[1].preset.settings.fps is StandardFrameRate.FPS_50
     dialog.close()
     window.export_button.click()
     reopened = window.export_window

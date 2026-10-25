@@ -1,5 +1,7 @@
 """SQLite persistence, immutable queue snapshots and real sequential export contracts."""
 
+from ride_forces_analyzer.rendering.model import StandardFrameRate
+
 from ride_forces_analyzer.analysis.recording import source_app_configuration
 
 # cspell:words Xnotes
@@ -163,6 +165,41 @@ def test_video_output_preserves_saved_codes_and_requires_enum_members(
         VideoOutput("other")
 
 
+@pytest.mark.parametrize("rate", list(StandardFrameRate))
+def test_standard_rates_keep_existing_json_values_and_restore_enum_members(
+    rate: StandardFrameRate,
+) -> None:
+    expected: int | str = rate.value if "/" in rate.value else int(rate.value)
+    base = preset()
+    settings = replace(base.settings, fps=rate)
+    chosen = base.model_copy(update={"settings": settings})
+    payload = json.loads(chosen.model_dump_json())
+    assert payload["settings"]["fps"] == expected
+    assert type(payload["settings"]["fps"]) is type(expected)
+    restored = SavedPreset.model_validate_json(json.dumps(payload))
+    assert restored.settings.fps is rate
+    assert restored.settings.frame_rate == rate.fraction
+    assert restored.settings.fps_label == rate.label
+    assert restored == chosen
+    if type(expected) is int:
+        assert ExportSettings(fps=expected).fps is rate
+    with pytest.raises(ValueError, match="Frame rate"):
+        ExportSettings(fps=cast(FrameRate, rate.value))
+
+
+def test_custom_frame_rates_preserve_integer_storage_and_reject_invalid_values() -> None:
+    assert ExportSettings().fps is StandardFrameRate.FPS_50
+    for value in (1, 27, 120):
+        settings = ExportSettings(fps=value)
+        chosen = preset().model_copy(update={"settings": settings})
+        restored = SavedPreset.model_validate_json(chosen.model_dump_json())
+        assert type(restored.settings.fps) is int and restored.settings.fps == value
+        assert restored.settings.frame_rate == value
+    for value in (True, False, 0, 121, 50.0, "23.976", "59.94", "50"):
+        with pytest.raises(ValueError, match="Frame rate"):
+            ExportSettings(fps=cast(FrameRate, value))
+
+
 def short_job(data: ExplorerData, chosen: SavedPreset | None = None) -> BatchJob:
     assert data.analysis is not None
     first = data.source.recording.indices.start
@@ -175,7 +212,7 @@ def short_job(data: ExplorerData, chosen: SavedPreset | None = None) -> BatchJob
     )
 
 
-@pytest.mark.parametrize("fps", ["24000/1001", "60000/1001"])
+@pytest.mark.parametrize("fps", [StandardFrameRate.FPS_23_976, StandardFrameRate.FPS_59_94])
 def test_sqlite_survives_reopen_with_snapshots_and_transaction_rollback(
     export_directory: Path,
     manta: ExplorerData,
@@ -201,7 +238,7 @@ def test_sqlite_survives_reopen_with_snapshots_and_transaction_rollback(
         chosen.model_copy(update={"settings": replace(chosen.settings, fps=30)}),
         overwrite=True,
     )
-    assert ExportStore(path).presets()[0].settings.fps == 30
+    assert ExportStore(path).presets()[0].settings.fps is StandardFrameRate.FPS_30
     assert ExportStore(path).batch("Weekend").jobs[0].preset.settings.fps == fps
     with pytest.raises(ExportStoreError):
         store.save_preset(chosen.model_copy(update={"name": "ribbon"}))
