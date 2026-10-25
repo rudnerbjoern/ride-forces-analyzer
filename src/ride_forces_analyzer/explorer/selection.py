@@ -6,6 +6,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import annotations
 
+from ride_forces_analyzer.validation.checks import validate_sample_range
+
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from math import ceil, floor, isclose, isfinite
@@ -99,8 +101,12 @@ def select(data: ExplorerData, first: int, last: int) -> SampleRange:
     Raises:
         ValueError: Selection requires bounded, ordered sample indices.
     """
-    if type(first) is not int or type(last) is not int or not 0 <= first <= last < data.count:
-        raise ValueError("Selection requires bounded, ordered sample indices")
+    validate_sample_range(
+        first,
+        last,
+        data.count,
+        "Selection requires bounded, ordered sample indices",
+    )
     return SampleRange(first, last)
 
 

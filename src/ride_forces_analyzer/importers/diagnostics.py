@@ -10,7 +10,7 @@ from enum import StrEnum
 import re
 
 
-from ride_forces_analyzer.domain._validation import has_type
+from ride_forces_analyzer.validation.checks import has_type, validate_diagnostic_code
 
 
 class Severity(StrEnum):
@@ -57,8 +57,7 @@ class ImportDiagnostic:
                 Diagnostic sample index must be a nonnegative integer.
             TypeError: Diagnostic severity must be a Severity.
         """
-        if not has_type(self.code, str) or not re.fullmatch(r"[A-Z][A-Z0-9_]*", self.code):
-            raise ValueError("Diagnostic code must be a stable uppercase identifier")
+        validate_diagnostic_code(self.code)
         if not has_type(self.severity, Severity):
             raise TypeError("Diagnostic severity must be a Severity")
         if (

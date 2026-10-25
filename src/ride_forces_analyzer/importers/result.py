@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Literal
 
-from ride_forces_analyzer.domain._validation import has_type
+from ride_forces_analyzer.validation.checks import has_type
 from ride_forces_analyzer.domain.models import Recording
 from ride_forces_analyzer.domain.source import SourceEnvelope
 

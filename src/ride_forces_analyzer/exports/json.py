@@ -11,11 +11,12 @@ from pathlib import Path
 from typing import TextIO
 
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
-from ride_forces_analyzer.domain._validation import has_type
 from ride_forces_analyzer.exports._file import export_file
 from ride_forces_analyzer.formatting.time import format_sample_time
-from ride_forces_analyzer.domain.models import SampleRate
 from ride_forces_analyzer.domain.source import SourceNumber, SourceValue
+
+from .formats import DataExportFormat
+from .validation import validate_export
 
 
 JSON_SAMPLE_KEYS = (
@@ -42,27 +43,6 @@ JSON_SAMPLE_KEYS = (
 
 class JsonExportCancelled(Exception):
     """Cancellation requested; the newly created incomplete file is removed."""
-
-
-def _validate_export(
-    analysis: RecordingAnalysis,
-    path: Path,
-    first: int,
-    last: int,
-) -> SampleRate:
-    if not has_type(analysis, RecordingAnalysis):
-        raise TypeError("JSON export requires RecordingAnalysis")
-    if type(first) is not int or type(last) is not int:
-        raise TypeError("JSON sample indices must be integers")
-    if not 0 <= first <= last < len(analysis.time.source_indices):
-        raise ValueError("JSON export requires a bounded inclusive sample range")
-    if path.suffix.lower() != ".json":
-        raise ValueError("JSON export requires a .json destination")
-    analysis.validate()
-    rate = analysis.time.basis.sample_rate
-    if rate is None:
-        raise ValueError("JSON sample times require a sample rate")
-    return rate
 
 
 def _recording_metadata(analysis: RecordingAnalysis) -> dict[str, object]:
@@ -163,7 +143,7 @@ def export_json(
     Returns:
         Number of exported source sample rows.
     """
-    rate = _validate_export(analysis, path, first, last)
+    rate = validate_export(analysis, path, first, last, DataExportFormat.JSON)
     arrays: dict[str, list[object]] = {key: [] for key in JSON_SAMPLE_KEYS}
     count = last - first + 1
     if cancelled():
@@ -274,7 +254,7 @@ def export_analyzer_json(
         cancelled: Predicate returning True when cancellation has been requested.
         progress: Callback receiving the number of source rows written.
     """
-    rate = _validate_export(analysis, path, first, last)
+    rate = validate_export(analysis, path, first, last, DataExportFormat.ANALYZER_JSON)
     count = last - first + 1
     axes = ("vertical", "lateral", "longitudinal")
     raw: dict[str, list[float | None]] = {axis: [] for axis in ("x", "y", "z")}

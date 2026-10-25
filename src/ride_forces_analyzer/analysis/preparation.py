@@ -18,7 +18,7 @@ from ride_forces_analyzer.domain import RecordingFormat
 from ride_forces_analyzer.importers import ImportSuccess, Severity
 
 from . import airtime, events as event_detection
-from ._validation import require as _require, require_type as _typed
+from ride_forces_analyzer.validation.checks import require as _require, require_type as _typed
 from .calibration import (
     prepare_calibration_basis,
 )

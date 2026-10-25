@@ -9,9 +9,11 @@ import csv
 from pathlib import Path
 
 from ride_forces_analyzer.analysis.recording import ForceSample, RecordingAnalysis
-from ride_forces_analyzer.domain._validation import has_type
 from ride_forces_analyzer.exports._file import export_file
 from ride_forces_analyzer.formatting.time import format_sample_time
+
+from .formats import DataExportFormat
+from .validation import validate_export
 
 
 CSV_COLUMNS = (
@@ -87,18 +89,7 @@ def export_csv(
     Returns:
         Number of exported source sample rows.
     """
-    if not has_type(analysis, RecordingAnalysis):
-        raise TypeError("CSV export requires RecordingAnalysis")
-    if type(first) is not int or type(last) is not int:
-        raise TypeError("CSV sample indices must be integers")
-    if not 0 <= first <= last < len(analysis.time.source_indices):
-        raise ValueError("CSV export requires a bounded inclusive sample range")
-    if path.suffix.lower() != ".csv":
-        raise ValueError("CSV export requires a .csv destination")
-    analysis.validate()
-    rate = analysis.time.basis.sample_rate
-    if rate is None:
-        raise ValueError("CSV sample times require a sample rate")
+    rate = validate_export(analysis, path, first, last, DataExportFormat.CSV)
     window = dict(analysis.configuration.smoothing.parameters).get("window_samples", 11)
     count = last - first + 1
     if cancelled():

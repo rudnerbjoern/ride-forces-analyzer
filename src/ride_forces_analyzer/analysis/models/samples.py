@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from numpy.typing import NDArray
 
-from ride_forces_analyzer.domain._validation import has_type
+from ride_forces_analyzer.validation.checks import has_type
 
 
 @dataclass(frozen=True, slots=True, init=False)

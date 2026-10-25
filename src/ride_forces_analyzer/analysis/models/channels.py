@@ -9,9 +9,13 @@ from enum import StrEnum
 
 
 from ride_forces_analyzer.domain import SampleRate
-from ride_forces_analyzer.domain._validation import has_type
+from ride_forces_analyzer.validation.checks import has_type
 
-from ._validation import validate_text as _text, text_values as _texts, validate_enum as _enum
+from ride_forces_analyzer.validation.checks import (
+    validate_text as _text,
+    text_values as _texts,
+    validate_enum as _enum,
+)
 from .samples import SampleValues
 
 

@@ -7,14 +7,13 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import StrEnum
-import re
 
 
 from ride_forces_analyzer.domain import SourceProvenance
-from ride_forces_analyzer.domain._validation import has_type
+from ride_forces_analyzer.validation.checks import has_type, validate_diagnostic_code
 from ride_forces_analyzer.importers import ImportSuccess, Severity
 
-from ._validation import validate_text as _text, validate_enum as _enum
+from ride_forces_analyzer.validation.checks import validate_text as _text, validate_enum as _enum
 from .channels import AnalysisChannel, CapabilityState, ProcessingKind, QuantityKind, SourceSequence
 from .profiles import AnalysisProfile, ProfileName
 
@@ -48,8 +47,7 @@ class AnalysisDiagnostic:
                 index must be a nonnegative integer. Indexed diagnostics require a
                 channel/sequence reference.
         """
-        if not has_type(self.code, str) or not re.fullmatch(r"[A-Z][A-Z0-9_]*", self.code):
-            raise ValueError("Diagnostic code must be a stable uppercase identifier")
+        validate_diagnostic_code(self.code)
         _enum(self.severity, Severity)
         _text(self.message, "Diagnostic message")
         if self.channel_id is not None:

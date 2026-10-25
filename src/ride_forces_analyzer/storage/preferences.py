@@ -4,6 +4,8 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
+from ride_forces_analyzer.validation.checks import validate_sha256
+
 from contextlib import closing
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -17,7 +19,6 @@ from ride_forces_analyzer.rendering.model import DEFAULT_FRAME_RATE, StandardFra
 from ride_forces_analyzer.i18n import LANGUAGES, Language
 from typing import Literal
 from math import isfinite
-import re
 
 from ride_forces_analyzer.analysis.calibration import (
     CalibrationOverrides,
@@ -31,9 +32,7 @@ _RECORDING_BOUNDS = TypeAdapter(tuple[int, int])
 
 
 def _recording_hash(value: object) -> str:
-    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
-        raise ValueError("Expected a source SHA-256")
-    return value
+    return validate_sha256(value, "Expected a source SHA-256")
 
 
 def _recording_bounds(value: tuple[int, int]) -> tuple[int, int]:

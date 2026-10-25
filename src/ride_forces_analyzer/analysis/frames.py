@@ -10,14 +10,13 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from importlib import import_module
 from importlib.metadata import version
-import re
 from typing import Protocol, cast
 
 import numpy as np
 from numpy.typing import NDArray
 
 from ride_forces_analyzer.domain import Vector3
-from ride_forces_analyzer.domain._validation import has_type
+from ride_forces_analyzer.validation.checks import has_type, validate_sha256
 from ride_forces_analyzer.importers import ImportSuccess, Severity
 
 from .device import MotionUnitContract, analyze_device_vectors
@@ -184,11 +183,7 @@ class RiderCalibration:
             TypeError: Calibration requires an explicit validated basis. Calibration
                 references must be a collection.
         """
-        if not has_type(self.source_sha256, str) or not re.fullmatch(
-            r"[0-9a-f]{64}",
-            self.source_sha256,
-        ):
-            raise ValueError("Calibration requires a lowercase source SHA-256")
+        validate_sha256(self.source_sha256, "Calibration requires a lowercase source SHA-256")
         if not has_type(self.basis, OrthonormalFrame):
             raise TypeError("Calibration requires an explicit validated basis")
         if isinstance(self.references, (str, bytes)):

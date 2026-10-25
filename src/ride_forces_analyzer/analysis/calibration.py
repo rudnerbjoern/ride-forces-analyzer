@@ -12,7 +12,7 @@ from math import fsum, hypot, isfinite
 
 from ride_forces_analyzer import __version__
 from ride_forces_analyzer.domain import Vector3
-from ride_forces_analyzer.domain._validation import has_type
+from ride_forces_analyzer.validation.checks import has_type
 from ride_forces_analyzer.importers import ImportSuccess, Severity
 
 from .models import AnalysisDiagnostic, AnalysisProvenance, CapabilityState

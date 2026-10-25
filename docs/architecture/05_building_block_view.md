@@ -32,6 +32,11 @@ flowchart TB
 ```
 
 Arrows indicate dependencies. Domain/import/analysis code has no widget dependency.
+The independent `validation.checks` module checks types, conditions, nonempty text,
+enum members, lowercase SHA-256 digests, diagnostic codes and inclusive sample
+intervals. Callers retain their error types and messages. Domain and analysis rules
+remain with their owning packages;
+`analysis.recording.validation` validates snapshot and configuration relationships.
 
 ## Contained building blocks
 
@@ -133,8 +138,10 @@ processors, with a one-job fallback. [Runtime](06_runtime_view.md) and
 ## Sample data export boundary
 
 `exports.csv` and `exports.json` serialize a bound snapshot and inclusive interval;
-they do not calculate analysis or depend on Qt/FFmpeg. `exports._file` owns exclusive
-creation and atomic replacement after explicit overwrite confirmation.
+they do not calculate analysis or depend on Qt/FFmpeg. `exports.validation` checks
+the bound snapshot, inclusive range, destination suffix and available sample rate
+for both serializers. `exports._file` owns exclusive creation and atomic replacement
+after explicit overwrite confirmation.
 `exports.formats.DataExportFormat` provides the shared `CSV`, `JSON` and `ANALYZER_JSON`
 identifiers with stable text values `csv`, `json` and `analyzer_json`.
 `formatting.time.format_sample_time` supplies the common replay labels for explorer,

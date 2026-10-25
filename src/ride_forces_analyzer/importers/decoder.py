@@ -17,7 +17,7 @@ from typing import Literal, cast
 import zlib
 
 from ride_forces_analyzer.domain import RecordingFormat, SourceEnvelope, SourceNumber, SourceValue
-from ride_forces_analyzer.domain._validation import has_type
+from ride_forces_analyzer.validation.checks import has_type
 
 from ._json_preflight import DecodeProblem, preflight
 from .diagnostics import ImportDiagnostic, Severity

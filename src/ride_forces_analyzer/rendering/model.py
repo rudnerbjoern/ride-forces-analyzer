@@ -4,6 +4,8 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
+from ride_forces_analyzer.validation.checks import validate_sample_range
+
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -424,8 +426,7 @@ def prepare_export(
         AssertionError: If a required internal invariant does not hold.
     """
     count = len(analysis.time.source_indices)
-    if type(first) is not int or type(last) is not int or not 0 <= first <= last < count:
-        raise ValueError("Invalid export sample interval")
+    validate_sample_range(first, last, count, "Invalid export sample interval")
     forces = analysis.forces.smoothed
     if forces.channels is None:
         reason = forces.availability.reason

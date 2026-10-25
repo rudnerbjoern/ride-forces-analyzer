@@ -11,7 +11,7 @@ from math import isfinite
 from ride_forces_analyzer.domain import Vector3
 from ride_forces_analyzer.importers import ImportSuccess
 
-from .._validation import require as _require, require_type as _typed
+from ride_forces_analyzer.validation.checks import require as _require, require_type as _typed
 from ..calibration import (
     CalibrationBasis,
     CalibrationOverrides,

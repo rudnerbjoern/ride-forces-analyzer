@@ -16,7 +16,7 @@ import logging
 from threading import RLock
 
 from ride_forces_analyzer.importers import ImportSuccess, Severity
-from ride_forces_analyzer.domain._validation import has_type
+from ride_forces_analyzer.validation.checks import has_type, require_type
 
 from .models import AnalysisDiagnostic
 from .calibration import CalibrationOverrides, CalibrationReferenceError
@@ -188,8 +188,7 @@ class AnalysisService:
         Returns:
             None.
         """
-        if not has_type(subscription, AnalysisSubscription):
-            raise TypeError("Expected AnalysisSubscription")
+        require_type(subscription, AnalysisSubscription)
         with self._lock:
             entry = self._subscriptions.get(subscription.identifier)
             if entry is not None:

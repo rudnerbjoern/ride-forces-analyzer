@@ -4,6 +4,8 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
+from ride_forces_analyzer.validation.checks import validate_sample_range
+
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from math import isfinite
@@ -133,8 +135,7 @@ def calculate_extrema(
         raise ValueError("Extrema calculation time must be timezone-aware")
     recording = source.recording
     count = len(recording.motion.acceleration)
-    if type(first) is not int or type(last) is not int or not 0 <= first <= last < count:
-        raise ValueError("Extrema require bounded, ordered sample indices")
+    validate_sample_range(first, last, count, "Extrema require bounded, ordered sample indices")
     rate = recording.motion.sample_rate
     channels: "tuple[Sequence[float] | NDArray[np.float64], ...]"
     if forces is not None:
