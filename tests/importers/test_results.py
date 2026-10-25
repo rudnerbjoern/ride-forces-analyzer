@@ -135,3 +135,37 @@ def test_public_model_packages_do_not_import_qt() -> None:
     )
     assert result.returncode == 0, result.stderr
     assert b"Qt-independent model packages verified" in result.stdout
+
+
+def test_results_and_diagnostics_reject_incompatible_runtime_values(
+    synthetic_recording: Recording,
+) -> None:
+    from dataclasses import replace
+    from typing import cast
+    from ride_forces_analyzer.domain import GpsStatus
+    from ride_forces_analyzer.importers import OptionalParseSuccess, parse_optional_data
+
+    error = ImportDiagnostic("INVALID_INPUT", Severity.ERROR, "", "Invalid input")
+    with pytest.raises(TypeError, match="Diagnostic severity must be a Severity"):
+        replace(error, severity=cast(Severity, "error"))
+    with pytest.raises(ValueError, match="Diagnostic message must not be empty"):
+        replace(error, message=" ")
+    with pytest.raises(ValueError, match="nonnegative integer"):
+        replace(error, sample_index=-1)
+    with pytest.raises(TypeError, match="Diagnostics must contain ImportDiagnostic"):
+        ordered_diagnostics(cast(tuple[ImportDiagnostic, ...], ("invalid",)))
+    with pytest.raises(TypeError, match="complete typed Recording"):
+        ImportSuccess(cast(Recording, None))
+    with pytest.raises(TypeError, match="owned SourceEnvelope"):
+        ImportFailure((error,), source=cast(SourceEnvelope, "source"))
+    with pytest.raises(ValueError, match="nonempty string"):
+        ImportFailure((error,), schema_version="")
+    optional = parse_optional_data(synthetic_recording.source)
+    assert isinstance(optional, OptionalParseSuccess)
+    for changes, kind in (
+        ({"diagnostics": (error,)}, ValueError),
+        ({"gps_status": GpsStatus.PRESENT}, ValueError),
+        ({"attributes": ("Seat",)}, TypeError),
+    ):
+        with pytest.raises(kind):
+            replace(optional, **changes)

@@ -91,8 +91,8 @@ Source smoke checks do not replace [frozen-package qualification](RELEASE.md#win
 ## Coverage gate
 
 Locked `coverage.py`/`pytest-cov` measure lines and branches throughout `analysis`,
-`validation`, `storage`, `i18n`, `formatting`, `playback`, `runtime`, `gps` and
-`domain`. `[tool.coverage.*]` in `pyproject.toml` owns configuration.
+`validation`, `storage`, `i18n`, `formatting`, `playback`, `runtime`, `gps`,
+`domain` and `importers`. `[tool.coverage.*]` in `pyproject.toml` owns configuration.
 Subprocess measurement includes isolated error-report lifecycle and exception-hook tests. Collection selects the declared sources without importing modules for discovery. Run from the repository root on native Windows:
 
 ```powershell
@@ -102,7 +102,8 @@ uv run --locked pytest --cov --cov-report=term-missing `
     tests/updates/test_releases.py tests/localization `
     tests/explorer/test_data.py::test_replay_sample_counter_format tests/playback `
     tests/support tests/tooling/test_runtime_paths.py tests/tooling/test_settings.py `
-    tests/explorer/test_gps.py tests/explorer/test_map_background.py tests/domain
+    tests/explorer/test_gps.py tests/explorer/test_map_background.py tests/domain `
+    tests/importers
 uv run --locked coverage html
 uv run --locked coverage json
 ```
@@ -134,6 +135,10 @@ projection, bounded viewport requests, HTTP/cache rules and cancellation using
 simulated tile responses without live network access. Domain coverage includes
 immutable source ownership, exact number tokens, constructor type checks and
 recording-component consistency without decoding or rewriting original recordings.
+Importer coverage includes bounded JSON/compressed decoding, diagnostic budgets,
+motion/optional parsing and full-service outcomes. The two strict subprocess
+file-access audits run without coverage instrumentation, whose own file I/O would
+violate their contract; the remaining tests measure the importer modules.
 Behavior tests establish contracts; coverage percentage does not qualify physical
 interpretation or UI integration. Cover new branches without weakening the gate.
 
