@@ -138,7 +138,7 @@ def test_bound_calibration_jobs_ignore_later_preferences_and_preserve_preset_sco
     "field,value",
     (("algorithm_version", "unsupported"), ("window_samples", 11), ("window_samples", None)),
 )
-def test_saved_calibration_recipe_requires_supported_explicit_parameters(
+def test_saved_calibration_recipe_defaults_missing_and_rejects_unsupported_parameters(
     field: str,
     value: str | int | None,
 ) -> None:
@@ -151,10 +151,12 @@ def test_saved_calibration_recipe_requires_supported_explicit_parameters(
     payload = json.loads(preset.model_dump_json())
     if value is None:
         del payload["analysis_configuration"]["calibration"][field]
+        restored = SavedPreset.model_validate_json(json.dumps(payload))
+        assert restored == preset
     else:
         payload["analysis_configuration"]["calibration"][field] = value
-    with pytest.raises(ValueError):
-        SavedPreset.model_validate_json(json.dumps(payload))
+        with pytest.raises(ValueError):
+            SavedPreset.model_validate_json(json.dumps(payload))
 
 
 def test_export_reuses_buffers_orientation_and_full_history_context(
