@@ -4,7 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-from dataclasses import asdict, fields, replace
+from dataclasses import asdict, replace
 from pathlib import Path
 import json
 from typing import Literal, Self, cast
@@ -19,21 +19,12 @@ from pydantic import (
     model_validator,
 )
 
-from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, StageConfiguration
+from ride_forces_analyzer.analysis.recording import AnalysisConfiguration
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
-from ride_forces_analyzer.analysis.models import AnalysisProfile
 from ride_forces_analyzer.rendering.model import VideoAspect, ExportSettings
 from ride_forces_analyzer.rendering.layouts import registry
 
 RangeMode = Literal["markers", "selection", "entire"]
-
-
-def _require_fields(value: object, required: set[str], label: str) -> None:
-    """Reject incomplete stored objects; typed objects may use new-object defaults."""
-    if isinstance(value, dict):
-        missing = required - cast(dict[str, object], value).keys()
-        if missing:
-            raise ValueError(f"{label} is incomplete; missing fields: {', '.join(sorted(missing))}")
 
 
 class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
@@ -56,20 +47,6 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
     range_mode: RangeMode
     analysis_configuration: AnalysisConfiguration
 
-    @field_validator("settings", mode="before")
-    @classmethod
-    def complete_settings(cls, value: object) -> object:
-        """Require every persisted export setting to be explicitly present.
-
-        Args:
-            value: Candidate value to validate, format or store.
-
-        Returns:
-            Input unchanged after the persisted-settings completeness check.
-        """
-        _require_fields(value, {item.name for item in fields(ExportSettings)}, "Export settings")
-        return value
-
     @field_validator("settings")
     @classmethod
     def explicit_position(cls, value: ExportSettings) -> ExportSettings:
@@ -89,39 +66,21 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
 
     @field_validator("analysis_configuration", mode="before")
     @classmethod
-    def complete_configuration(cls, value: object, info: ValidationInfo) -> object:
-        """Require a complete persisted analysis configuration.
+    def decode_configuration(cls, value: object, info: ValidationInfo) -> object:
+        """Decode stored analysis recipes using declared defaults for omitted fields.
 
         Args:
             value: Candidate value to validate, format or store.
             info: Prepared information for the operation.
 
         Returns:
-            Input unchanged after the analysis-recipe completeness check.
+            Validated JSON configuration, or unchanged Python input for strict validation.
+
+        Raises:
+            ValueError: Required fields are missing or supplied values are invalid.
         """
-        _require_fields(
-            value,
-            {item.name for item in fields(AnalysisConfiguration)} - {"ride_bounds"},
-            "Analysis recipe",
-        )
         if isinstance(value, dict):
             recipe = cast(dict[str, object], value)
-            _require_fields(
-                recipe.get("calibration"),
-                {item.name for item in fields(CalibrationOverrides)},
-                "Reference calibration",
-            )
-            _require_fields(
-                recipe.get("profile"),
-                {item.name for item in fields(AnalysisProfile)},
-                "Analysis profile",
-            )
-            for name in ("projection", "smoothing", "orientation", "context", "events"):
-                _require_fields(
-                    recipe.get(name),
-                    {item.name for item in fields(StageConfiguration)},
-                    "Analysis stage",
-                )
             if info.mode == "json":
                 return TypeAdapter(AnalysisConfiguration).validate_json(
                     json.dumps(recipe),

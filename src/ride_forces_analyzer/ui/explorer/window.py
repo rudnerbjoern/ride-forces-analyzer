@@ -7,6 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words Pixmap
 
 from ride_forces_analyzer import __version__
+from ride_forces_analyzer.ui.presentation.error_report import ErrorReportButton
 from ride_forces_analyzer.i18n import LANGUAGE_CHOICES, Language, tr
 from ride_forces_analyzer.ui.presentation.translation import (
     bind,
@@ -206,6 +207,7 @@ class ExplorerWindow(QMainWindow):
         self.setCentralWidget(body)
         version_label = QLabel(f"v{__version__}")
         version_label.setObjectName("applicationVersion")
+        self.statusBar().addPermanentWidget(ErrorReportButton(self.statusBar()))
         self.statusBar().addPermanentWidget(version_label)
         bind(self.statusBar(), tr("Ready — open a recording"), "message")
         self._set_controls(False)

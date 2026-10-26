@@ -132,6 +132,12 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     choose_layout(ExportLayout.COLUMN)
     assert choices() == ["left", "right"]
     assert dialog.form.position.currentData() == LayoutPosition.RIGHT
+    dialog.form.position.setCurrentIndex(dialog.form.position.findData("left"))
+    choose_layout(ExportLayout.RIBBON)
+    assert dialog.form.positions[ExportLayout.COLUMN] is LayoutPosition.LEFT
+    choose_layout(ExportLayout.COLUMN)
+    assert dialog.form.position.currentData() == LayoutPosition.LEFT
+    dialog.form.position.setCurrentIndex(dialog.form.position.findData("right"))
     choose_layout(ExportLayout.ORBIT)
     assert set(choices()) == {"top_left", "top_right", "bottom_left", "bottom_right"}
     assert dialog.form.position.currentData() == LayoutPosition.TOP_RIGHT

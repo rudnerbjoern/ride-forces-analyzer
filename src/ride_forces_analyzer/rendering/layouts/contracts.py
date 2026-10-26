@@ -123,10 +123,11 @@ class LayoutPositions:
         preferred: LayoutPosition | None,
         previous: LayoutPosition | None = None,
     ) -> LayoutPosition:
-        """Keep a supported position or its equivalent side; otherwise use the default.
+        """Keep a supported position or equivalent side, then a retained choice or default.
 
         For an edge-to-corner change, the previous position supplies the unspecified
-        axis, falling back to the default.
+        axis, falling back to the default. With no equivalent side, preserve a
+        supported previous position rather than replacing it with the default.
 
         Args:
             preferred: Preferred option when available.
@@ -173,7 +174,7 @@ class LayoutPositions:
                 ]
                 if shared and all(requested == offered for requested, offered in shared):
                     return candidate
-        return self.default
+        return previous if previous in self.regions and previous is not None else self.default
 
 
 class LayoutRenderer(Protocol):

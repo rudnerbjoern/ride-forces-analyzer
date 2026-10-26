@@ -42,8 +42,14 @@ Each window owns its recording, analysis, playback and child dialogs. Language
 and appearance are shared. Explicit file paths take precedence over optional
 Restore last file; only successful imports update the remembered path.
 
-Support reports collect handled/unhandled errors and best-effort native crash
-stacks. Writes are serialized and flushed without a per-run size limit.
+Support reports collect handled/unhandled errors, Qt warnings/critical/fatal
+messages with severity/category and best-effort native crash stacks. Qt diagnostics
+also reach the prior handler or terminal; debug/info messages are not stored.
+Writes are serialized and flushed without a per-run size limit.
+The first successful diagnostic write publishes report availability. Status-bar
+indicators receive queued UI-thread delivery; newly opened windows read the current
+state immediately. Header-only reports and failed writes do not activate the icon.
+Clicking opens the report directory through the platform desktop service.
 Startup removes completed-process
 reports and preserves active ones. Report failure must not replace the original
 error. Exception messages may contain personal paths; nothing is uploaded.

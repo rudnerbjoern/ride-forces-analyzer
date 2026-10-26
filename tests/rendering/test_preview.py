@@ -153,8 +153,12 @@ def test_edge_choice_moves_corner_previews_to_equivalent_side(
         3500,
         3700,
         3600,
-        previous_positions={ExportLayout.ORBIT: previous},
+        previous_positions={
+            ExportLayout.ORBIT: previous,
+            ExportLayout.COLUMN: LayoutPosition.LEFT,
+        },
     )
+    assert settings_by_layout[ExportLayout.COLUMN].position is LayoutPosition.LEFT
     assert settings_by_layout[ExportLayout.CORNERS].position == (
         LayoutPosition.TOP_RIGHT if position == LayoutPosition.TOP else LayoutPosition.BOTTOM_RIGHT
     )
