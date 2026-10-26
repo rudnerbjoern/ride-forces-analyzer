@@ -141,7 +141,8 @@ encoding; presets and compact layout thumbnails remain directly accessible.
   large previews, thumbnails and encoder padding use the same selected region.
   The assistant offers localized positions beside Layout profile. Layout/format
   changes retain a supported selection or choose an equivalent edge/corner on the
-  same side, falling back to the default. Thumbnails use the same policy.
+  same side. Without an equivalent, retain the layout's remembered supported
+  position before falling back to its default. Thumbnails use the same policy.
 - Compact time plots show three forces plus numeric tilt; Column adds an
   orientation plot. Export uses calibrated channels at the selected centered-mean
   setting. Bounds use selected extrema plus 5% outward padding and −1/0/+1 g labels.
