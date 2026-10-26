@@ -7,6 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # CSpell checks English keys and French translations using the file override.
 
 FRENCH: dict[str, str] = {
+    "Error report available — open folder": "Rapport d’erreur disponible — ouvrir le dossier",
     "1 · Set up export · {0}": "1 · Configurer l’export · {0}",
     "Force display": "Affichage des forces",
     "Encoding": "Encodage vidéo",
