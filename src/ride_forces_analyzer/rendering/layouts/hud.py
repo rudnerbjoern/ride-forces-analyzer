@@ -533,15 +533,14 @@ class HudRenderer(Drawing):
                 width=1,
             )
             reference = self.references[row]
-            if reference != 0:
-                self._text(
-                    draw,
-                    (g.history_left - 14, center),
-                    f"{reference:g} g",
-                    self.history_label,
-                    WHITE,
-                    "rm",
-                )
+            self._text(
+                draw,
+                (g.history_left - 4, reference_y),
+                f"{reference:g} g",
+                self.history_label,
+                WHITE,
+                "rm",
+            )
             draw.line(
                 (g.history_left, top + g.history_row - 1, history_right, top + g.history_row - 1),
                 fill=BASELINE_COLOR,
