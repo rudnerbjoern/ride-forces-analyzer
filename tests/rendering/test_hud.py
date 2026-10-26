@@ -739,7 +739,7 @@ def test_history_ranges_remain_usable_for_zero_missing_and_tiny_values(manta: Ex
 @pytest.mark.parametrize("aspect", list(VideoAspect))
 @pytest.mark.parametrize("inverted", [True, False])
 @pytest.mark.parametrize("flying", [True, False])
-def test_vertical_history_fits_extrema_and_keeps_label_positions(
+def test_vertical_history_fits_extrema_and_aligns_reference_label(
     seated: ExplorerData,
     manta: ExplorerData,
     flying: bool,
@@ -765,6 +765,7 @@ def test_vertical_history_fits_extrema_and_keeps_label_positions(
     vertical = replace(timeline.channels[0], values=values)
     labels: list[str] = []
     label_positions: dict[str, tuple[float, float]] = {}
+    zero_label_positions: list[tuple[float, float]] = []
     reference_lines: list[tuple[float, float, float, float]] = []
     original_line = ImageDraw.ImageDraw.line
 
@@ -781,6 +782,8 @@ def test_vertical_history_fits_extrema_and_keeps_label_positions(
     ) -> None:
         labels.append(text)
         label_positions[text] = _xy
+        if text == "0 g":
+            zero_label_positions.append(_xy)
 
     monkeypatch.setattr(ImageDraw.ImageDraw, "text", record_text)
     monkeypatch.setattr(ImageDraw.ImageDraw, "line", record_line)
@@ -802,7 +805,11 @@ def test_vertical_history_fits_extrema_and_keeps_label_positions(
     )
     assert {"0", "+1", "1 g"} <= set(labels)
     fixed_center = g.history_top + g.history_row / 2
-    assert label_positions["1 g"] == (g.history_left - 14, fixed_center)
+    assert label_positions["1 g"] == (g.history_left - 4, center)
+    assert zero_label_positions == [
+        (g.history_left - 4, g.history_top + 1.5 * g.history_row),
+        (g.history_left - 4, g.history_top + 2.5 * g.history_row),
+    ]
     assert label_positions["VERTICAL"] == (
         40,
         g.history_top - 10 if renderer.portrait else fixed_center,

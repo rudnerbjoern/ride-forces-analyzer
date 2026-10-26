@@ -149,8 +149,10 @@ History ranges are fitted once to valid selected samples per channel, separately
 from instrument ranges. Vertical history maps its selected extrema, including
 1 g, linearly onto `top + 1` through `top + history_row - 1` without headroom or
 rounding. Its reference line follows that mapping; equal bounds map to the center.
-Text positions stay fixed, including the 1 g label and portrait endpoint labels;
-the endpoint text shows the actual fitted bounds.
+Reference labels show 1 g for vertical and 0 g for lateral/longitudinal, aligned
+with their respective lines, including vertical inversion. Heading
+and portrait endpoint label positions stay fixed; endpoint text shows the actual
+fitted bounds.
 Lateral and longitudinal histories use symmetric
 bounds equal to their own largest absolute selected value, with no headroom,
 rounding or minimum range. Each uses `history_row / 2 - 1` pixels per direction,

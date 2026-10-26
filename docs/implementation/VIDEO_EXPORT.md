@@ -207,8 +207,10 @@ encoding; presets and compact layout thumbnails remain directly accessible.
   selected interval's independent per-channel scales. In every posture, vertical
   history maps its selected minimum and maximum to the row boundaries, including
   1 g in those bounds. Its 1 g reference line follows that linear mapping; equal
-  bounds remain centered. Text anchors stay fixed, including the vertical heading,
-  reference label and portrait endpoint labels. Lateral and longitudinal histories use
+  bounds remain centered. Reference labels follow their lines: 1 g for vertical
+  (including inversion), 0 g for lateral and longitudinal. The vertical heading
+  and portrait endpoint labels retain fixed anchors.
+  Lateral and longitudinal histories use
   zero as their reference and each use their exact
   largest absolute selected value as symmetric bounds, without padding, rounding
   or a minimum force range. Their peaks reach the row boundary: ±31.5 native pixels
