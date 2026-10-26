@@ -470,11 +470,6 @@ def test_saved_batch_reopens_and_exports_different_rides_and_formats(
     "field",
     (
         ("analysis_configuration",),
-        ("settings", "aspect"),
-        ("settings", "language"),
-        ("settings", "position"),
-        ("analysis_configuration", "events_input"),
-        ("analysis_configuration", "smoothing", "parameters"),
         ("analysis_configuration", "profile", "assumptions"),
         ("range_mode",),
         ("schema_version",),
@@ -499,8 +494,36 @@ def test_incomplete_stored_configuration_is_rejected_without_rewriting_database(
         del item[field[-1]]
         db.execute(f"UPDATE {table} SET payload=?", (json.dumps(payload),))
     before = path.read_bytes()
-    with pytest.raises(ExportStoreError, match="incomplete|Field required"):
+    with pytest.raises(ExportStoreError, match="Field required|assumptions"):
         store.presets() if table == "presets" else store.batches()
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("table", ("presets", "batches"))
+def test_missing_optional_fields_use_defaults_without_rewriting_database(
+    export_directory: Path,
+    manta: ExplorerData,
+    table: str,
+) -> None:
+    path = export_directory / "defaults.sqlite3"
+    store = ExportStore(path)
+    chosen = preset()
+    batch = SavedBatch(name="Batch", jobs=(short_job(manta, chosen),), schema_version=1)
+    store.save_preset(chosen)
+    store.save_batch(batch)
+    with closing(sqlite3.connect(path)) as db, db:
+        payload = json.loads(db.execute(f"SELECT payload FROM {table}").fetchone()[0])
+        item = payload if table == "presets" else payload["jobs"][0]["preset"]
+        for name in ("aspect", "language", "position"):
+            del item["settings"][name]
+        for name in ("calibration", "events", "context_input", "events_input"):
+            del item["analysis_configuration"][name]
+        del item["analysis_configuration"]["projection"]["parameters"]
+        del item["analysis_configuration"]["profile"]["schema_version"]
+        db.execute(f"UPDATE {table} SET payload=?", (json.dumps(payload),))
+    before = path.read_bytes()
+    assert store.presets() == (chosen,)
+    assert store.batches() == (batch,)
     assert path.read_bytes() == before
 
 

@@ -77,7 +77,7 @@ def test_french_settings_and_export_preserve_source_and_explicit_language(
         dialog.presets.save_preset.click()
         assert store.presets()[0].settings.language == "fr"
         dialog.form.overlay_language.setCurrentIndex(0)
-        dialog.presets.load_preset.click()
+        dialog.presets.preset_selector.activated.emit(dialog.presets.preset_selector.currentIndex())
         assert dialog.form.overlay_language.currentText() == "Français"
         window.set_ui_language(0)
         QApplication.processEvents()

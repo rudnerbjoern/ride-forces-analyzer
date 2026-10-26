@@ -332,7 +332,9 @@ def test_german_export_and_batch_dialogs_fit_and_save_language(
             assert store.presets()[0].name == "Meine Vorgabe"
             assert store.presets()[0].settings.language == "de"
             dialog.form.overlay_language.setCurrentIndex(0)
-            dialog.presets.load_preset.click()
+            dialog.presets.preset_selector.activated.emit(
+                dialog.presets.preset_selector.currentIndex(),
+            )
             assert dialog.form.overlay_language.currentIndex() == 1
             for button in dialog.findChildren(QPushButton):
                 if button.isVisible():

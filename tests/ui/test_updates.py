@@ -131,8 +131,12 @@ def test_offline_automatic_check_is_silent_and_manual_check_explains_failure(
     window.settings_action.trigger()
     settings = window.findChild(SettingsDialog)
     assert settings is not None
+    QApplication.processEvents()
+    initial_size = settings.size()
     try:
         settings.check_updates.click()
+        QApplication.processEvents()
+        assert settings.size() == initial_size
         assert not settings.check_updates.isEnabled()
         assert "Checking" in settings.update_status.text()
         settings.reject()
@@ -140,9 +144,13 @@ def test_offline_automatic_check_is_silent_and_manual_check_explains_failure(
         window.settings_action.trigger()
         settings = window.findChild(SettingsDialog)
         assert settings is not None and not settings.check_updates.isEnabled()
+        QApplication.processEvents()
+        initial_size = settings.size()
     finally:
         release.set()
     wait_until(lambda: window.updates.worker is None)
     assert "unavailable" in settings.update_status.text()
     assert settings.check_updates.isEnabled()
+    QApplication.processEvents()
+    assert settings.size() == initial_size
     settings.reject()

@@ -12,14 +12,18 @@ from ride_forces_analyzer.ui.presentation.translation import bind, items
 
 
 from PySide6.QtCore import (
+    Qt,
     Slot,
 )
+from PySide6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QStyle,
     QVBoxLayout,
     QWidget,
     QInputDialog,
@@ -52,9 +56,9 @@ class ExportPresets(QWidget):
         saved: Saved presets currently offered by the selector.
         batch_window: Open batch editor, when present.
         preset_selector: Choice of stored preset names.
-        load_preset: Button applying the selected preset.
         save_preset: Button saving a new named preset.
         update_preset: Button updating the selected saved preset.
+        delete_preset: Button deleting the selected saved preset.
         queue: Button adding the current source and recipe to a batch.
         manage_batches: Button opening the batch editor.
         controls: Preset and batch controls disabled during video export.
@@ -98,31 +102,70 @@ class ExportPresets(QWidget):
         presets_row.setContentsMargins(0, 0, 0, 0)
         presets_row.addWidget(bind(QLabel(), tr("Saved preset")))
         self.preset_selector = QComboBox()
+        self.preset_selector.activated.connect(self._load_preset)
         presets_row.addWidget(self.preset_selector, 1)
-        self.load_preset = bind(QPushButton(), tr("Load"))
-        self.load_preset.clicked.connect(self._load_preset)
-        self.save_preset = bind(QPushButton(), tr("Save as…"))
+        divider = QFrame()
+        divider.setObjectName("presetActionsDivider")
+        divider.setFrameShape(QFrame.Shape.VLine)
+        divider.setFrameShadow(QFrame.Shadow.Sunken)
+        presets_row.addWidget(divider)
+        self.save_preset = QPushButton()
+        save_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton)
+        save_pixmap = QPixmap(40, 40)
+        save_pixmap.setDevicePixelRatio(2)
+        save_pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(save_pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        save_icon.paint(painter, 0, 0, 20, 20)
+        for color, width in ((QColor("#203020"), 5), (QColor("#70d43b"), 3)):
+            painter.setPen(QPen(color, width))
+            painter.drawLine(12, 15, 17, 15)
+            painter.drawLine(15, 12, 15, 17)
+        painter.end()
+        self.save_preset.setIcon(QIcon(save_pixmap))
+        bind(self.save_preset, tr("Save as…"), "toolTip")
+        bind(self.save_preset, tr("Save as…"), "accessibleName")
         self.save_preset.clicked.connect(self._save_preset)
-        self.update_preset = bind(QPushButton(), tr("Update selected"))
+        self.update_preset = QPushButton()
+        self.update_preset.setIcon(save_icon)
+        bind(self.update_preset, tr("Update selected"), "toolTip")
+        bind(self.update_preset, tr("Update selected"), "accessibleName")
         self.update_preset.clicked.connect(self._update_preset)
-        self.queue = bind(QPushButton(), tr("Add this export to batch…"))
+        self.delete_preset = QPushButton()
+        self.delete_preset.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogDiscardButton),
+        )
+        bind(self.delete_preset, tr("Delete preset"), "toolTip")
+        bind(self.delete_preset, tr("Delete preset"), "accessibleName")
+        self.delete_preset.clicked.connect(self._delete_preset)
+        self.queue = QPushButton()
+        self.queue.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogNewFolder),
+        )
+        bind(self.queue, tr("Add this export to batch…"), "toolTip")
+        bind(self.queue, tr("Add this export to batch…"), "accessibleName")
         self.queue.clicked.connect(self._queue)
-        self.manage_batches = bind(QPushButton(), tr("Saved batches…"))
+        self.manage_batches = QPushButton()
+        self.manage_batches.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogDetailedView),
+        )
+        bind(self.manage_batches, tr("Saved batches…"), "toolTip")
+        bind(self.manage_batches, tr("Saved batches…"), "accessibleName")
         self.manage_batches.clicked.connect(self._manage_batches)
-        presets_row.addWidget(self.load_preset)
+        presets_row.addWidget(self.save_preset)
+        presets_row.addWidget(self.update_preset)
+        presets_row.addWidget(self.delete_preset)
+        batch_divider = QFrame()
+        batch_divider.setObjectName("presetBatchDivider")
+        batch_divider.setFrameShape(QFrame.Shape.VLine)
+        batch_divider.setFrameShadow(QFrame.Shadow.Sunken)
+        presets_row.addWidget(batch_divider)
+        presets_row.addWidget(self.queue)
+        presets_row.addWidget(self.manage_batches)
         presets_layout.addLayout(presets_row)
-        preset_actions = QHBoxLayout()
-        for preset_button in (
-            self.save_preset,
-            self.update_preset,
-            self.queue,
-            self.manage_batches,
-        ):
-            preset_actions.addWidget(preset_button)
-        presets_layout.addLayout(preset_actions)
         self.controls = (
             self.preset_selector,
-            self.load_preset,
+            self.delete_preset,
             self.save_preset,
             self.update_preset,
             self.queue,
@@ -200,6 +243,21 @@ class ExportPresets(QWidget):
             self.refresh(preset.name)
             self.message.emit(tr("Preset updated. Existing saved batch snapshots are unchanged."))
         except (ValueError, ExportStoreError) as error:
+            record_error("Export configuration", error)
+            self.message.emit(tr(str(error)))
+
+    @Slot()
+    def _delete_preset(self) -> None:
+        index = self.preset_selector.currentIndex() - 1
+        if not 0 <= index < len(self.saved):
+            self.message.emit(tr("Choose a saved preset first"))
+            return
+        name = self.saved[index].name
+        try:
+            self.store.delete_preset(name)
+            self.refresh()
+            self.message.emit(tr("Preset deleted: {0}", name))
+        except ExportStoreError as error:
             record_error("Export configuration", error)
             self.message.emit(tr(str(error)))
 

@@ -137,7 +137,9 @@ SQLite separates application preferences, versioned export definitions and map
 tiles. Preferences retain language/appearance, folders, restore/update consent,
 render-job count and source-bound marker choices. Invalid/unavailable values use
 documented defaults without destroying stored data. Presets/jobs retain complete
-recipes, not recordings or prepared arrays. Batches reimport/check hashes and run
+recipes, not recordings or prepared arrays. Omitted optional stored fields use
+declared model defaults, while required fields and supplied values remain strictly
+validated. Reads do not rewrite stored definitions. Batches reimport/check hashes and run
 sequentially, preserving completed videos across later failure/cancellation.
 
 Update lookup stays outside widgets. It requires a matching platform asset;

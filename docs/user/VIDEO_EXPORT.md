@@ -136,9 +136,11 @@ shown in turn over Onride footage. An additional
 
 ## Reuse settings
 
-Use **Save as…** in the assistant's preset area to save a setup. Choose a saved
-preset and click **Load** to use it again. Presets retain their own frame rate.
-For several exports, **Add this export to batch…** and **Saved batches…** let
+Use the disk icon with a plus (tooltip: **Save as…**) in the assistant's preset area to save a setup. Choose a saved
+preset to load it immediately and use it again.
+Presets retain their own frame rate.
+For several exports, the new-folder and list icons (tooltips: **Add this export to batch…**
+and **Saved batches…**) let
 you prepare and run a queue.
 Follow [presets and batches](EXPORT_BATCHES.md) for the complete workflow and
 how saved jobs retain their recording paths and settings.

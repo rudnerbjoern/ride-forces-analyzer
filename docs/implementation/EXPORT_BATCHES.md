@@ -36,18 +36,22 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   replay zero and the explicit calibration version/window. Later marker or
   preference edits do not change a saved job. Adding files restores valid local
   bounds and calibration before binding jobs; execution uses the saved recipe only.
-  Existing recipes may omit the optional `ride_bounds`
-  field, meaning original markers; all numerical stage settings remain explicit.
-- Every preset/job requires complete analysis/video settings, including aspect,
-  position and language. Missing/unsupported fields are rejected without fallback recipes,
-  format migration or destructive cleanup. New-object `ExportSettings` defaults
-  do not fill incomplete stored records.
+  Missing `ride_bounds` means original markers; missing `calibration` retains
+  original source directions without custom Gravity/Incline references.
+- Stored presets/jobs use the typed models' declared defaults for omitted optional
+  settings and nested recipe fields. Supplied values are preserved and validated;
+  missing required fields, inconsistent smoothing, invalid values and unsupported
+  schema versions still fail. No scientific recipe is invented when the required
+  analysis configuration is absent. Reading never rewrites or deletes stored
+  records; the next explicit save serializes the complete effective settings.
 - Preset creation resolves an implicit position to the current layout/format default
   and persists its named enum value. Jobs retain that explicit position; subsequent
   preset/default changes do not move it. Unsupported layout/format/position combinations
   are rejected. Coordinates and sizes remain in layout metadata, never in stored jobs.
 - Save as creates a preset; Update selected replaces only that named preset.
-  Loading refreshes production previews without changing explorer recording/settings.
+  Delete preset removes the selected definition and refreshes the selector.
+  User selection loads a preset and refreshes production previews without changing
+  explorer recording/settings. Refreshing the stored list does not apply a preset.
 - Editing/deleting a preset does not change saved job snapshots.
   Jobs replay their saved overlay language independently of UI language.
 - Mixed portrait/landscape jobs are supported; the job table identifies aspect.

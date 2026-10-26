@@ -53,7 +53,9 @@ edge/corner on the same vertical or horizontal side. The assistant remembers eac
 layout's current position for its lifetime. That position supplies an unspecified
 axis (Orbit Top right → Ribbon Bottom → Orbit Bottom right); without a remembered
 position, the target default supplies it.
-Without an equivalent, the default applies. Preview thumbnails and the assistant's
+Without an equivalent, a supported remembered position is retained; otherwise the
+default applies. Switching Column Left to Ribbon therefore keeps Column's thumbnail
+on the left. Preview thumbnails and the assistant's
 localized Position selector share this policy on layout/format changes.
 Preview workers receive a copy of the remembered positions for their revision.
 `PreviewBackground` defines `CHECKER`, `LIGHT` and `DARK` for `build_previews` and

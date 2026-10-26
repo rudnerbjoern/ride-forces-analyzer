@@ -8,14 +8,14 @@ from ride_forces_analyzer.analysis.preparation import (
     source_app_configuration,
 )
 
-# cspell:words getpixel
+# cspell:words getpixel pixmap
 
 from pathlib import Path
 from threading import Event
 from tempfile import TemporaryDirectory
 
 from PySide6.QtCore import QThreadPool
-from PySide6.QtWidgets import QFileDialog, QInputDialog, QPushButton
+from PySide6.QtWidgets import QFileDialog, QFrame, QInputDialog, QPushButton
 import pytest
 
 from ride_forces_analyzer.ui.exports.video import ExportDialog
@@ -132,6 +132,12 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     choose_layout(ExportLayout.COLUMN)
     assert choices() == ["left", "right"]
     assert dialog.form.position.currentData() == LayoutPosition.RIGHT
+    dialog.form.position.setCurrentIndex(dialog.form.position.findData("left"))
+    choose_layout(ExportLayout.RIBBON)
+    assert dialog.form.positions[ExportLayout.COLUMN] is LayoutPosition.LEFT
+    choose_layout(ExportLayout.COLUMN)
+    assert dialog.form.position.currentData() == LayoutPosition.LEFT
+    dialog.form.position.setCurrentIndex(dialog.form.position.findData("right"))
     choose_layout(ExportLayout.ORBIT)
     assert set(choices()) == {"top_left", "top_right", "bottom_left", "bottom_right"}
     assert dialog.form.position.currentData() == LayoutPosition.TOP_RIGHT
@@ -211,7 +217,7 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     dialog.presets.save_preset.click()
     assert dialog.presets.store.presets()[0].settings.aspect is VideoAspect.PORTRAIT
     dialog.form.aspect.setCurrentIndex(0)
-    dialog.presets.load_preset.click()
+    dialog.presets.preset_selector.activated.emit(dialog.presets.preset_selector.currentIndex())
     assert dialog.form.aspect.currentIndex() == 1
     preview_ready(dialog)
     dialog.next.click()
@@ -491,6 +497,38 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     dialog.form.smoothing.setCurrentIndex(1)
     dialog.form.seconds.setValue(12.5)
     dialog.form.interval.setCurrentIndex(2)
+    assert not dialog.presets.save_preset.text()
+    assert not dialog.presets.save_preset.icon().isNull()
+    assert dialog.presets.save_preset.toolTip() == "Save as…"
+    assert dialog.presets.save_preset.accessibleName() == "Save as…"
+    save_geometry = dialog.presets.save_preset.geometry()
+    selector_geometry = dialog.presets.preset_selector.geometry()
+    assert save_geometry.left() > selector_geometry.right()
+    assert abs(save_geometry.center().y() - selector_geometry.center().y()) <= 1
+    divider = dialog.presets.findChild(QFrame, "presetActionsDivider")
+    assert divider is not None and divider.frameShape() == QFrame.Shape.VLine
+    assert selector_geometry.right() < divider.geometry().left()
+    assert divider.geometry().right() < save_geometry.left()
+    update = dialog.presets.update_preset
+    assert not update.text() and not update.icon().isNull()
+    assert update.toolTip() == update.accessibleName() == "Update selected"
+    assert update.icon().pixmap(20, 20).toImage() != (
+        dialog.presets.save_preset.icon().pixmap(20, 20).toImage()
+    )
+    assert update.geometry().left() > save_geometry.right()
+    assert abs(update.geometry().center().y() - selector_geometry.center().y()) <= 1
+    for action, tooltip in (
+        (dialog.presets.queue, "Add this export to batch…"),
+        (dialog.presets.manage_batches, "Saved batches…"),
+    ):
+        assert not action.text() and not action.icon().isNull()
+        assert action.toolTip() == action.accessibleName() == tooltip
+        assert abs(action.geometry().center().y() - selector_geometry.center().y()) <= 1
+    batch_divider = dialog.presets.findChild(QFrame, "presetBatchDivider")
+    assert batch_divider is not None and batch_divider.frameShape() == QFrame.Shape.VLine
+    assert dialog.presets.delete_preset.geometry().right() < batch_divider.geometry().left()
+    assert batch_divider.geometry().right() < dialog.presets.queue.geometry().left()
+    assert dialog.presets.queue.geometry().right() < dialog.presets.manage_batches.geometry().left()
     dialog.presets.save_preset.click()
     dialog.presets.queue.click()
     dialog.form.layout_profile.setCurrentIndex(0)
@@ -518,7 +556,7 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     assert isinstance(reopened, ExportDialog)
     assert reopened.presets.preset_selector.count() == 3
     reopened.presets.preset_selector.setCurrentText("Orbit5994")
-    reopened.presets.load_preset.click()
+    reopened.presets.preset_selector.activated.emit(reopened.presets.preset_selector.currentIndex())
     preview_ready(reopened)
     assert reopened.form.layout_profile.currentIndex() == 3
     assert reopened.form.position.currentData() == LayoutPosition.TOP_RIGHT
@@ -532,6 +570,20 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     reopened.presets.manage_batches.click()
     assert isinstance(reopened.presets.batch_window, BatchDialog)
     assert reopened.presets.batch_window.table.rowCount() == 2
+    assert not reopened.presets.delete_preset.text()
+    assert not reopened.presets.delete_preset.icon().isNull()
+    assert reopened.presets.delete_preset.toolTip() == "Delete preset"
+    assert reopened.presets.delete_preset.accessibleName() == "Delete preset"
+    reopened.presets.delete_preset.click()
+    assert [preset.name for preset in reopened.presets.store.presets()] == ["Ribbon50"]
+    assert reopened.presets.preset_selector.currentIndex() == 0
+    assert reopened.presets.store.batch("Weekend") == saved
+    reopened.close()
+    window.export_button.click()
+    reopened = window.export_window
+    assert isinstance(reopened, ExportDialog)
+    assert reopened.presets.preset_selector.count() == 2
+    assert reopened.presets.preset_selector.findText("Orbit5994") == -1
     reopened.close()
 
 
@@ -691,7 +743,7 @@ def test_loading_analysis_recipe_keeps_workspace_snapshot_and_independent_stages
     dialog = window.export_window
     assert isinstance(dialog, ExportDialog) and dialog.data.analysis is snapshot
     dialog.presets.preset_selector.setCurrentText("Source context")
-    dialog.presets.load_preset.click()
+    dialog.presets.preset_selector.activated.emit(dialog.presets.preset_selector.currentIndex())
     changed = dialog.data.analysis
     assert changed is not None and changed.configuration == configuration
     assert changed.forces is snapshot.forces and changed.orientation is snapshot.orientation

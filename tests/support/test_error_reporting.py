@@ -63,6 +63,9 @@ active = support / f"error-report-{os.getppid()}.txt"
 active.write_text("active instance")
 path = reports.initialize_error_reporting()
 assert path is not None and path == reports.initialize_error_reporting()
+assert reports.report_status.path is None
+notifications = []
+reports.report_status.available.connect(notifications.append)
 assert active.read_text() == "active instance"
 assert not (support / "error-report-999999999.txt").exists()
 for number in range(75):
@@ -74,6 +77,8 @@ text = path.read_text(encoding="utf-8")
 assert "Physical CPU cores: 12" in text
 assert "Logical processors: 24" in text
 assert all(f"ValueError: failure-{number}" in text for number in range(75))
+assert reports.report_status.path == path
+assert notifications == [str(path)]
 print(path.name)
 """,
     )
@@ -138,6 +143,107 @@ except ValueError as cause:
     assert all(f"RuntimeError: group-{number}" in text for number in range(25))
 
 
+def test_report_captures_qt_severity_and_preserves_previous_handler(
+    export_directory: Path,
+) -> None:
+    result = run_report(
+        export_directory,
+        """
+from PySide6.QtCore import (
+    QLoggingCategory, QMessageLogContext, QtMsgType, qCritical, qCWarning, qDebug,
+    qInfo, qInstallMessageHandler, qWarning,
+)
+from threading import Thread
+forwarded = []
+qInstallMessageHandler(lambda kind, context, message: forwarded.append(message))
+path = reports.initialize_error_reporting()
+assert path is not None
+qDebug("debug not stored")
+qInfo("info not stored")
+qWarning("geometry warning")
+qCWarning(QLoggingCategory("qt.qpa.windows"), "categorized warning")
+worker = Thread(target=lambda: qCritical("worker critical"))
+worker.start()
+worker.join()
+installed = qInstallMessageHandler(None)
+assert installed is not None
+context = QMessageLogContext()
+# Exercise the fatal-message callback without invoking Qt's process-aborting qFatal.
+installed(QtMsgType.QtFatalMsg, context, "fatal diagnostic")
+text = path.read_text(encoding="utf-8")
+assert "WARNING" in text and "QtWarningMsg" in text and "geometry warning" in text
+assert "CRITICAL" in text and "QtCriticalMsg" in text and "worker critical" in text
+assert "QtWarningMsg [qt.qpa.windows]: categorized warning" in text
+assert "QtFatalMsg [default]: fatal diagnostic" in text
+assert "debug not stored" not in text and "info not stored" not in text
+assert forwarded == [
+    "debug not stored", "info not stored", "geometry warning", "categorized warning",
+    "worker critical", "fatal diagnostic",
+]
+def failed_report(*args, **kwargs):
+    raise OSError("report unavailable")
+reports._LOGGER.log = failed_report
+installed(QtMsgType.QtWarningMsg, context, "forward despite report failure")
+assert forwarded[-1] == "forward despite report failure"
+""",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_qt_messages_keep_terminal_output_and_restore_default_handler(
+    export_directory: Path,
+) -> None:
+    result = run_report(
+        export_directory,
+        """
+from PySide6.QtCore import qInstallMessageHandler, qWarning, qInfo
+qInstallMessageHandler(None)
+callbacks = []
+reports.atexit.register = callbacks.append
+path = reports.initialize_error_reporting()
+assert path is not None
+qWarning("terminal warning")
+assert "terminal warning" in path.read_text(encoding="utf-8")
+terminal = sys.stderr
+sys.stderr = None
+qInfo("no console")
+sys.stderr = terminal
+callbacks.pop()()
+assert qInstallMessageHandler(None) is None
+""",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "terminal warning" in result.stderr
+
+
+def test_failed_report_write_does_not_publish_availability(export_directory: Path) -> None:
+    result = run_report(
+        export_directory,
+        """
+import logging
+path = reports.initialize_error_reporting()
+assert path is not None and reports.report_status.path is None
+handler = logging.getLogger("ride_forces_analyzer").handlers[-1]
+stream = handler.stream
+class Unwritable:
+    def write(self, message):
+        raise OSError("write failed")
+    def flush(self):
+        pass
+handler.stream = Unwritable()
+logging.raiseExceptions = False
+reports.record_error("Export", message="not written")
+assert reports.report_status.path is None
+handler.stream = stream
+reports.record_error("Export", message="written")
+assert reports.report_status.path == path
+assert "not written" not in path.read_text(encoding="utf-8")
+assert "written" in path.read_text(encoding="utf-8")
+""",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_unwritable_report_location_preserves_exception_behavior(export_directory: Path) -> None:
     result = run_report(
         export_directory,
@@ -188,6 +294,7 @@ def test_report_hooks_handle_empty_errors_and_preserve_replacement_hooks(
     from collections.abc import Callable
     from types import SimpleNamespace
     from typing import Any, cast
+    from PySide6.QtCore import qInstallMessageHandler
 
     from ride_forces_analyzer.runtime import error_reporting as reports
 
@@ -214,6 +321,7 @@ def test_report_hooks_handle_empty_errors_and_preserve_replacement_hooks(
     invalid = support / "error-report-invalid.txt"
     invalid.write_text("Keep unknown report", encoding="utf-8")
     before = tuple(logging.getLogger("ride_forces_analyzer").handlers)
+    original_qt = qInstallMessageHandler(None)
     path = reports.initialize_error_reporting()
     assert path is not None
     try:
@@ -235,7 +343,13 @@ def test_report_hooks_handle_empty_errors_and_preserve_replacement_hooks(
         reports.sys.excepthook = replacement
         reports.threading.excepthook = replacement
         reports.sys.unraisablehook = replacement
+
+        def replacement_qt(*args: object) -> None:
+            pass
+
+        qInstallMessageHandler(replacement_qt)
         callbacks.pop()()
+        assert qInstallMessageHandler(None) is replacement_qt
         assert reports.sys.excepthook is replacement
         assert reports.threading.excepthook is replacement
         assert reports.sys.unraisablehook is replacement
@@ -243,6 +357,7 @@ def test_report_hooks_handle_empty_errors_and_preserve_replacement_hooks(
     finally:
         for close in callbacks:
             close()
+        qInstallMessageHandler(original_qt)
 
 
 def test_process_probe_preserves_reports_when_process_access_is_denied(

@@ -22,12 +22,61 @@ import traceback
 from types import TracebackType
 from typing import TextIO
 
+from PySide6.QtCore import QObject, Signal
+
 from ride_forces_analyzer import __version__
 from ride_forces_analyzer.runtime.cpu_resources import detect_cpu_resources
 from ride_forces_analyzer.runtime.paths import data_directory
 
 _LOGGER = logging.getLogger("ride_forces_analyzer.errors")
 _stream: TextIO | None = None
+
+
+class ErrorReportStatus(QObject):
+    """Expose the first successfully written diagnostic for the current run.
+
+    Attributes:
+        available: Signal carrying the report path after a diagnostic is flushed.
+        path: Current report with a written diagnostic, or None for a header-only report.
+    """
+
+    available = Signal(str)
+
+    def __init__(self) -> None:
+        """Initialize an empty report state without creating files."""
+        super().__init__()
+        self.path: Path | None = None
+
+    def recorded(self, path: Path) -> None:
+        """Publish availability once per report, after its first successful write.
+
+        Args:
+            path: Report whose diagnostic entry has been written and flushed.
+        """
+        if self.path != path:
+            self.path = path
+            self.available.emit(str(path))
+
+
+report_status = ErrorReportStatus()
+
+
+class _ReportHandler(logging.StreamHandler[TextIO]):
+    """Notify report observers only after a complete diagnostic reaches the file."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Write, flush and publish a diagnostic without reporting failed writes.
+
+        Args:
+            record: Logging entry accepted by this report handler.
+        """
+        try:
+            self.stream.write(self.format(record) + self.terminator)
+            self.flush()
+        except Exception:
+            self.handleError(record)
+            return
+        report_status.recorded(Path(self.stream.name))
 
 
 class _CompleteTraceback(logging.Formatter):
@@ -110,6 +159,8 @@ def initialize_error_reporting() -> Path | None:
     Prepare the text file at startup so faulthandler can write during native faults.
     Completed-run reports are removed on the next start; active instances retain
     independent files. No size/count limit, uploads, locals or source dumps.
+    Qt warnings, critical and fatal messages retain their severity and category;
+    prior Qt handlers or formatted terminal output remain active.
     Unwritable support storage leaves normal application/error handling intact.
 
     Returns:
@@ -144,14 +195,60 @@ def initialize_error_reporting() -> Path | None:
         stream.flush()
     except OSError:
         return None
-    handler = logging.StreamHandler(stream)
-    handler.setLevel(logging.ERROR)
+    handler = _ReportHandler(stream)
+    handler.setLevel(logging.WARNING)
     handler.setFormatter(_CompleteTraceback("%(asctime)s %(levelname)s %(name)s: %(message)s"))
     logging.getLogger("ride_forces_analyzer").addHandler(handler)
     _stream = stream
     previous_exception = sys.excepthook
     previous_thread = threading.excepthook
     previous_unraisable = sys.unraisablehook
+
+    from PySide6.QtCore import (
+        QMessageLogContext,
+        QtMsgType,
+        qFormatLogMessage,
+        qInstallMessageHandler,
+    )
+
+    qt_levels = {
+        QtMsgType.QtWarningMsg: logging.WARNING,
+        QtMsgType.QtCriticalMsg: logging.CRITICAL,
+        QtMsgType.QtFatalMsg: logging.CRITICAL,
+    }
+
+    def qt_message(kind: QtMsgType, context: QMessageLogContext, message: str) -> None:
+        """Record Qt warnings/errors and preserve the previously installed output.
+
+        Args:
+            kind: Qt message severity, including distinct critical and fatal types.
+            context: Qt source/category information when provided by the runtime.
+            message: Unmodified native diagnostic text.
+
+        Returns:
+            None; reporting failures never escape into Qt's message delivery.
+        """
+        try:
+            if kind in qt_levels:
+                _LOGGER.log(
+                    qt_levels[kind],
+                    "Qt %s [%s]: %s",
+                    kind.name,
+                    context.category or "default",
+                    message,
+                )
+        except Exception:
+            pass
+        try:
+            if previous_qt is not None:
+                previous_qt(kind, context, message)
+            elif sys.stderr is not None:
+                sys.stderr.write(qFormatLogMessage(kind, context, message) + "\n")
+                sys.stderr.flush()
+        except Exception:
+            pass
+
+    previous_qt = qInstallMessageHandler(qt_message)
 
     def exception_hook(
         kind: type[BaseException],
@@ -187,6 +284,9 @@ def initialize_error_reporting() -> Path | None:
         record_error("Native fault handler", message=traceback.format_exc())
 
     def close() -> None:
+        current_qt = qInstallMessageHandler(previous_qt)
+        if current_qt is not qt_message:
+            qInstallMessageHandler(current_qt)
         faulthandler.disable()
         if sys.excepthook is exception_hook:
             sys.excepthook = previous_exception

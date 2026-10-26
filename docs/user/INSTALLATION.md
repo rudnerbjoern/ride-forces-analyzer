@@ -172,9 +172,14 @@ The application writes a local text file, `error-report-<process-id>.txt`, in:
 - Linux: `$XDG_DATA_HOME/ride-forces-analyzer/support`, or
   `~/.local/share/ride-forces-analyzer/support` when unset
 
-The file contains system details and errors from the current run. Reports from
+The file contains system details and errors from the current run, including Qt
+warnings, critical and fatal messages with their severity. Reports from
 completed runs are removed on the next launch.
 Copy the file before restarting if you need to retain it for support.
+
+A small warning icon appears on the right of each window's status bar after a
+diagnostic is written. Click it to open the report folder in your system's file
+manager. The icon stays visible for the current run, without popups or blinking.
 
 Some crashes may leave no report. Error messages can contain personal paths or
 data fragments. Review the text and remove anything you do not want to share
