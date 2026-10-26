@@ -150,12 +150,16 @@ def test_settings_save_cancel_and_new_exports_keep_independent_frame_rates(
         reopened = ExportDialog(window.data, 0, 10, window, store=store)
         assert reopened.form.fps.currentText() == "23.976"
         reopened.presets.preset_selector.setCurrentIndex(1)
-        reopened.presets.load_preset.click()
+        reopened.presets.preset_selector.activated.emit(
+            reopened.presets.preset_selector.currentIndex(),
+        )
         assert reopened.form.fps.currentText() == "25"
         reopened.presets.preset_selector.setCurrentIndex(
             reopened.presets.preset_selector.findText("Z custom rate"),
         )
-        reopened.presets.load_preset.click()
+        reopened.presets.preset_selector.activated.emit(
+            reopened.presets.preset_selector.currentIndex(),
+        )
         assert reopened.form.fps.currentText() == "27" and reopened.form.fps.currentData() == 27
         assert Preferences(window.preferences.path).export_fps() == "24000/1001"
         reopened.close()

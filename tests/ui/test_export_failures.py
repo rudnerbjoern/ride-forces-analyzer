@@ -88,7 +88,12 @@ def test_preset_storage_errors_preserve_definitions_and_allow_retry(
     controls = ExportPresets(store, form, analysis, 0, 0, parent)
     messages: list[object] = []
     controls.message.connect(messages.append)
+    selected: list[object] = []
+    controls.selected.connect(selected.append)
     controls.refresh(preset.name)
+    assert not selected
+    controls.preset_selector.activated.emit(controls.preset_selector.currentIndex())
+    assert selected == [preset]
     monkeypatch.setattr(QInputDialog, "getText", Mock(return_value=("New", True)))
     try:
         with monkeypatch.context() as patch:
@@ -125,6 +130,23 @@ def test_preset_storage_errors_preserve_definitions_and_allow_retry(
         controls.save_preset.click()
         assert {saved.name for saved in store.presets()} == {"Existing", "New"}
         assert "Saved preset" in str(messages[-1])
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                store,
+                "delete_preset",
+                Mock(side_effect=ExportStoreError("Delete denied")),
+            )
+            controls.delete_preset.click()
+            assert str(messages[-1]) == "Delete denied"
+            assert controls.preset_selector.currentText() == "New"
+            assert len(store.presets()) == 2
+        controls.delete_preset.click()
+        assert store.presets() == (preset,)
+        assert str(messages[-1]) == "Preset deleted: New"
+        controls.delete_preset.click()
+        assert str(messages[-1]) == "Choose a saved preset first"
+        assert store.presets() == (preset,)
+        assert selected == [preset]
     finally:
         parent.deleteLater()
 

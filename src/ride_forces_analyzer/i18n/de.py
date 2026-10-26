@@ -8,6 +8,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words AUSSERHALB Drittanbieterhinweise Kalibrierungsmarkierung Kalibrierungsreferenz Markierungsindex Metadatenfeld Rundungsgrenzen Vertikalkraft
 
 GERMAN: dict[str, str] = {
+    "Delete preset": "Vorgabe löschen",
+    "Preset deleted: {0}": "Vorgabe gelöscht: {0}",
     "Error report available — open folder": "Fehlerbericht verfügbar – Ordner öffnen",
     "1 · Set up export · {0}": "1 · Export einrichten · {0}",
     "Force display": "Darstellung der Kräfte",

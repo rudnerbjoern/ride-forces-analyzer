@@ -49,7 +49,9 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   preset/default changes do not move it. Unsupported layout/format/position combinations
   are rejected. Coordinates and sizes remain in layout metadata, never in stored jobs.
 - Save as creates a preset; Update selected replaces only that named preset.
-  Loading refreshes production previews without changing explorer recording/settings.
+  Delete preset removes the selected definition and refreshes the selector.
+  User selection loads a preset and refreshes production previews without changing
+  explorer recording/settings. Refreshing the stored list does not apply a preset.
 - Editing/deleting a preset does not change saved job snapshots.
   Jobs replay their saved overlay language independently of UI language.
 - Mixed portrait/landscape jobs are supported; the job table identifies aspect.

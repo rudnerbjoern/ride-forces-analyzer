@@ -12,16 +12,19 @@ The steps below use the English interface labels.
 1. Open a recording and click **Export video…**.
 2. Choose your layout, position, video format, language, output type, frame rate, visible
    time window, smoothing and range.
-3. Click **Save as…** in the preset area and give the setup a unique name.
-4. For another export, select that preset and click **Load**.
+3. Click the disk icon with a plus (tooltip: **Save as…**) in the preset area and give the setup a unique name.
+4. For another export, select that preset to load it immediately.
 
-To change a saved preset, load it, adjust the settings and click **Update selected**.
+To change a saved preset, load it, adjust the settings and click the disk icon
+(tooltip: **Update selected**).
+To remove one, select it and click the trash icon (tooltip: **Delete preset**).
+Saved batch jobs keep their settings.
 Presets remember their own position, frame rate and overlay language, independently of
 the application's defaults.
 
 ## Queue the current export
 
-In the export assistant, click **Add this export to batch…** and choose or create
+In the export assistant, click the new-folder icon (tooltip: **Add this export to batch…**) and choose or create
 a batch. This saves the current recording, settings and interval as a job.
 Use this route when you want to retain a custom **Current selection** interval.
 
@@ -31,7 +34,7 @@ the old job and add it again.
 
 ## Add several recordings and presets
 
-1. Click **Batches…** in the main window or **Saved batches…** in the export assistant.
+1. Click **Batches…** in the main window or the list icon (tooltip: **Saved batches…**) in the export assistant.
 2. Select a batch, or click **New batch…** and enter a unique name.
 3. Select one or more saved presets.
 4. Choose **Start/end markers for each recording** or **Entire recording**.
