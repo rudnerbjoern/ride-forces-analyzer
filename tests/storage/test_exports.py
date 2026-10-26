@@ -1,11 +1,13 @@
 """Saved export definitions reject stale edits without damaging stored snapshots."""
 
 from pathlib import Path
+import json
 
 from pydantic import ValidationError
 import pytest
 
 from ride_forces_analyzer.analysis.preparation import source_app_configuration
+from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.rendering.model import ExportSettings
 from ride_forces_analyzer.storage.export_models import (
     BatchJob,
@@ -84,3 +86,16 @@ def test_python_recipe_mapping_requires_typed_configuration_without_coercion() -
                 "analysis_configuration": recipe,
             },
         )
+
+
+def test_partial_calibration_retains_explicit_indices_and_fills_defaults() -> None:
+    chosen = make_preset("Preset", ExportSettings(), 11, "markers", source_app_configuration())
+    payload = json.loads(chosen.model_dump_json())
+    payload["analysis_configuration"]["calibration"] = {"gravity_index": 42}
+    restored = SavedPreset.model_validate_json(json.dumps(payload))
+    assert restored.analysis_configuration.calibration == CalibrationOverrides(gravity_index=42)
+    serialized = json.loads(restored.model_dump_json())
+    assert serialized["analysis_configuration"]["calibration"]["incline_index"] is None
+    payload["analysis_configuration"]["calibration"]["gravity_index"] = "42"
+    with pytest.raises(ValidationError):
+        SavedPreset.model_validate_json(json.dumps(payload))
