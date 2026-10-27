@@ -70,6 +70,10 @@ chapter 9 retains decision status and rationale.
 - [Recording catalog and authorization](development/RECORDINGS.md),
   [recording reuse license](../tests/fixtures/real/README.md), [image reuse license](images/README.md).
 
+## Planned work
+
+- [Full-frame and bounded overlay export](requirements/BOUNDED_OVERLAY_EXPORT.md).
+
 ## Ownership
 
 Keep current behavior, planned work and known limits distinct. Architecture owns
