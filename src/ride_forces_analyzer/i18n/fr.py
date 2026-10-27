@@ -172,7 +172,7 @@ FRENCH: dict[str, str] = {
     "Save export preset": "Enregistrer le préréglage d’export",
     "Preset name": "Nom du préréglage",
     "Loaded preset: {0}": "Préréglage chargé : {0}",
-    "Updating all five previews…": "Actualisation des cinq aperçus…",
+    "Updating layout previews…": "Actualisation des aperçus de mise en page…",
     "Preview failed: {0}": "Échec de l’aperçu : {0}",
     "Choose FFmpeg": "Choisir FFmpeg",
     "All files (*)": "Tous les fichiers (*)",

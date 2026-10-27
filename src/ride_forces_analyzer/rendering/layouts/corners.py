@@ -8,7 +8,14 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import annotations
 from .charts import ChartRenderer
-from .contracts import ExportLayout, LayoutPlugin, LayoutPosition, LayoutPositions
+from .contracts import (
+    ContentArea,
+    ExportExtent,
+    ExportLayout,
+    LayoutPlugin,
+    LayoutPosition,
+    LayoutPositions,
+)
 
 
 NATIVE_SIZE = (840, 1120)  # Native landscape drawing size in pixels.
@@ -241,12 +248,24 @@ class CornersRenderer(ChartRenderer):
 # Unmeasured codec rates; None retains the shared planning heuristic.
 PRORES_4444_SIZE_RATES: tuple[float, float] | None = None
 H264_SIZE_RATES: tuple[float, float] | None = None
+PRORES_4444_CONTENT_SIZE_RATES: tuple[float, float] | None = None
+H264_CONTENT_SIZE_RATES: tuple[float, float] | None = None
+LANDSCAPE_CONTENT = ContentArea((0, 0, 840, 1120), margin=16)
+PORTRAIT_CONTENT = ContentArea((0, 0, 1680, 2240), margin=16)
 
 PLUGIN = LayoutPlugin(
     ExportLayout.CORNERS,
     LANDSCAPE_POSITIONS,
     PORTRAIT_POSITIONS,
     CornersRenderer,
-    prores_4444_size_rates=PRORES_4444_SIZE_RATES,
-    h264_size_rates=H264_SIZE_RATES,
+    landscape_content=LANDSCAPE_CONTENT,
+    portrait_content=PORTRAIT_CONTENT,
+    prores_4444_size_rates={
+        ExportExtent.FULL_FRAME: PRORES_4444_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: PRORES_4444_CONTENT_SIZE_RATES,
+    },
+    h264_size_rates={
+        ExportExtent.FULL_FRAME: H264_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: H264_CONTENT_SIZE_RATES,
+    },
 )

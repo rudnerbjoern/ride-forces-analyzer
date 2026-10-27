@@ -24,7 +24,14 @@ from ..scales import (
     vertical_scale,
 )
 from .common import Drawing
-from .contracts import ExportLayout, VideoAspect, LayoutPlugin, LayoutPosition, LayoutPositions
+from .contracts import (
+    ExportExtent,
+    ExportLayout,
+    VideoAspect,
+    LayoutPlugin,
+    LayoutPosition,
+    LayoutPositions,
+)
 
 if TYPE_CHECKING:
     from ..model import ExportTimeline
@@ -782,6 +789,6 @@ PLUGIN = LayoutPlugin(
     landscape_canvas=LANDSCAPE.size,
     portrait_canvas=PORTRAIT.size,
     preferred_window_seconds=30.0,
-    prores_4444_size_rates=PRORES_4444_SIZE_RATES,
-    h264_size_rates=H264_SIZE_RATES,
+    prores_4444_size_rates={ExportExtent.FULL_FRAME: PRORES_4444_SIZE_RATES},
+    h264_size_rates={ExportExtent.FULL_FRAME: H264_SIZE_RATES},
 )

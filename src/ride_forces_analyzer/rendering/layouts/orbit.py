@@ -19,7 +19,14 @@ from math import cos, sin, radians
 from ..peaks import PeakEnvelope
 from ..scales import selected_bounds, vertical_scale
 from .common import ACCELERATION_COLOR, BRAKING_COLOR, Drawing
-from .contracts import ExportLayout, LayoutPlugin, LayoutPosition, LayoutPositions
+from .contracts import (
+    ContentArea,
+    ExportExtent,
+    ExportLayout,
+    LayoutPlugin,
+    LayoutPosition,
+    LayoutPositions,
+)
 
 
 FONT_FILE = "segoeui.ttf"  # Regular Windows font file.
@@ -410,12 +417,24 @@ class OrbitRenderer(Drawing):
 # Unmeasured codec rates; None retains the shared planning heuristic.
 PRORES_4444_SIZE_RATES: tuple[float, float] | None = None
 H264_SIZE_RATES: tuple[float, float] | None = None
+PRORES_4444_CONTENT_SIZE_RATES: tuple[float, float] | None = None
+H264_CONTENT_SIZE_RATES: tuple[float, float] | None = None
+LANDSCAPE_CONTENT = ContentArea((2, 2, 796, 796), margin=16)
+PORTRAIT_CONTENT = ContentArea((0, 0, 1188, 1188), margin=16)
 
 PLUGIN = LayoutPlugin(
     ExportLayout.ORBIT,
     LANDSCAPE_POSITIONS,
     PORTRAIT_POSITIONS,
     OrbitRenderer,
-    prores_4444_size_rates=PRORES_4444_SIZE_RATES,
-    h264_size_rates=H264_SIZE_RATES,
+    landscape_content=LANDSCAPE_CONTENT,
+    portrait_content=PORTRAIT_CONTENT,
+    prores_4444_size_rates={
+        ExportExtent.FULL_FRAME: PRORES_4444_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: PRORES_4444_CONTENT_SIZE_RATES,
+    },
+    h264_size_rates={
+        ExportExtent.FULL_FRAME: H264_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: H264_CONTENT_SIZE_RATES,
+    },
 )

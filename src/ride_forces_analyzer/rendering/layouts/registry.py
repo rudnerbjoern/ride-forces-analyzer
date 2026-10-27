@@ -13,7 +13,15 @@ from .corners import PLUGIN as CORNERS
 from .hud import PLUGIN as HUD
 from .orbit import PLUGIN as ORBIT
 from .column import PLUGIN as COLUMN
-from .contracts import VideoAspect, LayoutPlugin, LayoutPosition, LayoutRenderer, Region
+from .contracts import (
+    ExportExtent,
+    ExportGeometry,
+    VideoAspect,
+    LayoutPlugin,
+    LayoutPosition,
+    LayoutRenderer,
+    Region,
+)
 
 if TYPE_CHECKING:
     from ..model import ExportLayout, ExportSettings, ExportTimeline
@@ -34,8 +42,12 @@ def canvas_dimensions(settings: ExportSettings) -> tuple[int, int]:
 
     Returns:
         Landscape or portrait canvas dimensions in pixels.
+
+    Raises:
+        ValueError: The selected format is unsupported by the plugin.
     """
     plugin = PLUGINS[settings.layout]
+    plugin.positions(settings.aspect)
     return (
         plugin.landscape_canvas
         if settings.aspect is VideoAspect.LANDSCAPE
@@ -45,6 +57,8 @@ def canvas_dimensions(settings: ExportSettings) -> tuple[int, int]:
 
 def export_region(settings: ExportSettings) -> Region:
     """Return the selected layout region as x, y, width and height in pixels.
+
+    Content area uses the format's canonical render region, ignoring retained placement.
 
     Args:
         settings: Validated settings controlling this operation.
@@ -56,11 +70,58 @@ def export_region(settings: ExportSettings) -> Region:
         ValueError: Unsupported export position for layout and format.
     """
     plugin = PLUGINS[settings.layout]
-    positions = plugin.landscape if settings.aspect is VideoAspect.LANDSCAPE else plugin.portrait
-    position = positions.default if settings.position is None else settings.position
+    positions = plugin.positions(settings.aspect)
+    if settings.position is not None and type(settings.position) is not LayoutPosition:
+        raise ValueError("Unsupported export position for layout and format")
+    position = (
+        positions.default
+        if settings.position is None or settings.extent is ExportExtent.CONTENT_AREA
+        else settings.position
+    )
     if type(position) is not LayoutPosition or position not in positions.regions:
         raise ValueError("Unsupported export position for layout and format")
     return positions.regions[position]
+
+
+def resolve_geometry(settings: ExportSettings) -> ExportGeometry:
+    """Resolve fixed crop, render size, padding and output size from plugin metadata.
+
+    Args:
+        settings: Typed layout, aspect, extent and optional retained placement.
+
+    Returns:
+        Immutable pixel geometry. Content-area padding starts at the declared margin;
+        ten-pixel rounding adds pixels only to the right and bottom.
+
+    Raises:
+        ValueError: Format, extent or placement is unsupported, or dimensions are not even.
+    """
+    plugin = PLUGINS[settings.layout]
+    plugin.positions(settings.aspect)
+    if type(settings.extent) is not ExportExtent or settings.extent not in plugin.supported_extents(
+        settings.aspect,
+    ):
+        raise ValueError("Unsupported export extent for layout and format")
+    x, y, width, height = export_region(settings)
+    content = plugin.content_area(settings.aspect)
+    if settings.extent is ExportExtent.CONTENT_AREA:
+        assert content is not None
+        geometry = ExportGeometry(
+            content.dimensions,
+            (width, height),
+            content.bounds,
+            (content.margin, content.margin),
+        )
+    else:
+        geometry = ExportGeometry(
+            canvas_dimensions(settings),
+            (width, height),
+            (0, 0, width, height),
+            (x, y),
+        )
+    if any(size % 2 for size in geometry.output_size):
+        raise ValueError("Export dimensions must be even for the supported codecs")
+    return geometry
 
 
 def create_renderer(timeline: ExportTimeline) -> LayoutRenderer:

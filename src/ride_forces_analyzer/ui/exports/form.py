@@ -16,6 +16,7 @@ from PySide6.QtCore import (
     Slot,
     QSignalBlocker,
 )
+from PySide6.QtGui import QStandardItemModel
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -277,9 +278,9 @@ class ExportForm(QWidget):
         """
         settings = self.settings()
         for key, plugin in registry.PLUGINS.items():
-            positions = (
-                plugin.landscape if settings.aspect is VideoAspect.LANDSCAPE else plugin.portrait
-            )
+            if settings.aspect not in plugin.supported_aspects:
+                continue
+            positions = plugin.positions(settings.aspect)
             self.positions[key] = positions.select(
                 settings.position,
                 self.positions.get(key),
@@ -299,8 +300,24 @@ class ExportForm(QWidget):
     @Slot()
     def _refresh_positions(self) -> None:
         previous = self.position.currentData()
+        aspect = VideoAspect.LANDSCAPE if self.aspect.currentIndex() == 0 else VideoAspect.PORTRAIT
+        model = self.layout_profile.model()
+        assert isinstance(model, QStandardItemModel)
+        for index, (key, _) in enumerate(PROFILES):
+            item = model.item(index)
+            assert item is not None
+            item.setEnabled(aspect in registry.PLUGINS[key].supported_aspects)
         plugin = registry.PLUGINS[PROFILES[self.layout_profile.currentIndex()][0]]
-        positions = plugin.landscape if self.aspect.currentIndex() == 0 else plugin.portrait
+        if aspect not in plugin.supported_aspects:
+            self.layout_profile.setCurrentIndex(
+                next(
+                    index
+                    for index, (key, _) in enumerate(PROFILES)
+                    if aspect in registry.PLUGINS[key].supported_aspects
+                ),
+            )
+            return
+        positions = plugin.positions(aspect)
         labels = {
             LayoutPosition.FULL_SCREEN: tr("Full screen"),
             LayoutPosition.TOP: tr("Top"),
@@ -355,9 +372,7 @@ class ExportForm(QWidget):
             next(i for i, (key, _) in enumerate(PROFILES) if key == settings.layout),
         )
         plugin = registry.PLUGINS[settings.layout]
-        positions = (
-            plugin.landscape if settings.aspect is VideoAspect.LANDSCAPE else plugin.portrait
-        )
+        positions = plugin.positions(settings.aspect)
         self.position.setCurrentIndex(
             self.position.findData((settings.position or positions.default).value),
         )

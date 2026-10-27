@@ -1,6 +1,6 @@
 # Full-frame and bounded overlay export
 
-Status: steps 1–2 accepted by the owner; steps 3–8 pending.
+Status: steps 1–3 accepted by the owner; steps 4–8 pending.
 Content-area export remains planned.
 
 ## Requirements
@@ -8,12 +8,15 @@ Content-area export remains planned.
 - Export choice: **Full frame** (default) or **Content area**.
 - Full frame preserves current canvas dimensions and selected overlay position.
 - HUD always uses Full frame; no Content area export.
+- Four-panel column supports landscape only. Its Full frame remains 3840 × 2160;
+  its rectangular Content area is exactly 960 × 2160, filling the complete 4K height.
+  No safety margin, rescaling or canvas enlargement applies to this layout.
 - Content area exports only the required layout rectangle plus a safety margin;
   preserve pixel scale, transparency/output mode, frame rate and encoding quality.
 - Measure all five layouts in landscape/portrait, including supported positions,
   languages and changing content, text, strokes, shadows and glow.
 - Store validated bounds and margin in layout metadata. Start with a 16-pixel
-  margin at output resolution; increase where measurements require it.
+  margin at output resolution; increase where measurements require it. Column uses zero.
 - Keep dimensions and crop origin fixed throughout an export. No clipping,
   frame-dependent resizing or movement.
 - For Content area, add the safety margin, then round each dimension up to the next
@@ -48,7 +51,8 @@ Content-area export remains planned.
 
 ## Planned output dimensions
 
-Content-area sizes include a 16-pixel margin on each side and rounding up to 10 pixels.
+Content-area sizes include a 16-pixel margin on each side and rounding up to 10 pixels,
+except the rectangular Column, which has no margin or added padding.
 HUD retains its native Full-frame size.
 
 | Layout             | Landscape output | Portrait output |
@@ -56,13 +60,13 @@ HUD retains its native Full-frame size.
 | Flow Ribbon        | 3110 × 400       | 1720 × 2280     |
 | Corner Instruments | 880 × 1160       | 1720 × 2280     |
 | G-Orbit            | 830 × 830        | 1220 × 1220     |
-| Four-panel column  | 1000 × 2200      | 1480 × 3280     |
+| Four-panel column  | 960 × 2160       | Unsupported     |
 | HUD (Full frame)   | 1920 × 1080      | 1080 × 1920     |
 
 Bounds use the existing output pixel scale. G-Orbit landscape uses its measured
 796 × 796 alpha rectangle; portrait resampling fills its 1188 × 1188 region.
-Other cropped layouts use their complete declared region. Column landscape may
-exceed 2160 pixels in height because its added margin must not shrink the content.
+Other cropped layouts use their complete declared region. Column keeps its complete
+960 × 2160 rectangle without growing beyond the 4K height.
 
 ## Export assistant
 
@@ -85,6 +89,7 @@ exceed 2160 pixels in height because its added margin must not shrink the conten
 - Rename Video format to Layout format: it controls layout arrangement; Content area
   output need not have a 16:9 or 9:16 aspect ratio.
 - HUD replaces Export area selection with a fixed Full frame label and hides Position.
+- Layout availability follows plugin-supported formats; Column is unavailable in portrait.
 - Retain the chosen position when switching to Content area; restore it on return.
 - Review shows export area and actual dimensions; show Position only for applicable
   Full-frame layouts.

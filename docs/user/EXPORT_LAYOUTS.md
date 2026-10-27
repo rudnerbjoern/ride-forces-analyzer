@@ -41,8 +41,9 @@ thumbnails follow your current position choices.
 
 1. In the main chart, select a moment with forces you want to show.
 2. Click **Export video…** and choose a layout thumbnail or **Layout profile**.
-3. Choose landscape or portrait under **Video format**. Every layout supports
-   both; the portrait arrangement adapts to the narrower frame.
+3. Choose landscape or portrait under **Video format**. Four-panel column supports
+   landscape only and fills the complete 4K frame height. Other layouts adapt to
+   both formats. Unsupported layouts are unavailable in the selector and thumbnails.
 4. Choose **Position** beside **Layout profile**. Ribbon offers top or
    bottom, Column left or right, and Corners and G-Orbit all four corners.
    HUD uses the whole frame with a fixed **Full screen** position. Its native

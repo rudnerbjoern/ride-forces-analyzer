@@ -186,7 +186,9 @@ for every posture; lateral and longitudinal references remain zero.
 Layouts consume this timeline through one native-RGBA-region/source-position
 protocol. Each plugin owns its geometry, renderer, presentation defaults and optional
 file-size estimate rates. The registry resolves these through the common contract
-and validates geometry. Concrete layouts never depend on one another; reusable
+and validates geometry. Its extent resolver combines layout-owned crop/margin
+metadata with common rounding and placement rules; capability and rate lookup
+use the same typed extent contract. Concrete layouts never depend on one another; reusable
 drawing/history primitives stay in shared modules. UI, preview, sizing and encoding
 consumers use the registered metadata rather than identifying concrete layouts;
 `frames` composes regions, `preview` builds exact-sample previews and `peaks`

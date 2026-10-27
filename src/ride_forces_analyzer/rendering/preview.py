@@ -105,11 +105,7 @@ def build_previews(
     previews: list[ProfilePreview] = []
     size = (540, 960) if settings.aspect is VideoAspect.PORTRAIT else (960, 540)
     selected_plugin = registry.PLUGINS[settings.layout]
-    selected_positions = (
-        selected_plugin.landscape
-        if settings.aspect is VideoAspect.LANDSCAPE
-        else selected_plugin.portrait
-    )
+    selected_positions = selected_plugin.positions(settings.aspect)
     selected_position = settings.position or selected_positions.default
     backdrop = Image.new(
         "RGBA",
@@ -124,9 +120,9 @@ def build_previews(
                     draw.rectangle((x, y, x + 29, y + 29), fill="#aebfce")
     for layout, title in PROFILES:
         plugin = registry.PLUGINS[layout]
-        positions = (
-            plugin.landscape if settings.aspect is VideoAspect.LANDSCAPE else plugin.portrait
-        )
+        if settings.aspect not in plugin.supported_aspects:
+            continue
+        positions = plugin.positions(settings.aspect)
         profile = (
             settings
             if layout == settings.layout

@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from fractions import Fraction
 from math import ceil
 
-from .layouts import export_region, registry
+from .layouts import resolve_geometry, registry
 from .model import VideoOutput, ExportSettings
 
 # Bytes per pixel per frame: uniform canvas plus active overlay. These broad
@@ -40,12 +40,13 @@ def estimate_size_bytes(
     if sample_count < 1 or sample_rate <= 0:
         raise ValueError("A positive sample count and sample rate are required")
     frames = ceil(Fraction(sample_count) * settings.frame_rate / Fraction(str(sample_rate)))
-    width, height = settings.dimensions
+    geometry = resolve_geometry(settings)
+    width, height = geometry.output_size
     plugin = registry.PLUGINS[settings.layout]
     rates = (
-        plugin.h264_size_rates
+        plugin.h264_size_rates.get(settings.extent)
         if settings.output == VideoOutput.OPAQUE
-        else plugin.prores_4444_size_rates
+        else plugin.prores_4444_size_rates.get(settings.extent)
         if settings.prefer_gpu
         else None
     )
@@ -53,7 +54,7 @@ def estimate_size_bytes(
         low_rate, high_rate = rates
         pixels = frames * width * height
         return ceil(pixels * low_rate), ceil(pixels * high_rate)
-    _, _, overlay_width, overlay_height = export_region(settings)
+    _, _, overlay_width, overlay_height = geometry.crop
     base, overlay = (
         (PRORES_BASE, PRORES_OVERLAY)
         if settings.output == VideoOutput.TRANSPARENT

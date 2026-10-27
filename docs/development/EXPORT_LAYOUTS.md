@@ -38,7 +38,7 @@ Each layout module exports one immutable `PLUGIN` with its stable key,
 landscape/portrait `LayoutPositions`, canvas dimensions and a renderer factory.
 Plugins remain independent; shared algorithms live in `common.py`, `charts.py`,
 `rendering.scales` and `rendering.peaks`, never in another concrete layout module.
-Each format owns a
+Each supported format owns a
 read-only `regions` mapping from `LayoutPosition` StrEnum members to explicit pixel
 regions `(x, y, width, height)`, plus a supported `default` key. Coordinates start
 at the canvas's upper-left corner. Position entries may have different sizes.
@@ -79,20 +79,25 @@ otherwise its default. No corner/edge is inferred from a full-screen position.
 `LayoutPlugin.landscape_canvas` and `portrait_canvas` declare full-frame output sizes;
 `canvas_dimensions(settings)` resolves them through the registry. Plugins also own
 `preferred_window_seconds` (optional selection-time override), `preview_invert_lateral`
-(unselected gallery default), and optional `prores_4444_size_rates` / `h264_size_rates`
-(lower/upper bytes per canvas pixel per frame). Shared consumers apply these values
+(unselected gallery default), and read-only `prores_4444_size_rates` / `h264_size_rates`
+maps keyed by `ExportExtent` (optional lower/upper bytes per output pixel per frame).
+Shared consumers apply these values
 without branching on layout names. HUD declares its native canvases, 30-second
 selection default and measured estimate rates; Column declares its lateral preview
-default. Every layout module explicitly supplies its own `PRORES_4444_SIZE_RATES`
-and `H264_SIZE_RATES`; unmeasured values remain `None` and use the shared planning
-heuristic. Setting one codec's rates does not require configuring the other codec
-or changing another layout. No missing measurements are fabricated.
+default. Each layout declares its Full-frame rates and, where supported, separate
+`PRORES_4444_CONTENT_SIZE_RATES` / `H264_CONTENT_SIZE_RATES`. Missing/None entries
+use the shared planning heuristic; Full-frame rates never fill missing Content-area
+rates. Rates need not be configured for both codecs. No measurements are fabricated.
 Rates must be finite, positive
 and ordered; a preferred time window must be within 1–60 seconds.
 
 `LANDSCAPE_POSITIONS` and `PORTRAIT_POSITIONS` live in each layout module.
 Ribbon declares top/bottom, Column left/right, Corners/G-Orbit all four corners,
-and HUD full-screen. Each format has one explicit default.
+and HUD full-screen. Each supported format has one explicit default.
+`portrait=None` declares landscape-only support; Column uses this capability.
+Consumers query `supported_aspects` and resolve placements through `positions(aspect)`;
+unsupported formats are rejected centrally. Gallery/selector entries are unavailable
+for unsupported formats; changing to portrait selects a supported layout when needed.
 The factory receives an `ExportTimeline`. Its renderer implements
 `render_position(position: float) -> Image.Image`, returning a native-sized
 RGBA region at an absolute source-sample position, including fractional samples.
@@ -187,6 +192,40 @@ lateral and longitudinal histories retain zero as their reference.
 The histories' time-zero cursor shares the exact x coordinate of `lateral_x(0)`.
 Their right boundary mirrors `history_left` around this coordinate, keeping equal
 pixels per second before/after zero; curves, baselines and time ticks share the bounds.
+
+## Output-area geometry
+
+`ExportSettings.extent` requires `ExportExtent.FULL_FRAME` (default) or
+`ExportExtent.CONTENT_AREA`. JSON values are `full_frame` / `content_area`.
+`LayoutPlugin.landscape_content` / `portrait_content` hold optional `ContentArea`
+definitions. Their presence determines `supported_extents(aspect)`; HUD declares
+neither and admits Full frame only. Unsupported extents and raw-string enum inputs
+are rejected centrally, without identifying layouts by name.
+
+`ContentArea.bounds` is `(x, y, width, height)` inside the default region **after
+output scaling**; bounds must fit that region. `margin` is a nonnegative integer,
+16 for current cropped plugins except Column, whose margin is zero. Column uses
+its complete 960 × 2160 rectangle in landscape only; it never gains padding or
+extends the canvas beyond the 4K height. The final size adds the margin on both sides and rounds up
+to multiples of ten. Extra pixels go to the right/bottom; content is never scaled
+to achieve rounding. Crop and output size are independent of retained placement.
+
+`resolve_geometry(settings)` returns an immutable `ExportGeometry`:
+
+- `output_size`: final dimensions, even for the supported codecs.
+- `render_size`: scaled layout region before cropping/composition.
+- `crop`: local `(x, y, width, height)` retained from that region.
+- `offset`: destination of the retained crop; margin for Content area, placement
+  for Full frame.
+
+Example: landscape G-Orbit Content area resolves to `render_size=(800, 800)`,
+`crop=(2, 2, 796, 796)`, `offset=(16, 16)` and `output_size=(830, 830)`.
+`ExportSettings.dimensions` remains the Full-frame reference canvas; use resolved
+geometry for extent-specific dimensions. File-size estimates already use the
+resolved output/crop and the selected extent's codec rates.
+
+Content-area frame generation, encoding, previews and UI selection are planned
+integration steps. This geometry API does not make those output paths available yet.
 
 ## Design constants
 

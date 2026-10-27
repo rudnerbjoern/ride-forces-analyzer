@@ -50,6 +50,7 @@ from ride_forces_analyzer.rendering.model import (
     prepare_export_analysis,
 )
 from ride_forces_analyzer.rendering.preview import ExportPreview, PreviewBackground
+from ride_forces_analyzer.rendering.layouts import registry
 from ride_forces_analyzer.storage.export_models import SavedPreset
 from ride_forces_analyzer.storage.exports import (
     ExportStore,
@@ -343,13 +344,27 @@ class ExportDialog(QDialog):
         self._schedule_preview()
 
     def _choose_profile(self, index: int, _checked: bool = False) -> None:
+        if (
+            self.form.settings().aspect
+            not in registry.PLUGINS[PROFILES[index][0]].supported_aspects
+        ):
+            return
         self.form.layout_profile.setCurrentIndex(index)
+
+    def _update_profile_availability(self) -> None:
+        """Reflect plugin format capabilities without enabling controls during export."""
+        aspect = self.form.settings().aspect
+        for (key, _), button in zip(PROFILES, self.profile_buttons, strict=True):
+            button.setEnabled(
+                self.worker is None and aspect in registry.PLUGINS[key].supported_aspects,
+            )
 
     def _bounds(self) -> tuple[int, int]:
         return self.form.bounds(self.analysis, (self.first, self.last))
 
     @Slot()
     def _schedule_preview(self) -> None:
+        self._update_profile_availability()
         self.form.remember_positions()
         self._update_size_estimate()
         first, last = self._bounds()
@@ -364,15 +379,18 @@ class ExportDialog(QDialog):
         )
         self.next.setEnabled(False)
         self.start.setEnabled(False)
-        bind(self.preview_note, tr("Updating all five previews…"), "text")
+        bind(self.preview_note, tr("Updating layout previews…"), "text")
 
     @Slot(object)
     def _preview_ready(self, result: ExportPreview) -> None:
-        selected = self.form.layout_profile.currentIndex()
-        for index, profile in enumerate(result.profiles):
-            self.profile_buttons[index].setIcon(QIcon(preview_pixmap(profile.image)))
-            self.profile_buttons[index].setChecked(index == selected)
-        self.preview_view.show_image(result.profiles[selected].image)
+        selected = PROFILES[self.form.layout_profile.currentIndex()][0]
+        profiles = {profile.layout: profile for profile in result.profiles}
+        for (key, _), button in zip(PROFILES, self.profile_buttons, strict=True):
+            profile = profiles.get(key)
+            button.setIcon(QIcon(preview_pixmap(profile.image)) if profile is not None else QIcon())
+            button.setChecked(key == selected)
+        self._update_profile_availability()
+        self.preview_view.show_image(profiles[selected].image)
         self._update_preview_caption()
         bind(
             self.preview_note,
@@ -551,6 +569,7 @@ class ExportDialog(QDialog):
         self.worker = None
         for control in self.controls:
             control.setEnabled(True)
+        self._update_profile_availability()
         self.form.flip_vertical.setEnabled(True)
         self.form.flip_lateral.setEnabled(False)
         self.start.setEnabled(True)

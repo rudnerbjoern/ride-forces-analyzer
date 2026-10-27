@@ -91,7 +91,7 @@ numeric readouts continue to show the current forces.
 
 ## Four-panel column
 
-The right-hand column includes three force plots and a dedicated orientation
+The landscape-only column fills the complete 4K height and includes three force plots and a dedicated orientation
 plot. All four timelines advance left-to-right. Its default vertical/lateral
 force axes are positive-down, unlike the compact lateral charts;
 the underlying signed values are identical. The longitudinal trace is green for

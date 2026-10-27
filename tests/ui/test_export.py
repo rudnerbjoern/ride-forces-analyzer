@@ -123,6 +123,10 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     dialog.form.position.setCurrentIndex(dialog.form.position.findData("top"))
     assert dialog.previews.result is None
     assert dialog.form.position.currentData() == LayoutPosition.TOP
+    choose_layout(ExportLayout.COLUMN)
+    dialog.form.aspect.setCurrentIndex(1)
+    assert PROFILES[dialog.form.layout_profile.currentIndex()][0] is not ExportLayout.COLUMN
+    dialog.form.aspect.setCurrentIndex(0)
     choose_layout(ExportLayout.HUD)
     assert choices() == ["full_screen"]
     assert dialog.form.position.currentData() == LayoutPosition.FULL_SCREEN
@@ -158,7 +162,11 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     original_plugins = registry.PLUGINS
     plugin = registry.PLUGINS[ExportLayout.CORNERS]
     portrait = LayoutPositions(
-        regions={LayoutPosition.BOTTOM_LEFT: plugin.portrait.regions[LayoutPosition.BOTTOM_LEFT]},
+        regions={
+            LayoutPosition.BOTTOM_LEFT: plugin.positions(VideoAspect.PORTRAIT).regions[
+                LayoutPosition.BOTTOM_LEFT
+            ],
+        },
         default=LayoutPosition.BOTTOM_LEFT,
     )
     monkeypatch.setattr(
@@ -219,6 +227,9 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     wait_until(lambda dialog=dialog: dialog.previews.result is None)
     result = preview_ready(dialog)
     assert all(profile.image.size == (540, 960) for profile in result.profiles)
+    assert ExportLayout.COLUMN not in {profile.layout for profile in result.profiles}
+    column_index = next(i for i, (key, _) in enumerate(PROFILES) if key is ExportLayout.COLUMN)
+    assert not dialog.profile_buttons[column_index].isEnabled()
 
     def preset_name(*args: object, **kwargs: object) -> tuple[str, bool]:
         return "Portrait", True

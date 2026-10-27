@@ -32,6 +32,10 @@ def test_portrait_contains_complete_region(manta: ExplorerData, layout: ExportLa
     from ride_forces_analyzer.rendering.model import ExportLayout
     from ride_forces_analyzer.rendering.layouts import export_region
 
+    if VideoAspect.PORTRAIT not in registry.PLUGINS[layout].supported_aspects:
+        with pytest.raises(ValueError, match="Unsupported export format"):
+            ExportSettings(layout=layout, aspect=VideoAspect.PORTRAIT)
+        return
     settings = ExportSettings(layout=ExportLayout(layout), aspect=VideoAspect.PORTRAIT)
     renderer = OverlayRenderer(prepare_export(manta.analysis, settings, 3500, 3700))
     frame = renderer.render_sample(3600)
@@ -92,7 +96,9 @@ def test_previews_match_production_at_exact_graph_sample(
     first, last = sample - 101, sample + 100
     result = build_previews(manta.analysis, settings, first, last, sample, PreviewBackground.DARK)
     assert result.sample == sample and not result.outside_range
-    assert tuple((p.layout, p.title) for p in result.profiles) == PROFILES
+    assert tuple((p.layout, p.title) for p in result.profiles) == tuple(
+        (key, title) for key, title in PROFILES if aspect in registry.PLUGINS[key].supported_aspects
+    )
     timeline = prepare_export(manta.analysis, settings, first, last)
     for profile in result.profiles:
         chosen = (

@@ -27,6 +27,7 @@ from ride_forces_analyzer.i18n import (
     diagnostic_message,
 )
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
+from ride_forces_analyzer.rendering.layouts import PLUGINS
 from ride_forces_analyzer.rendering.model import (
     VideoAspect,
     ExportLayout,
@@ -188,8 +189,15 @@ def test_saved_language_roundtrip_is_explicit(
     assert ExportStore(store.path).batch("Mixed").jobs[0].preset.settings.language is language
 
 
-@pytest.mark.parametrize("layout", [profile[0] for profile in PROFILES])
-@pytest.mark.parametrize("aspect", list(VideoAspect))
+@pytest.mark.parametrize(
+    "layout,aspect",
+    [
+        (layout, aspect)
+        for layout, _ in PROFILES
+        for aspect in VideoAspect
+        if aspect in PLUGINS[layout].supported_aspects
+    ],
+)
 @pytest.mark.parametrize("language", [Language.GERMAN, Language.FRENCH])
 def test_overlay_labels_fit_and_language_is_reproducible(
     manta: ExplorerData,

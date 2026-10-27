@@ -37,7 +37,7 @@ from ride_forces_analyzer.rendering.model import (
         ExportSettings(layout=ExportLayout.ORBIT),
         ExportSettings(
             layout=ExportLayout.COLUMN,
-            aspect=VideoAspect.PORTRAIT,
+            aspect=VideoAspect.LANDSCAPE,
             output=VideoOutput.OPAQUE,
         ),
     ],

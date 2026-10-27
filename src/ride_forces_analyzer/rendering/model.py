@@ -21,6 +21,7 @@ from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, Recor
 from ride_forces_analyzer.i18n import Language
 from .layouts.contracts import LayoutPosition
 from .layouts.contracts import ExportLayout as ExportLayout
+from .layouts.contracts import ExportExtent as ExportExtent
 from .layouts.contracts import VideoAspect as VideoAspect
 from .scales import history_extent, lateral_scale, longitudinal_scale, selected_bounds
 
@@ -126,6 +127,7 @@ class ExportSettings:
         language: Language member used for overlay text; saved JSON retains its text code.
         position: Requested source position or named layout placement, as declared by the
             type.
+        extent: Typed output-area choice; defaults to the complete canvas.
     """
 
     fps: Annotated[FrameRate, PlainSerializer(frame_rate_value)] = DEFAULT_FRAME_RATE
@@ -138,13 +140,14 @@ class ExportSettings:
     aspect: VideoAspect = VideoAspect.LANDSCAPE
     language: Language = Language.ENGLISH
     position: LayoutPosition | None = None
+    extent: ExportExtent = ExportExtent.FULL_FRAME
 
     @property
     def dimensions(self) -> tuple[int, int]:
-        """Return the layout's output canvas width and height in pixels.
+        """Return the layout's full-frame reference canvas dimensions.
 
         Returns:
-            The layout's output canvas width and height in pixels.
+            Full-frame width and height; resolve_geometry supplies extent-specific sizes.
         """
         from .layouts import canvas_dimensions
 
@@ -177,7 +180,8 @@ class ExportSettings:
         Raises:
             ValueError: Unsupported overlay language. Unknown export aspect ratio. Frame rate
                 must be an integer from 1 to 120, 24000/1001 or 60000/1001. Visible time window must be
-                from 1 to 60 seconds. Unknown export output mode. Unknown export layout.
+                from 1 to 60 seconds. Unknown export output mode/layout, unsupported extent
+                or placement, or output dimensions incompatible with supported codecs.
         """
         if type(self.language) is not Language:
             raise ValueError("Unsupported overlay language")
@@ -202,9 +206,9 @@ class ExportSettings:
             raise ValueError("Unknown export output mode")
         if type(self.layout) is not ExportLayout:
             raise ValueError("Unknown export layout")
-        from .layouts.registry import export_region
+        from .layouts.registry import resolve_geometry
 
-        export_region(self)
+        resolve_geometry(self)
 
 
 @dataclass(frozen=True, slots=True)

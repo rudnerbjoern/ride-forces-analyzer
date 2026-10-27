@@ -13,7 +13,11 @@ from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering.encoding import encoder_command
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts import COLORS, registry
-from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition, LayoutPositions
+from ride_forces_analyzer.rendering.layouts.contracts import (
+    ContentArea,
+    LayoutPosition,
+    LayoutPositions,
+)
 from ride_forces_analyzer.rendering.model import (
     VideoOutput,
     ExportLayout,
@@ -49,7 +53,8 @@ def test_equivalent_position_keeps_shared_axis_and_uses_default_for_other_axis(
     from ride_forces_analyzer.rendering.model import ExportLayout
 
     plugin = registry.PLUGINS[ExportLayout(layout)]
-    for positions in (plugin.landscape, plugin.portrait):
+    for aspect in plugin.supported_aspects:
+        positions = plugin.positions(aspect)
         assert positions.select(preferred) == expected
 
 
@@ -74,6 +79,8 @@ def test_export_settings_validate_positions_for_each_format(
         registry.PLUGINS[ExportLayout.ORBIT],
         landscape=LayoutPositions({LayoutPosition.TOP: (0, 0, 40, 30)}, LayoutPosition.TOP),
         portrait=LayoutPositions({LayoutPosition.BOTTOM: (10, 20, 30, 40)}, LayoutPosition.BOTTOM),
+        landscape_content=ContentArea((0, 0, 40, 30)),
+        portrait_content=ContentArea((0, 0, 30, 40)),
     )
     monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, ExportLayout.ORBIT: plugin})
     settings = ExportSettings(layout=ExportLayout.ORBIT, position=LayoutPosition.TOP)
@@ -120,6 +127,8 @@ def test_selected_region_controls_frame_size_placement_and_encoder_padding(
             LayoutPosition.BOTTOM,
         ),
         create=create,
+        landscape_content=ContentArea((0, 0, 40, 30)),
+        portrait_content=ContentArea((0, 0, 30, 40)),
     )
     monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, ExportLayout.ORBIT: plugin})
     settings = ExportSettings(

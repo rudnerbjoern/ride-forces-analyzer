@@ -173,7 +173,7 @@ GERMAN: dict[str, str] = {
     "Save export preset": "Exportvorgabe speichern",
     "Preset name": "Name der Vorgabe",
     "Loaded preset: {0}": "Vorgabe geladen: {0}",
-    "Updating all five previews…": "Alle fünf Vorschauen werden aktualisiert…",
+    "Updating layout previews…": "Layout-Vorschauen werden aktualisiert…",
     "Preview failed: {0}": "Vorschau fehlgeschlagen: {0}",
     "Choose FFmpeg": "FFmpeg auswählen",
     "All files (*)": "Alle Dateien (*)",

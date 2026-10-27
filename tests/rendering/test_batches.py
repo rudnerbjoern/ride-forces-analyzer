@@ -62,7 +62,11 @@ def test_portrait_and_landscape_persistence(
 
     chosen = SavedPreset(
         name="Portrait",
-        settings=ExportSettings(aspect=VideoAspect.PORTRAIT, position=LayoutPosition.LEFT),
+        settings=ExportSettings(
+            layout=ExportLayout.CORNERS,
+            aspect=VideoAspect.PORTRAIT,
+            position=LayoutPosition.TOP_LEFT,
+        ),
         analysis_configuration=source_app_configuration(),
         schema_version=1,
         smoothing_window=11,
@@ -76,16 +80,16 @@ def test_portrait_and_landscape_persistence(
     assert preset().settings.position is LayoutPosition.BOTTOM
     store.save_preset(
         chosen.model_copy(
-            update={"settings": replace(chosen.settings, position=LayoutPosition.RIGHT)},
+            update={"settings": replace(chosen.settings, position=LayoutPosition.TOP_RIGHT)},
         ),
         overwrite=True,
     )
     reopened = ExportStore(path)
     assert reopened.presets()[0].settings.dimensions == (2160, 3840)
-    assert reopened.presets()[0].settings.position is LayoutPosition.RIGHT
+    assert reopened.presets()[0].settings.position is LayoutPosition.TOP_RIGHT
     jobs = reopened.batch("Mixed formats").jobs
     assert [job.preset.settings.position for job in jobs] == [
-        LayoutPosition.LEFT,
+        LayoutPosition.TOP_LEFT,
         LayoutPosition.BOTTOM,
     ]
     assert [job.preset.settings.aspect for job in reopened.batch("Mixed formats").jobs] == [
@@ -131,7 +135,9 @@ def test_video_aspect_preserves_saved_codes_and_requires_enum_members(
 
     assert ExportSettings().aspect is VideoAspect.LANDSCAPE
     assert VideoAspect(aspect.value) is aspect
-    chosen = preset().model_copy(update={"settings": ExportSettings(aspect=aspect)})
+    chosen = preset().model_copy(
+        update={"settings": ExportSettings(layout=ExportLayout.RIBBON, aspect=aspect)},
+    )
     payload = json.loads(chosen.model_dump_json())
     assert payload["settings"]["aspect"] == aspect.value
     assert SavedPreset.model_validate_json(json.dumps(payload)).settings.aspect is aspect

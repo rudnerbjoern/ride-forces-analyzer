@@ -39,6 +39,10 @@ the supplied [Manta reference recording](../development/RECORDINGS.md#manta).
 
 ## Contracts
 
+Four-panel column is landscape-only: a 960×2160 rectangle fills the complete height
+of its 3840×2160 Full-frame canvas. Unsupported format/layout combinations are
+unavailable in the selector and preview gallery; other layouts support both formats.
+
 ### Defaults, destinations and saved settings
 
 - Settings → Export persists the default frame rate in `preferences.sqlite3`.

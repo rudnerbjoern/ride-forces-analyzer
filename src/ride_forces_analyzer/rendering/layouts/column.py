@@ -20,7 +20,14 @@ from pathlib import Path
 from ride_forces_analyzer.formatting.time import format_sample_time
 from ride_forces_analyzer.i18n import tr
 from .common import ACCELERATION_COLOR, BRAKING_COLOR
-from .contracts import ExportLayout, LayoutPlugin, LayoutPosition, LayoutPositions
+from .contracts import (
+    ContentArea,
+    ExportExtent,
+    ExportLayout,
+    LayoutPlugin,
+    LayoutPosition,
+    LayoutPositions,
+)
 
 FONT_FILE = "segoeui.ttf"  # Regular Windows font file.
 FONT_SIZE = 25  # Hint, scale and clock text size.
@@ -29,10 +36,6 @@ CANVAS_WIDTH = 3840  # Reference landscape canvas width.
 NATIVE_SIZE = (960, 2160)  # Native column drawing dimensions.
 LANDSCAPE_POSITIONS = LayoutPositions(  # Landscape regions: x, y, width, height.
     {LayoutPosition.LEFT: (0, 0, 960, 2160), LayoutPosition.RIGHT: (2880, 0, 960, 2160)},
-    default=LayoutPosition.RIGHT,
-)
-PORTRAIT_POSITIONS = LayoutPositions(  # Portrait regions: x, y, width, height.
-    {LayoutPosition.LEFT: (108, 300, 1440, 3240), LayoutPosition.RIGHT: (612, 300, 1440, 3240)},
     default=LayoutPosition.RIGHT,
 )
 BACKGROUND_COLOR = (0, 0, 0, 255)  # Opaque column background RGBA.
@@ -313,13 +316,23 @@ class ColumnRenderer:
 # Unmeasured codec rates; None retains the shared planning heuristic.
 PRORES_4444_SIZE_RATES: tuple[float, float] | None = None
 H264_SIZE_RATES: tuple[float, float] | None = None
+PRORES_4444_CONTENT_SIZE_RATES: tuple[float, float] | None = None
+H264_CONTENT_SIZE_RATES: tuple[float, float] | None = None
+LANDSCAPE_CONTENT = ContentArea((0, 0, *NATIVE_SIZE), margin=0)
 
 PLUGIN = LayoutPlugin(
     ExportLayout.COLUMN,
     LANDSCAPE_POSITIONS,
-    PORTRAIT_POSITIONS,
+    None,
     ColumnRenderer,
     preview_invert_lateral=True,
-    prores_4444_size_rates=PRORES_4444_SIZE_RATES,
-    h264_size_rates=H264_SIZE_RATES,
+    landscape_content=LANDSCAPE_CONTENT,
+    prores_4444_size_rates={
+        ExportExtent.FULL_FRAME: PRORES_4444_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: PRORES_4444_CONTENT_SIZE_RATES,
+    },
+    h264_size_rates={
+        ExportExtent.FULL_FRAME: H264_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: H264_CONTENT_SIZE_RATES,
+    },
 )
