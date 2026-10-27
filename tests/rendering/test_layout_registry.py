@@ -264,15 +264,42 @@ def test_compositor_accepts_a_registered_renderer_without_layout_branches(
                     LayoutPositions({LayoutPosition.TOP: region}, default=LayoutPosition.TOP),
                     LayoutPositions({LayoutPosition.TOP: region}, default=LayoutPosition.TOP),
                     create,
+                    landscape_canvas=(320, 240),
+                    portrait_canvas=(240, 320),
                 ),
             },
         ),
     )
     image = OverlayRenderer(timeline).render_sample(3600.5)
+    assert image.size == (320, 240)
+    assert replace(timeline.settings, aspect=VideoAspect.PORTRAIT).dimensions == (240, 320)
     assert positions == [3600.5]
     assert image.getchannel("A").getbbox() == (100, 200, 140, 230)
     assert image.getpixel((100, 200)) == (255, 0, 0, 180)
     assert image.getpixel((99, 200)) == (0, 0, 0, 0)
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"landscape_canvas": (0, 2160)},
+        {"portrait_canvas": (2160, 3841)},
+        {"landscape_canvas": (True, 2160)},
+        {"preferred_window_seconds": float("nan")},
+        {"preferred_window_seconds": 61},
+        {"preview_invert_lateral": 1},
+        {"prores_4444_size_rates": (0.2, 0.1)},
+        {"h264_size_rates": (0.1, float("inf"))},
+    ],
+)
+def test_invalid_plugin_canvas_defaults_and_rates_are_rejected(changes: dict[str, object]) -> None:
+    with pytest.raises(ValueError, match="Layout"):
+        replace(PLUGINS[ExportLayout.ORBIT], **changes)
+
+
+def test_regions_must_fit_the_plugin_declared_canvas() -> None:
+    with pytest.raises(ValueError, match="fit within"):
+        replace(PLUGINS[ExportLayout.HUD], landscape_canvas=(1919, 1080))
 
 
 def test_individual_chart_style_applies_in_both_aspects_without_leaking(

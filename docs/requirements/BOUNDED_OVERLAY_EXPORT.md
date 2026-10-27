@@ -1,6 +1,6 @@
 # Full-frame and bounded overlay export
 
-Status: planned; no implementation.
+Status: step 1 accepted by the owner; steps 2–8 pending. Content-area export remains planned.
 
 ## Requirements
 
@@ -22,6 +22,13 @@ Status: planned; no implementation.
   always show the full canvas.
 - Layout, format or extent changes refresh previews. Preview backgrounds remain
   presentation-only. Content area must not be padded back to a full-frame video.
+- File-size estimates use the selected extent's resolved output dimensions,
+  active content and safety margin, including codec alignment; never assume a 4K canvas.
+- Each plugin may supply codec-specific estimate rates for Full frame and Content area
+  independently. Unmeasured combinations use a shared approximate fallback, not
+  fabricated measurements or a simple proportional reduction of the full-frame file size.
+- Refresh estimates in settings and review after layout, format or extent changes.
+  HUD estimates always use Full frame.
 - Persist the choice in presets and bound batch jobs; omitted values use Full frame.
 - Explain in the user guide: bounded videos require positioning in the video editor;
   the original full-frame placement is not represented by empty video pixels.
@@ -74,8 +81,9 @@ measurement tables, images and videos in `.tmp/`; no separate historical reports
 2. **Measure bounds.** Measure supported layout/format variants and safety margins.
    Acceptance: dimension table and boundary previews, including text/effect extremes;
    HUD remains full-frame. No application changes.
-3. **Model geometry.** Extend the existing plugin contract with typed extent capabilities
-   and layout-owned geometry; implement common resolution/validation centrally.
+3. **Model geometry.** Extend the existing plugin contract with typed extent capabilities,
+   layout-owned geometry and extent/codec-specific estimate rates; implement common
+   resolution/validation centrally.
    Acceptance: resolved-size examples and focused contract tests for fixed bounds,
    margins, codec alignment, position independence and HUD restrictions. Review
    dependency direction: plugins use shared helpers, never other layout plugins.
@@ -87,7 +95,8 @@ measurement tables, images and videos in `.tmp/`; no separate historical reports
    preview refresh after layout/format/extent changes.
 6. **Connect the assistant.** Add localized controls, property order, visibility and
    review fields using plugin capabilities. Acceptance: interactive review of both
-   modes, HUD, position restoration and actual output dimensions; focused UI checks.
+   modes, HUD, position restoration, actual dimensions and matching file-size estimates;
+   focused UI checks, including estimate updates when changing extent.
 7. **Persist and batch.** Store extent in presets/jobs and use it during batch execution.
    Acceptance: save/reopen and mixed-mode batch examples; omitted extent defaults to
    Full frame. Verify HUD handling and independent saved job snapshots.

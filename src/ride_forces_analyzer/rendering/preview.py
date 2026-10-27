@@ -138,7 +138,7 @@ def build_previews(
                     previous_positions.get(layout) if previous_positions is not None else None,
                 ),
                 invert_vertical=True,
-                invert_lateral=layout == ExportLayout.COLUMN,
+                invert_lateral=plugin.preview_invert_lateral,
             )
         )
         channels = tuple(

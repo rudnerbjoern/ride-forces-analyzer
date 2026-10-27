@@ -767,4 +767,21 @@ class HudRenderer(Drawing):
         return image
 
 
-PLUGIN = LayoutPlugin(ExportLayout.HUD, LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, HudRenderer)
+# Kraken, Iron Gwazi and Voltron GPU ProRes measurements span 0.734–0.764 bytes
+# per pixel/frame including MOV overhead; retain a 10% planning margin around 0.75.
+PRORES_4444_SIZE_RATES = (0.675, 0.825)
+# Kraken CPU H.264: 17,181,504 bytes, about 0.00085 bytes/pixel/frame including
+# MP4 overhead; allow 50% for content/encoder variation.
+H264_SIZE_RATES = (0.000425, 0.001275)
+
+PLUGIN = LayoutPlugin(
+    ExportLayout.HUD,
+    LANDSCAPE_POSITIONS,
+    PORTRAIT_POSITIONS,
+    HudRenderer,
+    landscape_canvas=LANDSCAPE.size,
+    portrait_canvas=PORTRAIT.size,
+    preferred_window_seconds=30.0,
+    prores_4444_size_rates=PRORES_4444_SIZE_RATES,
+    h264_size_rates=H264_SIZE_RATES,
+)

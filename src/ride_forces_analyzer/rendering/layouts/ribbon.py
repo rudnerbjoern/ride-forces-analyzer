@@ -269,4 +269,15 @@ def create_renderer(timeline: ExportTimeline) -> ChartRenderer:
     return RibbonRenderer(timeline)
 
 
-PLUGIN = LayoutPlugin(ExportLayout.RIBBON, LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, create_renderer)
+# Unmeasured codec rates; None retains the shared planning heuristic.
+PRORES_4444_SIZE_RATES: tuple[float, float] | None = None
+H264_SIZE_RATES: tuple[float, float] | None = None
+
+PLUGIN = LayoutPlugin(
+    ExportLayout.RIBBON,
+    LANDSCAPE_POSITIONS,
+    PORTRAIT_POSITIONS,
+    create_renderer,
+    prores_4444_size_rates=PRORES_4444_SIZE_RATES,
+    h264_size_rates=H264_SIZE_RATES,
+)

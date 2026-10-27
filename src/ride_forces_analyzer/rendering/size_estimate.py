@@ -7,8 +7,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from fractions import Fraction
 from math import ceil
 
-from .layouts import export_region
-from .model import VideoOutput, ExportLayout, ExportSettings
+from .layouts import export_region, registry
+from .model import VideoOutput, ExportSettings
 
 # Bytes per pixel per frame: uniform canvas plus active overlay. These broad
 # planning assumptions are not calibrated against every recording or GPU.
@@ -17,13 +17,6 @@ PRORES_OVERLAY = (0.08, 0.8)
 H264_BASE = (0.0001, 0.001)
 H264_OVERLAY = (0.003, 0.06)
 CONTAINER_ALLOWANCE = 1.02
-# Kraken, Iron Gwazi and Voltron HUD Vulkan ProRes 4444 span 0.734–0.764
-# bytes/pixel/frame including MOV overhead. Their frame-weighted mean rounds to
-# 0.75; retain a 10% planning margin for content variation.
-HUD_GPU_PRORES = (0.675, 0.825)
-# Matching Kraken HUD CPU H.264: 17,181,504 bytes, about 0.00085
-# bytes/pixel/frame including MP4 overhead. Allow 50% for content/encoder variation.
-HUD_H264 = (0.000425, 0.001275)
 
 
 def estimate_size_bytes(
@@ -48,10 +41,16 @@ def estimate_size_bytes(
         raise ValueError("A positive sample count and sample rate are required")
     frames = ceil(Fraction(sample_count) * settings.frame_rate / Fraction(str(sample_rate)))
     width, height = settings.dimensions
-    if settings.layout == ExportLayout.HUD and (
-        settings.output == VideoOutput.OPAQUE or settings.prefer_gpu
-    ):
-        low_rate, high_rate = HUD_H264 if settings.output == VideoOutput.OPAQUE else HUD_GPU_PRORES
+    plugin = registry.PLUGINS[settings.layout]
+    rates = (
+        plugin.h264_size_rates
+        if settings.output == VideoOutput.OPAQUE
+        else plugin.prores_4444_size_rates
+        if settings.prefer_gpu
+        else None
+    )
+    if rates is not None:
+        low_rate, high_rate = rates
         pixels = frames * width * height
         return ceil(pixels * low_rate), ceil(pixels * high_rate)
     _, _, overlay_width, overlay_height = export_region(settings)

@@ -164,8 +164,18 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     monkeypatch.setattr(
         registry,
         "PLUGINS",
-        {**registry.PLUGINS, ExportLayout.CORNERS: replace(plugin, portrait=portrait)},
+        {
+            **registry.PLUGINS,
+            ExportLayout.CORNERS: replace(
+                plugin,
+                portrait=portrait,
+                preferred_window_seconds=17.0,
+            ),
+        },
     )
+    choose_layout(ExportLayout.ORBIT)
+    choose_layout(ExportLayout.CORNERS)
+    assert dialog.form.seconds.value() == 17
     dialog.form.aspect.setCurrentIndex(0)
     dialog.form.aspect.setCurrentIndex(1)
     assert choices() == ["bottom_left"]

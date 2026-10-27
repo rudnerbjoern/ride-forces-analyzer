@@ -13,6 +13,7 @@ import pytest
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
+from ride_forces_analyzer.rendering.layouts import registry
 from ride_forces_analyzer.rendering.model import (
     VideoOutput,
     FrameRate,
@@ -200,6 +201,26 @@ def test_preview_sample_is_independent_of_video_rate(
     )
     assert result.sample == sample
     assert positions == [sample] * len(PROFILES)
+
+
+def test_gallery_uses_plugin_lateral_defaults(
+    manta: ExplorerData,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert manta.analysis is not None
+    observed: dict[ExportLayout, bool] = {}
+
+    def render(self: OverlayRenderer, position: float) -> Image.Image:
+        observed[self.timeline.settings.layout] = self.timeline.settings.invert_lateral
+        return Image.new("RGBA", (8, 8))
+
+    plugin = replace(registry.PLUGINS[ExportLayout.ORBIT], preview_invert_lateral=True)
+    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
+    monkeypatch.setattr(OverlayRenderer, "render_sample", render)
+    build_previews(manta.analysis, ExportSettings(layout=ExportLayout.RIBBON), 3600, 3610, 3600)
+    assert observed[ExportLayout.ORBIT]
+    assert observed[ExportLayout.COLUMN]
+    assert not observed[ExportLayout.CORNERS]
 
 
 @pytest.mark.parametrize("mode", [VideoOutput.TRANSPARENT, VideoOutput.OPAQUE])

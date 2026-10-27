@@ -7,6 +7,8 @@ from typing import Literal
 
 import pytest
 
+from ride_forces_analyzer.rendering.layouts import registry
+
 from ride_forces_analyzer.rendering.model import VideoOutput, ExportLayout, ExportSettings
 from ride_forces_analyzer.rendering.size_estimate import estimate_size_bytes
 
@@ -31,6 +33,35 @@ def test_estimate_scales_with_duration_and_frame_rate_and_distinguishes_codec(
 def test_single_sample_is_rounded_to_full_output_frame() -> None:
     settings = ExportSettings(fps=25)
     assert estimate_size_bytes(settings, 1, 50) == estimate_size_bytes(settings, 2, 50)
+
+
+@pytest.mark.parametrize(
+    "layout,expected",
+    [
+        (ExportLayout.COLUMN, (8_294_400, 16_588_800)),
+        (ExportLayout.RIBBON, (8_294_400, 16_588_800)),
+        (ExportLayout.CORNERS, (8_294_400, 16_588_800)),
+        (ExportLayout.ORBIT, (8_294_400, 16_588_800)),
+        (ExportLayout.HUD, (2_073_600, 4_147_200)),
+    ],
+)
+def test_estimate_uses_registered_layout_rates(
+    layout: ExportLayout,
+    expected: tuple[int, int],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    plugin = replace(
+        registry.PLUGINS[layout],
+        prores_4444_size_rates=(0.1, 0.2),
+        h264_size_rates=(0.01, 0.02),
+    )
+    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
+    settings = ExportSettings(layout=layout, fps=50)
+    assert estimate_size_bytes(settings, 10, 50) == expected
+    assert estimate_size_bytes(replace(settings, output=VideoOutput.OPAQUE), 10, 50) == (
+        expected[0] // 10,
+        expected[1] // 10,
+    )
 
 
 @pytest.mark.parametrize(

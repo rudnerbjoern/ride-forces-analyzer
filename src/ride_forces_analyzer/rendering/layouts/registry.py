@@ -26,6 +26,23 @@ REGIONS = {
 }
 
 
+def canvas_dimensions(settings: ExportSettings) -> tuple[int, int]:
+    """Resolve the full-frame canvas from the registered layout's metadata.
+
+    Args:
+        settings: Validated layout and aspect selection.
+
+    Returns:
+        Landscape or portrait canvas dimensions in pixels.
+    """
+    plugin = PLUGINS[settings.layout]
+    return (
+        plugin.landscape_canvas
+        if settings.aspect is VideoAspect.LANDSCAPE
+        else plugin.portrait_canvas
+    )
+
+
 def export_region(settings: ExportSettings) -> Region:
     """Return the selected layout region as x, y, width and height in pixels.
 

@@ -407,4 +407,15 @@ class OrbitRenderer(Drawing):
         return image
 
 
-PLUGIN = LayoutPlugin(ExportLayout.ORBIT, LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, OrbitRenderer)
+# Unmeasured codec rates; None retains the shared planning heuristic.
+PRORES_4444_SIZE_RATES: tuple[float, float] | None = None
+H264_SIZE_RATES: tuple[float, float] | None = None
+
+PLUGIN = LayoutPlugin(
+    ExportLayout.ORBIT,
+    LANDSCAPE_POSITIONS,
+    PORTRAIT_POSITIONS,
+    OrbitRenderer,
+    prores_4444_size_rates=PRORES_4444_SIZE_RATES,
+    h264_size_rates=H264_SIZE_RATES,
+)

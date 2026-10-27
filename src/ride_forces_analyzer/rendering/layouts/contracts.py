@@ -6,6 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import annotations
 from dataclasses import dataclass
+from math import isfinite
 from collections.abc import Callable, Mapping
 from enum import StrEnum
 from types import MappingProxyType
@@ -194,22 +195,34 @@ class LayoutRenderer(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class LayoutPlugin:
-    """Register a renderer and position regions within the maximum 4K canvas bounds.
+    """Register layout-owned geometry, defaults and optional size-estimate rates.
 
     HUD uses a smaller native-resolution canvas. Regions exceeding the maximum
     landscape/portrait bounds raise ValueError at registration.
 
     Attributes:
         key: ExportLayout member identifying the registered renderer.
-        landscape: Landscape dimensions supported by the layout.
-        portrait: Whether the selected layout uses portrait geometry.
+        landscape: Supported landscape regions and default placement.
+        portrait: Supported portrait regions and default placement.
         create: Factory constructing a renderer bound to an export timeline.
+        landscape_canvas: Full-frame landscape dimensions in pixels.
+        portrait_canvas: Full-frame portrait dimensions in pixels.
+        preferred_window_seconds: Time-window override when selecting the layout, or None.
+        preview_invert_lateral: Lateral direction used for an unselected gallery preview.
+        prores_4444_size_rates: Optional ProRes 4444 lower/upper bytes per canvas pixel per frame.
+        h264_size_rates: Optional H.264 lower/upper bytes per canvas pixel per frame.
     """
 
     key: ExportLayout
     landscape: LayoutPositions
     portrait: LayoutPositions
     create: Callable[[ExportTimeline], LayoutRenderer]
+    landscape_canvas: tuple[int, int] = (3840, 2160)
+    portrait_canvas: tuple[int, int] = (2160, 3840)
+    preferred_window_seconds: float | None = None
+    preview_invert_lateral: bool = False
+    prores_4444_size_rates: tuple[float, float] | None = None
+    h264_size_rates: tuple[float, float] | None = None
 
     def __post_init__(self) -> None:
         """Validate constructor fields and establish the documented model invariants.
@@ -218,11 +231,42 @@ class LayoutPlugin:
             None.
 
         Raises:
-            ValueError: The key is not an ExportLayout member, or a region exceeds its canvas.
+            ValueError: The key, canvas, defaults or rates are invalid, or a region
+                exceeds its declared canvas.
         """
         if type(self.key) is not ExportLayout:
             raise ValueError("Unknown export layout")
-        for positions, canvas in ((self.landscape, (3840, 2160)), (self.portrait, (2160, 3840))):
+        for positions, canvas, maximum in (
+            (self.landscape, self.landscape_canvas, (3840, 2160)),
+            (self.portrait, self.portrait_canvas, (2160, 3840)),
+        ):
+            if (
+                type(canvas) is not tuple
+                or len(canvas) != 2
+                or any(
+                    type(value) is not int or not 0 < value <= limit
+                    for value, limit in zip(canvas, maximum, strict=True)
+                )
+            ):
+                raise ValueError("Layout canvas must fit within the maximum export dimensions")
             for x, y, width, height in positions.regions.values():
                 if x + width > canvas[0] or y + height > canvas[1]:
                     raise ValueError("Layout region must fit within its export canvas")
+        window = self.preferred_window_seconds
+        if window is not None and (
+            type(window) not in (float, int) or not isfinite(window) or not 1 <= window <= 60
+        ):
+            raise ValueError("Layout time window must be from 1 to 60 seconds")
+        if type(self.preview_invert_lateral) is not bool:
+            raise ValueError("Layout preview direction must be a boolean")
+        for rates in (self.prores_4444_size_rates, self.h264_size_rates):
+            if rates is not None and (
+                type(rates) is not tuple
+                or len(rates) != 2
+                or any(
+                    type(value) not in (float, int) or not isfinite(value) or value <= 0
+                    for value in rates
+                )
+                or rates[0] > rates[1]
+            ):
+                raise ValueError("Layout size rates must be positive ordered finite values")

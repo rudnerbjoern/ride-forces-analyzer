@@ -146,11 +146,9 @@ class ExportSettings:
         Returns:
             The layout's output canvas width and height in pixels.
         """
-        if self.layout == ExportLayout.HUD:
-            from .layouts.hud import LANDSCAPE, PORTRAIT
+        from .layouts import canvas_dimensions
 
-            return (PORTRAIT if self.aspect is VideoAspect.PORTRAIT else LANDSCAPE).size
-        return (2160, 3840) if self.aspect is VideoAspect.PORTRAIT else (3840, 2160)
+        return canvas_dimensions(self)
 
     @property
     def frame_rate(self) -> Fraction:

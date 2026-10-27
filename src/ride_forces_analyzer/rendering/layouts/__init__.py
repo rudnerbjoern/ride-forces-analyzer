@@ -9,5 +9,6 @@ from .registry import (
     PLUGINS as PLUGINS,
     REGIONS as REGIONS,
     create_renderer as create_renderer,
+    canvas_dimensions as canvas_dimensions,
     export_region as export_region,
 )

@@ -35,7 +35,10 @@ For examples of all five rendered layouts in turn over Onride footage, watch the
 ## Renderer contract
 
 Each layout module exports one immutable `PLUGIN` with its stable key,
-landscape/portrait `LayoutPositions` and a renderer factory. Each format owns a
+landscape/portrait `LayoutPositions`, canvas dimensions and a renderer factory.
+Plugins remain independent; shared algorithms live in `common.py`, `charts.py`,
+`rendering.scales` and `rendering.peaks`, never in another concrete layout module.
+Each format owns a
 read-only `regions` mapping from `LayoutPosition` StrEnum members to explicit pixel
 regions `(x, y, width, height)`, plus a supported `default` key. Coordinates start
 at the canvas's upper-left corner. Position entries may have different sizes.
@@ -44,7 +47,8 @@ values (such as `top_left`) remain stable; parse external values with
 `LayoutPosition(value)`. Metadata keys and defaults require enum members.
 Mappings are copied; coordinates/dimensions must be integers, coordinates
 nonnegative and sizes positive. Plugin construction rejects regions outside the
-maximum 3840×2160 landscape or 2160×3840 portrait bounds, including nondefault entries.
+declared canvas, including nondefault entries. Canvases must fit within the maximum
+3840×2160 landscape or 2160×3840 portrait dimensions.
 `ExportSettings.position` accepts a `LayoutPosition`; `None` selects the format's
 default. Unsupported layout/format combinations and raw string positions raise
 `ValueError`. Rendering, previews and encoder padding resolve the same region.
@@ -71,6 +75,20 @@ The compositor and encoder retain these dimensions without upscaling; the other
 profiles use 4K canvases. Switching from a
 full-screen layout restores another layout's remembered position when available,
 otherwise its default. No corner/edge is inferred from a full-screen position.
+
+`LayoutPlugin.landscape_canvas` and `portrait_canvas` declare full-frame output sizes;
+`canvas_dimensions(settings)` resolves them through the registry. Plugins also own
+`preferred_window_seconds` (optional selection-time override), `preview_invert_lateral`
+(unselected gallery default), and optional `prores_4444_size_rates` / `h264_size_rates`
+(lower/upper bytes per canvas pixel per frame). Shared consumers apply these values
+without branching on layout names. HUD declares its native canvases, 30-second
+selection default and measured estimate rates; Column declares its lateral preview
+default. Every layout module explicitly supplies its own `PRORES_4444_SIZE_RATES`
+and `H264_SIZE_RATES`; unmeasured values remain `None` and use the shared planning
+heuristic. Setting one codec's rates does not require configuring the other codec
+or changing another layout. No missing measurements are fabricated.
+Rates must be finite, positive
+and ordered; a preferred time window must be within 1–60 seconds.
 
 `LANDSCAPE_POSITIONS` and `PORTRAIT_POSITIONS` live in each layout module.
 Ribbon declares top/bottom, Column left/right, Corners/G-Orbit all four corners,
