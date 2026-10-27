@@ -1,6 +1,7 @@
 # Full-frame and bounded overlay export
 
-Status: step 1 accepted by the owner; steps 2–8 pending. Content-area export remains planned.
+Status: steps 1–2 accepted by the owner; steps 3–8 pending.
+Content-area export remains planned.
 
 ## Requirements
 
@@ -14,7 +15,11 @@ Status: step 1 accepted by the owner; steps 2–8 pending. Content-area export r
 - Store validated bounds and margin in layout metadata. Start with a 16-pixel
   margin at output resolution; increase where measurements require it.
 - Keep dimensions and crop origin fixed throughout an export. No clipping,
-  frame-dependent resizing or movement. Round dimensions up where codecs require it.
+  frame-dependent resizing or movement.
+- For Content area, add the safety margin, then round each dimension up to the next
+  multiple of 10 pixels: `10 * ceil((content_dimension + 2 * margin) / 10)`.
+  Add remaining pixels on the right/bottom; never scale the content. Padding is
+  transparent for MOV and black for opaque MP4. Full-frame dimensions remain unchanged.
 - Use the same geometry for frames, encoder input/output, layout thumbnails,
   main preview and export summary. Show the actual output dimensions.
 - Full-frame previews show the complete canvas and selected placement; Content area
@@ -40,6 +45,24 @@ Status: step 1 accepted by the owner; steps 2–8 pending. Content-area export r
   usable by plugins and export consumers without duplicated logic.
 - Resolve capabilities through the common plugin contract. HUD declares Full-frame-only
   support in its metadata; dialog, previews and encoder must not hard-code layout names.
+
+## Planned output dimensions
+
+Content-area sizes include a 16-pixel margin on each side and rounding up to 10 pixels.
+HUD retains its native Full-frame size.
+
+| Layout             | Landscape output | Portrait output |
+| ------------------ | ---------------- | --------------- |
+| Flow Ribbon        | 3110 × 400       | 1720 × 2280     |
+| Corner Instruments | 880 × 1160       | 1720 × 2280     |
+| G-Orbit            | 830 × 830        | 1220 × 1220     |
+| Four-panel column  | 1000 × 2200      | 1480 × 3280     |
+| HUD (Full frame)   | 1920 × 1080      | 1080 × 1920     |
+
+Bounds use the existing output pixel scale. G-Orbit landscape uses its measured
+796 × 796 alpha rectangle; portrait resampling fills its 1188 × 1188 region.
+Other cropped layouts use their complete declared region. Column landscape may
+exceed 2160 pixels in height because its added margin must not shrink the content.
 
 ## Export assistant
 
@@ -85,7 +108,7 @@ measurement tables, images and videos in `.tmp/`; no separate historical reports
    layout-owned geometry and extent/codec-specific estimate rates; implement common
    resolution/validation centrally.
    Acceptance: resolved-size examples and focused contract tests for fixed bounds,
-   margins, codec alignment, position independence and HUD restrictions. Review
+   margins, rounding up to 10 pixels, codec alignment, position independence and HUD restrictions. Review
    dependency direction: plugins use shared helpers, never other layout plugins.
 4. **Render and encode.** Apply geometry to frame generation and both output modes.
    Acceptance: short full-frame/content-area videos, verified dimensions/transparency
