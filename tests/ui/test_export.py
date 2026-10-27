@@ -2,7 +2,13 @@
 
 from ride_forces_analyzer.rendering.model import StandardFrameRate
 
-from ride_forces_analyzer.rendering.model import ExportLayout, VideoAspect, ExportExtent
+from ride_forces_analyzer.rendering.model import (
+    ExportLayout,
+    VideoAspect,
+    ExportExtent,
+    ExportTimeline,
+)
+from ride_forces_analyzer.rendering.layouts import resolve_geometry
 from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.analysis.preparation import (
     source_app_configuration,
@@ -324,6 +330,8 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
     dialog = window.export_window
     assert isinstance(dialog, ExportDialog)
     preview_ready(dialog)
+    dialog.form.extent.setCurrentIndex(dialog.form.extent.findData(ExportExtent.CONTENT_AREA.value))
+    preview_ready(dialog)
     dialog.next.click()
     with TemporaryDirectory(dir=".tmp") as temporary:
         output = Path(temporary).resolve() / "custom.mov"
@@ -338,7 +346,10 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
         def encoder(path: Path | None = None) -> Path:
             return Path(__file__)
 
-        def export(*args: object, **kwargs: object) -> Path:
+        def export(timeline: ExportTimeline, target: Path, **kwargs: object) -> Path:
+            assert timeline.settings.extent is ExportExtent.CONTENT_AREA
+            assert resolve_geometry(timeline.settings).output_size == (3072, 360)
+            assert target == output
             assert kwargs["overwrite"] is output.exists()
             output.write_bytes(b"complete video")
             return output

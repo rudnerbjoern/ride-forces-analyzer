@@ -24,14 +24,15 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 
 ## Supported output
 
-| Setting            | Contract                                                                                                   |
-| ------------------ | ---------------------------------------------------------------------------------------------------------- |
-| Output             | One video per recording; transparent ProRes 4444 MOV (default) or independent opaque H.264 MP4             |
-| Canvas             | HUD: native 1920×1080 / 1080×1920; other profiles: 3840×2160 / 2160×3840                                   |
-| Profiles           | Flow Ribbon (assistant opening default), Corner Instruments, HUD, G-Orbit, four-panel column               |
-| Frame-rate choices | 23.976/24/25/30/50/59.94/60 fps; default 50 without a valid saved preference                               |
-| Context window     | 1–60 s, default 12; shared source position and centered cursor in time plots                               |
-| Alignment          | Manual in DaVinci Resolve; source-video ingestion/synchronization excluded                                 |
+| Setting            | Contract                                                                                       |
+| ------------------ | ---------------------------------------------------------------------------------------------- |
+| Output             | One video per recording; transparent ProRes 4444 MOV (default) or independent opaque H.264 MP4 |
+| Full-frame canvas  | HUD: native 1920×1080 / 1080×1920; other profiles: 3840×2160 / 2160×3840                       |
+| Export area        | Full frame (default) or complete native Content area; HUD supports Full frame only             |
+| Profiles           | Flow Ribbon (assistant opening default), Corner Instruments, HUD, G-Orbit, four-panel column   |
+| Frame-rate choices | 23.976/24/25/30/50/59.94/60 fps; default 50 without a valid saved preference                   |
+| Context window     | 1–60 s, default 12; shared source position and centered cursor in time plots                   |
+| Alignment          | Manual in DaVinci Resolve; source-video ingestion/synchronization excluded                     |
 
 [Manta overlay demo](https://youtu.be/0sGiE6F8YlI): all five layouts in turn over Onride footage.
 The additional [Manta HUD demo](https://youtu.be/JGcNPKoKU1Q) shows HUD using
@@ -63,9 +64,10 @@ unavailable in the selector and preview gallery; other layouts support both form
   Successful exports remember the destination folder across restarts, separately
   from the recording folder. Missing folders use dialog defaults; cancellation or
   failure preserves the previous folder.
-- Presets/immutable batch jobs explicitly retain aspect, overlay language, vertical
-  direction and analysis recipe; incomplete saved settings are rejected.
-  Mixed-aspect batches are supported.
+- Presets/immutable batch jobs retain aspect, export area, position, overlay language,
+  vertical direction and analysis recipe. Omitted optional fields use declared defaults,
+  including Full frame for `extent`; invalid supplied or missing required values fail.
+  Mixed-aspect and mixed-area batches are supported.
 - Python callers select `VideoAspect.LANDSCAPE` or `VideoAspect.PORTRAIT` from
   `rendering.model`; `VideoAspect(value)` converts supported text values.
   Saved JSON retains `landscape` and `portrait`; existing presets need no migration.
@@ -115,7 +117,7 @@ only when applicable. Controls and review labels support English, German and Fre
   source indices; layouts consume a bound `ExportTimeline`.
   Force/orientation views share prepared buffers; context uses full-history labels
   without per-layout reclassification.
-- Orientation is independent of force smoothing. Layout, aspect, position, language, video
+- Orientation is independent of force smoothing. Layout, aspect, export area, position, language, video
   rate and seeking do not recalculate analysis. Running exports/preview workers
   retain bound snapshots independently of later workspace changes.
   This includes custom Gravity/Incline references and subsequent resets: all five
@@ -147,14 +149,14 @@ only when applicable. Controls and review labels support English, German and Fre
 
 ### Geometry, directions and colors
 
-- All profiles fit the full canvas. Portrait Ribbon stacks force cards;
-  Corners, G-Orbit and Column preserve complete instruments with proportional
-  scaling/margins. Previews retain aspect without cropping/stretching.
-  Frame composition and encoder padding share region geometry.
+- Full frame fits the complete layout on its canvas, using proportional scaling
+  and layout-owned placement. Portrait Ribbon stacks force cards; Column supports
+  landscape only. Content area keeps the complete native image without added
+  margins or scaling. Previews retain aspect without cropping/stretching.
 - The export API accepts a layout/format-supported position or uses that format's
   default. Coordinates and dimensions come from the layout; frame composition,
   large previews, thumbnails and encoder padding use the same selected region.
-  The assistant offers localized positions beside Layout profile. Layout/format
+  The assistant offers a separate localized Position row for applicable Full-frame layouts. Layout/format
   changes retain a supported selection or choose an equivalent edge/corner on the
   same side. Without an equivalent, retain the layout's remembered supported
   position before falling back to its default. Thumbnails use the same policy.
@@ -290,8 +292,8 @@ only when applicable. Controls and review labels support English, German and Fre
 
 | Estimate             | Contract and limits                                                                                                                             |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| File size            | Live approximate MiB range in settings/review, using rounded frame count, canvas/overlay area and codec; no FFmpeg or trial rendering           |
-| Size uncertainty     | HUD H.264 and GPU-preferred ProRes use measured references; other combinations use a generic heuristic. Neither guarantees bounds               |
+| File size            | Live approximate MiB range in settings/review using resolved dimensions, frame count and codec/extent rates; no FFmpeg or trial rendering       |
+| Size uncertainty     | Plugin-owned measured planning ranges per codec/extent; missing entries use the shared heuristic; estimates never guarantee bounds              |
 | Remaining frame time | Single and batch exports share `ExportProgress`; monotonic elapsed time per submitted frame × pending count; min:sec, including encoder startup |
 | ETA states           | Estimating before first frame; finalization after last frame has no predicted duration; cancel/failure/completion clears ETA                    |
 
@@ -347,7 +349,8 @@ shared heuristic; no rate is borrowed from a different extent.
   equals input size. MOV retains transparency; MP4 uses a black background.
   Full frame retains its scaling, canvas and placement. Column's
   Content area remains exactly 960 × 2160 without padding; HUD remains Full frame.
-  Previews use the resolved output geometry; Content-area assistant selection remains planned.
+  Previews, assistant dimensions, review and size estimates use the resolved output
+  geometry; presets and jobs retain the same typed area choice.
 - The save dialog confirms replacement of existing videos. An explicitly confirmed
   replacement atomically publishes the completed staged video on the same filesystem;
   cancellation or failure preserves the original. Other callers and batches default

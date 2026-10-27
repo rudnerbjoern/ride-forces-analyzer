@@ -78,7 +78,8 @@ accepts an external executable. Linux/macOS use an external native FFmpeg.
 
 Pillow generates RGBA regions. Supported NVIDIA backends provide Vulkan ProRes
 4444 with alpha or NVENC H.264; a real probe selects the backend. CPU fallback
-remains available. HUD exports native HD and other layouts 4K. Output format and
+remains available. Full frame uses native HD for HUD and 4K for other layouts;
+Content area retains each supported layout's native image dimensions. Output format and
 editor compatibility depend on the selected encoder and editor.
 [Video contracts](../implementation/VIDEO_EXPORT.md) define encoding/publication
 and [the user guide](../user/VIDEO_EXPORT.md#5-put-the-overlay-above-your-footage)

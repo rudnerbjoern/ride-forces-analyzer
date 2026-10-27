@@ -53,7 +53,8 @@ or a shared clock. [Decisions](09_architecture_decisions.md) retain rationale;
 ## Export strategy
 
 Production renderers serve previews and video output. HUD retains native HD for
-editor scaling; other layouts use 4K. One renderer runs serially or independent
+editor scaling; other layouts offer 4K Full-frame or native Content-area output.
+One renderer runs serially or independent
 renderer threads prepare a bounded, ordered frame stream. FFmpeg uses a probed
 NVIDIA backend when supported, otherwise CPU encoding.
 

@@ -33,9 +33,34 @@ Curves and pointers retain their full precision.
 | **Four-panel column**  | Right side                  | Compare force histories and a separate orientation curve.     |
 
 Flow Ribbon is selected when you first open the export assistant.
-The comparison above shows each layout at its own default position; assistant
-thumbnails follow your current position choices.
-[Open the larger detail views](../EXPORT_THEMES.md) to inspect each layout.
+The comparison above shows Full-frame output at each layout's default position;
+assistant thumbnails follow your export area and position choices.
+[Open the larger detail views](../EXPORT_LAYOUTS.md) to inspect each layout.
+
+## Export area and video size
+
+**Full frame** keeps the selected placement on a complete video frame. HUD uses
+1920×1080 landscape or 1080×1920 portrait; the other layouts use 3840×2160 or
+2160×3840. Four-panel column supports landscape only.
+
+**Content area** exports the complete smaller layout image, including any empty
+space already around its instruments. It does not crop or stretch the design.
+Place this clip where you want it in your video editor: your Full-frame position
+is remembered in the assistant, but is not included as empty video space.
+HUD always uses Full frame.
+
+| Layout             | Landscape Content area | Portrait Content area |
+| ------------------ | ---------------------- | --------------------- |
+| Flow Ribbon        | 3072×360               | 840×1120              |
+| Corner Instruments | 840×1120               | 840×1120              |
+| G-Orbit            | 800×800                | 800×800               |
+| Four-panel column  | 960×2160               | Unavailable           |
+| HUD                | Full frame only        | Full frame only       |
+
+**Layout format** chooses the arrangement; Content-area video need not be 16:9 or
+9:16. **Output dimensions** and **Review export** show the actual video size.
+Changing the area refreshes previews and the rough file-size estimate. Smaller
+dimensions do not guarantee a proportionally smaller video.
 
 ## Try a layout with your recording
 
@@ -138,5 +163,5 @@ The preview background is only a viewing aid; it does not add your footage or
 change the exported background. Alignment with footage is done manually in your
 video editor.
 
-[Video export guide](VIDEO_EXPORT.md) · [Full-size examples](../EXPORT_THEMES.md) ·
+[Video export guide](VIDEO_EXPORT.md) · [Full-size examples](../EXPORT_LAYOUTS.md) ·
 [Developer layout reference](../development/EXPORT_LAYOUTS.md)

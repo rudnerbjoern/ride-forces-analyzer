@@ -29,7 +29,8 @@ from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.storage.preferences import Appearance
 from ride_forces_analyzer.ui.exports.video import ExportDialog
-from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
+from ride_forces_analyzer.ui.dialogs.gps import GpsDialog
+from ride_forces_analyzer.rendering.layouts.contracts import ExportExtent, LayoutPosition
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -344,7 +345,7 @@ def capture_reference(
                     output.mkdir(parents=True, exist_ok=True)
                     window.gps_button.click()
                     gps_window = window.gps_window
-                    if gps_window is None:
+                    if not isinstance(gps_window, GpsDialog):
                         raise RuntimeError("Voltron GPS overview is unavailable")
                     wait_for(application, lambda: gps_window.worker is None)
                     gps_window.load_map()
@@ -430,8 +431,8 @@ def capture_reference(
                         newline="\n",
                     )
                     return
-                for appearance, name in ((0, "dark"), (1, "light")):
-                    window.set_appearance(appearance)
+                for appearance_index, name in ((0, "dark"), (1, "light")):
+                    window.set_appearance(appearance_index)
                     wait_for(application, lambda: window.theme.name == name)
                     save_widget(application, window, output / f"workspace-{name}.png")
                 dialog = ExportDialog(
@@ -444,6 +445,9 @@ def capture_reference(
                 dialog.setMinimumSize(*EXPORT_SIZE)
                 dialog.resize(*EXPORT_SIZE)
                 dialog.form.layout_profile.setCurrentIndex(0)
+                dialog.form.extent.setCurrentIndex(
+                    dialog.form.extent.findData(ExportExtent.FULL_FRAME.value),
+                )
                 dialog.form.position.setCurrentIndex(
                     dialog.form.position.findData(LayoutPosition.BOTTOM.value),
                 )
@@ -481,6 +485,7 @@ def capture_reference(
                     "workspace_size": WORKSPACE_SIZE,
                     "export_size": EXPORT_SIZE,
                     "layout": "ribbon",
+                    "extent": dialog.form.settings().extent.value,
                     "position": dialog.form.position.currentData(),
                     "aspect": "landscape",
                     "output": "transparent",

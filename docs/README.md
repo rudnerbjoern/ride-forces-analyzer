@@ -36,7 +36,7 @@ chapter 9 retains decision status and rationale.
 - [Video export contract](implementation/VIDEO_EXPORT.md), [saved presets and batches](implementation/EXPORT_BATCHES.md).
 - [CSV sample export contract](implementation/CSV_EXPORT.md).
 - [JSON sample export contract](implementation/JSON_EXPORT.md).
-- [All export themes](EXPORT_THEMES.md), [layout extension API](development/EXPORT_LAYOUTS.md),
+- [All export layouts](EXPORT_LAYOUTS.md), [layout extension API](development/EXPORT_LAYOUTS.md),
   [Manta demo with all five overlays](https://youtu.be/0sGiE6F8YlI) and
   [additional Manta HUD demo](https://youtu.be/JGcNPKoKU1Q).
 - [Provisional airtime context](implementation/AIRTIME.md) and
@@ -70,7 +70,7 @@ chapter 9 retains decision status and rationale.
 - [Recording catalog and authorization](development/RECORDINGS.md),
   [recording reuse license](../tests/fixtures/real/README.md), [image reuse license](images/README.md).
 
-## Planned work
+## Implementation plan
 
 - [Full-frame and bounded overlay export](requirements/BOUNDED_OVERLAY_EXPORT.md).
 

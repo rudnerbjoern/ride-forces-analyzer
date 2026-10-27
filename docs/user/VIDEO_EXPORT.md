@@ -129,6 +129,9 @@ In a video editor that supports transparent ProRes 4444, such as DaVinci Resolve
 1. Use a timeline with the same frame rate as your footage and overlay.
 2. Place your ride footage on a video track.
 3. Place the exported **MOV** on a track above it.
+   For **Content area**, position the smaller clip over your footage; its original
+   Full-frame placement is not part of the video. Adjust scale in the editor if needed.
+   **Full frame** already includes the selected placement on the complete canvas.
 4. Move the overlay along the timeline until a recognizable ride moment, such
    as a launch or drop, lines up with the footage. Check another moment later
    in the ride as well.
@@ -167,5 +170,5 @@ how saved jobs retain their recording paths and settings.
   MP4 when you want a smaller standalone video with a black background.
 
 [Installation](INSTALLATION.md) ·
-[Layout gallery](../EXPORT_THEMES.md) ·
+[Layout gallery](../EXPORT_LAYOUTS.md) ·
 [Technical export reference](../implementation/VIDEO_EXPORT.md)

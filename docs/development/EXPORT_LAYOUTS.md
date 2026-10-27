@@ -51,7 +51,8 @@ declared canvas, including nondefault entries. Canvases must fit within the maxi
 3840×2160 landscape or 2160×3840 portrait dimensions.
 `ExportSettings.position` accepts a `LayoutPosition`; `None` selects the format's
 default. Unsupported layout/format combinations and raw string positions raise
-`ValueError`. Rendering, previews and encoder padding resolve the same region.
+`ValueError`. Full-frame rendering, previews and encoder padding resolve the same region;
+Content area ignores placement and uses its independent native dimensions.
 `LayoutPositions.select` retains supported positions, otherwise chooses an equivalent
 edge/corner on the same vertical or horizontal side. The assistant remembers each
 layout's current position for its lifetime. That position supplies an unspecified
@@ -72,7 +73,7 @@ Coordinates remain layout-owned and are not stored in presets/jobs.
 `LayoutPosition.FULL_SCREEN` serializes as `full_screen`. HUD uses this single
 position with a region covering its native 1920×1080 or 1080×1920 export canvas.
 The compositor and encoder retain these dimensions without upscaling; the other
-profiles use 4K canvases. Switching from a
+profiles use 4K canvases for Full frame. Switching from a
 full-screen layout restores another layout's remembered position when available,
 otherwise its default. No corner/edge is inferred from a full-screen position.
 
@@ -295,7 +296,7 @@ force interpolation or independent orientation buffers.
    encoder consume the registration without layout-specific branches.
 4. Verify registry coverage, region bounds, force directions, alpha and localized
    text. Use representative video integration rather than a full option matrix.
-   Regenerate the fixed-sample [Voltron Nevera reference](../EXPORT_THEMES.md) to review
+   Regenerate the fixed-sample [Voltron Nevera reference](../EXPORT_LAYOUTS.md) to review
    intended design changes. Structural changes must preserve existing pixels.
 
 Registry tests also substitute a small custom renderer to verify that composition

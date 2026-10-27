@@ -143,20 +143,22 @@ It uses the supplied [Manta reference recording](docs/development/RECORDINGS.md#
 | **Four-panel column**  | Stacked force and orientation plots.                    |
 
 [Choose a layout](docs/user/EXPORT_LAYOUTS.md) or
-[compare larger previews](docs/EXPORT_THEMES.md).
+[compare larger previews](docs/EXPORT_LAYOUTS.md).
 
-Export themes use yellow for lateral data, green for acceleration and red for
+Export layouts use yellow for lateral data, green for acceleration and red for
 braking. Flow Ribbon, Corner Instruments and HUD also show the
 current vertical context with the same colors and labels as the workspace.
 
-Every layout supports **landscape** for classic YouTube videos and **portrait**
-for Shorts or TikTok. HUD exports at its native **1920×1080** or **1080×1920**;
-scale it to your timeline in your video editor. The other layouts export in 4K.
-Choose **Position** beside the layout to keep the action clear.
+Choose **landscape** for classic YouTube videos or **portrait** for Shorts or
+TikTok. Four-panel column supports landscape only. **Full frame** keeps the selected
+position on a complete video canvas: native **1920×1080** or **1080×1920** for HUD,
+4K for the other layouts. **Content area** exports the smaller layout image for
+placement in your video editor; **Output dimensions** shows its exact size.
+HUD always uses Full frame. [Compare export areas](docs/user/EXPORT_LAYOUTS.md#export-area-and-video-size).
 Export the whole recording, its marker interval or your
 selected section. Choose the overlay language independently of the application.
 
-![Export assistant showing layout thumbnails, the Position selector and a Flow Ribbon preview with Ejector Airtime](docs/images/export-preview.png)
+![Export assistant showing layout thumbnails, Export area and Position choices, output dimensions and a Flow Ribbon preview with Ejector Airtime](docs/images/export-preview.png)
 
 *Preview the selected chart moment before rendering. The checkerboard indicates transparency and is not part of the video.*
 

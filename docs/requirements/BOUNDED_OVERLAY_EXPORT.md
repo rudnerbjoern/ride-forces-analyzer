@@ -1,6 +1,6 @@
 # Full-frame and bounded overlay export
 
-Status: steps 1–7 accepted by the owner; step 8 pending.
+Status: all eight implementation steps accepted by the owner.
 Native Content-area geometry and rendering/encoding are implemented and locally validated.
 Geometry-aware previews, localized assistant controls and preset/job area restoration
 are available. Batch execution uses each saved job's bound export area.
@@ -52,7 +52,7 @@ are available. Batch execution uses each saved job's bound export area.
 - Resolve capabilities through the common plugin contract. HUD declares Full-frame-only
   support in its metadata; dialog, previews and encoder must not hard-code layout names.
 
-## Planned output dimensions
+## Output dimensions
 
 Content-area sizes equal the layout renderer's complete native image.
 HUD retains its native Full-frame size.

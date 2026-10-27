@@ -19,6 +19,7 @@
     1000
   ],
   "layout": "ribbon",
+  "extent": "full_frame",
   "position": "bottom",
   "aspect": "landscape",
   "output": "transparent",
