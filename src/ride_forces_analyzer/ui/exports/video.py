@@ -50,6 +50,7 @@ from ride_forces_analyzer.rendering.model import (
     prepare_export_analysis,
 )
 from ride_forces_analyzer.rendering.preview import ExportPreview, PreviewBackground
+from ride_forces_analyzer.rendering.layouts import registry
 from ride_forces_analyzer.storage.export_models import SavedPreset
 from ride_forces_analyzer.storage.exports import (
     ExportStore,
@@ -200,12 +201,17 @@ class ExportDialog(QDialog):
         self.summary.setFont(summary_font)
         review_layout.addWidget(self.summary)
         review_form = QFormLayout()
+        self._review_form = review_form
         review_form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
         self.review_fields: dict[str, QLabel] = {}
         for key, label in (
             ("layout", tr("Layout profile")),
+            ("aspect", tr("Layout format")),
+            ("extent", tr("Export area")),
+            ("position", tr("Position")),
+            ("resolution", tr("Output dimensions")),
             ("output", tr("Output")),
-            ("resolution", tr("Resolution")),
+            ("language", tr("Overlay language")),
             ("fps", tr("Video frame rate")),
             ("range", tr("Range")),
             ("samples", tr("Samples")),
@@ -343,15 +349,29 @@ class ExportDialog(QDialog):
         self._schedule_preview()
 
     def _choose_profile(self, index: int, _checked: bool = False) -> None:
+        if (
+            self.form.settings().aspect
+            not in registry.PLUGINS[PROFILES[index][0]].supported_aspects
+        ):
+            return
         self.form.layout_profile.setCurrentIndex(index)
+
+    def _update_profile_availability(self) -> None:
+        """Reflect plugin format capabilities without enabling controls during export."""
+        aspect = self.form.settings().aspect
+        for (key, _), button in zip(PROFILES, self.profile_buttons, strict=True):
+            button.setEnabled(
+                self.worker is None and aspect in registry.PLUGINS[key].supported_aspects,
+            )
 
     def _bounds(self) -> tuple[int, int]:
         return self.form.bounds(self.analysis, (self.first, self.last))
 
     @Slot()
     def _schedule_preview(self) -> None:
+        self._update_profile_availability()
         self.form.remember_positions()
-        self._update_size_estimate()
+        self._update_summary()
         first, last = self._bounds()
         self.previews.schedule(
             self.analysis,
@@ -364,15 +384,18 @@ class ExportDialog(QDialog):
         )
         self.next.setEnabled(False)
         self.start.setEnabled(False)
-        bind(self.preview_note, tr("Updating all five previews…"), "text")
+        bind(self.preview_note, tr("Updating layout previews…"), "text")
 
     @Slot(object)
     def _preview_ready(self, result: ExportPreview) -> None:
-        selected = self.form.layout_profile.currentIndex()
-        for index, profile in enumerate(result.profiles):
-            self.profile_buttons[index].setIcon(QIcon(preview_pixmap(profile.image)))
-            self.profile_buttons[index].setChecked(index == selected)
-        self.preview_view.show_image(result.profiles[selected].image)
+        selected = PROFILES[self.form.layout_profile.currentIndex()][0]
+        profiles = {profile.layout: profile for profile in result.profiles}
+        for (key, _), button in zip(PROFILES, self.profile_buttons, strict=True):
+            profile = profiles.get(key)
+            button.setIcon(QIcon(preview_pixmap(profile.image)) if profile is not None else QIcon())
+            button.setChecked(key == selected)
+        self._update_profile_availability()
+        self.preview_view.show_image(profiles[selected].image)
         self._update_preview_caption()
         bind(
             self.preview_note,
@@ -394,10 +417,17 @@ class ExportDialog(QDialog):
     def _update_summary(self) -> None:
         self._update_size_estimate()
         first, last = self._bounds()
-        width, height = self.form.settings().dimensions
+        settings = self.form.settings()
+        width, height = registry.resolve_geometry(settings).output_size
         values = {
             "layout": self.form.layout_profile.currentText(),
+            "aspect": self.form.aspect.currentText(),
+            "extent": self.form.extent.currentText()
+            if not self.form.extent.isHidden()
+            else self.form.fixed_extent.text(),
+            "position": self.form.position.currentText(),
             "output": self.form.mode.currentText(),
+            "language": self.form.overlay_language.currentText(),
             "resolution": f"{width}×{height}",
             "fps": self.form.fps.currentText(),
             "range": f"{self.data.replay_text(first)}–{self.data.replay_text(last)}",
@@ -407,6 +437,10 @@ class ExportDialog(QDialog):
         }
         for key, value in values.items():
             bind(self.review_fields[key], value)
+        self._review_form.setRowVisible(
+            self.review_fields["position"],
+            not self.form.position.isHidden(),
+        )
 
     def _update_preview_caption(self) -> None:
         result = self.previews.result
@@ -551,6 +585,7 @@ class ExportDialog(QDialog):
         self.worker = None
         for control in self.controls:
             control.setEnabled(True)
+        self._update_profile_availability()
         self.form.flip_vertical.setEnabled(True)
         self.form.flip_lateral.setEnabled(False)
         self.start.setEnabled(True)

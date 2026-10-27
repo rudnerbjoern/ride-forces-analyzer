@@ -7,7 +7,14 @@ from typing import Literal
 
 import pytest
 
-from ride_forces_analyzer.rendering.model import VideoOutput, ExportLayout, ExportSettings
+from ride_forces_analyzer.rendering.layouts import registry
+
+from ride_forces_analyzer.rendering.model import (
+    ExportExtent,
+    VideoOutput,
+    ExportLayout,
+    ExportSettings,
+)
 from ride_forces_analyzer.rendering.size_estimate import estimate_size_bytes
 
 
@@ -34,6 +41,63 @@ def test_single_sample_is_rounded_to_full_output_frame() -> None:
 
 
 @pytest.mark.parametrize(
+    "layout,expected",
+    [
+        (ExportLayout.COLUMN, (8_294_400, 16_588_800)),
+        (ExportLayout.RIBBON, (8_294_400, 16_588_800)),
+        (ExportLayout.CORNERS, (8_294_400, 16_588_800)),
+        (ExportLayout.ORBIT, (8_294_400, 16_588_800)),
+        (ExportLayout.HUD, (2_073_600, 4_147_200)),
+    ],
+)
+@pytest.mark.parametrize("prefer_gpu", [False, True])
+def test_estimate_uses_registered_layout_rates(
+    layout: ExportLayout,
+    expected: tuple[int, int],
+    prefer_gpu: bool,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    plugin = replace(
+        registry.PLUGINS[layout],
+        prores_4444_size_rates={ExportExtent.FULL_FRAME: (0.1, 0.2)},
+        h264_size_rates={ExportExtent.FULL_FRAME: (0.01, 0.02)},
+    )
+    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
+    settings = ExportSettings(layout=layout, fps=50, prefer_gpu=prefer_gpu)
+    assert estimate_size_bytes(settings, 10, 50) == expected
+    assert estimate_size_bytes(replace(settings, output=VideoOutput.OPAQUE), 10, 50) == (
+        expected[0] // 10,
+        expected[1] // 10,
+    )
+
+
+def test_content_estimates_use_their_own_geometry_and_codec_rates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    plugin = replace(
+        registry.PLUGINS[ExportLayout.ORBIT],
+        prores_4444_size_rates={
+            ExportExtent.FULL_FRAME: (0.1, 0.2),
+            ExportExtent.CONTENT_AREA: (0.01, 0.02),
+        },
+        h264_size_rates={ExportExtent.CONTENT_AREA: (0.001, 0.002)},
+    )
+    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
+    settings = ExportSettings(layout=plugin.key, extent=ExportExtent.CONTENT_AREA, fps=50)
+    assert estimate_size_bytes(settings, 10, 50) == (64_000, 128_000)
+    assert estimate_size_bytes(replace(settings, output=VideoOutput.OPAQUE), 10, 50) == (
+        6_400,
+        12_800,
+    )
+    plugin = replace(plugin, prores_4444_size_rates={ExportExtent.FULL_FRAME: (0.1, 0.2)})
+    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
+    fallback = estimate_size_bytes(settings, 10, 50)
+    plugin = replace(plugin, prores_4444_size_rates={})
+    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
+    assert estimate_size_bytes(settings, 10, 50) == fallback
+
+
+@pytest.mark.parametrize(
     "output,sample_count,measured_bytes,tolerance",
     [
         pytest.param(VideoOutput.TRANSPARENT, 8226, 15_301_686_528, 0.15, id="kraken-prores"),
@@ -56,3 +120,4 @@ def test_hud_estimate_tracks_measured_exports(
     low, high = estimate_size_bytes(settings, sample_count, 50)
     assert measured_bytes * (1 - tolerance) <= low < measured_bytes < high
     assert high <= measured_bytes * (1 + tolerance)
+    assert estimate_size_bytes(replace(settings, prefer_gpu=False), sample_count, 50) == (low, high)

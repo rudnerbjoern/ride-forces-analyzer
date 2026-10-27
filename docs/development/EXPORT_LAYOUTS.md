@@ -35,7 +35,10 @@ For examples of all five rendered layouts in turn over Onride footage, watch the
 ## Renderer contract
 
 Each layout module exports one immutable `PLUGIN` with its stable key,
-landscape/portrait `LayoutPositions` and a renderer factory. Each format owns a
+landscape/portrait `LayoutPositions`, canvas dimensions and a renderer factory.
+Plugins remain independent; shared algorithms live in `common.py`, `charts.py`,
+`rendering.scales` and `rendering.peaks`, never in another concrete layout module.
+Each supported format owns a
 read-only `regions` mapping from `LayoutPosition` StrEnum members to explicit pixel
 regions `(x, y, width, height)`, plus a supported `default` key. Coordinates start
 at the canvas's upper-left corner. Position entries may have different sizes.
@@ -44,10 +47,12 @@ values (such as `top_left`) remain stable; parse external values with
 `LayoutPosition(value)`. Metadata keys and defaults require enum members.
 Mappings are copied; coordinates/dimensions must be integers, coordinates
 nonnegative and sizes positive. Plugin construction rejects regions outside the
-maximum 3840×2160 landscape or 2160×3840 portrait bounds, including nondefault entries.
+declared canvas, including nondefault entries. Canvases must fit within the maximum
+3840×2160 landscape or 2160×3840 portrait dimensions.
 `ExportSettings.position` accepts a `LayoutPosition`; `None` selects the format's
 default. Unsupported layout/format combinations and raw string positions raise
-`ValueError`. Rendering, previews and encoder padding resolve the same region.
+`ValueError`. Full-frame rendering, previews and encoder padding resolve the same region;
+Content area ignores placement and uses its independent native dimensions.
 `LayoutPositions.select` retains supported positions, otherwise chooses an equivalent
 edge/corner on the same vertical or horizontal side. The assistant remembers each
 layout's current position for its lifetime. That position supplies an unspecified
@@ -68,13 +73,39 @@ Coordinates remain layout-owned and are not stored in presets/jobs.
 `LayoutPosition.FULL_SCREEN` serializes as `full_screen`. HUD uses this single
 position with a region covering its native 1920×1080 or 1080×1920 export canvas.
 The compositor and encoder retain these dimensions without upscaling; the other
-profiles use 4K canvases. Switching from a
+profiles use 4K canvases for Full frame. Switching from a
 full-screen layout restores another layout's remembered position when available,
 otherwise its default. No corner/edge is inferred from a full-screen position.
 
+`LayoutPlugin.landscape_canvas` and `portrait_canvas` declare full-frame output sizes;
+`canvas_dimensions(settings)` resolves them through the registry. Plugins also own
+`preferred_window_seconds` (optional selection-time override), `preview_invert_lateral`
+(unselected gallery default), and read-only `prores_4444_size_rates` / `h264_size_rates`
+maps keyed by `ExportExtent` (optional lower/upper bytes per output pixel per frame).
+Shared consumers apply these values
+without branching on layout names. HUD declares its native canvases, 30-second
+selection default and measured estimate rates; Column declares its lateral preview
+default. Each layout declares its Full-frame rates and, where supported, separate
+`PRORES_4444_CONTENT_SIZE_RATES` / `H264_CONTENT_SIZE_RATES`. Missing/None entries
+use the shared planning heuristic; Full-frame rates never fill missing Content-area
+rates. Rates need not be configured for both codecs. No measurements are fabricated.
+The estimator uses the same codec/extent rates for CPU and GPU preferences without
+probing hardware. HUD retains only its full-ride calibration, unchanged by short
+test exports. Plugin comments retain encoder settings, source intervals, tested output
+sizes, observed rate ranges and limits. The other plugins' CPU planning ranges include container
+overhead from ten-frame Manta/Voltron exports in each supported format, rounded
+outward from half the minimum to 1.5 times the maximum. They do not qualify other
+recordings, durations, languages or GPU encoders.
+Rates must be finite, positive
+and ordered; a preferred time window must be within 1–60 seconds.
+
 `LANDSCAPE_POSITIONS` and `PORTRAIT_POSITIONS` live in each layout module.
 Ribbon declares top/bottom, Column left/right, Corners/G-Orbit all four corners,
-and HUD full-screen. Each format has one explicit default.
+and HUD full-screen. Each supported format has one explicit default.
+`portrait=None` declares landscape-only support; Column uses this capability.
+Consumers query `supported_aspects` and resolve placements through `positions(aspect)`;
+unsupported formats are rejected centrally. Gallery/selector entries are unavailable
+for unsupported formats; changing to portrait selects a supported layout when needed.
 The factory receives an `ExportTimeline`. Its renderer implements
 `render_position(position: float) -> Image.Image`, returning a native-sized
 RGBA region at an absolute source-sample position, including fractional samples.
@@ -170,6 +201,68 @@ The histories' time-zero cursor shares the exact x coordinate of `lateral_x(0)`.
 Their right boundary mirrors `history_left` around this coordinate, keeping equal
 pixels per second before/after zero; curves, baselines and time ticks share the bounds.
 
+## Output-area geometry
+
+`ExportSettings.extent` requires `ExportExtent.FULL_FRAME` (default) or
+`ExportExtent.CONTENT_AREA`. JSON values are `full_frame` / `content_area`.
+`LayoutPlugin.landscape_content` / `portrait_content` hold optional `ContentArea`
+definitions. Their presence determines `supported_extents(aspect)`; HUD declares
+neither and admits Full frame only. Unsupported extents and raw-string enum inputs
+are rejected centrally, without identifying layouts by name.
+
+`ContentArea.dimensions` is the renderer's exact native `(width, height)`, including
+layout-owned empty pixels. Both must be positive even integers. Content area never
+crops, scales, adds margins/padding or rounds dimensions. Native size is independent
+of Full-frame placement/scaling: Ribbon exports 3072 × 360 landscape or 840 × 1120
+portrait, Corners 840 × 1120 and G-Orbit 800 × 800 in either format. Column exports
+960 × 2160 in landscape only. Invalid metadata is rejected rather than padded.
+
+`resolve_geometry(settings)` returns an immutable `ExportGeometry`:
+
+- `output_size`: final dimensions, even for the supported codecs.
+- `render_size`: native Content-area image or scaled Full-frame layout region.
+- `offset`: `(0, 0)` for Content area, selected placement for Full frame.
+
+Example: G-Orbit Content area resolves to `render_size=(800, 800)`,
+`offset=(0, 0)` and `output_size=(800, 800)` in either format.
+`ExportSettings.dimensions` remains the Full-frame reference canvas; use resolved
+geometry for extent-specific dimensions. File-size estimates already use the
+resolved output/region sizes and the selected extent's codec rates.
+
+`OverlayRenderer` fixes the resolved geometry for its timeline. Content area checks
+the renderer's image size against metadata and returns the complete native image;
+a mismatch raises `ValueError`. Output dimensions and layout placement remain
+fixed throughout the export, independently of changing sample content.
+Full frame scales to `render_size` as needed and
+composes at `offset` on its canvas. Opaque output composites onto black.
+The ordered serial/parallel encoder pipe carries the native Content-area image;
+FFmpeg retains its size without geometric filters. Full frame retains its existing
+scaling, placement, canvas padding and codec options. `render_sample` / `render_frame`
+use the same dimensions as the encoded output.
+
+`build_previews` renders the same complete output frame at the exact graph sample,
+then composites a display-only background and fits the image within 960 × 540
+(landscape) or 540 × 960 (portrait). These are maximum sizes, not forced aspect
+ratios: native Content-area images retain their shape without cropping/stretching.
+Checker cells remain square. Miniatures and the main view share this RGB image;
+Qt fits it within its available space while preserving aspect.
+
+Each gallery profile resolves the requested extent through plugin capabilities.
+A Full-frame-only profile uses Full frame even when the selected profile uses
+Content area; HUD thumbnails therefore always show the complete native HD canvas.
+Layout/format/extent changes are carried in the immutable preview request;
+the controller invalidates the result and rejects superseded worker revisions.
+The assistant derives area/position visibility from plugin capabilities. Full-frame-only
+plugins show a fixed area label; Content area hides placement without discarding it.
+Settings and review display resolved dimensions and matching codec/extent estimates.
+Layout format selects the arrangement, not the native Content-area aspect ratio.
+
+Saved presets and bound jobs serialize the extent's enum value. Omitted `extent`
+uses `FULL_FRAME`; supplied unsupported combinations remain invalid, including
+HUD with `CONTENT_AREA`. Applying a preset restores both area and retained placement.
+Batch execution uses the job's immutable settings with the same geometry resolver;
+later assistant/preset edits do not change it.
+
 ## Design constants
 
 Each profile starts with named uppercase constants and short English descriptions.
@@ -204,8 +297,11 @@ force interpolation or independent orientation buffers.
 3. Add the module's `PLUGIN` to `registry.py`. The composer, preview gallery and
    encoder consume the registration without layout-specific branches.
 4. Verify registry coverage, region bounds, force directions, alpha and localized
-   text. Use representative video integration rather than a full option matrix.
-   Regenerate the fixed-sample [Voltron Nevera reference](../EXPORT_THEMES.md) to review
+   text for supported formats/positions and English, German and French. Check
+   both export areas with changing content, longest labels and stroke/shadow/glow
+   extremes; native image bounds must not clip them. Use representative video
+   integration rather than a full option matrix.
+   Regenerate the fixed-sample [Voltron Nevera reference](../EXPORT_LAYOUTS.md) to review
    intended design changes. Structural changes must preserve existing pixels.
 
 Registry tests also substitute a small custom renderer to verify that composition

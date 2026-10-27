@@ -4,11 +4,18 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-# cspell:words segoeui segoeuib
+# cspell:words segoeui segoeuib qscale libx
 
 from __future__ import annotations
 from .charts import ChartRenderer
-from .contracts import ExportLayout, LayoutPlugin, LayoutPosition, LayoutPositions
+from .contracts import (
+    ContentArea,
+    ExportExtent,
+    ExportLayout,
+    LayoutPlugin,
+    LayoutPosition,
+    LayoutPositions,
+)
 
 
 NATIVE_SIZE = (840, 1120)  # Native landscape drawing size in pixels.
@@ -238,9 +245,33 @@ class CornersRenderer(ChartRenderer):
     time_bottom_gap = TIME_BOTTOM_GAP
 
 
+# Bytes/output pixel/frame including container overhead. FFmpeg 9.0.2 CPU:
+# prores_ks 4444 qscale 4/alpha 16; libx264 fast CRF 18. Ten frames at 50 fps,
+# Manta 3600..3609 / Voltron 4960..4969, English, 11-sample smoothing, both formats.
+# Full: 3840x2160 / 2160x3840; native content: 840x1120 in both formats.
+# Rounded outward from half the observed minimum to 1.5 times the maximum.
+# Short clips include first-frame overhead; other scenes, durations, languages
+# and GPU encoders are unqualified. These are planning ranges, not guarantees.
+PRORES_4444_SIZE_RATES = (0.026, 0.222)  # Observed 0.05304..0.14782.
+H264_SIZE_RATES = (0.00019, 0.00119)  # Observed 0.0003826..0.0007895.
+PRORES_4444_CONTENT_SIZE_RATES = (0.168, 0.522)  # Observed 0.33736..0.34769.
+H264_CONTENT_SIZE_RATES = (0.00149, 0.00543)  # Observed 0.0029967..0.0036198.
+LANDSCAPE_CONTENT = ContentArea(NATIVE_SIZE)
+PORTRAIT_CONTENT = ContentArea(NATIVE_SIZE)
+
 PLUGIN = LayoutPlugin(
     ExportLayout.CORNERS,
     LANDSCAPE_POSITIONS,
     PORTRAIT_POSITIONS,
     CornersRenderer,
+    landscape_content=LANDSCAPE_CONTENT,
+    portrait_content=PORTRAIT_CONTENT,
+    prores_4444_size_rates={
+        ExportExtent.FULL_FRAME: PRORES_4444_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: PRORES_4444_CONTENT_SIZE_RATES,
+    },
+    h264_size_rates={
+        ExportExtent.FULL_FRAME: H264_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: H264_CONTENT_SIZE_RATES,
+    },
 )

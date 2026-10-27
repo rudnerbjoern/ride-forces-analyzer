@@ -4,7 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-# cspell:words WINDIR segoeui
+# cspell:words WINDIR segoeui qscale libx
 
 from __future__ import annotations
 
@@ -20,7 +20,14 @@ from pathlib import Path
 from ride_forces_analyzer.formatting.time import format_sample_time
 from ride_forces_analyzer.i18n import tr
 from .common import ACCELERATION_COLOR, BRAKING_COLOR
-from .contracts import ExportLayout, LayoutPlugin, LayoutPosition, LayoutPositions
+from .contracts import (
+    ContentArea,
+    ExportExtent,
+    ExportLayout,
+    LayoutPlugin,
+    LayoutPosition,
+    LayoutPositions,
+)
 
 FONT_FILE = "segoeui.ttf"  # Regular Windows font file.
 FONT_SIZE = 25  # Hint, scale and clock text size.
@@ -29,10 +36,6 @@ CANVAS_WIDTH = 3840  # Reference landscape canvas width.
 NATIVE_SIZE = (960, 2160)  # Native column drawing dimensions.
 LANDSCAPE_POSITIONS = LayoutPositions(  # Landscape regions: x, y, width, height.
     {LayoutPosition.LEFT: (0, 0, 960, 2160), LayoutPosition.RIGHT: (2880, 0, 960, 2160)},
-    default=LayoutPosition.RIGHT,
-)
-PORTRAIT_POSITIONS = LayoutPositions(  # Portrait regions: x, y, width, height.
-    {LayoutPosition.LEFT: (108, 300, 1440, 3240), LayoutPosition.RIGHT: (612, 300, 1440, 3240)},
     default=LayoutPosition.RIGHT,
 )
 BACKGROUND_COLOR = (0, 0, 0, 255)  # Opaque column background RGBA.
@@ -310,4 +313,32 @@ class ColumnRenderer:
         return image
 
 
-PLUGIN = LayoutPlugin(ExportLayout.COLUMN, LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, ColumnRenderer)
+# Bytes/output pixel/frame including container overhead. FFmpeg 9.0.2 CPU:
+# prores_ks 4444 qscale 4/alpha 16; libx264 fast CRF 18. Ten frames at 50 fps,
+# Manta 3600..3609 / Voltron 4960..4969, English, 11-sample smoothing, landscape.
+# Full: 3840x2160; content: 960x2160, without margin or scaling.
+# Rounded outward from half the observed minimum to 1.5 times the maximum.
+# Short clips include first-frame overhead; other scenes, durations, languages
+# and GPU encoders are unqualified. These are planning ranges, not guarantees.
+PRORES_4444_SIZE_RATES = (0.018, 0.059)  # Observed 0.03688..0.03884.
+H264_SIZE_RATES = (0.00022, 0.00080)  # Observed 0.0004436..0.0005293.
+PRORES_4444_CONTENT_SIZE_RATES = (0.049, 0.160)  # Observed 0.09828..0.10611.
+H264_CONTENT_SIZE_RATES = (0.00081, 0.00296)  # Observed 0.0016378..0.0019717.
+LANDSCAPE_CONTENT = ContentArea(NATIVE_SIZE)
+
+PLUGIN = LayoutPlugin(
+    ExportLayout.COLUMN,
+    LANDSCAPE_POSITIONS,
+    None,
+    ColumnRenderer,
+    preview_invert_lateral=True,
+    landscape_content=LANDSCAPE_CONTENT,
+    prores_4444_size_rates={
+        ExportExtent.FULL_FRAME: PRORES_4444_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: PRORES_4444_CONTENT_SIZE_RATES,
+    },
+    h264_size_rates={
+        ExportExtent.FULL_FRAME: H264_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: H264_CONTENT_SIZE_RATES,
+    },
+)

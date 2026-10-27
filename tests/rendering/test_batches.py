@@ -14,6 +14,7 @@ from contextlib import closing
 from pathlib import Path
 import json
 import sqlite3
+import subprocess
 from threading import Event
 from typing import cast
 
@@ -27,11 +28,13 @@ from ride_forces_analyzer.rendering.model import (
     VideoOutput,
     FrameRate,
     ExportLayout,
+    ExportExtent,
     VideoAspect,
     ExportSettings,
     ExportTimeline,
 )
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
+from ride_forces_analyzer.rendering.layouts import resolve_geometry
 from ride_forces_analyzer.storage.export_models import BatchJob, SavedBatch, SavedPreset
 from ride_forces_analyzer.storage.exports import ExportStore, ExportStoreError
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
@@ -62,7 +65,12 @@ def test_portrait_and_landscape_persistence(
 
     chosen = SavedPreset(
         name="Portrait",
-        settings=ExportSettings(aspect=VideoAspect.PORTRAIT, position=LayoutPosition.LEFT),
+        settings=ExportSettings(
+            layout=ExportLayout.CORNERS,
+            aspect=VideoAspect.PORTRAIT,
+            position=LayoutPosition.TOP_LEFT,
+            extent=ExportExtent.CONTENT_AREA,
+        ),
         analysis_configuration=source_app_configuration(),
         schema_version=1,
         smoothing_window=11,
@@ -76,16 +84,33 @@ def test_portrait_and_landscape_persistence(
     assert preset().settings.position is LayoutPosition.BOTTOM
     store.save_preset(
         chosen.model_copy(
-            update={"settings": replace(chosen.settings, position=LayoutPosition.RIGHT)},
+            update={
+                "settings": replace(
+                    chosen.settings,
+                    position=LayoutPosition.TOP_RIGHT,
+                    extent=ExportExtent.FULL_FRAME,
+                ),
+            },
         ),
         overwrite=True,
     )
     reopened = ExportStore(path)
     assert reopened.presets()[0].settings.dimensions == (2160, 3840)
-    assert reopened.presets()[0].settings.position is LayoutPosition.RIGHT
+    assert reopened.presets()[0].settings.position is LayoutPosition.TOP_RIGHT
+    assert reopened.presets()[0].settings.extent is ExportExtent.FULL_FRAME
     jobs = reopened.batch("Mixed formats").jobs
+    assert [job.preset.settings.extent for job in jobs] == [
+        ExportExtent.CONTENT_AREA,
+        ExportExtent.FULL_FRAME,
+    ]
+    assert [resolve_geometry(job.preset.settings).output_size for job in jobs] == [
+        (840, 1120),
+        (3840, 2160),
+    ]
+    store.delete_preset(chosen.name)
+    assert reopened.batch("Mixed formats").jobs == jobs
     assert [job.preset.settings.position for job in jobs] == [
-        LayoutPosition.LEFT,
+        LayoutPosition.TOP_LEFT,
         LayoutPosition.BOTTOM,
     ]
     assert [job.preset.settings.aspect for job in reopened.batch("Mixed formats").jobs] == [
@@ -117,6 +142,17 @@ def test_hud_preset_round_trip_and_removed_layout_rejection() -> None:
     assert saved.settings.dimensions == (1920, 1080)
     assert replace(saved.settings, aspect=VideoAspect.PORTRAIT).dimensions == (1080, 1920)
     assert saved.settings.position is LayoutPosition.FULL_SCREEN
+    assert saved.settings.extent is ExportExtent.FULL_FRAME
+    payload = json.loads(saved.model_dump_json())
+    del payload["settings"]["extent"]
+    assert (
+        SavedPreset.model_validate_json(json.dumps(payload)).settings.extent
+        is ExportExtent.FULL_FRAME
+    )
+    for extent in (ExportExtent.CONTENT_AREA.value, "unknown"):
+        payload["settings"]["extent"] = extent
+        with pytest.raises(ValidationError, match="extent|Input should be"):
+            SavedPreset.model_validate_json(json.dumps(payload))
     payload = json.loads(saved.model_dump_json())
     payload["settings"]["layout"] = "capsule"
     with pytest.raises(ValidationError):
@@ -131,7 +167,9 @@ def test_video_aspect_preserves_saved_codes_and_requires_enum_members(
 
     assert ExportSettings().aspect is VideoAspect.LANDSCAPE
     assert VideoAspect(aspect.value) is aspect
-    chosen = preset().model_copy(update={"settings": ExportSettings(aspect=aspect)})
+    chosen = preset().model_copy(
+        update={"settings": ExportSettings(layout=ExportLayout.RIBBON, aspect=aspect)},
+    )
     payload = json.loads(chosen.model_dump_json())
     assert payload["settings"]["aspect"] == aspect.value
     assert SavedPreset.model_validate_json(json.dumps(payload)).settings.aspect is aspect
@@ -287,10 +325,23 @@ def test_multiple_rides_cross_multiple_presets_and_custom_bounds(manta: Explorer
     )
     chosen = (
         preset(),
-        preset("Orbit").model_copy(update={"settings": ExportSettings(layout=ExportLayout.ORBIT)}),
+        preset("Orbit").model_copy(
+            update={
+                "settings": ExportSettings(
+                    layout=ExportLayout.ORBIT,
+                    extent=ExportExtent.CONTENT_AREA,
+                ),
+            },
+        ),
     )
     jobs = build_jobs(paths, chosen, "entire")
     assert len(jobs) == 4
+    assert [job.preset.settings.extent for job in jobs] == [
+        ExportExtent.FULL_FRAME,
+        ExportExtent.CONTENT_AREA,
+        ExportExtent.FULL_FRAME,
+        ExportExtent.CONTENT_AREA,
+    ]
     assert [(job.ride, job.preset.name) for job in jobs] == [
         ("Manta", "Ribbon"),
         ("Manta", "Orbit"),
@@ -414,7 +465,7 @@ def test_cancel_stops_remaining_jobs_and_keeps_completed_files(
         run_batches((SavedBatch(name="Empty", schema_version=1, jobs=()),), export_directory)
 
 
-def test_saved_batch_reopens_and_exports_different_rides_and_formats(
+def test_saved_batch_reopens_and_exports_mixed_extents_and_outputs(
     export_directory: Path,
 ) -> None:
     ffmpeg = Path(".tmp/ffmpeg/bin/ffmpeg.exe").resolve()
@@ -438,14 +489,23 @@ def test_saved_batch_reopens_and_exports_different_rides_and_formats(
                 layout=ExportLayout.ORBIT,
                 output=VideoOutput.OPAQUE,
                 prefer_gpu=False,
+                extent=ExportExtent.CONTENT_AREA,
             ),
             analysis_configuration=source_app_configuration(),
             schema_version=1,
             smoothing_window=11,
             range_mode="markers",
         ),
+        SavedPreset(
+            name="HUD full frame",
+            settings=ExportSettings(layout=ExportLayout.HUD, prefer_gpu=False),
+            analysis_configuration=source_app_configuration(),
+            schema_version=1,
+            smoothing_window=11,
+            range_mode="markers",
+        ),
     )
-    for ride, chosen in zip(("Manta", "Kraken"), presets, strict=True):
+    for ride, chosen in zip(("Manta", "Kraken", "Manta"), presets, strict=True):
         path = next(REAL_FIXTURE_DIRECTORY.glob(f"{ride}-*.forces"))
         sources.append((path, path.read_bytes()))
         data = load_recording(path)
@@ -453,7 +513,7 @@ def test_saved_batch_reopens_and_exports_different_rides_and_formats(
         jobs.append(short_job(data, chosen))
     store.save_batch(SavedBatch(name="Real", jobs=tuple(jobs), schema_version=1))
     result = run_batches(ExportStore(store.path).batches(), export_directory, ffmpeg=ffmpeg)
-    assert len(result.results) == 2
+    assert len(result.results) == 3
     assert all(
         item.status == "completed" and item.output is not None and item.output.stat().st_size > 0
         for item in result.results
@@ -461,7 +521,34 @@ def test_saved_batch_reopens_and_exports_different_rides_and_formats(
     assert [item.output.suffix for item in result.results if item.output] == [
         ".mov",
         ".mp4",
+        ".mov",
     ]
+    for item, dimensions in zip(
+        result.results,
+        ((3840, 2160), (800, 800), (1920, 1080)),
+        strict=True,
+    ):
+        assert item.output is not None
+        probe = subprocess.run(
+            [
+                str(ffmpeg.with_name("ffprobe.exe")),
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=width,height,nb_frames",
+                "-of",
+                "json",
+                str(item.output),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        stream = json.loads(probe.stdout)["streams"][0]
+        assert (stream["width"], stream["height"]) == dimensions
+        assert int(stream["nb_frames"]) == 2
     assert all(path.read_bytes() == original for path, original in sources)
 
 
@@ -514,7 +601,7 @@ def test_missing_optional_fields_use_defaults_without_rewriting_database(
     with closing(sqlite3.connect(path)) as db, db:
         payload = json.loads(db.execute(f"SELECT payload FROM {table}").fetchone()[0])
         item = payload if table == "presets" else payload["jobs"][0]["preset"]
-        for name in ("aspect", "language", "position"):
+        for name in ("aspect", "language", "position", "extent"):
             del item["settings"][name]
         for name in ("calibration", "events", "context_input", "events_input"):
             del item["analysis_configuration"][name]

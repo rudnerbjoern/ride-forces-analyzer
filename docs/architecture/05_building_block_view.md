@@ -184,8 +184,16 @@ layouts, shared history fitting and the HUD/G-Orbit posture-dependent vertical
 instrument ranges. Export channels carry a 1 g vertical presentation reference
 for every posture; lateral and longitudinal references remain zero.
 Layouts consume this timeline through one native-RGBA-region/source-position
-protocol. The registry owns layout metadata and validates supported geometry;
-`frames` composes regions, `preview` builds exact-sample previews and `peaks`
+protocol. Each plugin owns its geometry, renderer, presentation defaults and optional
+file-size estimate rates. The registry resolves these through the common contract
+and validates geometry. Its extent resolver uses layout-owned native dimensions
+for Content area and region/canvas placement for Full frame; capability and rate lookup
+use the same typed extent contract. Concrete layouts never depend on one another; reusable
+drawing/history primitives stay in shared modules. UI, preview, sizing and encoding
+consumers use the registered metadata rather than identifying concrete layouts;
+`frames` retains complete native Content-area images or scales/places Full-frame
+regions. `encoding` preserves native Content-area dimensions without geometric
+filters and pads Full-frame regions onto their canvas. `preview` builds exact-sample previews and `peaks`
 prepares deterministic source-time peak envelopes for HUD and G-Orbit.
 
 `parallel` uses one serial renderer or independent thread-owned renderers, images

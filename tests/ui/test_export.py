@@ -2,7 +2,13 @@
 
 from ride_forces_analyzer.rendering.model import StandardFrameRate
 
-from ride_forces_analyzer.rendering.model import ExportLayout, VideoAspect
+from ride_forces_analyzer.rendering.model import (
+    ExportLayout,
+    VideoAspect,
+    ExportExtent,
+    ExportTimeline,
+)
+from ride_forces_analyzer.rendering.layouts import resolve_geometry
 from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.analysis.preparation import (
     source_app_configuration,
@@ -123,6 +129,10 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     dialog.form.position.setCurrentIndex(dialog.form.position.findData("top"))
     assert dialog.previews.result is None
     assert dialog.form.position.currentData() == LayoutPosition.TOP
+    choose_layout(ExportLayout.COLUMN)
+    dialog.form.aspect.setCurrentIndex(1)
+    assert PROFILES[dialog.form.layout_profile.currentIndex()][0] is not ExportLayout.COLUMN
+    dialog.form.aspect.setCurrentIndex(0)
     choose_layout(ExportLayout.HUD)
     assert choices() == ["full_screen"]
     assert dialog.form.position.currentData() == LayoutPosition.FULL_SCREEN
@@ -158,14 +168,28 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     original_plugins = registry.PLUGINS
     plugin = registry.PLUGINS[ExportLayout.CORNERS]
     portrait = LayoutPositions(
-        regions={LayoutPosition.BOTTOM_LEFT: plugin.portrait.regions[LayoutPosition.BOTTOM_LEFT]},
+        regions={
+            LayoutPosition.BOTTOM_LEFT: plugin.positions(VideoAspect.PORTRAIT).regions[
+                LayoutPosition.BOTTOM_LEFT
+            ],
+        },
         default=LayoutPosition.BOTTOM_LEFT,
     )
     monkeypatch.setattr(
         registry,
         "PLUGINS",
-        {**registry.PLUGINS, ExportLayout.CORNERS: replace(plugin, portrait=portrait)},
+        {
+            **registry.PLUGINS,
+            ExportLayout.CORNERS: replace(
+                plugin,
+                portrait=portrait,
+                preferred_window_seconds=17.0,
+            ),
+        },
     )
+    choose_layout(ExportLayout.ORBIT)
+    choose_layout(ExportLayout.CORNERS)
+    assert dialog.form.seconds.value() == 17
     dialog.form.aspect.setCurrentIndex(0)
     dialog.form.aspect.setCurrentIndex(1)
     assert choices() == ["bottom_left"]
@@ -209,6 +233,9 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     wait_until(lambda dialog=dialog: dialog.previews.result is None)
     result = preview_ready(dialog)
     assert all(profile.image.size == (540, 960) for profile in result.profiles)
+    assert ExportLayout.COLUMN not in {profile.layout for profile in result.profiles}
+    column_index = next(i for i, (key, _) in enumerate(PROFILES) if key is ExportLayout.COLUMN)
+    assert not dialog.profile_buttons[column_index].isEnabled()
 
     def preset_name(*args: object, **kwargs: object) -> tuple[str, bool]:
         return "Portrait", True
@@ -303,6 +330,8 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
     dialog = window.export_window
     assert isinstance(dialog, ExportDialog)
     preview_ready(dialog)
+    dialog.form.extent.setCurrentIndex(dialog.form.extent.findData(ExportExtent.CONTENT_AREA.value))
+    preview_ready(dialog)
     dialog.next.click()
     with TemporaryDirectory(dir=".tmp") as temporary:
         output = Path(temporary).resolve() / "custom.mov"
@@ -317,7 +346,10 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
         def encoder(path: Path | None = None) -> Path:
             return Path(__file__)
 
-        def export(*args: object, **kwargs: object) -> Path:
+        def export(timeline: ExportTimeline, target: Path, **kwargs: object) -> Path:
+            assert timeline.settings.extent is ExportExtent.CONTENT_AREA
+            assert resolve_geometry(timeline.settings).output_size == (3072, 360)
+            assert target == output
             assert kwargs["overwrite"] is output.exists()
             output.write_bytes(b"complete video")
             return output
@@ -494,6 +526,7 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
         dialog.form.position.findData(LayoutPosition.TOP_RIGHT.value),
     )
     dialog.form.fps.setCurrentText("59.94")
+    dialog.form.extent.setCurrentIndex(dialog.form.extent.findData(ExportExtent.CONTENT_AREA.value))
     dialog.form.smoothing.setCurrentIndex(1)
     dialog.form.seconds.setValue(12.5)
     dialog.form.interval.setCurrentIndex(2)
@@ -532,6 +565,7 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     dialog.presets.save_preset.click()
     dialog.presets.queue.click()
     dialog.form.layout_profile.setCurrentIndex(0)
+    dialog.form.extent.setCurrentIndex(dialog.form.extent.findData(ExportExtent.FULL_FRAME.value))
     dialog.form.fps.setCurrentText("50")
     dialog.form.smoothing.setCurrentIndex(5)
     dialog.presets.save_preset.click()
@@ -541,9 +575,11 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     assert saved.jobs[0].preset.settings.layout == ExportLayout.ORBIT
     assert saved.jobs[0].preset.settings.fps == "60000/1001"
     assert saved.jobs[0].preset.settings.position is LayoutPosition.TOP_RIGHT
+    assert saved.jobs[0].preset.settings.extent is ExportExtent.CONTENT_AREA
     assert saved.jobs[0].preset.smoothing_window == 3
     assert saved.jobs[0].preset.analysis_configuration is not None
     assert saved.jobs[1].preset.settings.layout == ExportLayout.RIBBON
+    assert saved.jobs[1].preset.settings.extent is ExportExtent.FULL_FRAME
     dialog.form.fps.setCurrentText("25")
     dialog.presets.update_preset.click()
     assert (
@@ -560,6 +596,18 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     preview_ready(reopened)
     assert reopened.form.layout_profile.currentIndex() == 3
     assert reopened.form.position.currentData() == LayoutPosition.TOP_RIGHT
+    assert reopened.form.settings().extent is ExportExtent.CONTENT_AREA
+    assert reopened.form.position.isHidden()
+    assert reopened.form.output_dimensions.text() == "800×800"
+    reopened.presets.preset_selector.setCurrentText("Ribbon50")
+    reopened.presets.preset_selector.activated.emit(reopened.presets.preset_selector.currentIndex())
+    preview_ready(reopened)
+    assert reopened.form.settings().extent is ExportExtent.FULL_FRAME
+    assert not reopened.form.position.isHidden()
+    assert reopened.form.output_dimensions.text() == "3840×2160"
+    reopened.presets.preset_selector.setCurrentText("Orbit5994")
+    reopened.presets.preset_selector.activated.emit(reopened.presets.preset_selector.currentIndex())
+    preview_ready(reopened)
     assert reopened.form.fps.currentText() == "59.94" and reopened.form.seconds.value() == 12.5
     assert (
         reopened.form.smoothing.currentIndex() == 1 and reopened.form.interval.currentIndex() == 2
@@ -570,6 +618,9 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
     reopened.presets.manage_batches.click()
     assert isinstance(reopened.presets.batch_window, BatchDialog)
     assert reopened.presets.batch_window.table.rowCount() == 2
+    for row, area, dimensions in ((0, "Content area", "800×800"), (1, "Full frame", "3840×2160")):
+        item = reopened.presets.batch_window.table.item(row, 1)
+        assert item is not None and area in item.text() and dimensions in item.text()
     assert not reopened.presets.delete_preset.text()
     assert not reopened.presets.delete_preset.icon().isNull()
     assert reopened.presets.delete_preset.toolTip() == "Delete preset"

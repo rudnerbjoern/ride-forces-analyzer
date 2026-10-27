@@ -3,6 +3,7 @@
 # cspell:words autouse
 
 from collections.abc import Iterator
+from math import gcd
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -59,10 +60,13 @@ def small_preview_frames(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     from PIL import Image
     from ride_forces_analyzer.rendering.frames import OverlayRenderer
+    from ride_forces_analyzer.rendering.layouts import resolve_geometry
 
     def render_sample(self: OverlayRenderer, position: float) -> Image.Image:
         assert self.timeline.first <= position <= self.timeline.last
         alpha = 0 if self.timeline.settings.output == VideoOutput.TRANSPARENT else 255
-        return Image.new("RGBA", (8, 8), (0, 0, 0, alpha))
+        width, height = resolve_geometry(self.timeline.settings).output_size
+        divisor = gcd(width, height)
+        return Image.new("RGBA", (width // divisor, height // divisor), (0, 0, 0, alpha))
 
     monkeypatch.setattr(OverlayRenderer, "render_sample", render_sample)

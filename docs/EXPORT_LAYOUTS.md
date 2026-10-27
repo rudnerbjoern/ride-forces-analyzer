@@ -14,6 +14,8 @@ reproduction commands and image licensing are documented in the
 ![Five Voltron Nevera export layouts at the same positive vertical-force peak with simultaneous lateral and braking forces](images/voltron-export-themes.png)
 
 The overview preserves placement in the full 3840×2160 landscape canvas.
+These are Full-frame placement examples. For smaller Content-area exports and
+their dimensions, see [export area and video size](user/EXPORT_LAYOUTS.md#export-area-and-video-size).
 Checkerboards illustrate transparent space and translucent panels; they are
 not exported. Detail views below enlarge each instrument region.
 These are actual production-renderer frames, not interface mockups.
@@ -24,13 +26,13 @@ centered zero axis. G-Orbit shows the current lateral force on an upper inner
 semicircle: negative left, positive right, with equal scale in both directions.
 Longitudinal acceleration is always above zero and braking below zero, including
 G-Orbit's right semicircle; numeric signs remain unchanged.
-Across all themes, lateral diagrams and bars are yellow. G-Orbit uses muted yellow
+Across all layouts, lateral diagrams and bars are yellow. G-Orbit uses muted yellow
 for lateral peak markers and translucent peak fills. Longitudinal data is green
 for acceleration and red for braking.
 This applies to curves and their current-point markers, and to G-Orbit's current
 arc, peak fills and peak markers. Channel headings and numeric text retain their
-theme colors.
-Theme graphics contain no Hz/fps labels; source sample rate and overlay export
+layout colors.
+Layout graphics contain no Hz/fps labels; source sample rate and overlay export
 frame rate are technical settings, not the frame rate of the underlying video.
 Flow Ribbon, Corner Instruments and HUD show source-time vertical
 context using the provisional [airtime heuristic](implementation/AIRTIME.md).
@@ -91,7 +93,7 @@ numeric readouts continue to show the current forces.
 
 ## Four-panel column
 
-The right-hand column includes three force plots and a dedicated orientation
+The landscape-only column fills the complete 4K height and includes three force plots and a dedicated orientation
 plot. All four timelines advance left-to-right. Its default vertical/lateral
 force axes are positive-down, unlike the compact lateral charts;
 the underlying signed values are identical. The longitudinal trace is green for

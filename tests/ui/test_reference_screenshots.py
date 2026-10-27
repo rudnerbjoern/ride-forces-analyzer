@@ -52,6 +52,7 @@ def test_capture_cli_is_repeatable_and_preserves_original_and_preferences() -> N
             assert manifest["smoothing"] == 11 and manifest["language"] == "en"
             assert manifest["layout"] == "ribbon" and manifest["fps"] == 50
             assert manifest["position"] == "bottom"
+            assert manifest["extent"] == "full_frame"
             pixels: dict[str, bytes] = {}
             for filename, size in (
                 ("workspace-dark.png", (1600, 1100)),

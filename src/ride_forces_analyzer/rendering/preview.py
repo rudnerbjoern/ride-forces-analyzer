@@ -12,13 +12,18 @@ from dataclasses import dataclass, replace
 from collections.abc import Mapping
 from enum import StrEnum
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageOps
 
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from .frames import OverlayRenderer
 from .layouts import registry
 from .layouts.contracts import LayoutPosition
-from .model import VideoAspect, ExportLayout, ExportSettings, PROFILES, prepare_export
+from .model import ExportExtent, VideoAspect, ExportLayout, ExportSettings, PROFILES, prepare_export
+
+DARK_BACKGROUND = "#162533"
+LIGHT_BACKGROUND = "#e4eaf0"
+CHECKER_COLOR = "#aebfce"
+CHECKER_SIZE = 30  # Approximate checker width/height in preview pixels.
 
 
 class PreviewBackground(StrEnum):
@@ -42,12 +47,48 @@ class ProfilePreview:
     Attributes:
         layout: Stable key selecting the overlay renderer.
         title: Recording or layout title shown without interpreting its contents.
-        image: Prepared raster image in the format declared by its owning model.
+        image: RGB display image fitted to the preview limit without stretching
+            its resolved export aspect ratio. Background is presentation-only.
     """
 
     layout: ExportLayout
     title: str
     image: Image.Image
+
+
+def _preview_frame(
+    frame: Image.Image,
+    maximum: tuple[int, int],
+    background: PreviewBackground,
+) -> Image.Image:
+    """Composite an export frame and fit its complete geometry for display.
+
+    Args:
+        frame: Complete RGBA export frame at its resolved output dimensions.
+        maximum: Display width/height limits; never crop or stretch the frame.
+        background: Preview-only backdrop, including square checker cells when selected.
+
+    Returns:
+        RGB display image preserving the export aspect ratio within the limits.
+    """
+    canvas = Image.new(
+        "RGBA",
+        frame.size,
+        DARK_BACKGROUND if background is PreviewBackground.DARK else LIGHT_BACKGROUND,
+    )
+    if background is PreviewBackground.CHECKER:
+        scale = min(maximum[0] / frame.width, maximum[1] / frame.height)
+        tile = max(1, round(CHECKER_SIZE / scale))
+        draw = ImageDraw.Draw(canvas)
+        for y in range(0, frame.height, tile):
+            for x in range(0, frame.width, tile):
+                if (x // tile + y // tile) % 2:
+                    draw.rectangle((x, y, x + tile - 1, y + tile - 1), fill=CHECKER_COLOR)
+    return ImageOps.contain(
+        Image.alpha_composite(canvas, frame),
+        maximum,
+        Image.Resampling.LANCZOS,
+    ).convert("RGB")
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,7 +127,9 @@ def build_previews(
         previous_positions: Previously selected positions keyed by layout.
 
     Returns:
-        All selectable layout previews and selected-frame metadata.
+        All selectable layout previews and selected-frame metadata. Images retain
+        the output aspect ratio within 960 × 540 landscape or 540 × 960 portrait.
+        Layouts without the requested extent use Full frame in the gallery.
 
     Raises:
         ValueError: Preview sample outside recording. Invalid export sample interval.
@@ -105,40 +148,28 @@ def build_previews(
     previews: list[ProfilePreview] = []
     size = (540, 960) if settings.aspect is VideoAspect.PORTRAIT else (960, 540)
     selected_plugin = registry.PLUGINS[settings.layout]
-    selected_positions = (
-        selected_plugin.landscape
-        if settings.aspect is VideoAspect.LANDSCAPE
-        else selected_plugin.portrait
-    )
+    selected_positions = selected_plugin.positions(settings.aspect)
     selected_position = settings.position or selected_positions.default
-    backdrop = Image.new(
-        "RGBA",
-        size,
-        "#162533" if background == PreviewBackground.DARK else "#e4eaf0",
-    )
-    if background == PreviewBackground.CHECKER:
-        draw = ImageDraw.Draw(backdrop)
-        for y in range(0, size[1], 30):
-            for x in range(0, size[0], 30):
-                if (x // 30 + y // 30) % 2:
-                    draw.rectangle((x, y, x + 29, y + 29), fill="#aebfce")
     for layout, title in PROFILES:
         plugin = registry.PLUGINS[layout]
-        positions = (
-            plugin.landscape if settings.aspect is VideoAspect.LANDSCAPE else plugin.portrait
-        )
+        if settings.aspect not in plugin.supported_aspects:
+            continue
+        positions = plugin.positions(settings.aspect)
         profile = (
             settings
             if layout == settings.layout
             else replace(
                 settings,
                 layout=layout,
+                extent=settings.extent
+                if settings.extent in plugin.supported_extents(settings.aspect)
+                else ExportExtent.FULL_FRAME,
                 position=positions.select(
                     selected_position,
                     previous_positions.get(layout) if previous_positions is not None else None,
                 ),
                 invert_vertical=True,
-                invert_lateral=layout == ExportLayout.COLUMN,
+                invert_lateral=plugin.preview_invert_lateral,
             )
         )
         channels = tuple(
@@ -152,11 +183,6 @@ def build_previews(
         frame = OverlayRenderer(
             replace(timeline, settings=profile, channels=channels),
         ).render_sample(sample)
-        canvas = backdrop.resize(frame.size, Image.Resampling.NEAREST)
-        image = (
-            Image.alpha_composite(canvas, frame)
-            .resize(size, Image.Resampling.LANCZOS)
-            .convert("RGB")
-        )
+        image = _preview_frame(frame, size, background)
         previews.append(ProfilePreview(layout, title, image))
     return ExportPreview(sample, outside, tuple(previews))

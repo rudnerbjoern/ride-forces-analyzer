@@ -7,8 +7,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words LANCZOS
 
 from PIL import Image
-from .model import VideoOutput, ExportTimeline
-from .layouts import create_renderer, export_region
+from .model import ExportExtent, VideoOutput, ExportTimeline
+from .layouts import create_renderer, resolve_geometry
 
 WIDTH, HEIGHT, COLUMN_WIDTH = 3840, 2160, 960
 COLUMN_X = WIDTH - COLUMN_WIDTH
@@ -20,6 +20,7 @@ class OverlayRenderer:
     Attributes:
         timeline: Bound video timeline containing the source interval and export settings.
         renderer: Layout renderer bound to this object's immutable video timeline.
+        geometry: Fixed output dimensions and placement for the complete export.
     """
 
     def __init__(self, timeline: ExportTimeline) -> None:
@@ -33,6 +34,7 @@ class OverlayRenderer:
         """
         self.timeline = timeline
         self.renderer = create_renderer(timeline)
+        self.geometry = resolve_geometry(timeline.settings)
 
     def render_region(self, frame: int) -> Image.Image:
         """Render the active overlay region for an output frame.
@@ -41,28 +43,36 @@ class OverlayRenderer:
             frame: Zero-based output video frame index.
 
         Returns:
-            The rendered image in the layout or canvas dimensions declared by the timeline.
+            Native RGBA content, or the scaled layout region for Full frame.
+
+        Raises:
+            ValueError: The plugin's image size differs from its native Content area metadata.
         """
         return self._render_region_at(self.timeline.sample_position(frame))
 
     def _render_region_at(self, position: float) -> Image.Image:
         image = self.renderer.render_position(position)
-        _, _, width, height = export_region(self.timeline.settings)
-        if image.size != (width, height):
-            image = image.resize((width, height), Image.Resampling.LANCZOS)
+        if self.timeline.settings.extent is ExportExtent.CONTENT_AREA:
+            if image.size != self.geometry.render_size:
+                raise ValueError("Renderer output does not match native content dimensions")
+        elif image.size != self.geometry.render_size:
+            image = image.resize(self.geometry.render_size, Image.Resampling.LANCZOS)
         if self.timeline.settings.output == VideoOutput.OPAQUE:
             background = Image.new("RGBA", image.size, (0, 0, 0, 255))
             return Image.alpha_composite(background, image)
         return image
 
     def render_frame(self, frame: int) -> Image.Image:
-        """Render an output frame on the complete transparent or opaque canvas.
+        """Render an output frame on its resolved transparent or opaque canvas.
 
         Args:
             frame: Zero-based output video frame index.
 
         Returns:
-            The rendered image in the layout or canvas dimensions declared by the timeline.
+            RGBA image at the selected extent's final output dimensions.
+
+        Raises:
+            ValueError: The frame is outside the timeline, or native dimensions mismatch.
         """
         return self.render_sample(self.timeline.sample_position(frame))
 
@@ -73,15 +83,17 @@ class OverlayRenderer:
             position: Fractional source-sample position.
 
         Returns:
-            The rendered image in the layout or canvas dimensions declared by the timeline.
+            RGBA image at the selected extent's final output dimensions.
 
         Raises:
-            ValueError: Preview sample outside prepared interval.
+            ValueError: Sample is outside the prepared interval, or native dimensions mismatch.
         """
         if not self.timeline.first <= position <= self.timeline.last:
             raise ValueError("Preview sample outside prepared interval")
+        region = self._render_region_at(position)
+        if self.timeline.settings.extent is ExportExtent.CONTENT_AREA:
+            return region
         alpha = 0 if self.timeline.settings.output == VideoOutput.TRANSPARENT else 255
-        canvas = Image.new("RGBA", self.timeline.settings.dimensions, (0, 0, 0, alpha))
-        x, y, _, _ = export_region(self.timeline.settings)
-        canvas.alpha_composite(self._render_region_at(position), (x, y))
+        canvas = Image.new("RGBA", self.geometry.output_size, (0, 0, 0, alpha))
+        canvas.alpha_composite(region, self.geometry.offset)
         return canvas

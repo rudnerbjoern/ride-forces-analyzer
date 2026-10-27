@@ -6,7 +6,7 @@ import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 // cspell:words Schwerkraft échantillon
-// cspell:ignore Schwerkrafft échantilllon
+// cspell:ignore Schwerkrafft échantilllon stylessheett
 
 // Resolve from the actual consumers, even if npm stops hoisting these packages.
 const project = createRequire(import.meta.url);
@@ -45,6 +45,27 @@ for (const [language, correct, typo] of [
     }
   });
 }
+
+test("CSpell checks skill Markdown consistently across editor language ids", () => {
+  const root = fileURLToPath(new URL("../../", import.meta.url));
+  const cli = fileURLToPath(import.meta.resolve("cspell/bin.mjs"));
+  const skill = ".agents/skills/update-screenshots/SKILL.md";
+  for (const [filename, languageId, word, expected] of [
+    [skill, "markdown", "stylesheet", 0],
+    [skill, "instructions", "stylesheet", 0],
+    [skill, "instructions", "stylessheett", 1],
+    ["README.md", "instructions", "stylesheet", 1],
+  ]) {
+    const result = spawnSync(process.execPath,
+      [cli, "lint", `stdin://${filename}`, "--config", ".cspell.json", "--no-progress",
+        "--language-id", languageId],
+      { cwd: root, input: `${word}\n`, encoding: "utf8", timeout: 30000 });
+    const output = result.stdout + result.stderr;
+    assert.ifError(result.error);
+    assert.equal(result.status, expected, output);
+    if (expected === 1) assert.ok(output.includes(word), output);
+  }
+});
 
 test("Documentation and lint consumers share the declared Markdown parser release", async () => {
   const manifest = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8"));

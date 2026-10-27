@@ -11,9 +11,9 @@ supported RFDB profile, preserves original data and provides:
 - Raw and calibrated force charts, configurable smoothing, visible-range extrema,
   provisional airtime context and an approximate GPS overview.
 - Sample playback, editable ride/calibration markers and independent recording windows.
-- Five video-overlay layouts in landscape or portrait, transparent MOV or opaque
+- Five video-overlay layouts in supported landscape/portrait formats, transparent MOV or opaque
   MP4 output, saved presets and sequential batches. HUD exports native HD;
-  the other layouts export 4K.
+  the other layouts offer 4K Full-frame or native Content-area output.
 - CSV, app-shaped JSON and Analyzer JSON sample exports.
 
 Sensor capture and video synchronization are outside scope. Users align exported

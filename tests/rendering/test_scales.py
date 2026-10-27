@@ -12,7 +12,7 @@ from ride_forces_analyzer.analysis.preparation import (
     source_app_configuration,
 )
 from ride_forces_analyzer.rendering.layouts.orbit import OrbitRenderer
-from ride_forces_analyzer.rendering.layouts import create_renderer
+from ride_forces_analyzer.rendering.layouts import create_renderer, PLUGINS
 from ride_forces_analyzer.rendering.layouts.charts import ChartRenderer
 from ride_forces_analyzer.rendering.layouts.column import ColumnRenderer, SCALE_COLOR
 from ride_forces_analyzer.rendering.layouts.hud import HudRenderer
@@ -103,6 +103,8 @@ def test_all_layouts_use_one_g_reference_with_absolute_values(
         calculation_time=datetime.now(UTC),
     )
     for layout in ExportLayout:
+        if aspect not in PLUGINS[layout].supported_aspects:
+            continue
         timeline = prepare_export(analysis, ExportSettings(layout=layout, aspect=aspect), 2, 6)
         vertical = timeline.channels[0]
         assert [channel.reference for channel in timeline.channels] == [1, 0, 0, 0]

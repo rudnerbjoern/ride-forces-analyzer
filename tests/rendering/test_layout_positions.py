@@ -1,6 +1,6 @@
 """Selected layout regions stay consistent across composition and encoding."""
 
-# cspell:words getchannel getbbox
+# cspell:words getchannel getbbox hwupload
 
 from dataclasses import replace
 from pathlib import Path
@@ -13,8 +13,13 @@ from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering.encoding import encoder_command
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts import COLORS, registry
-from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition, LayoutPositions
+from ride_forces_analyzer.rendering.layouts.contracts import (
+    ContentArea,
+    LayoutPosition,
+    LayoutPositions,
+)
 from ride_forces_analyzer.rendering.model import (
+    ExportExtent,
     VideoOutput,
     ExportLayout,
     VideoAspect,
@@ -49,7 +54,8 @@ def test_equivalent_position_keeps_shared_axis_and_uses_default_for_other_axis(
     from ride_forces_analyzer.rendering.model import ExportLayout
 
     plugin = registry.PLUGINS[ExportLayout(layout)]
-    for positions in (plugin.landscape, plugin.portrait):
+    for aspect in plugin.supported_aspects:
+        positions = plugin.positions(aspect)
         assert positions.select(preferred) == expected
 
 
@@ -74,6 +80,8 @@ def test_export_settings_validate_positions_for_each_format(
         registry.PLUGINS[ExportLayout.ORBIT],
         landscape=LayoutPositions({LayoutPosition.TOP: (0, 0, 40, 30)}, LayoutPosition.TOP),
         portrait=LayoutPositions({LayoutPosition.BOTTOM: (10, 20, 30, 40)}, LayoutPosition.BOTTOM),
+        landscape_content=ContentArea((40, 30)),
+        portrait_content=ContentArea((30, 40)),
     )
     monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, ExportLayout.ORBIT: plugin})
     settings = ExportSettings(layout=ExportLayout.ORBIT, position=LayoutPosition.TOP)
@@ -120,6 +128,8 @@ def test_selected_region_controls_frame_size_placement_and_encoder_padding(
             LayoutPosition.BOTTOM,
         ),
         create=create,
+        landscape_content=ContentArea((40, 30)),
+        portrait_content=ContentArea((30, 40)),
     )
     monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, ExportLayout.ORBIT: plugin})
     settings = ExportSettings(
@@ -152,3 +162,76 @@ def test_selected_region_controls_frame_size_placement_and_encoder_padding(
         f"pad={canvas_width}:{canvas_height}:{x}:{y}:color=black@"
         + ("0" if output == VideoOutput.TRANSPARENT else "1")
     )
+
+
+@pytest.mark.parametrize("output", [VideoOutput.TRANSPARENT, VideoOutput.OPAQUE])
+@pytest.mark.parametrize(
+    "layout,aspect,size",
+    [
+        (ExportLayout.ORBIT, VideoAspect.LANDSCAPE, (800, 800)),
+        (ExportLayout.ORBIT, VideoAspect.PORTRAIT, (800, 800)),
+        (ExportLayout.COLUMN, VideoAspect.LANDSCAPE, (960, 2160)),
+        (ExportLayout.RIBBON, VideoAspect.LANDSCAPE, (3072, 360)),
+        (ExportLayout.RIBBON, VideoAspect.PORTRAIT, (840, 1120)),
+        (ExportLayout.CORNERS, VideoAspect.LANDSCAPE, (840, 1120)),
+        (ExportLayout.CORNERS, VideoAspect.PORTRAIT, (840, 1120)),
+    ],
+)
+def test_content_export_passes_native_pixels_and_dimensions_to_encoder(
+    manta: ExplorerData,
+    layout: ExportLayout,
+    aspect: VideoAspect,
+    size: tuple[int, int],
+    output: VideoOutput,
+) -> None:
+    assert manta.analysis is not None
+    settings = ExportSettings(
+        layout=layout,
+        aspect=aspect,
+        output=output,
+        extent=ExportExtent.CONTENT_AREA,
+    )
+    native = OverlayRenderer(prepare_export(manta.analysis, settings, 3600, 3601))
+    expected = native.renderer.render_position(3600)
+    assert expected.size == size
+    if output is VideoOutput.OPAQUE:
+        expected = Image.alpha_composite(Image.new("RGBA", size, (0, 0, 0, 255)), expected)
+    for position in registry.PLUGINS[layout].positions(aspect).regions:
+        timeline = prepare_export(
+            manta.analysis,
+            replace(settings, extent=ExportExtent.CONTENT_AREA, position=position),
+            3600,
+            3601,
+        )
+        renderer = OverlayRenderer(timeline)
+        assert renderer.render_region(0).tobytes() == expected.tobytes()
+        frame = renderer.render_frame(0)
+        assert frame.size == size
+        assert frame.tobytes() == expected.tobytes()
+        for use_gpu in (False, True):
+            command = encoder_command(Path("ffmpeg"), timeline, Path("output"), use_gpu=use_gpu)
+            assert command[command.index("-video_size") + 1] == f"{size[0]}x{size[1]}"
+            if use_gpu and output is VideoOutput.TRANSPARENT:
+                filters = command[command.index("-vf") + 1].split(",")
+                assert all(
+                    part.split("=")[0] in {"setparams", "hwupload", "scale_vulkan"}
+                    for part in filters
+                )
+            else:
+                assert "-vf" not in command
+
+
+def test_content_export_rejects_native_size_mismatch(
+    manta: ExplorerData,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert manta.analysis is not None
+    plugin = replace(
+        registry.PLUGINS[ExportLayout.ORBIT],
+        landscape_content=ContentArea((802, 800)),
+    )
+    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
+    settings = ExportSettings(layout=plugin.key, extent=ExportExtent.CONTENT_AREA)
+    renderer = OverlayRenderer(prepare_export(manta.analysis, settings, 3600, 3601))
+    with pytest.raises(ValueError, match="native content dimensions"):
+        renderer.render_frame(0)

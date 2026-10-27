@@ -53,7 +53,7 @@ image set as refreshed. Do not use incomplete output as a reference.
   recording, replay time, sample, smoothing, force values and visible context.
   Update descriptions in place when needed. Retain the existing links on coaster
   names and the distinction between provisional context and measured forces.
-- Check the linked [layout gallery](../../../docs/EXPORT_THEMES.md) when its
+- Check the linked [layout gallery](../../../docs/EXPORT_LAYOUTS.md) when its
   images change. Follow the [central image guide](../../../docs/images/README.md)
   for reproduction settings, licensing and attribution.
 - Inspect the diff for unintended image/document changes. Preserve unrelated
@@ -63,7 +63,7 @@ image set as refreshed. Do not use incomplete output as a reference.
 
 The [Pages start page](../../../index.html) renders the README directly; do not
 maintain a second copy of its content. Read the
-[website setup](../../../docs/development/SETUP.md#project-website) when reviewing
+[website setup](../../../docs/development/SETUP.md), section **Project website**, when reviewing
 the [layout](../../../_layouts/default.html),
 [stylesheet](../../../assets/css/style.scss) and
 [Pages configuration](../../../_config.yml).

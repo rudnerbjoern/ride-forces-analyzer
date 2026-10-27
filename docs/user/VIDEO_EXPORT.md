@@ -45,12 +45,17 @@ your footage.
 
 Choose these settings:
 
-- **Position:** choose one of the selected layout's placements beside **Layout profile**.
+- **Layout format:** landscape for a normal widescreen video, or portrait for
+  vertical videos. This sets the layout arrangement.
+- **Export area:** **Full frame** keeps the complete video frame; **Content area**
+  exports the smaller layout image for positioning in your video editor.
+  HUD always uses Full frame. **Output dimensions** shows the actual video size.
+- **Position:** in Full frame, choose one of the selected layout's placements.
   The preview updates immediately. Changing layout or format keeps a supported
   or equivalent position (such as top left → top), otherwise it selects the default.
-- **Video format:** landscape for a normal widescreen video, or portrait for
-  vertical videos. HUD exports at 1920×1080 or 1080×1920; the other layouts export
-  at 3840×2160 or 2160×3840. Review export shows the actual dimensions.
+  Content area hides this choice and keeps it for your return to Full frame.
+  HUD exports at 1920×1080 or 1080×1920; other Full-frame layouts export
+  at 3840×2160 or 2160×3840. Review export also shows the actual dimensions.
 - **Overlay language:** English, German or French, independently of the application language.
 - **Output:** **Transparent overlay · ProRes 4444 MOV** to place the graphics
   over footage in an editor; **Opaque video · H.264 MP4** for a black background.
@@ -124,6 +129,9 @@ In a video editor that supports transparent ProRes 4444, such as DaVinci Resolve
 1. Use a timeline with the same frame rate as your footage and overlay.
 2. Place your ride footage on a video track.
 3. Place the exported **MOV** on a track above it.
+   For **Content area**, position the smaller clip over your footage; its original
+   Full-frame placement is not part of the video. Adjust scale in the editor if needed.
+   **Full frame** already includes the selected placement on the complete canvas.
 4. Move the overlay along the timeline until a recognizable ride moment, such
    as a launch or drop, lines up with the footage. Check another moment later
    in the ride as well.
@@ -162,5 +170,5 @@ how saved jobs retain their recording paths and settings.
   MP4 when you want a smaller standalone video with a black background.
 
 [Installation](INSTALLATION.md) ·
-[Layout gallery](../EXPORT_THEMES.md) ·
+[Layout gallery](../EXPORT_LAYOUTS.md) ·
 [Technical export reference](../implementation/VIDEO_EXPORT.md)

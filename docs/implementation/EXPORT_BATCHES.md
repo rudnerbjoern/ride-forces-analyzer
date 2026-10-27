@@ -22,12 +22,12 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
 
 ## Contracts
 
-| Saved object    | Required contents                                                                                                                                                         |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Preset          | Layout, position, landscape/portrait aspect, overlay language, output mode, fps, time context, axis inversion, GPU preference, odd 1–51 sample smoothing and range policy |
-| Analysis recipe | Explicit versioned projection, smoothing, independent orientation, context/events, input dependencies and source-app policy; smoothing matches preset window              |
-| Job             | Absolute source path, original SHA-256, title, concrete inclusive source range and complete preset snapshot                                                               |
-| Storage         | Recipes/definitions only; no source bytes or stage buffers; originals remain external/read-only                                                                           |
+| Saved object    | Required contents                                                                                                                                                                      |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Preset          | Layout, position, export area, landscape/portrait aspect, overlay language, output mode, fps, time context, axis inversion, GPU preference, odd 1–51 sample smoothing and range policy |
+| Analysis recipe | Explicit versioned projection, smoothing, independent orientation, context/events, input dependencies and source-app policy; smoothing matches preset window                           |
+| Job             | Absolute source path, original SHA-256, title, concrete inclusive source range and complete preset snapshot                                                                            |
+| Storage         | Recipes/definitions only; no source bytes or stage buffers; originals remain external/read-only                                                                                        |
 
 - Writes are transactional; preset/batch names are unique. Damaged/unsupported
   databases are reported, never silently replaced.
@@ -54,7 +54,14 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   explorer recording/settings. Refreshing the stored list does not apply a preset.
 - Editing/deleting a preset does not change saved job snapshots.
   Jobs replay their saved overlay language independently of UI language.
-- Mixed portrait/landscape jobs are supported; the job table identifies aspect.
+- Presets/jobs persist `settings.extent` as `full_frame` or `content_area`; omission
+  uses Full frame without rewriting storage. Unsupported supplied values or
+  combinations, including HUD Content area, are rejected.
+  Loading a preset restores its area, retained position, output dimensions and
+  matching estimates. Jobs retain their own area after preset edits/deletion.
+- Mixed portrait/landscape and Full-frame/Content-area jobs are supported; the job
+  table identifies aspect, export area and resolved output dimensions. Each job
+  uses the same geometry and encoder path as an individual export.
 
 | Queue interaction        | Contract                                                                                                         |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------- |

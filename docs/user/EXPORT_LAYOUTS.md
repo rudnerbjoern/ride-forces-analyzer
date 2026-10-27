@@ -33,33 +33,62 @@ Curves and pointers retain their full precision.
 | **Four-panel column**  | Right side                  | Compare force histories and a separate orientation curve.     |
 
 Flow Ribbon is selected when you first open the export assistant.
-The comparison above shows each layout at its own default position; assistant
-thumbnails follow your current position choices.
-[Open the larger detail views](../EXPORT_THEMES.md) to inspect each layout.
+The comparison above shows Full-frame output at each layout's default position;
+assistant thumbnails follow your export area and position choices.
+[Open the larger detail views](../EXPORT_LAYOUTS.md) to inspect each layout.
+
+## Export area and video size
+
+**Full frame** keeps the selected placement on a complete video frame. HUD uses
+1920×1080 landscape or 1080×1920 portrait; the other layouts use 3840×2160 or
+2160×3840. Four-panel column supports landscape only.
+
+**Content area** exports the complete smaller layout image, including any empty
+space already around its instruments. It does not crop or stretch the design.
+Place this clip where you want it in your video editor: your Full-frame position
+is remembered in the assistant, but is not included as empty video space.
+HUD always uses Full frame.
+
+| Layout             | Landscape Content area | Portrait Content area |
+| ------------------ | ---------------------- | --------------------- |
+| Flow Ribbon        | 3072×360               | 840×1120              |
+| Corner Instruments | 840×1120               | 840×1120              |
+| G-Orbit            | 800×800                | 800×800               |
+| Four-panel column  | 960×2160               | Unavailable           |
+| HUD                | Full frame only        | Full frame only       |
+
+**Layout format** chooses the arrangement; Content-area video need not be 16:9 or
+9:16. **Output dimensions** and **Review export** show the actual video size.
+Changing the area refreshes previews and the rough file-size estimate. Smaller
+dimensions do not guarantee a proportionally smaller video.
 
 ## Try a layout with your recording
 
 1. In the main chart, select a moment with forces you want to show.
 2. Click **Export video…** and choose a layout thumbnail or **Layout profile**.
-3. Choose landscape or portrait under **Video format**. Every layout supports
-   both; the portrait arrangement adapts to the narrower frame.
-4. Choose **Position** beside **Layout profile**. Ribbon offers top or
+3. Choose landscape or portrait under **Layout format**. Four-panel column supports
+   landscape only and fills the complete 4K frame height. Other layouts adapt to
+   both formats. Unsupported layouts are unavailable in the selector and thumbnails.
+4. Choose **Full frame** or **Content area** under **Export area**. Content area
+   exports the smaller layout image for placement in your video editor and hides
+   Position. HUD always uses Full frame. Check **Output dimensions** for the video size.
+5. In Full frame, choose **Position**. Ribbon offers top or
    bottom, Column left or right, and Corners and G-Orbit all four corners.
-   HUD uses the whole frame with a fixed **Full screen** position. Its native
+   HUD uses the whole frame and hides Position. Its native
    1920×1080 or 1080×1920 output can be scaled to a 4K timeline in your editor.
    The assistant remembers each layout's position while open and keeps a similar
    placement when you switch layouts. Check the preview after switching.
-5. Check whether the labels and curves will be readable at your video's viewing
+6. Check whether the labels and curves will be readable at your video's viewing
    size, and whether the chosen position leaves the action clear.
-6. Choose a light, dark or checkerboard preview background to check visibility.
+7. Choose a light, dark or checkerboard preview background to check visibility.
 
 The preview shows a single moment, rather than playing the video. To inspect
 another moment, close the assistant, select another chart sample and reopen it.
 No FFmpeg installation is needed to compare layouts.
 
 Layouts provide preset positions and styling. The assistant does not offer dragging,
-resizing, custom fonts or custom colors. You can choose the layout, position, video
-format and overlay language. For the remaining export steps, follow the
+resizing, custom fonts or custom colors. You can choose the layout, export area,
+position, layout format and overlay language. For the remaining export steps, follow the
 [video export guide](VIDEO_EXPORT.md).
 
 ## Read the instruments
@@ -134,5 +163,5 @@ The preview background is only a viewing aid; it does not add your footage or
 change the exported background. Alignment with footage is done manually in your
 video editor.
 
-[Video export guide](VIDEO_EXPORT.md) · [Full-size examples](../EXPORT_THEMES.md) ·
+[Video export guide](VIDEO_EXPORT.md) · [Full-size examples](../EXPORT_LAYOUTS.md) ·
 [Developer layout reference](../development/EXPORT_LAYOUTS.md)

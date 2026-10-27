@@ -25,8 +25,8 @@ chapter 9 retains decision status and rationale.
   spreadsheets or other analysis tools.
 - [Export sample data as JSON](user/JSON_EXPORT.md): app-shaped arrays with
   additional analysis data, or structured Analyzer JSON with shared time/quality.
-- [Choose an export layout](user/EXPORT_LAYOUTS.md): compare placement, read the
-  instruments and check landscape/portrait previews.
+- [Choose an export layout](user/EXPORT_LAYOUTS.md): compare placement and video
+  sizes, choose Full frame or Content area and read the instruments.
 - [Presets and batches](user/EXPORT_BATCHES.md): reuse settings, queue recordings
   and find results or handle failed jobs.
 
@@ -36,7 +36,7 @@ chapter 9 retains decision status and rationale.
 - [Video export contract](implementation/VIDEO_EXPORT.md), [saved presets and batches](implementation/EXPORT_BATCHES.md).
 - [CSV sample export contract](implementation/CSV_EXPORT.md).
 - [JSON sample export contract](implementation/JSON_EXPORT.md).
-- [All export themes](EXPORT_THEMES.md), [layout extension API](development/EXPORT_LAYOUTS.md),
+- [All export layouts](EXPORT_LAYOUTS.md), [layout extension API](development/EXPORT_LAYOUTS.md),
   [Manta demo with all five overlays](https://youtu.be/0sGiE6F8YlI) and
   [additional Manta HUD demo](https://youtu.be/JGcNPKoKU1Q).
 - [Provisional airtime context](implementation/AIRTIME.md) and

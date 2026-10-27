@@ -23,6 +23,8 @@ from ride_forces_analyzer.rendering.model import (
 from ride_forces_analyzer.rendering.layouts import PLUGINS
 from ride_forces_analyzer.rendering.layouts.contracts import (
     LayoutPlugin,
+    ContentArea,
+    ExportExtent,
     LayoutPosition,
     LayoutPositions,
     Region,
@@ -52,6 +54,9 @@ def test_every_persisted_profile_has_registered_geometry() -> None:
             (VideoAspect.LANDSCAPE, plugin.landscape),
             (VideoAspect.PORTRAIT, plugin.portrait),
         ):
+            if positions is None:
+                assert aspect not in plugin.supported_aspects
+                continue
             settings = ExportSettings(
                 layout=key,
                 aspect=aspect,
@@ -84,7 +89,7 @@ def test_every_persisted_profile_has_registered_geometry() -> None:
             LayoutPosition.RIGHT,
             {LayoutPosition.LEFT, LayoutPosition.RIGHT},
             (2880, 0, 960, 2160),
-            (612, 300, 1440, 3240),
+            None,
         ),
         (
             ExportLayout.CORNERS,
@@ -117,13 +122,19 @@ def test_builtin_positions_and_existing_default_placement(
     default: LayoutPosition,
     supported: set[LayoutPosition],
     landscape: Region,
-    portrait: Region,
+    portrait: Region | None,
 ) -> None:
     plugin = PLUGINS[key]
     for positions in (plugin.landscape, plugin.portrait):
+        if positions is None:
+            continue
         assert positions.default == default
         assert set(positions.regions) == supported
     assert registry.export_region(ExportSettings(layout=key)) == landscape
+    if portrait is None:
+        with pytest.raises(ValueError, match="Unsupported export format"):
+            ExportSettings(layout=key, aspect=VideoAspect.PORTRAIT)
+        return
     assert (
         registry.export_region(ExportSettings(layout=key, aspect=VideoAspect.PORTRAIT)) == portrait
     )
@@ -139,12 +150,20 @@ def test_layout_owns_positions_sizes_and_defaults_independently_per_format() -> 
         {LayoutPosition.LEFT: (100, 200, 300, 400)},
         default=LayoutPosition.LEFT,
     )
-    plugin = replace(PLUGINS[ExportLayout.ORBIT], landscape=landscape, portrait=portrait)
+    plugin = replace(
+        PLUGINS[ExportLayout.ORBIT],
+        landscape=landscape,
+        portrait=portrait,
+        landscape_content=ContentArea((30, 40)),
+        portrait_content=ContentArea((300, 400)),
+    )
     regions[LayoutPosition.TOP] = (0, 0, 1, 1)
     assert plugin.landscape.regions[LayoutPosition.TOP] == (10, 20, 30, 40)
     assert plugin.landscape.regions[LayoutPosition.BOTTOM] == (50, 60, 70, 80)
-    assert plugin.portrait.default == LayoutPosition.LEFT
-    assert plugin.portrait.regions == {LayoutPosition.LEFT: (100, 200, 300, 400)}
+    assert plugin.positions(VideoAspect.PORTRAIT).default == LayoutPosition.LEFT
+    assert plugin.positions(VideoAspect.PORTRAIT).regions == {
+        LayoutPosition.LEFT: (100, 200, 300, 400),
+    }
     with pytest.raises(TypeError):
         cast(dict[LayoutPosition, Region], landscape.regions)[LayoutPosition.TOP] = (0, 0, 1, 1)
     with pytest.raises(FrozenInstanceError):
@@ -264,15 +283,42 @@ def test_compositor_accepts_a_registered_renderer_without_layout_branches(
                     LayoutPositions({LayoutPosition.TOP: region}, default=LayoutPosition.TOP),
                     LayoutPositions({LayoutPosition.TOP: region}, default=LayoutPosition.TOP),
                     create,
+                    landscape_canvas=(320, 240),
+                    portrait_canvas=(240, 320),
                 ),
             },
         ),
     )
     image = OverlayRenderer(timeline).render_sample(3600.5)
+    assert image.size == (320, 240)
+    assert replace(timeline.settings, aspect=VideoAspect.PORTRAIT).dimensions == (240, 320)
     assert positions == [3600.5]
     assert image.getchannel("A").getbbox() == (100, 200, 140, 230)
     assert image.getpixel((100, 200)) == (255, 0, 0, 180)
     assert image.getpixel((99, 200)) == (0, 0, 0, 0)
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"landscape_canvas": (0, 2160)},
+        {"portrait_canvas": (2160, 3841)},
+        {"landscape_canvas": (True, 2160)},
+        {"preferred_window_seconds": float("nan")},
+        {"preferred_window_seconds": 61},
+        {"preview_invert_lateral": 1},
+        {"prores_4444_size_rates": {ExportExtent.FULL_FRAME: (0.2, 0.1)}},
+        {"h264_size_rates": {ExportExtent.FULL_FRAME: (0.1, float("inf"))}},
+    ],
+)
+def test_invalid_plugin_canvas_defaults_and_rates_are_rejected(changes: dict[str, object]) -> None:
+    with pytest.raises(ValueError, match="Layout"):
+        replace(PLUGINS[ExportLayout.ORBIT], **changes)
+
+
+def test_regions_must_fit_the_plugin_declared_canvas() -> None:
+    with pytest.raises(ValueError, match="fit within"):
+        replace(PLUGINS[ExportLayout.HUD], landscape_canvas=(1919, 1080))
 
 
 def test_individual_chart_style_applies_in_both_aspects_without_leaking(

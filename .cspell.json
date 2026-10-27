@@ -9,6 +9,12 @@
   ],
   "overrides": [
     {
+      "filename": ".agents/skills/**/*.md",
+      "dictionaries": [
+        "html"
+      ]
+    },
+    {
       "filename": "src/ride_forces_analyzer/i18n/de.py",
       "language": "en,de"
     },

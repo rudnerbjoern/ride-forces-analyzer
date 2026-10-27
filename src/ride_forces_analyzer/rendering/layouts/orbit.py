@@ -4,7 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-# cspell:words segoeui segoeuib
+# cspell:words segoeui segoeuib qscale libx
 
 from __future__ import annotations
 
@@ -19,7 +19,14 @@ from math import cos, sin, radians
 from ..peaks import PeakEnvelope
 from ..scales import selected_bounds, vertical_scale
 from .common import ACCELERATION_COLOR, BRAKING_COLOR, Drawing
-from .contracts import ExportLayout, LayoutPlugin, LayoutPosition, LayoutPositions
+from .contracts import (
+    ContentArea,
+    ExportExtent,
+    ExportLayout,
+    LayoutPlugin,
+    LayoutPosition,
+    LayoutPositions,
+)
 
 
 FONT_FILE = "segoeui.ttf"  # Regular Windows font file.
@@ -407,4 +414,33 @@ class OrbitRenderer(Drawing):
         return image
 
 
-PLUGIN = LayoutPlugin(ExportLayout.ORBIT, LANDSCAPE_POSITIONS, PORTRAIT_POSITIONS, OrbitRenderer)
+# Bytes/output pixel/frame including container overhead. FFmpeg 9.0.2 CPU:
+# prores_ks 4444 qscale 4/alpha 16; libx264 fast CRF 18. Ten frames at 50 fps,
+# Manta 3600..3609 / Voltron 4960..4969, English, 11-sample smoothing, both formats.
+# Full: 3840x2160 / 2160x3840; native content: 800x800 in both formats.
+# Rounded outward from half the observed minimum to 1.5 times the maximum.
+# Short clips include first-frame overhead; other scenes, durations, languages
+# and GPU encoders are unqualified. These are planning ranges, not guarantees.
+PRORES_4444_SIZE_RATES = (0.028, 0.185)  # Observed 0.05664..0.12277.
+H264_SIZE_RATES = (0.00026, 0.00132)  # Observed 0.0005266..0.0008751.
+PRORES_4444_CONTENT_SIZE_RATES = (0.278, 0.845)  # Observed 0.55742..0.56333.
+H264_CONTENT_SIZE_RATES = (0.00316, 0.01137)  # Observed 0.0063234..0.0075772.
+LANDSCAPE_CONTENT = ContentArea(NATIVE_SIZE)
+PORTRAIT_CONTENT = ContentArea(NATIVE_SIZE)
+
+PLUGIN = LayoutPlugin(
+    ExportLayout.ORBIT,
+    LANDSCAPE_POSITIONS,
+    PORTRAIT_POSITIONS,
+    OrbitRenderer,
+    landscape_content=LANDSCAPE_CONTENT,
+    portrait_content=PORTRAIT_CONTENT,
+    prores_4444_size_rates={
+        ExportExtent.FULL_FRAME: PRORES_4444_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: PRORES_4444_CONTENT_SIZE_RATES,
+    },
+    h264_size_rates={
+        ExportExtent.FULL_FRAME: H264_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: H264_CONTENT_SIZE_RATES,
+    },
+)
