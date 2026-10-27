@@ -231,7 +231,9 @@ resolved output/region sizes and the selected extent's codec rates.
 
 `OverlayRenderer` fixes the resolved geometry for its timeline. Content area checks
 the renderer's image size against metadata and returns the complete native image;
-a mismatch raises `ValueError`. Full frame scales to `render_size` as needed and
+a mismatch raises `ValueError`. Output dimensions and layout placement remain
+fixed throughout the export, independently of changing sample content.
+Full frame scales to `render_size` as needed and
 composes at `offset` on its canvas. Opaque output composites onto black.
 The ordered serial/parallel encoder pipe carries the native Content-area image;
 FFmpeg retains its size without geometric filters. Full frame retains its existing
@@ -295,7 +297,10 @@ force interpolation or independent orientation buffers.
 3. Add the module's `PLUGIN` to `registry.py`. The composer, preview gallery and
    encoder consume the registration without layout-specific branches.
 4. Verify registry coverage, region bounds, force directions, alpha and localized
-   text. Use representative video integration rather than a full option matrix.
+   text for supported formats/positions and English, German and French. Check
+   both export areas with changing content, longest labels and stroke/shadow/glow
+   extremes; native image bounds must not clip them. Use representative video
+   integration rather than a full option matrix.
    Regenerate the fixed-sample [Voltron Nevera reference](../EXPORT_LAYOUTS.md) to review
    intended design changes. Structural changes must preserve existing pixels.
 

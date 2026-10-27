@@ -25,8 +25,8 @@ chapter 9 retains decision status and rationale.
   spreadsheets or other analysis tools.
 - [Export sample data as JSON](user/JSON_EXPORT.md): app-shaped arrays with
   additional analysis data, or structured Analyzer JSON with shared time/quality.
-- [Choose an export layout](user/EXPORT_LAYOUTS.md): compare placement, read the
-  instruments and check landscape/portrait previews.
+- [Choose an export layout](user/EXPORT_LAYOUTS.md): compare placement and video
+  sizes, choose Full frame or Content area and read the instruments.
 - [Presets and batches](user/EXPORT_BATCHES.md): reuse settings, queue recordings
   and find results or handle failed jobs.
 
@@ -69,10 +69,6 @@ chapter 9 retains decision status and rationale.
 - [Release policy and native packages](development/RELEASE.md).
 - [Recording catalog and authorization](development/RECORDINGS.md),
   [recording reuse license](../tests/fixtures/real/README.md), [image reuse license](images/README.md).
-
-## Implementation plan
-
-- [Full-frame and bounded overlay export](requirements/BOUNDED_OVERLAY_EXPORT.md).
 
 ## Ownership
 
