@@ -254,6 +254,12 @@ plugins show a fixed area label; Content area hides placement without discarding
 Settings and review display resolved dimensions and matching codec/extent estimates.
 Layout format selects the arrangement, not the native Content-area aspect ratio.
 
+Saved presets and bound jobs serialize the extent's enum value. Omitted `extent`
+uses `FULL_FRAME`; supplied unsupported combinations remain invalid, including
+HUD with `CONTENT_AREA`. Applying a preset restores both area and retained placement.
+Batch execution uses the job's immutable settings with the same geometry resolver;
+later assistant/preset edits do not change it.
+
 ## Design constants
 
 Each profile starts with named uppercase constants and short English descriptions.

@@ -12,7 +12,8 @@ from pathlib import Path
 from threading import Event
 
 from PySide6.QtCore import QEvent, QObject, QRunnable, QThreadPool, Qt, Signal, Slot
-from ride_forces_analyzer.rendering.model import PROFILES, VideoAspect
+from ride_forces_analyzer.rendering.model import PROFILES, VideoAspect, ExportExtent
+from ride_forces_analyzer.rendering.layouts import resolve_geometry
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -385,9 +386,23 @@ class BatchDialog(QDialog):
             return
         self.table.setRowCount(len(batch.jobs))
         for row, job in enumerate(batch.jobs):
+            settings = job.preset.settings
+            width, height = resolve_geometry(settings).output_size
             values = (
                 job.ride,
-                f"{job.preset.name} / {tr(dict(PROFILES)[job.preset.settings.layout])} / {tr('Portrait' if job.preset.settings.aspect is VideoAspect.PORTRAIT else 'Landscape')}",
+                " / ".join(
+                    (
+                        job.preset.name,
+                        tr(dict(PROFILES)[settings.layout]),
+                        tr("Portrait" if settings.aspect is VideoAspect.PORTRAIT else "Landscape"),
+                        tr(
+                            "Content area"
+                            if settings.extent is ExportExtent.CONTENT_AREA
+                            else "Full frame",
+                        ),
+                        f"{width}×{height}",
+                    ),
+                ),
                 f"{job.first_sample}–{job.last_sample}",
                 tr("{0} samples", job.preset.smoothing_window),
                 str(job.recording_path),

@@ -10,7 +10,7 @@ The steps below use the English interface labels.
 ## Save and reuse a preset
 
 1. Open a recording and click **Export video…**.
-2. Choose your layout, position, video format, language, output type, frame rate, visible
+2. Choose your layout, layout format, export area, position, language, output type, frame rate, visible
    time window, smoothing and range.
 3. Click the disk icon with a plus (tooltip: **Save as…**) in the preset area and give the setup a unique name.
 4. For another export, select that preset to load it immediately.
@@ -19,8 +19,11 @@ To change a saved preset, load it, adjust the settings and click the disk icon
 (tooltip: **Update selected**).
 To remove one, select it and click the trash icon (tooltip: **Delete preset**).
 Saved batch jobs keep their settings.
-Presets remember their own position, frame rate and overlay language, independently of
+Presets remember their own export area, position, frame rate and overlay language, independently of
 the application's defaults.
+Loading a Content-area preset hides Position; its saved placement returns if you
+switch to Full frame. HUD always uses Full frame. Presets saved without an export-area
+choice also use Full frame.
 
 ## Queue the current export
 
@@ -39,11 +42,13 @@ the old job and add it again.
 3. Select one or more saved presets.
 4. Choose **Start/end markers for each recording** or **Entire recording**.
 5. Click **Add recordings × presets…** and select your `.forces` or `.zforces` files.
-6. Check the job table, including the recording, range, smoothing and video format.
+6. Check the job table, including the recording, range, smoothing, layout format,
+   export area and output dimensions.
 
 Every selected recording is paired with every selected preset. For example,
 three recordings and two presets create six videos. Portrait and landscape jobs
-can share a batch. **Remove selected jobs** saves the removal immediately.
+can share a batch, as can Full-frame and Content-area exports.
+Each job keeps its own output size. **Remove selected jobs** saves the removal immediately.
 You can manage saved batches without opening a recording first.
 
 ## Run the queue and find the results

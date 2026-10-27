@@ -411,6 +411,7 @@ class ExportForm(QWidget):
         self.layout_profile.setCurrentIndex(
             next(i for i, (key, _) in enumerate(PROFILES) if key == settings.layout),
         )
+        self.extent.setCurrentIndex(self.extent.findData(settings.extent.value))
         plugin = registry.PLUGINS[settings.layout]
         positions = plugin.positions(settings.aspect)
         self.position.setCurrentIndex(

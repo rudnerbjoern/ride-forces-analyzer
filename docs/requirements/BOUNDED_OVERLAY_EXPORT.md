@@ -1,9 +1,9 @@
 # Full-frame and bounded overlay export
 
-Status: steps 1–6 accepted by the owner; steps 7–8 pending.
+Status: steps 1–7 accepted by the owner; step 8 pending.
 Native Content-area geometry and rendering/encoding are implemented and locally validated.
-Geometry-aware previews and the localized assistant area selection are available;
-preset/job restoration and batch integration remain planned.
+Geometry-aware previews, localized assistant controls and preset/job area restoration
+are available. Batch execution uses each saved job's bound export area.
 
 ## Requirements
 

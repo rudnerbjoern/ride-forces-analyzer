@@ -229,6 +229,8 @@ sequenceDiagram
 ```
 
 Videos run sequentially; their frames use the local render-job preference.
+Each job replays its saved export area through the shared geometry/encoding path,
+independently of current assistant settings and later preset edits.
 Per-job failures allow later jobs to continue. Cancellation skips pending jobs and
 preserves completed videos. Closing the dialog requests cancellation and waits for
 the active encoder. Definitions survive restart; automatic resume is outside scope.
