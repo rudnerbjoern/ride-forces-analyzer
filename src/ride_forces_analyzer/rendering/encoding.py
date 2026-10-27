@@ -19,8 +19,8 @@ from threading import Event
 from time import monotonic
 from uuid import uuid4
 
-from .layouts import export_region
-from .model import VideoOutput, ExportTimeline, frame_rate_value
+from .layouts import resolve_geometry
+from .model import ExportExtent, VideoOutput, ExportTimeline, frame_rate_value
 from .parallel import render_region_bytes
 from .progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.runtime.cpu_resources import effective_render_jobs
@@ -122,11 +122,19 @@ def encoder_command(
         if use_gpu and transparent
         else []
     )
-    x, y, width, height = export_region(timeline.settings)
-    canvas_width, canvas_height = timeline.settings.dimensions
-    filters = f"pad={canvas_width}:{canvas_height}:{x}:{y}:color=black@{alpha}"
+    geometry = resolve_geometry(timeline.settings)
+    x, y = geometry.offset
+    width, height = geometry.render_size
+    canvas_width, canvas_height = geometry.output_size
+    filters = (
+        [f"pad={canvas_width}:{canvas_height}:{x}:{y}:color=black@{alpha}"]
+        if timeline.settings.extent is ExportExtent.FULL_FRAME
+        else []
+    )
     if use_gpu and transparent:
-        filters += ",setparams=colorspace=bt709,hwupload,scale_vulkan=format=yuva444p10le:out_range=tv,setparams=colorspace=bt709"
+        filters.append(
+            "setparams=colorspace=bt709,hwupload,scale_vulkan=format=yuva444p10le:out_range=tv,setparams=colorspace=bt709",
+        )
     return [
         str(ffmpeg),
         "-hide_banner",
@@ -146,8 +154,7 @@ def encoder_command(
         "-i",
         "pipe:0",
         "-an",
-        "-vf",
-        filters,
+        *(["-vf", ",".join(filters)] if filters else []),
         "-metadata",
         "comment="
         + json.dumps(

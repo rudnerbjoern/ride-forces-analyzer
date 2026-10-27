@@ -14,6 +14,7 @@ from ride_forces_analyzer.runtime import cpu_resources
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering import parallel
 from ride_forces_analyzer.rendering.model import (
+    ExportExtent,
     VideoOutput,
     ExportLayout,
     VideoAspect,
@@ -34,7 +35,7 @@ from ride_forces_analyzer.rendering.model import (
         ),
         ExportSettings(layout=ExportLayout.RIBBON, output=VideoOutput.OPAQUE),
         ExportSettings(layout=ExportLayout.CORNERS, aspect=VideoAspect.PORTRAIT),
-        ExportSettings(layout=ExportLayout.ORBIT),
+        ExportSettings(layout=ExportLayout.ORBIT, extent=ExportExtent.CONTENT_AREA),
         ExportSettings(
             layout=ExportLayout.COLUMN,
             aspect=VideoAspect.LANDSCAPE,

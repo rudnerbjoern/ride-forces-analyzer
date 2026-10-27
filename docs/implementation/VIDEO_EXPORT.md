@@ -299,15 +299,23 @@ The owner-provided HUD references use 1920×1080 and 60000/1001 fps:
 | Voltron Nevera | ProRes 4444 MOV | `prores_ks_vulkan` | 10,353 | 16,397,302,310 |
 | Kraken         | H.264 MP4       | `libx264`          | 9,862  | 17,181,504     |
 
-The ProRes observations span 0.734–0.764 bytes/pixel/frame; their frame-weighted
+The HUD ProRes observations span 0.734–0.764 bytes/pixel/frame; their frame-weighted
 mean is 0.74957, rounded to 0.75 with a ±10% planning allowance.
-H.264 uses 0.00085 with ±50%.
-These allowances are not guaranteed bounds. Rates include container overhead
-and scale by pixel count and encoded frames.
-HUD H.264 uses its CPU reference for both GPU preferences; NVENC output has not
-been measured. GPU availability is not probed for estimation. Other scenes,
-portrait output and ProRes CPU fallback remain unqualified by these references.
-CPU-only HUD ProRes and other layouts retain their existing heuristics.
+HUD H.264 uses 0.00085 with ±50%. These full-ride calibration ranges are unchanged
+by short test exports and apply to both CPU and GPU preferences. Other scenes and
+portrait output remain unqualified by these references.
+
+The other plugins own separate codec/extent planning ranges derived from ten-frame,
+50-fps Manta/Voltron CPU exports in its supported formats. They include container
+overhead and an outward-rounded half-minimum / 1.5-times-maximum allowance.
+Short H.264 clips include
+first-frame overhead and do not predict full-ride compression precisely.
+The plugin constants retain source intervals, dimensions, encoder settings and
+measurement limits. Estimates scale by resolved output pixels and frame count
+for either backend preference; estimation does not probe hardware. Other scenes,
+durations, languages and unmeasured GPU encoders remain unqualified. These are
+approximate ranges, not guaranteed bounds. A missing codec/extent entry uses the
+shared heuristic; no rate is borrowed from a different extent.
 
 ### Encoding and FFmpeg
 
@@ -321,8 +329,13 @@ CPU-only HUD ProRes and other layouts retain their existing heuristics.
   Batch videos remain sequential; their frames use the selected render-job count.
 - Probe actual NVIDIA Vulkan ProRes with alpha / NVENC H.264; otherwise CPU fallback.
   Display selected backend. GPU ProRes never receives CPU `qscale`.
-- Pipe only the selected layout region; encoder pads remaining transparent/opaque
-  canvas to selected dimensions.
+- Frame generation and encoding resolve the same fixed geometry. Content area pipes
+  the complete native layout image, including existing empty pixels. Renderer and
+  encoder do not crop, scale, add margins/padding or round dimensions; output size
+  equals input size. MOV retains transparency; MP4 uses a black background.
+  Full frame retains its scaling, canvas and placement. Column's
+  Content area remains exactly 960 × 2160 without padding; HUD remains Full frame.
+  Content-area assistant selection and preview integration are planned.
 - The save dialog confirms replacement of existing videos. An explicitly confirmed
   replacement atomically publishes the completed staged video on the same filesystem;
   cancellation or failure preserves the original. Other callers and batches default

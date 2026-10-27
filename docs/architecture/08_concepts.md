@@ -125,7 +125,10 @@ own catalog and theme details.
 ## Rendering and persistence
 
 Layouts own named positions and geometry; previews, composition and encoder
-padding share the same regions. HUD exports native HD; other layouts export 4K.
+padding share centrally resolved geometry. Full frame retains native HD for HUD
+and 4K for other layouts. Content-area frame generation/encoding retain the complete
+native layout image, including empty pixels, without cropping, scaling or added padding;
+HUD admits Full frame only. Content-area preview/UI integration remains planned.
 Previews use the exact cursor, while video frames follow an independent
 deterministic clock. The 23.976 and 59.94 options retain exact `24000/1001` and
 `60000/1001` timing.

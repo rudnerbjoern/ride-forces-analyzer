@@ -47,14 +47,12 @@ def estimate_size_bytes(
         plugin.h264_size_rates.get(settings.extent)
         if settings.output == VideoOutput.OPAQUE
         else plugin.prores_4444_size_rates.get(settings.extent)
-        if settings.prefer_gpu
-        else None
     )
     if rates is not None:
         low_rate, high_rate = rates
         pixels = frames * width * height
         return ceil(pixels * low_rate), ceil(pixels * high_rate)
-    _, _, overlay_width, overlay_height = geometry.crop
+    overlay_width, overlay_height = geometry.render_size
     base, overlay = (
         (PRORES_BASE, PRORES_OVERLAY)
         if settings.output == VideoOutput.TRANSPARENT

@@ -14,7 +14,7 @@ from threading import Event
 from typing import Literal, cast
 from unittest.mock import patch
 
-from PIL import Image, ImageColor, ImageDraw
+from PIL import Image, ImageChops, ImageColor, ImageDraw
 import pytest
 
 from ride_forces_analyzer.analysis.orientation import orientation_degrees
@@ -24,6 +24,7 @@ from ride_forces_analyzer.rendering.frames import COLUMN_X, WIDTH, OverlayRender
 from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.rendering.model import (
+    ExportExtent,
     VideoOutput,
     FrameRate,
     VideoAspect,
@@ -32,7 +33,13 @@ from ride_forces_analyzer.rendering.model import (
     PROFILES,
     prepare_export,
 )
-from ride_forces_analyzer.rendering.layouts import COLORS, REGIONS, create_renderer, lateral_x
+from ride_forces_analyzer.rendering.layouts import (
+    COLORS,
+    REGIONS,
+    create_renderer,
+    lateral_x,
+    resolve_geometry,
+)
 from ride_forces_analyzer.rendering.layouts import orbit
 from ride_forces_analyzer.rendering.layouts.common import ACCELERATION_COLOR, BRAKING_COLOR
 from ride_forces_analyzer.rendering.layouts.charts import ChartRenderer
@@ -196,17 +203,104 @@ def test_cancel_and_existing_destination_preserve_files(
 
 
 @pytest.mark.parametrize(
-    "layout,mode,aspect,prefer_gpu,language",
+    "layout,mode,aspect,prefer_gpu,language,extent",
     [
-        (ExportLayout.COLUMN, VideoOutput.TRANSPARENT, VideoAspect.LANDSCAPE, False, "en"),
-        (ExportLayout.RIBBON, VideoOutput.TRANSPARENT, VideoAspect.LANDSCAPE, True, "en"),
-        (ExportLayout.CORNERS, VideoOutput.TRANSPARENT, VideoAspect.PORTRAIT, False, "de"),
-        (ExportLayout.ORBIT, VideoOutput.TRANSPARENT, VideoAspect.PORTRAIT, True, "en"),
-        (ExportLayout.HUD, VideoOutput.OPAQUE, VideoAspect.LANDSCAPE, False, "en"),
-        (ExportLayout.COLUMN, VideoOutput.OPAQUE, VideoAspect.LANDSCAPE, True, "de"),
-        (ExportLayout.ORBIT, VideoOutput.OPAQUE, VideoAspect.PORTRAIT, False, "en"),
-        (ExportLayout.RIBBON, VideoOutput.OPAQUE, VideoAspect.PORTRAIT, True, "en"),
-        (ExportLayout.HUD, VideoOutput.TRANSPARENT, VideoAspect.PORTRAIT, False, "fr"),
+        (
+            ExportLayout.COLUMN,
+            VideoOutput.TRANSPARENT,
+            VideoAspect.LANDSCAPE,
+            False,
+            "en",
+            ExportExtent.FULL_FRAME,
+        ),
+        (
+            ExportLayout.RIBBON,
+            VideoOutput.TRANSPARENT,
+            VideoAspect.LANDSCAPE,
+            True,
+            "en",
+            ExportExtent.FULL_FRAME,
+        ),
+        (
+            ExportLayout.CORNERS,
+            VideoOutput.TRANSPARENT,
+            VideoAspect.PORTRAIT,
+            False,
+            "de",
+            ExportExtent.FULL_FRAME,
+        ),
+        (
+            ExportLayout.ORBIT,
+            VideoOutput.TRANSPARENT,
+            VideoAspect.PORTRAIT,
+            True,
+            "en",
+            ExportExtent.FULL_FRAME,
+        ),
+        (
+            ExportLayout.HUD,
+            VideoOutput.OPAQUE,
+            VideoAspect.LANDSCAPE,
+            False,
+            "en",
+            ExportExtent.FULL_FRAME,
+        ),
+        (
+            ExportLayout.COLUMN,
+            VideoOutput.OPAQUE,
+            VideoAspect.LANDSCAPE,
+            True,
+            "de",
+            ExportExtent.FULL_FRAME,
+        ),
+        (
+            ExportLayout.ORBIT,
+            VideoOutput.OPAQUE,
+            VideoAspect.PORTRAIT,
+            False,
+            "en",
+            ExportExtent.FULL_FRAME,
+        ),
+        (
+            ExportLayout.RIBBON,
+            VideoOutput.OPAQUE,
+            VideoAspect.PORTRAIT,
+            True,
+            "en",
+            ExportExtent.FULL_FRAME,
+        ),
+        (
+            ExportLayout.HUD,
+            VideoOutput.TRANSPARENT,
+            VideoAspect.PORTRAIT,
+            False,
+            "fr",
+            ExportExtent.FULL_FRAME,
+        ),
+        (
+            ExportLayout.ORBIT,
+            VideoOutput.TRANSPARENT,
+            VideoAspect.LANDSCAPE,
+            False,
+            "en",
+            ExportExtent.CONTENT_AREA,
+        ),
+        (
+            ExportLayout.COLUMN,
+            VideoOutput.TRANSPARENT,
+            VideoAspect.LANDSCAPE,
+            False,
+            "en",
+            ExportExtent.CONTENT_AREA,
+        ),
+        (
+            ExportLayout.RIBBON,
+            VideoOutput.OPAQUE,
+            VideoAspect.PORTRAIT,
+            False,
+            "de",
+            ExportExtent.CONTENT_AREA,
+        ),
     ],
 )
 def test_native_encoder_produces_layout_resolution_with_verified_alpha(
@@ -222,7 +316,8 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
         ExportLayout.ORBIT,
     ],
     aspect: VideoAspect,
-    language: Literal["en", "de"],
+    language: Literal["en", "de", "fr"],
+    extent: ExportExtent,
 ) -> None:
     # Cover codec × aspect × backend preference once; pure tests own layout/language geometry.
     # Local integration is explicit; clean CI without FFmpeg still runs all pure contracts.
@@ -239,6 +334,7 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
         layout=layout,
         aspect=aspect,
         language=Language(language),
+        extent=extent,
     )
     timeline = prepare_export(manta.analysis, settings, 3600, 3603)
     output = export_directory / ("overlay.mov" if mode == VideoOutput.TRANSPARENT else "opaque.mp4")
@@ -276,7 +372,8 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
         text=True,
     )
     stream = json.loads(probe.stdout)["streams"][0]
-    assert (stream["width"], stream["height"]) == settings.dimensions
+    geometry = resolve_geometry(settings)
+    assert (stream["width"], stream["height"]) == geometry.output_size
     assert stream["r_frame_rate"] == ("60000/1001" if settings.fps == "60000/1001" else "25/1")
     assert int(stream["nb_frames"]) == timeline.frame_count
     assert stream["codec_name"] == ("prores" if mode == VideoOutput.TRANSPARENT else "h264")
@@ -298,7 +395,13 @@ def test_native_encoder_produces_layout_resolution_with_verified_alpha(
         capture_output=True,
         check=True,
     )
-    image = Image.frombytes("RGBA", settings.dimensions, result.stdout)
+    image = Image.frombytes("RGBA", geometry.output_size, result.stdout)
+    expected = OverlayRenderer(timeline).render_frame(0)
+    alpha_difference = ImageChops.difference(image.getchannel("A"), expected.getchannel("A"))
+    maximum_alpha_error = alpha_difference.getextrema()[1]
+    assert isinstance(maximum_alpha_error, (int, float)) and maximum_alpha_error <= 2
+    if extent is ExportExtent.CONTENT_AREA:
+        return
     left = image.getpixel((100, 100))
     from ride_forces_analyzer.rendering.layouts import export_region
 

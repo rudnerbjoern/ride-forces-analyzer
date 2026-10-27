@@ -56,9 +56,10 @@ def canvas_dimensions(settings: ExportSettings) -> tuple[int, int]:
 
 
 def export_region(settings: ExportSettings) -> Region:
-    """Return the selected layout region as x, y, width and height in pixels.
+    """Return the selected Full-frame layout region as x, y, width and height.
 
-    Content area uses the format's canonical render region, ignoring retained placement.
+    Content area resolves the default placement, ignoring retained position;
+    resolve_geometry provides its independent native output dimensions.
 
     Args:
         settings: Validated settings controlling this operation.
@@ -84,14 +85,14 @@ def export_region(settings: ExportSettings) -> Region:
 
 
 def resolve_geometry(settings: ExportSettings) -> ExportGeometry:
-    """Resolve fixed crop, render size, padding and output size from plugin metadata.
+    """Resolve native content size or Full-frame scaling and placement from metadata.
 
     Args:
         settings: Typed layout, aspect, extent and optional retained placement.
 
     Returns:
-        Immutable pixel geometry. Content-area padding starts at the declared margin;
-        ten-pixel rounding adds pixels only to the right and bottom.
+        Immutable pixel geometry. Content area retains exact native dimensions,
+        with zero offset and no cropping, scaling, rounding or padding.
 
     Raises:
         ValueError: Format, extent or placement is unsupported, or dimensions are not even.
@@ -108,15 +109,13 @@ def resolve_geometry(settings: ExportSettings) -> ExportGeometry:
         assert content is not None
         geometry = ExportGeometry(
             content.dimensions,
-            (width, height),
-            content.bounds,
-            (content.margin, content.margin),
+            content.dimensions,
+            (0, 0),
         )
     else:
         geometry = ExportGeometry(
             canvas_dimensions(settings),
             (width, height),
-            (0, 0, width, height),
             (x, y),
         )
     if any(size % 2 for size in geometry.output_size):

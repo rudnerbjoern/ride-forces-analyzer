@@ -10,7 +10,6 @@ from ride_forces_analyzer.rendering.layouts.contracts import (
     ContentArea,
     LayoutPosition,
     LayoutPositions,
-    Region,
 )
 from ride_forces_analyzer.rendering.model import (
     ExportExtent,
@@ -38,16 +37,15 @@ def test_full_frame_geometry_preserves_registered_canvas_and_placement(
         assert settings.extent is ExportExtent.FULL_FRAME
         assert geometry.output_size == settings.dimensions
         assert geometry.render_size == (width, height)
-        assert geometry.crop == (0, 0, width, height)
         assert geometry.offset == (x, y)
 
 
 @pytest.mark.parametrize(
     "layout,landscape,portrait",
     [
-        (ExportLayout.RIBBON, (3110, 400), (1720, 2280)),
-        (ExportLayout.CORNERS, (880, 1160), (1720, 2280)),
-        (ExportLayout.ORBIT, (830, 830), (1220, 1220)),
+        (ExportLayout.RIBBON, (3072, 360), (840, 1120)),
+        (ExportLayout.CORNERS, (840, 1120), (840, 1120)),
+        (ExportLayout.ORBIT, (800, 800), (800, 800)),
     ],
 )
 def test_content_geometry_matches_approved_dimensions_and_ignores_retained_position(
@@ -62,11 +60,9 @@ def test_content_geometry_matches_approved_dimensions_and_ignores_retained_posit
         content = plugin.content_area(aspect)
         assert content is not None
         assert geometry.output_size == expected
-        assert geometry.crop == content.bounds
-        assert geometry.offset == (16, 16)
-        assert all(size % 10 == 0 and size % 2 == 0 for size in expected)
-        assert geometry.output_size[0] - geometry.crop[2] - geometry.offset[0] >= 16
-        assert geometry.output_size[1] - geometry.crop[3] - geometry.offset[1] >= 16
+        assert geometry.render_size == content.dimensions == expected
+        assert geometry.offset == (0, 0)
+        assert all(size % 2 == 0 for size in expected)
         for position in (None, *LayoutPosition):
             retained = replace(settings, position=position)
             assert retained.position == position
@@ -89,13 +85,12 @@ def test_landscape_only_rectangle_preserves_4k_height_without_any_padding() -> N
     assert plugin.supported_aspects == frozenset((VideoAspect.LANDSCAPE,))
     assert plugin.portrait is None
     assert not plugin.supported_extents(VideoAspect.PORTRAIT)
-    assert plugin.landscape_content == ContentArea((0, 0, 960, 2160), margin=0)
+    assert plugin.landscape_content == ContentArea((960, 2160))
     for extent in ExportExtent:
         settings = ExportSettings(layout=plugin.key, extent=extent)
         geometry = resolve_geometry(settings)
         assert geometry.render_size == (960, 2160)
         assert geometry.output_size[1] == settings.dimensions[1] == 2160
-        assert geometry.crop == (0, 0, 960, 2160)
         if extent is ExportExtent.CONTENT_AREA:
             assert geometry.output_size == (960, 2160)
             assert geometry.offset == (0, 0)
@@ -106,36 +101,32 @@ def test_landscape_only_rectangle_preserves_4k_height_without_any_padding() -> N
 
 
 @pytest.mark.parametrize(
-    "bounds,margin,expected",
-    [
-        ((0, 0, 796, 796), 16, (830, 830)),
-        ((2, 3, 798, 399), 16, (830, 440)),
-        ((0, 0, 10, 20), 0, (10, 20)),
-        ((0, 0, 11, 21), 0, (20, 30)),
-    ],
+    "dimensions",
+    [(3072, 360), (840, 1120), (800, 800), (12, 22)],
 )
-def test_margin_then_rounding_keeps_exact_multiples_and_never_shrinks(
-    bounds: Region,
-    margin: int,
-    expected: tuple[int, int],
+def test_native_dimensions_retain_exact_size_without_rounding(
+    dimensions: tuple[int, int],
 ) -> None:
-    assert ContentArea(bounds, margin).dimensions == expected
+    assert ContentArea(dimensions).dimensions == dimensions
 
 
-@pytest.mark.parametrize("margin", [-1, True, 1.5])
-def test_invalid_content_margins_are_rejected(margin: object) -> None:
-    with pytest.raises(ValueError, match="Content margin"):
-        ContentArea((0, 0, 1, 1), cast(int, margin))
+@pytest.mark.parametrize(
+    "dimensions",
+    [(0, 800), (-2, 800), (801, 800), (800, 803), (False, 800), (800, 1.5), [800, 800], (800,)],
+)
+def test_invalid_native_dimensions_are_rejected(dimensions: object) -> None:
+    with pytest.raises(ValueError, match="Native content dimensions"):
+        ContentArea(cast(tuple[int, int], dimensions))
 
 
-def test_plugin_validates_crop_bounds_extent_rates_and_format_capabilities(
+def test_plugin_validates_native_metadata_extent_rates_and_format_capabilities(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     plugin = registry.PLUGINS[ExportLayout.ORBIT]
-    with pytest.raises(ValueError, match="canonical render region"):
-        replace(plugin, landscape_content=ContentArea((799, 0, 2, 1)))
+    with pytest.raises(ValueError, match="supported format"):
+        replace(plugin, portrait=None)
     with pytest.raises(ValueError, match="typed ContentArea"):
-        replace(plugin, landscape_content=cast(ContentArea, (0, 0, 1, 1)))
+        replace(plugin, landscape_content=cast(ContentArea, (800, 800)))
     rates = {ExportExtent.CONTENT_AREA: (0.1, 0.2)}
     changed = replace(plugin, landscape_content=None, prores_4444_size_rates=rates)
     rates[ExportExtent.CONTENT_AREA] = (0.2, 0.4)
@@ -155,7 +146,7 @@ def test_plugin_validates_crop_bounds_extent_rates_and_format_capabilities(
             aspect=VideoAspect.PORTRAIT,
             extent=ExportExtent.CONTENT_AREA,
         ),
-    ).output_size == (1220, 1220)
+    ).output_size == (800, 800)
     with pytest.raises(ValueError, match="supported typed export extent"):
         replace(plugin, prores_4444_size_rates={cast(ExportExtent, "content_area"): (0.1, 0.2)})
     with pytest.raises(ValueError, match="extent mapping"):

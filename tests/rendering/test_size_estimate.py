@@ -50,9 +50,11 @@ def test_single_sample_is_rounded_to_full_output_frame() -> None:
         (ExportLayout.HUD, (2_073_600, 4_147_200)),
     ],
 )
+@pytest.mark.parametrize("prefer_gpu", [False, True])
 def test_estimate_uses_registered_layout_rates(
     layout: ExportLayout,
     expected: tuple[int, int],
+    prefer_gpu: bool,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     plugin = replace(
@@ -61,7 +63,7 @@ def test_estimate_uses_registered_layout_rates(
         h264_size_rates={ExportExtent.FULL_FRAME: (0.01, 0.02)},
     )
     monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
-    settings = ExportSettings(layout=layout, fps=50)
+    settings = ExportSettings(layout=layout, fps=50, prefer_gpu=prefer_gpu)
     assert estimate_size_bytes(settings, 10, 50) == expected
     assert estimate_size_bytes(replace(settings, output=VideoOutput.OPAQUE), 10, 50) == (
         expected[0] // 10,
@@ -82,10 +84,10 @@ def test_content_estimates_use_their_own_geometry_and_codec_rates(
     )
     monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
     settings = ExportSettings(layout=plugin.key, extent=ExportExtent.CONTENT_AREA, fps=50)
-    assert estimate_size_bytes(settings, 10, 50) == (68_890, 137_780)
+    assert estimate_size_bytes(settings, 10, 50) == (64_000, 128_000)
     assert estimate_size_bytes(replace(settings, output=VideoOutput.OPAQUE), 10, 50) == (
-        6_889,
-        13_778,
+        6_400,
+        12_800,
     )
     plugin = replace(plugin, prores_4444_size_rates={ExportExtent.FULL_FRAME: (0.1, 0.2)})
     monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
@@ -118,3 +120,4 @@ def test_hud_estimate_tracks_measured_exports(
     low, high = estimate_size_bytes(settings, sample_count, 50)
     assert measured_bytes * (1 - tolerance) <= low < measured_bytes < high
     assert high <= measured_bytes * (1 + tolerance)
+    assert estimate_size_bytes(replace(settings, prefer_gpu=False), sample_count, 50) == (low, high)

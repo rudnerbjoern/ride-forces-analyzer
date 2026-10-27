@@ -154,8 +154,8 @@ def test_layout_owns_positions_sizes_and_defaults_independently_per_format() -> 
         PLUGINS[ExportLayout.ORBIT],
         landscape=landscape,
         portrait=portrait,
-        landscape_content=ContentArea((0, 0, 30, 40)),
-        portrait_content=ContentArea((0, 0, 300, 400)),
+        landscape_content=ContentArea((30, 40)),
+        portrait_content=ContentArea((300, 400)),
     )
     regions[LayoutPosition.TOP] = (0, 0, 1, 1)
     assert plugin.landscape.regions[LayoutPosition.TOP] == (10, 20, 30, 40)

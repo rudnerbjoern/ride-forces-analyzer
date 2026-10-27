@@ -88,6 +88,13 @@ default. Each layout declares its Full-frame rates and, where supported, separat
 `PRORES_4444_CONTENT_SIZE_RATES` / `H264_CONTENT_SIZE_RATES`. Missing/None entries
 use the shared planning heuristic; Full-frame rates never fill missing Content-area
 rates. Rates need not be configured for both codecs. No measurements are fabricated.
+The estimator uses the same codec/extent rates for CPU and GPU preferences without
+probing hardware. HUD retains only its full-ride calibration, unchanged by short
+test exports. Plugin comments retain encoder settings, source intervals, tested output
+sizes, observed rate ranges and limits. The other plugins' CPU planning ranges include container
+overhead from ten-frame Manta/Voltron exports in each supported format, rounded
+outward from half the minimum to 1.5 times the maximum. They do not qualify other
+recordings, durations, languages or GPU encoders.
 Rates must be finite, positive
 and ordered; a preferred time window must be within 1–60 seconds.
 
@@ -202,30 +209,35 @@ definitions. Their presence determines `supported_extents(aspect)`; HUD declares
 neither and admits Full frame only. Unsupported extents and raw-string enum inputs
 are rejected centrally, without identifying layouts by name.
 
-`ContentArea.bounds` is `(x, y, width, height)` inside the default region **after
-output scaling**; bounds must fit that region. `margin` is a nonnegative integer,
-16 for current cropped plugins except Column, whose margin is zero. Column uses
-its complete 960 × 2160 rectangle in landscape only; it never gains padding or
-extends the canvas beyond the 4K height. The final size adds the margin on both sides and rounds up
-to multiples of ten. Extra pixels go to the right/bottom; content is never scaled
-to achieve rounding. Crop and output size are independent of retained placement.
+`ContentArea.dimensions` is the renderer's exact native `(width, height)`, including
+layout-owned empty pixels. Both must be positive even integers. Content area never
+crops, scales, adds margins/padding or rounds dimensions. Native size is independent
+of Full-frame placement/scaling: Ribbon exports 3072 × 360 landscape or 840 × 1120
+portrait, Corners 840 × 1120 and G-Orbit 800 × 800 in either format. Column exports
+960 × 2160 in landscape only. Invalid metadata is rejected rather than padded.
 
 `resolve_geometry(settings)` returns an immutable `ExportGeometry`:
 
 - `output_size`: final dimensions, even for the supported codecs.
-- `render_size`: scaled layout region before cropping/composition.
-- `crop`: local `(x, y, width, height)` retained from that region.
-- `offset`: destination of the retained crop; margin for Content area, placement
-  for Full frame.
+- `render_size`: native Content-area image or scaled Full-frame layout region.
+- `offset`: `(0, 0)` for Content area, selected placement for Full frame.
 
-Example: landscape G-Orbit Content area resolves to `render_size=(800, 800)`,
-`crop=(2, 2, 796, 796)`, `offset=(16, 16)` and `output_size=(830, 830)`.
+Example: G-Orbit Content area resolves to `render_size=(800, 800)`,
+`offset=(0, 0)` and `output_size=(800, 800)` in either format.
 `ExportSettings.dimensions` remains the Full-frame reference canvas; use resolved
 geometry for extent-specific dimensions. File-size estimates already use the
-resolved output/crop and the selected extent's codec rates.
+resolved output/region sizes and the selected extent's codec rates.
 
-Content-area frame generation, encoding, previews and UI selection are planned
-integration steps. This geometry API does not make those output paths available yet.
+`OverlayRenderer` fixes the resolved geometry for its timeline. Content area checks
+the renderer's image size against metadata and returns the complete native image;
+a mismatch raises `ValueError`. Full frame scales to `render_size` as needed and
+composes at `offset` on its canvas. Opaque output composites onto black.
+The ordered serial/parallel encoder pipe carries the native Content-area image;
+FFmpeg retains its size without geometric filters. Full frame retains its existing
+scaling, placement, canvas padding and codec options. `render_sample` / `render_frame`
+use the same dimensions as the encoded output.
+
+Content-area preview integration and assistant selection remain planned.
 
 ## Design constants
 

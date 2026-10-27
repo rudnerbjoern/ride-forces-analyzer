@@ -25,7 +25,7 @@ class ExportExtent(StrEnum):
 
     Attributes:
         FULL_FRAME: Complete layout canvas with its selected placement.
-        CONTENT_AREA: Layout-owned content rectangle with margin and rounded padding.
+        CONTENT_AREA: Complete native layout image without scaling, cropping or padding.
     """
 
     FULL_FRAME = "full_frame"
@@ -50,41 +50,29 @@ def _validate_region(region: Region) -> None:
 
 @dataclass(frozen=True, slots=True)
 class ContentArea:
-    """Fixed crop and safety margin in the layout region's output pixel scale.
+    """Exact native layout dimensions for direct content-area encoding.
 
     Attributes:
-        bounds: Crop rectangle as local x, y, width and height after layout scaling.
-        margin: Minimum padding on every side; rounding adds pixels at right/bottom.
+        dimensions: Native width and height, including any layout-owned empty pixels.
 
     Raises:
-        ValueError: Bounds are invalid or the margin is not a nonnegative integer.
+        ValueError: Dimensions are not positive even integers supported by both codecs.
     """
 
-    bounds: Region
-    margin: int = 16
+    dimensions: tuple[int, int]
 
     def __post_init__(self) -> None:
-        """Validate fixed crop geometry and its minimum safety margin.
+        """Validate native dimensions without adding pixels or changing scale.
 
         Raises:
-            ValueError: Bounds are invalid or the margin is not a nonnegative integer.
+            ValueError: Dimensions are not two positive even integers.
         """
-        _validate_region(self.bounds)
-        if type(self.margin) is not int or self.margin < 0:
-            raise ValueError("Content margin must be a nonnegative integer")
-
-    @property
-    def dimensions(self) -> tuple[int, int]:
-        """Return crop plus margins, rounded upward to multiples of ten pixels.
-
-        Returns:
-            Final content-area width and height without changing content scale.
-        """
-        width, height = self.bounds[2:]
-        return (
-            ((width + 2 * self.margin + 9) // 10) * 10,
-            ((height + 2 * self.margin + 9) // 10) * 10,
-        )
+        if (
+            type(self.dimensions) is not tuple
+            or len(self.dimensions) != 2
+            or any(type(size) is not int or size <= 0 or size % 2 for size in self.dimensions)
+        ):
+            raise ValueError("Native content dimensions must be two positive even integers")
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,14 +81,12 @@ class ExportGeometry:
 
     Attributes:
         output_size: Final encoded width and height.
-        render_size: Layout region size before cropping or composition.
-        crop: Local x, y, width and height to retain from the rendered region.
-        offset: Destination x/y of the retained crop in the final output.
+        render_size: Native content size or scaled Full-frame layout region size.
+        offset: Full-frame destination x/y, or zero for native Content area.
     """
 
     output_size: tuple[int, int]
     render_size: tuple[int, int]
-    crop: Region
     offset: tuple[int, int]
 
 
@@ -286,8 +272,8 @@ class LayoutPlugin:
         portrait_canvas: Full-frame portrait dimensions in pixels.
         preferred_window_seconds: Time-window override when selecting the layout, or None.
         preview_invert_lateral: Lateral direction used for an unselected gallery preview.
-        landscape_content: Fixed landscape crop, or None when Content area is unsupported.
-        portrait_content: Fixed portrait crop, or None when Content area is unsupported.
+        landscape_content: Native landscape size, or None when Content area is unsupported.
+        portrait_content: Native portrait size, or None when Content area is unsupported.
         prores_4444_size_rates: Optional ProRes 4444 rates per extent; no cross-extent fallback.
         h264_size_rates: Optional H.264 rates per extent; no cross-extent fallback.
     """
@@ -348,10 +334,6 @@ class LayoutPlugin:
                     raise ValueError("Layout content requires a supported format")
                 if type(content) is not ContentArea:
                     raise ValueError("Layout content requires typed ContentArea metadata")
-                x, y, width, height = content.bounds
-                _, _, region_width, region_height = positions.regions[positions.default]
-                if x + width > region_width or y + height > region_height:
-                    raise ValueError("Layout content must fit within its canonical render region")
         window = self.preferred_window_seconds
         if window is not None and (
             type(window) not in (float, int) or not isfinite(window) or not 1 <= window <= 60
@@ -385,7 +367,7 @@ class LayoutPlugin:
             object.__setattr__(self, name, MappingProxyType(entries))
 
     def content_area(self, aspect: VideoAspect) -> ContentArea | None:
-        """Return the format's fixed crop metadata, if supported.
+        """Return the format's native content dimensions, if supported.
 
         Args:
             aspect: Typed landscape or portrait format.
@@ -438,7 +420,7 @@ class LayoutPlugin:
 
         Returns:
             Empty for unsupported formats; otherwise Full frame, plus Content area
-            when crop metadata exists for the format.
+            when native content dimensions exist for the format.
 
         Raises:
             ValueError: The aspect is not a VideoAspect member.

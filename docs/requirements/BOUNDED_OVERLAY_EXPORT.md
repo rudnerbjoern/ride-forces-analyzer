@@ -1,7 +1,8 @@
 # Full-frame and bounded overlay export
 
-Status: steps 1–3 accepted by the owner; steps 4–8 pending.
-Content-area export remains planned.
+Status: steps 1–4 accepted by the owner; steps 5–8 pending.
+Native Content-area geometry and rendering/encoding are implemented and locally validated.
+Preview, assistant and persistence integration remain planned.
 
 ## Requirements
 
@@ -11,27 +12,28 @@ Content-area export remains planned.
 - Four-panel column supports landscape only. Its Full frame remains 3840 × 2160;
   its rectangular Content area is exactly 960 × 2160, filling the complete 4K height.
   No safety margin, rescaling or canvas enlargement applies to this layout.
-- Content area exports only the required layout rectangle plus a safety margin;
-  preserve pixel scale, transparency/output mode, frame rate and encoding quality.
-- Measure all five layouts in landscape/portrait, including supported positions,
+- Content area exports the complete native layout image directly, including its
+  existing empty/transparent pixels. Preserve transparency/output mode, frame rate
+  and encoding quality.
+- Verify all five layouts in landscape/portrait, including supported positions,
   languages and changing content, text, strokes, shadows and glow.
-- Store validated bounds and margin in layout metadata. Start with a 16-pixel
-  margin at output resolution; increase where measurements require it. Column uses zero.
-- Keep dimensions and crop origin fixed throughout an export. No clipping,
+- Store exact native dimensions in layout metadata. Do not crop, scale, add safety
+  margins/padding or round dimensions. Both encoder input and output use these sizes.
+- Native dimensions must be positive even integers for the supported codecs.
+  Reject invalid metadata or renderer-size mismatches rather than changing images.
+- Keep dimensions fixed throughout an export. No clipping,
   frame-dependent resizing or movement.
-- For Content area, add the safety margin, then round each dimension up to the next
-  multiple of 10 pixels: `10 * ceil((content_dimension + 2 * margin) / 10)`.
-  Add remaining pixels on the right/bottom; never scale the content. Padding is
-  transparent for MOV and black for opaque MP4. Full-frame dimensions remain unchanged.
+- Content area uses no geometric FFmpeg filter. Opaque output retains its black
+  background. Full-frame scaling, placement and canvas dimensions remain unchanged.
 - Use the same geometry for frames, encoder input/output, layout thumbnails,
   main preview and export summary. Show the actual output dimensions.
 - Full-frame previews show the complete canvas and selected placement; Content area
-  previews show only the exported rectangle including its margin. HUD thumbnails
+  previews show the complete native layout image. HUD thumbnails
   always show the full canvas.
 - Layout, format or extent changes refresh previews. Preview backgrounds remain
   presentation-only. Content area must not be padded back to a full-frame video.
-- File-size estimates use the selected extent's resolved output dimensions,
-  active content and safety margin, including codec alignment; never assume a 4K canvas.
+- File-size estimates use the selected extent's exact output dimensions and active
+  content; never assume a 4K canvas for Content area.
 - Each plugin may supply codec-specific estimate rates for Full frame and Content area
   independently. Unmeasured combinations use a shared approximate fallback, not
   fabricated measurements or a simple proportional reduction of the full-frame file size.
@@ -42,8 +44,8 @@ Content-area export remains planned.
   the original full-frame placement is not represented by empty video pixels.
 - Reuse existing rendering/encoding boundaries; no new output format or dependency.
 - Preserve the existing plugin model: each layout owns its drawing functions,
-  bounds, margins, supported formats, positions and export-area capabilities.
-- No layout may depend on another layout. Reusable geometry, margin handling,
+  native dimensions, supported formats, positions and export-area capabilities.
+- No layout may depend on another layout. Reusable geometry,
   validation and rendering helpers belong to shared central implementations,
   usable by plugins and export consumers without duplicated logic.
 - Resolve capabilities through the common plugin contract. HUD declares Full-frame-only
@@ -51,27 +53,25 @@ Content-area export remains planned.
 
 ## Planned output dimensions
 
-Content-area sizes include a 16-pixel margin on each side and rounding up to 10 pixels,
-except the rectangular Column, which has no margin or added padding.
+Content-area sizes equal the layout renderer's complete native image.
 HUD retains its native Full-frame size.
 
 | Layout             | Landscape output | Portrait output |
 | ------------------ | ---------------- | --------------- |
-| Flow Ribbon        | 3110 × 400       | 1720 × 2280     |
-| Corner Instruments | 880 × 1160       | 1720 × 2280     |
-| G-Orbit            | 830 × 830        | 1220 × 1220     |
+| Flow Ribbon        | 3072 × 360       | 840 × 1120      |
+| Corner Instruments | 840 × 1120       | 840 × 1120      |
+| G-Orbit            | 800 × 800        | 800 × 800       |
 | Four-panel column  | 960 × 2160       | Unsupported     |
 | HUD (Full frame)   | 1920 × 1080      | 1080 × 1920     |
 
-Bounds use the existing output pixel scale. G-Orbit landscape uses its measured
-796 × 796 alpha rectangle; portrait resampling fills its 1188 × 1188 region.
-Other cropped layouts use their complete declared region. Column keeps its complete
-960 × 2160 rectangle without growing beyond the 4K height.
+Content-area sizes are independent of Full-frame placement/scaling. Portrait
+Content area does not enlarge the native image to its Full-frame region size.
+Column keeps its complete 960 × 2160 rectangle without growing beyond the 4K height.
 
 ## Export assistant
 
 - One dialog: presets/thumbnails above, settings left, large preview right.
-- Keep Force display and Encoding sections; no editable safety-margin field.
+- Keep Force display and Encoding sections.
 - Export settings order and visibility:
 
 | Order | Property          | Full frame                             | Content area                       |
@@ -80,7 +80,7 @@ Other cropped layouts use their complete declared region. Column keeps its compl
 | 2     | Layout format     | Landscape / portrait                   | Landscape / portrait               |
 | 3     | Export area       | Full frame selected                    | Content area selected              |
 | 4     | Position          | Supported placements                   | Hidden; ignored by output/previews |
-| 5     | Output dimensions | Read-only canvas size                  | Read-only bounds including margin  |
+| 5     | Output dimensions | Read-only canvas size                  | Read-only native dimensions        |
 | 6     | Output            | Transparent MOV / opaque MP4           | Same choices                       |
 | 7     | Overlay language  | Select                                 | Select                             |
 | 8     | Frame rate        | Select                                 | Select                             |
@@ -106,18 +106,26 @@ measurement tables, images and videos in `.tmp/`; no separate historical reports
    Resolve boundary violations with behavior-preserving changes limited to this scope.
    Acceptance: concise dependency/ownership findings, any required corrections and
    focused regression checks; owner confirms the existing plugin boundaries are sound.
-2. **Measure bounds.** Measure supported layout/format variants and safety margins.
+2. **Verify native output.** Verify supported layout/format variants and native sizes.
    Acceptance: dimension table and boundary previews, including text/effect extremes;
    HUD remains full-frame. No application changes.
 3. **Model geometry.** Extend the existing plugin contract with typed extent capabilities,
    layout-owned geometry and extent/codec-specific estimate rates; implement common
    resolution/validation centrally.
-   Acceptance: resolved-size examples and focused contract tests for fixed bounds,
-   margins, rounding up to 10 pixels, codec alignment, position independence and HUD restrictions. Review
+   Acceptance: resolved-size examples and focused contract tests for exact native sizes,
+   even codec dimensions, position independence and HUD restrictions. Review
    dependency direction: plugins use shared helpers, never other layout plugins.
-4. **Render and encode.** Apply geometry to frame generation and both output modes.
+4. **Render and encode.** Pass complete native layout images directly to encoding
+   for Content area, without cropping/scaling/padding/rounding, in both output modes.
+   Use measured test-export bytes, frame counts and actual dimensions to populate
+   rough lower/upper size-estimate rates in the owning plugin, separately for each
+   tested codec and extent. Retain measurement conditions/limits with the rates;
+   leave untested combinations on the shared fallback.
+   Preserve HUD's existing full-ride calibration; use the same rates for CPU and GPU.
+   Short HUD exports verify rendering/encoding only and do not change its rates.
    Acceptance: short full-frame/content-area videos, verified dimensions/transparency
-   and a ten-frame ProRes size comparison. Full-frame output remains unchanged.
+   and a ten-frame ProRes size comparison; plugin estimates reflect those exports
+   as approximate ranges. Full-frame output remains unchanged.
 5. **Prepare previews.** Adapt thumbnail and main-preview generation to output geometry.
    Acceptance: paired preview images matching the encoded output, including HUD and
    preview refresh after layout/format/extent changes.
