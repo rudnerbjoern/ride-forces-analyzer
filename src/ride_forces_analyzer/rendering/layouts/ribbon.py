@@ -286,8 +286,13 @@ def create_renderer(timeline: ExportTimeline) -> ChartRenderer:
 # and GPU encoders are unqualified. These are planning ranges, not guarantees.
 PRORES_4444_SIZE_RATES = (0.024, 0.220)  # Observed 0.04986..0.14613.
 H264_SIZE_RATES = (0.00018, 0.00117)  # Observed 0.0003628..0.0007794.
-PRORES_4444_CONTENT_SIZE_RATES = (0.138, 0.522)  # Observed 0.27633..0.34769.
 H264_CONTENT_SIZE_RATES = (0.00119, 0.00543)  # Observed 0.0023835..0.0036197.
+# Content-area ProRes uses the owner-provided Kraken GPU export reference:
+# 3072x360, 60000/1001 fps, 9,544 frames, prores_ks_vulkan, 16,010,922,883 bytes.
+# Including MOV overhead: 1.51692 bytes/pixel/frame, rounded to 1.52 with +/-10%.
+# Applies to both backend preferences; CPU, portrait and other scenes remain
+# unqualified by this reference. These are planning ranges, not guarantees.
+PRORES_4444_CONTENT_SIZE_RATES = (1.368, 1.672)
 LANDSCAPE_CONTENT = ContentArea(NATIVE_SIZE)
 PORTRAIT_CONTENT = ContentArea(PORTRAIT_NATIVE_SIZE)
 

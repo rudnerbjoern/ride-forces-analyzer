@@ -322,8 +322,13 @@ class ColumnRenderer:
 # and GPU encoders are unqualified. These are planning ranges, not guarantees.
 PRORES_4444_SIZE_RATES = (0.018, 0.059)  # Observed 0.03688..0.03884.
 H264_SIZE_RATES = (0.00022, 0.00080)  # Observed 0.0004436..0.0005293.
-PRORES_4444_CONTENT_SIZE_RATES = (0.049, 0.160)  # Observed 0.09828..0.10611.
 H264_CONTENT_SIZE_RATES = (0.00081, 0.00296)  # Observed 0.0016378..0.0019717.
+# Content-area ProRes uses the owner-provided Kraken GPU export reference:
+# 960x2160, 60000/1001 fps, 9,544 frames, prores_ks_vulkan, 6,069,102,102 bytes.
+# Including MOV overhead: 0.30667 bytes/pixel/frame, rounded to 0.31 with +/-10%.
+# Applies to both backend preferences; CPU and other scenes remain unqualified
+# by this reference. These are planning ranges, not guarantees.
+PRORES_4444_CONTENT_SIZE_RATES = (0.279, 0.341)
 LANDSCAPE_CONTENT = ContentArea(NATIVE_SIZE)
 
 PLUGIN = LayoutPlugin(

@@ -774,9 +774,10 @@ class HudRenderer(Drawing):
         return image
 
 
-# Kraken, Iron Gwazi and Voltron GPU ProRes measurements span 0.734–0.764 bytes
-# per pixel/frame including MOV overhead; retain a 10% planning margin around 0.75.
-PRORES_4444_SIZE_RATES = (0.675, 0.825)
+# Four Kraken, Iron Gwazi and Voltron GPU ProRes references span 0.734–0.801 bytes
+# per pixel/frame including MOV overhead. The frame-weighted mean is 0.76244;
+# retain a 10% planning margin around the rounded rate of 0.76.
+PRORES_4444_SIZE_RATES = (0.684, 0.836)
 # Kraken CPU H.264: 17,181,504 bytes, about 0.00085 bytes/pixel/frame including
 # MP4 overhead; allow 50% for content/encoder variation.
 H264_SIZE_RATES = (0.000425, 0.001275)

@@ -309,18 +309,34 @@ The owner-provided HUD references use 1920×1080 and 60000/1001 fps:
 | Recording      | Output          | Encoder            | Frames | File bytes     |
 | -------------- | --------------- | ------------------ | ------ | -------------- |
 | Kraken         | ProRes 4444 MOV | `prores_ks_vulkan` | 9,862  | 15,301,686,528 |
+| Kraken (batch) | ProRes 4444 MOV | `prores_ks_vulkan` | 9,544  | 15,856,749,604 |
 | Iron Gwazi     | ProRes 4444 MOV | `prores_ks_vulkan` | 8,546  | 13,004,672,088 |
 | Voltron Nevera | ProRes 4444 MOV | `prores_ks_vulkan` | 10,353 | 16,397,302,310 |
 | Kraken         | H.264 MP4       | `libx264`          | 9,862  | 17,181,504     |
 
-The HUD ProRes observations span 0.734–0.764 bytes/pixel/frame; their frame-weighted
-mean is 0.74957, rounded to 0.75 with a ±10% planning allowance.
-HUD H.264 uses 0.00085 with ±50%. These full-ride calibration ranges are unchanged
+The HUD ProRes observations span 0.734–0.801 bytes/pixel/frame; their frame-weighted
+mean is 0.76244, rounded to 0.76 with a ±10% planning allowance (0.684–0.836).
+HUD H.264 uses 0.00085 with ±50%. These reference calibration ranges are unchanged
 by short test exports and apply to both CPU and GPU preferences. Other scenes and
 portrait output remain unqualified by these references.
 
-The other plugins own separate codec/extent planning ranges derived from ten-frame,
-50-fps Manta/Voltron CPU exports in its supported formats. They include container
+The owner-provided Kraken Content-area ProRes references use 60000/1001 fps,
+9,544 frames and `prores_ks_vulkan`. Rates include MOV overhead:
+
+| Layout             | Dimensions | File bytes     | Bytes/pixel/frame | Planning range |
+| ------------------ | ---------- | -------------- | ----------------- | -------------- |
+| Flow Ribbon        | 3072×360   | 16,010,922,883 | 1.51692           | 1.368–1.672    |
+| Corner Instruments | 840×1120   | 13,791,547,469 | 1.53598           | 1.386–1.694    |
+| G-Orbit            | 800×800    | 9,153,051,038  | 1.49850           | 1.35–1.65      |
+| Four-panel column  | 960×2160   | 6,069,102,102  | 0.30667           | 0.279–0.341    |
+
+Each measured rate is rounded to two decimal places with a ±10% planning allowance.
+These replace the short CPU-clip ranges for the respective codec/extent and apply
+to both backend preferences. CPU, unmeasured aspects and other scenes remain
+unqualified by these references; further export measurements can refine the ranges.
+
+The remaining non-HUD codec/extent planning ranges derive from ten-frame,
+50-fps Manta/Voltron CPU exports in each supported format. They include container
 overhead and an outward-rounded half-minimum / 1.5-times-maximum allowance.
 Short H.264 clips include
 first-frame overhead and do not predict full-ride compression precisely.

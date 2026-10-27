@@ -423,8 +423,13 @@ class OrbitRenderer(Drawing):
 # and GPU encoders are unqualified. These are planning ranges, not guarantees.
 PRORES_4444_SIZE_RATES = (0.028, 0.185)  # Observed 0.05664..0.12277.
 H264_SIZE_RATES = (0.00026, 0.00132)  # Observed 0.0005266..0.0008751.
-PRORES_4444_CONTENT_SIZE_RATES = (0.278, 0.845)  # Observed 0.55742..0.56333.
 H264_CONTENT_SIZE_RATES = (0.00316, 0.01137)  # Observed 0.0063234..0.0075772.
+# Content-area ProRes uses the owner-provided Kraken GPU export reference:
+# 800x800, 60000/1001 fps, 9,544 frames, prores_ks_vulkan, 9,153,051,038 bytes.
+# Including MOV overhead: 1.49850 bytes/pixel/frame, rounded to 1.50 with +/-10%.
+# Applies to both backend preferences; CPU, unmeasured aspects and other scenes
+# remain unqualified by this reference. These are planning ranges, not guarantees.
+PRORES_4444_CONTENT_SIZE_RATES = (1.35, 1.65)
 LANDSCAPE_CONTENT = ContentArea(NATIVE_SIZE)
 PORTRAIT_CONTENT = ContentArea(NATIVE_SIZE)
 

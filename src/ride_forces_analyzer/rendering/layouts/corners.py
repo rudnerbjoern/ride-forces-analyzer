@@ -254,8 +254,13 @@ class CornersRenderer(ChartRenderer):
 # and GPU encoders are unqualified. These are planning ranges, not guarantees.
 PRORES_4444_SIZE_RATES = (0.026, 0.222)  # Observed 0.05304..0.14782.
 H264_SIZE_RATES = (0.00019, 0.00119)  # Observed 0.0003826..0.0007895.
-PRORES_4444_CONTENT_SIZE_RATES = (0.168, 0.522)  # Observed 0.33736..0.34769.
 H264_CONTENT_SIZE_RATES = (0.00149, 0.00543)  # Observed 0.0029967..0.0036198.
+# Content-area ProRes uses the owner-provided Kraken GPU export reference:
+# 840x1120, 60000/1001 fps, 9,544 frames, prores_ks_vulkan, 13,791,547,469 bytes.
+# Including MOV overhead: 1.53598 bytes/pixel/frame, rounded to 1.54 with +/-10%.
+# Applies to both backend preferences; CPU, unmeasured aspects and other scenes
+# remain unqualified by this reference. These are planning ranges, not guarantees.
+PRORES_4444_CONTENT_SIZE_RATES = (1.386, 1.694)
 LANDSCAPE_CONTENT = ContentArea(NATIVE_SIZE)
 PORTRAIT_CONTENT = ContentArea(NATIVE_SIZE)
 
