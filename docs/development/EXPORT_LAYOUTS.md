@@ -237,7 +237,19 @@ FFmpeg retains its size without geometric filters. Full frame retains its existi
 scaling, placement, canvas padding and codec options. `render_sample` / `render_frame`
 use the same dimensions as the encoded output.
 
-Content-area preview integration and assistant selection remain planned.
+`build_previews` renders the same complete output frame at the exact graph sample,
+then composites a display-only background and fits the image within 960 × 540
+(landscape) or 540 × 960 (portrait). These are maximum sizes, not forced aspect
+ratios: native Content-area images retain their shape without cropping/stretching.
+Checker cells remain square. Miniatures and the main view share this RGB image;
+Qt fits it within its available space while preserving aspect.
+
+Each gallery profile resolves the requested extent through plugin capabilities.
+A Full-frame-only profile uses Full frame even when the selected profile uses
+Content area; HUD thumbnails therefore always show the complete native HD canvas.
+Layout/format/extent changes are carried in the immutable preview request;
+the controller invalidates the result and rejects superseded worker revisions.
+Content-area selection in the assistant remains planned.
 
 ## Design constants
 

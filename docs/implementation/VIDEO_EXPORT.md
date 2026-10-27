@@ -88,7 +88,8 @@ encoding; presets and compact layout thumbnails remain directly accessible.
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Opening                | Two-step modal assistant binds current analysis, graph cursor and smoothing; does not follow workspace changes                     |
 | Preview sample         | All five thumbnails and large preview use production RGBA at the exact source sample, independent of video-frame quantization      |
-| Refresh                | Settings/background changes use a debounced worker; only latest revision applies                                                   |
+| Preview geometry       | Fit complete output within 960×540 / 540×960 without stretching/cropping; HUD gallery entries always Full frame                    |
+| Refresh                | Layout/format/extent, other settings and background changes use a debounced worker; only latest revision applies                   |
 | Background             | Checkerboard/light/dark are preview-only; preview needs neither FFmpeg nor encoding                                                |
 | Out-of-interval cursor | Retained unchanged; explicit full-recording-context warning                                                                        |
 | Review                 | Labeled settings/size summary and large preview; presets/gallery stay on step one; final Export video action chooses destination   |
@@ -247,7 +248,8 @@ encoding; presets and compact layout thumbnails remain directly accessible.
 - The only position is `full_screen` in both formats. Native 1920×1080/1080×1920
   drawing is exported directly without resizing, for scaling in the video editor.
   Both transparent and opaque output retain these dimensions, including saved
-  presets and batches. Preview galleries keep their common display dimensions.
+  presets and batches. Preview galleries fit complete output images within common
+  display limits while preserving their aspect ratio.
   Static effects are prepared once; moving effects use instrument/history tiles.
   Rendering is independent of seek order and previous frames.
 - Unsupported layout keys are rejected in saved presets/jobs; no automatic remapping
@@ -335,7 +337,7 @@ shared heuristic; no rate is borrowed from a different extent.
   equals input size. MOV retains transparency; MP4 uses a black background.
   Full frame retains its scaling, canvas and placement. Column's
   Content area remains exactly 960 × 2160 without padding; HUD remains Full frame.
-  Content-area assistant selection and preview integration are planned.
+  Previews use the resolved output geometry; Content-area assistant selection remains planned.
 - The save dialog confirms replacement of existing videos. An explicitly confirmed
   replacement atomically publishes the completed staged video on the same filesystem;
   cancellation or failure preserves the original. Other callers and batches default

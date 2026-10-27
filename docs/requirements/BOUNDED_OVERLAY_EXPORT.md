@@ -1,8 +1,9 @@
 # Full-frame and bounded overlay export
 
-Status: steps 1–4 accepted by the owner; steps 5–8 pending.
+Status: steps 1–5 accepted by the owner; steps 6–8 pending.
 Native Content-area geometry and rendering/encoding are implemented and locally validated.
-Preview, assistant and persistence integration remain planned.
+Geometry-aware preview generation is available; assistant selection and persistence
+integration remain planned.
 
 ## Requirements
 

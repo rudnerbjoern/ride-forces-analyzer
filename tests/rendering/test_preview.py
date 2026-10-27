@@ -2,12 +2,12 @@
 
 from ride_forces_analyzer.rendering.model import StandardFrameRate
 
-# cspell:words LANCZOS getpixel getchannel getbbox
+# cspell:words LANCZOS getpixel getchannel getbbox getrgb
 
 from dataclasses import replace
 from typing import Literal
 
-from PIL import Image
+from PIL import Image, ImageColor, ImageOps
 import pytest
 
 from ride_forces_analyzer.explorer import ExplorerData
@@ -15,6 +15,7 @@ from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 from ride_forces_analyzer.rendering.layouts import registry
 from ride_forces_analyzer.rendering.model import (
+    ExportExtent,
     VideoOutput,
     FrameRate,
     ExportLayout,
@@ -23,7 +24,12 @@ from ride_forces_analyzer.rendering.model import (
     PROFILES,
     prepare_export,
 )
-from ride_forces_analyzer.rendering.preview import PreviewBackground, build_previews
+from ride_forces_analyzer.rendering.preview import (
+    DARK_BACKGROUND,
+    LIGHT_BACKGROUND,
+    PreviewBackground,
+    build_previews,
+)
 
 
 @pytest.mark.parametrize("layout", [profile[0] for profile in PROFILES])
@@ -73,16 +79,25 @@ def test_portrait_contains_complete_region(manta: ExplorerData, layout: ExportLa
 
 
 @pytest.mark.parametrize("aspect", list(VideoAspect))
-@pytest.mark.parametrize("selected_layout", [ExportLayout.ORBIT, ExportLayout.HUD])
+@pytest.mark.parametrize(
+    "selected_layout,extent",
+    [
+        (ExportLayout.ORBIT, ExportExtent.FULL_FRAME),
+        (ExportLayout.HUD, ExportExtent.FULL_FRAME),
+        (ExportLayout.ORBIT, ExportExtent.CONTENT_AREA),
+    ],
+)
 def test_previews_match_production_at_exact_graph_sample(
     manta: ExplorerData,
     aspect: VideoAspect,
     selected_layout: Literal[ExportLayout.ORBIT, ExportLayout.HUD],
+    extent: ExportExtent,
 ) -> None:
     assert manta.analysis is not None
     sample = manta.source.recording.indices.start + 72 * 50 + 1
     settings = ExportSettings(
         layout=selected_layout,
+        extent=extent,
         position=(
             LayoutPosition.FULL_SCREEN
             if selected_layout == ExportLayout.HUD
@@ -107,6 +122,9 @@ def test_previews_match_production_at_exact_graph_sample(
             else replace(
                 settings,
                 layout=profile.layout,
+                extent=extent
+                if extent in registry.PLUGINS[profile.layout].supported_extents(aspect)
+                else ExportExtent.FULL_FRAME,
                 position={
                     ExportLayout.CORNERS: LayoutPosition.TOP_RIGHT,
                     ExportLayout.COLUMN: LayoutPosition.RIGHT,
@@ -125,14 +143,16 @@ def test_previews_match_production_at_exact_graph_sample(
         actual = OverlayRenderer(prepare_export(manta.analysis, chosen, first, last)).render_sample(
             sample,
         )
-        expected = (
-            Image.alpha_composite(Image.new("RGBA", actual.size, "#162533"), actual)
-            .resize(
-                (540, 960) if aspect is VideoAspect.PORTRAIT else (960, 540),
-                Image.Resampling.LANCZOS,
-            )
-            .convert("RGB")
-        )
+        limit = (540, 960) if aspect is VideoAspect.PORTRAIT else (960, 540)
+        expected = ImageOps.contain(
+            Image.alpha_composite(Image.new("RGBA", actual.size, DARK_BACKGROUND), actual),
+            limit,
+            Image.Resampling.LANCZOS,
+        ).convert("RGB")
+        assert profile.image.size == expected.size
+        assert abs(
+            profile.image.width * actual.height - profile.image.height * actual.width,
+        ) <= max(actual.size)
         assert profile.image.tobytes() == expected.tobytes()
     with pytest.raises(ValueError, match="outside"):
         OverlayRenderer(timeline).render_sample(last + 1)
@@ -230,22 +250,27 @@ def test_gallery_uses_plugin_lateral_defaults(
 
 
 @pytest.mark.parametrize("mode", [VideoOutput.TRANSPARENT, VideoOutput.OPAQUE])
+@pytest.mark.parametrize("extent", list(ExportExtent))
 def test_outside_range_keeps_graph_sample_and_smoothing(
     manta: ExplorerData,
     mode: VideoOutput,
+    extent: ExportExtent,
 ) -> None:
     data = manta.with_smoothing(3)
     assert data.analysis is not None
     sample = data.source.recording.indices.start + 72 * 50
-    settings = ExportSettings(output=mode)
+    settings = ExportSettings(output=mode, extent=extent)
     original = data.source.source_sha256
     result = build_previews(data.analysis, settings, 0, 100, sample, PreviewBackground.LIGHT)
     assert result.outside_range and result.sample == sample
     assert data.source.source_sha256 == original and data.calibration_available
     assert data.smoothing_window == 3
     assert all(
-        p.image.getpixel((0, 0)) == ((0, 0, 0) if mode == VideoOutput.OPAQUE else (228, 234, 240))
+        p.image.getpixel((0, 0))
+        == ImageColor.getrgb("black" if mode == VideoOutput.OPAQUE else LIGHT_BACKGROUND)
         for p in result.profiles
+        if extent is ExportExtent.FULL_FRAME
+        or extent not in registry.PLUGINS[p.layout].supported_extents(settings.aspect)
     )
     with pytest.raises(ValueError, match="outside"):
         build_previews(data.analysis, settings, 0, 100, -1)

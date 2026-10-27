@@ -190,9 +190,13 @@ the destination folder. The worker retains its bound snapshot until completion.
 
 The assistant captures its opening snapshot and preview sample. Debounced preview
 workers receive current settings; revision checks discard outdated results.
+Layout, format and extent changes invalidate the current preview and capture a
+new request. Gallery and main view share images fitted to the resolved output
+geometry; Full-frame-only gallery profiles retain their complete canvas.
 Export binds the selected range, layout, aspect, language and analysis recipe.
 
-A worker streams native-HD HUD or 4K regions to FFmpeg. The local render-job
+A worker streams the native Content-area image or Full-frame layout region to
+FFmpeg, which retains native dimensions or pads to the chosen canvas. The local render-job
 preference selects serial generation or a bounded thread pool with independent
 renderers. Ordered prefetch preserves frame order. NVIDIA Vulkan/NVENC is used
 only after a successful probe; CPU remains the fallback.
