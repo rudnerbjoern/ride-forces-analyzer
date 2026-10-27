@@ -84,6 +84,16 @@ Both steps share a compact ride heading, labeled left-hand controls/summary and
 a large right-hand preview. Step one groups export settings, force display and
 encoding; presets and compact layout thumbnails remain directly accessible.
 
+Settings order: layout, layout format, export area, position, output dimensions,
+output mode, overlay language, frame rate and ride range. Export area offers Full
+frame (default) and native Content area through plugin capabilities. Full-frame-only
+plugins show a fixed Full frame label. Position is hidden for Content area or a
+single fixed placement and restored with its retained value on return to Full frame.
+Settings and review show the actual resolved dimensions and the same codec/extent
+file-size estimate; changes update both immediately and refresh the preview.
+Review includes layout format, export area and overlay language; position appears
+only when applicable. Controls and review labels support English, German and French.
+
 | Interaction            | Contract                                                                                                                           |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Opening                | Two-step modal assistant binds current analysis, graph cursor and smoothing; does not follow workspace changes                     |

@@ -41,26 +41,29 @@ thumbnails follow your current position choices.
 
 1. In the main chart, select a moment with forces you want to show.
 2. Click **Export video…** and choose a layout thumbnail or **Layout profile**.
-3. Choose landscape or portrait under **Video format**. Four-panel column supports
+3. Choose landscape or portrait under **Layout format**. Four-panel column supports
    landscape only and fills the complete 4K frame height. Other layouts adapt to
    both formats. Unsupported layouts are unavailable in the selector and thumbnails.
-4. Choose **Position** beside **Layout profile**. Ribbon offers top or
+4. Choose **Full frame** or **Content area** under **Export area**. Content area
+   exports the smaller layout image for placement in your video editor and hides
+   Position. HUD always uses Full frame. Check **Output dimensions** for the video size.
+5. In Full frame, choose **Position**. Ribbon offers top or
    bottom, Column left or right, and Corners and G-Orbit all four corners.
-   HUD uses the whole frame with a fixed **Full screen** position. Its native
+   HUD uses the whole frame and hides Position. Its native
    1920×1080 or 1080×1920 output can be scaled to a 4K timeline in your editor.
    The assistant remembers each layout's position while open and keeps a similar
    placement when you switch layouts. Check the preview after switching.
-5. Check whether the labels and curves will be readable at your video's viewing
+6. Check whether the labels and curves will be readable at your video's viewing
    size, and whether the chosen position leaves the action clear.
-6. Choose a light, dark or checkerboard preview background to check visibility.
+7. Choose a light, dark or checkerboard preview background to check visibility.
 
 The preview shows a single moment, rather than playing the video. To inspect
 another moment, close the assistant, select another chart sample and reopen it.
 No FFmpeg installation is needed to compare layouts.
 
 Layouts provide preset positions and styling. The assistant does not offer dragging,
-resizing, custom fonts or custom colors. You can choose the layout, position, video
-format and overlay language. For the remaining export steps, follow the
+resizing, custom fonts or custom colors. You can choose the layout, export area,
+position, layout format and overlay language. For the remaining export steps, follow the
 [video export guide](VIDEO_EXPORT.md).
 
 ## Read the instruments

@@ -131,7 +131,9 @@ native layout image, including empty pixels, without cropping, scaling or added 
 HUD admits Full frame only. Preview backgrounds are presentation-only; complete
 resolved frames are fitted without changing their aspect ratio. Gallery entries
 use Full frame when a plugin cannot provide the requested extent.
-Content-area UI selection remains planned.
+The assistant selects export areas through plugin capabilities, hides placement
+for Content area and Full-screen-only positions, and displays resolved output
+dimensions and extent-specific estimates. Retained placement returns with Full frame.
 Previews use the exact cursor, while video frames follow an independent
 deterministic clock. The 23.976 and 59.94 options retain exact `24000/1001` and
 `60000/1001` timing.

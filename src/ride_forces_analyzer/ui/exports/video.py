@@ -201,12 +201,17 @@ class ExportDialog(QDialog):
         self.summary.setFont(summary_font)
         review_layout.addWidget(self.summary)
         review_form = QFormLayout()
+        self._review_form = review_form
         review_form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
         self.review_fields: dict[str, QLabel] = {}
         for key, label in (
             ("layout", tr("Layout profile")),
+            ("aspect", tr("Layout format")),
+            ("extent", tr("Export area")),
+            ("position", tr("Position")),
+            ("resolution", tr("Output dimensions")),
             ("output", tr("Output")),
-            ("resolution", tr("Resolution")),
+            ("language", tr("Overlay language")),
             ("fps", tr("Video frame rate")),
             ("range", tr("Range")),
             ("samples", tr("Samples")),
@@ -366,7 +371,7 @@ class ExportDialog(QDialog):
     def _schedule_preview(self) -> None:
         self._update_profile_availability()
         self.form.remember_positions()
-        self._update_size_estimate()
+        self._update_summary()
         first, last = self._bounds()
         self.previews.schedule(
             self.analysis,
@@ -412,10 +417,17 @@ class ExportDialog(QDialog):
     def _update_summary(self) -> None:
         self._update_size_estimate()
         first, last = self._bounds()
-        width, height = self.form.settings().dimensions
+        settings = self.form.settings()
+        width, height = registry.resolve_geometry(settings).output_size
         values = {
             "layout": self.form.layout_profile.currentText(),
+            "aspect": self.form.aspect.currentText(),
+            "extent": self.form.extent.currentText()
+            if not self.form.extent.isHidden()
+            else self.form.fixed_extent.text(),
+            "position": self.form.position.currentText(),
             "output": self.form.mode.currentText(),
+            "language": self.form.overlay_language.currentText(),
             "resolution": f"{width}×{height}",
             "fps": self.form.fps.currentText(),
             "range": f"{self.data.replay_text(first)}–{self.data.replay_text(last)}",
@@ -425,6 +437,10 @@ class ExportDialog(QDialog):
         }
         for key, value in values.items():
             bind(self.review_fields[key], value)
+        self._review_form.setRowVisible(
+            self.review_fields["position"],
+            not self.form.position.isHidden(),
+        )
 
     def _update_preview_caption(self) -> None:
         result = self.previews.result

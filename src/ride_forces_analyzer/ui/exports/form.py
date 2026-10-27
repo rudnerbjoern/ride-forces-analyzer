@@ -41,6 +41,7 @@ from ride_forces_analyzer.rendering.model import (
     EXPORT_FRAME_RATES,
     StandardFrameRate,
     ExportLayout,
+    ExportExtent,
     ExportSettings,
     PROFILES,
 )
@@ -64,6 +65,9 @@ class ExportForm(QWidget):
         layout_profile: Overlay layout choice.
         position: Placement choice supported by the selected layout and aspect.
         aspect: Landscape or portrait choice.
+        extent: Requested Full-frame or native Content-area export choice.
+        fixed_extent: Fixed area label for plugins supporting only Full frame.
+        output_dimensions: Read-only resolved output dimensions in pixels.
         overlay_language: Overlay-only language choice.
         mode: Transparent MOV or opaque MP4 choice.
         fps: Standard or preserved custom frame-rate choice.
@@ -99,6 +103,7 @@ class ExportForm(QWidget):
         self.positions: dict[ExportLayout, LayoutPosition] = {}
         settings_layout = QVBoxLayout(self)
         form = QFormLayout()
+        self._form = form
         form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
         section_font = self.font()
         section_font.setBold(True)
@@ -112,28 +117,37 @@ class ExportForm(QWidget):
         self.layout_profile = QComboBox()
         items(self.layout_profile, [tr(title) for _, title in PROFILES])
         self.layout_profile.currentIndexChanged.connect(self._layout_changed)
-        layout_row = QHBoxLayout()
-        layout_row.addWidget(self.layout_profile, 1)
-        layout_row.addWidget(bind(QLabel(), tr("Position")))
-        self.position = QComboBox()
-        self.position.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-        layout_row.addWidget(self.position)
-        form.addRow(bind(QLabel(), tr("Layout profile")), layout_row)
+        form.addRow(bind(QLabel(), tr("Layout profile")), self.layout_profile)
         self.aspect = QComboBox()
         items(self.aspect, [tr("Landscape · 16:9"), tr("Portrait · 9:16")])
-        form.addRow(bind(QLabel(), tr("Video format")), self.aspect)
+        form.addRow(bind(QLabel(), tr("Layout format")), self.aspect)
         self.aspect.currentIndexChanged.connect(self._refresh_positions)
-        self._refresh_positions()
+        self.extent = QComboBox()
+        items(self.extent, [tr("Full frame"), tr("Content area")])
+        for index, extent in enumerate(ExportExtent):
+            self.extent.setItemData(index, extent.value)
+        bind(self.extent, tr("Export area"), "accessibleName")
+        self.fixed_extent = bind(QLabel(), tr("Full frame"))
+        extent_row = QHBoxLayout()
+        extent_row.setContentsMargins(0, 0, 0, 0)
+        extent_row.addWidget(self.extent)
+        extent_row.addWidget(self.fixed_extent)
+        form.addRow(bind(QLabel(), tr("Export area")), extent_row)
+        self.position = QComboBox()
+        self.position.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        form.addRow(bind(QLabel(), tr("Position")), self.position)
+        self.output_dimensions = QLabel()
+        form.addRow(bind(QLabel(), tr("Output dimensions")), self.output_dimensions)
         self.overlay_language = QComboBox()
         items(self.overlay_language, [definition.name for definition in LANGUAGES.values()])
         self.overlay_language.setCurrentIndex(LANGUAGE_CHOICES.index(get_language()))
-        form.addRow(bind(QLabel(), tr("Overlay language")), self.overlay_language)
         self.mode = QComboBox()
         items(
             self.mode,
             [tr("Transparent overlay · ProRes 4444 MOV"), tr("Opaque video · H.264 MP4")],
         )
         form.addRow(bind(QLabel(), tr("Output")), self.mode)
+        form.addRow(bind(QLabel(), tr("Overlay language")), self.overlay_language)
         self.fps = QComboBox()
         items(self.fps, [rate.label for rate in EXPORT_FRAME_RATES])
         for index, rate in enumerate(EXPORT_FRAME_RATES):
@@ -200,11 +214,15 @@ class ExportForm(QWidget):
         settings_layout.addLayout(form)
         settings_layout.addStretch()
         bind(self.smoothing, data.smoothing_text, "toolTip")
+        self._refresh_positions()
+        self.extent.currentIndexChanged.connect(self._refresh_geometry)
+        self.position.currentIndexChanged.connect(self._refresh_geometry)
         self.controls = (
             self.overlay_language,
             self.aspect,
             self.layout_profile,
             self.position,
+            self.extent,
             self.mode,
             self.fps,
             self.interval,
@@ -221,6 +239,7 @@ class ExportForm(QWidget):
             self.layout_profile,
             self.aspect,
             self.position,
+            self.extent,
             self.mode,
             self.fps,
             self.interval,
@@ -241,19 +260,23 @@ class ExportForm(QWidget):
             ValueError: A selected input is unsupported by the settings contract.
         """
         rate = self.fps.currentData()
+        layout = PROFILES[self.layout_profile.currentIndex()][0]
+        aspect = VideoAspect.LANDSCAPE if self.aspect.currentIndex() == 0 else VideoAspect.PORTRAIT
+        extent = ExportExtent(self.extent.currentData())
         return ExportSettings(
             language=LANGUAGE_CHOICES[self.overlay_language.currentIndex()],
-            aspect=VideoAspect.LANDSCAPE
-            if self.aspect.currentIndex() == 0
-            else VideoAspect.PORTRAIT,
+            aspect=aspect,
             fps=StandardFrameRate(rate) if isinstance(rate, str) else cast(int, rate),
             window_seconds=float(self.seconds.value()),
             output=VideoOutput.TRANSPARENT if self.mode.currentIndex() == 0 else VideoOutput.OPAQUE,
             invert_vertical=self.flip_vertical.isChecked(),
             invert_lateral=self.flip_lateral.isChecked(),
             prefer_gpu=self.gpu.isChecked(),
-            layout=PROFILES[self.layout_profile.currentIndex()][0],
+            layout=layout,
             position=LayoutPosition(self.position.currentData()),
+            extent=extent
+            if extent in registry.PLUGINS[layout].supported_extents(aspect)
+            else ExportExtent.FULL_FRAME,
         )
 
     def bounds(self, analysis: RecordingAnalysis, selection: tuple[int, int]) -> tuple[int, int]:
@@ -339,6 +362,23 @@ class ExportForm(QWidget):
                 self.positions.get(plugin.key),
             )
             self.position.setCurrentIndex(self.position.findData(selected.value))
+        self._refresh_geometry()
+
+    @Slot()
+    def _refresh_geometry(self) -> None:
+        """Show applicable plugin controls and centrally resolved output dimensions."""
+        settings = self.settings()
+        plugin = registry.PLUGINS[settings.layout]
+        selectable = len(plugin.supported_extents(settings.aspect)) > 1
+        self.extent.setVisible(selectable)
+        self.fixed_extent.setVisible(not selectable)
+        self._form.setRowVisible(
+            self.position,
+            settings.extent is ExportExtent.FULL_FRAME
+            and len(plugin.positions(settings.aspect).regions) > 1,
+        )
+        width, height = registry.resolve_geometry(settings).output_size
+        self.output_dimensions.setText(f"{width}×{height}")
 
     @Slot()
     def _browse(self) -> None:

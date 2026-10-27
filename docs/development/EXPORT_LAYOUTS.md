@@ -249,7 +249,10 @@ A Full-frame-only profile uses Full frame even when the selected profile uses
 Content area; HUD thumbnails therefore always show the complete native HD canvas.
 Layout/format/extent changes are carried in the immutable preview request;
 the controller invalidates the result and rejects superseded worker revisions.
-Content-area selection in the assistant remains planned.
+The assistant derives area/position visibility from plugin capabilities. Full-frame-only
+plugins show a fixed area label; Content area hides placement without discarding it.
+Settings and review display resolved dimensions and matching codec/extent estimates.
+Layout format selects the arrangement, not the native Content-area aspect ratio.
 
 ## Design constants
 
