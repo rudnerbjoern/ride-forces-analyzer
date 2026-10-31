@@ -112,6 +112,10 @@ depends on calibration and smoothing; they are not a measurement of what a rider
    means the encoder is finishing the file, with no duration estimate. You can
    cancel the export.
 
+On Windows, the taskbar icon also shows export progress while the window is
+minimized. For batches it shows overall queue progress. The indicator disappears
+after completion, failure or cancellation.
+
 The suggested file name includes the recording name and chosen overlay, for
 example `Manta - HUD.mov`.
 

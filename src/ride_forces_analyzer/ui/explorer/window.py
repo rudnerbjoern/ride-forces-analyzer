@@ -61,6 +61,7 @@ from ride_forces_analyzer.importers import ImportFailure
 from ride_forces_analyzer.gps.overview import prepare_gps_overview
 
 from ride_forces_analyzer.ui.presentation.chrome import app_icon
+from ride_forces_analyzer.ui.presentation.taskbar import taskbar_progress
 from ride_forces_analyzer.ui.dialogs.about import AboutDialog
 from ride_forces_analyzer.ui.dialogs.settings import APPEARANCE_CHOICES, SettingsDialog
 from ride_forces_analyzer.ui.presentation.updates import UpdateController
@@ -133,6 +134,7 @@ class ExplorerWindow(QMainWindow):
         navigation: Component owning sample controls, readouts and playback transport.
         data_exports: Controller owning destination prompts and sample-export dialogs.
         progress: Progress display for progress.
+        taskbar_progress: Native export-progress presentation for this window.
     """
 
     new_window_requested = Signal(object)
@@ -149,6 +151,7 @@ class ExplorerWindow(QMainWindow):
             None.
         """
         super().__init__()
+        self.taskbar_progress = taskbar_progress(self)
         self.setAcceptDrops(True)
         self._application_title = settings.window_title
         self.preferences = Preferences()

@@ -16,6 +16,7 @@ from ride_forces_analyzer.analysis.preparation import (
 
 # cspell:words getpixel pixmap
 
+from unittest.mock import Mock
 from pathlib import Path
 from threading import Event
 from tempfile import TemporaryDirectory
@@ -382,6 +383,8 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     from ride_forces_analyzer.rendering.encoding import ExportCancelled
 
     window = explorer_window
+    taskbar = Mock(wraps=window.taskbar_progress)
+    monkeypatch.setattr(ui_export, "taskbar_progress", Mock(return_value=taskbar))
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
     wait_until(window.open_action.isEnabled)
     window.export_button.click()
@@ -419,19 +422,38 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     wait_until(started.is_set)
     assert isinstance(dialog.worker, ExportWorker)
     assert not dialog.start.isEnabled()
+    taskbar.start.assert_called_once()
     dialog.worker.signals.progress.emit(ExportProgress(ExportPhase.RENDERING, 100, 1000, 10))
     wait_until(lambda: dialog.progress.value() == 10)
     wait_until(lambda: "1:30" in dialog.eta.text())
+    taskbar.set_value.assert_called_with(10)
     dialog.worker.signals.progress.emit(ExportProgress(ExportPhase.FINALIZING, 1000, 1000, 100))
     wait_until(lambda: dialog.eta.text() == "Frames complete · finalizing video…")
     dialog.reject()
     assert dialog.isVisible()
     assert not window.close()  # A close requests cancellation, never abandons a live worker.
     wait_until(lambda: dialog.worker is None)
+    taskbar.clear.assert_called()
+    cleared = taskbar.clear.call_count
     QThreadPool.globalInstance().waitForDone()
     assert dialog.start.isEnabled()
     assert "cancelled" in dialog.status.text()
     assert dialog.eta.text() == ""
+    # Reuse the same window/dialog to check successful completion and failure too.
+    monkeypatch.setattr(ui_workers, "export_video", Mock(return_value=Path("unused.mov")))
+    dialog.start.click()
+    wait_until(lambda: dialog.worker is None)
+    assert "Saved" in dialog.status.text()
+    assert taskbar.clear.call_count == cleared + 1
+    monkeypatch.setattr(
+        ui_workers,
+        "export_video",
+        Mock(side_effect=RuntimeError("Encoder failed")),
+    )
+    dialog.start.click()
+    wait_until(lambda: dialog.worker is None)
+    assert "Encoder failed" in dialog.status.text()
+    assert taskbar.clear.call_count == cleared + 2
     dialog.close()
 
 
@@ -671,6 +693,8 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     )
     store.create_batch("Day1")
     window = explorer_window
+    taskbar = Mock(wraps=window.taskbar_progress)
+    monkeypatch.setattr(ui_batches, "taskbar_progress", Mock(return_value=taskbar))
     window.preferences.remember_render_jobs(4)
     assert window.data is None and window.batches_button.isEnabled()
     window.batches_button.click()
@@ -740,6 +764,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     assert "Manta" in dialog.current_job.text()
     assert dialog.export_progress.value() == 50
     assert "0:10" in dialog.eta.text()
+    taskbar.set_value.assert_called_with(10)
     dialog.worker.signals.progress.emit(
         1,
         5,
@@ -750,6 +775,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     dialog.worker.signals.progress.emit(1, 5, None, "Day1 · Manta · Orbit")
     wait_until(lambda: dialog.progress.value() == 20)
     assert dialog.eta.text() == ""
+    taskbar.set_value.assert_called_with(20)
     dialog.worker.signals.progress.emit(
         2,
         5,
@@ -761,10 +787,22 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     assert "estimating" in dialog.eta.text()
     assert not window.close()
     wait_until(lambda: dialog.worker is None)
+    taskbar.clear.assert_called()
+    cleared = taskbar.clear.call_count
     assert dialog.last_report is not None and len(dialog.last_report.results) == 5
     assert "5 cancelled" in dialog.status.text()
     assert dialog.eta.text() == ""
     assert len(store.batch("Day1").jobs) == 4
+    report = dialog.last_report
+    monkeypatch.setattr(ui_batches, "run_batches", Mock(return_value=report))
+    dialog.run_all.click()
+    wait_until(lambda: dialog.worker is None)
+    assert taskbar.clear.call_count == cleared + 1
+    monkeypatch.setattr(ui_batches, "run_batches", Mock(side_effect=RuntimeError("Queue failed")))
+    dialog.run_all.click()
+    wait_until(lambda: dialog.worker is None)
+    assert "Queue failed" in dialog.status.text()
+    assert taskbar.clear.call_count == cleared + 2
     dialog.table.selectAll()
     dialog.remove.click()
     assert store.batch("Day1").jobs == ()

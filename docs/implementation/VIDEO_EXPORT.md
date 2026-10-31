@@ -224,6 +224,15 @@ unpredicted during finalization and cleared on cancel/failure/completion; comple
 requires successful publication. Qt workers transport snapshots; dialogs own no clock
 or throughput estimator.
 
+On Windows, the explorer's taskbar button mirrors single-video progress or the
+batch's equally weighted overall job percentage, including while minimized.
+Starting an export shows indeterminate activity until progress is available;
+success, failure and cancellation remove it. The UI-owned native adapter waits for
+`TaskbarButtonCreated`, restores active state after button recreation and releases
+its COM resources on termination/window destruction. Other platforms and unavailable
+shell services leave exports unaffected. See Microsoft's
+[taskbar progress contract](https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-itaskbarlist3-setprogressvalue).
+
 #### File-size calibration evidence
 
 **47 distinct observations:** 16 GPU ProRes, 4 CPU ProRes, 14 CPU H.264 and 13 NVENC.

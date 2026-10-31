@@ -40,8 +40,9 @@ from PySide6.QtWidgets import (
 
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering.encoding import find_ffmpeg
-from ride_forces_analyzer.rendering.progress import ExportProgress
+from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.ui.exports.progress import show_export_progress
+from ride_forces_analyzer.ui.presentation.taskbar import taskbar_progress
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.rendering.model import (
     VideoOutput,
@@ -127,6 +128,7 @@ class ExportDialog(QDialog):
             ValueError: Prepared recording analysis is unavailable.
         """
         super().__init__(parent)
+        self._taskbar = taskbar_progress(self)
         bind(self, tr("Export assistant · {0}", data.title), "windowTitle")
         self.resize(1240, 820)
         self.setWindowModality(Qt.WindowModality.WindowModal)
@@ -559,6 +561,7 @@ class ExportDialog(QDialog):
         worker.signals.failed.connect(self._finished)
         worker.signals.saved.connect(self._export_saved)
         self.worker = worker
+        self._taskbar.start()
         bind(self.eta, tr("Remaining frame time: estimating…"), "text")
         self.progress.setValue(0)
         self.progress.show()
@@ -578,9 +581,12 @@ class ExportDialog(QDialog):
     def _progress(self, update: ExportProgress) -> None:
         if self.worker is not None and not self.worker.cancelled.is_set():
             show_export_progress(update, self.progress, self.status, self.eta)
+            if update.phase is not ExportPhase.PREPARING:
+                self._taskbar.set_value(update.percent)
 
     @Slot(str)
     def _finished(self, message: str) -> None:
+        self._taskbar.clear()
         bind(self.eta, "")
         self.worker = None
         for control in self.controls:
@@ -597,6 +603,7 @@ class ExportDialog(QDialog):
     def _cancel(self) -> None:
         if self.worker is not None:
             self.worker.cancelled.set()
+            self._taskbar.clear()
             bind(self.eta, "")
             bind(self.status, tr("Cancelling export…"), "text")
         else:
