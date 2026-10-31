@@ -8,7 +8,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.runtime.error_reporting import record_error
-from ride_forces_analyzer.ui.presentation.translation import bind
+from ride_forces_analyzer.ui.presentation.translation import bind, button_text
+from ride_forces_analyzer.ui.presentation.icons import gps_overview_icon
 
 from threading import Event
 
@@ -22,8 +23,10 @@ from PySide6.QtWidgets import (
     QGraphicsEllipseItem,
     QGraphicsSimpleTextItem,
     QGraphicsView,
+    QHBoxLayout,
     QLabel,
     QPushButton,
+    QStyle,
     QVBoxLayout,
     QWidget,
 )
@@ -387,7 +390,8 @@ def _populate_dialog(dialog: GpsDialog, overview: GpsOverview, title: str) -> No
     view.style_route()
     view.setRenderHint(QPainter.RenderHint.Antialiasing)
     layout.addWidget(view)
-    dialog.map_button = bind(QPushButton(), tr("Load map background"))
+    dialog.map_button = button_text(QPushButton(), tr("Load map background"))
+    dialog.map_button.setIcon(gps_overview_icon())
     bind(
         dialog.map_button,
         tr(
@@ -397,13 +401,11 @@ def _populate_dialog(dialog: GpsDialog, overview: GpsOverview, title: str) -> No
     )
     dialog.map_button.setEnabled(dialog.route is not None)
     dialog.map_button.clicked.connect(dialog.load_map)
-    layout.addWidget(dialog.map_button)
     dialog.map_status = QLabel()
     dialog.map_status.setWordWrap(True)
     dialog.map_status.setMinimumHeight(2 * dialog.map_status.fontMetrics().height())
     if dialog.route is None:
         bind(dialog.map_status, tr("Map unavailable for these coordinates."))
-    layout.addWidget(dialog.map_status)
     dialog.attribution = QLabel(
         '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
     )
@@ -412,7 +414,20 @@ def _populate_dialog(dialog: GpsDialog, overview: GpsOverview, title: str) -> No
     policy.setRetainSizeWhenHidden(True)
     dialog.attribution.setSizePolicy(policy)
     dialog.attribution.hide()
-    layout.addWidget(dialog.attribution)
+    close = button_text(QPushButton(), tr("Close"))
+    close.setIcon(
+        dialog.style().standardIcon(QStyle.StandardPixmap.SP_DialogCloseButton),
+    )
+    close.clicked.connect(dialog.close)
+    actions = QHBoxLayout()
+    actions.addWidget(dialog.map_button, 0, Qt.AlignmentFlag.AlignBottom)
+    messages = QVBoxLayout()
+    messages.setSpacing(0)
+    messages.addWidget(dialog.map_status)
+    messages.addWidget(dialog.attribution)
+    actions.addLayout(messages, 1)
+    actions.addWidget(close, 0, Qt.AlignmentFlag.AlignBottom)
+    layout.addLayout(actions)
 
 
 def gps_dialog(overview: GpsOverview, title: str, parent: QWidget) -> GpsDialog:

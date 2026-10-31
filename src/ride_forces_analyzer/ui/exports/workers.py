@@ -26,7 +26,11 @@ from ride_forces_analyzer.rendering.model import (
     ExportSettings,
     ExportTimeline,
 )
-from ride_forces_analyzer.rendering.preview import PreviewBackground, build_previews
+from ride_forces_analyzer.rendering.preview import (
+    PreviewBackground,
+    build_previews,
+    preview_rendered_region,
+)
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 
 
@@ -119,12 +123,14 @@ class ExportSignals(QObject):
     Attributes:
         saved: Qt signal for saved notifications.
         progress: Qt signal for progress notifications.
+        preview: Qt signal carrying an export frame index and its display image.
         finished: Qt signal for finished notifications.
         failed: Qt signal for failed notifications.
     """
 
     saved = Signal(str)
     progress = Signal(object)
+    preview = Signal(int, object)
     finished = Signal(str)
     failed = Signal(str)
 
@@ -139,6 +145,7 @@ class ExportWorker(QRunnable):
         ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
         render_jobs: Requested concurrent frame-renderer count, bounded by local CPU
             availability.
+        background: Display-only backdrop used for live frame previews.
         overwrite: Whether the caller explicitly permits replacing an existing
             destination.
         cancelled: Event used to request cancellation without publishing partial output.
@@ -153,6 +160,7 @@ class ExportWorker(QRunnable):
         *,
         render_jobs: int = 1,
         overwrite: bool = False,
+        background: PreviewBackground = PreviewBackground.CHECKER,
     ) -> None:
         """Initialize export worker and its owned state.
 
@@ -165,6 +173,7 @@ class ExportWorker(QRunnable):
                 availability.
             overwrite: Whether the caller explicitly permits replacing an existing
                 destination.
+            background: Display-only backdrop used for live frame previews.
 
         Returns:
             None.
@@ -175,6 +184,7 @@ class ExportWorker(QRunnable):
         self.ffmpeg = ffmpeg
         self.render_jobs = render_jobs
         self.overwrite = overwrite
+        self.background = background
         self.cancelled = Event()
         self.signals = ExportSignals()
 
@@ -186,12 +196,18 @@ class ExportWorker(QRunnable):
             None.
         """
         try:
+
+            def preview(frame: int, raw: bytes) -> None:
+                image = preview_rendered_region(self.timeline, raw, self.background)
+                self.signals.preview.emit(frame, image)
+
             path = export_video(
                 self.timeline,
                 self.destination,
                 ffmpeg=self.ffmpeg,
                 cancelled=self.cancelled,
                 progress=self.signals.progress.emit,
+                frame_preview=preview,
                 render_jobs=self.render_jobs,
                 overwrite=self.overwrite,
             )

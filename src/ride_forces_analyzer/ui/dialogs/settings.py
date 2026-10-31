@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QLabel,
     QPushButton,
+    QStyle,
     QVBoxLayout,
     QWidget,
 )
@@ -23,7 +24,7 @@ from ride_forces_analyzer.runtime.cpu_resources import render_job_limit
 from ride_forces_analyzer.rendering.model import EXPORT_FRAME_RATES
 from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 from ride_forces_analyzer.storage.map_tiles import TileCache
-from ride_forces_analyzer.ui.presentation.translation import bind, items
+from ride_forces_analyzer.ui.presentation.translation import bind, button_text, items
 from ride_forces_analyzer.ui.presentation.updates import UpdateController
 
 APPEARANCE_CHOICES = tuple(Appearance)
@@ -101,6 +102,9 @@ class SettingsDialog(QDialog):
         self.restore_last_file.setChecked(preferences.restore_last_file())
         application_form.addRow(self.restore_last_file)
         self.clear_map_cache = QPushButton()
+        self.clear_map_cache.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_TrashIcon),
+        )
         self._update_map_cache_count()
         self.clear_map_cache.clicked.connect(self.clear_cached_maps)
         application_form.addRow(self.clear_map_cache)
@@ -140,7 +144,10 @@ class SettingsDialog(QDialog):
         )
         self.automatic_updates.setChecked(preferences.automatic_updates())
         update_layout.addWidget(self.automatic_updates)
-        self.check_updates = bind(QPushButton(), tr("Check for updates…"))
+        self.check_updates = button_text(QPushButton(), tr("Check for updates…"))
+        self.check_updates.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload),
+        )
         self.check_updates.setEnabled(updates.worker is None)
         self.check_updates.clicked.connect(lambda: updates.check(manual=True))
         updates.busy_changed.connect(self.check_updates.setDisabled)
@@ -164,6 +171,20 @@ class SettingsDialog(QDialog):
         layout.addWidget(update_group)
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
+        )
+        bind(self.buttons.button(QDialogButtonBox.StandardButton.Save), tr("&Save"))
+        for standard, name in (
+            (QDialogButtonBox.StandardButton.Save, tr("Save settings")),
+            (QDialogButtonBox.StandardButton.Cancel, tr("Cancel")),
+        ):
+            button = self.buttons.button(standard)
+            bind(button, name, "accessibleName")
+            bind(button, name, "toolTip")
+        self.buttons.button(QDialogButtonBox.StandardButton.Save).setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton),
+        )
+        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogCancelButton),
         )
         self.buttons.accepted.connect(self.save)
         self.buttons.rejected.connect(self.reject)
@@ -238,15 +259,15 @@ class SettingsDialog(QDialog):
             None.
         """
         if TileCache().clear():
-            bind(self.clear_map_cache, tr("Map cache cleared."))
+            button_text(self.clear_map_cache, tr("Map cache cleared."))
             self.clear_map_cache.setEnabled(False)
         else:
-            bind(self.clear_map_cache, tr("Could not clear map cache. Try again later."))
+            button_text(self.clear_map_cache, tr("Could not clear map cache. Try again later."))
 
     def _update_map_cache_count(self) -> None:
         count = TileCache().count()
         self.clear_map_cache.setEnabled(count != 0)
-        bind(
+        button_text(
             self.clear_map_cache,
             tr("Clear map cache") if count is None else tr("Clear map cache ({0} tiles)", count),
         )

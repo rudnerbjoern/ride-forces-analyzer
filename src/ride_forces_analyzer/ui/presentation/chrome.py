@@ -10,11 +10,97 @@ import ctypes
 from ctypes import wintypes
 import sys
 
-from PySide6.QtCore import QEvent, QObject, QTimer
-from PySide6.QtGui import QIcon, QPalette, QPixmap
-from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QWidget
+from PySide6.QtCore import QEvent, QObject, QTimer, Qt
+from PySide6.QtGui import QIcon, QKeyEvent, QPalette, QPixmap
+from PySide6.QtWidgets import (
+    QAbstractButton,
+    QApplication,
+    QDialog,
+    QMainWindow,
+    QProxyStyle,
+    QStyle,
+    QStyleHintReturn,
+    QStyleOption,
+    QWidget,
+)
 
 from ride_forces_analyzer.ui.presentation.icons import ICON_SIZES, render_icon
+
+
+class AccessKeyStyle(QProxyStyle):
+    """Toggle native access-key underlines with bare Alt on Windows.
+
+    Attributes:
+        visible: Whether access-key underlines are currently displayed.
+    """
+
+    def __init__(self) -> None:
+        """Retain native styling and start with hidden access-key underlines."""
+        super().__init__()
+        self.visible = False
+        self._alt_only = False
+
+    def styleHint(
+        self,
+        hint: QStyle.StyleHint,
+        option: QStyleOption | None = None,
+        widget: QWidget | None = None,
+        returnData: QStyleHintReturn | None = None,
+    ) -> int:
+        """Override underline visibility and delegate every other native style hint.
+
+        Args:
+            hint: Requested Qt style behavior.
+            option: Drawing options supplied by Qt.
+            widget: Widget being styled, if available.
+            returnData: Optional extended result supplied by Qt.
+
+        Returns:
+            The toggle state for underlines, otherwise the native style result.
+        """
+        if hint == QStyle.StyleHint.SH_UnderlineShortcut:
+            return int(self.visible)
+        return super().styleHint(hint, option, widget, returnData)
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        """Toggle on bare Alt release without consuming keyboard events.
+
+        Args:
+            watched: Object receiving the original event.
+            event: Qt event delivered to the application.
+
+        Returns:
+            False so native keyboard navigation and shortcuts remain active.
+        """
+        if isinstance(event, QKeyEvent) and not event.isAutoRepeat():
+            if event.type() == QEvent.Type.KeyPress:
+                self._alt_only = event.key() == Qt.Key.Key_Alt and event.modifiers() in (
+                    Qt.KeyboardModifier.NoModifier,
+                    Qt.KeyboardModifier.AltModifier,
+                )
+            elif event.type() == QEvent.Type.ShortcutOverride and event.key() != Qt.Key.Key_Alt:
+                self._alt_only = False
+            elif event.type() == QEvent.Type.KeyRelease and event.key() == Qt.Key.Key_Alt:
+                if self._alt_only:
+                    self.visible = not self.visible
+                    for button in QApplication.allWidgets():
+                        if isinstance(button, QAbstractButton) and button.isVisible():
+                            button.update()
+                self._alt_only = False
+        return False
+
+
+def install_access_key_cues(application: QApplication) -> None:
+    """Install the Windows Alt toggle once, preserving native styling elsewhere.
+
+    Args:
+        application: Application owning the style and keyboard event filter.
+    """
+    if sys.platform == "win32" and application.findChild(AccessKeyStyle) is None:
+        style = AccessKeyStyle()
+        style.setParent(application)
+        application.setStyle(style)
+        application.installEventFilter(style)
 
 
 class NativeCaptionFilter(QObject):

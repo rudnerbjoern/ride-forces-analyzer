@@ -503,6 +503,17 @@ def test_zoom_and_reference_changes_preserve_recording_bounds_and_data(
     assert window.visibility[2].text() == "Longitudinal"
     assert window.visibility[2].toolTip() == "Longitudinal (+ acceleration / − braking)"
     assert window.reference_toggle.text() == "Calibrated forces"
+    for value, line in window.plot.force_references.items():
+        assert line.isVisible()
+        area = window.plot.chart.plotArea()
+        expected_y = (
+            area.bottom()
+            - (value - window.plot.axis_y.min())
+            / (window.plot.axis_y.max() - window.plot.axis_y.min())
+            * area.height()
+        )
+        assert line.line().y1() == pytest.approx(expected_y)
+        assert line.line().y2() == pytest.approx(expected_y)
     assert window.reference_toggle.toolTip() == "App reference available for Manta"
     assert "Calibrated forces" in window.inspector.disclaimer.text()
     assert "11 samples" in window.inspector.disclaimer.text()
@@ -513,6 +524,7 @@ def test_zoom_and_reference_changes_preserve_recording_bounds_and_data(
         window.inspector.last.value(),
     )
     window.reference_toggle.setChecked(False)
+    assert all(not line.isVisible() for line in window.plot.force_references.values())
     assert [line.name() for line in window.plot.series] == ["x", "y", "z"]
     document = QTextDocument()
     document.setHtml(window.inspector.readout.text())
@@ -525,6 +537,7 @@ def test_zoom_and_reference_changes_preserve_recording_bounds_and_data(
         window.inspector.last.value(),
     ) == before
     window.reference_toggle.setChecked(True)
+    assert all(line.isVisible() for line in window.plot.force_references.values())
     assert tuple(point.y() for point in window.plot.series[0].points()) == tuple(
         data.plotted_channels[0],
     )
@@ -723,7 +736,11 @@ def test_technical_details_and_replay_labels_follow_language_and_sample(
         (1, ("Quelle", "Verarbeitung", "Aktueller Messpunkt")),
     ):
         window.set_ui_language(language)
+        window.inspector.details_button.setChecked(False)
+        collapsed_icon = window.inspector.details_button.icon().pixmap(16, 16).toImage()
         window.inspector.details_button.setChecked(True)
+        assert window.inspector.details_button.icon().pixmap(16, 16).toImage() != collapsed_icon
+        assert window.inspector.details_button.layoutDirection() == Qt.LayoutDirection.RightToLeft
         captions = [label.text() for label in window.inspector.details_body.findChildren(QLabel)]
         assert all(heading in captions for heading in headings)
         for index in (1571, 4960):
@@ -1023,6 +1040,12 @@ def test_workspace_layout_and_cards_follow_size_language_and_theme(
     wait_until(window.open_action.isEnabled)
     assert window.data is not None
     assert window.header_summary.text() == window.data.overview_text
+    QApplication.processEvents()
+    baselines = [
+        label.geometry().top() + label.contentsRect().bottom() - label.fontMetrics().descent()
+        for label in (window.heading, window.header_summary)
+    ]
+    assert baselines[0] == baselines[1]
     for index in (2013, 4782):
         window.navigation.position.setValue(index)
         assert window.navigation.time_readout.text() == window.data.sample_clock_text(index)
@@ -1129,7 +1152,7 @@ def test_focus_header_preserves_literal_device_metadata(
 
     recording = replace(
         synthetic_recording,
-        metadata=replace(synthetic_recording.metadata, device="<b>Watch</b>"),
+        metadata=replace(synthetic_recording.metadata, device="<b>Watch</b>", location=None),
     )
     view = present_recording(ImportSuccess(recording))
 
@@ -1142,6 +1165,12 @@ def test_focus_header_preserves_literal_device_metadata(
     assert explorer_window.header_summary.text() == view.overview_text
     assert "<b>Watch</b>" in explorer_window.header_summary.text()
     assert explorer_window.header_summary.textFormat() == Qt.TextFormat.PlainText
+    assert explorer_window.heading.text() == view.title
+    recording = replace(recording, metadata=replace(recording.metadata, location="Europa-Park"))
+    view = present_recording(ImportSuccess(recording))
+    explorer_window.open_path(Path("synthetic-header-park.forces"))
+    wait_until(explorer_window.open_action.isEnabled)
+    assert explorer_window.heading.text() == f"{view.title} · Europa-Park"
 
 
 def test_visible_extrema_follow_zoom_and_ignore_selection_and_cursor(

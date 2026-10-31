@@ -13,6 +13,7 @@ from weakref import WeakKeyDictionary
 from PySide6.QtCore import QObject, QLocale, QLibraryInfo, QTranslator
 from PySide6.QtWidgets import (
     QApplication,
+    QAbstractButton,
     QComboBox,
     QGraphicsSimpleTextItem,
     QListWidget,
@@ -23,6 +24,7 @@ from PySide6.QtWidgets import (
 from ride_forces_analyzer.i18n import LANGUAGES, Language, Text, set_language
 
 T = TypeVar("T", bound=QObject | QGraphicsSimpleTextItem)
+B = TypeVar("B", bound=QAbstractButton)
 _bindings: WeakKeyDictionary[QObject, dict[str, Text]] = WeakKeyDictionary()
 _qt_translator: QTranslator | None = None
 
@@ -83,6 +85,31 @@ def bind(widget: T, value: str, prop: str = "text") -> T:
         bindings.pop(prop, None)
     _apply(widget, prop, str(value))
     return widget
+
+
+def button_text(
+    button: B,
+    value: str,
+    *,
+    tooltip: str | None = None,
+    caption: str | None = None,
+) -> B:
+    """Bind a button's caption, accessible name and translated tooltip together.
+
+    Args:
+        button: Button whose presentation is being updated.
+        value: Caption and accessible action name, including its current state.
+        tooltip: Explanation to show on hover; defaults to the action name.
+        caption: Optional caption with a native Qt mnemonic marker; the accessible
+            name and tooltip retain the plain action name.
+
+    Returns:
+        The supplied button with all three text properties bound.
+    """
+    bind(button, value if caption is None else caption)
+    bind(button, value, "accessibleName")
+    bind(button, value if tooltip is None else tooltip, "toolTip")
+    return button
 
 
 def items(combo: QComboBox | QListWidget, values: Sequence[str]) -> None:

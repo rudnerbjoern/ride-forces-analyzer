@@ -8,7 +8,7 @@ from time import time
 
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal, Slot, Qt, QUrl
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QMessageBox, QWidget
+from PySide6.QtWidgets import QMessageBox, QStyle, QWidget
 
 from ride_forces_analyzer import __version__
 from ride_forces_analyzer.i18n import tr
@@ -16,7 +16,7 @@ from ride_forces_analyzer.runtime.error_reporting import record_error
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.runtime.updates import AvailableRelease, check_for_update
 
-from ride_forces_analyzer.ui.presentation.translation import bind
+from ride_forces_analyzer.ui.presentation.translation import bind, button_text
 
 
 class _Signals(QObject):
@@ -167,17 +167,26 @@ class UpdateController(QObject):
                 __version__,
             ),
         )
-        open_release = bind(
+        open_release = button_text(
             notice.addButton(str(tr("Open release")), QMessageBox.ButtonRole.AcceptRole),
             tr("Open release"),
         )
-        later = bind(
+        later = button_text(
             notice.addButton(str(tr("Later")), QMessageBox.ButtonRole.RejectRole),
             tr("Later"),
         )
-        skip = bind(
+        skip = button_text(
             notice.addButton(str(tr("Skip this version")), QMessageBox.ButtonRole.ActionRole),
             tr("Skip this version"),
+        )
+        open_release.setIcon(
+            notice.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton),
+        )
+        later.setIcon(
+            notice.style().standardIcon(QStyle.StandardPixmap.SP_DialogCloseButton),
+        )
+        skip.setIcon(
+            notice.style().standardIcon(QStyle.StandardPixmap.SP_MediaSkipForward),
         )
         notice.setDefaultButton(later)
 

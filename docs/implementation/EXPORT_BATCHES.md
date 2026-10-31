@@ -104,9 +104,13 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   cancellation handling. It excludes queue waiting and report writes; skipped
   jobs retain `null` rather than a fabricated duration.
   Progress wraps the shared `ExportProgress` with job index/count and label.
-  Separate bars show the equally weighted overall queue and the current video's
-  submitted frames. A new job resets video progress and its estimate; settled jobs,
-  including failures, advance the queue without fabricating frame counts.
+  Separate bars show the frame-weighted overall queue and the current video's
+  submitted frames. Before rendering, each distinct source is imported to calculate
+  job frame budgets from its sample rate, inclusive saved interval and export frame
+  rate. No full analysis is prepared during this counting pass. Settled jobs,
+  including failures, consume their planned budget; unreadable sources have no known
+  budget. This queue accounting never reports failed frames as successfully encoded.
+  A new job resets video progress and its estimate; cancellation retains partial progress.
 - Cancellation stops the active encode and skips remaining jobs; remove incomplete
   output, preserve completed videos. Parent close/Escape cannot abandon an active export.
 - Definitions survive restart, without embedded sensor data or automatic relocated-file

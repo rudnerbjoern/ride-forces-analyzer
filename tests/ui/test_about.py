@@ -81,6 +81,8 @@ def test_copy_diagnostics_uses_worker_and_localized_feedback(
         wait_until(lambda: dialog.diagnostic_worker is None)
         assert clipboard.text() == "Ride Forces Analyzer: test\nFFmpeg: Not found"
         assert dialog.copy_diagnostics.text() == "Kopiert"
+        assert dialog.copy_diagnostics.accessibleName() == "Kopiert"
+        assert dialog.copy_diagnostics.toolTip() == "Kopiert"
         dialog.copy_reset.timeout.emit()
         assert dialog.copy_diagnostics.text() == "Diagnoseinformationen kopieren"
     finally:

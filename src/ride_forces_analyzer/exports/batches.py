@@ -11,6 +11,8 @@ from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
 from collections.abc import Callable, Sequence
 from datetime import datetime, UTC
 from dataclasses import replace
+from fractions import Fraction
+from math import ceil
 from pathlib import Path
 import re
 from threading import Event
@@ -241,6 +243,43 @@ def _safe_name(name: str) -> str:
     return re.sub(r"[^\w.-]+", "-", name).strip(".-_")[:70] or "export"
 
 
+def _planned_frame_counts(batches: Sequence[SavedBatch], cancelled: Event) -> tuple[int, ...]:
+    """Count output frames from saved intervals, importing each source once.
+
+    Args:
+        batches: Batches in execution order.
+        cancelled: Event stopping additional source reads.
+
+    Returns:
+        Frame budgets per job; unreadable sources have no known frame budget.
+    """
+    rates: dict[Path, float | None] = {}
+    counts: list[int] = []
+    for batch in batches:
+        for job in batch.jobs:
+            if job.recording_path not in rates and not cancelled.is_set():
+                try:
+                    source = import_forces(job.recording_path)
+                    rates[job.recording_path] = (
+                        source.recording.motion.sample_rate.value
+                        if isinstance(source, ImportSuccess)
+                        else None
+                    )
+                except OSError, ValueError:
+                    rates[job.recording_path] = None
+            rate = rates.get(job.recording_path)
+            counts.append(
+                ceil(
+                    Fraction(job.last_sample - job.first_sample + 1)
+                    * job.preset.settings.frame_rate
+                    / Fraction(str(rate)),
+                )
+                if rate is not None
+                else 0,
+            )
+    return tuple(counts)
+
+
 def run_batches(
     batches: Sequence[SavedBatch],
     output_directory: Path,
@@ -248,6 +287,7 @@ def run_batches(
     ffmpeg: Path | None = None,
     cancelled: Event | None = None,
     progress: Callable[[int, int, ExportProgress | None, str], None] | None = None,
+    overall_progress: Callable[[int, int], None] | None = None,
     render_jobs: int = 1,
 ) -> BatchReport:
     """Run saved video jobs sequentially and retain a report and completed outputs.
@@ -259,6 +299,9 @@ def run_batches(
         cancelled: Cancellation event checked during the operation.
         progress: Callback receiving job index/count, export status and label. None status
             marks a settled job, including failure, without fabricating frame progress.
+        overall_progress: Callback receiving settled/submitted frame budgets and total
+            planned frames across all batches. Failed jobs settle their planned budget;
+            unreadable sources have no known frame budget. Cancellation retains progress.
         render_jobs: Requested concurrent frame-renderer count, bounded by local CPU
             availability.
 
@@ -276,6 +319,11 @@ def run_batches(
     if not total:
         raise ValueError("The selected batches contain no export jobs")
     cancel = cancelled if cancelled is not None else Event()
+    frame_counts = _planned_frame_counts(batches, cancel) if overall_progress else ()
+    total_frames = sum(frame_counts)
+    settled_frames = 0
+    if overall_progress:
+        overall_progress(0, total_frames)
     directory = output_directory
     directory.mkdir(parents=True, exist_ok=True)
     report_path = directory / "run-report.json"
@@ -338,6 +386,12 @@ def run_batches(
                             common["gpu_encoding"] = update.use_gpu
                         if progress:
                             progress(ordinal, total, update, label)
+                        if overall_progress:
+                            overall_progress(
+                                settled_frames
+                                + min(update.completed_frames, frame_counts[ordinal - 1]),
+                                total_frames,
+                            )
 
                     export_video(
                         timeline,
@@ -371,6 +425,9 @@ def run_batches(
             )
             if progress and not cancel.is_set():
                 progress(ordinal, total, None, label)
+            if overall_progress and not cancel.is_set():
+                settled_frames += frame_counts[ordinal - 1]
+                overall_progress(settled_frames, total_frames)
     return BatchReport(
         directory=directory,
         report_path=report_path,

@@ -11,11 +11,7 @@ from ride_forces_analyzer.ui.presentation.translation import bind, items
 # cspell:words pixmap Deutsch
 
 
-from PySide6.QtCore import (
-    Qt,
-    Slot,
-)
-from PySide6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
+from PySide6.QtCore import Slot
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -30,6 +26,7 @@ from PySide6.QtWidgets import (
 )
 
 from ride_forces_analyzer.exports.batches import make_job
+from ride_forces_analyzer.ui.presentation.icons import icon_with_plus
 from ride_forces_analyzer.storage.export_models import SavedPreset, make_preset
 from ride_forces_analyzer.storage.exports import (
     ExportStore,
@@ -111,18 +108,7 @@ class ExportPresets(QWidget):
         presets_row.addWidget(divider)
         self.save_preset = QPushButton()
         save_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton)
-        save_pixmap = QPixmap(40, 40)
-        save_pixmap.setDevicePixelRatio(2)
-        save_pixmap.fill(Qt.GlobalColor.transparent)
-        painter = QPainter(save_pixmap)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        save_icon.paint(painter, 0, 0, 20, 20)
-        for color, width in ((QColor("#203020"), 5), (QColor("#70d43b"), 3)):
-            painter.setPen(QPen(color, width))
-            painter.drawLine(12, 15, 17, 15)
-            painter.drawLine(15, 12, 15, 17)
-        painter.end()
-        self.save_preset.setIcon(QIcon(save_pixmap))
+        self.save_preset.setIcon(icon_with_plus(save_icon))
         bind(self.save_preset, tr("Save as…"), "toolTip")
         bind(self.save_preset, tr("Save as…"), "accessibleName")
         self.save_preset.clicked.connect(self._save_preset)
@@ -133,7 +119,7 @@ class ExportPresets(QWidget):
         self.update_preset.clicked.connect(self._update_preset)
         self.delete_preset = QPushButton()
         self.delete_preset.setIcon(
-            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogDiscardButton),
+            self.style().standardIcon(QStyle.StandardPixmap.SP_TrashIcon),
         )
         bind(self.delete_preset, tr("Delete preset"), "toolTip")
         bind(self.delete_preset, tr("Delete preset"), "accessibleName")

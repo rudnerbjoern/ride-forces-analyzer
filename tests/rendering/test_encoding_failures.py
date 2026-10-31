@@ -18,6 +18,7 @@ from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering import encoding
 from ride_forces_analyzer.rendering.model import (
     ExportSettings,
+    StandardFrameRate,
     ExportTimeline,
     VideoOutput,
     prepare_export,
@@ -28,6 +29,51 @@ from ride_forces_analyzer.rendering.model import (
 def timeline(manta: ExplorerData) -> ExportTimeline:
     assert manta.analysis is not None
     return prepare_export(manta.analysis, ExportSettings(prefer_gpu=False), 0, 0)
+
+
+@pytest.mark.parametrize(
+    "fps,expected",
+    [
+        (StandardFrameRate.FPS_50, [0, 100, 200, 205]),
+        (StandardFrameRate.FPS_23_976, [0, 48, 96, 98]),
+    ],
+)
+def test_live_preview_reuses_encoded_regions_at_two_second_frame_intervals(
+    timeline: ExportTimeline,
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    fps: StandardFrameRate,
+    expected: list[int],
+) -> None:
+    timeline = replace(timeline, last=205, settings=replace(timeline.settings, fps=fps))
+    rendered: list[bytes] = []
+    previews: list[tuple[int, bytes]] = []
+    process = Mock(stdin=BytesIO())
+    process.wait.return_value = 0
+    process.poll.return_value = 0
+
+    def frames(bound: ExportTimeline, jobs: int) -> Generator[bytes, None, None]:
+        for index in range(bound.frame_count):
+            raw = str(index).encode("ascii")
+            rendered.append(raw)
+            yield raw
+
+    def start(arguments: list[str], **kwargs: object) -> Mock:
+        Path(arguments[-1]).write_bytes(b"completed video")
+        return process
+
+    monkeypatch.setattr(encoding, "find_ffmpeg", Mock(return_value=Path("ffmpeg.exe")))
+    monkeypatch.setattr(encoding, "supports_nvidia", Mock(return_value=False))
+    monkeypatch.setattr(encoding, "render_region_bytes", frames)
+    monkeypatch.setattr(encoding.subprocess, "Popen", start)
+    encoding.export_video(
+        timeline,
+        export_directory / "preview.mov",
+        frame_preview=lambda index, raw: previews.append((index, raw)),
+    )
+    assert [index for index, _ in previews] == expected
+    assert len(rendered) == timeline.frame_count
+    assert all(raw is rendered[index] for index, raw in previews)
 
 
 def test_encoder_discovery_precedence_and_missing_locations(

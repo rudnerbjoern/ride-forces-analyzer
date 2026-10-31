@@ -12,7 +12,10 @@ from ride_forces_analyzer.storage.preferences import Appearance
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
-from ride_forces_analyzer.ui.presentation.chrome import install_native_captions
+from ride_forces_analyzer.ui.presentation.chrome import (
+    install_access_key_cues,
+    install_native_captions,
+)
 
 
 # cspell:words Segoe gridline
@@ -673,6 +676,7 @@ def apply_theme(application: QApplication, theme: Theme) -> None:
         None.
     """
     install_native_captions(application)
+    install_access_key_cues(application)
     palette = QPalette()
     for role, color in (
         (QPalette.ColorRole.Window, theme.background),

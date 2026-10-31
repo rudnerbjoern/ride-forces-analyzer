@@ -1,4 +1,4 @@
-"""Single-sample export previews using the production renderer, without encoding.
+"""Static export previews and live display of already rendered video frames.
 
 Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
@@ -19,7 +19,16 @@ from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from .frames import OverlayRenderer
 from .layouts import registry
 from .layouts.contracts import LayoutPosition
-from .model import ExportExtent, VideoAspect, ExportLayout, ExportSettings, PROFILES, prepare_export
+from .model import (
+    ExportExtent,
+    ExportTimeline,
+    VideoOutput,
+    VideoAspect,
+    ExportLayout,
+    ExportSettings,
+    PROFILES,
+    prepare_export,
+)
 
 DARK_BACKGROUND = "#162533"
 LIGHT_BACKGROUND = "#e4eaf0"
@@ -112,6 +121,41 @@ def compose_preview(
         maximum,
         Image.Resampling.LANCZOS,
     ).convert("RGB")
+
+
+def preview_rendered_region(
+    timeline: ExportTimeline,
+    raw: bytes,
+    background: PreviewBackground,
+) -> Image.Image:
+    """Compose an already rendered export region for display without rendering again.
+
+    Args:
+        timeline: Export geometry and opaque/transparent output settings.
+        raw: RGBA region bytes already submitted to the encoder.
+        background: Display-only backdrop selected in the export dialog.
+
+    Returns:
+        RGB preview within 960 by 540 pixels, or 540 by 960 for portrait output.
+
+    Raises:
+        ValueError: Region bytes do not match the resolved dimensions.
+        OSError: A bundled POV background cannot be read.
+    """
+    geometry = registry.resolve_geometry(timeline.settings)
+    region = Image.frombytes("RGBA", geometry.render_size, raw)
+    if timeline.settings.extent is ExportExtent.CONTENT_AREA:
+        frame = region
+    else:
+        alpha = 0 if timeline.settings.output == VideoOutput.TRANSPARENT else 255
+        frame = Image.new("RGBA", geometry.output_size, (0, 0, 0, alpha))
+        frame.alpha_composite(region, geometry.offset)
+    photo = None
+    if background in POV_BACKGROUNDS:
+        with Image.open(Path(__file__).with_name("pov") / f"{background.value}.jpg") as source:
+            photo = source.convert("RGBA")
+    size = (540, 960) if timeline.settings.aspect is VideoAspect.PORTRAIT else (960, 540)
+    return compose_preview(frame, size, background, photo)
 
 
 @dataclass(frozen=True, slots=True)

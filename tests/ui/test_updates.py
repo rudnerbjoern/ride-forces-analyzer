@@ -41,6 +41,8 @@ def test_manual_update_popup_skip_and_open_actions(
     wait_until(lambda: window.updates.worker is None)
     notice = window.findChild(QMessageBox, "updateNotice")
     assert notice is not None and notice.isVisible()
+    for action_button in notice.findChildren(QPushButton):
+        assert action_button.toolTip() == action_button.accessibleName() == action_button.text()
     assert QApplication.activeModalWidget() is notice
     assert "v0.3.1" in notice.text()
     button(notice, "Later").click()
