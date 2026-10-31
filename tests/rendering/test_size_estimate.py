@@ -145,24 +145,78 @@ def test_hud_estimate_tracks_measured_exports(
 
 @pytest.mark.parametrize("prefer_gpu", [False, True])
 @pytest.mark.parametrize(
-    "layout,measured_bytes,tolerance",
+    "layout,extent,measured_bytes,tolerance",
     [
-        pytest.param(ExportLayout.RIBBON, 16_010_922_883, 0.11, id="ribbon"),
-        pytest.param(ExportLayout.CORNERS, 13_791_547_469, 0.11, id="corners"),
-        pytest.param(ExportLayout.ORBIT, 9_153_051_038, 0.11, id="orbit"),
+        pytest.param(
+            ExportLayout.RIBBON,
+            ExportExtent.CONTENT_AREA,
+            16_010_922_883,
+            0.11,
+            id="ribbon-content",
+        ),
+        pytest.param(
+            ExportLayout.CORNERS,
+            ExportExtent.CONTENT_AREA,
+            13_791_547_469,
+            0.11,
+            id="corners-content",
+        ),
+        pytest.param(
+            ExportLayout.ORBIT,
+            ExportExtent.CONTENT_AREA,
+            9_153_051_038,
+            0.11,
+            id="orbit-content",
+        ),
         # Rounding 0.30667 to 0.31 puts the upper bound 11.2% above the measurement.
-        pytest.param(ExportLayout.COLUMN, 6_069_102_102, 0.12, id="column"),
+        pytest.param(
+            ExportLayout.COLUMN,
+            ExportExtent.CONTENT_AREA,
+            6_069_102_102,
+            0.12,
+            id="column-content",
+        ),
+        pytest.param(
+            ExportLayout.RIBBON,
+            ExportExtent.FULL_FRAME,
+            17_267_346_554,
+            0.11,
+            id="ribbon-full-frame",
+        ),
+        pytest.param(
+            ExportLayout.CORNERS,
+            ExportExtent.FULL_FRAME,
+            15_202_085_911,
+            0.11,
+            id="corners-full-frame",
+        ),
+        pytest.param(
+            ExportLayout.ORBIT,
+            ExportExtent.FULL_FRAME,
+            10_236_947_676,
+            0.11,
+            id="orbit-full-frame",
+        ),
+        # Rounding 0.08884 to 0.09 puts the upper bound 11.4% above the measurement.
+        pytest.param(
+            ExportLayout.COLUMN,
+            ExportExtent.FULL_FRAME,
+            7_032_587_238,
+            0.12,
+            id="column-full-frame",
+        ),
     ],
 )
-def test_content_estimate_tracks_measured_kraken_exports(
+def test_estimate_tracks_measured_kraken_layout_exports(
     layout: ExportLayout,
+    extent: ExportExtent,
     measured_bytes: int,
     tolerance: float,
     prefer_gpu: bool,
 ) -> None:
     settings = ExportSettings(
         layout=layout,
-        extent=ExportExtent.CONTENT_AREA,
+        extent=extent,
         fps=StandardFrameRate.FPS_59_94,
         prefer_gpu=prefer_gpu,
     )

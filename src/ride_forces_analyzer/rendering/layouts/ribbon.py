@@ -277,16 +277,21 @@ def create_renderer(timeline: ExportTimeline) -> ChartRenderer:
     return RibbonRenderer(timeline)
 
 
-# Bytes/output pixel/frame including container overhead. FFmpeg 9.0.2 CPU:
-# prores_ks 4444 qscale 4/alpha 16; libx264 fast CRF 18. Ten frames at 50 fps,
+# H.264 bytes/output pixel/frame including container overhead. FFmpeg 9.0.2 CPU:
+# libx264 fast CRF 18. Ten frames at 50 fps,
 # Manta 3600..3609 / Voltron 4960..4969, English, 11-sample smoothing, both formats.
 # Full: 3840x2160 / 2160x3840; native content: 3072x360 / 840x1120.
 # Rounded outward from half the observed minimum to 1.5 times the maximum.
 # Short clips include first-frame overhead; other scenes, durations, languages
 # and GPU encoders are unqualified. These are planning ranges, not guarantees.
-PRORES_4444_SIZE_RATES = (0.024, 0.220)  # Observed 0.04986..0.14613.
 H264_SIZE_RATES = (0.00018, 0.00117)  # Observed 0.0003628..0.0007794.
 H264_CONTENT_SIZE_RATES = (0.00119, 0.00543)  # Observed 0.0023835..0.0036197.
+# Full-frame ProRes uses the owner-provided Kraken GPU export reference:
+# 3840x2160, 60000/1001 fps, 9,544 frames, prores_ks_vulkan, 17,267,346,554 bytes.
+# Including MOV overhead: 0.21813 bytes/pixel/frame, rounded to 0.22 with +/-10%.
+# Applies to both backend preferences; CPU, portrait and other scenes remain
+# unqualified by this reference. These are planning ranges, not guarantees.
+PRORES_4444_SIZE_RATES = (0.198, 0.242)
 # Content-area ProRes uses the owner-provided Kraken GPU export reference:
 # 3072x360, 60000/1001 fps, 9,544 frames, prores_ks_vulkan, 16,010,922,883 bytes.
 # Including MOV overhead: 1.51692 bytes/pixel/frame, rounded to 1.52 with +/-10%.

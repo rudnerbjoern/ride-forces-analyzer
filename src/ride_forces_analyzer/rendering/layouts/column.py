@@ -313,16 +313,21 @@ class ColumnRenderer:
         return image
 
 
-# Bytes/output pixel/frame including container overhead. FFmpeg 9.0.2 CPU:
-# prores_ks 4444 qscale 4/alpha 16; libx264 fast CRF 18. Ten frames at 50 fps,
+# H.264 bytes/output pixel/frame including container overhead. FFmpeg 9.0.2 CPU:
+# libx264 fast CRF 18. Ten frames at 50 fps,
 # Manta 3600..3609 / Voltron 4960..4969, English, 11-sample smoothing, landscape.
 # Full: 3840x2160; content: 960x2160, without margin or scaling.
 # Rounded outward from half the observed minimum to 1.5 times the maximum.
 # Short clips include first-frame overhead; other scenes, durations, languages
 # and GPU encoders are unqualified. These are planning ranges, not guarantees.
-PRORES_4444_SIZE_RATES = (0.018, 0.059)  # Observed 0.03688..0.03884.
 H264_SIZE_RATES = (0.00022, 0.00080)  # Observed 0.0004436..0.0005293.
 H264_CONTENT_SIZE_RATES = (0.00081, 0.00296)  # Observed 0.0016378..0.0019717.
+# Full-frame ProRes uses the owner-provided Kraken GPU export reference:
+# 3840x2160, 60000/1001 fps, 9,544 frames, prores_ks_vulkan, 7,032,587,238 bytes.
+# Including MOV overhead: 0.08884 bytes/pixel/frame, rounded to 0.09 with +/-10%.
+# Applies to both backend preferences; CPU and other scenes remain unqualified
+# by this reference. These are planning ranges, not guarantees.
+PRORES_4444_SIZE_RATES = (0.081, 0.099)
 # Content-area ProRes uses the owner-provided Kraken GPU export reference:
 # 960x2160, 60000/1001 fps, 9,544 frames, prores_ks_vulkan, 6,069,102,102 bytes.
 # Including MOV overhead: 0.30667 bytes/pixel/frame, rounded to 0.31 with +/-10%.
