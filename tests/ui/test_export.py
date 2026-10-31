@@ -453,6 +453,7 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     dialog.start.click()
     wait_until(started.is_set)
     assert isinstance(dialog.worker, ExportWorker)
+    export_signals = dialog.worker.signals
     wait_until(lambda: "Export preview: frame 1/" in dialog.preview_caption.text())
     assert dialog.preview_view.source.toImage().pixelColor(0, 0).name() == "#ff0000"
     assert dialog.cancel.toolTip() == dialog.cancel.accessibleName() == "Cancel export"
@@ -473,7 +474,7 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     QThreadPool.globalInstance().waitForDone()
     assert dialog.start.isEnabled()
     assert "cancelled" in dialog.status.text()
-    dialog._export_preview(100, Image.new("RGB", (32, 18), "blue"))
+    export_signals.preview.emit(100, Image.new("RGB", (32, 18), "blue"))
     assert dialog.preview_view.source.toImage().pixelColor(0, 0).name() == "#ff0000"
     assert dialog.cancel.toolTip() == dialog.cancel.accessibleName() == "Close"
     assert dialog.eta.text() == ""
@@ -791,10 +792,13 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     monkeypatch.setattr(ui_batches, "run_batches", fake_run)
     monkeypatch.setattr(ui_batches, "find_ffmpeg", encoder)
     monkeypatch.setattr(QFileDialog, "getExistingDirectory", folder)
+    dialog.presets.selectAll()
+    assert dialog.add.isEnabled()
     dialog.run_all.click()
     wait_until(started.is_set)
     assert names == ["Day1", "Day2"]
     assert dialog.worker is not None
+    assert not dialog.add.isEnabled()
     dialog.worker.signals.progress.emit(
         1,
         5,
@@ -834,6 +838,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     cleared = taskbar.clear.call_count
     assert dialog.last_report is not None and len(dialog.last_report.results) == 5
     assert "5 cancelled" in dialog.status.text()
+    assert dialog.add.isEnabled()
     assert dialog.eta.text() == ""
     assert len(store.batch("Day1").jobs) == 4
     report = dialog.last_report
