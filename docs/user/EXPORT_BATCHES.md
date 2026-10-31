@@ -51,14 +51,20 @@ can share a batch, as can Full-frame and Content-area exports.
 Each job keeps its own output size. **Remove selected jobs** saves the removal immediately.
 You can manage saved batches without opening a recording first.
 
+**Add recordings × presets…** is available only after selecting a batch and at
+least one saved preset, and while no preparation or export is running.
+
 ## Run the queue and find the results
 
 1. Check the **FFmpeg** field; use **Browse…** if the executable was not found.
-2. Select the batches you want and click **Run selected batches…**, or choose
-   **Run ALL saved batches…**.
+2. Select the batches you want and click **Run selected…**, or choose **Run all…**
+   to export every saved batch. Both commands include all jobs in those batches;
+   marked job rows do not restrict the run. Tooltips explain the difference.
 3. Choose an output folder and follow the two progress bars.
 
-**Overall batch** gives every job an equal share, regardless of video length.
+**Overall batch** weights jobs by their planned output frame counts across the
+selected batches, including each job's interval and export frame rate. A failed
+job settles its planned share; a source that cannot be read has no known frame budget.
 **Current export** shows the frames prepared for the current video and resets
 when the next job starts. The remaining time estimates those pending frames.
 Afterward, **Finalizing video…** means the encoder is still finishing the file;

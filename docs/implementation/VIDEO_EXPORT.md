@@ -57,7 +57,7 @@ the [HUD demo](https://youtu.be/JGcNPKoKU1Q) uses the supplied
 
 ### Assistant and previews
 
-Two-step modal assistant captures analysis, graph cursor and smoothing on opening,
+Two-step modal assistant captures analysis and smoothing on opening,
 independently of later workspace changes. Both steps use a compact ride heading,
 labeled left controls/summary and large right preview. Step one groups export,
 force-display and encoding controls with presets and compact layout thumbnails.
@@ -76,7 +76,7 @@ It retains the selected preview-only background and displays the current export
 frame number. No additional frames are rendered and preview backgrounds are never
 encoded. Returning to setup restores the selected static preview.
 
-- All thumbnails and the main preview use production RGBA at the exact source sample,
+- Setup thumbnails and the main preview use production RGBA at the exact source sample,
   independently of video-frame quantization. Fit complete output within 960×540 /
   540×960 without cropping/stretching; HUD gallery entries always use Full frame.
 - Settings/background changes use a debounced worker; only its latest revision applies.

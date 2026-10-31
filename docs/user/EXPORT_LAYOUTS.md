@@ -82,10 +82,11 @@ dimensions do not guarantee a proportionally smaller video.
    size, and whether the chosen position leaves the action clear.
 7. Choose a light, dark or checkerboard preview background to check visibility.
 
-The thumbnails and large preview show the sample at 60% of the selected export
-range, rounded to a sample, rather than playing the video. Changing the range
+Before export, the thumbnails and large preview show the sample at 60% of the selected
+export range, rounded to a sample. Changing the range
 recalculates that moment without moving the workspace cursor. No FFmpeg installation
-is needed to compare layouts.
+is needed to compare layouts. During export, the large preview follows already
+rendered frames approximately every two video seconds.
 
 Layouts provide preset positions and styling. The assistant does not offer dragging,
 resizing, custom fonts or custom colors. You can choose the layout, export area,

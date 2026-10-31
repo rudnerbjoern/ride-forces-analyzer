@@ -172,6 +172,13 @@ immediately; Save persists the choices and Cancel restores the previous theme.
 Startup restores valid saved choices, otherwise the registered OS language (English
 fallback) and System appearance. `AppSettings` can explicitly override language.
 
+The loaded heading combines ride and optional park names, with device/sample/rate
+metadata on a shared baseline. Calibration and curve visibility occupy one row;
+the three icon-only view controls sit at its right edge with translated tooltips
+and accessible names. Calibrated plots show dashed 0 g and 1 g guides within the
+existing value range; raw views omit them. GPS status and attribution share the
+bottom action row, with Close pinned at its right edge.
+
 - Shared palette/styles cover controls, disabled/selected states, tables, lists,
   tooltips, dialogs and GPS. Charts have scheme-specific backgrounds, axes,
   force/raw colors and markers; light text/channel/marker colors meet 4.5:1

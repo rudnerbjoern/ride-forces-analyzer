@@ -15,7 +15,7 @@ Bundled POV photographs are listed in the
 ## Image content and reproduction
 
 All images use the actual application or production renderer, in English.
-Workspace and appearance screenshots show version 1.2.0.
+Workspace and appearance screenshots show version 1.3.0.
 Checkerboards illustrate transparency and are not part of exported videos.
 HUD placement views are enlarged to illustrate a 4K editing timeline; its video
 export retains the native 1920×1080 or 1080×1920 resolution.
@@ -25,7 +25,7 @@ Source hashes and exact settings are retained in the linked generated manifests.
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `workspace-dark.png`, `workspace-light.png`           | Voltron Nevera sample 4960, replay `01:07.39`, selection 4200–5100, 11-sample smoothing; 1600×1100 workspace.                                                                                                                                            | [Application](app-reference.json)        |
 | `voltron-gps-overview.png`                            | Voltron Nevera GPS dialog, 850×650, English, full recorded route with first/last markers and an explicitly loaded OpenStreetMap background. Map details may change over time.                                                                            | [GPS](gps-reference.json)                |
-| `export-preview.png`                                  | Same Voltron sample and smoothing; 1500×1000 assistant, Flow Ribbon at the bottom, Full frame, 3840×2160 landscape transparent output, 50 fps, 12-second window.                                                                                         | [Application](app-reference.json)        |
+| `export-preview.png`                                  | Voltron sample 6853, replay `01:45.32` (60% of markers 1571–10374), 11-sample smoothing; 1500×1000 assistant, Flow Ribbon bottom, Full frame, 3840×2160 landscape transparent output, 50 fps, 12-second window.                                          | [Application](app-reference.json)        |
 | `export-preview-pov.png`                              | Voltron Nevera preview sample 6853, replay `01:45.32` (60% of marker interval 1571–10374), 11-sample smoothing; same export settings as `export-preview.png`, with the bundled Toutatis POV photo.                                                       | [POV](pov-reference.json)                |
 | Voltron layout images and `voltron-export-themes.png` | All five layouts at sample 8575, replay `02:20.04` (140.08 s at 50 Hz; recording time 171.50 s), marker interval 1571–10374, 11-sample smoothing; 3840×2160 placement views and detail crops. HUD uses a 30-second window; other layouts use 12 seconds. | [Voltron Nevera](voltron-reference.json) |
 | `voltron-airtime-detail.png`                          | Voltron sample 4960, replay `01:07.39`, interval 4500–5250, 11-sample smoothing; force curves, context strip and legend.                                                                                                                                 | [README details](readme-reference.json)  |
