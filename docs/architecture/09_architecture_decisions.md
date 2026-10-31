@@ -1,7 +1,5 @@
 # 9. Architecture Decisions
 
-<!-- cspell:words orthogonalize -->
-
 [Architecture index](README.md)
 
 ## Platform

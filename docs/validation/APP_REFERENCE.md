@@ -1,7 +1,5 @@
 # Source-app comparison evidence
 
-<!-- cspell:words Flojector -->
-
 Source-specific observations and independent comparison values for the pinned
 [recordings](../development/RECORDINGS.md). Architecture remains authoritative for
 the [source-app policy](../architecture/09_architecture_decisions.md#source-app-projection),

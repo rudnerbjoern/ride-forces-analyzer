@@ -195,6 +195,7 @@ GERMAN: dict[str, str] = {
     "Current selection": "Aktuelle Auswahl",
     "Checkerboard · alpha preview only": "Schachbrett · nur Alphavorschau",
     "Light background · preview only": "Heller Hintergrund · nur Vorschau",
+    "POV · {0} · preview only": "POV · {0} · nur Vorschau",
     "Dark background · preview only": "Dunkler Hintergrund · nur Vorschau",
     "Choose a saved preset…": "Vorgabe auswählen…",
     "Saved preset: {0}": "Vorgabe gespeichert: {0}",

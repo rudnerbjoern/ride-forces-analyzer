@@ -1,7 +1,5 @@
 # Third-party licenses and materials
 
-<!-- cspell:words shiboken ast flexcache flexparser librt iniconfig pluggy dateutil tzdata libx264 libx265 nonfree Aileron GyanD WTFPL CMU QtCharts buildconf Segoe -->
-
 Copyright © 2026 Björn Rudner. Program code: [GPL-3.0-or-later](LICENSE).
 External components retain their licenses. This inventory records notice/source
 duties, not a complete notice bundle or installer clearance.
@@ -12,6 +10,13 @@ Versions/hashes: [uv.lock](uv.lock), [package-lock.json](package-lock.json),
 [ffmpeg.json](ffmpeg.json). Architecture owns
 [deployment](docs/architecture/07_deployment_view.md);
 [release documentation](docs/development/RELEASE.md#windows-packages) owns package checks.
+
+## Bundled POV photographs
+
+The [central owner grant](ASSET_LICENSES.md) defines licensing and attribution for
+recordings, app exports, documentation images and bundled POV photographs.
+Packages include that document and the complete CC BY-SA 4.0 legal text beside
+the POV assets.
 
 ## Python application components
 

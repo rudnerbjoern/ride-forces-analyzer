@@ -162,6 +162,10 @@ selected section. Choose the overlay language independently of the application.
 
 *Preview the selected chart moment before rendering. The checkerboard indicates transparency and is not part of the video.*
 
+![Additional export preview showing a Voltron Nevera Flow Ribbon overlay over the bundled Toutatis POV photo](docs/images/export-preview-pov.png)
+
+*See how an overlay looks over ride footage using a bundled POV photo. Preview backgrounds are not exported.*
+
 - **Transparent MOV (ProRes 4444):** place it above your footage in a video editor
   such as DaVinci Resolve. These editing files can be large.
 - **Opaque MP4 (H.264):** export a video with a solid background.
@@ -235,9 +239,8 @@ Copyright © 2026 Björn Rudner.
 The application is free and open source under **GPL-3.0-or-later**, including
 commercial use under its terms, without warranty. See [LICENSE](LICENSE).
 
-Reuse terms for supplied recordings are in the
-[recording notice](tests/fixtures/real/README.md); image licensing and attribution
-are in the [central image guide](docs/images/README.md). These grants do not
+The [central owner grant](ASSET_LICENSES.md) defines reuse of supplied recordings,
+app exports, documentation images and bundled POV photographs. It does not
 automatically apply to your own recordings or exports. Dependencies retain their
 own licenses; see [third-party notices](THIRD_PARTY_NOTICES.md) for their terms
 and documented distribution limits.

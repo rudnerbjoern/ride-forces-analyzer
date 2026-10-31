@@ -108,7 +108,7 @@ def test_release_build_outputs_only_windows_downloads_and_checksums(
             encoding="utf-8",
         )
         (root / "pyproject.toml").write_text('[project]\nversion = "1.2.3"\n', encoding="utf-8")
-        for name in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
+        for name in ("LICENSE", "THIRD_PARTY_NOTICES.md", "ASSET_LICENSES.md"):
             (root / name).write_text("synthetic notices", encoding="utf-8")
         distribution = root / ".tmp/encoder"
         (distribution / "bin").mkdir(parents=True)
@@ -134,6 +134,13 @@ def test_release_build_outputs_only_windows_downloads_and_checksums(
                 assert (
                     f"{build_windows.ICON_SOURCE}:ride_forces_analyzer/ui/presentation" in arguments
                 )
+                assert (
+                    f"{root / 'src/ride_forces_analyzer/rendering/pov'}"
+                    ":ride_forces_analyzer/rendering/pov" in arguments
+                )
+                assert (
+                    f"{root / 'ASSET_LICENSES.md'}:ride_forces_analyzer/rendering/pov" in arguments
+                )
                 version_info = Path(arguments[arguments.index("--version-file") + 1])
                 assert "StringStruct('FileVersion', '1.2.3')" in version_info.read_text(
                     encoding="utf-8",
@@ -156,6 +163,12 @@ def test_release_build_outputs_only_windows_downloads_and_checksums(
             for line in (result / "WINDOWS-SHA256SUMS.txt").read_text(encoding="utf-8").splitlines()
         }
         assert checksum_names == downloads
+        for variant in ("standard", "complete"):
+            with ZipFile(result / f"{prefix}-{variant}.zip") as archive:
+                assert (
+                    archive.read(f"{build_windows.APP_NAME}/ASSET_LICENSES.md")
+                    == (root / "ASSET_LICENSES.md").read_bytes()
+                )
 
 
 @pytest.mark.parametrize(

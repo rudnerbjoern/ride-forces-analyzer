@@ -3,8 +3,6 @@
 For an explanation of the displayed forces, colors and labels, see the
 [user forces and airtime guide](../user/FORCES_AND_AIRTIME.md).
 
-<!-- cspell:words Pendrill RFDB -->
-
 - **Input:** smoothed calibrated vertical channel and effective source sample rate;
   `AnalysisConfiguration.context_input` can select projection instead. The prepared
   stage retains its actual input/configuration.

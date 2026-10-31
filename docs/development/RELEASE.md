@@ -234,9 +234,8 @@ in the shipped catalog; no static Windows FFmpeg binary is added to these packag
 
 ## Distribution boundaries
 
-The program is GPL-3.0-or-later. The authorized recordings, including GPS/metadata,
-have a separate [recording notice](../../tests/fixtures/real/README.md).
-Documentation images follow the [central image guide](../images/README.md).
+The program is GPL-3.0-or-later. The authorized recordings, app exports, documentation images and
+bundled POV photographs follow the [central owner grant](../../ASSET_LICENSES.md).
 Original bytes and attribution notices remain intact. See
 [third-party notices](../../THIRD_PARTY_NOTICES.md) before any future binary bundle.
 

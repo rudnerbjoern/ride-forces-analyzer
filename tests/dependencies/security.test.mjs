@@ -5,8 +5,8 @@ import { createRequire } from "node:module";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-// cspell:words Schwerkraft échantillon
-// cspell:ignore Schwerkrafft échantilllon stylessheett
+// cspell:words Beschleunigung échantillon
+// cspell:ignore Beschleunigunng échantilllon stylessheett
 
 // Resolve from the actual consumers, even if npm stops hoisting these packages.
 const project = createRequire(import.meta.url);
@@ -20,7 +20,7 @@ const { micromark } = await import(pathToFileURL(markdown.resolve("micromark")))
 const { math, mathHtml } = await import(pathToFileURL(mathModule));
 
 for (const [language, correct, typo] of [
-  ["de", "Schwerkraft", "Schwerkrafft"],
+  ["de", "Beschleunigung", "Beschleunigunng"],
   ["fr", "échantillon", "échantilllon"],
 ]) {
   test(`CSpell checks the ${language} catalog, rejects typos and keeps its dictionary file-scoped`, async () => {

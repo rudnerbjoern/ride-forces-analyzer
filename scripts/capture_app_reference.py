@@ -31,11 +31,13 @@ from ride_forces_analyzer.storage.preferences import Appearance
 from ride_forces_analyzer.ui.exports.video import ExportDialog
 from ride_forces_analyzer.ui.dialogs.gps import GpsDialog
 from ride_forces_analyzer.rendering.layouts.contracts import ExportExtent, LayoutPosition
+from ride_forces_analyzer.rendering.preview import PreviewBackground
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "tests/fixtures/real/VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
 SOURCE_SHA256 = "f48157cadbfeb374eeadf48112b0bbfc1e8b47c580cb303342cf65977054ad04"
+POV_SOURCE = ROOT / "src/ride_forces_analyzer/rendering/pov/pov-toutatis.jpg"
 SAMPLE = 4960
 SELECTION = (4200, 5100)
 SMOOTHING = 11
@@ -89,7 +91,7 @@ def save_widget(application: QApplication, widget: QWidget, target: Path) -> Non
     application.processEvents()
     if not widget.grab().save(str(target)):
         raise RuntimeError(f"Cannot save reference image: {target.name}")
-    print(f"Captured {target.name}: sample {SAMPLE}", flush=True)
+    print(f"Captured {target.name}", flush=True)
 
 
 def capture_details(application: QApplication, window: ExplorerWindow, output: Path) -> None:
@@ -459,7 +461,9 @@ def capture_reference(
                 dialog.form.flip_vertical.setChecked(True)
                 dialog.form.flip_lateral.setChecked(False)
                 dialog.form.gpu.setChecked(True)
-                dialog.background.setCurrentIndex(0)
+                dialog.background.setCurrentIndex(
+                    dialog.background.findData(PreviewBackground.CHECKER.value),
+                )
                 dialog.form.fps.setCurrentText("50")
                 dialog.form.seconds.setValue(12)
                 dialog.form.encoder.setText(".tmp/ffmpeg/bin/ffmpeg.exe")
@@ -493,6 +497,32 @@ def capture_reference(
                     "window_seconds": 12,
                 }
                 (output / "app-reference.json").write_text(
+                    json.dumps(manifest, indent=2) + "\n",
+                    encoding="utf-8",
+                    newline="\n",
+                )
+                dialog.background.setCurrentIndex(
+                    dialog.background.findData(PreviewBackground.POV_TOUTATIS.value),
+                )
+                wait_for(
+                    application,
+                    lambda: (
+                        preview_dialog.previews.result is not None
+                        and preview_dialog.previews.worker is None
+                    ),
+                )
+                save_widget(application, dialog, output / "export-preview-pov.png")
+                assert dialog.previews.result is not None
+                preview_sample = dialog.previews.result.sample
+                manifest.update(
+                    image="export-preview-pov.png",
+                    preview_background=dialog.background.currentData(),
+                    preview_background_sha256=sha256(POV_SOURCE.read_bytes()).hexdigest(),
+                    preview_sample=preview_sample,
+                    preview_replay=window.data.replay_text(preview_sample),
+                    preview_interval=dialog.form.bounds(dialog.analysis, SELECTION),
+                )
+                (output / "pov-reference.json").write_text(
                     json.dumps(manifest, indent=2) + "\n",
                     encoding="utf-8",
                     newline="\n",

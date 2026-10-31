@@ -194,6 +194,7 @@ FRENCH: dict[str, str] = {
     "Current selection": "Sélection actuelle",
     "Checkerboard · alpha preview only": "Damier · aperçu de transparence uniquement",
     "Light background · preview only": "Fond clair · aperçu uniquement",
+    "POV · {0} · preview only": "POV · {0} · aperçu uniquement",
     "Dark background · preview only": "Fond sombre · aperçu uniquement",
     "Choose a saved preset…": "Choisir un préréglage enregistré…",
     "Saved preset: {0}": "Préréglage enregistré : {0}",

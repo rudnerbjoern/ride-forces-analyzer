@@ -11,6 +11,7 @@ from ride_forces_analyzer.validation.checks import validate_sample_range
 from dataclasses import dataclass, replace
 from collections.abc import Mapping
 from enum import StrEnum
+from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageOps
 
@@ -33,11 +34,27 @@ class PreviewBackground(StrEnum):
         CHECKER: Named value for checker (`checker`).
         LIGHT: Named value for light (`light`).
         DARK: Named value for dark (`dark`).
+        POV_LOUP_GAROU: Bundled Loup-Garou video still.
+        POV_GOUDURIX: Bundled Goudurix video still.
+        POV_TONNERRE_2_ZEUS: Bundled Tonnerre 2 Zeus video still.
+        POV_TOUTATIS: Bundled Toutatis video still.
     """
 
     CHECKER = "checker"
     LIGHT = "light"
     DARK = "dark"
+    POV_LOUP_GAROU = "pov-loup-garou"
+    POV_GOUDURIX = "pov-goudurix"
+    POV_TONNERRE_2_ZEUS = "pov-tonnerre-2-zeus"
+    POV_TOUTATIS = "pov-toutatis"
+
+
+POV_BACKGROUNDS = {
+    PreviewBackground.POV_LOUP_GAROU: "Loup-Garou",
+    PreviewBackground.POV_GOUDURIX: "Goudurix",
+    PreviewBackground.POV_TONNERRE_2_ZEUS: "Tonnerre 2 Zeus",
+    PreviewBackground.POV_TOUTATIS: "Toutatis",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,10 +73,11 @@ class ProfilePreview:
     image: Image.Image
 
 
-def _preview_frame(
+def compose_preview(
     frame: Image.Image,
     maximum: tuple[int, int],
     background: PreviewBackground,
+    photo: Image.Image | None = None,
 ) -> Image.Image:
     """Composite an export frame and fit its complete geometry for display.
 
@@ -67,14 +85,19 @@ def _preview_frame(
         frame: Complete RGBA export frame at its resolved output dimensions.
         maximum: Display width/height limits; never crop or stretch the frame.
         background: Preview-only backdrop, including square checker cells when selected.
+        photo: Decoded POV image, fitted and center-cropped behind the complete frame.
 
     Returns:
         RGB display image preserving the export aspect ratio within the limits.
     """
-    canvas = Image.new(
-        "RGBA",
-        frame.size,
-        DARK_BACKGROUND if background is PreviewBackground.DARK else LIGHT_BACKGROUND,
+    canvas = (
+        ImageOps.fit(photo, frame.size, Image.Resampling.LANCZOS)
+        if photo is not None
+        else Image.new(
+            "RGBA",
+            frame.size,
+            DARK_BACKGROUND if background is PreviewBackground.DARK else LIGHT_BACKGROUND,
+        )
     )
     if background is PreviewBackground.CHECKER:
         scale = min(maximum[0] / frame.width, maximum[1] / frame.height)
@@ -133,11 +156,16 @@ def build_previews(
 
     Raises:
         ValueError: Preview sample outside recording. Invalid export sample interval.
+        OSError: A bundled POV photograph cannot be read.
     """
     count = len(analysis.time.source_indices)
     if not 0 <= sample < count:
         raise ValueError("Preview sample outside recording")
     validate_sample_range(first, last, count, "Invalid export sample interval")
+    photo = None
+    if background in POV_BACKGROUNDS:
+        with Image.open(Path(__file__).with_name("pov") / f"{background.value}.jpg") as source:
+            photo = source.convert("RGBA")
     outside = not first <= sample <= last
     timeline = prepare_export(
         analysis,
@@ -183,6 +211,6 @@ def build_previews(
         frame = OverlayRenderer(
             replace(timeline, settings=profile, channels=channels),
         ).render_sample(sample)
-        image = _preview_frame(frame, size, background)
+        image = compose_preview(frame, size, background, photo)
         previews.append(ProfilePreview(layout, title, image))
     return ExportPreview(sample, outside, tuple(previews))

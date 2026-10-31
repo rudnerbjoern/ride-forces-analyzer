@@ -1,7 +1,5 @@
 # Export layout extensions
 
-<!-- cspell:words Bahnschrift -->
-
 For choosing and reading the available layouts, see the
 [user layout guide](../user/EXPORT_LAYOUTS.md). This page covers implementation
 and extension of the renderers.

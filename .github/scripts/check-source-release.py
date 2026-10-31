@@ -18,6 +18,7 @@ REQUIRED_FILES = (
     "start.ps1",
     "README.md",
     "LICENSE",
+    "ASSET_LICENSES.md",
     "THIRD_PARTY_NOTICES.md",
     "scripts/build_windows.py",
     "scripts/check_windows_packages.py",
