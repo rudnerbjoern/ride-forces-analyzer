@@ -132,7 +132,7 @@ def test_localized_export_in_4k_workspace_keeps_controls_reachable(
                 assert (dialog.width(), dialog.height()) == DIALOG_SIZE
                 assert scroll is not None and scroll.verticalScrollBar().maximum() == 0
                 assert dialog.next.isVisible() and dialog.rect().contains(dialog.next.geometry())
-                assert dialog.next.text() == 'Export prüfen →'
+                assert dialog.next.text() == 'Export prüfen'
                 for language in (0, 1, 2, 0, 2):
                     window.set_ui_language(language)
                     app.processEvents()
@@ -178,7 +178,12 @@ def test_localized_export_in_4k_workspace_keeps_controls_reachable(
         "DIALOG_SIZE",
         repr(dialog_size),
     )
-    environment = {**os.environ, "QT_SCALE_FACTOR": scale_factor, "QT_QPA_PLATFORM": "windows"}
+    environment = {
+        **os.environ,
+        "QT_SCALE_FACTOR": scale_factor,
+        "QT_QPA_PLATFORM": "windows",
+        "PYTHONIOENCODING": "utf-8",
+    }
     result = subprocess.run(
         [sys.executable, "-c", script],
         env=environment,
@@ -450,7 +455,7 @@ def test_german_export_and_batch_dialogs_fit_and_save_language(
                 assert_combo_text_fits(dialog.form.position)
             dialog.form.layout_profile.setCurrentIndex(0)
             assert dialog.form.position.count() == 2
-            assert dialog.next.text() == "Export prüfen →"
+            assert dialog.next.text() == "Export prüfen"
             for combo in dialog.findChildren(QComboBox):
                 if combo.isVisible():
                     assert_combo_text_fits(combo)

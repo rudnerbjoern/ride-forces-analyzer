@@ -350,7 +350,8 @@ class ExplorerWindow(QMainWindow):
         self.heading.setObjectName("recordingHeading")
         self.heading.setTextFormat(Qt.TextFormat.PlainText)
         self.heading.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        self.heading.setMinimumWidth(0)
+        # A positive minimum overrides QLabel's unshrinkable text-width hint.
+        self.heading.setMinimumWidth(1)
         header = QHBoxLayout()
         header.addWidget(self.heading, 0, Qt.AlignmentFlag.AlignBottom)
         self.header_summary = bind(
