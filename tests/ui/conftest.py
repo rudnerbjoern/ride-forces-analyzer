@@ -3,18 +3,16 @@
 # cspell:words autouse
 
 from collections.abc import Iterator
-from math import gcd
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
 from PySide6.QtCore import QEvent, QThreadPool
 from PySide6.QtWidgets import QApplication
-from ride_forces_analyzer.rendering.model import VideoOutput
 from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.i18n import Language, get_language, set_language
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
-from tests.ui.helpers import resize_workspace, wait_until
+from tests.ui.helpers import SmallPreviewRenderer, resize_workspace, wait_until
 
 
 @pytest.fixture(autouse=True)
@@ -54,19 +52,11 @@ def explorer_window() -> Iterator[ExplorerWindow]:
 
 @pytest.fixture
 def small_preview_frames(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Exercise real preview workers/compositing without drawing five 4K layouts.
+    """Keep timeline/worker/compositing contracts, substituting layout image generation.
 
-    Production frame/preview tests own geometry, alpha and rendered content.
+    Rendering tests own full-resolution layout construction, glyphs and alpha.
     """
-    from PIL import Image
-    from ride_forces_analyzer.rendering.frames import OverlayRenderer
-    from ride_forces_analyzer.rendering.layouts import resolve_geometry
-
-    def render_sample(self: OverlayRenderer, position: float) -> Image.Image:
-        assert self.timeline.first <= position <= self.timeline.last
-        alpha = 0 if self.timeline.settings.output == VideoOutput.TRANSPARENT else 255
-        width, height = resolve_geometry(self.timeline.settings).output_size
-        divisor = gcd(width, height)
-        return Image.new("RGBA", (width // divisor, height // divisor), (0, 0, 0, alpha))
-
-    monkeypatch.setattr(OverlayRenderer, "render_sample", render_sample)
+    monkeypatch.setattr(
+        "ride_forces_analyzer.rendering.preview.OverlayRenderer",
+        SmallPreviewRenderer,
+    )

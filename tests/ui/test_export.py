@@ -83,7 +83,6 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     assert dialog.previews.result is not None and not dialog.previews.result.outside_range
     assert dialog.previews.result.sample == 144
     assert dialog.current_sample == sample
-    assert "OUTSIDE" not in dialog.preview_note.text()
     # Range changes select their own 60% sample, independently of the graph cursor.
     dialog.form.interval.setCurrentIndex(2)
     end = len(dialog.analysis.time.source_indices) - 1

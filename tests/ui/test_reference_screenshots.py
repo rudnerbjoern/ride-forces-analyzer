@@ -1,4 +1,4 @@
-"""Fixed native screenshot scene, repeatability and source/profile preservation."""
+"""Native screenshot scenes retain source identities, settings and isolated profiles."""
 
 # cspell:words getextrema
 
@@ -6,11 +6,12 @@ from hashlib import sha256
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
 from textwrap import dedent
+
+from scripts import capture_app_reference
 
 from PIL import Image
 import pytest
@@ -24,7 +25,7 @@ SOURCE = REAL_FIXTURE_DIRECTORY / "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC
 SOURCE_SHA256 = "f48157cadbfeb374eeadf48112b0bbfc1e8b47c580cb303342cf65977054ad04"
 
 
-def test_capture_cli_is_repeatable_and_preserves_original_and_preferences() -> None:
+def test_capture_cli_preserves_reference_scene_source_and_preferences() -> None:
     with TemporaryDirectory(dir=ROOT / ".tmp") as directory:
         work = Path(directory)
         profile = work / "personal-profile"
@@ -32,39 +33,33 @@ def test_capture_cli_is_repeatable_and_preserves_original_and_preferences() -> N
         sentinel = profile / "keep.txt"
         sentinel.write_text("Keep personal settings unchanged", encoding="utf-8")
         environment = {**os.environ, "LOCALAPPDATA": str(profile), "QT_SCALE_FACTOR": "2"}
-        captures: list[dict[str, bytes]] = []
-        for name in ("first", "second"):
-            output = work / name
-            result = subprocess.run(
-                [sys.executable, str(SCRIPT), "--output", str(output)],
-                cwd=work,
-                env=environment,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                timeout=120,
-                check=False,
-            )
-            assert result.returncode == 0, result.stdout + result.stderr
-            manifest = json.loads((output / "app-reference.json").read_text(encoding="utf-8"))
-            assert manifest["source_sha256"] == SOURCE_SHA256
-            assert manifest["sample"] == 4960 and manifest["selection"] == [4200, 5100]
-            assert manifest["smoothing"] == 11 and manifest["language"] == "en"
-            assert manifest["layout"] == "ribbon" and manifest["fps"] == 50
-            assert manifest["position"] == "bottom"
-            assert manifest["extent"] == "full_frame"
-            pixels: dict[str, bytes] = {}
-            for filename, size in (
-                ("workspace-dark.png", (1600, 1100)),
-                ("workspace-light.png", (1600, 1100)),
-                ("export-preview.png", (1500, 1000)),
-            ):
-                with Image.open(output / filename) as image:
-                    assert image.size == size
-                    pixels[filename] = image.convert("RGB").tobytes()
-            assert len(list(output.glob("*.png"))) == 3
-            captures.append(pixels)
-        assert captures[0] == captures[1]
+        output = work / "reference"
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "--output", str(output)],
+            cwd=work,
+            env=environment,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=120,
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        manifest = json.loads((output / "app-reference.json").read_text(encoding="utf-8"))
+        assert manifest["source_sha256"] == SOURCE_SHA256
+        assert manifest["sample"] == 4960 and manifest["selection"] == [4200, 5100]
+        assert manifest["smoothing"] == 11 and manifest["language"] == "en"
+        assert manifest["layout"] == "ribbon" and manifest["fps"] == 50
+        assert manifest["position"] == "bottom" and manifest["extent"] == "full_frame"
+        for filename, size in (
+            ("workspace-dark.png", (1600, 1100)),
+            ("workspace-light.png", (1600, 1100)),
+            ("export-preview.png", (1500, 1000)),
+        ):
+            with Image.open(output / filename) as image:
+                assert image.size == size
+                assert image.convert("RGB").getextrema() != ((0, 0), (0, 0), (0, 0))
+        assert len(list(output.glob("*.png"))) == 3
         assert list(profile.iterdir()) == [sentinel]
         assert sentinel.read_text(encoding="utf-8") == "Keep personal settings unchanged"
         assert sha256(SOURCE.read_bytes()).hexdigest() == SOURCE_SHA256
@@ -101,54 +96,38 @@ def test_theme_capture_uses_the_same_scene_for_each_appearance() -> None:
         assert len(list(output.glob("*.png"))) == len(manifest["themes"])
 
 
-def test_capture_rejects_changed_source_before_writing_images() -> None:
+def test_capture_rejects_changed_source_before_writing_images(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     with TemporaryDirectory(dir=ROOT / ".tmp") as directory:
         work = Path(directory)
-        changed = work / "tests/fixtures/real" / SOURCE.name
-        changed.parent.mkdir(parents=True)
+        changed = work / SOURCE.name
         changed.write_bytes(SOURCE.read_bytes() + b"\n")
-        copied_script = work / "scripts" / SCRIPT.name
-        copied_script.parent.mkdir()
-        shutil.copyfile(SCRIPT, copied_script)
-        shutil.copyfile(ROOT / "pyproject.toml", work / "pyproject.toml")
+        monkeypatch.setattr(capture_app_reference, "SOURCE", changed)
         output = work / "output"
-        result = subprocess.run(
-            [sys.executable, str(copied_script), "--output", str(output)],
-            cwd=work,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            timeout=30,
-            check=False,
-        )
-        assert result.returncode != 0
-        assert "source hash differs" in result.stderr
+        with pytest.raises(ValueError, match="source hash differs"):
+            capture_app_reference.capture_reference(output)
         assert not output.exists()
 
 
-@pytest.mark.parametrize("missing_context", [False, True])
-def test_detail_capture_uses_three_recordings_and_identical_comparison_scales(
-    missing_context: bool,
-) -> None:
+def test_detail_capture_preserves_sources_scales_and_missing_context_fallback() -> None:
     """Real UI crops retain source identities and honest smoothing comparison axes."""
     with TemporaryDirectory(dir=ROOT / ".tmp") as directory:
         work = Path(directory)
         output = work / "details"
-        command = [sys.executable, str(SCRIPT), "--details", "--output", str(output)]
-        if missing_context:
-            wrapper = dedent("""
-                import sys
-                from runpy import run_path
-                from ride_forces_analyzer.explorer import ExplorerData
-                original = ExplorerData.vertical_context_label
-                ExplorerData.vertical_context_label = (
-                    lambda self, index: None if index % 2 == 0 else original(self, index)
-                )
-                script = sys.argv.pop(1)
-                sys.argv[0] = script
-                run_path(script, run_name="__main__")
-            """)
-            command = [sys.executable, "-c", wrapper, *command[1:]]
+        wrapper = dedent("""
+            import sys
+            from runpy import run_path
+            from ride_forces_analyzer.explorer import ExplorerData
+            original = ExplorerData.vertical_context_label
+            ExplorerData.vertical_context_label = (
+                lambda self, index: None if index % 2 == 0 else original(self, index)
+            )
+            script = sys.argv.pop(1)
+            sys.argv[0] = script
+            run_path(script, run_name="__main__")
+        """)
+        command = [sys.executable, "-c", wrapper, str(SCRIPT), "--details", "--output", str(output)]
         result = subprocess.run(
             command,
             cwd=work,

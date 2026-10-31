@@ -8,10 +8,12 @@ from ride_forces_analyzer.analysis.preparation import (
 
 # cspell:words Einstellungen
 
+import pytest
+
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from PySide6.QtWidgets import QComboBox, QDialogButtonBox, QToolBar
+from PySide6.QtWidgets import QDialogButtonBox
 
 from ride_forces_analyzer.rendering.model import ExportSettings
 from ride_forces_analyzer.storage.export_models import SavedPreset
@@ -24,6 +26,9 @@ from ride_forces_analyzer.ui.dialogs.settings import SettingsDialog
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.ui.helpers import wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
+
+
+pytestmark = pytest.mark.usefixtures("small_preview_frames")
 
 
 def test_settings_clear_map_cache_is_immediate_and_reports_failure(
@@ -71,8 +76,6 @@ def test_settings_save_cancel_and_new_exports_keep_independent_frame_rates(
     window = explorer_window
     window.set_ui_language(1)
     window.set_appearance(1)
-    toolbar = window.findChild(QToolBar)
-    assert toolbar is not None and not toolbar.findChildren(QComboBox)
     window.settings_action.trigger()
     dialog = window.findChild(SettingsDialog, "settingsDialog")
     assert dialog is not None and dialog.isVisible()

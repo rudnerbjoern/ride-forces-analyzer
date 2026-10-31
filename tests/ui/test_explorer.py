@@ -1002,70 +1002,65 @@ def test_smoothing_slider_preserves_source_time_and_selection(
 def test_workspace_layout_and_cards_follow_size_language_and_theme(
     explorer_window: ExplorerWindow,
 ) -> None:
-    for initial_width in (720, 1280):
-        resize_workspace(explorer_window, 720, 480)
-        explorer_window.inspector_button.setChecked(False)
-        explorer_window.inspector.details_button.setChecked(False)
-        window = explorer_window
-        resize_workspace(window, initial_width, 480)
-        QTest.qWait(50)
-        wide = initial_width >= 1080
-        assert window.inspector.isVisible() == wide
-        assert window.plot_panel.isVisible()
-        assert window.workspace.orientation() == (
-            Qt.Orientation.Horizontal if wide else Qt.Orientation.Vertical
+    window = explorer_window
+    assert window.inspector.isVisible()
+    assert window.workspace.orientation() == Qt.Orientation.Horizontal
+    resize_workspace(window, 720, 480)
+    window.inspector_button.setChecked(False)
+    window.inspector.details_button.setChecked(False)
+    assert not window.inspector.isVisible()
+    assert window.plot_panel.isVisible()
+    assert window.workspace.orientation() == Qt.Orientation.Vertical
+    window.inspector_button.click()
+    assert window.inspector.isVisible()
+    assert not window.plot_panel.isVisible()
+    resize_workspace(window, 1280, 820)
+    QTest.qWait(50)
+    assert window.inspector.isVisible()
+    assert window.workspace.orientation() == Qt.Orientation.Horizontal
+    assert not window.inspector.details_body.isVisible()
+    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
+    wait_until(window.open_action.isEnabled)
+    assert window.data is not None
+    assert window.header_summary.text() == window.data.overview_text
+    for index in (2013, 4782):
+        window.navigation.position.setValue(index)
+        assert window.navigation.time_readout.text() == window.data.sample_clock_text(index)
+        assert [label.text() for label in window.navigation.value_labels] == [
+            card[1] for card in window.data.sample_cards(index)
+        ]
+        context = window.data.vertical_context_label(index)
+        assert context is not None
+        assert window.navigation.value_hints[0].text() == window.data.sample_cards(index)[0][2]
+        assert window.theme.vertical_context_colors[context] in (
+            window.navigation.value_hints[0].styleSheet()
         )
-        if not wide:
-            window.inspector_button.click()
-            assert window.inspector.isVisible()
-            assert not window.plot_panel.isVisible()
-        resize_workspace(window, 1280, 820)
-        QTest.qWait(50)
-        assert window.inspector.isVisible()
-        assert window.workspace.orientation() == Qt.Orientation.Horizontal
-        assert not window.inspector.details_body.isVisible()
-        window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
-        wait_until(window.open_action.isEnabled)
-        assert window.data is not None
-        assert window.header_summary.text() == window.data.overview_text
-        for index in (2013, 4782):
-            window.navigation.position.setValue(index)
-            assert window.navigation.time_readout.text() == window.data.sample_clock_text(index)
-            assert [label.text() for label in window.navigation.value_labels] == [
-                card[1] for card in window.data.sample_cards(index)
-            ]
-            context = window.data.vertical_context_label(index)
-            assert context is not None
-            assert window.navigation.value_hints[0].text() == window.data.sample_cards(index)[0][2]
-            assert window.theme.vertical_context_colors[context] in (
-                window.navigation.value_hints[0].styleSheet()
-            )
-        window.reference_toggle.setChecked(False)
-        assert [label.text() for label in window.navigation.value_names] == ["x", "y", "z"]
-        assert all("unknown" in label.text() for label in window.navigation.value_hints)
-        window.reference_toggle.setChecked(True)
-        resize_workspace(window, 720, 480)
-        QTest.qWait(50)
-        assert (window.width(), window.height()) == (720, 480)
-        assert window.workspace.orientation() == Qt.Orientation.Vertical
-        assert not window.inspector.isVisible()
-        window.inspector_button.click()
-        assert window.inspector.isVisible()
-        assert not window.plot_panel.isVisible()
-        assert (window.width(), window.height()) == (720, 480)
-        window.notes_button.click()
-        assert window.inspector.details_body.isVisible() and window.inspector.notes.isVisible()
-        QTest.qWait(20)
-        note_position = window.inspector.notes.mapTo(window.inspector.viewport(), QPoint(0, 0))
-        assert note_position.y() < window.inspector.viewport().height()
-        assert note_position.y() + window.inspector.notes.height() > 0
-        window.inspector.details_button.click()
-        assert not window.notes_button.isChecked() and not window.inspector.notes.isVisible()
-        resize_workspace(window, 1280, 820)
-        QTest.qWait(50)
-        assert window.workspace.orientation() == Qt.Orientation.Horizontal
-        assert window.inspector.isVisible()
-        assert window.plot.chart.plotArea().width() > 0
+    window.reference_toggle.setChecked(False)
+    assert [label.text() for label in window.navigation.value_names] == ["x", "y", "z"]
+    assert all("unknown" in label.text() for label in window.navigation.value_hints)
+    window.reference_toggle.setChecked(True)
+    resize_workspace(window, 720, 480)
+    QTest.qWait(50)
+    assert (window.width(), window.height()) == (720, 480)
+    assert window.workspace.orientation() == Qt.Orientation.Vertical
+    assert not window.inspector.isVisible()
+    window.inspector_button.click()
+    assert window.inspector.isVisible()
+    assert not window.plot_panel.isVisible()
+    assert (window.width(), window.height()) == (720, 480)
+    window.notes_button.click()
+    assert window.inspector.details_body.isVisible() and window.inspector.notes.isVisible()
+    QTest.qWait(20)
+    note_position = window.inspector.notes.mapTo(window.inspector.viewport(), QPoint(0, 0))
+    assert note_position.y() < window.inspector.viewport().height()
+    assert note_position.y() + window.inspector.notes.height() > 0
+    window.inspector.details_button.click()
+    assert not window.notes_button.isChecked() and not window.inspector.notes.isVisible()
+    resize_workspace(window, 1280, 820)
+    QTest.qWait(50)
+    assert window.workspace.orientation() == Qt.Orientation.Horizontal
+    assert window.inspector.isVisible()
+    assert window.plot.chart.plotArea().width() > 0
 
     window = explorer_window
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("VoltronNevera-*.forces")))

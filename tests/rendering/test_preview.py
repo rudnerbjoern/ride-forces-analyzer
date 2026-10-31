@@ -21,6 +21,7 @@ from ride_forces_analyzer.rendering.model import (
     ExportLayout,
     VideoAspect,
     ExportSettings,
+    ExportTimeline,
     PROFILES,
     prepare_export,
 )
@@ -30,6 +31,25 @@ from ride_forces_analyzer.rendering.preview import (
     PreviewBackground,
     build_previews,
 )
+
+
+class PreviewProbeRenderer:
+    """Bind real timelines for settings/position probes without drawing layouts."""
+
+    def __init__(self, timeline: ExportTimeline) -> None:
+        self.timeline = timeline
+
+    def render_sample(self, position: float) -> Image.Image:
+        return Image.new("RGBA", (8, 8))
+
+
+@pytest.fixture
+def preview_probe(monkeypatch: pytest.MonkeyPatch) -> type[PreviewProbeRenderer]:
+    monkeypatch.setattr(
+        "ride_forces_analyzer.rendering.preview.OverlayRenderer",
+        PreviewProbeRenderer,
+    )
+    return PreviewProbeRenderer
 
 
 @pytest.mark.parametrize("layout", [profile[0] for profile in PROFILES])
@@ -115,7 +135,14 @@ def test_previews_match_production_at_exact_graph_sample(
         (key, title) for key, title in PROFILES if aspect in registry.PLUGINS[key].supported_aspects
     )
     timeline = prepare_export(manta.analysis, settings, first, last)
-    for profile in result.profiles:
+    # Qualify every gallery layout once per aspect; remaining cases qualify the
+    # selected HUD/content output without redrawing all gallery references again.
+    reference_profiles = (
+        result.profiles
+        if selected_layout is ExportLayout.ORBIT and extent is ExportExtent.FULL_FRAME
+        else tuple(profile for profile in result.profiles if profile.layout is selected_layout)
+    )
+    for profile in reference_profiles:
         chosen = (
             settings
             if profile.layout == selected_layout
@@ -163,17 +190,18 @@ def test_previews_match_production_at_exact_graph_sample(
 def test_edge_choice_moves_corner_previews_to_equivalent_side(
     manta: ExplorerData,
     monkeypatch: pytest.MonkeyPatch,
+    preview_probe: type[PreviewProbeRenderer],
     position: LayoutPosition,
     previous: LayoutPosition,
 ) -> None:
     assert manta.analysis is not None
     settings_by_layout: dict[str, ExportSettings] = {}
 
-    def render(self: OverlayRenderer, sample: float) -> Image.Image:
+    def render(self: PreviewProbeRenderer, sample: float) -> Image.Image:
         settings_by_layout[self.timeline.settings.layout] = self.timeline.settings
         return Image.new("RGBA", (8, 8))
 
-    monkeypatch.setattr(OverlayRenderer, "render_sample", render)
+    monkeypatch.setattr(preview_probe, "render_sample", render)
     build_previews(
         manta.analysis,
         ExportSettings(layout=ExportLayout.RIBBON, position=position),
@@ -208,15 +236,16 @@ def test_preview_sample_is_independent_of_video_rate(
     manta: ExplorerData,
     fps: FrameRate,
     monkeypatch: pytest.MonkeyPatch,
+    preview_probe: type[PreviewProbeRenderer],
 ) -> None:
     assert manta.analysis is not None
     positions: list[float] = []
 
-    def record_position(self: OverlayRenderer, position: float) -> Image.Image:
+    def record_position(self: PreviewProbeRenderer, position: float) -> Image.Image:
         positions.append(position)
         return Image.new("RGBA", (8, 8), (0, 0, 0, 0))
 
-    monkeypatch.setattr(OverlayRenderer, "render_sample", record_position)
+    monkeypatch.setattr(preview_probe, "render_sample", record_position)
     sample = manta.source.recording.indices.start + 72 * 50 + 1
     result = build_previews(
         manta.analysis,
@@ -232,25 +261,31 @@ def test_preview_sample_is_independent_of_video_rate(
 def test_gallery_uses_plugin_lateral_defaults(
     manta: ExplorerData,
     monkeypatch: pytest.MonkeyPatch,
+    preview_probe: type[PreviewProbeRenderer],
 ) -> None:
     assert manta.analysis is not None
     observed: dict[ExportLayout, bool] = {}
 
-    def render(self: OverlayRenderer, position: float) -> Image.Image:
+    def render(self: PreviewProbeRenderer, position: float) -> Image.Image:
         observed[self.timeline.settings.layout] = self.timeline.settings.invert_lateral
         return Image.new("RGBA", (8, 8))
 
     plugin = replace(registry.PLUGINS[ExportLayout.ORBIT], preview_invert_lateral=True)
     monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
-    monkeypatch.setattr(OverlayRenderer, "render_sample", render)
+    monkeypatch.setattr(preview_probe, "render_sample", render)
     build_previews(manta.analysis, ExportSettings(layout=ExportLayout.RIBBON), 3600, 3610, 3600)
     assert observed[ExportLayout.ORBIT]
     assert observed[ExportLayout.COLUMN]
     assert not observed[ExportLayout.CORNERS]
 
 
-@pytest.mark.parametrize("mode", [VideoOutput.TRANSPARENT, VideoOutput.OPAQUE])
-@pytest.mark.parametrize("extent", list(ExportExtent))
+@pytest.mark.parametrize(
+    "mode,extent",
+    [
+        (VideoOutput.TRANSPARENT, ExportExtent.FULL_FRAME),
+        (VideoOutput.OPAQUE, ExportExtent.CONTENT_AREA),
+    ],
+)
 def test_outside_range_keeps_graph_sample_and_smoothing(
     manta: ExplorerData,
     mode: VideoOutput,

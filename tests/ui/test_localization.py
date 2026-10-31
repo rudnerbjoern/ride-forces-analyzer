@@ -52,6 +52,9 @@ def assert_combo_text_fits(combo: QComboBox) -> None:
         )
 
 
+pytestmark = pytest.mark.usefixtures("small_preview_frames")
+
+
 def test_settings_choices_fit_after_repeated_language_switches(
     explorer_window: ExplorerWindow,
 ) -> None:
@@ -93,6 +96,9 @@ def test_localized_export_in_4k_workspace_keeps_controls_reachable(
         from ride_forces_analyzer.storage.exports import ExportStore
         from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
         from ride_forces_analyzer.ui.exports.video import ExportDialog
+        from tests.ui.helpers import SmallPreviewRenderer
+        from unittest.mock import patch
+        patch('ride_forces_analyzer.rendering.preview.OverlayRenderer', SmallPreviewRenderer).start()
         app = QApplication([])
         directory = TemporaryDirectory(dir='.tmp')
         window = ExplorerWindow(AppSettings(language=Language.GERMAN))
@@ -271,7 +277,6 @@ def test_language_switch_preserves_state_and_source_metadata(
         window.set_ui_language(0)
 
 
-@pytest.mark.usefixtures("small_preview_frames")
 def test_german_export_and_batch_dialogs_fit_and_save_language(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
