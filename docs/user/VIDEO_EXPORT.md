@@ -99,6 +99,8 @@ and a range containing only one sample uses that sample.
   crop, including portrait formats. They are not exported. Transparent MOV keeps
   transparency; opaque MP4 uses black and covers the selected backdrop.
 
+![Export assistant showing a Voltron Nevera overlay over the bundled Toutatis POV photo](../images/export-preview-pov.png)
+
 Changing the export range recalculates the preview sample without moving the
 workspace cursor. Layout, language and display changes retain that sample.
 The preview caption identifies the sample actually shown.

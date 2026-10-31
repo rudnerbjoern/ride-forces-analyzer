@@ -1,0 +1,37 @@
+{
+  "source_sha256": "f48157cadbfeb374eeadf48112b0bbfc1e8b47c580cb303342cf65977054ad04",
+  "sample": 4960,
+  "replay": "01:07.39",
+  "selection": [
+    4200,
+    5100
+  ],
+  "smoothing": 11,
+  "language": "en",
+  "font": "Segoe UI 9 pt",
+  "scale_factor": 1,
+  "workspace_size": [
+    1600,
+    1100
+  ],
+  "export_size": [
+    1500,
+    1000
+  ],
+  "layout": "ribbon",
+  "extent": "full_frame",
+  "position": "bottom",
+  "aspect": "landscape",
+  "output": "transparent",
+  "fps": 50,
+  "window_seconds": 12,
+  "image": "export-preview-pov.png",
+  "preview_background": "pov-toutatis",
+  "preview_background_sha256": "0d5625623e0b46f1770dde87f3e0804c2e7c993edcc0fc0f4fc06c3c3245bcf3",
+  "preview_sample": 6853,
+  "preview_replay": "01:45.32",
+  "preview_interval": [
+    1571,
+    10374
+  ]
+}
