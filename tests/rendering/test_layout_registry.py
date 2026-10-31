@@ -309,6 +309,13 @@ def test_compositor_accepts_a_registered_renderer_without_layout_branches(
         {"preview_invert_lateral": 1},
         {"prores_4444_size_rates": {ExportExtent.FULL_FRAME: (0.2, 0.1)}},
         {"h264_size_rates": {ExportExtent.FULL_FRAME: (0.1, float("inf"))}},
+        {"h264_nvenc_size_rates": {ExportExtent.CONTENT_AREA: (0.2, 0.1)}},
+        {"h264_nvenc_size_rates": {ExportExtent.CONTENT_AREA: (0.1, float("nan"))}},
+        {"prores_4444_portrait_size_rates": {ExportExtent.FULL_FRAME: (0.2, 0.1)}},
+        {"prores_4444_cpu_portrait_size_rates": {ExportExtent.FULL_FRAME: (0.2, 0.1)}},
+        {"h264_portrait_size_rates": {ExportExtent.FULL_FRAME: (0.2, 0.1)}},
+        {"h264_nvenc_portrait_size_rates": {ExportExtent.FULL_FRAME: (0.2, 0.1)}},
+        {"prores_4444_portrait_size_rates": {ExportExtent.FULL_FRAME: (0.1, float("inf"))}},
     ],
 )
 def test_invalid_plugin_canvas_defaults_and_rates_are_rejected(changes: dict[str, object]) -> None:
@@ -319,6 +326,23 @@ def test_invalid_plugin_canvas_defaults_and_rates_are_rejected(changes: dict[str
 def test_regions_must_fit_the_plugin_declared_canvas() -> None:
     with pytest.raises(ValueError, match="fit within"):
         replace(PLUGINS[ExportLayout.HUD], landscape_canvas=(1919, 1080))
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "prores_4444_portrait_size_rates",
+        "prores_4444_cpu_portrait_size_rates",
+        "h264_portrait_size_rates",
+        "h264_nvenc_portrait_size_rates",
+    ],
+)
+def test_landscape_only_layout_rejects_portrait_size_rates(field_name: str) -> None:
+    with pytest.raises(ValueError, match="supported typed export extent"):
+        replace(
+            PLUGINS[ExportLayout.COLUMN],
+            **{field_name: {ExportExtent.FULL_FRAME: (0.1, 0.2)}},
+        )
 
 
 def test_individual_chart_style_applies_in_both_aspects_without_leaking(

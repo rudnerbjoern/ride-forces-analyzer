@@ -277,19 +277,56 @@ def create_renderer(timeline: ExportTimeline) -> ChartRenderer:
     return RibbonRenderer(timeline)
 
 
-# Bytes/output pixel/frame including container overhead. FFmpeg 9.0.2 CPU:
-# prores_ks 4444 qscale 4/alpha 16; libx264 fast CRF 18. Ten frames at 50 fps,
-# Manta 3600..3609 / Voltron 4960..4969, English, 11-sample smoothing, both formats.
-# Full: 3840x2160 / 2160x3840; native content: 3072x360 / 840x1120.
-# Rounded outward from half the observed minimum to 1.5 times the maximum.
-# Short clips include first-frame overhead; other scenes, durations, languages
-# and GPU encoders are unqualified. These are planning ranges, not guarantees.
-PRORES_4444_SIZE_RATES = (0.024, 0.220)  # Observed 0.04986..0.14613.
-H264_SIZE_RATES = (0.00018, 0.00117)  # Observed 0.0003628..0.0007794.
-PRORES_4444_CONTENT_SIZE_RATES = (0.138, 0.522)  # Observed 0.27633..0.34769.
-H264_CONTENT_SIZE_RATES = (0.00119, 0.00543)  # Observed 0.0023835..0.0036197.
+# Content-area H.264 uses the owner-provided Kraken CPU export reference:
+# 3072x360, 60000/1001 fps, 9,544 frames, libx264, 22,602,237 bytes including MP4.
+# Observed 0.002141397 bytes/pixel/frame; round to 0.002141 with +/-50%.
+# CPU planning range; portrait, other scenes and GPU encoders remain unqualified
+# by this reference. These are planning ranges, not guarantees.
+H264_CONTENT_SIZE_RATES = (0.0010705, 0.0032115)
+# Voltron Nevera Content-area NVENC: 3072x360, 60000/1001 fps, 10,353 frames,
+# h264_nvenc, 76,217,448 bytes including MP4 overhead. Observed 0.006656784
+# bytes/pixel/frame; round to 0.006657 with +/-50%. Other scenes and portrait
+# remain unqualified. These are planning ranges, not guarantees.
+H264_NVENC_CONTENT_SIZE_RATES = (0.0033285, 0.0099855)
+# Full-frame H.264 uses the owner-provided Kraken CPU export reference:
+# 3840x2160, 60000/1001 fps, 9,544 frames, libx264, 24,441,395 bytes including MP4.
+# Observed 0.000308753 bytes/pixel/frame; round to 0.000309 with +/-50%.
+# CPU planning range; portrait, other scenes and GPU encoders remain unqualified
+# by this reference. These are planning ranges, not guarantees.
+H264_SIZE_RATES = (0.0001545, 0.0004635)
+# Voltron Nevera Full-frame NVENC: 3840x2160, 60000/1001 fps, 10,353 frames,
+# h264_nvenc, 75,440,403 bytes including MP4 overhead. Observed 0.000878522
+# bytes/pixel/frame; round to 0.000879 with +/-50%. Other scenes and portrait
+# remain unqualified. These are planning ranges, not guarantees.
+H264_NVENC_SIZE_RATES = (0.0004395, 0.0013185)
+# Full-frame ProRes uses the owner-provided Kraken GPU export reference:
+# 3840x2160, 60000/1001 fps, 9,544 frames, prores_ks_vulkan, 17,267,346,554 bytes.
+# Including MOV overhead: 0.21813 bytes/pixel/frame, rounded to 0.22 with +/-10%.
+# Applies to both backend preferences; CPU, portrait and other scenes remain
+# unqualified by this reference. These are planning ranges, not guarantees.
+PRORES_4444_SIZE_RATES = (0.198, 0.242)
+# Content-area ProRes uses the owner-provided Kraken GPU export reference:
+# 3072x360, 60000/1001 fps, 9,544 frames, prores_ks_vulkan, 16,010,922,883 bytes.
+# Including MOV overhead: 1.51692 bytes/pixel/frame, rounded to 1.52 with +/-10%.
+# Applies to both backend preferences; CPU, portrait and other scenes remain
+# unqualified by this reference. These are planning ranges, not guarantees.
+PRORES_4444_CONTENT_SIZE_RATES = (1.368, 1.672)
 LANDSCAPE_CONTENT = ContentArea(NATIVE_SIZE)
 PORTRAIT_CONTENT = ContentArea(PORTRAIT_NATIVE_SIZE)
+
+# Portrait Full-frame calibration: Voltron Nevera, source samples 4000..4999
+# at 50 Hz; 480 frames at 24000/1001 fps (20.02 s), English, vertical inversion,
+# 11-sample smoothing, 30-s history, Incline reference 3575 (five-sample window).
+# Rates include container overhead; ProRes anchors round to two decimals (+/-10%),
+# H.264 to six (+/-50%). This short clip does not qualify other scenes or durations.
+# prores_ks_vulkan: 2160x3840, 2,668,950,544 bytes; observed 0.670369603 bytes/pixel/frame.
+PRORES_4444_PORTRAIT_SIZE_RATES = (0.603, 0.737)
+# prores_ks: 2160x3840, 813,316,855 bytes; observed 0.204283627 bytes/pixel/frame.
+PRORES_4444_CPU_PORTRAIT_SIZE_RATES = (0.18, 0.22)
+# libx264: 2160x3840, 4,229,764 bytes; observed 0.001062405 bytes/pixel/frame.
+H264_PORTRAIT_SIZE_RATES = (0.000531, 0.001593)
+# h264_nvenc: 2160x3840, 7,141,078 bytes; observed 0.001793649 bytes/pixel/frame.
+H264_NVENC_PORTRAIT_SIZE_RATES = (0.000897, 0.002691)
 
 PLUGIN = LayoutPlugin(
     ExportLayout.RIBBON,
@@ -306,4 +343,14 @@ PLUGIN = LayoutPlugin(
         ExportExtent.FULL_FRAME: H264_SIZE_RATES,
         ExportExtent.CONTENT_AREA: H264_CONTENT_SIZE_RATES,
     },
+    h264_nvenc_size_rates={
+        ExportExtent.FULL_FRAME: H264_NVENC_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: H264_NVENC_CONTENT_SIZE_RATES,
+    },
+    prores_4444_portrait_size_rates={ExportExtent.FULL_FRAME: PRORES_4444_PORTRAIT_SIZE_RATES},
+    prores_4444_cpu_portrait_size_rates={
+        ExportExtent.FULL_FRAME: PRORES_4444_CPU_PORTRAIT_SIZE_RATES,
+    },
+    h264_portrait_size_rates={ExportExtent.FULL_FRAME: H264_PORTRAIT_SIZE_RATES},
+    h264_nvenc_portrait_size_rates={ExportExtent.FULL_FRAME: H264_NVENC_PORTRAIT_SIZE_RATES},
 )

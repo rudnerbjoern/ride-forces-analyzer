@@ -14,11 +14,13 @@ from dataclasses import replace
 from pathlib import Path
 import re
 from threading import Event
+from time import monotonic
 from uuid import uuid4
 from typing import TypedDict
 
 from pydantic import BaseModel
 
+from ride_forces_analyzer import __version__
 from ride_forces_analyzer.analysis.recording import (
     AnalysisConfiguration,
     RecordingAnalysis,
@@ -32,7 +34,7 @@ from ride_forces_analyzer.runtime.error_reporting import record_error
 from ride_forces_analyzer.storage.export_models import BatchJob, RangeMode, SavedBatch, SavedPreset
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.rendering.encoding import ExportCancelled, export_video
-from ride_forces_analyzer.rendering.model import VideoOutput, prepare_export
+from ride_forces_analyzer.rendering.model import ExportSnapshot, VideoOutput, prepare_export
 
 
 def _load_analysis(
@@ -160,19 +162,32 @@ class JobResult(BaseModel, frozen=True, strict=True):
     """Job result contract and owned data.
 
     Attributes:
-        batch: Validated saved batch definition.
-        job: Export job associated with this result.
-        ride: Recording name or resolved recording for this export job.
-        preset: Validated immutable export preset to store or apply.
-        status: Optional callback receiving the current processing status.
-        output: Output directory or path for generated artifacts.
-        error: Failure to describe or transport.
+        batch: Saved batch display name.
+        job: One-based job number within the batch.
+        ride: Recording title captured by the saved job.
+        preset: Saved preset display name.
+        job_snapshot: Requested saved job, retained even if preparation never starts.
+        export_snapshot: Export-owned effective settings and analysis recipe from the
+            prepared timeline, or None when preparation did not complete.
+        gpu_encoding: Actual encoder GPU selection, or None before it is reported.
+        file_size_bytes: Completed output length, or None without a completed file.
+        duration_seconds: Elapsed job-attempt time from preparation through completion,
+            failure or cancellation. Excludes queue waiting and report writes; None
+            when the job was skipped.
+        status: Completed, failed, cancelled or skipped outcome.
+        output: Path of the successfully completed video, if available.
+        error: Explanation of an unsuccessful outcome, if available.
     """
 
     batch: str
     job: int
     ride: str
     preset: str
+    job_snapshot: BatchJob | None = None
+    export_snapshot: ExportSnapshot | None = None
+    gpu_encoding: bool | None = None
+    file_size_bytes: int | None = None
+    duration_seconds: float | None = None
     status: str
     output: Path | None = None
     error: str | None = None
@@ -182,11 +197,19 @@ class BatchReport(BaseModel, frozen=True, strict=True):
     """Batch report contract and owned data.
 
     Attributes:
-        directory: Directory used by the operation.
+        directory: User-selected directory containing numbered batch folders.
+        report_path: Unique report file reserved for this run in the selected directory.
+        application_version: Analyzer version producing the report.
+        render_jobs: Effective concurrent frame-renderer setting used for this run.
+        requested_ffmpeg: Supplied encoder path, or None for automatic discovery.
         results: Completed job results in processing order.
     """
 
     directory: Path
+    report_path: Path
+    application_version: str = __version__
+    render_jobs: int = 1
+    requested_ffmpeg: Path | None = None
     results: tuple[JobResult, ...]
 
 
@@ -194,16 +217,24 @@ class _JobInfo(TypedDict):
     """Job info contract and owned data.
 
     Attributes:
-        batch: Validated saved batch definition.
-        job: Export job associated with this result.
-        ride: Recording name or resolved recording for this export job.
-        preset: Validated immutable export preset to store or apply.
+        batch: Saved batch display name.
+        job: One-based job number within the batch.
+        ride: Recording title captured by the saved job.
+        preset: Saved preset display name.
+        job_snapshot: Complete immutable saved job captured before execution.
+        export_snapshot: Export-owned effective snapshot, or None before preparation.
+        gpu_encoding: Reported encoder selection, or None while unavailable.
+        file_size_bytes: Completed file length, or None without a completed file.
     """
 
     batch: str
     job: int
     ride: str
     preset: str
+    job_snapshot: BatchJob
+    export_snapshot: ExportSnapshot | None
+    gpu_encoding: bool | None
+    file_size_bytes: int | None
 
 
 def _safe_name(name: str) -> str:
@@ -223,7 +254,7 @@ def run_batches(
 
     Args:
         batches: Selected saved batches in execution order.
-        output_directory: Directory receiving completed outputs.
+        output_directory: Selected directory receiving batch folders directly.
         ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
         cancelled: Cancellation event checked during the operation.
         progress: Callback receiving job index/count, export status and label. None status
@@ -245,10 +276,14 @@ def run_batches(
     if not total:
         raise ValueError("The selected batches contain no export jobs")
     cancel = cancelled if cancelled is not None else Event()
-    directory = output_directory / (
-        datetime.now(UTC).strftime("export-%Y%m%d-%H%M%S-") + uuid4().hex[:8]
-    )
-    directory.mkdir(parents=True)
+    directory = output_directory
+    directory.mkdir(parents=True, exist_ok=True)
+    report_path = directory / "run-report.json"
+    try:
+        report_path.touch(exist_ok=False)
+    except FileExistsError:
+        report_path = directory / f"run-report-{uuid4().hex[:8]}.json"
+        report_path.touch(exist_ok=False)
     results: list[JobResult] = []
     ordinal = 0
     for batch_number, batch in enumerate(batches, 1):
@@ -260,6 +295,10 @@ def run_batches(
                 "job": job_number,
                 "ride": job.ride,
                 "preset": job.preset.name,
+                "job_snapshot": job,
+                "export_snapshot": None,
+                "gpu_encoding": None,
+                "file_size_bytes": None,
             }
             if cancel.is_set():
                 result = JobResult(
@@ -268,6 +307,7 @@ def run_batches(
                     error="Cancelled before this job started",
                 )
             else:
+                started = monotonic()
                 try:
                     if progress:
                         progress(ordinal, total, ExportProgress(ExportPhase.PREPARING), label)
@@ -282,6 +322,7 @@ def run_batches(
                         job.first_sample,
                         job.last_sample,
                     )
+                    common["export_snapshot"] = timeline.snapshot
                     folder = directory / f"{batch_number:03d}-{_safe_name(batch.name)}"
                     folder.mkdir(exist_ok=True)
                     suffix = (
@@ -293,6 +334,8 @@ def run_batches(
                     )
 
                     def on_progress(update: ExportProgress) -> None:
+                        if update.use_gpu is not None:
+                            common["gpu_encoding"] = update.use_gpu
                         if progress:
                             progress(ordinal, total, update, label)
 
@@ -304,6 +347,7 @@ def run_batches(
                         progress=on_progress,
                         render_jobs=render_jobs,
                     )
+                    common["file_size_bytes"] = target.stat().st_size
                     result = JobResult(**common, status="completed", output=target)
                 except ExportCancelled:
                     cancel.set()
@@ -311,13 +355,26 @@ def run_batches(
                 except Exception as error:
                     record_error("Batch export job", error)
                     result = JobResult(**common, status="failed", error=str(error))
+                result = result.model_copy(update={"duration_seconds": monotonic() - started})
             results.append(result)
-            report = BatchReport(directory=directory, results=tuple(results))
-            # The directory is unique to this run; persist completed work even after a later failure.
-            (directory / "run-report.json").write_text(
+            report = BatchReport(
+                directory=directory,
+                report_path=report_path,
+                render_jobs=render_jobs,
+                requested_ffmpeg=ffmpeg,
+                results=tuple(results),
+            )
+            # Only this run's reserved report is updated; earlier reports stay intact.
+            report_path.write_text(
                 report.model_dump_json(indent=2),
                 encoding="utf-8",
             )
             if progress and not cancel.is_set():
                 progress(ordinal, total, None, label)
-    return BatchReport(directory=directory, results=tuple(results))
+    return BatchReport(
+        directory=directory,
+        report_path=report_path,
+        render_jobs=render_jobs,
+        requested_ffmpeg=ffmpeg,
+        results=tuple(results),
+    )

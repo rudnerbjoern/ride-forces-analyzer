@@ -194,6 +194,10 @@ Layout, format and extent changes invalidate the current preview and capture a
 new request. Gallery and main view share images fitted to the resolved output
 geometry; Full-frame-only gallery profiles retain their complete canvas.
 Export binds the selected range, layout, aspect, language and analysis recipe.
+Preparing the timeline captures its export-owned settings/analysis snapshot.
+Single and batch encoding embed the same snapshot in the video comment; batch
+reporting collects that snapshot without creating another analysis representation
+or a per-video JSON sidecar.
 
 A worker streams the native Content-area image or Full-frame layout region to
 FFmpeg, which retains native dimensions or pads to the chosen canvas. The local render-job
@@ -218,12 +222,13 @@ sequenceDiagram
     participant Encoder as Video export
     User->>UI: Run selected or all saved batches
     UI->>Store: Read immutable job snapshots
-    UI->>Queue: Start queue in a unique output directory
+    UI->>Queue: Start queue in selected output directory
+    Queue->>Queue: Reserve a unique run report
     loop Each job
         Queue->>Queue: Reimport, verify hash and restore saved recipe
         Queue->>Encoder: Render and encode
         Encoder-->>Queue: Completion, failure or cancellation
-        Queue->>Queue: Update run-report.json
+        Queue->>Queue: Update this run's report
         Queue-->>UI: Progress and result
     end
 ```

@@ -4,7 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-from dataclasses import asdict, replace
+from dataclasses import replace
 from pathlib import Path
 import json
 from typing import Literal, Self, cast
@@ -21,7 +21,7 @@ from pydantic import (
 
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
-from ride_forces_analyzer.rendering.model import ExportSettings
+from ride_forces_analyzer.rendering.model import ExportSettings, analysis_configuration_metadata
 from ride_forces_analyzer.rendering.layouts import registry
 
 RangeMode = Literal["markers", "selection", "entire"]
@@ -117,26 +117,7 @@ class SavedPreset(BaseModel, frozen=True, strict=True, extra="forbid"):
         Returns:
             JSON-compatible analysis configuration.
         """
-        profile = value.profile
-        return {
-            "profile": {
-                "name": profile.name,
-                "schema_version": profile.schema_version,
-                "configuration": dict(profile.configuration),
-                "policy_references": profile.policy_references,
-                "assumptions": profile.assumptions,
-                "allow_provisional": profile.allow_provisional,
-            },
-            "projection": asdict(value.projection),
-            "smoothing": asdict(value.smoothing),
-            "orientation": asdict(value.orientation),
-            "context": asdict(value.context),
-            "events": asdict(value.events) if value.events is not None else None,
-            "context_input": value.context_input,
-            "events_input": value.events_input,
-            "ride_bounds": value.ride_bounds,
-            "calibration": asdict(value.calibration),
-        }
+        return analysis_configuration_metadata(value)
 
     @field_validator("name", mode="before")
     @classmethod

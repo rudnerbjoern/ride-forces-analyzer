@@ -5,6 +5,7 @@
 from collections.abc import Generator
 from dataclasses import replace
 import errno
+import subprocess
 from io import BytesIO
 from pathlib import Path
 from threading import Event
@@ -15,7 +16,12 @@ import pytest
 
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering import encoding
-from ride_forces_analyzer.rendering.model import ExportSettings, ExportTimeline, prepare_export
+from ride_forces_analyzer.rendering.model import (
+    ExportSettings,
+    ExportTimeline,
+    VideoOutput,
+    prepare_export,
+)
 
 
 @pytest.fixture
@@ -63,6 +69,39 @@ def test_gpu_probe_failures_fall_back_to_cpu(
     for error in (OSError("Unavailable"), encoding.subprocess.TimeoutExpired("ffmpeg", 30)):
         monkeypatch.setattr(encoding.subprocess, "run", Mock(side_effect=error))
         assert not encoding.supports_nvidia(Path("ffmpeg.exe"), enabled)
+
+
+@pytest.mark.parametrize("output", list(VideoOutput))
+@pytest.mark.parametrize("encoder_returncode", [0, 1])
+def test_gpu_probe_handles_nvenc_minimum_dimensions_and_encoder_result(
+    timeline: ExportTimeline,
+    monkeypatch: pytest.MonkeyPatch,
+    output: VideoOutput,
+    encoder_returncode: int,
+) -> None:
+    enabled = replace(
+        timeline,
+        settings=replace(timeline.settings, prefer_gpu=True, output=output),
+    )
+
+    def encode(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[bytes]:
+        source = command[command.index("-i") + 1]
+        dimensions = source.split("s=", 1)[1].split(",", 1)[0]
+        width, height = map(int, dimensions.split("x"))
+        codec = command[command.index("-c:v") + 1]
+        assert command[command.index("-frames:v") + 1] == "1"
+        if output is VideoOutput.OPAQUE:
+            assert codec == "h264_nvenc"
+            # Model the real device failure that incorrectly triggered CPU fallback.
+            if width < 256 or height < 256:
+                return subprocess.CompletedProcess(command, 1)
+        else:
+            assert codec == "prores_ks_vulkan"
+            assert "-alpha_bits" in command
+        return subprocess.CompletedProcess(command, encoder_returncode)
+
+    monkeypatch.setattr(encoding.subprocess, "run", encode)
+    assert encoding.supports_nvidia(Path("ffmpeg.exe"), enabled) is (encoder_returncode == 0)
 
 
 @pytest.mark.parametrize(

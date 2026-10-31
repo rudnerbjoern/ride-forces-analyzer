@@ -172,6 +172,7 @@ def encoder_command(
                 "aspect": timeline.settings.aspect,
                 "language": timeline.settings.language,
                 "orientation": "angle-source-gravity-to-stored-vertical-v1",
+                "export_snapshot": timeline.snapshot.model_dump(mode="json"),
             },
             sort_keys=True,
         ),
@@ -196,15 +197,18 @@ def supports_nvidia(ffmpeg: Path, timeline: ExportTimeline) -> bool:
     """Probe a real GPU encode; compiled-in codec names alone are not evidence.
 
     Args:
-        ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
-        timeline: Bound video timeline containing the source interval and export settings.
+        ffmpeg: Encoder executable used for the capability check.
+        timeline: Bound video timeline selecting the output codec and GPU preference.
 
     Returns:
-        True when the requested check succeeds or the event is handled; otherwise False.
+        True if GPU encoding is enabled and the test frame encodes successfully.
+        False if disabled, the encoder fails or cannot start, or the probe times out.
     """
     if not timeline.settings.prefer_gpu:
         return False
     transparent = timeline.settings.output == VideoOutput.TRANSPARENT
+    # Some NVENC devices reject 128x128 frames even though normal exports work.
+    probe_size = "128x128" if transparent else "256x256"
     device = (
         ["-init_hw_device", "vulkan=overlay_gpu:NVIDIA", "-filter_hw_device", "overlay_gpu"]
         if transparent
@@ -235,7 +239,7 @@ def supports_nvidia(ffmpeg: Path, timeline: ExportTimeline) -> bool:
                 "-f",
                 "lavfi",
                 "-i",
-                "color=black:s=128x128,format=rgba",
+                f"color=black:s={probe_size},format=rgba",
                 "-frames:v",
                 "1",
                 *codec,

@@ -4,7 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-# cspell:words bahnschrift RGBa getbbox getchannel putalpha WINDIR
+# cspell:words bahnschrift RGBa getbbox getchannel putalpha WINDIR libx
 
 from __future__ import annotations
 
@@ -774,12 +774,32 @@ class HudRenderer(Drawing):
         return image
 
 
-# Kraken, Iron Gwazi and Voltron GPU ProRes measurements span 0.734–0.764 bytes
-# per pixel/frame including MOV overhead; retain a 10% planning margin around 0.75.
-PRORES_4444_SIZE_RATES = (0.675, 0.825)
+# Four Kraken, Iron Gwazi and Voltron GPU ProRes references span 0.734–0.801 bytes
+# per pixel/frame including MOV overhead. The frame-weighted mean is 0.76244;
+# retain a 10% planning margin around the rounded rate of 0.76.
+PRORES_4444_SIZE_RATES = (0.684, 0.836)
 # Kraken CPU H.264: 17,181,504 bytes, about 0.00085 bytes/pixel/frame including
 # MP4 overhead; allow 50% for content/encoder variation.
 H264_SIZE_RATES = (0.000425, 0.001275)
+# Voltron Nevera Full-frame NVENC: 1920x1080, 60000/1001 fps, 10,353 frames,
+# h264_nvenc, 73,904,770 bytes including MP4 overhead. Observed 0.003442558
+# bytes/pixel/frame; round to 0.003443 with +/-50%. Other scenes and portrait
+# remain unqualified. These are planning ranges, not guarantees.
+H264_NVENC_SIZE_RATES = (0.0017215, 0.0051645)
+
+# Portrait Full-frame calibration: Voltron Nevera, source samples 4000..4999
+# at 50 Hz; 480 frames at 24000/1001 fps (20.02 s), English, vertical inversion,
+# 11-sample smoothing, 30-s history, Incline reference 3575 (five-sample window).
+# Rates include container overhead; ProRes anchors round to two decimals (+/-10%),
+# H.264 to six (+/-50%). This short clip does not qualify other scenes or durations.
+# prores_ks_vulkan: 1080x1920, 903,143,298 bytes; observed 0.907382589 bytes/pixel/frame.
+PRORES_4444_PORTRAIT_SIZE_RATES = (0.819, 1.001)
+# prores_ks: 1080x1920, 610,934,100 bytes; observed 0.613801782 bytes/pixel/frame.
+PRORES_4444_CPU_PORTRAIT_SIZE_RATES = (0.549, 0.671)
+# libx264: 1080x1920, 3,254,464 bytes; observed 0.003269740 bytes/pixel/frame.
+H264_PORTRAIT_SIZE_RATES = (0.001635, 0.004905)
+# h264_nvenc: 1080x1920, 6,386,732 bytes; observed 0.006416711 bytes/pixel/frame.
+H264_NVENC_PORTRAIT_SIZE_RATES = (0.0032085, 0.0096255)
 
 PLUGIN = LayoutPlugin(
     ExportLayout.HUD,
@@ -791,4 +811,11 @@ PLUGIN = LayoutPlugin(
     preferred_window_seconds=30.0,
     prores_4444_size_rates={ExportExtent.FULL_FRAME: PRORES_4444_SIZE_RATES},
     h264_size_rates={ExportExtent.FULL_FRAME: H264_SIZE_RATES},
+    h264_nvenc_size_rates={ExportExtent.FULL_FRAME: H264_NVENC_SIZE_RATES},
+    prores_4444_portrait_size_rates={ExportExtent.FULL_FRAME: PRORES_4444_PORTRAIT_SIZE_RATES},
+    prores_4444_cpu_portrait_size_rates={
+        ExportExtent.FULL_FRAME: PRORES_4444_CPU_PORTRAIT_SIZE_RATES,
+    },
+    h264_portrait_size_rates={ExportExtent.FULL_FRAME: H264_PORTRAIT_SIZE_RATES},
+    h264_nvenc_portrait_size_rates={ExportExtent.FULL_FRAME: H264_NVENC_PORTRAIT_SIZE_RATES},
 )

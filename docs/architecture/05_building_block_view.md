@@ -179,14 +179,22 @@ define formats and lifecycle.
 ## Video export boundary
 
 `rendering.model` binds a snapshot, range and settings into an `ExportTimeline`.
+Each timeline owns an immutable `ExportSnapshot` describing its effective analysis
+recipe, source identity, settings, interval and output geometry. The encoder embeds
+this common snapshot in video metadata for both single and batch exports; the
+batch report references it after preparation instead of building its own analysis
+snapshot. Queued job definitions remain separate requested configuration for jobs
+that cannot be prepared. Snapshot serialization is shared with saved presets.
 `rendering.scales` owns the lateral/longitudinal range policies shared by all
 layouts, shared history fitting and the HUD/G-Orbit posture-dependent vertical
 instrument ranges. Export channels carry a 1 g vertical presentation reference
 for every posture; lateral and longitudinal references remain zero.
 Layouts consume this timeline through one native-RGBA-region/source-position
 protocol. Each plugin owns its geometry, renderer, presentation defaults and optional
-file-size estimate rates. The registry resolves these through the common contract
-and validates geometry. Its extent resolver uses layout-owned native dimensions
+file-size estimate rates, including optional NVENC rates selected by the H.264
+GPU preference with a same-extent CPU-rate fallback, and portrait overrides
+for CPU/GPU ProRes and CPU/NVENC H.264 with same-extent fallback. The registry resolves these through the
+common contract and validates geometry. Its extent resolver uses layout-owned native dimensions
 for Content area and region/canvas placement for Full frame; capability and rate lookup
 use the same typed extent contract. Concrete layouts never depend on one another; reusable
 drawing/history primitives stay in shared modules. UI, preview, sizing and encoding

@@ -7,15 +7,16 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from ride_forces_analyzer.validation.checks import validate_sample_range
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 from fractions import Fraction
 from math import ceil, floor, isfinite
-from typing import Annotated, overload
+from typing import Annotated, Literal, overload
 
-from pydantic import PlainSerializer
+from pydantic import BaseModel, PlainSerializer, field_serializer
 
+from ride_forces_analyzer import __version__
 from ride_forces_analyzer.analysis.models import SampleValues
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, RecordingAnalysis
 from ride_forces_analyzer.i18n import Language
@@ -336,6 +337,81 @@ class ExportChannel:
         return tuple(sorted(ticks))
 
 
+def analysis_configuration_metadata(configuration: AnalysisConfiguration) -> dict[str, object]:
+    """Serialize a complete analysis recipe without computed sample buffers.
+
+    Args:
+        configuration: Effective immutable analysis configuration to describe.
+
+    Returns:
+        JSON-compatible recipe, including frozen profile mappings and calibration.
+    """
+    profile = configuration.profile
+    return {
+        "profile": {
+            "name": profile.name,
+            "schema_version": profile.schema_version,
+            "configuration": dict(profile.configuration),
+            "policy_references": profile.policy_references,
+            "assumptions": profile.assumptions,
+            "allow_provisional": profile.allow_provisional,
+        },
+        "projection": asdict(configuration.projection),
+        "smoothing": asdict(configuration.smoothing),
+        "orientation": asdict(configuration.orientation),
+        "context": asdict(configuration.context),
+        "events": asdict(configuration.events) if configuration.events is not None else None,
+        "context_input": configuration.context_input,
+        "events_input": configuration.events_input,
+        "ride_bounds": configuration.ride_bounds,
+        "calibration": asdict(configuration.calibration),
+    }
+
+
+class ExportSnapshot(BaseModel, frozen=True, strict=True):
+    """Own the effective settings and analysis recipe of any prepared video export.
+
+    Attributes:
+        schema_version: Version of the serialized export snapshot.
+        application_version: Analyzer version preparing the export.
+        source_sha256: Identity of the original recording bytes.
+        settings: Complete visual and encoding preferences bound to the export.
+        analysis_configuration: Effective recipe of the prepared analysis, not raw data.
+        sample_rate: Effective source samples per second.
+        first_sample: First included source index.
+        last_sample_inclusive: Last included source index.
+        replay_origin: Source index used as replay time zero.
+        smoothing_window: Effective smoothing window in source samples.
+        output_dimensions: Resolved output width and height in pixels.
+        planned_frame_count: Prepared output frame count, not encoded completion.
+    """
+
+    schema_version: Literal[1] = 1
+    application_version: str = __version__
+    source_sha256: str
+    settings: ExportSettings
+    analysis_configuration: AnalysisConfiguration
+    sample_rate: float
+    first_sample: int
+    last_sample_inclusive: int
+    replay_origin: int
+    smoothing_window: int
+    output_dimensions: tuple[int, int]
+    planned_frame_count: int
+
+    @field_serializer("analysis_configuration")
+    def serialize_configuration(self, value: AnalysisConfiguration) -> dict[str, object]:
+        """Serialize the bound recipe using the common export representation.
+
+        Args:
+            value: Effective configuration stored by this snapshot.
+
+        Returns:
+            JSON-compatible analysis recipe without computed sample buffers.
+        """
+        return analysis_configuration_metadata(value)
+
+
 @dataclass(frozen=True, slots=True)
 class ExportTimeline:
     """Export timeline contract and owned data.
@@ -350,6 +426,7 @@ class ExportTimeline:
         channels: Prepared channels to inspect or display.
         settings: Validated settings controlling this operation.
         analysis: Prepared recording-analysis snapshot used by this operation.
+        snapshot: Export-owned settings and recipe shared by single and batch outputs.
     """
 
     source_sha256: str
@@ -361,6 +438,35 @@ class ExportTimeline:
     channels: tuple[ExportChannel, ...]
     settings: ExportSettings
     analysis: RecordingAnalysis
+    snapshot: ExportSnapshot = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Capture export metadata from this timeline's effective bound analysis.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: Bound settings do not resolve to supported output geometry.
+        """
+        from .layouts import resolve_geometry
+
+        object.__setattr__(
+            self,
+            "snapshot",
+            ExportSnapshot(
+                source_sha256=self.source_sha256,
+                settings=self.settings,
+                analysis_configuration=self.analysis.configuration,
+                sample_rate=self.sample_rate,
+                first_sample=self.first,
+                last_sample_inclusive=self.last,
+                replay_origin=self.replay_origin,
+                smoothing_window=self.smoothing_window,
+                output_dimensions=resolve_geometry(self.settings).output_size,
+                planned_frame_count=self.frame_count,
+            ),
+        )
 
     def context_at(self, position: float) -> str:
         """Read the prepared full-history classification at the preceding source sample.

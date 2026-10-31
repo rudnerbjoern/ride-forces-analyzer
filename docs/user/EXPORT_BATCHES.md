@@ -68,10 +68,29 @@ Frame generation uses **Settings → Export → Parallel render jobs** on this c
 as described in the [video export guide](VIDEO_EXPORT.md). Videos still run one
 after another.
 
-Each run creates a new directory below the chosen folder, with numbered batch
-folders and video filenames. Earlier outputs are not overwritten. The run's
-`run-report.json` records completed, failed, cancelled and skipped jobs; there
-is no persistent execution-history screen.
+Numbered batch folders are created directly in your chosen output folder, with
+numbered video filenames. For example, choosing `E:\RF batch` for `MP4-Content`
+writes videos into `E:\RF batch\001-MP4-Content`.
+Existing videos are not overwritten; a job with a conflicting filename fails.
+The run's `run-report.json` records completed, failed, cancelled and skipped jobs.
+If a report already exists, the new report is named `run-report-<id>.json`.
+The completion message shows its path. There is no persistent execution-history screen.
+
+The report also keeps the complete saved settings for every job, including its
+preset/profile, frame rate, export area, orientation, language, time window,
+axis options, GPU preference, smoothing, selected interval and analysis recipe.
+Every prepared export owns an effective settings/analysis snapshot, whether it
+was started individually or through a batch. It is embedded in the video's
+metadata; the batch report collects the same data as `export_snapshot`, including
+output dimensions and planned frame count. No additional JSON file is created
+beside each video. Run details include the application version, parallel render
+setting and supplied FFmpeg path. The report distinguishes the requested GPU
+option from actual GPU encoding and
+records completed file sizes in bytes. Missing execution details remain `null`,
+while the saved settings are retained even for failed, cancelled or skipped jobs.
+Each started job also records `duration_seconds`, including preparation, rendering
+and encoding/finalization. Failed and cancelled attempts keep their elapsed time;
+skipped jobs have no duration. Waiting for preceding jobs is not included.
 
 **Cancel remaining exports** stops the active export and skips pending jobs.
 Incomplete output is removed, while already completed videos remain saved.

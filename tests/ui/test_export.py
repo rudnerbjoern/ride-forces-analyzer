@@ -703,6 +703,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
         assert isinstance(cancelled, Event) and cancelled.wait(5)
         return BatchReport(
             directory=directory,
+            report_path=directory / "run-report.json",
             results=tuple(
                 JobResult(
                     batch=batch.name,

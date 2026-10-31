@@ -248,6 +248,7 @@ class ExportForm(QWidget):
         self.seconds.valueChanged.connect(self.changed)
         self.flip_vertical.toggled.connect(self.changed)
         self.flip_lateral.toggled.connect(self.changed)
+        self.gpu.toggled.connect(self.changed)
         self.smoothing.currentIndexChanged.connect(self.smoothing_changed)
 
     def settings(self) -> ExportSettings:
