@@ -188,8 +188,10 @@ the destination folder. The worker retains its bound snapshot until completion.
 
 ## Video export runtime
 
-The assistant captures its opening snapshot and preview sample. Debounced preview
-workers receive current settings; revision checks discard outdated results.
+The assistant captures its opening analysis snapshot. Preview requests select the
+rounded sample at 60% of the chosen export interval, independently of the workspace
+cursor. Range changes recompute it; other settings retain it. Debounced workers
+receive current settings; revision checks discard outdated results.
 Layout, format and extent changes invalidate the current preview and capture a
 new request. Gallery and main view share images fitted to the resolved output
 geometry; Full-frame-only gallery profiles retain their complete canvas.

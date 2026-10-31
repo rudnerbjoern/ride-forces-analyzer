@@ -77,8 +77,10 @@ support EN/DE/FR. Final Export video opens the destination dialog.
   540×960 without cropping/stretching; HUD gallery entries always use Full frame.
 - Settings/background changes use a debounced worker; only its latest revision applies.
   Checkerboard/light/dark backgrounds are preview-only; preview needs no FFmpeg/encoding.
-- An out-of-interval cursor stays unchanged with an explicit full-recording-context
-  warning. Source sample stays fixed while open; Close/Escape respects active cancellation.
+- Preview uses `first + round(0.6 * (last - first))` within the selected export range,
+  independently of the graph cursor. Range changes select a new sample; other settings
+  retain it. Short ranges may round to an endpoint; a single-sample range uses that sample.
+  The workspace cursor stays unchanged; Close/Escape respects cancellation.
 - Content scrolls while progress/status/ETA and navigation/export actions remain pinned
   on smaller/high-DPI desktops, including translated settings.
 

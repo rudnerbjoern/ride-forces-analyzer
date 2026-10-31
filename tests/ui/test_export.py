@@ -68,7 +68,9 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     assert dialog.form.layout_profile.currentIndex() == 0
     assert dialog.current_sample == sample
     wait_until(lambda dialog=dialog: dialog.previews.result is not None)
-    assert dialog.previews.result is not None and dialog.previews.result.sample == sample
+    assert dialog.previews.result is not None
+    first, last = dialog.analysis.ride_bounds
+    assert dialog.previews.result.sample == first + round(0.6 * (last - first))
     assert all(not button.icon().isNull() for button in dialog.profile_buttons)
     assert dialog.preview_caption.height() >= dialog.preview_caption.fontMetrics().height()
     dialog.profile_buttons[0].click()
@@ -78,16 +80,24 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     wait_until(lambda dialog=dialog: dialog.previews.result is not None)
     dialog.form.interval.setCurrentIndex(1)
     wait_until(lambda dialog=dialog: dialog.previews.result is not None)
-    assert dialog.previews.result is not None and dialog.previews.result.outside_range
-    assert dialog.previews.result.sample == sample
-    assert "OUTSIDE" in dialog.preview_note.text()
+    assert dialog.previews.result is not None and not dialog.previews.result.outside_range
+    assert dialog.previews.result.sample == 144
+    assert dialog.current_sample == sample
+    assert "OUTSIDE" not in dialog.preview_note.text()
+    # Range changes select their own 60% sample, independently of the graph cursor.
+    dialog.form.interval.setCurrentIndex(2)
+    end = len(dialog.analysis.time.source_indices) - 1
+    assert preview_ready(dialog).sample == round(0.6 * end)
+    dialog.form.interval.setCurrentIndex(1)
+    assert preview_ready(dialog).sample == 144
+    assert window.navigation.slider.value() == sample
     dialog.next.click()
     assert dialog.pages.currentIndex() == 1 and dialog.start.isVisible()
-    assert f"{sample:,}" in dialog.preview_caption.text()
+    assert "144" in dialog.preview_caption.text()
     assert dialog.review_fields["layout"].text() == "Flow Ribbon"
     assert dialog.review_fields["samples"].text() == "120–160 (inclusive)"
     assert not dialog.presets.isVisible() and not dialog.gallery.isVisible()
-    assert dialog.preview_note.isVisible()  # The out-of-range warning remains visible.
+    assert not dialog.preview_note.isVisible()
     dialog.back.click()
     assert dialog.pages.currentIndex() == 0
     assert dialog.presets.isVisible() and dialog.gallery.isVisible()
@@ -111,10 +121,16 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     window = explorer_window
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
     wait_until(window.open_action.isEnabled)
+    window.inspector.first.setValue(120)
+    window.inspector.last.setValue(160)
+    window.navigation.slider.setValue(100)
     window.export_button.click()
     dialog = window.export_window
     assert isinstance(dialog, ExportDialog)
-    preview_ready(dialog)
+    dialog.form.interval.setCurrentIndex(1)
+    result = preview_ready(dialog)
+    assert result.sample == 144 and not result.outside_range
+    assert dialog.current_sample == window.navigation.slider.value() == 100
     analysis = dialog.analysis
 
     def choose_layout(key: str) -> None:
@@ -216,9 +232,11 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     assert dialog.previews.result is None and not dialog.next.isEnabled()
     dark_preview = preview_ready(dialog)
     assert dialog.current_sample == sample and dialog.form.layout_profile.currentText() == "G-Orbit"
+    assert dark_preview.sample == 144
     assert dark_preview.profiles[3].image.getpixel((0, 0)) == (22, 37, 51)
     dialog.form.mode.setCurrentIndex(1)
     opaque_preview = preview_ready(dialog)
+    assert opaque_preview.sample == 144
     assert all(profile.image.getpixel((0, 0)) == (0, 0, 0) for profile in opaque_preview.profiles)
     assert dialog.worker is None
     dialog.form.mode.setCurrentIndex(0)

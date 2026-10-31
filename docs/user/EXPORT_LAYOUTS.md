@@ -82,9 +82,10 @@ dimensions do not guarantee a proportionally smaller video.
    size, and whether the chosen position leaves the action clear.
 7. Choose a light, dark or checkerboard preview background to check visibility.
 
-The preview shows a single moment, rather than playing the video. To inspect
-another moment, close the assistant, select another chart sample and reopen it.
-No FFmpeg installation is needed to compare layouts.
+The thumbnails and large preview show the sample at 60% of the selected export
+range, rounded to a sample, rather than playing the video. Changing the range
+recalculates that moment without moving the workspace cursor. No FFmpeg installation
+is needed to compare layouts.
 
 Layouts provide preset positions and styling. The assistant does not offer dragging,
 resizing, custom fonts or custom colors. You can choose the layout, export area,

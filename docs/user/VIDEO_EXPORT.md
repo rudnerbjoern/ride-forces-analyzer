@@ -78,9 +78,10 @@ video editor scale the complete overlay to fill the timeline frame.
 
 ## 3. Check the preview
 
-The preview shows one moment: the chart sample selected when you opened the
-assistant. It does not play the whole video. To preview another moment, close
-the assistant, select another chart sample and open it again.
+The preview shows the sample 60% of the way through the selected export range,
+rounded to the nearest sample. All layout thumbnails and the large preview use
+that moment; they do not play the video. Very short ranges can select an endpoint,
+and a range containing only one sample uses that sample.
 
 - **Visible time window** controls how many seconds the small history plots
   show around each moment. It does not change the length of the exported video.
@@ -93,9 +94,9 @@ the assistant, select another chart sample and open it again.
 - Checkerboard, light and dark backgrounds help you inspect the preview. They
   are not exported. Transparent MOV keeps transparency; opaque MP4 uses black.
 
-If the selected preview moment falls outside your export range, the assistant
-shows a warning. That moment is still used for the preview; the video uses the
-chosen range.
+Changing the export range recalculates the preview sample without moving the
+workspace cursor. Layout, language and display changes retain that sample.
+The preview caption identifies the sample actually shown.
 
 Airtime labels are provisional interpretations of the recording. Their meaning
 depends on calibration and smoothing; they are not a measurement of what a rider felt.

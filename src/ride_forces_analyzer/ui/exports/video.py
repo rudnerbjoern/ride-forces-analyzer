@@ -78,7 +78,7 @@ class ExportDialog(QDialog):
         first: First included source index or the control selecting that bound.
         last: Last included source index or the control selecting that bound.
         preferences: Local application preference access for this window or controller.
-        current_sample: Exact source sample selected for the preview.
+        current_sample: Opening graph sample, independent of the range-based preview.
         worker: Current background worker, or None when no task is active.
         step_label: Label displaying step label.
         profile_buttons: Layout-selection buttons keyed by profile.
@@ -118,7 +118,7 @@ class ExportDialog(QDialog):
             first: First included source sample index.
             last: Last included source sample index.
             parent: Qt parent that owns this object's lifetime.
-            current_sample: Exact source sample selected for the preview.
+            current_sample: Opening graph sample, independent of the range-based preview.
             store: Local export-definition storage.
 
         Returns:
@@ -380,7 +380,7 @@ class ExportDialog(QDialog):
             self.form.settings(),
             first,
             last,
-            self.current_sample,
+            first + round(0.6 * (last - first)),
             PreviewBackground(self.background.currentData()),
             self.form.positions,
         )
