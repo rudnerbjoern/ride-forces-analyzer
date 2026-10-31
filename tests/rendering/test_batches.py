@@ -386,7 +386,8 @@ def test_batch_continues_after_changed_recording_and_preserves_outputs(
         callback = cast(Callable[[ExportProgress], None], kwargs["progress"])
         callback(ExportProgress(ExportPhase.RENDERING, 1, 2, 10, True))
         callback(ExportProgress(ExportPhase.FINALIZING, 2, 2, 20, True))
-        target.write_bytes(b"completed")
+        with target.open("xb") as output:
+            output.write(b"completed")
         callback(ExportProgress(ExportPhase.COMPLETED, 2, 2, 20, True))
         assert timeline.smoothing_window == 3
         return target
@@ -425,9 +426,18 @@ def test_batch_continues_after_changed_recording_and_preserves_outputs(
     assert "changed" in (result.results[1].error or "")
     assert len(calls) == 2 and calls[0] != calls[1]
     assert all(path.read_bytes() == b"completed" for path in calls)
-    assert len(json.loads((result.directory / "run-report.json").read_text())["results"]) == 4
+    assert result.directory == export_directory
+    assert calls[0].parent == export_directory / "001-A"
+    assert calls[1].parent == export_directory / "002-B"
+    assert not list(export_directory.glob("export-*"))
+    assert result.report_path == export_directory / "run-report.json"
+    original_report = result.report_path.read_bytes()
+    assert len(json.loads(original_report)["results"]) == 4
     second = run_batches(saved, export_directory)
-    assert second.directory != result.directory
+    assert second.directory == result.directory
+    assert second.report_path != result.report_path and second.report_path.is_file()
+    assert result.report_path.read_bytes() == original_report
+    assert all(item.status == "failed" for item in second.results)
     assert calls[0].read_bytes() == b"completed"
 
 

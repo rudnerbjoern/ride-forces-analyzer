@@ -61,6 +61,7 @@ def test_estimate_uses_registered_layout_rates(
         registry.PLUGINS[layout],
         prores_4444_size_rates={ExportExtent.FULL_FRAME: (0.1, 0.2)},
         h264_size_rates={ExportExtent.FULL_FRAME: (0.01, 0.02)},
+        h264_nvenc_size_rates={},
     )
     monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
     settings = ExportSettings(layout=layout, fps=50, prefer_gpu=prefer_gpu)
@@ -81,6 +82,7 @@ def test_content_estimates_use_their_own_geometry_and_codec_rates(
             ExportExtent.CONTENT_AREA: (0.01, 0.02),
         },
         h264_size_rates={ExportExtent.CONTENT_AREA: (0.001, 0.002)},
+        h264_nvenc_size_rates={},
     )
     monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
     settings = ExportSettings(layout=plugin.key, extent=ExportExtent.CONTENT_AREA, fps=50)
@@ -133,17 +135,22 @@ def test_hud_estimate_tracks_measured_exports(
         layout=ExportLayout.HUD,
         fps=StandardFrameRate.FPS_59_94,
         output=output,
+        prefer_gpu=False,
     )
     low, high = estimate_size_bytes(settings, sample_count, sample_rate)
     assert measured_bytes * (1 - tolerance) <= low < measured_bytes < high
     assert high <= measured_bytes * (1 + tolerance)
-    assert estimate_size_bytes(replace(settings, prefer_gpu=False), sample_count, sample_rate) == (
-        low,
-        high,
-    )
+    if output is VideoOutput.TRANSPARENT:
+        assert estimate_size_bytes(
+            replace(settings, prefer_gpu=True),
+            sample_count,
+            sample_rate,
+        ) == (
+            low,
+            high,
+        )
 
 
-@pytest.mark.parametrize("prefer_gpu", [False, True])
 @pytest.mark.parametrize(
     "layout,extent,measured_bytes",
     [
@@ -201,30 +208,90 @@ def test_h264_estimate_tracks_measured_kraken_exports(
     layout: ExportLayout,
     extent: ExportExtent,
     measured_bytes: int,
-    prefer_gpu: bool,
 ) -> None:
     settings = ExportSettings(
         layout=layout,
         extent=extent,
         output=VideoOutput.OPAQUE,
         fps=StandardFrameRate.FPS_59_94,
-        prefer_gpu=prefer_gpu,
+        prefer_gpu=False,
     )
     # Synthetic source clock reproduces the measured 9,544 encoded frames.
     low, high = estimate_size_bytes(settings, 9544 * 1001, 60_000)
     assert measured_bytes * 0.45 <= low < measured_bytes < high <= measured_bytes * 1.55
 
 
-@pytest.mark.parametrize("prefer_gpu", [False, True])
-def test_hud_h264_estimate_covers_additional_kraken_reference(prefer_gpu: bool) -> None:
+def test_hud_h264_estimate_covers_additional_kraken_reference() -> None:
     settings = ExportSettings(
         layout=ExportLayout.HUD,
         output=VideoOutput.OPAQUE,
         fps=StandardFrameRate.FPS_59_94,
-        prefer_gpu=prefer_gpu,
+        prefer_gpu=False,
     )
     low, high = estimate_size_bytes(settings, 9544 * 1001, 60_000)
     assert low < 23_256_703 < high
+
+
+@pytest.mark.parametrize(
+    "layout,extent,measured_bytes",
+    [
+        (ExportLayout.RIBBON, ExportExtent.FULL_FRAME, 75_440_403),
+        (ExportLayout.RIBBON, ExportExtent.CONTENT_AREA, 76_217_448),
+        (ExportLayout.CORNERS, ExportExtent.FULL_FRAME, 78_626_283),
+        (ExportLayout.CORNERS, ExportExtent.CONTENT_AREA, 79_139_381),
+        (ExportLayout.HUD, ExportExtent.FULL_FRAME, 73_904_770),
+        (ExportLayout.ORBIT, ExportExtent.FULL_FRAME, 15_774_006),
+        (ExportLayout.ORBIT, ExportExtent.CONTENT_AREA, 14_267_683),
+        (ExportLayout.COLUMN, ExportExtent.FULL_FRAME, 188_122_482),
+        (ExportLayout.COLUMN, ExportExtent.CONTENT_AREA, 190_277_305),
+    ],
+)
+def test_nvenc_estimate_tracks_measured_voltron_exports(
+    layout: ExportLayout,
+    extent: ExportExtent,
+    measured_bytes: int,
+) -> None:
+    settings = ExportSettings(
+        layout=layout,
+        extent=extent,
+        output=VideoOutput.OPAQUE,
+        fps=StandardFrameRate.FPS_59_94,
+        prefer_gpu=True,
+    )
+    # Synthetic source clock reproduces the measured 10,353 encoded frames.
+    low, high = estimate_size_bytes(settings, 10_353 * 1001, 60_000)
+    assert measured_bytes * 0.45 <= low < measured_bytes < high <= measured_bytes * 1.55
+    assert estimate_size_bytes(replace(settings, prefer_gpu=False), 10_353 * 1001, 60_000)[1] < (
+        measured_bytes
+    )
+
+
+@pytest.mark.parametrize("gpu_rate", [None, (0.03, 0.04)])
+def test_nvenc_rates_follow_preference_and_fall_back_within_the_same_extent(
+    gpu_rate: tuple[float, float] | None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    plugin = replace(
+        registry.PLUGINS[ExportLayout.RIBBON],
+        h264_size_rates={ExportExtent.CONTENT_AREA: (0.01, 0.02)},
+        h264_nvenc_size_rates={
+            ExportExtent.FULL_FRAME: (0.3, 0.4),
+            ExportExtent.CONTENT_AREA: gpu_rate,
+        },
+    )
+    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
+    settings = ExportSettings(
+        layout=plugin.key,
+        extent=ExportExtent.CONTENT_AREA,
+        output=VideoOutput.OPAQUE,
+        fps=50,
+    )
+    assert estimate_size_bytes(replace(settings, prefer_gpu=False), 10, 50) == (110_592, 221_184)
+    expected = (331_776, 442_368) if gpu_rate else (110_592, 221_184)
+    assert estimate_size_bytes(settings, 10, 50) == expected
+    plugin = replace(plugin, h264_nvenc_size_rates={ExportExtent.FULL_FRAME: (0.3, 0.4)})
+    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
+    assert estimate_size_bytes(settings, 10, 50) == (110_592, 221_184)
 
 
 @pytest.mark.parametrize("prefer_gpu", [False, True])

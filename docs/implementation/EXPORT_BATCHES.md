@@ -75,9 +75,13 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   history before applying the stored interval; bind that snapshot to production
   rendering/encoding and exclusive publication, independently of explorer presentation.
 - Missing, invalid or changed sources fail their job; remaining jobs can run.
-- Each run creates a unique output directory, numbered batch folders and safe,
-  numbered recording/preset filenames. Never overwrite earlier outputs.
-- Incrementally persist completed/failed/cancelled/skipped job states in `run-report.json`.
+- Create numbered batch folders directly in the selected output directory, with
+  safe, numbered recording/preset filenames. Existing videos are never overwritten;
+  a conflicting filename fails that job while remaining jobs can run.
+- Incrementally persist completed/failed/cancelled/skipped job states in `run-report.json`
+  in the selected directory. If that path already exists, reserve a unique
+  `run-report-<id>.json` instead. Earlier reports remain intact; the returned
+  `BatchReport.report_path` identifies the current report shown by the UI.
   Progress wraps the shared `ExportProgress` with job index/count and label.
   Separate bars show the equally weighted overall queue and the current video's
   submitted frames. A new job resets video progress and its estimate; settled jobs,

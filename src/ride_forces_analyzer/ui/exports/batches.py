@@ -619,7 +619,7 @@ class BatchDialog(QDialog):
                     completed,
                     failed,
                     cancelled,
-                    result.directory / "run-report.json",
+                    result.report_path,
                 ),
                 "text",
             )

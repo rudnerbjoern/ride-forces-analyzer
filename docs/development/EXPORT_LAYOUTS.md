@@ -80,7 +80,8 @@ otherwise its default. No corner/edge is inferred from a full-screen position.
 `LayoutPlugin.landscape_canvas` and `portrait_canvas` declare full-frame output sizes;
 `canvas_dimensions(settings)` resolves them through the registry. Plugins also own
 `preferred_window_seconds` (optional selection-time override), `preview_invert_lateral`
-(unselected gallery default), and read-only `prores_4444_size_rates` / `h264_size_rates`
+(unselected gallery default), and read-only `prores_4444_size_rates`, `h264_size_rates`
+and `h264_nvenc_size_rates`
 maps keyed by `ExportExtent` (optional lower/upper bytes per output pixel per frame).
 Shared consumers apply these values
 without branching on layout names. HUD declares its native canvases, 30-second
@@ -89,8 +90,12 @@ default. Each layout declares its Full-frame rates and, where supported, separat
 `PRORES_4444_CONTENT_SIZE_RATES` / `H264_CONTENT_SIZE_RATES`. Missing/None entries
 use the shared planning heuristic; Full-frame rates never fill missing Content-area
 rates. Rates need not be configured for both codecs. No measurements are fabricated.
-The estimator uses the same codec/extent rates for CPU and GPU preferences without
-probing hardware. All declared codec/extent rates use the owner-provided export
+The estimator uses `h264_nvenc_size_rates` for H.264 with GPU preference enabled.
+A missing/None NVENC entry uses `h264_size_rates` for the same extent, followed
+by the shared heuristic if that is also missing. No other extent supplies rates.
+ProRes uses the same rates for both preferences. Estimation does not probe hardware;
+actual CPU fallback can produce a smaller file than an NVENC planning range.
+All declared codec/extent rates use the owner-provided export
 references, with separate measurements per codec/extent.
 These are not replaced by short test exports; the
 [export contract](../implementation/VIDEO_EXPORT.md#estimates-and-progress) records

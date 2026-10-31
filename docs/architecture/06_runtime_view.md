@@ -218,12 +218,13 @@ sequenceDiagram
     participant Encoder as Video export
     User->>UI: Run selected or all saved batches
     UI->>Store: Read immutable job snapshots
-    UI->>Queue: Start queue in a unique output directory
+    UI->>Queue: Start queue in selected output directory
+    Queue->>Queue: Reserve a unique run report
     loop Each job
         Queue->>Queue: Reimport, verify hash and restore saved recipe
         Queue->>Encoder: Render and encode
         Encoder-->>Queue: Completion, failure or cancellation
-        Queue->>Queue: Update run-report.json
+        Queue->>Queue: Update this run's report
         Queue-->>UI: Progress and result
     end
 ```

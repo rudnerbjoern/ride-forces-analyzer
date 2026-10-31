@@ -417,15 +417,25 @@ class OrbitRenderer(Drawing):
 # Content-area H.264 uses the owner-provided Kraken CPU export reference:
 # 800x800, 60000/1001 fps, 9,544 frames, libx264, 6,136,463 bytes including MP4.
 # Observed 0.001004634 bytes/pixel/frame; round to 0.001005 with +/-50%.
-# Applies to both backend preferences; unmeasured aspects, other scenes and GPU
-# encoders remain unqualified. These are planning ranges, not guarantees.
+# CPU planning range; unmeasured aspects, other scenes and GPU encoders remain
+# unqualified. These are planning ranges, not guarantees.
 H264_CONTENT_SIZE_RATES = (0.0005025, 0.0015075)
+# Voltron Nevera Content-area NVENC: 800x800, 60000/1001 fps, 10,353 frames,
+# h264_nvenc, 14,267,683 bytes including MP4 overhead. Observed 0.002153314
+# bytes/pixel/frame; round to 0.002153 with +/-50%. Other scenes and unmeasured
+# aspects remain unqualified. These are planning ranges, not guarantees.
+H264_NVENC_CONTENT_SIZE_RATES = (0.0010765, 0.0032295)
 # Full-frame H.264 uses the owner-provided Kraken CPU export reference:
 # 3840x2160, 60000/1001 fps, 9,544 frames, libx264, 8,061,387 bytes including MP4.
 # Observed 0.000101834 bytes/pixel/frame; round to 0.000102 with +/-50%.
-# Applies to both backend preferences; portrait, other scenes and GPU encoders
-# remain unqualified by this reference. These are planning ranges, not guarantees.
+# CPU planning range; portrait, other scenes and GPU encoders remain unqualified
+# by this reference. These are planning ranges, not guarantees.
 H264_SIZE_RATES = (0.000051, 0.000153)
+# Voltron Nevera Full-frame NVENC: 3840x2160, 60000/1001 fps, 10,353 frames,
+# h264_nvenc, 15,774,006 bytes including MP4 overhead. Observed 0.000183692
+# bytes/pixel/frame; round to 0.000184 with +/-50%. Other scenes and portrait
+# remain unqualified. These are planning ranges, not guarantees.
+H264_NVENC_SIZE_RATES = (0.000092, 0.000276)
 # Full-frame ProRes uses the owner-provided Kraken GPU export reference:
 # 3840x2160, 60000/1001 fps, 9,544 frames, prores_ks_vulkan, 10,236,947,676 bytes.
 # Including MOV overhead: 0.12932 bytes/pixel/frame, rounded to 0.13 with +/-10%.
@@ -455,5 +465,9 @@ PLUGIN = LayoutPlugin(
     h264_size_rates={
         ExportExtent.FULL_FRAME: H264_SIZE_RATES,
         ExportExtent.CONTENT_AREA: H264_CONTENT_SIZE_RATES,
+    },
+    h264_nvenc_size_rates={
+        ExportExtent.FULL_FRAME: H264_NVENC_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: H264_NVENC_CONTENT_SIZE_RATES,
     },
 )

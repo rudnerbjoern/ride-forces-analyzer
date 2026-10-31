@@ -275,7 +275,9 @@ class LayoutPlugin:
         landscape_content: Native landscape size, or None when Content area is unsupported.
         portrait_content: Native portrait size, or None when Content area is unsupported.
         prores_4444_size_rates: Optional ProRes 4444 rates per extent; no cross-extent fallback.
-        h264_size_rates: Optional H.264 rates per extent; no cross-extent fallback.
+        h264_size_rates: Optional CPU H.264 rates per extent; no cross-extent fallback.
+        h264_nvenc_size_rates: Optional H.264 rates for GPU preference; missing entries
+            use CPU rates for the same extent without probing hardware.
     """
 
     key: ExportLayout
@@ -292,6 +294,9 @@ class LayoutPlugin:
         default_factory=lambda: dict[ExportExtent, SizeRates | None](),
     )
     h264_size_rates: Mapping[ExportExtent, SizeRates | None] = field(
+        default_factory=lambda: dict[ExportExtent, SizeRates | None](),
+    )
+    h264_nvenc_size_rates: Mapping[ExportExtent, SizeRates | None] = field(
         default_factory=lambda: dict[ExportExtent, SizeRates | None](),
     )
 
@@ -347,6 +352,7 @@ class LayoutPlugin:
         for name, values in (
             ("prores_4444_size_rates", self.prores_4444_size_rates),
             ("h264_size_rates", self.h264_size_rates),
+            ("h264_nvenc_size_rates", self.h264_nvenc_size_rates),
         ):
             if not isinstance(cast(object, values), Mapping):
                 raise ValueError("Layout size rates require an extent mapping")

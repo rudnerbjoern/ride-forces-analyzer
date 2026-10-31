@@ -185,7 +185,8 @@ instrument ranges. Export channels carry a 1 g vertical presentation reference
 for every posture; lateral and longitudinal references remain zero.
 Layouts consume this timeline through one native-RGBA-region/source-position
 protocol. Each plugin owns its geometry, renderer, presentation defaults and optional
-file-size estimate rates. The registry resolves these through the common contract
+file-size estimate rates, including optional NVENC rates selected by the H.264
+GPU preference with a same-extent CPU-rate fallback. The registry resolves these through the common contract
 and validates geometry. Its extent resolver uses layout-owned native dimensions
 for Content area and region/canvas placement for Full frame; capability and rate lookup
 use the same typed extent contract. Concrete layouts never depend on one another; reusable

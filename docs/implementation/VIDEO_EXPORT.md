@@ -317,9 +317,9 @@ The owner-provided HUD references use 1920×1080 and 60000/1001 fps:
 
 The HUD ProRes observations span 0.734–0.801 bytes/pixel/frame; their frame-weighted
 mean is 0.76244, rounded to 0.76 with a ±10% planning allowance (0.684–0.836).
-HUD H.264 retains 0.00085 with ±50%; both H.264 references fit this planning range.
-These reference calibration ranges are unchanged
-by short test exports and apply to both CPU and GPU preferences. Other scenes and
+HUD CPU H.264 retains 0.00085 with ±50%; both CPU H.264 references fit this planning range.
+These reference calibration ranges are unchanged by short test exports.
+ProRes rates apply to both CPU and GPU preferences. Other scenes and
 portrait output remain unqualified by these references.
 
 The owner-provided Kraken non-HUD ProRes references use 60000/1001 fps,
@@ -355,13 +355,31 @@ The owner-provided Kraken non-HUD H.264 references use 60000/1001 fps,
 | Four-panel column  | Full frame   | 3840×2160  | 69,336,081 | 0.000875879       | 0.000438–0.001314   |
 | Four-panel column  | Content area | 960×2160   | 43,889,261 | 0.002217700       | 0.001109–0.003327   |
 
-Each measured rate is rounded to six decimal places with a ±50% planning allowance
-for content/encoder variation. Separate Full-frame and Content-area ranges apply
-to both backend preferences. Other scenes, unmeasured aspects and GPU encoding
-remain unqualified by these references.
+The owner-provided Voltron Nevera NVENC references use 60000/1001 fps,
+10,353 frames and `h264_nvenc`. Rates include MP4 overhead:
+
+| Layout             | Export area  | Dimensions | File bytes  | Bytes/pixel/frame | Planning range      |
+| ------------------ | ------------ | ---------- | ----------- | ----------------- | ------------------- |
+| Flow Ribbon        | Full frame   | 3840×2160  | 75,440,403  | 0.000878522       | 0.0004395–0.0013185 |
+| Flow Ribbon        | Content area | 3072×360   | 76,217,448  | 0.006656784       | 0.0033285–0.0099855 |
+| Corner Instruments | Full frame   | 3840×2160  | 78,626,283  | 0.000915623       | 0.000458–0.001374   |
+| Corner Instruments | Content area | 840×1120   | 79,139,381  | 0.008125108       | 0.0040625–0.0121875 |
+| HUD                | Full frame   | 1920×1080  | 73,904,770  | 0.003442558       | 0.0017215–0.0051645 |
+| G-Orbit            | Full frame   | 3840×2160  | 15,774,006  | 0.000183692       | 0.000092–0.000276   |
+| G-Orbit            | Content area | 800×800    | 14,267,683  | 0.002153314       | 0.0010765–0.0032295 |
+| Four-panel column  | Full frame   | 3840×2160  | 188,122,482 | 0.002190733       | 0.0010955–0.0032865 |
+| Four-panel column  | Content area | 960×2160   | 190,277,305 | 0.008863307       | 0.0044315–0.0132945 |
+
+CPU and NVENC H.264 rates are rounded to six decimal places with a ±50% planning
+allowance for content/encoder variation. With GPU preference enabled, estimates use
+the layout's NVENC rate for the selected extent when present; otherwise they use
+its CPU rate for that same extent, followed by the shared heuristic if neither
+is measured. Estimation does not probe hardware. An actual CPU fallback can produce
+a smaller file than the NVENC planning range. Other scenes, unmeasured aspects and
+unmeasured encoders remain unqualified by these references.
 The plugin constants retain source intervals, dimensions, encoder settings and
 measurement limits. Estimates scale by resolved output pixels and frame count
-for either backend preference; estimation does not probe hardware. Other scenes,
+using the selected planning rates. Other scenes,
 durations, languages and unmeasured GPU encoders remain unqualified. These are
 approximate ranges, not guaranteed bounds. A missing codec/extent entry uses the
 shared heuristic; no rate is borrowed from a different extent.

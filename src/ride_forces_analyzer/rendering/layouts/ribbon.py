@@ -280,15 +280,25 @@ def create_renderer(timeline: ExportTimeline) -> ChartRenderer:
 # Content-area H.264 uses the owner-provided Kraken CPU export reference:
 # 3072x360, 60000/1001 fps, 9,544 frames, libx264, 22,602,237 bytes including MP4.
 # Observed 0.002141397 bytes/pixel/frame; round to 0.002141 with +/-50%.
-# Applies to both backend preferences; portrait, other scenes and GPU encoders
-# remain unqualified by this reference. These are planning ranges, not guarantees.
+# CPU planning range; portrait, other scenes and GPU encoders remain unqualified
+# by this reference. These are planning ranges, not guarantees.
 H264_CONTENT_SIZE_RATES = (0.0010705, 0.0032115)
+# Voltron Nevera Content-area NVENC: 3072x360, 60000/1001 fps, 10,353 frames,
+# h264_nvenc, 76,217,448 bytes including MP4 overhead. Observed 0.006656784
+# bytes/pixel/frame; round to 0.006657 with +/-50%. Other scenes and portrait
+# remain unqualified. These are planning ranges, not guarantees.
+H264_NVENC_CONTENT_SIZE_RATES = (0.0033285, 0.0099855)
 # Full-frame H.264 uses the owner-provided Kraken CPU export reference:
 # 3840x2160, 60000/1001 fps, 9,544 frames, libx264, 24,441,395 bytes including MP4.
 # Observed 0.000308753 bytes/pixel/frame; round to 0.000309 with +/-50%.
-# Applies to both backend preferences; portrait, other scenes and GPU encoders
-# remain unqualified by this reference. These are planning ranges, not guarantees.
+# CPU planning range; portrait, other scenes and GPU encoders remain unqualified
+# by this reference. These are planning ranges, not guarantees.
 H264_SIZE_RATES = (0.0001545, 0.0004635)
+# Voltron Nevera Full-frame NVENC: 3840x2160, 60000/1001 fps, 10,353 frames,
+# h264_nvenc, 75,440,403 bytes including MP4 overhead. Observed 0.000878522
+# bytes/pixel/frame; round to 0.000879 with +/-50%. Other scenes and portrait
+# remain unqualified. These are planning ranges, not guarantees.
+H264_NVENC_SIZE_RATES = (0.0004395, 0.0013185)
 # Full-frame ProRes uses the owner-provided Kraken GPU export reference:
 # 3840x2160, 60000/1001 fps, 9,544 frames, prores_ks_vulkan, 17,267,346,554 bytes.
 # Including MOV overhead: 0.21813 bytes/pixel/frame, rounded to 0.22 with +/-10%.
@@ -318,5 +328,9 @@ PLUGIN = LayoutPlugin(
     h264_size_rates={
         ExportExtent.FULL_FRAME: H264_SIZE_RATES,
         ExportExtent.CONTENT_AREA: H264_CONTENT_SIZE_RATES,
+    },
+    h264_nvenc_size_rates={
+        ExportExtent.FULL_FRAME: H264_NVENC_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: H264_NVENC_CONTENT_SIZE_RATES,
     },
 )

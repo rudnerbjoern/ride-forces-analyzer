@@ -316,15 +316,25 @@ class ColumnRenderer:
 # Content-area H.264 uses the owner-provided Kraken CPU export reference:
 # 960x2160, 60000/1001 fps, 9,544 frames, libx264, 43,889,261 bytes including MP4.
 # Observed 0.002217700 bytes/pixel/frame; round to 0.002218 with +/-50%.
-# Applies to both backend preferences; other scenes and GPU encoders remain
+# CPU planning range; other scenes and GPU encoders remain
 # unqualified by this reference. These are planning ranges, not guarantees.
 H264_CONTENT_SIZE_RATES = (0.001109, 0.003327)
+# Voltron Nevera Content-area NVENC: 960x2160, 60000/1001 fps, 10,353 frames,
+# h264_nvenc, 190,277,305 bytes including MP4 overhead. Observed 0.008863307
+# bytes/pixel/frame; round to 0.008863 with +/-50%. Other scenes remain
+# unqualified. These are planning ranges, not guarantees.
+H264_NVENC_CONTENT_SIZE_RATES = (0.0044315, 0.0132945)
 # Full-frame H.264 uses the owner-provided Kraken CPU export reference:
 # 3840x2160, 60000/1001 fps, 9,544 frames, libx264, 69,336,081 bytes including MP4.
 # Observed 0.000875879 bytes/pixel/frame; round to 0.000876 with +/-50%.
-# Applies to both backend preferences; other scenes and GPU encoders remain
+# CPU planning range; other scenes and GPU encoders remain
 # unqualified by this reference. These are planning ranges, not guarantees.
 H264_SIZE_RATES = (0.000438, 0.001314)
+# Voltron Nevera Full-frame NVENC: 3840x2160, 60000/1001 fps, 10,353 frames,
+# h264_nvenc, 188,122,482 bytes including MP4 overhead. Observed 0.002190733
+# bytes/pixel/frame; round to 0.002191 with +/-50%. Other scenes remain
+# unqualified. These are planning ranges, not guarantees.
+H264_NVENC_SIZE_RATES = (0.0010955, 0.0032865)
 # Full-frame ProRes uses the owner-provided Kraken GPU export reference:
 # 3840x2160, 60000/1001 fps, 9,544 frames, prores_ks_vulkan, 7,032,587,238 bytes.
 # Including MOV overhead: 0.08884 bytes/pixel/frame, rounded to 0.09 with +/-10%.
@@ -353,5 +363,9 @@ PLUGIN = LayoutPlugin(
     h264_size_rates={
         ExportExtent.FULL_FRAME: H264_SIZE_RATES,
         ExportExtent.CONTENT_AREA: H264_CONTENT_SIZE_RATES,
+    },
+    h264_nvenc_size_rates={
+        ExportExtent.FULL_FRAME: H264_NVENC_SIZE_RATES,
+        ExportExtent.CONTENT_AREA: H264_NVENC_CONTENT_SIZE_RATES,
     },
 )

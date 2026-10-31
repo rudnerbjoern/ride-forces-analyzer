@@ -781,6 +781,11 @@ PRORES_4444_SIZE_RATES = (0.684, 0.836)
 # Kraken CPU H.264: 17,181,504 bytes, about 0.00085 bytes/pixel/frame including
 # MP4 overhead; allow 50% for content/encoder variation.
 H264_SIZE_RATES = (0.000425, 0.001275)
+# Voltron Nevera Full-frame NVENC: 1920x1080, 60000/1001 fps, 10,353 frames,
+# h264_nvenc, 73,904,770 bytes including MP4 overhead. Observed 0.003442558
+# bytes/pixel/frame; round to 0.003443 with +/-50%. Other scenes and portrait
+# remain unqualified. These are planning ranges, not guarantees.
+H264_NVENC_SIZE_RATES = (0.0017215, 0.0051645)
 
 PLUGIN = LayoutPlugin(
     ExportLayout.HUD,
@@ -792,4 +797,5 @@ PLUGIN = LayoutPlugin(
     preferred_window_seconds=30.0,
     prores_4444_size_rates={ExportExtent.FULL_FRAME: PRORES_4444_SIZE_RATES},
     h264_size_rates={ExportExtent.FULL_FRAME: H264_SIZE_RATES},
+    h264_nvenc_size_rates={ExportExtent.FULL_FRAME: H264_NVENC_SIZE_RATES},
 )

@@ -182,11 +182,13 @@ class BatchReport(BaseModel, frozen=True, strict=True):
     """Batch report contract and owned data.
 
     Attributes:
-        directory: Directory used by the operation.
+        directory: User-selected directory containing numbered batch folders.
+        report_path: Unique report file reserved for this run in the selected directory.
         results: Completed job results in processing order.
     """
 
     directory: Path
+    report_path: Path
     results: tuple[JobResult, ...]
 
 
@@ -223,7 +225,7 @@ def run_batches(
 
     Args:
         batches: Selected saved batches in execution order.
-        output_directory: Directory receiving completed outputs.
+        output_directory: Selected directory receiving batch folders directly.
         ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
         cancelled: Cancellation event checked during the operation.
         progress: Callback receiving job index/count, export status and label. None status
@@ -245,10 +247,14 @@ def run_batches(
     if not total:
         raise ValueError("The selected batches contain no export jobs")
     cancel = cancelled if cancelled is not None else Event()
-    directory = output_directory / (
-        datetime.now(UTC).strftime("export-%Y%m%d-%H%M%S-") + uuid4().hex[:8]
-    )
-    directory.mkdir(parents=True)
+    directory = output_directory
+    directory.mkdir(parents=True, exist_ok=True)
+    report_path = directory / "run-report.json"
+    try:
+        report_path.touch(exist_ok=False)
+    except FileExistsError:
+        report_path = directory / f"run-report-{uuid4().hex[:8]}.json"
+        report_path.touch(exist_ok=False)
     results: list[JobResult] = []
     ordinal = 0
     for batch_number, batch in enumerate(batches, 1):
@@ -312,12 +318,16 @@ def run_batches(
                     record_error("Batch export job", error)
                     result = JobResult(**common, status="failed", error=str(error))
             results.append(result)
-            report = BatchReport(directory=directory, results=tuple(results))
-            # The directory is unique to this run; persist completed work even after a later failure.
-            (directory / "run-report.json").write_text(
+            report = BatchReport(
+                directory=directory,
+                report_path=report_path,
+                results=tuple(results),
+            )
+            # Only this run's reserved report is updated; earlier reports stay intact.
+            report_path.write_text(
                 report.model_dump_json(indent=2),
                 encoding="utf-8",
             )
             if progress and not cancel.is_set():
                 progress(ordinal, total, None, label)
-    return BatchReport(directory=directory, results=tuple(results))
+    return BatchReport(directory=directory, report_path=report_path, results=tuple(results))

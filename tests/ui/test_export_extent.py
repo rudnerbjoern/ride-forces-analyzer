@@ -111,6 +111,18 @@ def test_assistant_extent_geometry_visibility_estimates_and_localization(
         check_output("800×800", ExportExtent.CONTENT_AREA, position_visible=False)
         content_estimate = form.size_estimate.text()
         assert content_estimate != full_estimate
+        form.mode.setCurrentIndex(1)
+        gpu_estimate = form.size_estimate.text()
+        assert dialog.review_size_estimate.text() == gpu_estimate
+        form.gpu.setChecked(False)
+        cpu_estimate = form.size_estimate.text()
+        assert cpu_estimate != gpu_estimate
+        assert dialog.review_size_estimate.text() == cpu_estimate
+        form.gpu.setChecked(True)
+        assert form.size_estimate.text() == gpu_estimate
+        assert dialog.review_size_estimate.text() == gpu_estimate
+        form.mode.setCurrentIndex(0)
+        check_output("800×800", ExportExtent.CONTENT_AREA, position_visible=False)
         assert form.position.currentData() == "top_right"
         dialog.next.click()
         assert dialog.pages.currentIndex() == 1

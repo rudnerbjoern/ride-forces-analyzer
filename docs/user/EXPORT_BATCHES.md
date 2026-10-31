@@ -68,10 +68,13 @@ Frame generation uses **Settings → Export → Parallel render jobs** on this c
 as described in the [video export guide](VIDEO_EXPORT.md). Videos still run one
 after another.
 
-Each run creates a new directory below the chosen folder, with numbered batch
-folders and video filenames. Earlier outputs are not overwritten. The run's
-`run-report.json` records completed, failed, cancelled and skipped jobs; there
-is no persistent execution-history screen.
+Numbered batch folders are created directly in your chosen output folder, with
+numbered video filenames. For example, choosing `E:\RF batch` for `MP4-Content`
+writes videos into `E:\RF batch\001-MP4-Content`.
+Existing videos are not overwritten; a job with a conflicting filename fails.
+The run's `run-report.json` records completed, failed, cancelled and skipped jobs.
+If a report already exists, the new report is named `run-report-<id>.json`.
+The completion message shows its path. There is no persistent execution-history screen.
 
 **Cancel remaining exports** stops the active export and skips pending jobs.
 Incomplete output is removed, while already completed videos remain saved.

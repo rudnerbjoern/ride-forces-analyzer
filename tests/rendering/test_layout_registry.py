@@ -309,6 +309,8 @@ def test_compositor_accepts_a_registered_renderer_without_layout_branches(
         {"preview_invert_lateral": 1},
         {"prores_4444_size_rates": {ExportExtent.FULL_FRAME: (0.2, 0.1)}},
         {"h264_size_rates": {ExportExtent.FULL_FRAME: (0.1, float("inf"))}},
+        {"h264_nvenc_size_rates": {ExportExtent.CONTENT_AREA: (0.2, 0.1)}},
+        {"h264_nvenc_size_rates": {ExportExtent.CONTENT_AREA: (0.1, float("nan"))}},
     ],
 )
 def test_invalid_plugin_canvas_defaults_and_rates_are_rejected(changes: dict[str, object]) -> None:
