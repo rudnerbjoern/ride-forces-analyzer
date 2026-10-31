@@ -1,26 +1,14 @@
 # Ride overlay video export
 
-<!-- cspell:words libx -->
+<!-- cspell:words libx qscale Bahnschrift -->
 
-For instructions on creating an overlay and using it in a video editor, see the
-[user guide](../user/VIDEO_EXPORT.md). This page defines the technical contracts.
-
-Windows uses the existing optional bundled encoder. Linux/macOS select an external
-native `ffmpeg` from PATH or the Browse action; frame generation and encoding remain
-separate. Export staging stays beside the chosen output and is cleaned on success,
-cancellation or failure, including when the application launches from a read-only
-directory. Frozen Linux library paths are removed from external encoder processes.
-See [native deployment requirements](../development/RELEASE.md#linux-and-macos-packages).
-
-Current output/interaction contracts. Architecture owns
-[component/API boundaries](../architecture/05_building_block_view.md#video-export-boundary),
+Technical output and interaction contracts; see the [user guide](../user/VIDEO_EXPORT.md)
+for export/editor instructions and the [layout API](../development/EXPORT_LAYOUTS.md)
+for styling/extensions. Architecture owns [component boundaries](../architecture/05_building_block_view.md#video-export-boundary),
 [runtime](../architecture/06_runtime_view.md#video-export-runtime),
-[snapshot reuse/lifetime](../architecture/08_concepts.md#snapshot-lifetime-and-reuse)
-and [encoder qualification limits](../architecture/07_deployment_view.md#encoder-installation).
-The [layout API](../development/EXPORT_LAYOUTS.md) owns styling/extensions;
+[snapshot lifetime](../architecture/08_concepts.md#snapshot-lifetime-and-reuse) and
+[encoder installation/qualification](../architecture/07_deployment_view.md#encoder-installation);
 the [roadmap](../ROADMAP.md) owns planned scope.
-
-<!-- cspell:words qscale Bahnschrift -->
 
 ## Supported output
 
@@ -34,148 +22,116 @@ the [roadmap](../ROADMAP.md) owns planned scope.
 | Context window     | 1–60 s, default 12; shared source position and centered cursor in time plots                   |
 | Alignment          | Manual in DaVinci Resolve; source-video ingestion/synchronization excluded                     |
 
-[Manta overlay demo](https://youtu.be/0sGiE6F8YlI): all five layouts in turn over Onride footage.
-The additional [Manta HUD demo](https://youtu.be/JGcNPKoKU1Q) shows HUD using
-the supplied [Manta reference recording](../development/RECORDINGS.md#manta).
+Four-panel column is landscape-only: its 960×2160 region fills the 3840×2160
+canvas height. Other layouts support both aspects. Unsupported combinations are
+unavailable in settings and galleries.
+[Manta overlay demo](https://youtu.be/0sGiE6F8YlI) shows all five layouts;
+the [HUD demo](https://youtu.be/JGcNPKoKU1Q) uses the supplied
+[Manta recording](../development/RECORDINGS.md#manta).
 
 ## Contracts
 
-Four-panel column is landscape-only: a 960×2160 rectangle fills the complete height
-of its 3840×2160 Full-frame canvas. Unsupported format/layout combinations are
-unavailable in the selector and preview gallery; other layouts support both formats.
-
 ### Defaults, destinations and saved settings
 
-- Settings → Export persists the default frame rate in `preferences.sqlite3`.
-  Save changes it; Cancel and temporary assistant edits do not. Presets/batches
-  retain their own rates, including exact `24000/1001` and `60000/1001`.
-- `rendering.model.StandardFrameRate` owns standard rate values, display labels and
-  exact fractions. `EXPORT_FRAME_RATES` follows enum order; `DEFAULT_FRAME_RATE`
-  selects 50 fps. `FrameRate` also permits custom integers from 1 to 120.
-  Standard integers normalize to enum members in `ExportSettings`; Python callers
-  use enum members for fractional rates. Preset JSON and encoder metadata retain
-  integer whole rates and exact fractional strings, without a storage migration.
-- The local `render_jobs` preference defaults to 1 and accepts positive integers,
-  capped at the detected logical processor count (1 if unavailable). Settings →
-  Export applies it to newly started individual and batch exports. It is not part
-  of visual presets or saved batch snapshots.
-- Save dialog suggests the source recording stem, ` - `, the selected layout's
-  displayed name and `.mov`/`.mp4` (for example, `Manta - HUD.mov`).
-  Successful exports remember the destination folder across restarts, separately
-  from the recording folder. Missing folders use dialog defaults; cancellation or
-  failure preserves the previous folder.
-- Presets/immutable batch jobs retain aspect, export area, position, overlay language,
-  vertical direction and analysis recipe. Omitted optional fields use declared defaults,
-  including Full frame for `extent`; invalid supplied or missing required values fail.
-  Mixed-aspect and mixed-area batches are supported.
-- Python callers select `VideoAspect.LANDSCAPE` or `VideoAspect.PORTRAIT` from
-  `rendering.model`; `VideoAspect(value)` converts supported text values.
-  Saved JSON retains `landscape` and `portrait`; existing presets need no migration.
-- `VideoOutput.TRANSPARENT` selects the alpha overlay in ProRes 4444 MOV;
-  `VideoOutput.OPAQUE` selects the black-background video in H.264 MP4.
-  Both come from `rendering.model`; saved JSON retains `transparent` and `opaque`.
-- Overlay language is English/German/French, initially following UI language but independently
-  selectable. Production previews/frames share localized labels/numbers.
-  Replay clocks, source values, geometry, signs and units remain unchanged.
-  German and French glyph bounds are checked in every profile/aspect. Known layout names
-  translate; Flow Ribbon and G-Orbit retain their identities.
+- Settings → Export saves the default frame rate in `preferences.sqlite3`; Cancel,
+  temporary assistant edits and independently saved preset/batch rates do not alter it.
+  `StandardFrameRate` owns exact fractions, labels and enum order (`EXPORT_FRAME_RATES`);
+  `DEFAULT_FRAME_RATE` is 50 fps. `FrameRate` also accepts integers 1–120; standard
+  integers normalize to enum members. Python fractional rates use enum members;
+  JSON/metadata retain integer rates or exact `24000/1001` / `60000/1001` strings.
+- Local `render_jobs` defaults to 1, accepts positive integers up to detected logical
+  processors (fallback 1), and applies to newly started single/batch exports.
+  It is excluded from visual presets and saved batch snapshots.
+- Save suggests `<recording stem> - <displayed layout>.mov/.mp4` (e.g. `Manta - HUD.mov`).
+  Only success remembers the destination across restarts, separately from the recording
+  folder; missing folders use dialog defaults, cancellation/failure retain the old folder.
+- Immutable presets/jobs retain aspect, extent, position, overlay language, vertical
+  direction and analysis recipe; mixed-aspect/area batches are supported. Omitted optional
+  fields use defaults (`extent`: Full frame); missing required/invalid supplied values
+  fail. Unsupported layout keys are rejected without remapping or database cleanup.
+- `rendering.model` exposes `VideoAspect.LANDSCAPE`/`PORTRAIT` (JSON `landscape`/`portrait`,
+  text conversion via `VideoAspect(value)`) and `VideoOutput.TRANSPARENT`/`OPAQUE`
+  (JSON `transparent`/`opaque`). These settings require no storage migration.
+- Overlay language initially follows UI language, then independently selects EN/DE/FR.
+  Frames/previews share translated labels/numbers; replay clocks, geometry, values,
+  signs and units do not change. Glyph bounds are checked in every layout/aspect.
+  Layout names translate except Flow Ribbon and G-Orbit.
 
 ### Assistant and previews
 
-Both steps share a compact ride heading, labeled left-hand controls/summary and
-a large right-hand preview. Step one groups export settings, force display and
-encoding; presets and compact layout thumbnails remain directly accessible.
+Two-step modal assistant captures analysis, graph cursor and smoothing on opening,
+independently of later workspace changes. Both steps use a compact ride heading,
+labeled left controls/summary and large right preview. Step one groups export,
+force-display and encoding controls with presets and compact layout thumbnails.
 
-Settings order: layout, layout format, export area, position, output dimensions,
-output mode, overlay language, frame rate and ride range. Export area offers Full
-frame (default) and native Content area through plugin capabilities. Full-frame-only
-plugins show a fixed Full frame label. Position is hidden for Content area or a
-single fixed placement and restored with its retained value on return to Full frame.
-Settings and review show read-only resolved output dimensions and the same codec/extent
-file-size estimate; changes update both immediately and refresh the preview.
-Review includes layout format, export area and overlay language; position appears
-only when applicable. Controls and review labels support English, German and French.
+Settings order: layout, format, export area, position, read-only output dimensions,
+output mode, language, frame rate and ride range. Plugin capabilities select Full
+frame/Content area or a fixed Full frame label. Position is hidden for Content area
+or a fixed placement; returning to Full frame restores it. Settings/review share
+resolved dimensions and a live size range; changes refresh both and the preview.
+Review includes format, area, language and applicable position. All controls/labels
+support EN/DE/FR. Final Export video opens the destination dialog.
 
-| Interaction            | Contract                                                                                                                           |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Opening                | Two-step modal assistant binds current analysis, graph cursor and smoothing; does not follow workspace changes                     |
-| Preview sample         | All five thumbnails and large preview use production RGBA at the exact source sample, independent of video-frame quantization      |
-| Preview geometry       | Fit complete output within 960×540 / 540×960 without stretching/cropping; HUD gallery entries always Full frame                    |
-| Refresh                | Layout/format/extent, other settings and background changes use a debounced worker; only latest revision applies                   |
-| Background             | Checkerboard/light/dark are preview-only; preview needs neither FFmpeg nor encoding                                                |
-| Out-of-interval cursor | Retained unchanged; explicit full-recording-context warning                                                                        |
-| Review                 | Labeled settings/size summary and large preview; presets/gallery stay on step one; final Export video action chooses destination   |
-| Navigation             | Scrollable content, pinned progress/status/ETA and navigation/export actions for smaller/high-DPI desktops and translated settings |
-| Close/Escape           | Preserve source sample while open; respect active-encoding cancellation                                                            |
+- All thumbnails and the main preview use production RGBA at the exact source sample,
+  independently of video-frame quantization. Fit complete output within 960×540 /
+  540×960 without cropping/stretching; HUD gallery entries always use Full frame.
+- Settings/background changes use a debounced worker; only its latest revision applies.
+  Checkerboard/light/dark backgrounds are preview-only; preview needs no FFmpeg/encoding.
+- An out-of-interval cursor stays unchanged with an explicit full-recording-context
+  warning. Source sample stays fixed while open; Close/Escape respects active cancellation.
+- Content scrolls while progress/status/ETA and navigation/export actions remain pinned
+  on smaller/high-DPI desktops, including translated settings.
 
 ### Analysis and time mapping
 
-- Preparation reuses an identical source/configuration snapshot; otherwise
-  `prepare_export_analysis` reuses matching upstream stages and rebuilds affected ones.
-  Complete available history precedes interval selection.
-- `prepare_export`/`build_previews` accept `RecordingAnalysis`, settings and concrete
-  source indices; layouts consume a bound `ExportTimeline`.
-  Each timeline owns a frozen `ExportSnapshot`, captured from that effective
-  analysis and the bound export settings. It retains the source identity, complete
-  analysis recipe, inclusive interval, replay origin, smoothing, sample rate,
-  resolved output dimensions and planned frame count, without computed sample
-  buffers or recording paths. Rebinding a timeline creates a matching snapshot.
-  `encoder_command` embeds this snapshot under `export_snapshot` in the existing
-  JSON video comment, alongside the flat metadata fields. Single and batch exports
-  use the same contract; a batch result references the timeline-owned snapshot.
-  No per-video JSON sidecar is created.
-  Force/orientation views share prepared buffers; context uses full-history labels
-  without per-layout reclassification.
-- Orientation is independent of force smoothing. Layout, aspect, export area, position, language, video
-  rate and seeking do not recalculate analysis. Running exports/preview workers
-  retain bound snapshots independently of later workspace changes.
-  This includes custom Gravity/Incline references and subsequent resets: all five
-  preview layouts and the encoder consume the same effective basis and tilt.
-  Original source directions remain available as evidence; see
-  [reference calibration](../development/ANALYSIS_MODELS.md#reference-calibration).
-- Source time is index/rate; fractional output positions interpolate adjacent values.
-  Inclusive ranges include the final sample interval; duration rounds up to a frame.
-- Force readouts use one decimal place in every layout and production preview.
-  Curves, pointers, analysis buffers and data exports retain their existing precision.
-- 23.976 and 59.94 use exact `24000/1001` and `60000/1001` in timing, frame counts,
-  FFmpeg and saved settings. Match the recording and editing timeline's frame rate.
-- Default interval uses effective start/end markers; current selection and entire
-  recording are alternatives. Plot context outside the exported interval is blank.
-- All five layouts use a symmetric lateral instrument/chart scale starting at
-  ±1.25 g. The largest absolute valid value in the selected interval expands both
-  bounds to the next 0.25 g boundary, without extra padding. Ranges are fixed for
-  the entire export; endpoint labels retain quarter-g precision. HUD's separate
-  history curves retain their independently fitted ranges.
-- Longitudinal scales use the same symmetric quarter-g expansion with a ±1 g
-  minimum in all five layouts. Positive and negative peaks share the same extent;
-  for example, -1.01 g requires ±1.25 g and +1.26 g requires ±1.5 g.
-- All layouts use 1 g as the vertical display reference, including Flying. Numeric
-  values, source calibration and analysis remain absolute and unchanged. Vertical
-  history charts are symmetric around 1 g, with 5% headroom and a minimum ±0.1 g
-  deviation. Their reference line is highlighted; absolute endpoint labels are retained.
-- Replay labels retain sample-counter notation. Graphics omit Hz/fps; neither
-  identifies the POV video's rate. Technical rates remain in settings/metadata/encoding.
+- `prepare_export_analysis` reuses identical source/configuration snapshots and matching
+  upstream stages, rebuilding affected stages. Full history is prepared before selection.
+  `prepare_export`/`build_previews` bind `RecordingAnalysis`, settings and source indices
+  to an `ExportTimeline`; force/orientation views share buffers and prepared context
+  labels without per-layout classification. Orientation is independent of force smoothing.
+- Each timeline owns a frozen `ExportSnapshot`: source identity, full analysis recipe,
+  inclusive interval, replay origin, smoothing, sample rate, resolved dimensions and
+  planned frame count; no computed buffers or recording paths. Rebinding creates a
+  matching snapshot. `encoder_command` embeds it as `export_snapshot` beside flat JSON
+  video-comment metadata; single/batch exports share it, with no per-video JSON sidecar.
+  [Batch reports](EXPORT_BATCHES.md#contracts) retain that snapshot, requested job,
+  actual GPU selection, completed bytes and elapsed job duration.
+- Layout/aspect/extent/position/language/rate changes and seeking do not recalculate
+  analysis. Running exports/previews retain the bound basis/tilt, including custom
+  Gravity/Incline references and resets; source directions remain evidence.
+  See [reference calibration](../development/ANALYSIS_MODELS.md#reference-calibration).
+- Source time is index/rate; fractional positions interpolate adjacent values. Inclusive
+  ranges include the final sample interval and round duration up to an encoded frame.
+  23.976/59.94 use exact fractions throughout timing, frame counts, FFmpeg and storage;
+  match footage/editing rate. Replay labels use sample-counter notation; graphics omit
+  Hz/fps, which cannot identify the POV rate. Technical rates remain in settings/metadata.
+- Default interval uses effective start/end markers; selection and whole recording are
+  alternatives. Plot context outside it is blank. Force readouts use one decimal;
+  curves, pointers, analysis buffers and data exports keep their precision.
+- Instrument/chart lateral scales start at ±1.25 g; longitudinal scales at ±1 g.
+  Valid selected absolute peaks expand both bounds to the next 0.25 g without padding,
+  fixed for the export, with quarter-g endpoint labels (e.g. −1.01 → ±1.25 g,
+  +1.26 → ±1.5 g). HUD histories use the independent rules below.
+- All layouts use an absolute 1 g vertical reference, including Flying; calibration and
+  numeric values stay unchanged. Vertical histories are symmetric about 1 g with 5%
+  headroom and minimum ±0.1 g deviation, highlighted reference and absolute endpoints;
+  HUD histories use the independent rules below.
 
 ### Geometry, directions and colors
 
-- Full frame fits the complete layout on its canvas, using proportional scaling
-  and layout-owned placement. Portrait Ribbon stacks force cards; Column supports
-  landscape only. Content area keeps the complete native image without added
-  margins or scaling. Previews retain aspect without cropping/stretching.
-- The export API accepts a layout/format-supported position or uses that format's
-  default. Coordinates and dimensions come from the layout; frame composition,
-  large previews, thumbnails and encoder padding use the same selected region.
-  The assistant offers a separate localized Position row for applicable Full-frame layouts. Layout/format
-  changes retain a supported selection or choose an equivalent edge/corner on the
-  same side. Without an equivalent, retain the layout's remembered supported
-  position before falling back to its default. Thumbnails use the same policy.
-- Compact time plots show three forces plus numeric tilt; Column adds an
-  orientation plot. Export uses calibrated channels at the selected centered-mean
-  setting. Bounds use selected extrema plus 5% outward padding and −1/0/+1 g labels.
-- Compact panels are translucent with transparent surroundings/rounded corners;
-  data are opaque: cyan vertical, yellow lateral, green/red longitudinal.
-  Text/curves are outlined; opaque output composites over black.
-  Exact geometry/styles belong to [design constants](../development/EXPORT_LAYOUTS.md#design-constants).
+- Full frame proportionally fits the complete layout at its layout-owned placement;
+  portrait Ribbon stacks force cards. Content area retains the complete native image,
+  including empty pixels, without scaling, cropping, margins, padding or size rounding.
+  Frame composition, previews/thumbnails and encoding use the same resolved geometry.
+- API positions must be supported by layout/aspect or use that format's default.
+  Changes retain a supported position, then an equivalent same-side edge/corner,
+  then that layout's remembered supported position, then default; thumbnails agree.
+- Compact plots show three calibrated, centered-mean-smoothed forces plus numeric tilt;
+  Column adds orientation. Bounds use selected extrema with 5% outward padding and
+  −1/0/+1 g labels, subject to the channel-specific scale rules above.
+- Translucent panels have transparent surroundings/rounded corners. Data are opaque:
+  cyan vertical, yellow lateral, green/red longitudinal; text/curves have outlines.
+  MP4 composites over black. See [design constants](../development/EXPORT_LAYOUTS.md#design-constants).
 
 | Channel/axis              | Contract                                                                                                                                                                         |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -192,151 +148,98 @@ only when applicable. Controls and review labels support English, German and Fre
 
 ### HUD
 
-- Frameless full-screen arrangement with a transparent center: vertical force and
-  provisional airtime context at the left, acceleration/braking at the right,
-  and signed lateral force below. A transparent-to-black gradient gently darkens
-  the bottom histories; the center remains transparent. No reticle is drawn.
-- Fine major/minor ticks, luminous pointers, bold technical-font readouts, colored
-  bloom and soft black shadows remain transparent over footage. Bahnschrift is used
-  when installed, using its Bold weight for values; the existing scalable font
-  fallback applies otherwise. Prepared airtime labels are shown in uppercase.
-- A narrow orientation line sits at the outer right edge, alongside the existing
-  instrument height, with 0° at the top and 180° at the bottom. Only 0°, 45°, 90°,
-  135° and 180° are marked and labeled. A white triangular bug follows the prepared
-  orientation, including fractional-sample interpolation. Missing orientation hides
-  the entire line, labels and bug for that frame; no placeholder is shown.
-- The vertical instrument has independent negative/positive bounds in both formats:
-  Seated starts at −1.5…+5 g and Flying at −4…+3 g. The recording's effective
-  `riding_position` selects Flying only for the explicit `Flying` value; absent
-  source metadata already defaults to Seated in the importer. Other or unavailable
-  positions use the general Seated display range without changing source metadata.
-  Each bound expands outward independently in 0.5 g steps to include actual valid
-  samples in the export interval. Both sides use equal pixels per g; zero moves
-  with the bounds instead of staying at the center. Direction reversal mirrors
-  the instrument without negating values or exchanging its numeric bounds.
-  Only whole g values are labeled. Whole, half and quarter g values use long,
-  medium and short tick marks respectively; wider ranges reduce tick density
-  with an integer stride while preserving the exact endpoint marks.
-- Lateral and longitudinal instruments retain symmetric scales. Four minor ticks
-  separate major labels. Lateral uses at least ±1.25 g in both formats,
-  expanding both sides to the next 0.25 g boundary from the largest absolute actual selected
-  peak (for example, 1.26 g → ±1.5 g; 1.54 g → ±1.75 g), independently of major tick spacing.
-  Longitudinal uses
-  ±1 g in both formats. Before frame generation, its actual valid selected
-  samples determine the largest absolute peak: only peaks exceeding 1 g expand
-  that scale outward in 0.25 g steps. Padded chart bounds and samples outside the export interval
-  do not affect instrument ranges. All ranges remain fixed for the
-  entire export. Major tick
-  spacing grows for wider ranges to retain readable density; values are never clipped.
-- Three thin, wide force histories share a centered time cursor aligned exactly
-  with the lateral instrument's zero. Their left/right time spans have equal width
-  around that line; baselines and time ticks use the same plot bounds. They use the
-  selected interval's independent per-channel scales. In every posture, vertical
-  history maps its selected minimum and maximum to the row boundaries, including
-  1 g in those bounds. Its 1 g reference line follows that linear mapping; equal
-  bounds remain centered. Reference labels follow their lines: 1 g for vertical
-  (including inversion), 0 g for lateral and longitudinal. The vertical heading
-  and portrait endpoint labels retain fixed anchors.
-  Lateral and longitudinal histories use
-  zero as their reference and each use their exact
-  largest absolute selected value as symmetric bounds, without padding, rounding
-  or a minimum force range. Their peaks reach the row boundary: ±31.5 native pixels
-  in landscape, ±47 pixels in portrait. Zero-only or missing channels stay on the
-  reference when drawn. Labels and readouts retain absolute g values.
-  These ranges use valid selected samples, stay fixed during the entire export
-  and do not change the large instrument scales. Curve heights therefore show
-  variation within each channel, rather than equal g-per-pixel across channels.
-  Histories use the
-  selected time window. Selecting HUD in the assistant sets a 30-second window
-  (15 seconds before/after the cursor), still editable; loaded presets retain their
-  saved window. Time ticks appear every second, with labels every five seconds
-  (including `0 s`). Time advances left-to-right; vertical respects its inversion,
-  lateral is positive-up, and longitudinal acceleration is above zero/braking below.
-  Curves break at missing samples and omit context outside the export interval.
-  Longitudinal segments change green/red exactly at their zero crossing.
-- Independent markers disappear for missing channels. Readouts use existing
-  interpolation and prepared context; no speed, gears or vehicle attitude is invented.
-- Vertical instruments highlight 1 g as their neutral reference in every posture,
-  retaining 0 g, absolute values and the posture-dependent instrument bounds.
-- Bright bars along all three instrument scales hold peaks above/below their
-  reference: 1.5 seconds, then release toward the reference at 1 g/s. For
-  vertical this is 1 g, so unloading such as +0.4 g is held independently of higher
-  loading. Lateral and longitudinal channels retain zero as their reference.
-  Larger peaks replace the held value immediately. Pointers, lateral dot and
-  numeric readouts continue to show current values. Envelopes start at the first
-  selected sample, reset at missing samples and use source time, independent of
-  seek order and video rate. Missing current values hide their bars and pointers.
-- The only position is `full_screen` in both formats. Native 1920×1080/1080×1920
-  drawing is exported directly without resizing, for scaling in the video editor.
-  Both transparent and opaque output retain these dimensions, including saved
-  presets and batches. Preview galleries fit complete output images within common
-  display limits while preserving their aspect ratio.
-  Static effects are prepared once; moving effects use instrument/history tiles.
-  Rendering is independent of seek order and previous frames.
-- Unsupported layout keys are rejected in saved presets/jobs; no automatic remapping
-  or database cleanup is performed.
+- Frameless gauges: vertical/context left, acceleration/braking right, signed lateral
+  below; transparent center, no reticle, and transparent-to-black bottom-history gradient.
+  Fine ticks, luminous pointers, colored bloom and soft black shadows overlay footage.
+  Bahnschrift Bold values use the scalable fallback when unavailable; context is uppercase.
+- Outer-right orientation line spans instrument height: 0° top to 180° bottom, labeled
+  only at 0°/45°/90°/135°/180°. A white triangular marker interpolates prepared tilt;
+  missing tilt hides the entire line, labels and marker without a placeholder.
+- Vertical bounds start at −1.5…+5 g (Seated) or −4…+3 g (explicit `Flying`). Missing
+  metadata defaults to Seated in import; other/unavailable positions use the Seated
+  display range without altering metadata. Each bound independently expands outward
+  in 0.5 g steps for valid selected samples. Equal pixels/g moves zero with bounds;
+  inversion mirrors geometry, not values or bounds. Whole/half/quarter ticks are
+  long/medium/short; only whole g labels, with integer-stride density reduction for
+  wide ranges and exact endpoint marks. Highlight 1 g while retaining 0 g.
+- Lateral/longitudinal follow the shared symmetric instrument rules, with four minor
+  ticks per major interval. Major spacing grows for readability independently of
+  exact force bounds. Padded history bounds and samples outside selection cannot
+  expand instruments; values are not clipped.
+- Three thin, wide histories share a centered cursor aligned with lateral zero,
+  equal past/future widths, common plot/tick bounds and fixed selected per-channel
+  ranges, independent of instrument ranges. Vertical fits selected min/max including
+  1 g to row boundaries; equal bounds center. Lateral/longitudinal use exact symmetric
+  absolute selected peaks with no padding, rounding or minimum range: ±31.5 native
+  pixels landscape / ±47 portrait. Zero-only/missing channels stay on the reference
+  when drawn. Heights compare variation, not common g/pixel across channels.
+- History reference labels follow 1 g vertical (including inversion) and 0 g for
+  the others; headings and portrait endpoints keep fixed anchors, with absolute values.
+  Selecting HUD sets an editable 30-second window (±15 s); loaded presets keep theirs.
+  Ticks: 1 s, labels: 5 s including `0 s`; time left-to-right, vertical follows inversion,
+  lateral positive-up, longitudinal acceleration up/braking down. Curves break on gaps,
+  omit out-of-interval context and change longitudinal green/red exactly at zero.
+- Independent markers disappear on missing channels; readouts use interpolation and
+  prepared context. No speed, gears or vehicle attitude is invented.
+  Peak bars hold above/below 1 g vertical (including unloading), zero for other channels:
+  1.5 source-time seconds, then release toward reference at 1 g/s. Larger peaks replace
+  immediately; current pointers, lateral dot and numbers stay live. Envelopes begin at
+  first selected sample, reset on gaps and are seek/fps independent; missing current
+  values hide bars/pointers.
+- Only `full_screen` position; native 1920×1080 / 1080×1920 is exported without resizing
+  for either codec, presets or batches. Galleries fit whole images to preview limits.
+  Static effects prepare once; moving effects use instrument/history tiles. Rendering
+  is independent of prior frames and seek order.
 
 ### G-Orbit
 
-- Independent signed concentric force arcs: vertical left, longitudinal right,
-  lateral upper inner semicircle. The vertical 1 g reference is at the left equator;
-  loading/unloading extend toward opposite ends, with absolute numbers inside arcs.
-  Vertical instrument bounds use the same Seated/Flying policy as HUD. Vertical
-  current arcs and held peaks start at 1 g; other force arcs retain zero.
-- Separate right orientation semicircle: measured-angle marker at 0° top, 90° right,
-  180° bottom. No stretching/reconstructed attitude; missing tilt has no marker.
-- No replay footer. Square region with circular translucent background and fully
-  transparent corners; portrait scales all dimensions proportionally.
-- Bold scale numbers; white current-value bars with dark outlines cross tracks.
-  Translucent fills composite over tracks; opaque current arcs/white markers stay on top.
-- Positive/negative peaks held independently for 1.5 source-time seconds, then
-  released toward zero at 1 g/s without falling below current magnitude.
-  Reaching held value restarts hold; larger peaks replace it immediately.
-- Envelopes start at prepared interval's first sample and reset on gaps.
-  Immutable source-time envelopes give identical random-access preview/frame
-  behavior independently of query order/fps.
-- Peak bars use dark outlines and muted channel colors; longitudinal green/red by sign.
+- Signed concentric arcs: vertical left, longitudinal right, lateral upper inner
+  semicircle. Vertical uses HUD's Seated/Flying bounds and left-equator 1 g reference;
+  loading/unloading extend to opposite ends with absolute labels. Current/held vertical
+  arcs begin at 1 g, others at zero.
+- Separate right orientation semicircle: measured marker at 0° top / 90° right / 180°
+  bottom, absent on missing tilt; no stretched/reconstructed attitude. No replay footer.
+  Square region, circular translucent background, transparent corners; portrait scales
+  proportionally. Bold numbers and white outlined current bars cross the tracks;
+  translucent fills sit below opaque current arcs/white markers.
+- Positive/negative peaks hold independently for 1.5 source-time seconds, then release
+  toward their reference at 1 g/s without falling below current magnitude. Reaching a
+  held value restarts hold; larger peaks replace it. Envelopes begin at first selected
+  sample, reset on gaps, and give identical random-access results regardless of fps/order.
+  Peak bars use dark outlines/muted colors, longitudinal green/red by sign.
 
 ### Estimates and progress
 
-| Estimate             | Contract and limits                                                                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| File size            | Live approximate MiB range in settings/review using resolved dimensions, frame count and codec/extent rates; no FFmpeg or trial rendering       |
-| Size uncertainty     | Plugin-owned measured planning ranges per codec/extent; missing entries use the shared heuristic; estimates never guarantee bounds              |
-| Remaining frame time | Single and batch exports share `ExportProgress`; monotonic elapsed time per submitted frame × pending count; min:sec, including encoder startup |
-| ETA states           | Estimating before first frame; finalization after last frame has no predicted duration; cancel/failure/completion clears ETA                    |
+Live approximate MiB ranges in settings/review use resolved dimensions, rounded-up
+frame count and plugin codec/aspect/extent/backend rates. Estimation never probes
+hardware, invokes FFmpeg or renders a trial; ranges are planning aids, not guarantees.
+Missing rates use the same-extent fallback policy below, then a shared heuristic.
 
-`export_video` emits immutable `ExportProgress` snapshots through its callback:
-preparing, rendering, finalizing and completed. They carry submitted/total frame
-counts, monotonic elapsed time, the actual CPU/GPU backend and a shared
-remaining-frame estimate. Completion follows successful file publication. Frame
-counts measure input submitted to FFmpeg, not encoded output. Qt workers transport
-these snapshots; neither dialog owns a clock or estimates throughput.
+Single/batch `export_video` callbacks emit immutable `ExportProgress` snapshots:
+preparing, rendering, finalizing, completed. They contain submitted/total frames,
+monotonic elapsed time, actual CPU/GPU backend and remaining-frame time
+(elapsed/submitted × pending, min:sec, including encoder startup). Counts measure
+FFmpeg input, not encoded output. ETA is estimating before the first frame,
+unpredicted during finalization and cleared on cancel/failure/completion; completion
+requires successful publication. Qt workers transport snapshots; dialogs own no clock
+or throughput estimator.
 
 #### File-size calibration evidence
 
-The consolidated reference set contains **47 distinct export-size observations**.
-Landscape references use **60000/1001 fps (59.94)**; the 16 snapshot-confirmed
-portrait references use **24000/1001 fps (23.976)**. File bytes include container
-overhead; observed rates are file bytes divided by output width, height and encoded
-frame count. These are measurements of exported files, not guaranteed size bounds.
+**47 distinct observations:** 16 GPU ProRes, 4 CPU ProRes, 14 CPU H.264 and 13 NVENC.
+Each distinct file is counted once, including matching HUD outputs from different
+batch folders. Tables retain recording, layout, extent, dimensions, exact frame rate,
+frame count, bytes including container overhead, and bytes/(width × height × frames).
+Full-frame and Ribbon/Column native-area dimensions establish aspect; older
+Corner Instruments/G-Orbit native-area dimensions fit both aspects and cannot do so.
 
-Full-frame dimensions establish landscape output except for the explicitly
-identified portrait references.
-Flow Ribbon and Four-panel column Content-area dimensions also establish landscape.
-Corner Instruments and G-Orbit have identical native Content-area dimensions in
-both aspects; their recorded dimensions do not establish aspect, and a separate
-portrait Content-area reference for these two layouts is not retained. Matching
-HUD observations from Full-frame and Content-area batch folders are counted once;
-HUD supports Full frame only.
-
-The tables retain recording, layout, export area, dimensions, frame count and exact
-file length. Observed rates use bytes per output pixel per frame.
-
-[Batch run reports](EXPORT_BATCHES.md#contracts) collect the export-owned snapshot
-already embedded in each prepared video's metadata, together with the requested
-job definition, actual GPU selection, completed file size and elapsed job duration
-for subsequent comparisons.
+The 16 portrait references use the same Voltron Nevera interval: samples 4000–4999
+at 50 Hz → 480 frames, 24000/1001 fps, 20.02 s; `rider_calibrated`, English, vertical
+inverted/lateral unchanged, smoothing 11, history 30 s, ride bounds 1571–10206,
+Incline 3575, no Gravity override, reference window 5. Placement: Ribbon bottom,
+Corners/Orbit bottom-right, HUD full-screen. `run-report.json` agrees with video
+bytes, dimensions, frames, rates, encoder tags and embedded snapshots. Landscape
+references use 60000/1001 fps; portrait clips do not qualify longer exports/other scenes.
 
 ##### Transparent MOV — ProRes 4444 on NVIDIA Vulkan
 
@@ -361,23 +264,6 @@ Encoder: `prores_ks_vulkan`. Retained observations: **16**.
 | HUD                | Voltron Nevera | Full frame (portrait) | 1080×1920  | 24000/1001 | 480    | 903,143,298    | 0.907382589       |
 | G-Orbit            | Voltron Nevera | Full frame (portrait) | 2160×3840  | 24000/1001 | 480    | 1,099,437,272  | 0.276149488       |
 
-The portrait references come from the owner-provided `run-report.json` and are
-20.02-second clips of the same Voltron Nevera interval. File bytes, frame counts,
-frame rates, dimensions, encoder tags and embedded snapshots agree with the report.
-The Flow Ribbon GPU ProRes file is the same reference already supplied individually
-and is counted once. The snapshots confirm source samples 4000–4999 at 50 Hz,
-English, inverted vertical, unchanged lateral, 11-sample smoothing, a 30-second
-history and ride bounds 1571–10206. Calibration uses Incline reference 3575,
-no Gravity override and a five-sample reference window. Placement is bottom for
-Flow Ribbon, bottom-right for Corner Instruments/G-Orbit and full-screen for HUD.
-All outputs use the `rider_calibrated` analysis profile. These clips do not qualify
-whole rides, other scenes or longer portrait exports.
-
-Flow Ribbon's Full-frame render region is 1680×2240 in portrait versus 3072×360
-in landscape, on canvases with equal pixel count. This changes the active overlay
-area by a factor of about 3.4. The measured normalized rates differ by about 3.1,
-but recording, interval and frame rate also differ; these are not a controlled pair.
-
 ##### Transparent MOV — ProRes 4444 on CPU
 
 Encoder: `prores_ks`. Retained observations: **4**.
@@ -388,10 +274,6 @@ Encoder: `prores_ks`. Retained observations: **4**.
 | Corner Instruments | Voltron Nevera | Full frame (portrait) | 2160×3840  | 24000/1001 | 480    | 821,954,307 | 0.206453126       |
 | HUD                | Voltron Nevera | Full frame (portrait) | 1080×1920  | 24000/1001 | 480    | 610,934,100 | 0.613801782       |
 | G-Orbit            | Voltron Nevera | Full frame (portrait) | 2160×3840  | 24000/1001 | 480    | 494,918,229 | 0.124310335       |
-
-For this matched portrait interval, Vulkan ProRes files are approximately
-1.5–3.3 times larger than CPU ProRes files, depending on layout. CPU and GPU
-portrait estimates therefore use separate measured rates.
 
 ##### Opaque MP4 — H.264 on CPU
 
@@ -434,12 +316,16 @@ Encoder: `h264_nvenc`. Retained observations: **13**.
 | HUD                | Voltron Nevera | Full frame (portrait) | 1080×1920  | 24000/1001 | 480    | 6,386,732   | 0.006416711       |
 | G-Orbit            | Voltron Nevera | Full frame (portrait) | 2160×3840  | 24000/1001 | 480    | 2,909,826   | 0.000730871       |
 
+For the matched portrait interval, Vulkan ProRes files are 1.5–3.3 times larger
+than CPU files. Ribbon's Full-frame active region is 1680×2240 portrait versus
+3072×360 landscape on equal-pixel canvases: 3.4× the area and 3.1× measured
+bytes/pixel/frame. That aspect comparison also changes recording/interval/fps,
+so it is not a controlled pair.
+
 ##### Configured planning ranges
 
-All values below are bytes per output pixel per frame, including container
-overhead. Every supported layout/extent has a configured ProRes, CPU H.264 and
-NVENC H.264 range. Having a configured range does not establish measurement
-coverage for every encoder or aspect.
+Bytes per output pixel per frame, including overhead. All supported layout/extents
+have default ProRes/CPU H.264/NVENC ranges; configuration alone is not qualification.
 
 | Layout             | Export area  | ProRes 4444 | CPU H.264           | NVENC H.264         |
 | ------------------ | ------------ | ----------- | ------------------- | ------------------- |
@@ -453,9 +339,7 @@ coverage for every encoder or aspect.
 | Four-panel column  | Full frame   | 0.081–0.099 | 0.000438–0.001314   | 0.0010955–0.0032865 |
 | Four-panel column  | Content area | 0.279–0.341 | 0.001109–0.003327   | 0.0044315–0.0132945 |
 
-The table above gives default rates. Portrait **Full-frame** overrides use the
-matched 20.02-second reference set, with separate CPU/GPU ProRes and CPU/NVENC
-H.264 rates. Existing landscape and Content-area measurements remain unchanged.
+Portrait Full-frame overrides:
 
 | Layout             | GPU ProRes 4444 | CPU ProRes 4444 | CPU H.264           | NVENC H.264         |
 | ------------------ | --------------- | --------------- | ------------------- | ------------------- |
@@ -464,35 +348,21 @@ H.264 rates. Existing landscape and Content-area measurements remain unchanged.
 | HUD                | 0.819–1.001     | 0.549–0.671     | 0.001635–0.004905   | 0.0032085–0.0096255 |
 | G-Orbit            | 0.252–0.308     | 0.108–0.132     | 0.0001865–0.0005595 | 0.0003655–0.0010965 |
 
-ProRes uses a rate rounded to two decimal places with a ±10% planning allowance.
-HUD's four landscape GPU ProRes observations span 0.733857156–0.801232862; their frame-weighted
-mean is 0.762444717, rounded to 0.76. Outside the measured portrait Full-frame
-overrides, CPU ProRes shares the GPU-derived ranges and has no retained long-export reference of its own.
-
-H.264 rates use a ±50% planning allowance for content/encoder variation. CPU and
-NVENC references are kept separate. Non-HUD CPU and all NVENC anchors are rounded
-to six decimal places; landscape HUD CPU retains its 0.00085 anchor, containing
-both landscape CPU observations. Short ten-frame development clips do not qualify a long-export
-encoder/aspect combination.
-
-The estimator scales the selected range by resolved output pixels and encoded
-frame count. Portrait ProRes first selects a portrait rate for the same extent;
-CPU preference additionally selects its CPU portrait override when present.
-Missing portrait ProRes entries use the default rate for that same extent.
-Portrait H.264 selects its CPU or NVENC override according to GPU preference;
-a missing/None portrait NVENC entry prefers a portrait CPU rate before falling
-back to default codec rates. Default H.264 selection uses NVENC rates for GPU
-preference, then same-extent CPU rates if absent. If no applicable rates exist,
-the shared heuristic applies. No rate is borrowed from another extent.
-Estimation does not probe hardware or render a trial video. Actual CPU fallback
-can produce a smaller file than a GPU planning range. These ranges never
-guarantee bounds for other recordings, durations, languages, aspects or hardware.
+- ProRes: round anchor to two decimals, ±10%. The four landscape HUD GPU observations
+  span 0.733857156–0.801232862, frame-weighted mean 0.762444717 → 0.76. Outside portrait
+  Full-frame CPU overrides, CPU ProRes shares GPU-derived rates without its own
+  long-export evidence.
+- H.264: CPU/NVENC separate, six-decimal anchors, ±50%; landscape HUD CPU uses 0.00085
+  covering both measurements. Short ten-frame development clips do not qualify long exports.
+- Multiply selected rates by output pixels × encoded frames. Portrait ProRes uses
+  its override, additionally preferring CPU overrides when GPU preference is off;
+  absent entries use default ProRes rates. Portrait H.264 prefers its CPU/NVENC rate;
+  missing portrait NVENC prefers portrait CPU, then default codec selection. Default
+  H.264 uses NVENC for GPU preference, with CPU fallback. All fallbacks stay within
+  the selected extent; if none exists, use the shared heuristic. Actual CPU fallback
+  can produce smaller files than GPU ranges.
 
 ##### Calibration coverage and remaining gaps
-
-Coverage lists retained references for the stated encoder and output geometry;
-portrait references are 20.02-second clips. It does not claim general scene,
-duration or hardware qualification.
 
 | Output / encoder         | Landscape Full frame    | Measured native Content areas | Portrait Full frame                  |
 | ------------------------ | ----------------------- | ----------------------------- | ------------------------------------ |
@@ -501,23 +371,14 @@ duration or hardware qualification.
 | MP4 / `libx264` (CPU)    | All five layouts        | All four non-HUD layouts      | All four supported layouts (20.02 s) |
 | MP4 / `h264_nvenc`       | All five layouts        | All four non-HUD layouts      | All four supported layouts (20.02 s) |
 
-- **CPU ProRes 4444 MOV:** landscape and native Content-area references remain
-  missing. Portrait Full frame has one short reference per supported layout;
-  longer exports remain unqualified.
-- **Portrait Content area:** explicit references are missing for all encoders.
-  Corner Instruments and G-Orbit have older native-area measurements at the same
-  dimensions used in both aspects, but aspect was not retained. Dimensions alone
-  do not establish a separate portrait qualification.
-- **Frame rate:** longer references use 59.94 fps; the portrait Full-frame clips
-  cover 23.976 fps for all four encoders and supported layouts. Other combinations
-  at 23.976 fps and all other supported rates, including the 50-fps application
-  default, lack equivalent references.
-- **Recording diversity:** portrait clips use one Voltron Nevera interval only.
-  Landscape non-HUD GPU ProRes and CPU H.264 use Kraken; NVENC uses Voltron Nevera.
-  HUD GPU ProRes also includes Iron Gwazi and Voltron Nevera. Broader scene,
-  duration, language and hardware coverage remains open.
-
-Portrait geometry coverage (Full frame includes all four measured encoders):
+- Missing: landscape/native-area CPU ProRes; explicit portrait Content-area references
+  for all encoders. Older Corners/Orbit native-area measurements retain no aspect.
+- Portrait Full frame covers all four supported layouts/encoders only for one 20.02-s
+  Voltron interval at 23.976 fps. Longer references use 59.94 fps; remaining combinations
+  at 23.976 fps and other rates, including default 50 fps, lack equivalent evidence.
+- Landscape non-HUD GPU ProRes/CPU H.264 use Kraken; NVENC uses Voltron Nevera.
+  HUD GPU ProRes additionally covers Iron Gwazi/Voltron. Broader recording, duration,
+  language and hardware coverage remains open; ranges never guarantee those cases.
 
 | Layout             | Full frame                     | Content area                   |
 | ------------------ | ------------------------------ | ------------------------------ |
@@ -526,41 +387,32 @@ Portrait geometry coverage (Full frame includes all four measured encoders):
 | G-Orbit            | 2160×3840 (20.02-s references) | 800×800 (aspect not retained)  |
 | HUD                | 1080×1920 (20.02-s references) | Unsupported                    |
 
-Four-panel column is landscape-only; HUD Content area is unsupported. Neither
-is a missing calibration target.
+Full-frame portrait references cover all four encoders. Column portrait and HUD
+Content area are unsupported, not calibration gaps.
 
 ### Encoding and FFmpeg
 
-- Background export provides progress/cancellation; window close requests cancel.
-  Pillow RGBA generation remains separate from external FFmpeg encoding.
-- `rendering.parallel.render_region_bytes` uses the direct serial path for one
-  job. Multiple jobs use a bounded thread pool with independent renderers, images
-  and fonts per worker, sharing only the immutable timeline. Results reach the
-  encoder in frame order, with at most the job count plus one outstanding frames.
-  Closing on cancellation or failure cancels queued work and joins active renders.
-  Batch videos remain sequential; their frames use the selected render-job count.
-- Probe actual NVIDIA Vulkan ProRes with alpha / NVENC H.264; otherwise CPU fallback.
-  The single-frame NVENC probe uses 256×256 pixels because some devices reject
-  128×128 H.264 input.
-  Display selected backend. GPU ProRes never receives CPU `qscale`.
-- Frame generation and encoding resolve the same fixed geometry. Content area pipes
-  the complete native layout image, including existing empty pixels. Renderer and
-  encoder do not crop, scale, add margins/padding or round dimensions; output size
-  equals input size. MOV retains transparency; MP4 uses a black background.
-  Full frame retains its scaling, canvas and placement. Column's
-  Content area remains exactly 960 × 2160 without padding; HUD remains Full frame.
-  Previews, assistant dimensions, review and size estimates use the resolved output
-  geometry; presets and jobs retain the same typed area choice.
-- The save dialog confirms replacement of existing videos. An explicitly confirmed
-  replacement atomically publishes the completed staged video on the same filesystem;
-  cancellation or failure preserves the original. Other callers and batches default
-  to exclusive creation. For new files, use
-  same-volume hard links to avoid duplicate large files. Cross-volume or unsupported
-  links fall back to exclusive copying; failed/cancelled copies remove partial output.
-- Processing stays offline after installation, reusing Pillow. External full FFmpeg
-  build/version/checksum is pinned in `ffmpeg.json`; `setup.ps1 -VideoExport` installs it.
-  The assistant also accepts an installed executable.
-- FFmpeg Browse opens the configured executable's folder, including relative paths
-  or missing executables. A directory input opens itself; empty uses native defaults.
-  Cancel retains path; choosing a file replaces it.
-- Recording bytes, metadata, GPS and source values remain unchanged.
+- Pillow RGBA generation is separate from external FFmpeg encoding. `rendering.parallel.render_region_bytes`
+  runs serially for one job, otherwise with bounded threads and independent renderers,
+  fonts/images sharing immutable timelines. Ordered prefetch keeps at most job count + 1
+  frames outstanding. Cancel/close cancels queued work and joins active renders;
+  batch videos remain sequential. Background export reports progress/cancellation.
+- NVIDIA Vulkan alpha ProRes/NVENC requires a successful real probe; otherwise CPU.
+  Show the selected backend. NVENC's single-frame probe uses 256×256 (some devices
+  reject 128×128 H.264); GPU ProRes never receives CPU `qscale`.
+- Encoding preserves resolved native Content-area dimensions or pads the Full-frame
+  layout region to its canvas. MOV retains alpha; MP4 composites over black.
+- Save-dialog confirmation permits atomic replacement via a completed staged file on
+  the same filesystem; cancellation/failure preserves the original. Other callers/batches
+  default to exclusive creation. New files use same-volume hard links, falling back to
+  exclusive copying across volumes/unsupported links; failed/cancelled copies remove
+  partial output. Staging beside the destination is cleaned on success/cancel/failure,
+  including launches from read-only application directories.
+- Processing is offline after installation; source bytes, metadata, GPS and values
+  remain unchanged. Windows supports the optional bundled encoder; external full FFmpeg
+  version/build/checksum is pinned in `ffmpeg.json`, installed by `setup.ps1 -VideoExport`.
+  Linux/macOS use native external `ffmpeg` from PATH/Browse; frozen Linux library paths
+  are removed from its process. See [native deployment](../development/RELEASE.md#linux-and-macos-packages).
+- Browse starts in the configured executable's folder (also relative/missing paths),
+  opens directory inputs directly or uses native defaults for empty input. Cancel
+  retains the path; choosing a file replaces it. An installed executable is accepted.
