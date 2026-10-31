@@ -8,8 +8,8 @@ layouts in turn over Onride footage. The additional
 [Manta HUD demo](https://youtu.be/JGcNPKoKU1Q) shows only the HUD layout.
 
 All five layouts show the same Voltron Nevera moment. Recording details, fixed settings,
-reproduction commands and image licensing are documented in the
-[central image guide](images/README.md).
+and reproduction commands are documented in the [image guide](images/README.md).
+Image licensing and attribution follow the [central owner grant](../ASSET_LICENSES.md).
 
 ![Five Voltron Nevera export layouts at the same positive vertical-force peak with simultaneous lateral and braking forces](images/voltron-export-themes.png)
 

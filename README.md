@@ -235,9 +235,8 @@ Copyright © 2026 Björn Rudner.
 The application is free and open source under **GPL-3.0-or-later**, including
 commercial use under its terms, without warranty. See [LICENSE](LICENSE).
 
-Reuse terms for supplied recordings are in the
-[recording notice](tests/fixtures/real/README.md); image licensing and attribution
-are in the [central image guide](docs/images/README.md). These grants do not
+The [central owner grant](ASSET_LICENSES.md) defines reuse of supplied recordings,
+app exports, documentation images and bundled POV photographs. It does not
 automatically apply to your own recordings or exports. Dependencies retain their
 own licenses; see [third-party notices](THIRD_PARTY_NOTICES.md) for their terms
 and documented distribution limits.

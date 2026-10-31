@@ -2,9 +2,10 @@
 
 from ride_forces_analyzer.rendering.model import StandardFrameRate
 
-# cspell:words LANCZOS getpixel getchannel getbbox getrgb
+# cspell:words LANCZOS getpixel putpixel getchannel getbbox getrgb
 
 from dataclasses import replace
+from pathlib import Path
 from typing import Literal
 
 from PIL import Image, ImageColor, ImageOps
@@ -29,8 +30,33 @@ from ride_forces_analyzer.rendering.preview import (
     DARK_BACKGROUND,
     LIGHT_BACKGROUND,
     PreviewBackground,
+    POV_BACKGROUNDS,
+    compose_preview,
     build_previews,
 )
+
+
+@pytest.mark.parametrize("size", [(160, 90), (90, 160), (60, 40)])
+def test_pov_preserves_overlay_and_center_crops_only_photo(size: tuple[int, int]) -> None:
+    photo = Image.new("RGBA", (160, 90), "blue")
+    photo.paste("red", (0, 0, 40, 90))
+    photo.paste("green", (120, 0, 160, 90))
+    frame = Image.new("RGBA", size)
+    frame.putpixel((0, 0), (255, 255, 255, 255))
+    frame.putpixel((size[0] - 1, size[1] - 1), (255, 255, 255, 128))
+    result = compose_preview(frame, size, PreviewBackground.POV_LOUP_GAROU, photo)
+    expected = Image.alpha_composite(
+        ImageOps.fit(photo, size, Image.Resampling.LANCZOS),
+        frame,
+    ).convert("RGB")
+    assert result.size == size and result.tobytes() == expected.tobytes()
+    assert result.getpixel((0, 0)) == (255, 255, 255)
+    if size[1] > size[0]:
+        assert result.getpixel((0, size[1] // 2)) == (0, 0, 255)
+    opaque = Image.new("RGBA", size, "black")
+    assert compose_preview(opaque, size, PreviewBackground.POV_LOUP_GAROU, photo).tobytes() == (
+        opaque.convert("RGB").tobytes()
+    )
 
 
 class PreviewProbeRenderer:
@@ -50,6 +76,27 @@ def preview_probe(monkeypatch: pytest.MonkeyPatch) -> type[PreviewProbeRenderer]
         PreviewProbeRenderer,
     )
     return PreviewProbeRenderer
+
+
+@pytest.mark.parametrize("background", list(POV_BACKGROUNDS))
+def test_bundled_pov_background_reaches_all_layout_previews(
+    manta: ExplorerData,
+    preview_probe: type[PreviewProbeRenderer],
+    background: PreviewBackground,
+) -> None:
+    from ride_forces_analyzer.rendering import preview
+
+    assert manta.analysis is not None
+    result = build_previews(manta.analysis, ExportSettings(), 3500, 3700, 3600, background)
+    with Image.open(Path(preview.__file__).with_name("pov") / f"{background.value}.jpg") as photo:
+        assert photo.size == (3840, 2160)
+        expected = ImageOps.contain(
+            ImageOps.fit(photo.convert("RGBA"), (8, 8), Image.Resampling.LANCZOS),
+            (960, 540),
+            Image.Resampling.LANCZOS,
+        ).convert("RGB")
+    assert len(result.profiles) == len(PROFILES)
+    assert all(profile.image.tobytes() == expected.tobytes() for profile in result.profiles)
 
 
 @pytest.mark.parametrize("layout", [profile[0] for profile in PROFILES])

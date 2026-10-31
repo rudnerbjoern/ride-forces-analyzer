@@ -41,7 +41,7 @@ chapter 9 retains decision status and rationale.
   [additional Manta HUD demo](https://youtu.be/JGcNPKoKU1Q).
 - [Provisional airtime context](implementation/AIRTIME.md) and
   [separate opt-in airtime events](implementation/AIRTIME_EVENTS.md).
-- [Current screenshots, reference settings and image license](images/README.md).
+- [Current screenshots and reference settings](images/README.md).
 - [Localization: English, German and French](development/LOCALIZATION.md).
 - Import APIs: [service](development/IMPORT_SERVICE.md), [models](development/CANONICAL_MODELS.md),
   [decoder](development/STRICT_DECODING.md), [motion](development/MOTION_PARSING.md),
@@ -68,7 +68,7 @@ chapter 9 retains decision status and rationale.
   [third-party licenses](../THIRD_PARTY_NOTICES.md).
 - [Release policy and native packages](development/RELEASE.md).
 - [Recording catalog and authorization](development/RECORDINGS.md),
-  [recording reuse license](../tests/fixtures/real/README.md), [image reuse license](images/README.md).
+  [central owner grant for recordings and images](../ASSET_LICENSES.md).
 
 ## Ownership
 

@@ -1,7 +1,5 @@
 # 7. Deployment View
 
-<!-- cspell:words Segoe LOCALAPPDATA -->
-
 [Architecture index](README.md)
 
 ## Infrastructure level 1

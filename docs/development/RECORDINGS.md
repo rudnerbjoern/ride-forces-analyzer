@@ -1,21 +1,11 @@
 # Real recording fixtures
 
-<!-- cspell:words zforces -->
-
 ## Authorization and use
 
-Copyright © 2026 Björn Rudner. All owner-supplied test and reference data in this
-project are licensed under **CC BY-SA 4.0**, including complete recordings and
-app exports in any format. This includes
-embedded GPS positions, timestamps, sensor values, metadata and unknown fields.
-The owner approved this license for all test and reference data on 2026-10-21. The
-[license scope and attribution](../../tests/fixtures/real/README.md) identify the
-licensor and reuse conditions; the [complete legal text](../../tests/fixtures/real/LICENSE-CC-BY-SA-4.0.txt)
-is supplied alongside the files. Recipients may share and adapt the recordings,
-including commercially, with attribution, a license link and change indications.
-Shared adaptations must use the same or an officially compatible license under
-the ShareAlike terms.
-Program code and documentation images retain their separate licenses.
+The [central owner grant](../../ASSET_LICENSES.md) defines the license scope,
+author, attribution and reuse conditions for all supplied recordings and original
+app exports. The complete [legal text](../../tests/fixtures/real/LICENSE-CC-BY-SA-4.0.txt)
+is retained with the fixtures for redistribution.
 
 The owner authorizes using and publishing these complete data for project testing,
 development and reference comparisons. This data authorization does not authorize
@@ -105,7 +95,7 @@ see the [source comparisons](../validation/APP_REFERENCE.md).
 ## Source-app CSV reference
 
 - File: [Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.csv](../../tests/fixtures/real/Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.csv).
-- Owner-supplied Ride Forces app export, covered by the common CC BY-SA 4.0 grant.
+- Owner-supplied Ride Forces app export covered by the [central owner grant](../../ASSET_LICENSES.md).
 - Size: 248028 bytes.
 - SHA-256: `99cb644c8e5fb6cb6d4a0bd4c231f198215ff6f8bb90dc58f5d1baa20a79107b`.
 - Preserve original bytes, including CRLF line endings. The recording ID matches
@@ -115,7 +105,7 @@ see the [source comparisons](../validation/APP_REFERENCE.md).
 ## Source-app JSON reference
 
 - File: [Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.json](../../tests/fixtures/real/Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.json).
-- Owner-supplied Ride Forces app export, covered by the common CC BY-SA 4.0 grant.
+- Owner-supplied Ride Forces app export covered by the [central owner grant](../../ASSET_LICENSES.md).
 - Size: 179174 bytes.
 - SHA-256: `f76e04a71a339ec619b6b764847510f8a8c1a5d4989d3d447fb61f3b275d7379`.
 - Preserve original bytes. This export shares its recording ID with the Manta
@@ -125,7 +115,7 @@ see the [source comparisons](../validation/APP_REFERENCE.md).
 ## Source-app zforces reference
 
 - File: [Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.zforces](../../tests/fixtures/real/Manta-BE687591-84BB-4469-AAC0-E5A16B0744F9.zforces).
-- Owner-supplied Ride Forces app export, covered by the common CC BY-SA 4.0 grant.
+- Owner-supplied Ride Forces app export covered by the [central owner grant](../../ASSET_LICENSES.md).
 - Size: 91361 bytes.
 - SHA-256: `005ce708ec946bcf4dbe0163fc2fb23c629b65c1ed11706000c130855c4ba1e5`.
 - Preserve original bytes. Raw-DEFLATE expands to 783028 bytes of schema 2.2.0 JSON.

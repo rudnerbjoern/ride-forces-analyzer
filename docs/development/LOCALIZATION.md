@@ -1,7 +1,5 @@
 # Localization
 
-<!-- cspell:words Schwerkraft Neigung Neigungsmarkierung -->
-
 For changing application language and appearance, see the
 [user explorer guide](../user/EXPLORER.md#adjust-smoothing-and-display).
 

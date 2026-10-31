@@ -335,6 +335,10 @@ def build(work: Path, *, release: bool = False) -> Path:
             "--add-data",
             f"{ICON_SOURCE}:ride_forces_analyzer/ui/presentation",
             "--add-data",
+            f"{ROOT / 'src/ride_forces_analyzer/rendering/pov'}:ride_forces_analyzer/rendering/pov",
+            "--add-data",
+            f"{ROOT / 'ASSET_LICENSES.md'}:ride_forces_analyzer/rendering/pov",
+            "--add-data",
             f"{notices}:licenses/third-party",
             "--add-data",
             f"{ROOT / 'LICENSE'}:licenses",
@@ -356,7 +360,7 @@ def build(work: Path, *, release: bool = False) -> Path:
     standard = work / "standard"
     standard.mkdir(exist_ok=True)
     shutil.copyfile(executable, standard / f"{APP_NAME}.exe")
-    for filename in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
+    for filename in ("LICENSE", "THIRD_PARTY_NOTICES.md", "ASSET_LICENSES.md"):
         shutil.copyfile(ROOT / filename, standard / filename)
     shutil.copytree(notices, standard / "licenses", dirs_exist_ok=True)
     (standard / "START-HERE.txt").write_text(

@@ -91,8 +91,13 @@ and a range containing only one sample uses that sample.
 - The **Vertical** checkbox changes the direction of the vertical plot, without
   changing the signs of the numbers. The default shows positive loads downward
   and negative loads upward.
-- Checkerboard, light and dark backgrounds help you inspect the preview. They
-  are not exported. Transparent MOV keeps transparency; opaque MP4 uses black.
+- Checkerboard, light and dark backgrounds help you inspect transparency. Choose
+  a bundled **[Loup-Garou](https://rcdb.com/1029.htm)**, **[Goudurix](https://rcdb.com/753.htm)**,
+  **[Tonnerre 2 Zeus](https://rcdb.com/752.htm)** or **[Toutatis](https://rcdb.com/16327.htm)**
+  POV photo to see how
+  your overlay looks over ride footage. Photos fill the preview with a centered
+  crop, including portrait formats. They are not exported. Transparent MOV keeps
+  transparency; opaque MP4 uses black and covers the selected backdrop.
 
 Changing the export range recalculates the preview sample without moving the
 workspace cursor. Layout, language and display changes retain that sample.

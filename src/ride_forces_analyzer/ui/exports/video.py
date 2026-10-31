@@ -50,7 +50,7 @@ from ride_forces_analyzer.rendering.model import (
     prepare_export,
     prepare_export_analysis,
 )
-from ride_forces_analyzer.rendering.preview import ExportPreview, PreviewBackground
+from ride_forces_analyzer.rendering.preview import ExportPreview, PreviewBackground, POV_BACKGROUNDS
 from ride_forces_analyzer.rendering.layouts import registry
 from ride_forces_analyzer.storage.export_models import SavedPreset
 from ride_forces_analyzer.storage.exports import (
@@ -256,6 +256,7 @@ class ExportDialog(QDialog):
                 tr("Checkerboard · alpha preview only"),
                 tr("Light background · preview only"),
                 tr("Dark background · preview only"),
+                *(tr("POV · {0} · preview only", title) for title in POV_BACKGROUNDS.values()),
             ],
         )
         for index, background in enumerate(PreviewBackground):

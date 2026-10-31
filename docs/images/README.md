@@ -1,34 +1,16 @@
 # Documentation images
 
-This is the central reference for image licenses, content, settings and reproduction.
+This is the reference for documentation image content, settings and reproduction.
 
-## License
+## License reference
 
-Copyright © 2026 [Björn Rudner](https://github.com/rudnerbjoern).
+The [central owner grant](../../ASSET_LICENSES.md) defines the covered images,
+author, attribution, reuse conditions and third-party rights, including the
+OpenStreetMap background. The complete [CC BY-SA 4.0 legal text](LICENSE-CC-BY-SA-4.0.txt)
+is retained here for redistribution.
 
-All project-generated PNG images in this directory are licensed under
-**Creative Commons Attribution-ShareAlike 4.0 International** (`CC-BY-SA-4.0`).
-This includes workspace screenshots, export previews, all layout images including
-HUD, README details and the appearance gallery.
-
-You may copy, share and adapt them, including commercially. Credit the author,
-link the license, indicate changes and share adaptations under CC BY-SA 4.0 or
-an officially compatible license. Do not imply endorsement. See the
-[complete license](LICENSE-CC-BY-SA-4.0.txt) for the conditions and warranty disclaimer.
-
-Suggested attribution, adjusted for the filename and changes:
-
-> Ride Forces Analyzer — voltron-hud.png, copyright © 2026 Björn Rudner.
-> Source: [project documentation images](https://github.com/rudnerbjoern/ride-forces-analyzer/tree/main/docs/images).
-> License: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Changes: none.
-
-This grant covers the owner's image rights, not third-party trademarks, fonts,
-external Ride Forces/Apple Maps screenshots or users' own recordings and exports.
-The map background in `voltron-gps-overview.png` is © OpenStreetMap contributors;
-retain its attribution and see [OpenStreetMap copyright](https://www.openstreetmap.org/copyright)
-for the map's terms.
-Program code has its own GPL license; supplied recordings have a separate
-[recording notice](../../tests/fixtures/real/README.md).
+Bundled POV photographs are listed in the
+[POV inventory](../../src/ride_forces_analyzer/rendering/pov/README.md).
 
 ## Image content and reproduction
 

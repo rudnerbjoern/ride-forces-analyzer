@@ -29,7 +29,7 @@ from ride_forces_analyzer.ui.exports.video import ExportDialog
 from ride_forces_analyzer.ui.exports.workers import ExportWorker
 from ride_forces_analyzer.ui.exports import workers as ui_workers
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
-from ride_forces_analyzer.rendering.preview import ExportPreview, PreviewBackground
+from ride_forces_analyzer.rendering.preview import ExportPreview, PreviewBackground, POV_BACKGROUNDS
 from tests.ui.helpers import wait_until
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
@@ -90,6 +90,12 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     dialog.form.interval.setCurrentIndex(1)
     assert preview_ready(dialog).sample == 144
     assert window.navigation.slider.value() == sample
+    for background, title in POV_BACKGROUNDS.items():
+        index = dialog.background.findData(background.value)
+        assert index >= 0 and title in dialog.background.itemText(index)
+        dialog.background.setCurrentIndex(index)
+        result = preview_ready(dialog)
+        assert result.sample == 144 and not dialog.preview_view.source.isNull()
     dialog.next.click()
     assert dialog.pages.currentIndex() == 1 and dialog.start.isVisible()
     assert "144" in dialog.preview_caption.text()

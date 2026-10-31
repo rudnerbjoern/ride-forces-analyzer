@@ -155,8 +155,6 @@ and regression risks; do not add tests solely to reach a percentage.
 
 ### UI coverage
 
-<!-- cspell:words rcfile -->
-
 UI coverage uses [its own configuration](../../tests/ui/coverage.toml), with a
 90% combined line/branch threshold across the package. The other application
 packages use the shared 98% gate. Measure the existing native Windows interaction suite separately:

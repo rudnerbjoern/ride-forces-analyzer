@@ -1,7 +1,5 @@
 # Ride overlay video export
 
-<!-- cspell:words libx qscale Bahnschrift -->
-
 Technical output and interaction contracts; see the [user guide](../user/VIDEO_EXPORT.md)
 for export/editor instructions and the [layout API](../development/EXPORT_LAYOUTS.md)
 for styling/extensions. Architecture owns [component boundaries](../architecture/05_building_block_view.md#video-export-boundary),
@@ -76,7 +74,14 @@ support EN/DE/FR. Final Export video opens the destination dialog.
   independently of video-frame quantization. Fit complete output within 960×540 /
   540×960 without cropping/stretching; HUD gallery entries always use Full frame.
 - Settings/background changes use a debounced worker; only its latest revision applies.
-  Checkerboard/light/dark backgrounds are preview-only; preview needs no FFmpeg/encoding.
+  Checkerboard/light/dark and bundled [Loup-Garou](https://rcdb.com/1029.htm),
+  [Goudurix](https://rcdb.com/753.htm), [Tonnerre 2 Zeus](https://rcdb.com/752.htm) and
+  [Toutatis](https://rcdb.com/16327.htm) POV backgrounds are preview-only; preview needs no FFmpeg/encoding. Photos fill
+  the resolved output aspect with proportional resizing and a centered crop;
+  the overlay remains complete. One decoded photo is reused across the gallery.
+  Opaque MP4 retains its black canvas. Background choices are excluded from
+  export settings, presets, batches and snapshots. Image attribution and license
+  ship [with the assets](../../src/ride_forces_analyzer/rendering/pov/README.md).
 - Preview uses `first + round(0.6 * (last - first))` within the selected export range,
   independently of the graph cursor. Range changes select a new sample; other settings
   retain it. Short ranges may round to an endpoint; a single-sample range uses that sample.
