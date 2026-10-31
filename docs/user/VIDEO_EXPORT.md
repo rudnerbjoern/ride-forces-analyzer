@@ -19,8 +19,8 @@ your original recording unchanged, and processing works offline after setup.
 
 ## 1. Choose the part of the ride
 
-Click a point in the chart that you want to see in the preview, then click
-**Export video…**. The assistant opens with that moment and your current smoothing.
+Click **Export video…**. The assistant captures your current analysis and smoothing;
+its setup preview uses the sample 60% of the way through the selected export range.
 
 Choose **Range** to decide how much of the ride to export:
 
@@ -112,13 +112,18 @@ depends on calibration and smoothing; they are not a measurement of what a rider
 
 1. If FFmpeg was not found automatically, click **Browse…** next to **FFmpeg**
    and choose its executable (`ffmpeg.exe` on Windows, `ffmpeg` on Linux/macOS).
-2. Click **Review export →**. Check the settings and estimated file size on the left
+2. Click **Review export**. Check the settings and estimated file size on the left
    and the large preview on the right. Use **Back** to change the layout or settings.
 3. Click **Export video…**, choose a destination and file name, then save.
 4. Wait for the export to finish. The progress bar counts frames passed to the
    encoder; the remaining time estimates pending frames. **Finalizing video…**
    means the encoder is finishing the file, with no duration estimate. You can
    cancel the export.
+
+During export, the large preview follows the rendered video approximately every
+two video seconds and also shows its first and last frame. The selected backdrop
+remains preview-only; these updates reuse rendered frames rather than generating
+additional ones. Returning with **Back** restores the setup preview.
 
 On Windows, the taskbar icon also shows export progress while the window is
 minimized. For batches it shows overall queue progress. The indicator disappears

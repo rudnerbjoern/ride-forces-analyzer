@@ -90,6 +90,12 @@ the export assistant pauses playback. Closing the window stops it.
 Zoom changes the visible time interval; the force scale stays fixed. A click
 selects a moment, while a drag changes the view.
 
+The right-aligned view controls use icons with tooltips: a magnifier with a red X
+for **Reset view**, a magnifier with a blue selection for **Zoom to selection**,
+and blue selection brackets for **Select visible range**. Curve visibility sits
+beside **Calibrated forces**. Calibrated plots include dashed reference lines at
+0 g and 1 g when those values are within the displayed scale; raw plots do not.
+
 ## Choose an interval
 
 The inspector's **SELECTION** section contains **From sample** and **To sample**.
@@ -121,6 +127,10 @@ active display mode and smoothing.
 information is omitted. **Technical details** provides source information,
 processing settings and current-sample details; **Import notes** opens diagnostic
 information when you need to understand unavailable data.
+
+The heading also shows the park beside the ride name when available. Device,
+sample count and sample rate share the same line. The arrow on **Technical details**
+points down when collapsed and up when expanded.
 
 Replay time is relative to the recording's start marker. At an integer sample
 rate, `MM:SS.ff` ends with a sample counter, not hundredths: at 50 samples per

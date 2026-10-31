@@ -45,7 +45,7 @@ No Python installation is needed. The Windows Complete ZIP includes FFmpeg for
 video export; Linux and macOS need it installed separately. Windows EXE and
 Standard ZIP downloads are also available if you prefer to use your own FFmpeg.
 
-Version **1.2.0** is a stable release. Windows and macOS may display a security warning
+Version **1.3.0** is a stable release. Windows and macOS may display a security warning
 when you first open the app.
 Follow the [installation guide](docs/user/INSTALLATION.md) for download
 verification, Linux prerequisites and first-launch instructions.
@@ -158,9 +158,9 @@ HUD always uses Full frame. [Compare export areas](docs/user/EXPORT_LAYOUTS.md#e
 Export the whole recording, its marker interval or your
 selected section. Choose the overlay language independently of the application.
 
-![Export assistant showing layout thumbnails, Export area and Position choices, output dimensions and a Flow Ribbon preview with Ejector Airtime](docs/images/export-preview.png)
+![Export assistant showing layout thumbnails, Export area and Position choices, output dimensions and a Flow Ribbon preview at 60% of the export interval](docs/images/export-preview.png)
 
-*Preview the selected chart moment before rendering. The checkerboard indicates transparency and is not part of the video.*
+*Preview a sample at 60% of the selected export interval before rendering. The checkerboard indicates transparency and is not part of the video.*
 
 ![Additional export preview showing a Voltron Nevera Flow Ribbon overlay over the bundled Toutatis POV photo](docs/images/export-preview-pov.png)
 

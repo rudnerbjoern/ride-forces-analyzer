@@ -207,6 +207,11 @@ preference selects serial generation or a bounded thread pool with independent
 renderers. Ordered prefetch preserves frame order. NVIDIA Vulkan/NVENC is used
 only after a successful probe; CPU remains the fallback.
 
+For single-video exports, an optional callback forwards already rendered RGBA
+regions at approximately two-second video intervals, including the first and last
+frame. Preview composition applies the selected display-only backdrop in the worker;
+Qt signals deliver the resulting image to the dialog without a second render.
+
 Cancellation joins active renders, cancels queued work and discards incomplete
 output. Successful encoding publishes a new file exclusively or atomically replaces
 an existing video after save-dialog confirmation. The user aligns the
@@ -236,6 +241,10 @@ sequenceDiagram
 ```
 
 Videos run sequentially; their frames use the local render-job preference.
+Before encoding, the queue reads each distinct source to calculate per-job frame
+budgets from saved inclusive bounds, source sample rates and export frame rates.
+Overall dialog/taskbar progress uses those frame weights; settled failed jobs consume
+their planned share, while unreadable sources have no known budget.
 Each job replays its saved export area through the shared geometry/encoding path,
 independently of current assistant settings and later preset edits.
 Per-job failures allow later jobs to continue. Cancellation skips pending jobs and
