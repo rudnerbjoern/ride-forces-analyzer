@@ -21,7 +21,9 @@ from typing import cast
 import pytest
 
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
-from ride_forces_analyzer.exports.batches import build_jobs, make_job, run_batches
+from ride_forces_analyzer import __version__
+from ride_forces_analyzer.exports.batches import BatchReport, build_jobs, make_job, run_batches
+from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.rendering.encoding import ExportCancelled
 from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.rendering.model import (
@@ -31,6 +33,7 @@ from ride_forces_analyzer.rendering.model import (
     ExportExtent,
     VideoAspect,
     ExportSettings,
+    ExportSnapshot,
     ExportTimeline,
 )
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
@@ -372,6 +375,73 @@ def test_multiple_rides_cross_multiple_presets_and_custom_bounds(manta: Explorer
         )
 
 
+def test_batch_report_retains_complete_settings_and_actual_execution(
+    export_directory: Path,
+    manta: ExplorerData,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ride_forces_analyzer.exports import batches
+
+    renderer_counts: list[object] = []
+    snapshots: list[ExportSnapshot] = []
+
+    def fake_export(timeline: ExportTimeline, target: Path, **kwargs: object) -> Path:
+        snapshots.append(timeline.snapshot)
+        renderer_counts.append(kwargs["render_jobs"])
+        callback = cast(Callable[[ExportProgress], None], kwargs["progress"])
+        callback(ExportProgress(ExportPhase.RENDERING, 1, timeline.frame_count, 1, False))
+        target.write_bytes(b"encoded")
+        return target
+
+    monkeypatch.setattr(batches, "export_video", fake_export)
+    chosen = preset("Complete settings", window=5).model_copy(
+        update={
+            "settings": ExportSettings(
+                layout=ExportLayout.CORNERS,
+                extent=ExportExtent.CONTENT_AREA,
+                aspect=VideoAspect.PORTRAIT,
+                position=LayoutPosition.TOP_LEFT,
+                output=VideoOutput.OPAQUE,
+                fps=StandardFrameRate.FPS_59_94,
+                window_seconds=8,
+                invert_vertical=True,
+                invert_lateral=True,
+                language=Language.FRENCH,
+                prefer_gpu=True,
+            ),
+        },
+    )
+    job = short_job(manta, chosen)
+    ffmpeg = export_directory / "selected-ffmpeg.exe"
+    ticks = iter((100.0, 102.75))
+    monkeypatch.setattr(batches, "monotonic", lambda: next(ticks))
+    result = run_batches(
+        (SavedBatch(name="Settings", jobs=(job,), schema_version=1),),
+        export_directory,
+        ffmpeg=ffmpeg,
+        render_jobs=2,
+    )
+    payload = json.loads(result.report_path.read_text(encoding="utf-8"))
+    assert payload["application_version"] == __version__
+    assert payload["render_jobs"] == renderer_counts[0]
+    assert payload["requested_ffmpeg"] == str(ffmpeg)
+    outcome = payload["results"][0]
+    assert outcome["status"] == "completed"
+    assert outcome["job_snapshot"] == json.loads(job.model_dump_json())
+    assert outcome["job_snapshot"]["preset"]["settings"]["fps"] == "60000/1001"
+    assert outcome["job_snapshot"]["preset"]["settings"]["prefer_gpu"] is True
+    assert outcome["gpu_encoding"] is False
+    assert result.results[0].export_snapshot is snapshots[0]
+    assert outcome["export_snapshot"] == snapshots[0].model_dump(mode="json")
+    assert outcome["export_snapshot"]["sample_rate"] == 50
+    assert outcome["export_snapshot"]["output_dimensions"] == [840, 1120]
+    assert outcome["export_snapshot"]["planned_frame_count"] == 3
+    assert outcome["file_size_bytes"] == len(b"encoded")
+    assert outcome["duration_seconds"] == 2.75
+    restored = BatchReport.model_validate_json(result.report_path.read_text(encoding="utf-8"))
+    assert restored.results[0].job_snapshot == job
+
+
 def test_batch_continues_after_changed_recording_and_preserves_outputs(
     export_directory: Path,
     manta: ExplorerData,
@@ -380,6 +450,8 @@ def test_batch_continues_after_changed_recording_and_preserves_outputs(
     from ride_forces_analyzer.exports import batches
 
     calls: list[Path] = []
+    ticks = iter(index * 0.5 for index in range(16))
+    monkeypatch.setattr(batches, "monotonic", lambda: next(ticks))
 
     def fake_export(timeline: ExportTimeline, target: Path, **kwargs: object) -> Path:
         calls.append(target)
@@ -423,6 +495,12 @@ def test_batch_continues_after_changed_recording_and_preserves_outputs(
         "failed",
         "completed",
     ]
+    assert [item.job_snapshot for item in result.results] == [job, changed, missing, job]
+    assert all(item.duration_seconds == 0.5 for item in result.results)
+    assert result.results[0].gpu_encoding is True
+    assert result.results[1].gpu_encoding is None
+    assert result.results[1].export_snapshot is None
+    assert result.results[1].file_size_bytes is None
     assert "changed" in (result.results[1].error or "")
     assert len(calls) == 2 and calls[0] != calls[1]
     assert all(path.read_bytes() == b"completed" for path in calls)
@@ -432,12 +510,16 @@ def test_batch_continues_after_changed_recording_and_preserves_outputs(
     assert not list(export_directory.glob("export-*"))
     assert result.report_path == export_directory / "run-report.json"
     original_report = result.report_path.read_bytes()
-    assert len(json.loads(original_report)["results"]) == 4
+    saved_results = json.loads(original_report)["results"]
+    assert len(saved_results) == 4
+    assert saved_results[1]["job_snapshot"] == json.loads(changed.model_dump_json())
+    assert saved_results[2]["job_snapshot"] == json.loads(missing.model_dump_json())
     second = run_batches(saved, export_directory)
     assert second.directory == result.directory
     assert second.report_path != result.report_path and second.report_path.is_file()
     assert result.report_path.read_bytes() == original_report
     assert all(item.status == "failed" for item in second.results)
+    assert all(item.duration_seconds == 0.5 for item in second.results)
     assert calls[0].read_bytes() == b"completed"
 
 
@@ -450,6 +532,8 @@ def test_cancel_stops_remaining_jobs_and_keeps_completed_files(
 
     calls = 0
     cancel = Event()
+    ticks = iter((100.0, 101.25, 110.0, 112.5))
+    monkeypatch.setattr(batches, "monotonic", lambda: next(ticks))
 
     def fake_export(timeline: ExportTimeline, target: Path, **kwargs: object) -> Path:
         nonlocal calls
@@ -468,6 +552,13 @@ def test_cancel_stops_remaining_jobs_and_keeps_completed_files(
         cancelled=cancel,
     )
     assert [item.status for item in result.results] == ["completed", "cancelled", "skipped"]
+    assert [item.duration_seconds for item in result.results] == [1.25, 2.5, None]
+    payload = json.loads(result.report_path.read_text(encoding="utf-8"))
+    assert [item["duration_seconds"] for item in payload["results"]] == [1.25, 2.5, None]
+    assert all(item.job_snapshot == job for item in result.results)
+    assert result.results[1].file_size_bytes is None
+    assert result.results[2].export_snapshot is None
+    assert result.results[2].gpu_encoding is None
     assert calls == 2
     output = result.results[0].output
     assert output is not None and output.read_bytes() == b"complete"
@@ -539,6 +630,12 @@ def test_saved_batch_reopens_and_exports_mixed_extents_and_outputs(
         strict=True,
     ):
         assert item.output is not None
+        assert item.export_snapshot is not None
+        assert item.export_snapshot.output_dimensions == dimensions
+        assert item.export_snapshot.planned_frame_count == 2
+        assert item.file_size_bytes == item.output.stat().st_size
+        assert item.gpu_encoding is False
+        assert item.duration_seconds is not None and item.duration_seconds > 0
         probe = subprocess.run(
             [
                 str(ffmpeg.with_name("ffprobe.exe")),
@@ -547,7 +644,7 @@ def test_saved_batch_reopens_and_exports_mixed_extents_and_outputs(
                 "-select_streams",
                 "v:0",
                 "-show_entries",
-                "stream=width,height,nb_frames",
+                "stream=width,height,nb_frames:format_tags=comment",
                 "-of",
                 "json",
                 str(item.output),
@@ -556,9 +653,12 @@ def test_saved_batch_reopens_and_exports_mixed_extents_and_outputs(
             capture_output=True,
             text=True,
         )
-        stream = json.loads(probe.stdout)["streams"][0]
+        metadata = json.loads(probe.stdout)
+        stream = metadata["streams"][0]
         assert (stream["width"], stream["height"]) == dimensions
         assert int(stream["nb_frames"]) == 2
+        comment = json.loads(metadata["format"]["tags"]["comment"])
+        assert comment["export_snapshot"] == item.export_snapshot.model_dump(mode="json")
     assert all(path.read_bytes() == original for path, original in sources)
 
 

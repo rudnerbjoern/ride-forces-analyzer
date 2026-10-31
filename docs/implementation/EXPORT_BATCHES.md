@@ -82,6 +82,27 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   in the selected directory. If that path already exists, reserve a unique
   `run-report-<id>.json` instead. Earlier reports remain intact; the returned
   `BatchReport.report_path` identifies the current report shown by the UI.
+  Run metadata records `application_version`, the effective `render_jobs` value
+  and `requested_ffmpeg` (`null` means automatic discovery).
+  Each result retains the requested immutable `job_snapshot`, including recording
+  path/SHA-256, preset name/version, every `ExportSettings` field, smoothing,
+  range policy, inclusive sample bounds and the complete saved analysis recipe.
+  This snapshot is present for completed, failed, cancelled and skipped jobs.
+  Prepared jobs additionally reference `export_snapshot`, created and owned by
+  their `ExportTimeline` from the effective analysis and export settings. The batch
+  collects this same snapshot; it does not construct a separate analysis snapshot.
+  Its `sample_rate`, `output_dimensions` and `planned_frame_count` describe the
+  bound export. Single exports expose the same snapshot in video metadata,
+  without an additional JSON sidecar. Unprepared/skipped jobs have no effective
+  export snapshot; their requested job definition remains available.
+  `gpu_encoding` records the actual backend selection
+  reported by the encoder, independently of the requested GPU preference.
+  Completed videos record `file_size_bytes`; unavailable execution facts are
+  `null`, and planned frames never imply that a failed job encoded them all.
+  `duration_seconds` is the monotonic elapsed time of each started job attempt,
+  including import/analysis, rendering, encoding and final publication or failure/
+  cancellation handling. It excludes queue waiting and report writes; skipped
+  jobs retain `null` rather than a fabricated duration.
   Progress wraps the shared `ExportProgress` with job index/count and label.
   Separate bars show the equally weighted overall queue and the current video's
   submitted frames. A new job resets video progress and its estimate; settled jobs,

@@ -172,6 +172,7 @@ def encoder_command(
                 "aspect": timeline.settings.aspect,
                 "language": timeline.settings.language,
                 "orientation": "angle-source-gravity-to-stored-vertical-v1",
+                "export_snapshot": timeline.snapshot.model_dump(mode="json"),
             },
             sort_keys=True,
         ),

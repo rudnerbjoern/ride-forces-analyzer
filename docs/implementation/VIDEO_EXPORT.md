@@ -115,6 +115,15 @@ only when applicable. Controls and review labels support English, German and Fre
   Complete available history precedes interval selection.
 - `prepare_export`/`build_previews` accept `RecordingAnalysis`, settings and concrete
   source indices; layouts consume a bound `ExportTimeline`.
+  Each timeline owns a frozen `ExportSnapshot`, captured from that effective
+  analysis and the bound export settings. It retains the source identity, complete
+  analysis recipe, inclusive interval, replay origin, smoothing, sample rate,
+  resolved output dimensions and planned frame count, without computed sample
+  buffers or recording paths. Rebinding a timeline creates a matching snapshot.
+  `encoder_command` embeds this snapshot under `export_snapshot` in the existing
+  JSON video comment, alongside the flat metadata fields. Single and batch exports
+  use the same contract; a batch result references the timeline-owned snapshot.
+  No per-video JSON sidecar is created.
   Force/orientation views share prepared buffers; context uses full-history labels
   without per-layout reclassification.
 - Orientation is independent of force smoothing. Layout, aspect, export area, position, language, video
@@ -304,85 +313,157 @@ remaining-frame estimate. Completion follows successful file publication. Frame
 counts measure input submitted to FFmpeg, not encoded output. Qt workers transport
 these snapshots; neither dialog owns a clock or estimates throughput.
 
-The owner-provided HUD references use 1920×1080 and 60000/1001 fps:
+#### File-size calibration evidence
 
-| Recording      | Output          | Encoder            | Frames | File bytes     |
-| -------------- | --------------- | ------------------ | ------ | -------------- |
-| Kraken         | ProRes 4444 MOV | `prores_ks_vulkan` | 9,862  | 15,301,686,528 |
-| Kraken (batch) | ProRes 4444 MOV | `prores_ks_vulkan` | 9,544  | 15,856,749,604 |
-| Iron Gwazi     | ProRes 4444 MOV | `prores_ks_vulkan` | 8,546  | 13,004,672,088 |
-| Voltron Nevera | ProRes 4444 MOV | `prores_ks_vulkan` | 10,353 | 16,397,302,310 |
-| Kraken         | H.264 MP4       | `libx264`          | 9,862  | 17,181,504     |
-| Kraken (batch) | H.264 MP4       | `libx264`          | 9,544  | 23,256,703     |
+The consolidated reference set contains **31 distinct export-size observations**.
+Every reference uses **60000/1001 fps (59.94)**. File bytes include container
+overhead; observed rates are file bytes divided by output width, height and encoded
+frame count. These are measurements of exported files, not guaranteed size bounds.
 
-The HUD ProRes observations span 0.734–0.801 bytes/pixel/frame; their frame-weighted
-mean is 0.76244, rounded to 0.76 with a ±10% planning allowance (0.684–0.836).
-HUD CPU H.264 retains 0.00085 with ±50%; both CPU H.264 references fit this planning range.
-These reference calibration ranges are unchanged by short test exports.
-ProRes rates apply to both CPU and GPU preferences. Other scenes and
-portrait output remain unqualified by these references.
+Full-frame dimensions establish landscape output for every retained reference.
+Flow Ribbon and Four-panel column Content-area dimensions also establish landscape.
+Corner Instruments and G-Orbit have identical native Content-area dimensions in
+both aspects; their recorded dimensions do not establish aspect, and a separate
+portrait reference is not retained. Matching HUD observations from Full-frame and
+Content-area batch folders are counted once; HUD supports Full frame only.
 
-The owner-provided Kraken non-HUD ProRes references use 60000/1001 fps,
-9,544 frames and `prores_ks_vulkan`. Rates include MOV overhead:
+The tables retain recording, layout, export area, dimensions, frame count and exact
+file length. Observed rates use bytes per output pixel per frame.
 
-| Layout             | Export area  | Dimensions | File bytes     | Bytes/pixel/frame | Planning range |
-| ------------------ | ------------ | ---------- | -------------- | ----------------- | -------------- |
-| Flow Ribbon        | Full frame   | 3840×2160  | 17,267,346,554 | 0.21813           | 0.198–0.242    |
-| Flow Ribbon        | Content area | 3072×360   | 16,010,922,883 | 1.51692           | 1.368–1.672    |
-| Corner Instruments | Full frame   | 3840×2160  | 15,202,085,911 | 0.19204           | 0.171–0.209    |
-| Corner Instruments | Content area | 840×1120   | 13,791,547,469 | 1.53598           | 1.386–1.694    |
-| G-Orbit            | Full frame   | 3840×2160  | 10,236,947,676 | 0.12932           | 0.117–0.143    |
-| G-Orbit            | Content area | 800×800    | 9,153,051,038  | 1.49850           | 1.35–1.65      |
-| Four-panel column  | Full frame   | 3840×2160  | 7,032,587,238  | 0.08884           | 0.081–0.099    |
-| Four-panel column  | Content area | 960×2160   | 6,069,102,102  | 0.30667           | 0.279–0.341    |
+[Batch run reports](EXPORT_BATCHES.md#contracts) collect the export-owned snapshot
+already embedded in each prepared video's metadata, together with the requested
+job definition, actual GPU selection, completed file size and elapsed job duration
+for subsequent comparisons.
 
-Each measured rate is rounded to two decimal places with a ±10% planning allowance.
-These replace the short CPU-clip ranges for the respective codec/extent and apply
-to both backend preferences. CPU, unmeasured aspects and other scenes remain
-unqualified by these references; further export measurements can refine the ranges.
+##### Transparent MOV — ProRes 4444 on NVIDIA Vulkan
 
-The owner-provided Kraken non-HUD H.264 references use 60000/1001 fps,
-9,544 frames and `libx264`. Rates include MP4 overhead:
+Encoder: `prores_ks_vulkan`. Retained observations: **12**.
 
-| Layout             | Export area  | Dimensions | File bytes | Bytes/pixel/frame | Planning range      |
-| ------------------ | ------------ | ---------- | ---------- | ----------------- | ------------------- |
-| Flow Ribbon        | Full frame   | 3840×2160  | 24,441,395 | 0.000308753       | 0.0001545–0.0004635 |
-| Flow Ribbon        | Content area | 3072×360   | 22,602,237 | 0.002141397       | 0.0010705–0.0032115 |
-| Corner Instruments | Full frame   | 3840×2160  | 29,023,934 | 0.000366641       | 0.0001835–0.0005505 |
-| Corner Instruments | Content area | 840×1120   | 27,062,402 | 0.003013968       | 0.001507–0.004521   |
-| G-Orbit            | Full frame   | 3840×2160  | 8,061,387  | 0.000101834       | 0.000051–0.000153   |
-| G-Orbit            | Content area | 800×800    | 6,136,463  | 0.001004634       | 0.0005025–0.0015075 |
-| Four-panel column  | Full frame   | 3840×2160  | 69,336,081 | 0.000875879       | 0.000438–0.001314   |
-| Four-panel column  | Content area | 960×2160   | 43,889,261 | 0.002217700       | 0.001109–0.003327   |
+| Layout             | Recording      | Export area  | Dimensions | Frames | File bytes     | Bytes/pixel/frame |
+| ------------------ | -------------- | ------------ | ---------- | ------ | -------------- | ----------------- |
+| HUD                | Kraken         | Full frame   | 1920×1080  | 9,862  | 15,301,686,528 | 0.748254467       |
+| HUD                | Kraken         | Full frame   | 1920×1080  | 9,544  | 15,856,749,604 | 0.801232862       |
+| HUD                | Iron Gwazi     | Full frame   | 1920×1080  | 8,546  | 13,004,672,088 | 0.733857156       |
+| HUD                | Voltron Nevera | Full frame   | 1920×1080  | 10,353 | 16,397,302,310 | 0.763802728       |
+| Flow Ribbon        | Kraken         | Full frame   | 3840×2160  | 9,544  | 17,267,346,554 | 0.218127388       |
+| Flow Ribbon        | Kraken         | Content area | 3072×360   | 9,544  | 16,010,922,883 | 1.516918413       |
+| Corner Instruments | Kraken         | Full frame   | 3840×2160  | 9,544  | 15,202,085,911 | 0.192038266       |
+| Corner Instruments | Kraken         | Content area | 840×1120   | 9,544  | 13,791,547,469 | 1.535978933       |
+| G-Orbit            | Kraken         | Full frame   | 3840×2160  | 9,544  | 10,236,947,676 | 0.129316838       |
+| G-Orbit            | Kraken         | Content area | 800×800    | 9,544  | 9,153,051,038  | 1.498495625       |
+| Four-panel column  | Kraken         | Full frame   | 3840×2160  | 9,544  | 7,032,587,238  | 0.088838194       |
+| Four-panel column  | Kraken         | Content area | 960×2160   | 9,544  | 6,069,102,102  | 0.306668401       |
 
-The owner-provided Voltron Nevera NVENC references use 60000/1001 fps,
-10,353 frames and `h264_nvenc`. Rates include MP4 overhead:
+##### Opaque MP4 — H.264 on CPU
 
-| Layout             | Export area  | Dimensions | File bytes  | Bytes/pixel/frame | Planning range      |
-| ------------------ | ------------ | ---------- | ----------- | ----------------- | ------------------- |
-| Flow Ribbon        | Full frame   | 3840×2160  | 75,440,403  | 0.000878522       | 0.0004395–0.0013185 |
-| Flow Ribbon        | Content area | 3072×360   | 76,217,448  | 0.006656784       | 0.0033285–0.0099855 |
-| Corner Instruments | Full frame   | 3840×2160  | 78,626,283  | 0.000915623       | 0.000458–0.001374   |
-| Corner Instruments | Content area | 840×1120   | 79,139,381  | 0.008125108       | 0.0040625–0.0121875 |
-| HUD                | Full frame   | 1920×1080  | 73,904,770  | 0.003442558       | 0.0017215–0.0051645 |
-| G-Orbit            | Full frame   | 3840×2160  | 15,774,006  | 0.000183692       | 0.000092–0.000276   |
-| G-Orbit            | Content area | 800×800    | 14,267,683  | 0.002153314       | 0.0010765–0.0032295 |
-| Four-panel column  | Full frame   | 3840×2160  | 188,122,482 | 0.002190733       | 0.0010955–0.0032865 |
-| Four-panel column  | Content area | 960×2160   | 190,277,305 | 0.008863307       | 0.0044315–0.0132945 |
+Encoder: `libx264`. Retained observations: **10**.
 
-CPU and NVENC H.264 rates are rounded to six decimal places with a ±50% planning
-allowance for content/encoder variation. With GPU preference enabled, estimates use
-the layout's NVENC rate for the selected extent when present; otherwise they use
-its CPU rate for that same extent, followed by the shared heuristic if neither
-is measured. Estimation does not probe hardware. An actual CPU fallback can produce
-a smaller file than the NVENC planning range. Other scenes, unmeasured aspects and
-unmeasured encoders remain unqualified by these references.
-The plugin constants retain source intervals, dimensions, encoder settings and
-measurement limits. Estimates scale by resolved output pixels and frame count
-using the selected planning rates. Other scenes,
-durations, languages and unmeasured GPU encoders remain unqualified. These are
-approximate ranges, not guaranteed bounds. A missing codec/extent entry uses the
-shared heuristic; no rate is borrowed from a different extent.
+| Layout             | Recording | Export area  | Dimensions | Frames | File bytes | Bytes/pixel/frame |
+| ------------------ | --------- | ------------ | ---------- | ------ | ---------- | ----------------- |
+| HUD                | Kraken    | Full frame   | 1920×1080  | 9,862  | 17,181,504 | 0.000840178       |
+| HUD                | Kraken    | Full frame   | 1920×1080  | 9,544  | 23,256,703 | 0.001175148       |
+| Flow Ribbon        | Kraken    | Full frame   | 3840×2160  | 9,544  | 24,441,395 | 0.000308753       |
+| Flow Ribbon        | Kraken    | Content area | 3072×360   | 9,544  | 22,602,237 | 0.002141397       |
+| Corner Instruments | Kraken    | Full frame   | 3840×2160  | 9,544  | 29,023,934 | 0.000366641       |
+| Corner Instruments | Kraken    | Content area | 840×1120   | 9,544  | 27,062,402 | 0.003013968       |
+| G-Orbit            | Kraken    | Full frame   | 3840×2160  | 9,544  | 8,061,387  | 0.000101834       |
+| G-Orbit            | Kraken    | Content area | 800×800    | 9,544  | 6,136,463  | 0.001004634       |
+| Four-panel column  | Kraken    | Full frame   | 3840×2160  | 9,544  | 69,336,081 | 0.000875879       |
+| Four-panel column  | Kraken    | Content area | 960×2160   | 9,544  | 43,889,261 | 0.002217700       |
+
+##### Opaque MP4 — H.264 on NVIDIA NVENC
+
+Encoder: `h264_nvenc`. Retained observations: **9**.
+
+| Layout             | Recording      | Export area  | Dimensions | Frames | File bytes  | Bytes/pixel/frame |
+| ------------------ | -------------- | ------------ | ---------- | ------ | ----------- | ----------------- |
+| Flow Ribbon        | Voltron Nevera | Full frame   | 3840×2160  | 10,353 | 75,440,403  | 0.000878522       |
+| Flow Ribbon        | Voltron Nevera | Content area | 3072×360   | 10,353 | 76,217,448  | 0.006656784       |
+| Corner Instruments | Voltron Nevera | Full frame   | 3840×2160  | 10,353 | 78,626,283  | 0.000915623       |
+| Corner Instruments | Voltron Nevera | Content area | 840×1120   | 10,353 | 79,139,381  | 0.008125108       |
+| HUD                | Voltron Nevera | Full frame   | 1920×1080  | 10,353 | 73,904,770  | 0.003442558       |
+| G-Orbit            | Voltron Nevera | Full frame   | 3840×2160  | 10,353 | 15,774,006  | 0.000183692       |
+| G-Orbit            | Voltron Nevera | Content area | 800×800    | 10,353 | 14,267,683  | 0.002153314       |
+| Four-panel column  | Voltron Nevera | Full frame   | 3840×2160  | 10,353 | 188,122,482 | 0.002190733       |
+| Four-panel column  | Voltron Nevera | Content area | 960×2160   | 10,353 | 190,277,305 | 0.008863307       |
+
+##### Configured planning ranges
+
+All values below are bytes per output pixel per frame, including container
+overhead. Every supported layout/extent has a configured ProRes, CPU H.264 and
+NVENC H.264 range. Having a configured range does not establish measurement
+coverage for every encoder or aspect.
+
+| Layout             | Export area  | ProRes 4444 | CPU H.264           | NVENC H.264         |
+| ------------------ | ------------ | ----------- | ------------------- | ------------------- |
+| Flow Ribbon        | Full frame   | 0.198–0.242 | 0.0001545–0.0004635 | 0.0004395–0.0013185 |
+| Flow Ribbon        | Content area | 1.368–1.672 | 0.0010705–0.0032115 | 0.0033285–0.0099855 |
+| Corner Instruments | Full frame   | 0.171–0.209 | 0.0001835–0.0005505 | 0.000458–0.001374   |
+| Corner Instruments | Content area | 1.386–1.694 | 0.001507–0.004521   | 0.0040625–0.0121875 |
+| HUD                | Full frame   | 0.684–0.836 | 0.000425–0.001275   | 0.0017215–0.0051645 |
+| G-Orbit            | Full frame   | 0.117–0.143 | 0.000051–0.000153   | 0.000092–0.000276   |
+| G-Orbit            | Content area | 1.35–1.65   | 0.0005025–0.0015075 | 0.0010765–0.0032295 |
+| Four-panel column  | Full frame   | 0.081–0.099 | 0.000438–0.001314   | 0.0010955–0.0032865 |
+| Four-panel column  | Content area | 0.279–0.341 | 0.001109–0.003327   | 0.0044315–0.0132945 |
+
+ProRes uses a rate rounded to two decimal places with a ±10% planning allowance.
+HUD's four GPU ProRes observations span 0.733857156–0.801232862; their frame-weighted
+mean is 0.762444717, rounded to 0.76. CPU ProRes currently shares these GPU-derived
+ranges and has no retained long-export reference of its own.
+
+H.264 rates use a ±50% planning allowance for content/encoder variation. CPU and
+NVENC references are kept separate. Non-HUD CPU and all NVENC anchors are rounded
+to six decimal places; HUD CPU retains its 0.00085 anchor, containing both CPU
+observations. Short ten-frame development clips do not qualify a long-export
+encoder/aspect combination.
+
+The estimator scales the selected range by resolved output pixels and encoded
+frame count. ProRes uses the same range for both backend preferences. H.264 uses
+the layout's NVENC range when GPU preference is enabled, otherwise its CPU range.
+A missing/None NVENC entry uses CPU rates for the same extent, followed by the
+shared heuristic if those are also missing. No rate is borrowed from another
+extent. Estimation does not probe hardware or render a trial video. An actual CPU
+fallback may produce a smaller file than the NVENC range. These ranges never
+guarantee bounds for other recordings, durations, languages, aspects or hardware.
+
+##### Calibration coverage and remaining gaps
+
+Coverage here requires a retained long-export reference for the stated encoder
+and output geometry. It does not claim general scene or hardware qualification.
+
+| Output / encoder         | Landscape Full frame    | Measured native Content areas | Explicit portrait reference |
+| ------------------------ | ----------------------- | ----------------------------- | --------------------------- |
+| MOV / `prores_ks_vulkan` | All five layouts        | All four non-HUD layouts      | Missing                     |
+| MOV / `prores_ks` (CPU)  | Missing for all layouts | Missing for all four layouts  | Missing                     |
+| MP4 / `libx264` (CPU)    | All five layouts        | All four non-HUD layouts      | Missing                     |
+| MP4 / `h264_nvenc`       | All five layouts        | All four non-HUD layouts      | Missing                     |
+
+- **CPU ProRes 4444 MOV:** long-export references are missing for every layout and
+  supported export area. Existing CPU estimates reuse measured GPU ProRes rates.
+- **Portrait:** no explicitly identified long-export references are retained for
+  the supported portrait layouts and encoders. Corner Instruments and G-Orbit
+  Content-area measurements exist at the same dimensions used in both formats,
+  but their aspect was not retained with the measurement. Dimensions alone do
+  not supply a separate portrait qualification.
+- **Frame rate:** all retained long exports use 59.94 fps. Other supported rates,
+  including the 50-fps application default, lack equivalent long-export references.
+- **Recording diversity:** non-HUD GPU ProRes and CPU H.264 use Kraken only;
+  NVENC uses Voltron Nevera only. HUD GPU ProRes additionally includes Kraken,
+  Iron Gwazi and Voltron Nevera. Broader scene, duration, language and hardware
+  coverage remains open even where one reference exists.
+
+The supported portrait outputs needing an explicit reference are:
+
+| Layout             | Full frame | Content area                   |
+| ------------------ | ---------- | ------------------------------ |
+| Flow Ribbon        | 2160×3840  | 840×1120                       |
+| Corner Instruments | 2160×3840  | 840×1120 (aspect not retained) |
+| G-Orbit            | 2160×3840  | 800×800 (aspect not retained)  |
+| HUD                | 1080×1920  | Unsupported                    |
+
+These portrait gaps apply to ProRes CPU/GPU and H.264 CPU/NVENC. Four-panel column
+is landscape-only; HUD Content area is unsupported. Neither is a missing
+calibration target.
 
 ### Encoding and FFmpeg
 

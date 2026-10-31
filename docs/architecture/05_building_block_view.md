@@ -179,6 +179,12 @@ define formats and lifecycle.
 ## Video export boundary
 
 `rendering.model` binds a snapshot, range and settings into an `ExportTimeline`.
+Each timeline owns an immutable `ExportSnapshot` describing its effective analysis
+recipe, source identity, settings, interval and output geometry. The encoder embeds
+this common snapshot in video metadata for both single and batch exports; the
+batch report references it after preparation instead of building its own analysis
+snapshot. Queued job definitions remain separate requested configuration for jobs
+that cannot be prepared. Snapshot serialization is shared with saved presets.
 `rendering.scales` owns the lateral/longitudinal range policies shared by all
 layouts, shared history fitting and the HUD/G-Orbit posture-dependent vertical
 instrument ranges. Export channels carry a 1 g vertical presentation reference
