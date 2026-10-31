@@ -8,7 +8,7 @@ from fractions import Fraction
 from math import ceil
 
 from .layouts import resolve_geometry, registry
-from .model import VideoOutput, ExportSettings
+from .model import VideoAspect, VideoOutput, ExportSettings
 
 # Bytes per pixel per frame: uniform canvas plus active overlay. These broad
 # planning assumptions are not calibrated against every recording or GPU.
@@ -50,6 +50,19 @@ def estimate_size_bytes(
     )
     if settings.output == VideoOutput.OPAQUE and settings.prefer_gpu:
         rates = plugin.h264_nvenc_size_rates.get(settings.extent) or rates
+    if settings.aspect is VideoAspect.PORTRAIT:
+        if settings.output == VideoOutput.TRANSPARENT:
+            rates = plugin.prores_4444_portrait_size_rates.get(settings.extent) or rates
+            if not settings.prefer_gpu:
+                rates = plugin.prores_4444_cpu_portrait_size_rates.get(settings.extent) or rates
+        elif settings.prefer_gpu:
+            rates = (
+                plugin.h264_nvenc_portrait_size_rates.get(settings.extent)
+                or plugin.h264_portrait_size_rates.get(settings.extent)
+                or rates
+            )
+        else:
+            rates = plugin.h264_portrait_size_rates.get(settings.extent) or rates
     if rates is not None:
         low_rate, high_rate = rates
         pixels = frames * width * height

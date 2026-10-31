@@ -192,8 +192,9 @@ for every posture; lateral and longitudinal references remain zero.
 Layouts consume this timeline through one native-RGBA-region/source-position
 protocol. Each plugin owns its geometry, renderer, presentation defaults and optional
 file-size estimate rates, including optional NVENC rates selected by the H.264
-GPU preference with a same-extent CPU-rate fallback. The registry resolves these through the common contract
-and validates geometry. Its extent resolver uses layout-owned native dimensions
+GPU preference with a same-extent CPU-rate fallback, and portrait overrides
+for CPU/GPU ProRes and CPU/NVENC H.264 with same-extent fallback. The registry resolves these through the
+common contract and validates geometry. Its extent resolver uses layout-owned native dimensions
 for Content area and region/canvas placement for Full frame; capability and rate lookup
 use the same typed extent contract. Concrete layouts never depend on one another; reusable
 drawing/history primitives stay in shared modules. UI, preview, sizing and encoding

@@ -282,6 +282,20 @@ PRORES_4444_CONTENT_SIZE_RATES = (1.386, 1.694)
 LANDSCAPE_CONTENT = ContentArea(NATIVE_SIZE)
 PORTRAIT_CONTENT = ContentArea(NATIVE_SIZE)
 
+# Portrait Full-frame calibration: Voltron Nevera, source samples 4000..4999
+# at 50 Hz; 480 frames at 24000/1001 fps (20.02 s), English, vertical inversion,
+# 11-sample smoothing, 30-s history, Incline reference 3575 (five-sample window).
+# Rates include container overhead; ProRes anchors round to two decimals (+/-10%),
+# H.264 to six (+/-50%). This short clip does not qualify other scenes or durations.
+# prores_ks_vulkan: 2160x3840, 2,679,877,705 bytes; observed 0.673114216 bytes/pixel/frame.
+PRORES_4444_PORTRAIT_SIZE_RATES = (0.603, 0.737)
+# prores_ks: 2160x3840, 821,954,307 bytes; observed 0.206453126 bytes/pixel/frame.
+PRORES_4444_CPU_PORTRAIT_SIZE_RATES = (0.189, 0.231)
+# libx264: 2160x3840, 4,215,813 bytes; observed 0.001058900 bytes/pixel/frame.
+H264_PORTRAIT_SIZE_RATES = (0.0005295, 0.0015885)
+# h264_nvenc: 2160x3840, 7,152,713 bytes; observed 0.001796572 bytes/pixel/frame.
+H264_NVENC_PORTRAIT_SIZE_RATES = (0.0008985, 0.0026955)
+
 PLUGIN = LayoutPlugin(
     ExportLayout.CORNERS,
     LANDSCAPE_POSITIONS,
@@ -301,4 +315,10 @@ PLUGIN = LayoutPlugin(
         ExportExtent.FULL_FRAME: H264_NVENC_SIZE_RATES,
         ExportExtent.CONTENT_AREA: H264_NVENC_CONTENT_SIZE_RATES,
     },
+    prores_4444_portrait_size_rates={ExportExtent.FULL_FRAME: PRORES_4444_PORTRAIT_SIZE_RATES},
+    prores_4444_cpu_portrait_size_rates={
+        ExportExtent.FULL_FRAME: PRORES_4444_CPU_PORTRAIT_SIZE_RATES,
+    },
+    h264_portrait_size_rates={ExportExtent.FULL_FRAME: H264_PORTRAIT_SIZE_RATES},
+    h264_nvenc_portrait_size_rates={ExportExtent.FULL_FRAME: H264_NVENC_PORTRAIT_SIZE_RATES},
 )

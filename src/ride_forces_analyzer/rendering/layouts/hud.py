@@ -4,7 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-# cspell:words bahnschrift RGBa getbbox getchannel putalpha WINDIR
+# cspell:words bahnschrift RGBa getbbox getchannel putalpha WINDIR libx
 
 from __future__ import annotations
 
@@ -787,6 +787,20 @@ H264_SIZE_RATES = (0.000425, 0.001275)
 # remain unqualified. These are planning ranges, not guarantees.
 H264_NVENC_SIZE_RATES = (0.0017215, 0.0051645)
 
+# Portrait Full-frame calibration: Voltron Nevera, source samples 4000..4999
+# at 50 Hz; 480 frames at 24000/1001 fps (20.02 s), English, vertical inversion,
+# 11-sample smoothing, 30-s history, Incline reference 3575 (five-sample window).
+# Rates include container overhead; ProRes anchors round to two decimals (+/-10%),
+# H.264 to six (+/-50%). This short clip does not qualify other scenes or durations.
+# prores_ks_vulkan: 1080x1920, 903,143,298 bytes; observed 0.907382589 bytes/pixel/frame.
+PRORES_4444_PORTRAIT_SIZE_RATES = (0.819, 1.001)
+# prores_ks: 1080x1920, 610,934,100 bytes; observed 0.613801782 bytes/pixel/frame.
+PRORES_4444_CPU_PORTRAIT_SIZE_RATES = (0.549, 0.671)
+# libx264: 1080x1920, 3,254,464 bytes; observed 0.003269740 bytes/pixel/frame.
+H264_PORTRAIT_SIZE_RATES = (0.001635, 0.004905)
+# h264_nvenc: 1080x1920, 6,386,732 bytes; observed 0.006416711 bytes/pixel/frame.
+H264_NVENC_PORTRAIT_SIZE_RATES = (0.0032085, 0.0096255)
+
 PLUGIN = LayoutPlugin(
     ExportLayout.HUD,
     LANDSCAPE_POSITIONS,
@@ -798,4 +812,10 @@ PLUGIN = LayoutPlugin(
     prores_4444_size_rates={ExportExtent.FULL_FRAME: PRORES_4444_SIZE_RATES},
     h264_size_rates={ExportExtent.FULL_FRAME: H264_SIZE_RATES},
     h264_nvenc_size_rates={ExportExtent.FULL_FRAME: H264_NVENC_SIZE_RATES},
+    prores_4444_portrait_size_rates={ExportExtent.FULL_FRAME: PRORES_4444_PORTRAIT_SIZE_RATES},
+    prores_4444_cpu_portrait_size_rates={
+        ExportExtent.FULL_FRAME: PRORES_4444_CPU_PORTRAIT_SIZE_RATES,
+    },
+    h264_portrait_size_rates={ExportExtent.FULL_FRAME: H264_PORTRAIT_SIZE_RATES},
+    h264_nvenc_portrait_size_rates={ExportExtent.FULL_FRAME: H264_NVENC_PORTRAIT_SIZE_RATES},
 )

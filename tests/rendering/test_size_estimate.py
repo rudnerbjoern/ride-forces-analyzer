@@ -14,6 +14,7 @@ from ride_forces_analyzer.rendering.model import (
     VideoOutput,
     ExportLayout,
     ExportSettings,
+    VideoAspect,
 )
 from ride_forces_analyzer.rendering.size_estimate import estimate_size_bytes
 
@@ -38,6 +39,85 @@ def test_estimate_scales_with_duration_and_frame_rate_and_distinguishes_codec(
 def test_single_sample_is_rounded_to_full_output_frame() -> None:
     settings = ExportSettings(fps=25)
     assert estimate_size_bytes(settings, 1, 50) == estimate_size_bytes(settings, 2, 50)
+
+
+@pytest.mark.parametrize(
+    "layout,output,prefer_gpu,measured_bytes",
+    [
+        (ExportLayout.RIBBON, VideoOutput.TRANSPARENT, True, 2_668_950_544),
+        (ExportLayout.CORNERS, VideoOutput.TRANSPARENT, True, 2_679_877_705),
+        (ExportLayout.HUD, VideoOutput.TRANSPARENT, True, 903_143_298),
+        (ExportLayout.ORBIT, VideoOutput.TRANSPARENT, True, 1_099_437_272),
+        (ExportLayout.RIBBON, VideoOutput.OPAQUE, True, 7_141_078),
+        (ExportLayout.CORNERS, VideoOutput.OPAQUE, True, 7_152_713),
+        (ExportLayout.HUD, VideoOutput.OPAQUE, True, 6_386_732),
+        (ExportLayout.ORBIT, VideoOutput.OPAQUE, True, 2_909_826),
+        (ExportLayout.RIBBON, VideoOutput.OPAQUE, False, 4_229_764),
+        (ExportLayout.CORNERS, VideoOutput.OPAQUE, False, 4_215_813),
+        (ExportLayout.HUD, VideoOutput.OPAQUE, False, 3_254_464),
+        (ExportLayout.ORBIT, VideoOutput.OPAQUE, False, 1_484_353),
+        (ExportLayout.RIBBON, VideoOutput.TRANSPARENT, False, 813_316_855),
+        (ExportLayout.CORNERS, VideoOutput.TRANSPARENT, False, 821_954_307),
+        (ExportLayout.HUD, VideoOutput.TRANSPARENT, False, 610_934_100),
+        (ExportLayout.ORBIT, VideoOutput.TRANSPARENT, False, 494_918_229),
+    ],
+)
+def test_portrait_estimates_cover_snapshot_confirmed_report_measurements(
+    layout: ExportLayout,
+    output: VideoOutput,
+    prefer_gpu: bool,
+    measured_bytes: int,
+) -> None:
+    settings = ExportSettings(
+        layout=layout,
+        aspect=VideoAspect.PORTRAIT,
+        extent=ExportExtent.FULL_FRAME,
+        output=output,
+        fps=StandardFrameRate.FPS_23_976,
+        window_seconds=30,
+        prefer_gpu=prefer_gpu,
+    )
+    # Report and embedded snapshots agree: samples 4000..4999 at 50 Hz, 480 frames.
+    low, high = estimate_size_bytes(settings, 1000, 50)
+    assert low < measured_bytes < high
+    # The measured rate must match the anchor within its documented rounding.
+    pixels = 480 * (1920 * 1080 if layout is ExportLayout.HUD else 3840 * 2160)
+    rounding = 0.005 if output is VideoOutput.TRANSPARENT else 0.0000005
+    assert abs((low + high) / 2 - measured_bytes) <= pixels * rounding + 1
+    other_backend = estimate_size_bytes(replace(settings, prefer_gpu=not prefer_gpu), 1000, 50)
+    assert low > other_backend[0] if prefer_gpu else high < other_backend[1]
+
+
+@pytest.mark.parametrize("portrait_rate", [None, (0.03, 0.04)])
+def test_portrait_prores_override_keeps_codec_and_extent_fallbacks_separate(
+    portrait_rate: tuple[float, float] | None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    plugin = replace(
+        registry.PLUGINS[ExportLayout.RIBBON],
+        prores_4444_size_rates={ExportExtent.FULL_FRAME: (0.01, 0.02)},
+        prores_4444_portrait_size_rates={ExportExtent.CONTENT_AREA: portrait_rate},
+        prores_4444_cpu_portrait_size_rates={},
+        h264_portrait_size_rates={},
+        h264_nvenc_portrait_size_rates={},
+        h264_size_rates={ExportExtent.FULL_FRAME: (0.001, 0.002)},
+        h264_nvenc_size_rates={},
+    )
+    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
+    settings = ExportSettings(layout=plugin.key, aspect=VideoAspect.PORTRAIT, fps=50)
+    assert estimate_size_bytes(settings, 10, 50) == (829_440, 1_658_880)
+    assert estimate_size_bytes(replace(settings, output=VideoOutput.OPAQUE), 10, 50) == (
+        82_944,
+        165_888,
+    )
+    content = replace(settings, extent=ExportExtent.CONTENT_AREA)
+    if portrait_rate:
+        assert estimate_size_bytes(content, 10, 50) == (282_240, 376_320)
+    else:
+        fallback = estimate_size_bytes(content, 10, 50)
+        plugin = replace(plugin, prores_4444_portrait_size_rates={})
+        monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
+        assert estimate_size_bytes(content, 10, 50) == fallback
 
 
 @pytest.mark.parametrize(
@@ -376,3 +456,37 @@ def test_estimate_tracks_measured_kraken_layout_exports(
     low, high = estimate_size_bytes(settings, 9544 * 1001, 60_000)
     assert measured_bytes * (1 - tolerance) <= low < measured_bytes < high
     assert high <= measured_bytes * (1 + tolerance)
+
+
+@pytest.mark.parametrize("prefer_gpu", [False, True])
+@pytest.mark.parametrize("portrait_rate", [None, (0.003, 0.004)])
+def test_portrait_nvenc_missing_rate_prefers_portrait_cpu_before_default_rates(
+    prefer_gpu: bool,
+    portrait_rate: tuple[float, float] | None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    plugin = replace(
+        registry.PLUGINS[ExportLayout.RIBBON],
+        h264_size_rates={ExportExtent.FULL_FRAME: (0.001, 0.002)},
+        h264_nvenc_size_rates={ExportExtent.FULL_FRAME: (0.01, 0.02)},
+        h264_portrait_size_rates={ExportExtent.FULL_FRAME: portrait_rate},
+        h264_nvenc_portrait_size_rates={ExportExtent.FULL_FRAME: None},
+    )
+    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
+    settings = ExportSettings(
+        layout=plugin.key,
+        aspect=VideoAspect.PORTRAIT,
+        output=VideoOutput.OPAQUE,
+        prefer_gpu=prefer_gpu,
+        fps=50,
+    )
+    expected = (
+        (248_832, 331_776)
+        if portrait_rate
+        else ((829_440, 1_658_880) if prefer_gpu else (82_944, 165_888))
+    )
+    assert estimate_size_bytes(settings, 10, 50) == expected
+    landscape = replace(settings, aspect=VideoAspect.LANDSCAPE)
+    assert estimate_size_bytes(landscape, 10, 50) == (
+        (829_440, 1_658_880) if prefer_gpu else (82_944, 165_888)
+    )

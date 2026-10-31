@@ -80,8 +80,10 @@ otherwise its default. No corner/edge is inferred from a full-screen position.
 `LayoutPlugin.landscape_canvas` and `portrait_canvas` declare full-frame output sizes;
 `canvas_dimensions(settings)` resolves them through the registry. Plugins also own
 `preferred_window_seconds` (optional selection-time override), `preview_invert_lateral`
-(unselected gallery default), and read-only `prores_4444_size_rates`, `h264_size_rates`
-and `h264_nvenc_size_rates`
+(unselected gallery default), and read-only `prores_4444_size_rates`, `h264_size_rates`,
+`h264_nvenc_size_rates`, `prores_4444_portrait_size_rates`,
+`prores_4444_cpu_portrait_size_rates`, `h264_portrait_size_rates` and
+`h264_nvenc_portrait_size_rates`
 maps keyed by `ExportExtent` (optional lower/upper bytes per output pixel per frame).
 Shared consumers apply these values
 without branching on layout names. HUD declares its native canvases, 30-second
@@ -93,11 +95,17 @@ rates. Rates need not be configured for both codecs. No measurements are fabrica
 The estimator uses `h264_nvenc_size_rates` for H.264 with GPU preference enabled.
 A missing/None NVENC entry uses `h264_size_rates` for the same extent, followed
 by the shared heuristic if that is also missing. No other extent supplies rates.
-ProRes uses the same rates for both preferences. Estimation does not probe hardware;
-actual CPU fallback can produce a smaller file than an NVENC planning range.
+Portrait ProRes first uses `prores_4444_portrait_size_rates` for the selected extent;
+a missing/None override uses the default ProRes rate for that same extent.
+CPU ProRes preference additionally selects `prores_4444_cpu_portrait_size_rates`
+when present. Portrait H.264 uses `h264_portrait_size_rates` for CPU preference
+and `h264_nvenc_portrait_size_rates` for GPU preference. A missing portrait NVENC
+entry prefers the same-extent portrait CPU rate before default codec fallback.
+All portrait overrides require a supported portrait extent. Estimation does not
+probe hardware; actual CPU fallback can produce a smaller file than a GPU range.
 All declared codec/extent rates use the owner-provided export
 references, with separate measurements per codec/extent.
-These are not replaced by short test exports; the
+Short portrait references refine only their measured aspect/extent/encoder; the
 [export contract](../implementation/VIDEO_EXPORT.md#estimates-and-progress) records
 the measurements and their limits. Plugin comments retain encoder settings,
 source intervals where known, tested output sizes, observed rate ranges and limits.

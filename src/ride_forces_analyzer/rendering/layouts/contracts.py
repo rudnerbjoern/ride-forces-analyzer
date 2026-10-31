@@ -275,6 +275,13 @@ class LayoutPlugin:
         landscape_content: Native landscape size, or None when Content area is unsupported.
         portrait_content: Native portrait size, or None when Content area is unsupported.
         prores_4444_size_rates: Optional ProRes 4444 rates per extent; no cross-extent fallback.
+        prores_4444_portrait_size_rates: Optional portrait ProRes rates per extent;
+            missing entries use the default ProRes rate for that same extent.
+        prores_4444_cpu_portrait_size_rates: Optional CPU portrait ProRes overrides;
+            missing entries use the shared portrait/default rate for that extent.
+        h264_portrait_size_rates: Optional portrait CPU H.264 overrides per extent.
+        h264_nvenc_portrait_size_rates: Optional portrait NVENC overrides per extent;
+            missing entries prefer portrait CPU rates before default codec rates.
         h264_size_rates: Optional CPU H.264 rates per extent; no cross-extent fallback.
         h264_nvenc_size_rates: Optional H.264 rates for GPU preference; missing entries
             use CPU rates for the same extent without probing hardware.
@@ -297,6 +304,18 @@ class LayoutPlugin:
         default_factory=lambda: dict[ExportExtent, SizeRates | None](),
     )
     h264_nvenc_size_rates: Mapping[ExportExtent, SizeRates | None] = field(
+        default_factory=lambda: dict[ExportExtent, SizeRates | None](),
+    )
+    prores_4444_portrait_size_rates: Mapping[ExportExtent, SizeRates | None] = field(
+        default_factory=lambda: dict[ExportExtent, SizeRates | None](),
+    )
+    prores_4444_cpu_portrait_size_rates: Mapping[ExportExtent, SizeRates | None] = field(
+        default_factory=lambda: dict[ExportExtent, SizeRates | None](),
+    )
+    h264_portrait_size_rates: Mapping[ExportExtent, SizeRates | None] = field(
+        default_factory=lambda: dict[ExportExtent, SizeRates | None](),
+    )
+    h264_nvenc_portrait_size_rates: Mapping[ExportExtent, SizeRates | None] = field(
         default_factory=lambda: dict[ExportExtent, SizeRates | None](),
     )
 
@@ -349,16 +368,36 @@ class LayoutPlugin:
         supported = self.supported_extents(VideoAspect.LANDSCAPE) | self.supported_extents(
             VideoAspect.PORTRAIT,
         )
-        for name, values in (
-            ("prores_4444_size_rates", self.prores_4444_size_rates),
-            ("h264_size_rates", self.h264_size_rates),
-            ("h264_nvenc_size_rates", self.h264_nvenc_size_rates),
+        for name, values, extents in (
+            ("prores_4444_size_rates", self.prores_4444_size_rates, supported),
+            ("h264_size_rates", self.h264_size_rates, supported),
+            ("h264_nvenc_size_rates", self.h264_nvenc_size_rates, supported),
+            (
+                "prores_4444_cpu_portrait_size_rates",
+                self.prores_4444_cpu_portrait_size_rates,
+                self.supported_extents(VideoAspect.PORTRAIT),
+            ),
+            (
+                "h264_portrait_size_rates",
+                self.h264_portrait_size_rates,
+                self.supported_extents(VideoAspect.PORTRAIT),
+            ),
+            (
+                "h264_nvenc_portrait_size_rates",
+                self.h264_nvenc_portrait_size_rates,
+                self.supported_extents(VideoAspect.PORTRAIT),
+            ),
+            (
+                "prores_4444_portrait_size_rates",
+                self.prores_4444_portrait_size_rates,
+                self.supported_extents(VideoAspect.PORTRAIT),
+            ),
         ):
             if not isinstance(cast(object, values), Mapping):
                 raise ValueError("Layout size rates require an extent mapping")
             entries = dict(values)
             for extent, rates in entries.items():
-                if type(extent) is not ExportExtent or extent not in supported:
+                if type(extent) is not ExportExtent or extent not in extents:
                     raise ValueError("Layout size rates require a supported typed export extent")
                 if rates is not None and (
                     type(rates) is not tuple
