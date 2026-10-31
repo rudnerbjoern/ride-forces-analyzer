@@ -379,6 +379,8 @@ shared heuristic; no rate is borrowed from a different extent.
   Closing on cancellation or failure cancels queued work and joins active renders.
   Batch videos remain sequential; their frames use the selected render-job count.
 - Probe actual NVIDIA Vulkan ProRes with alpha / NVENC H.264; otherwise CPU fallback.
+  The single-frame NVENC probe uses 256×256 pixels because some devices reject
+  128×128 H.264 input.
   Display selected backend. GPU ProRes never receives CPU `qscale`.
 - Frame generation and encoding resolve the same fixed geometry. Content area pipes
   the complete native layout image, including existing empty pixels. Renderer and
