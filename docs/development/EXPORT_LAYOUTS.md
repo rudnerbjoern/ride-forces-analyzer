@@ -256,7 +256,8 @@ FFmpeg retains its size without geometric filters. Full frame retains its existi
 scaling, placement, canvas padding and codec options. `render_sample` / `render_frame`
 use the same dimensions as the encoded output.
 
-`build_previews` renders the same complete output frame at the exact graph sample,
+`build_previews` renders the same complete output frame at the supplied source sample
+(the assistant selects the rounded 60% point of the export interval),
 then composites a display-only background and fits the image within 960 × 540
 (landscape) or 540 × 960 (portrait). These are maximum sizes, not forced aspect
 ratios: native Content-area images retain their shape without cropping/stretching.

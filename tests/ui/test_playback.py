@@ -92,7 +92,6 @@ def test_play_pause_seek_end_and_translations(
     window.open_path(Path(".tmp/playback-recording.forces"))
     wait_until(window.open_action.isEnabled)
     assert window.navigation.play_button.isEnabled()
-    assert not window.navigation.play_button.text()
     assert not window.navigation.play_button.icon().isNull()
     assert window.navigation.play_button.toolTip() == "Play recording"
     assert window.navigation.playback_speed.currentIndex() == 1
@@ -121,7 +120,6 @@ def test_play_pause_seek_end_and_translations(
     window.reference_toggle.setChecked(False)
     window.navigation.position.setValue(100)
     QTest.mouseClick(window.navigation.play_button, Qt.MouseButton.LeftButton)
-    assert not window.navigation.play_button.text()
     assert window.navigation.play_button.accessibleName() == "Pause"
     assert window.navigation.play_button.toolTip() == "Pause playback"
     QTest.qWait(20)
@@ -147,12 +145,10 @@ def test_play_pause_seek_end_and_translations(
     window.navigation.position.setValue(recording.count - 2)
     now[0] = 51.0
     wait_until(lambda: window.navigation.slider.value() == recording.count - 1)
-    assert not window.navigation.play_button.text()
     assert window.navigation.play_button.accessibleName() == "Play"
     assert window.navigation.play_button.toolTip() == "Play recording"
     assert not window.navigation.playback_timer.isActive()
     window.set_ui_language(1)
-    assert not window.navigation.play_button.text()
     assert window.navigation.play_button.accessibleName() == "Wiedergabe"
     assert window.navigation.play_button.toolTip() == "Aufnahme wiedergeben"
     assert window.navigation.playback_speed.itemText(0) == "0,5×"
@@ -177,7 +173,6 @@ def test_play_pause_seek_end_and_translations(
     )
     QTest.mouseClick(window.navigation.play_button, Qt.MouseButton.LeftButton)
     assert window.navigation.slider.value() == 0
-    assert not window.navigation.play_button.text()
     assert window.navigation.play_button.accessibleName() == "Pause"
     assert window.navigation.play_button.toolTip() == "Wiedergabe anhalten"
     QTest.qWait(20)

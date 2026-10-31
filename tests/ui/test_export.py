@@ -16,6 +16,7 @@ from ride_forces_analyzer.analysis.preparation import (
 
 # cspell:words getpixel pixmap
 
+from unittest.mock import Mock
 from pathlib import Path
 from threading import Event
 from tempfile import TemporaryDirectory
@@ -67,7 +68,9 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     assert dialog.form.layout_profile.currentIndex() == 0
     assert dialog.current_sample == sample
     wait_until(lambda dialog=dialog: dialog.previews.result is not None)
-    assert dialog.previews.result is not None and dialog.previews.result.sample == sample
+    assert dialog.previews.result is not None
+    first, last = dialog.analysis.ride_bounds
+    assert dialog.previews.result.sample == first + round(0.6 * (last - first))
     assert all(not button.icon().isNull() for button in dialog.profile_buttons)
     assert dialog.preview_caption.height() >= dialog.preview_caption.fontMetrics().height()
     dialog.profile_buttons[0].click()
@@ -77,16 +80,23 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     wait_until(lambda dialog=dialog: dialog.previews.result is not None)
     dialog.form.interval.setCurrentIndex(1)
     wait_until(lambda dialog=dialog: dialog.previews.result is not None)
-    assert dialog.previews.result is not None and dialog.previews.result.outside_range
-    assert dialog.previews.result.sample == sample
-    assert "OUTSIDE" in dialog.preview_note.text()
+    assert dialog.previews.result is not None and not dialog.previews.result.outside_range
+    assert dialog.previews.result.sample == 144
+    assert dialog.current_sample == sample
+    # Range changes select their own 60% sample, independently of the graph cursor.
+    dialog.form.interval.setCurrentIndex(2)
+    end = len(dialog.analysis.time.source_indices) - 1
+    assert preview_ready(dialog).sample == round(0.6 * end)
+    dialog.form.interval.setCurrentIndex(1)
+    assert preview_ready(dialog).sample == 144
+    assert window.navigation.slider.value() == sample
     dialog.next.click()
     assert dialog.pages.currentIndex() == 1 and dialog.start.isVisible()
-    assert f"{sample:,}" in dialog.preview_caption.text()
+    assert "144" in dialog.preview_caption.text()
     assert dialog.review_fields["layout"].text() == "Flow Ribbon"
     assert dialog.review_fields["samples"].text() == "120–160 (inclusive)"
     assert not dialog.presets.isVisible() and not dialog.gallery.isVisible()
-    assert dialog.preview_note.isVisible()  # The out-of-range warning remains visible.
+    assert not dialog.preview_note.isVisible()
     dialog.back.click()
     assert dialog.pages.currentIndex() == 0
     assert dialog.presets.isVisible() and dialog.gallery.isVisible()
@@ -110,10 +120,16 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     window = explorer_window
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
     wait_until(window.open_action.isEnabled)
+    window.inspector.first.setValue(120)
+    window.inspector.last.setValue(160)
+    window.navigation.slider.setValue(100)
     window.export_button.click()
     dialog = window.export_window
     assert isinstance(dialog, ExportDialog)
-    preview_ready(dialog)
+    dialog.form.interval.setCurrentIndex(1)
+    result = preview_ready(dialog)
+    assert result.sample == 144 and not result.outside_range
+    assert dialog.current_sample == window.navigation.slider.value() == 100
     analysis = dialog.analysis
 
     def choose_layout(key: str) -> None:
@@ -215,9 +231,11 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     assert dialog.previews.result is None and not dialog.next.isEnabled()
     dark_preview = preview_ready(dialog)
     assert dialog.current_sample == sample and dialog.form.layout_profile.currentText() == "G-Orbit"
+    assert dark_preview.sample == 144
     assert dark_preview.profiles[3].image.getpixel((0, 0)) == (22, 37, 51)
     dialog.form.mode.setCurrentIndex(1)
     opaque_preview = preview_ready(dialog)
+    assert opaque_preview.sample == 144
     assert all(profile.image.getpixel((0, 0)) == (0, 0, 0) for profile in opaque_preview.profiles)
     assert dialog.worker is None
     dialog.form.mode.setCurrentIndex(0)
@@ -382,6 +400,8 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     from ride_forces_analyzer.rendering.encoding import ExportCancelled
 
     window = explorer_window
+    taskbar = Mock(wraps=window.taskbar_progress)
+    monkeypatch.setattr(ui_export, "taskbar_progress", Mock(return_value=taskbar))
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
     wait_until(window.open_action.isEnabled)
     window.export_button.click()
@@ -419,19 +439,38 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     wait_until(started.is_set)
     assert isinstance(dialog.worker, ExportWorker)
     assert not dialog.start.isEnabled()
+    taskbar.start.assert_called_once()
     dialog.worker.signals.progress.emit(ExportProgress(ExportPhase.RENDERING, 100, 1000, 10))
     wait_until(lambda: dialog.progress.value() == 10)
     wait_until(lambda: "1:30" in dialog.eta.text())
+    taskbar.set_value.assert_called_with(10)
     dialog.worker.signals.progress.emit(ExportProgress(ExportPhase.FINALIZING, 1000, 1000, 100))
     wait_until(lambda: dialog.eta.text() == "Frames complete · finalizing video…")
     dialog.reject()
     assert dialog.isVisible()
     assert not window.close()  # A close requests cancellation, never abandons a live worker.
     wait_until(lambda: dialog.worker is None)
+    taskbar.clear.assert_called()
+    cleared = taskbar.clear.call_count
     QThreadPool.globalInstance().waitForDone()
     assert dialog.start.isEnabled()
     assert "cancelled" in dialog.status.text()
     assert dialog.eta.text() == ""
+    # Reuse the same window/dialog to check successful completion and failure too.
+    monkeypatch.setattr(ui_workers, "export_video", Mock(return_value=Path("unused.mov")))
+    dialog.start.click()
+    wait_until(lambda: dialog.worker is None)
+    assert "Saved" in dialog.status.text()
+    assert taskbar.clear.call_count == cleared + 1
+    monkeypatch.setattr(
+        ui_workers,
+        "export_video",
+        Mock(side_effect=RuntimeError("Encoder failed")),
+    )
+    dialog.start.click()
+    wait_until(lambda: dialog.worker is None)
+    assert "Encoder failed" in dialog.status.text()
+    assert taskbar.clear.call_count == cleared + 2
     dialog.close()
 
 
@@ -671,6 +710,8 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     )
     store.create_batch("Day1")
     window = explorer_window
+    taskbar = Mock(wraps=window.taskbar_progress)
+    monkeypatch.setattr(ui_batches, "taskbar_progress", Mock(return_value=taskbar))
     window.preferences.remember_render_jobs(4)
     assert window.data is None and window.batches_button.isEnabled()
     window.batches_button.click()
@@ -740,6 +781,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     assert "Manta" in dialog.current_job.text()
     assert dialog.export_progress.value() == 50
     assert "0:10" in dialog.eta.text()
+    taskbar.set_value.assert_called_with(10)
     dialog.worker.signals.progress.emit(
         1,
         5,
@@ -750,6 +792,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     dialog.worker.signals.progress.emit(1, 5, None, "Day1 · Manta · Orbit")
     wait_until(lambda: dialog.progress.value() == 20)
     assert dialog.eta.text() == ""
+    taskbar.set_value.assert_called_with(20)
     dialog.worker.signals.progress.emit(
         2,
         5,
@@ -761,10 +804,22 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     assert "estimating" in dialog.eta.text()
     assert not window.close()
     wait_until(lambda: dialog.worker is None)
+    taskbar.clear.assert_called()
+    cleared = taskbar.clear.call_count
     assert dialog.last_report is not None and len(dialog.last_report.results) == 5
     assert "5 cancelled" in dialog.status.text()
     assert dialog.eta.text() == ""
     assert len(store.batch("Day1").jobs) == 4
+    report = dialog.last_report
+    monkeypatch.setattr(ui_batches, "run_batches", Mock(return_value=report))
+    dialog.run_all.click()
+    wait_until(lambda: dialog.worker is None)
+    assert taskbar.clear.call_count == cleared + 1
+    monkeypatch.setattr(ui_batches, "run_batches", Mock(side_effect=RuntimeError("Queue failed")))
+    dialog.run_all.click()
+    wait_until(lambda: dialog.worker is None)
+    assert "Queue failed" in dialog.status.text()
+    assert taskbar.clear.call_count == cleared + 2
     dialog.table.selectAll()
     dialog.remove.click()
     assert store.batch("Day1").jobs == ()

@@ -37,6 +37,7 @@ from ride_forces_analyzer.exports.batches import BatchReport, build_jobs, run_ba
 from ride_forces_analyzer.rendering.encoding import find_ffmpeg
 from ride_forces_analyzer.rendering.progress import ExportProgress
 from ride_forces_analyzer.ui.exports.progress import show_export_progress
+from ride_forces_analyzer.ui.presentation.taskbar import taskbar_progress
 from ride_forces_analyzer.storage.export_models import SavedBatch, SavedPreset, RangeMode
 from ride_forces_analyzer.storage.exports import ExportStore, ExportStoreError
 from ride_forces_analyzer.storage.preferences import Preferences
@@ -213,6 +214,7 @@ class BatchDialog(QDialog):
             None.
         """
         super().__init__(parent)
+        self._taskbar = taskbar_progress(self)
         self.store = store
         self.worker: BatchWorker | None = None
         self.builder: BuildWorker | None = None
@@ -567,6 +569,7 @@ class BatchDialog(QDialog):
             worker.signals.finished.connect(self._finished)
             worker.signals.failed.connect(self._failed)
             self.worker = worker
+            self._taskbar.start()
             self.last_report = None
             self.progress.setValue(0)
             self.export_progress.setValue(0)
@@ -595,6 +598,7 @@ class BatchDialog(QDialog):
             return
         fraction = 1.0 if update is None else update.percent / 100
         self.progress.setValue(int(((job - 1) + fraction) / total * 100))
+        self._taskbar.set_value(self.progress.value())
         bind(self.current_job, tr("Job {0}/{1}: {2}", job, total, label), "text")
         if update is not None:
             show_export_progress(update, self.export_progress, self.status, self.eta)
@@ -603,6 +607,7 @@ class BatchDialog(QDialog):
 
     @Slot(object)
     def _finished(self, result: object) -> None:
+        self._taskbar.clear()
         bind(self.eta, "", "text")
         self.worker = None
         self._busy(False)
@@ -626,6 +631,7 @@ class BatchDialog(QDialog):
 
     @Slot(str)
     def _failed(self, message: str) -> None:
+        self._taskbar.clear()
         bind(self.eta, "", "text")
         self.worker = None
         self.builder = None
@@ -637,6 +643,7 @@ class BatchDialog(QDialog):
     def _close_or_cancel(self) -> None:
         if self.worker is not None:
             self.worker.cancelled.set()
+            self._taskbar.clear()
             bind(self.eta, "", "text")
             bind(self.status, tr("Cancelling current job; completed exports remain saved."), "text")
         else:

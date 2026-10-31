@@ -136,7 +136,7 @@ def test_portrait_and_landscape_persistence(
     assert renderer_counts == [2, 2]
 
 
-def test_hud_preset_round_trip_and_removed_layout_rejection() -> None:
+def test_hud_preset_round_trip_and_invalid_settings_rejection() -> None:
     from pydantic import ValidationError
 
     chosen = preset().model_copy(update={"settings": ExportSettings(layout=ExportLayout.HUD)})
@@ -157,7 +157,7 @@ def test_hud_preset_round_trip_and_removed_layout_rejection() -> None:
         with pytest.raises(ValidationError, match="extent|Input should be"):
             SavedPreset.model_validate_json(json.dumps(payload))
     payload = json.loads(saved.model_dump_json())
-    payload["settings"]["layout"] = "capsule"
+    payload["settings"]["layout"] = "unknown-layout"
     with pytest.raises(ValidationError):
         SavedPreset.model_validate_json(json.dumps(payload))
 

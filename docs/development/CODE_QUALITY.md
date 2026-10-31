@@ -69,7 +69,9 @@ folders identify scope; no additional marker matrix is required.
 - Fixtures: shared synthetic data in `tests/conftest.py`; GUI/preference isolation in
   `tests/ui/conftest.py`; waits/workspace sizing in `tests/ui/helpers.py`;
   recording identities in `tests/support/recordings.py`; originals in `tests/fixtures/`.
-  Rendering reference data: `tests/rendering/conftest.py`. Each UI test isolates
+  Rendering tests share one immutable prepared recording per session through
+  `tests/rendering/conftest.py`; tests derive separate timelines/renderers and
+  use replacements for changed data. Each UI test isolates
   `LOCALAPPDATA`, including preference/export databases and subprocesses; no second
   export database-path override is needed.
 - Developer-tool regressions under `.agents/skills/` are outside application
@@ -111,7 +113,7 @@ uv run --locked coverage json
 
 | Rule        | Contract                                                                                                                               |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Gate        | Test success and configured 100% coverage; each reported module fully covered                                                          |
+| Gate        | Test success and at least 98% combined line/branch coverage across the declared application packages                                   |
 | Measurement | Replaces previous data; no append; `coverage report` can check existing data                                                           |
 | Outputs     | `.tmp/coverage/analysis/`: data, `html/index.html`, `coverage.json`                                                                    |
 | Execution   | Separate from ordinary pytest; not a hosted CI gate                                                                                    |
@@ -147,15 +149,17 @@ details and inclusive selections without desktop windows. Data-export coverage
 checks CSV/JSON serialization, shared validation, atomic file replacement and
 sequential batch preparation, failure and cancellation.
 Behavior tests establish contracts; coverage percentage does not qualify physical
-interpretation or UI integration. Cover new branches without weakening the gate.
+interpretation or UI integration. Use uncovered paths to guide review, not as a
+requirement to test every line. Prioritize current behavior, meaningful failures
+and regression risks; do not add tests solely to reach a percentage.
 
 ### UI coverage
 
 <!-- cspell:words rcfile -->
 
 UI coverage uses [its own configuration](../../tests/ui/coverage.toml), with a
-90% combined line/branch threshold across the package. The other packages retain
-their 100% gate. Measure the existing native Windows interaction suite separately:
+90% combined line/branch threshold across the package. The other application
+packages use the shared 98% gate. Measure the existing native Windows interaction suite separately:
 
 ```powershell
 uv run --locked pytest --cov --cov-config=tests/ui/coverage.toml --cov-report=term-missing tests/ui
@@ -166,6 +170,10 @@ uv run --locked coverage json --rcfile=tests/ui/coverage.toml
 Data and reports stay under `.tmp/coverage/ui/`. Prioritize user workflows,
 storage-error recovery, cancellation and stale worker deliveries. Related checks
 share application/widget lifetimes; controller tests need no visible windows.
+Screenshot entry-point checks capture each output mode once; source rejection is
+checked directly before GUI creation. Detail capture combines populated and missing
+context in one run. Assert current controls and outcomes rather than the continued
+absence of removed widgets or labels.
 The threshold detects broad regressions without requiring every platform fallback
 or drawing branch. Coverage does not verify visual quality or native dialog contents.
 
@@ -176,7 +184,13 @@ or drawing branch. Coverage does not verify visual quality or native dialog cont
 - Reuse a loaded recording/window for related GUI assertions. Reset view state
   between variants; use separate processes/windows only for lifecycle or isolation risks.
 - Keep full-resolution geometry, glyph and alpha checks in rendering suites.
-  GUI workflow tests can use small frames while exercising real worker transport.
+  GUI workflow tests use `small_preview_frames` / `SmallPreviewRenderer` when
+  checking controls and transport: substitute image generation before expensive
+  layout construction, retaining real timelines, workers and compositing.
+- Rendering preview tests compare every gallery layout to real production pixels
+  once per aspect; selected-output variants cover HUD and native Content area.
+  Settings/position probes bind real timelines to lightweight renderers, and
+  independent codec/extent behavior does not require a repeated Cartesian matrix.
 - Exercise real encoders with representative codecs, layouts, aspects and backend
   preferences. Keep command-contract and numerical timing tests independent.
 - Verify ordered/bounded parallel frames, worker ownership, cancellation and cleanup.

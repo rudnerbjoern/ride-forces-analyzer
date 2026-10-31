@@ -185,6 +185,9 @@ this common snapshot in video metadata for both single and batch exports; the
 batch report references it after preparation instead of building its own analysis
 snapshot. Queued job definitions remain separate requested configuration for jobs
 that cannot be prepared. Snapshot serialization is shared with saved presets.
+`ui.presentation.taskbar` mirrors existing single/batch percentages on the owning
+explorer's Windows taskbar button. It owns shell notifications and COM lifetime;
+rendering remains platform-independent and shell failures do not affect exports.
 `rendering.scales` owns the lateral/longitudinal range policies shared by all
 layouts, shared history fitting and the HUD/G-Orbit posture-dependent vertical
 instrument ranges. Export channels carry a 1 g vertical presentation reference

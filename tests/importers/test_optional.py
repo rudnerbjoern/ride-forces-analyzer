@@ -537,7 +537,7 @@ def test_arbitrary_attribute_values_labels_counts_and_extensions_keep_order_and_
         setattr(result, "gps", None)
     with pytest.raises(TypeError):
         cast(dict[str, object], result.attributes[0].value)["new"] = True
-    assert not result.diagnostics and not hasattr(result, "recording")
+    assert not result.diagnostics
 
 
 @pytest.mark.parametrize(
@@ -614,11 +614,10 @@ def test_optional_diagnostic_budget_accepts_boundary_and_fails_on_overflow(budge
     assert result == parse_optional_data(source, limits=limits)
 
 
-def test_missing_source_root_is_failure_and_optional_success_never_validates_core() -> None:
+def test_optional_root_validation_and_motion_stage_rejection() -> None:
     result = parse_optional_data(SourceEnvelope(b"invalid"))
     assert isinstance(result, ImportFailure) and result.diagnostics[0].code == "INVALID_SOURCE_ROOT"
     subset = _parse({})
-    assert not hasattr(subset, "recording")
     assert isinstance(parse_motion(subset.source), ImportFailure)
     with pytest.raises(ValueError, match="limits"):
         parse_optional_data(subset.source, limits=cast(ImportLimits, None))

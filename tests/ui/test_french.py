@@ -17,6 +17,9 @@ from tests.ui.helpers import wait_until
 from tests.ui.test_localization import assert_combo_text_fits
 
 
+pytestmark = pytest.mark.usefixtures("small_preview_frames")
+
+
 def test_french_settings_and_export_preserve_source_and_explicit_language(
     explorer_window: ExplorerWindow,
     export_directory: Path,

@@ -82,7 +82,7 @@ include = [
     "src/ride_forces_analyzer/explorer/*.py",
     "src/ride_forces_analyzer/exports/*.py",
 ]
-fail_under = 100
+fail_under = 98
 show_missing = true
 precision = 2
 

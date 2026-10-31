@@ -442,7 +442,6 @@ def test_extensions_member_order_immutability_and_no_scientific_transformations(
     with pytest.raises(FrozenInstanceError):
         setattr(result, "motion", None)
     assert source.root is not None and "locationSequence" in source.root
-    assert not hasattr(result, "recording")
 
 
 def test_all_bad_slots_produce_deterministic_safe_diagnostics_and_no_partial_success() -> None:

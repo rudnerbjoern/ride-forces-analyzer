@@ -7,7 +7,9 @@ from pathlib import Path
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
-import shutil
+from functools import partial
+
+from scripts import render_export_reference
 
 from PIL import Image
 import pytest
@@ -26,25 +28,20 @@ def reference_directory() -> Iterator[Path]:
         yield Path(directory)
 
 
-def test_reference_rejects_changed_recording(reference_directory: Path) -> None:
-    changed = reference_directory / "tests/fixtures/real" / SOURCE.name
-    changed.parent.mkdir(parents=True)
+def test_reference_rejects_changed_recording(
+    reference_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    changed = reference_directory / SOURCE.name
     changed.write_bytes(SOURCE.read_bytes() + b"\n")
-    script = reference_directory / "scripts" / SCRIPT.name
-    script.parent.mkdir()
-    shutil.copyfile(SCRIPT, script)
-    output = reference_directory / "output"
-    result = subprocess.run(
-        [sys.executable, str(script), "--output", str(output)],
-        cwd=reference_directory,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        timeout=30,
-        check=False,
+    monkeypatch.setattr(
+        render_export_reference,
+        "load_reference",
+        partial(render_export_reference.load_reference, source=changed),
     )
-    assert result.returncode != 0
-    assert "source hash differs" in result.stderr
+    output = reference_directory / "output"
+    with pytest.raises(ValueError, match="source hash differs"):
+        render_export_reference.render_reference(output)
     assert not output.exists()
 
 

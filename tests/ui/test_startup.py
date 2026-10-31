@@ -53,8 +53,6 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
                 assert window.windowHandle().isExposed()
                 assert window.windowTitle() == EXPECTED_TITLE
                 assert not window.windowIcon().isNull()
-                assert all(label.text() != "Ride Forces Analyzer"
-                           for label in window.findChildren(QLabel))
                 version = window.findChild(QLabel, "applicationVersion")
                 assert version is not None and version.isVisible()
                 assert version.text() == f"v{__version__}"

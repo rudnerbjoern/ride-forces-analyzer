@@ -77,8 +77,10 @@ support EN/DE/FR. Final Export video opens the destination dialog.
   540×960 without cropping/stretching; HUD gallery entries always use Full frame.
 - Settings/background changes use a debounced worker; only its latest revision applies.
   Checkerboard/light/dark backgrounds are preview-only; preview needs no FFmpeg/encoding.
-- An out-of-interval cursor stays unchanged with an explicit full-recording-context
-  warning. Source sample stays fixed while open; Close/Escape respects active cancellation.
+- Preview uses `first + round(0.6 * (last - first))` within the selected export range,
+  independently of the graph cursor. Range changes select a new sample; other settings
+  retain it. Short ranges may round to an endpoint; a single-sample range uses that sample.
+  The workspace cursor stays unchanged; Close/Escape respects cancellation.
 - Content scrolls while progress/status/ETA and navigation/export actions remain pinned
   on smaller/high-DPI desktops, including translated settings.
 
@@ -223,6 +225,15 @@ FFmpeg input, not encoded output. ETA is estimating before the first frame,
 unpredicted during finalization and cleared on cancel/failure/completion; completion
 requires successful publication. Qt workers transport snapshots; dialogs own no clock
 or throughput estimator.
+
+On Windows, the explorer's taskbar button mirrors single-video progress or the
+batch's equally weighted overall job percentage, including while minimized.
+Starting an export shows indeterminate activity until progress is available;
+success, failure and cancellation remove it. The UI-owned native adapter waits for
+`TaskbarButtonCreated`, restores active state after button recreation and releases
+its COM resources on termination/window destruction. Other platforms and unavailable
+shell services leave exports unaffected. See Microsoft's
+[taskbar progress contract](https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-itaskbarlist3-setprogressvalue).
 
 #### File-size calibration evidence
 
