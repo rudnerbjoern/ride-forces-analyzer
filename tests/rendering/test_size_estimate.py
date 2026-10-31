@@ -145,6 +145,44 @@ def test_hud_estimate_tracks_measured_exports(
 
 @pytest.mark.parametrize("prefer_gpu", [False, True])
 @pytest.mark.parametrize(
+    "layout,measured_bytes",
+    [
+        pytest.param(ExportLayout.RIBBON, 24_441_395, id="ribbon"),
+        pytest.param(ExportLayout.CORNERS, 29_023_934, id="corners"),
+        pytest.param(ExportLayout.ORBIT, 8_061_387, id="orbit"),
+        pytest.param(ExportLayout.COLUMN, 69_336_081, id="column"),
+    ],
+)
+def test_h264_full_frame_estimate_tracks_measured_kraken_exports(
+    layout: ExportLayout,
+    measured_bytes: int,
+    prefer_gpu: bool,
+) -> None:
+    settings = ExportSettings(
+        layout=layout,
+        output=VideoOutput.OPAQUE,
+        fps=StandardFrameRate.FPS_59_94,
+        prefer_gpu=prefer_gpu,
+    )
+    # Synthetic source clock reproduces the measured 9,544 encoded frames.
+    low, high = estimate_size_bytes(settings, 9544 * 1001, 60_000)
+    assert measured_bytes * 0.45 <= low < measured_bytes < high <= measured_bytes * 1.55
+
+
+@pytest.mark.parametrize("prefer_gpu", [False, True])
+def test_hud_h264_estimate_covers_additional_kraken_reference(prefer_gpu: bool) -> None:
+    settings = ExportSettings(
+        layout=ExportLayout.HUD,
+        output=VideoOutput.OPAQUE,
+        fps=StandardFrameRate.FPS_59_94,
+        prefer_gpu=prefer_gpu,
+    )
+    low, high = estimate_size_bytes(settings, 9544 * 1001, 60_000)
+    assert low < 23_256_703 < high
+
+
+@pytest.mark.parametrize("prefer_gpu", [False, True])
+@pytest.mark.parametrize(
     "layout,extent,measured_bytes,tolerance",
     [
         pytest.param(

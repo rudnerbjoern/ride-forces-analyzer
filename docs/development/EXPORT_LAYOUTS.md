@@ -90,14 +90,13 @@ default. Each layout declares its Full-frame rates and, where supported, separat
 use the shared planning heuristic; Full-frame rates never fill missing Content-area
 rates. Rates need not be configured for both codecs. No measurements are fabricated.
 The estimator uses the same codec/extent rates for CPU and GPU preferences without
-probing hardware. HUD retains its reference calibration; Flow Ribbon, Corner
-Instruments, G-Orbit and Four-panel column ProRes use separate owner-provided
-Kraken references for Full frame and Content area.
+probing hardware. Full-frame codec rates and non-HUD Content-area ProRes rates use
+the owner-provided export references, with separate measurements per codec/extent.
 These are not replaced by short test exports; the
 [export contract](../implementation/VIDEO_EXPORT.md#estimates-and-progress) records
 the measurements and their limits. Plugin comments retain encoder settings,
 source intervals where known, tested output sizes, observed rate ranges and limits.
-The non-HUD H.264 planning ranges include container
+The non-HUD Content-area H.264 planning ranges include container
 overhead from ten-frame Manta/Voltron exports in each supported format, rounded
 outward from half the minimum to 1.5 times the maximum. They do not qualify other
 recordings, durations, languages or GPU encoders.
