@@ -414,14 +414,12 @@ class OrbitRenderer(Drawing):
         return image
 
 
-# Content-area H.264 bytes/output pixel/frame including container overhead. FFmpeg 9.0.2 CPU:
-# libx264 fast CRF 18. Ten frames at 50 fps,
-# Manta 3600..3609 / Voltron 4960..4969, English, 11-sample smoothing, both formats.
-# Native content: 800x800 in both formats.
-# Rounded outward from half the observed minimum to 1.5 times the maximum.
-# Short clips include first-frame overhead; other scenes, durations, languages
-# and GPU encoders are unqualified. These are planning ranges, not guarantees.
-H264_CONTENT_SIZE_RATES = (0.00316, 0.01137)  # Observed 0.0063234..0.0075772.
+# Content-area H.264 uses the owner-provided Kraken CPU export reference:
+# 800x800, 60000/1001 fps, 9,544 frames, libx264, 6,136,463 bytes including MP4.
+# Observed 0.001004634 bytes/pixel/frame; round to 0.001005 with +/-50%.
+# Applies to both backend preferences; unmeasured aspects, other scenes and GPU
+# encoders remain unqualified. These are planning ranges, not guarantees.
+H264_CONTENT_SIZE_RATES = (0.0005025, 0.0015075)
 # Full-frame H.264 uses the owner-provided Kraken CPU export reference:
 # 3840x2160, 60000/1001 fps, 9,544 frames, libx264, 8,061,387 bytes including MP4.
 # Observed 0.000101834 bytes/pixel/frame; round to 0.000102 with +/-50%.

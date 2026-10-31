@@ -313,14 +313,12 @@ class ColumnRenderer:
         return image
 
 
-# Content-area H.264 bytes/output pixel/frame including container overhead. FFmpeg 9.0.2 CPU:
-# libx264 fast CRF 18. Ten frames at 50 fps,
-# Manta 3600..3609 / Voltron 4960..4969, English, 11-sample smoothing, landscape.
-# Content: 960x2160, without margin or scaling.
-# Rounded outward from half the observed minimum to 1.5 times the maximum.
-# Short clips include first-frame overhead; other scenes, durations, languages
-# and GPU encoders are unqualified. These are planning ranges, not guarantees.
-H264_CONTENT_SIZE_RATES = (0.00081, 0.00296)  # Observed 0.0016378..0.0019717.
+# Content-area H.264 uses the owner-provided Kraken CPU export reference:
+# 960x2160, 60000/1001 fps, 9,544 frames, libx264, 43,889,261 bytes including MP4.
+# Observed 0.002217700 bytes/pixel/frame; round to 0.002218 with +/-50%.
+# Applies to both backend preferences; other scenes and GPU encoders remain
+# unqualified by this reference. These are planning ranges, not guarantees.
+H264_CONTENT_SIZE_RATES = (0.001109, 0.003327)
 # Full-frame H.264 uses the owner-provided Kraken CPU export reference:
 # 3840x2160, 60000/1001 fps, 9,544 frames, libx264, 69,336,081 bytes including MP4.
 # Observed 0.000875879 bytes/pixel/frame; round to 0.000876 with +/-50%.

@@ -341,26 +341,24 @@ These replace the short CPU-clip ranges for the respective codec/extent and appl
 to both backend preferences. CPU, unmeasured aspects and other scenes remain
 unqualified by these references; further export measurements can refine the ranges.
 
-The owner-provided Kraken non-HUD Full-frame H.264 references use 3840×2160,
-60000/1001 fps, 9,544 frames and `libx264`. Rates include MP4 overhead:
+The owner-provided Kraken non-HUD H.264 references use 60000/1001 fps,
+9,544 frames and `libx264`. Rates include MP4 overhead:
 
-| Layout             | File bytes | Bytes/pixel/frame | Planning range          |
-| ------------------ | ---------- | ----------------- | ----------------------- |
-| Flow Ribbon        | 24,441,395 | 0.000308753       | 0.0001545–0.0004635     |
-| Corner Instruments | 29,023,934 | 0.000366641       | 0.0001835–0.0005505     |
-| G-Orbit            | 8,061,387  | 0.000101834       | 0.000051–0.000153       |
-| Four-panel column  | 69,336,081 | 0.000875879       | 0.000438–0.001314       |
+| Layout             | Export area  | Dimensions | File bytes | Bytes/pixel/frame | Planning range      |
+| ------------------ | ------------ | ---------- | ---------- | ----------------- | ------------------- |
+| Flow Ribbon        | Full frame   | 3840×2160  | 24,441,395 | 0.000308753       | 0.0001545–0.0004635 |
+| Flow Ribbon        | Content area | 3072×360   | 22,602,237 | 0.002141397       | 0.0010705–0.0032115 |
+| Corner Instruments | Full frame   | 3840×2160  | 29,023,934 | 0.000366641       | 0.0001835–0.0005505 |
+| Corner Instruments | Content area | 840×1120   | 27,062,402 | 0.003013968       | 0.001507–0.004521   |
+| G-Orbit            | Full frame   | 3840×2160  | 8,061,387  | 0.000101834       | 0.000051–0.000153   |
+| G-Orbit            | Content area | 800×800    | 6,136,463  | 0.001004634       | 0.0005025–0.0015075 |
+| Four-panel column  | Full frame   | 3840×2160  | 69,336,081 | 0.000875879       | 0.000438–0.001314   |
+| Four-panel column  | Content area | 960×2160   | 43,889,261 | 0.002217700       | 0.001109–0.003327   |
 
 Each measured rate is rounded to six decimal places with a ±50% planning allowance
-for content/encoder variation. These replace the short CPU-clip Full-frame H.264
-ranges and apply to both backend preferences. Other scenes, portrait output and
-GPU encoding remain unqualified by these references.
-
-The non-HUD Content-area H.264 planning ranges derive from ten-frame,
-50-fps Manta/Voltron CPU exports in each supported format. They include container
-overhead and an outward-rounded half-minimum / 1.5-times-maximum allowance.
-Short H.264 clips include
-first-frame overhead and do not predict full-ride compression precisely.
+for content/encoder variation. Separate Full-frame and Content-area ranges apply
+to both backend preferences. Other scenes, unmeasured aspects and GPU encoding
+remain unqualified by these references.
 The plugin constants retain source intervals, dimensions, encoder settings and
 measurement limits. Estimates scale by resolved output pixels and frame count
 for either backend preference; estimation does not probe hardware. Other scenes,

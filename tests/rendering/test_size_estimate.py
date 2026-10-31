@@ -145,21 +145,67 @@ def test_hud_estimate_tracks_measured_exports(
 
 @pytest.mark.parametrize("prefer_gpu", [False, True])
 @pytest.mark.parametrize(
-    "layout,measured_bytes",
+    "layout,extent,measured_bytes",
     [
-        pytest.param(ExportLayout.RIBBON, 24_441_395, id="ribbon"),
-        pytest.param(ExportLayout.CORNERS, 29_023_934, id="corners"),
-        pytest.param(ExportLayout.ORBIT, 8_061_387, id="orbit"),
-        pytest.param(ExportLayout.COLUMN, 69_336_081, id="column"),
+        pytest.param(
+            ExportLayout.RIBBON,
+            ExportExtent.FULL_FRAME,
+            24_441_395,
+            id="ribbon-full-frame",
+        ),
+        pytest.param(
+            ExportLayout.CORNERS,
+            ExportExtent.FULL_FRAME,
+            29_023_934,
+            id="corners-full-frame",
+        ),
+        pytest.param(
+            ExportLayout.ORBIT,
+            ExportExtent.FULL_FRAME,
+            8_061_387,
+            id="orbit-full-frame",
+        ),
+        pytest.param(
+            ExportLayout.COLUMN,
+            ExportExtent.FULL_FRAME,
+            69_336_081,
+            id="column-full-frame",
+        ),
+        pytest.param(
+            ExportLayout.RIBBON,
+            ExportExtent.CONTENT_AREA,
+            22_602_237,
+            id="ribbon-content",
+        ),
+        pytest.param(
+            ExportLayout.CORNERS,
+            ExportExtent.CONTENT_AREA,
+            27_062_402,
+            id="corners-content",
+        ),
+        pytest.param(
+            ExportLayout.ORBIT,
+            ExportExtent.CONTENT_AREA,
+            6_136_463,
+            id="orbit-content",
+        ),
+        pytest.param(
+            ExportLayout.COLUMN,
+            ExportExtent.CONTENT_AREA,
+            43_889_261,
+            id="column-content",
+        ),
     ],
 )
-def test_h264_full_frame_estimate_tracks_measured_kraken_exports(
+def test_h264_estimate_tracks_measured_kraken_exports(
     layout: ExportLayout,
+    extent: ExportExtent,
     measured_bytes: int,
     prefer_gpu: bool,
 ) -> None:
     settings = ExportSettings(
         layout=layout,
+        extent=extent,
         output=VideoOutput.OPAQUE,
         fps=StandardFrameRate.FPS_59_94,
         prefer_gpu=prefer_gpu,

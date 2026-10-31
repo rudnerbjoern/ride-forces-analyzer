@@ -277,14 +277,12 @@ def create_renderer(timeline: ExportTimeline) -> ChartRenderer:
     return RibbonRenderer(timeline)
 
 
-# Content-area H.264 bytes/output pixel/frame including container overhead. FFmpeg 9.0.2 CPU:
-# libx264 fast CRF 18. Ten frames at 50 fps,
-# Manta 3600..3609 / Voltron 4960..4969, English, 11-sample smoothing, both formats.
-# Native content: 3072x360 / 840x1120.
-# Rounded outward from half the observed minimum to 1.5 times the maximum.
-# Short clips include first-frame overhead; other scenes, durations, languages
-# and GPU encoders are unqualified. These are planning ranges, not guarantees.
-H264_CONTENT_SIZE_RATES = (0.00119, 0.00543)  # Observed 0.0023835..0.0036197.
+# Content-area H.264 uses the owner-provided Kraken CPU export reference:
+# 3072x360, 60000/1001 fps, 9,544 frames, libx264, 22,602,237 bytes including MP4.
+# Observed 0.002141397 bytes/pixel/frame; round to 0.002141 with +/-50%.
+# Applies to both backend preferences; portrait, other scenes and GPU encoders
+# remain unqualified by this reference. These are planning ranges, not guarantees.
+H264_CONTENT_SIZE_RATES = (0.0010705, 0.0032115)
 # Full-frame H.264 uses the owner-provided Kraken CPU export reference:
 # 3840x2160, 60000/1001 fps, 9,544 frames, libx264, 24,441,395 bytes including MP4.
 # Observed 0.000308753 bytes/pixel/frame; round to 0.000309 with +/-50%.
