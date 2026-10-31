@@ -17,6 +17,7 @@ from ride_forces_analyzer.analysis.preparation import (
 # cspell:words getpixel pixmap
 
 from unittest.mock import Mock
+from PIL import Image
 from pathlib import Path
 from threading import Event
 from tempfile import TemporaryDirectory
@@ -301,7 +302,9 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
     assert isinstance(dialog, ExportDialog)
     preview_ready(dialog)
     browse = next(
-        button for button in dialog.findChildren(QPushButton) if button.text() == "Browse…"
+        button
+        for button in dialog.findChildren(QPushButton)
+        if button.accessibleName() == "Browse…"
     )
     for configured in ("absolute", "relative", "directory", "missing", "empty"):
         with TemporaryDirectory(dir=".tmp") as temporary:
@@ -417,6 +420,9 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     wait_until(lambda: dialog.previews.result is not None)
     dialog.next.click()
     started = Event()
+    static_image = dialog.preview_view.source.toImage()
+    live_image = Image.new("RGB", (32, 18), "red")
+    monkeypatch.setattr(ui_workers, "preview_rendered_region", Mock(return_value=live_image))
 
     def fake_export(*args: object, **kwargs: object) -> Path:
         from ride_forces_analyzer.rendering.model import ExportTimeline
@@ -424,6 +430,9 @@ def test_export_worker_progress_cancel_and_gui_recovery(
         assert isinstance(args[0], ExportTimeline)
         assert args[0].settings.layout == ExportLayout.ORBIT
         assert kwargs["render_jobs"] == window.preferences.render_jobs()
+        preview = kwargs["frame_preview"]
+        assert callable(preview)
+        preview(0, b"rendered region")
         started.set()
         cancelled = kwargs["cancelled"]
         assert isinstance(cancelled, Event)
@@ -444,6 +453,9 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     dialog.start.click()
     wait_until(started.is_set)
     assert isinstance(dialog.worker, ExportWorker)
+    wait_until(lambda: "Export preview: frame 1/" in dialog.preview_caption.text())
+    assert dialog.preview_view.source.toImage().pixelColor(0, 0).name() == "#ff0000"
+    assert dialog.cancel.toolTip() == dialog.cancel.accessibleName() == "Cancel export"
     assert not dialog.start.isEnabled()
     taskbar.start.assert_called_once()
     dialog.worker.signals.progress.emit(ExportProgress(ExportPhase.RENDERING, 100, 1000, 10))
@@ -461,6 +473,9 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     QThreadPool.globalInstance().waitForDone()
     assert dialog.start.isEnabled()
     assert "cancelled" in dialog.status.text()
+    dialog._export_preview(100, Image.new("RGB", (32, 18), "blue"))
+    assert dialog.preview_view.source.toImage().pixelColor(0, 0).name() == "#ff0000"
+    assert dialog.cancel.toolTip() == dialog.cancel.accessibleName() == "Close"
     assert dialog.eta.text() == ""
     # Reuse the same window/dialog to check successful completion and failure too.
     monkeypatch.setattr(ui_workers, "export_video", Mock(return_value=Path("unused.mov")))
@@ -477,6 +492,9 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     wait_until(lambda: dialog.worker is None)
     assert "Encoder failed" in dialog.status.text()
     assert taskbar.clear.call_count == cleared + 2
+    dialog.back.click()
+    assert dialog.preview_view.source.toImage() == static_image
+    assert "Preview: graph sample" in dialog.preview_caption.text()
     dialog.close()
 
 
@@ -783,6 +801,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
         ExportProgress(ExportPhase.RENDERING, 1, 2, 10),
         "Day1 · Manta · Orbit",
     )
+    dialog.worker.signals.overall_progress.emit(1, 10)
     wait_until(lambda: dialog.progress.value() == 10)
     assert "Manta" in dialog.current_job.text()
     assert dialog.export_progress.value() == 50
@@ -796,6 +815,7 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     )
     wait_until(lambda: "finalizing" in dialog.eta.text())
     dialog.worker.signals.progress.emit(1, 5, None, "Day1 · Manta · Orbit")
+    dialog.worker.signals.overall_progress.emit(2, 10)
     wait_until(lambda: dialog.progress.value() == 20)
     assert dialog.eta.text() == ""
     taskbar.set_value.assert_called_with(20)

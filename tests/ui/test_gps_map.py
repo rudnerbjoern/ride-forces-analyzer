@@ -7,7 +7,7 @@ from threading import Event
 
 from PySide6.QtCore import QThreadPool, Qt
 from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QApplication, QGraphicsPixmapItem
+from PySide6.QtWidgets import QApplication, QGraphicsPixmapItem, QPushButton
 import pytest
 
 from ride_forces_analyzer.gps.map_background import MapBackground, MapError, MapRequest
@@ -68,6 +68,14 @@ def test_gps_map_requires_click_and_preserves_route_and_explorer_on_failure(
     assert covered.contains(visible)
     dialog.resize(1000, 750)
     QApplication.processEvents()
+    close = next(button for button in dialog.findChildren(QPushButton) if button.text() == "Close")
+    layout = dialog.layout()
+    assert layout is not None
+    margins = layout.contentsMargins()
+    assert close.geometry().right() == dialog.width() - margins.right() - 1
+    assert close.geometry().bottom() == dialog.height() - margins.bottom() - 1
+    assert close.geometry().left() > dialog.map_button.geometry().right()
+    assert close.geometry().bottom() == dialog.map_button.geometry().bottom()
     assert len(requests) == 1
     dialog.map_button.click()
     wait_until(lambda: dialog.worker is None)
@@ -106,7 +114,11 @@ def test_gps_map_close_cancels_and_late_result_cannot_replace_new_request(
     try:
         dialog.map_button.click()
         wait_until(started.is_set)
-        dialog.close()
+        close = next(
+            button for button in dialog.findChildren(QPushButton) if button.text() == "Close"
+        )
+        close.click()
+        assert not dialog.isVisible()
         assert requests[0].is_set()
         dialog.show()
         dialog.map_button.click()

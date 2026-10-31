@@ -7,7 +7,7 @@ from unittest.mock import Mock
 
 import pytest
 from PySide6.QtCore import QThreadPool, QTimer
-from PySide6.QtWidgets import QApplication, QInputDialog, QWidget
+from PySide6.QtWidgets import QApplication, QFileDialog, QInputDialog, QWidget
 
 from ride_forces_analyzer.explorer import present_recording
 from ride_forces_analyzer.rendering.model import ExportSettings
@@ -161,6 +161,38 @@ def test_batch_storage_errors_keep_selection_and_allow_retry(
     store.create_batch("Existing")
     dialog = BatchDialog(store, parent)
     try:
+        with monkeypatch.context() as patch:
+            report_error = Mock()
+            choose_recordings = Mock()
+            patch.setattr("ride_forces_analyzer.ui.exports.batches.record_error", report_error)
+            patch.setattr(QFileDialog, "getOpenFileNames", choose_recordings)
+            assert not dialog.add.isEnabled()
+            dialog.add.click()
+            dialog._add()
+            assert dialog.status.text() == "Select at least one preset"
+            assert dialog.builder is None and not dialog.add.isEnabled()
+            report_error.assert_not_called()
+            choose_recordings.assert_not_called()
+        store.save_preset(
+            make_preset("Preset", ExportSettings(), 3, "markers", snapshot().configuration),
+        )
+        dialog.refresh("Existing")
+        assert not dialog.add.isEnabled()
+        dialog.presets.selectAll()
+        assert dialog.add.isEnabled()
+        dialog._busy(True)
+        assert not dialog.add.isEnabled()
+        dialog._busy(False)
+        assert dialog.add.isEnabled()
+        dialog.batch_list.clearSelection()
+        assert not dialog.add.isEnabled()
+        dialog.batch_list.setCurrentRow(0)
+        assert dialog.add.isEnabled()
+        dialog.presets.clearSelection()
+        assert not dialog.add.isEnabled()
+        dialog._busy(True)
+        dialog._busy(False)
+        assert not dialog.add.isEnabled()
         with monkeypatch.context() as patch:
             patch.setattr(store, "batches", Mock(side_effect=ExportStoreError("List unavailable")))
             dialog.refresh()

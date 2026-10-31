@@ -1,6 +1,12 @@
 # Explore a recording
 
 Open a `.forces` or compressed `.zforces` file with **Open recording**, or **Ctrl+O** (**⌘O** on macOS).
+
+On Windows, **Alt** reveals native access-key underlines for Open recording, Save,
+Back and Browse. Press **Alt** with the underlined letter to activate the control;
+letters follow the selected UI language. Press **Alt** again to hide the underlines.
+Alt combined with another key activates its command without changing this toggle.
+**Esc** dismisses dialogs or requests cancellation of an active export.
 RFDB `.forces` recordings use the same dialog and need no conversion. Features
 requiring missing recording data, such as GPS or tilt, remain unavailable.
 Both formats appear in the same file dialog; no manual extraction is needed.

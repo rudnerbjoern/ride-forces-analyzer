@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 from ride_forces_analyzer.i18n import LANGUAGE_CHOICES, LANGUAGES, get_language, tr
-from ride_forces_analyzer.ui.presentation.translation import bind, items
+from ride_forces_analyzer.ui.presentation.translation import bind, button_text, items
 
 # cspell:words pixmap Deutsch
 
@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QStyle,
     QVBoxLayout,
     QWidget,
     QSizePolicy,
@@ -203,7 +204,15 @@ class ExportForm(QWidget):
             bind(self.encoder, str(find_ffmpeg()), "text")
         except ValueError:
             self.encoder.setPlaceholderText(tr("Choose installed FFmpeg executable"))
-        self.browse = bind(QPushButton(), tr("Browse…"))
+        self.browse = button_text(
+            QPushButton(),
+            tr("Browse…"),
+            tooltip=tr("Choose FFmpeg executable"),
+            caption=tr("&Browse…"),
+        )
+        self.browse.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon),
+        )
         self.browse.clicked.connect(self._browse)
         encoder_row = QHBoxLayout()
         encoder_row.addWidget(self.encoder)

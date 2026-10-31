@@ -27,6 +27,7 @@ from ride_forces_analyzer.rendering.model import (
     prepare_export,
 )
 from ride_forces_analyzer.rendering.preview import (
+    preview_rendered_region,
     DARK_BACKGROUND,
     LIGHT_BACKGROUND,
     PreviewBackground,
@@ -34,6 +35,60 @@ from ride_forces_analyzer.rendering.preview import (
     compose_preview,
     build_previews,
 )
+
+
+@pytest.mark.parametrize(
+    "aspect,extent,output,background",
+    [
+        (
+            VideoAspect.LANDSCAPE,
+            ExportExtent.FULL_FRAME,
+            VideoOutput.TRANSPARENT,
+            PreviewBackground.CHECKER,
+        ),
+        (
+            VideoAspect.PORTRAIT,
+            ExportExtent.FULL_FRAME,
+            VideoOutput.TRANSPARENT,
+            PreviewBackground.POV_TOUTATIS,
+        ),
+        (
+            VideoAspect.LANDSCAPE,
+            ExportExtent.CONTENT_AREA,
+            VideoOutput.OPAQUE,
+            PreviewBackground.DARK,
+        ),
+    ],
+)
+def test_live_region_preview_matches_production_frame(
+    manta: ExplorerData,
+    aspect: VideoAspect,
+    extent: ExportExtent,
+    output: VideoOutput,
+    background: PreviewBackground,
+) -> None:
+    from ride_forces_analyzer.rendering import preview
+
+    assert manta.analysis is not None
+    timeline = prepare_export(
+        manta.analysis,
+        ExportSettings(layout=ExportLayout.RIBBON, aspect=aspect, extent=extent, output=output),
+        3500,
+        3700,
+    )
+    renderer = OverlayRenderer(timeline)
+    raw = renderer.render_region(0).tobytes()
+    actual = preview_rendered_region(timeline, raw, background)
+    photo = None
+    if background in POV_BACKGROUNDS:
+        with Image.open(
+            Path(preview.__file__).with_name("pov") / f"{background.value}.jpg",
+        ) as source:
+            photo = source.convert("RGBA")
+    size = (540, 960) if aspect is VideoAspect.PORTRAIT else (960, 540)
+    expected = compose_preview(renderer.render_frame(0), size, background, photo)
+    assert actual.size == expected.size
+    assert actual.tobytes() == expected.tobytes()
 
 
 @pytest.mark.parametrize("size", [(160, 90), (90, 160), (60, 40)])

@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.runtime.error_reporting import record_error
-from ride_forces_analyzer.ui.presentation.translation import bind, items, headers
+from ride_forces_analyzer.ui.presentation.translation import bind, button_text, items, headers
 
 from pathlib import Path
 from threading import Event
@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
     QListWidget,
     QProgressBar,
     QPushButton,
+    QStyle,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -34,6 +35,7 @@ from PySide6.QtWidgets import (
 )
 
 from ride_forces_analyzer.exports.batches import BatchReport, build_jobs, run_batches
+from ride_forces_analyzer.ui.presentation.icons import icon_with_plus
 from ride_forces_analyzer.rendering.encoding import find_ffmpeg
 from ride_forces_analyzer.rendering.progress import ExportProgress
 from ride_forces_analyzer.ui.exports.progress import show_export_progress
@@ -50,11 +52,13 @@ class BatchSignals(QObject):
         finished: Qt signal for finished notifications.
         failed: Qt signal for failed notifications.
         progress: Qt signal for progress notifications.
+        overall_progress: Qt signal carrying completed and planned queue frame counts.
     """
 
     finished = Signal(object)
     failed = Signal(str)
     progress = Signal(int, int, object, str)
+    overall_progress = Signal(int, int)
 
 
 class BuildWorker(QRunnable):
@@ -164,6 +168,7 @@ class BatchWorker(QRunnable):
                 ffmpeg=self.ffmpeg,
                 cancelled=self.cancelled,
                 progress=self.signals.progress.emit,
+                overall_progress=self.signals.overall_progress.emit,
                 render_jobs=self.render_jobs,
             )
         except Exception as error:
@@ -275,13 +280,25 @@ class BatchDialog(QDialog):
         row.addLayout(right, 1)
         root.addLayout(row, 1)
         actions = QHBoxLayout()
-        self.new = bind(QPushButton(), tr("New batch…"))
+        self.new = button_text(QPushButton(), tr("New batch…"))
+        self.new.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogNewFolder),
+        )
         self.new.clicked.connect(self._new)
-        self.add = bind(QPushButton(), tr("Add recordings × presets…"))
+        self.add = button_text(QPushButton(), tr("Add recordings × presets…"))
+        self.add.setIcon(
+            icon_with_plus(self.style().standardIcon(QStyle.StandardPixmap.SP_FileIcon)),
+        )
         self.add.clicked.connect(self._add)
-        self.remove = bind(QPushButton(), tr("Remove selected jobs"))
+        self.remove = button_text(QPushButton(), tr("Remove selected jobs"))
+        self.remove.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogDiscardButton),
+        )
         self.remove.clicked.connect(self._remove)
-        self.delete = bind(QPushButton(), tr("Delete empty batch"))
+        self.delete = button_text(QPushButton(), tr("Delete empty batch"))
+        self.delete.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_TrashIcon),
+        )
         self.delete.clicked.connect(self._delete)
         for button in (self.new, self.add, self.remove, self.delete):
             actions.addWidget(button)
@@ -294,7 +311,15 @@ class BatchDialog(QDialog):
         except ValueError:
             self.encoder.setPlaceholderText(tr("Choose FFmpeg executable"))
         encoder_row.addWidget(self.encoder)
-        self.browse = bind(QPushButton(), tr("Browse…"))
+        self.browse = button_text(
+            QPushButton(),
+            tr("Browse…"),
+            tooltip=tr("Choose FFmpeg executable"),
+            caption=tr("&Browse…"),
+        )
+        self.browse.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon),
+        )
         self.browse.clicked.connect(self._browse)
         encoder_row.addWidget(self.browse)
         root.addLayout(encoder_row)
@@ -322,12 +347,32 @@ class BatchDialog(QDialog):
         bind(self.status, str(store.path), "toolTip")
         root.addWidget(self.status)
         buttons = QHBoxLayout()
-        self.run_selected = bind(QPushButton(), tr("Run selected batches…"))
+        buttons.addStretch()
+        self.run_selected = button_text(QPushButton(), tr("Run selected…"))
+        self.run_selected.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay),
+        )
+        bind(
+            self.run_selected,
+            tr("Export all jobs in the selected batches. Job-row selection is ignored."),
+            "toolTip",
+        )
         self.run_selected.clicked.connect(self._run_selected)
-        self.run_all = bind(QPushButton(), tr("Run ALL saved batches…"))
+        self.run_all = button_text(QPushButton(), tr("Run all…"))
+        self.run_all.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_MediaSeekForward),
+        )
+        bind(
+            self.run_all,
+            tr("Export all jobs in all saved batches, regardless of batch or job-row selection."),
+            "toolTip",
+        )
         self.run_all.setObjectName("Primary")
         self.run_all.clicked.connect(self._run_all)
-        self.close_button = bind(QPushButton(), tr("Close"))
+        self.close_button = button_text(QPushButton(), tr("Close"))
+        self.close_button.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogCloseButton),
+        )
         self.close_button.clicked.connect(self._close_or_cancel)
         for button in (self.run_selected, self.run_all, self.close_button):
             buttons.addWidget(button)
@@ -346,7 +391,20 @@ class BatchDialog(QDialog):
             self.run_selected,
             self.run_all,
         )
+        self.batch_list.itemSelectionChanged.connect(self._update_add_enabled)
+        self.presets.itemSelectionChanged.connect(self._update_add_enabled)
+        self._update_add_enabled()
         self.refresh()
+
+    @Slot()
+    def _update_add_enabled(self) -> None:
+        """Enable adding recordings only with an idle batch and preset selection."""
+        self.add.setEnabled(
+            self.worker is None
+            and self.builder is None
+            and bool(self.batch_list.selectedItems())
+            and bool(self.presets.selectedItems()),
+        )
 
     def refresh(self, select: str | None = None) -> None:
         """Reload the displayed batch definitions from local storage.
@@ -456,7 +514,8 @@ class BatchDialog(QDialog):
             selected = {item.text() for item in self.presets.selectedItems()}
             presets = tuple(preset for preset in self.store.presets() if preset.name in selected)
             if not presets:
-                raise ValueError(tr("Select at least one preset"))
+                bind(self.status, tr("Select at least one preset"), "text")
+                return
             paths, _ = QFileDialog.getOpenFileNames(
                 self,
                 tr("Add recordings"),
@@ -566,6 +625,7 @@ class BatchDialog(QDialog):
                 render_jobs=Preferences().render_jobs(),
             )
             worker.signals.progress.connect(self._progress)
+            worker.signals.overall_progress.connect(self._overall_progress)
             worker.signals.finished.connect(self._finished)
             worker.signals.failed.connect(self._failed)
             self.worker = worker
@@ -576,7 +636,10 @@ class BatchDialog(QDialog):
             self.export_progress.setFormat("%p%")
             bind(self.eta, "", "text")
             self._busy(True)
-            bind(self.close_button, tr("Cancel remaining exports"), "text")
+            button_text(self.close_button, tr("Cancel remaining exports"))
+            self.close_button.setIcon(
+                self.style().standardIcon(QStyle.StandardPixmap.SP_DialogCancelButton),
+            )
             QThreadPool.globalInstance().start(worker)
         except (ValueError, ExportStoreError) as error:
             record_error("Batch configuration", error)
@@ -585,6 +648,8 @@ class BatchDialog(QDialog):
     def _busy(self, busy: bool) -> None:
         for control in self.controls:
             control.setEnabled(not busy)
+        if not busy:
+            self._update_add_enabled()
 
     @Slot(int, int, object, str)
     def _progress(
@@ -596,14 +661,24 @@ class BatchDialog(QDialog):
     ) -> None:
         if self.worker is None or self.worker.cancelled.is_set():
             return
-        fraction = 1.0 if update is None else update.percent / 100
-        self.progress.setValue(int(((job - 1) + fraction) / total * 100))
-        self._taskbar.set_value(self.progress.value())
         bind(self.current_job, tr("Job {0}/{1}: {2}", job, total, label), "text")
         if update is not None:
             show_export_progress(update, self.export_progress, self.status, self.eta)
         else:
             bind(self.eta, "", "text")
+
+    @Slot(int, int)
+    def _overall_progress(self, completed: int, total: int) -> None:
+        """Show frame-weighted queue progress in the dialog and taskbar.
+
+        Args:
+            completed: Frame budgets settled or submitted so far.
+            total: Planned output frames across every selected batch.
+        """
+        if self.worker is None or self.worker.cancelled.is_set():
+            return
+        self.progress.setValue(completed * 100 // max(1, total))
+        self._taskbar.set_value(self.progress.value())
 
     @Slot(object)
     def _finished(self, result: object) -> None:
@@ -611,7 +686,10 @@ class BatchDialog(QDialog):
         bind(self.eta, "", "text")
         self.worker = None
         self._busy(False)
-        bind(self.close_button, tr("Close"), "text")
+        button_text(self.close_button, tr("Close"))
+        self.close_button.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogCloseButton),
+        )
         if isinstance(result, BatchReport):
             self.last_report = result
             completed = sum(item.status == "completed" for item in result.results)
@@ -636,7 +714,10 @@ class BatchDialog(QDialog):
         self.worker = None
         self.builder = None
         self._busy(False)
-        bind(self.close_button, tr("Close"), "text")
+        button_text(self.close_button, tr("Close"))
+        self.close_button.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogCloseButton),
+        )
         bind(self.status, tr("Batch operation failed: {0}", message), "text")
 
     @Slot()

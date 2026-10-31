@@ -70,6 +70,12 @@ resolved dimensions and a live size range; changes refresh both and the preview.
 Review includes format, area, language and applicable position. All controls/labels
 support EN/DE/FR. Final Export video opens the destination dialog.
 
+During a single-video export, the large preview follows already rendered frames
+at approximately two-second video intervals, including the first and last frame.
+It retains the selected preview-only background and displays the current export
+frame number. No additional frames are rendered and preview backgrounds are never
+encoded. Returning to setup restores the selected static preview.
+
 - All thumbnails and the main preview use production RGBA at the exact source sample,
   independently of video-frame quantization. Fit complete output within 960×540 /
   540×960 without cropping/stretching; HUD gallery entries always use Full frame.
@@ -232,7 +238,7 @@ requires successful publication. Qt workers transport snapshots; dialogs own no 
 or throughput estimator.
 
 On Windows, the explorer's taskbar button mirrors single-video progress or the
-batch's equally weighted overall job percentage, including while minimized.
+batch's overall percentage weighted by planned output frames, including while minimized.
 Starting an export shows indeterminate activity until progress is available;
 success, failure and cancellation remove it. The UI-owned native adapter waits for
 `TaskbarButtonCreated`, restores active state after button recreation and releases

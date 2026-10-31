@@ -442,6 +442,45 @@ def test_batch_report_retains_complete_settings_and_actual_execution(
     assert restored.results[0].job_snapshot == job
 
 
+def test_batch_overall_progress_weights_intervals_and_frame_rates(
+    export_directory: Path,
+    manta: ExplorerData,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ride_forces_analyzer.exports import batches
+
+    short = short_job(manta)
+    slow = short.preset.model_copy(
+        update={"settings": replace(short.preset.settings, fps=StandardFrameRate.FPS_25)},
+    )
+    short = short.model_copy(update={"preset": slow})
+    long = short.model_copy(
+        update={"last_sample": short.first_sample + 5, "preset": preset()},
+    )
+    frames: list[int] = []
+    overall: list[tuple[int, int]] = []
+
+    def fake_export(timeline: ExportTimeline, target: Path, **kwargs: object) -> Path:
+        frames.append(timeline.frame_count)
+        callback = cast(Callable[[ExportProgress], None], kwargs["progress"])
+        callback(ExportProgress(ExportPhase.RENDERING, 1, timeline.frame_count))
+        target.write_bytes(b"completed")
+        return target
+
+    monkeypatch.setattr(batches, "export_video", fake_export)
+    report = run_batches(
+        (
+            SavedBatch(name="Short", jobs=(short,), schema_version=1),
+            SavedBatch(name="Long", jobs=(long,), schema_version=1),
+        ),
+        export_directory,
+        overall_progress=lambda done, total: overall.append((done, total)),
+    )
+    assert frames == [1, 6]
+    assert overall == [(0, 7), (1, 7), (1, 7), (2, 7), (7, 7)]
+    assert all(result.status == "completed" for result in report.results)
+
+
 def test_batch_continues_after_changed_recording_and_preserves_outputs(
     export_directory: Path,
     manta: ExplorerData,
@@ -475,11 +514,15 @@ def test_batch_continues_after_changed_recording_and_preserves_outputs(
         SavedBatch(name="B", jobs=(job,), schema_version=1),
     )
     updates: list[tuple[int, ExportProgress | None]] = []
+    overall: list[tuple[int, int]] = []
     result = run_batches(
         saved,
         export_directory,
         progress=lambda job, total, update, label: updates.append((job, update)),
+        overall_progress=lambda done, total: overall.append((done, total)),
     )
+    assert overall[0] == (0, 6)
+    assert overall[-1] == (6, 6)
     assert [job for job, update in updates if update is None] == [1, 2, 3, 4]
     for job_index in range(1, 5):
         events = [update for job, update in updates if job == job_index and update is not None]
@@ -546,11 +589,14 @@ def test_cancel_stops_remaining_jobs_and_keeps_completed_files(
 
     monkeypatch.setattr(batches, "export_video", fake_export)
     job = short_job(manta)
+    overall: list[tuple[int, int]] = []
     result = run_batches(
         (SavedBatch(name="Cancel", jobs=(job, job, job), schema_version=1),),
         export_directory,
         cancelled=cancel,
+        overall_progress=lambda done, total: overall.append((done, total)),
     )
+    assert overall == [(0, 6), (2, 6)]
     assert [item.status for item in result.results] == ["completed", "cancelled", "skipped"]
     assert [item.duration_seconds for item in result.results] == [1.25, 2.5, None]
     payload = json.loads(result.report_path.read_text(encoding="utf-8"))

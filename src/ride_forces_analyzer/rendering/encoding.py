@@ -8,6 +8,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from collections.abc import Callable
 from contextlib import closing
+from math import ceil
 from pathlib import Path
 import json
 import errno
@@ -267,6 +268,7 @@ def export_video(
     ffmpeg: Path | None = None,
     cancelled: Event | None = None,
     progress: Callable[[ExportProgress], None] | None = None,
+    frame_preview: Callable[[int, bytes], None] | None = None,
     render_jobs: int = 1,
     overwrite: bool = False,
 ) -> Path:
@@ -279,6 +281,9 @@ def export_video(
         ffmpeg: Explicit encoder executable; None permits the documented discovery policy.
         cancelled: Cancellation event checked during the operation.
         progress: Optional callback receiving immutable phase, frame, backend and timing status.
+        frame_preview: Optional callback receiving the zero-based frame index and
+            rendered RGBA region bytes at roughly two-second video intervals,
+            including the first and last frame. No additional frames are rendered.
         render_jobs: Requested concurrent frame-renderer count, bounded by local CPU
             availability.
         overwrite: Whether the caller explicitly permits replacing an existing
@@ -320,6 +325,7 @@ def export_video(
             )
 
     notify(ExportPhase.PREPARING)
+    preview_interval = max(1, ceil(2 * timeline.settings.frame_rate))
     render_jobs = effective_render_jobs(render_jobs)
     executable = find_ffmpeg(ffmpeg)
     cancellation = cancelled if cancelled is not None else Event()
@@ -353,8 +359,13 @@ def export_video(
                     for frame in range(timeline.frame_count):
                         if cancellation.is_set():
                             raise ExportCancelled()
-                        process.stdin.write(next(frames))
+                        region = next(frames)
+                        process.stdin.write(region)
                         notify(ExportPhase.RENDERING, frame + 1)
+                        if frame_preview is not None and (
+                            frame % preview_interval == 0 or frame == timeline.frame_count - 1
+                        ):
+                            frame_preview(frame, region)
                 notify(ExportPhase.FINALIZING, timeline.frame_count)
                 process.stdin.close()
                 code = process.wait(timeout=120)

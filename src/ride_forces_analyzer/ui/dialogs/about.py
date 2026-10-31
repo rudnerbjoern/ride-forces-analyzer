@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QScrollArea,
+    QStyle,
     QVBoxLayout,
     QWidget,
 )
@@ -24,8 +25,9 @@ from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.runtime.diagnostics import collect_diagnostics
 from ride_forces_analyzer.runtime.error_reporting import record_error
 
-from ride_forces_analyzer.ui.presentation.translation import bind
+from ride_forces_analyzer.ui.presentation.translation import bind, button_text
 from ride_forces_analyzer.ui.presentation.chrome import app_icon
+from ride_forces_analyzer.ui.presentation.icons import clipboard_icon
 
 
 class _DiagnosticSignals(QObject):
@@ -160,7 +162,8 @@ class AboutDialog(QDialog):
             label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
             content.addWidget(label)
         self.diagnostic_worker: _DiagnosticWorker | None = None
-        self.copy_diagnostics = bind(QPushButton(), tr("Copy diagnostic information"))
+        self.copy_diagnostics = button_text(QPushButton(), tr("Copy diagnostic information"))
+        self.copy_diagnostics.setIcon(clipboard_icon())
         self.copy_diagnostics.clicked.connect(self._copy_diagnostics)
         self.copy_reset = QTimer(self)
         self.copy_reset.setSingleShot(True)
@@ -168,7 +171,10 @@ class AboutDialog(QDialog):
         content.addStretch()
         scroll.setWidget(body)
         layout.addWidget(scroll)
-        close = bind(QPushButton(), tr("Close"))
+        close = button_text(QPushButton(), tr("Close"))
+        close.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogCloseButton),
+        )
         close.clicked.connect(self.close)
         actions = QHBoxLayout()
         actions.addWidget(self.copy_diagnostics)
@@ -182,7 +188,7 @@ class AboutDialog(QDialog):
             return
         self.copy_reset.stop()
         self.copy_diagnostics.setEnabled(False)
-        bind(self.copy_diagnostics, tr("Collecting diagnostics…"))
+        button_text(self.copy_diagnostics, tr("Collecting diagnostics…"))
         worker = _DiagnosticWorker()
         worker.signals.completed.connect(self._diagnostics_ready)
         self.diagnostic_worker = worker
@@ -196,9 +202,9 @@ class AboutDialog(QDialog):
             self._reset_copy_label()
             return
         QApplication.clipboard().setText(report)
-        bind(self.copy_diagnostics, tr("Copied"))
+        button_text(self.copy_diagnostics, tr("Copied"))
         self.copy_reset.start(2000)
 
     @Slot()
     def _reset_copy_label(self) -> None:
-        bind(self.copy_diagnostics, tr("Copy diagnostic information"))
+        button_text(self.copy_diagnostics, tr("Copy diagnostic information"))

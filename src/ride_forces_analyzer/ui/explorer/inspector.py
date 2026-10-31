@@ -8,6 +8,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.ui.presentation.translation import (
     bind,
+    button_text,
 )
 
 
@@ -19,6 +20,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QPushButton,
     QScrollArea,
+    QStyle,
     QVBoxLayout,
     QWidget,
 )
@@ -163,8 +165,12 @@ class ExplorerInspector(QScrollArea):
         inspector_layout.addWidget(recording)
 
         details, details_layout = create_panel()
-        self.details_button = bind(QPushButton(), tr("Technical details"))
+        self.details_button = button_text(QPushButton(), tr("Technical details"))
         self.details_button.setCheckable(True)
+        self.details_button.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
+        self.details_button.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowDown),
+        )
         details_layout.addWidget(self.details_button)
         self.details_body = QWidget()
         details_body_layout = QVBoxLayout(self.details_body)
@@ -391,6 +397,11 @@ class ExplorerInspector(QScrollArea):
 
     @Slot(bool)
     def _toggle_details(self, checked: bool) -> None:
+        self.details_button.setIcon(
+            self.style().standardIcon(
+                QStyle.StandardPixmap.SP_ArrowUp if checked else QStyle.StandardPixmap.SP_ArrowDown,
+            ),
+        )
         self.details_body.setVisible(checked)
         if not checked:
             self.details_hidden.emit()

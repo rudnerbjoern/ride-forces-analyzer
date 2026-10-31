@@ -11,6 +11,7 @@ from PySide6.QtCore import QObject, QPointF, Qt, Signal, Slot
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import (
     QGraphicsRectItem,
+    QGraphicsLineItem,
     QGraphicsSimpleTextItem,
     QLabel,
     QSizePolicy,
@@ -36,6 +37,7 @@ class ExplorerChart(QObject):
         axis_x: Recording-time axis, replaced with replay labels on recording load.
         axis_y: Force or raw-value axis, fixed to the snapshot's value range.
         series: Three source-aligned force or raw-channel curves.
+        force_references: Horizontal reference lines at 0 g and 1 g in calibrated view.
         selection_band: Shaded inclusive export selection.
         vertical_context_bars: Visible provisional vertical-context graphics.
         vertical_context_ranges: Prepared intervals corresponding to the graphics.
@@ -71,6 +73,9 @@ class ExplorerChart(QObject):
         self.chart.legend().hide()
         self.chart.setAnimationOptions(QChart.AnimationOption.NoAnimation)
         chart_margins = self.chart.margins()
+        chart_margins.setTop(0)
+        chart_margins.setLeft(0)
+        chart_margins.setRight(0)
         chart_margins.setBottom(0)
         self.chart.setMargins(chart_margins)
         self.chart_view = TimeChartView(self.chart)
@@ -91,6 +96,12 @@ class ExplorerChart(QObject):
         bind(self.axis_x, tr("Elapsed time (s)"), "titleText")
         self.axis_x.setLabelFormat("%.3f")
         self.axis_y = QValueAxis()
+        self.force_references = {value: QGraphicsLineItem(self.chart) for value in (0.0, 1.0)}
+        for reference_line in self.force_references.values():
+            reference_line.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
+            reference_line.hide()
+        self.chart.plotAreaChanged.connect(self._redraw_force_references)
+        self.axis_y.rangeChanged.connect(self._redraw_force_references)
         bind(self.axis_y, tr("Source value (unit unknown)"), "titleText")
         self.chart.addAxis(self.axis_x, Qt.AlignmentFlag.AlignBottom)
         self.chart.addAxis(self.axis_y, Qt.AlignmentFlag.AlignLeft)
@@ -158,6 +169,14 @@ class ExplorerChart(QObject):
         self.chart.setBackgroundBrush(background)
         self.chart_view.setBackgroundBrush(background)
         self._style_axes()
+        for reference_line in self.force_references.values():
+            reference_line.setPen(
+                QPen(
+                    QColor(self.theme.chart_foreground or self.theme.muted),
+                    1.2,
+                    Qt.PenStyle.DashLine,
+                ),
+            )
         self._redraw_selection()
         for (name, line), color in zip(
             self.source_marker_lines.items(),
@@ -205,6 +224,20 @@ class ExplorerChart(QObject):
             )
         self.chart.setTitle("")
         self._draw_vertical_context()
+        self._redraw_force_references()
+
+    @Slot()
+    def _redraw_force_references(self) -> None:
+        """Position calibrated 0 g and 1 g guides within the existing plot area."""
+        area = self.chart.plotArea()
+        low, high = self.axis_y.min(), self.axis_y.max()
+        active = self.data is not None and self.data.calibrated_enabled and high > low
+        for value, line in self.force_references.items():
+            visible = active and low <= value <= high
+            line.setVisible(visible)
+            if visible:
+                y = area.bottom() - (value - low) / (high - low) * area.height()
+                line.setLine(area.left(), y, area.right(), y)
 
     def reset_axes(self) -> None:
         """Install replay/value labels and restore the bound recording's default view.
@@ -255,6 +288,7 @@ class ExplorerChart(QObject):
             "titleText",
         )
         self.axis_y.rangeChanged.connect(self._fix_value_view)
+        self.axis_y.rangeChanged.connect(self._redraw_force_references)
         self.axis_y.setRange(*data.value_range)
         self.axis_y.rangeChanged.connect(self._redraw_cursor)
         self.axis_y.rangeChanged.connect(self.redraw_value_labels)

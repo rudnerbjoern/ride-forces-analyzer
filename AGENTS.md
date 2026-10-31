@@ -10,9 +10,9 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 - MUST group related GUI checks and reuse application/window fixtures where isolation is unnecessary. NEVER repeatedly restart the desktop application for assertions that can share one session.
 - MUST keep Git-only requests limited to the authorized Git operations and necessary scope checks. NEVER automatically start the full application or GUI suite solely to commit or push.
 - MUST batch Git preparation and reuse current-context review and validation evidence for unchanged inputs. NEVER duplicate checks already performed by the delivery helper; retain required commit/push boundary checks. Keep tool output bounded; if output is truncated, read only the missing portion instead of requesting the entire output again.
-- NEVER make a simple task unnecessarily complex or turn it into a broader engineering project. NEVER introduce unnecessary complexity, abstractions, tools, frameworks or processes.
+- NEVER make a simple task unnecessarily complex or turn it into a broader engineering project. NEVER introduce unnecessary complexity, abstractions, tools, frameworks or processes. Repeated violations have deeply disappointed the owner and severely damaged trust; simplicity is a binding requirement, not an optional preference.
 - NEVER expand task scope under any circumstances without the owner's prior explicit permission. Useful, recommended or related work is NEVER automatically authorized.
-- NEVER invent requirements or act on assumptions or ideas about tasks the owner has not assigned. MUST perform only the requested work and necessary checks, then STOP.
+- NEVER invent requirements or act on assumptions or ideas about tasks the owner has not assigned. NEVER use an agent's own plans, requirement lists or numerical targets to justify extra features, repeated package builds, additional test environments or new acceptance gates beyond the owner's concrete request. MUST perform only the smallest sufficient change and necessary affected checks, then STOP.
 - MUST preserve the owner's accepted FFmpeg delivery model. The owner rejected a previous source-archive attempt because excessive effort, huge additional archives and broken delivery made it unacceptable. NEVER repeat that approach or reopen FFmpeg source procurement/source bundles as an automatic 1.0 or release prerequisite. Only a new, explicit owner instruction for that exact FFmpeg work authorizes reconsideration; general reviews, releases or Git requests do not.
 
 ## Communication and scope
@@ -24,6 +24,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 - MUST keep this file limited to durable project-wide rules. Milestone status belongs in the roadmap; stage steps, deliverables and specific gates belong in the applicable implementation plan. NEVER update this file solely for implementation progress.
 - MUST read [README](README.md), [roadmap](docs/ROADMAP.md), [architecture](docs/architecture/README.md), applicable requirements and implementation plan before edits. Use [docs index](docs/README.md) for references.
 - MUST keep changes scoped and consistent. NEVER refactor unrelated code. MUST align code, tests, configuration and docs.
+- MUST apply requested UI conventions consistently to directly paired controls within the same task, such as matching Back/Forward icons, without requiring separate instructions for each counterpart. This does not authorize unrelated UI changes or new features.
 
 ## Documentation: current state, never development history
 

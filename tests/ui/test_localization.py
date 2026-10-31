@@ -10,20 +10,27 @@ import subprocess
 import sys
 from textwrap import dedent
 
-from PySide6.QtCore import QCoreApplication, QTimer
+from PySide6.QtCore import QCoreApplication, QTimer, Qt
+from PySide6.QtGui import QKeySequence
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication,
+    QAbstractButton,
     QComboBox,
+    QDialog,
+    QFileDialog,
     QInputDialog,
     QLabel,
     QMenu,
     QPushButton,
     QStyle,
     QStyleOptionComboBox,
+    QToolButton,
+    QToolBar,
 )
 import pytest
 
-from ride_forces_analyzer.i18n import get_language
+from ride_forces_analyzer.i18n import get_language, tr
 from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.ui.exports.batches import BatchDialog
 from ride_forces_analyzer.ui.exports.video import ExportDialog
@@ -185,6 +192,114 @@ def test_localized_export_in_4k_workspace_keeps_controls_reachable(
     assert "PASS: native localized export" in result.stdout
 
 
+def test_native_alt_access_keys_preserve_standard_open_shortcut(
+    explorer_window: ExplorerWindow,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    window = explorer_window
+    opened: list[bool] = []
+
+    def choose(*args: object, **kwargs: object) -> tuple[str, str]:
+        opened.append(True)
+        return "", ""
+
+    monkeypatch.setattr(QFileDialog, "getOpenFileName", choose)
+    assert window.open_action.shortcut() == QKeySequence(QKeySequence.StandardKey.Open)
+    window.activateWindow()
+    wait_until(window.isActiveWindow)
+    open_button = next(
+        button
+        for button in window.findChildren(QToolButton)
+        if button.defaultAction() is window.open_action
+    )
+    initial = open_button.grab().toImage()
+    QTest.keyClick(window, Qt.Key.Key_Alt)
+    QApplication.processEvents()
+    shown = open_button.grab().toImage()
+    assert shown != initial
+    QTest.keyClick(window, Qt.Key.Key_Alt)
+    QApplication.processEvents()
+    assert open_button.grab().toImage() == initial
+    for count, (language, open_key, save_key) in enumerate(
+        (
+            (0, Qt.Key.Key_O, Qt.Key.Key_S),
+            (1, Qt.Key.Key_Odiaeresis, Qt.Key.Key_S),
+            (2, Qt.Key.Key_O, Qt.Key.Key_E),
+        ),
+        start=1,
+    ):
+        window.set_ui_language(language)
+        window.activateWindow()
+        wait_until(window.isActiveWindow)
+        QTest.keyClick(window, open_key, Qt.KeyboardModifier.AltModifier)
+        wait_until(lambda: len(opened) == count)
+        assert not open_button.style().styleHint(
+            QStyle.StyleHint.SH_UnderlineShortcut,
+            None,
+            open_button,
+        )
+        window.settings_action.trigger()
+        dialog = window.findChild(SettingsDialog, "settingsDialog")
+        assert dialog is not None
+        dialog.activateWindow()
+        wait_until(dialog.isActiveWindow)
+        save_button = next(
+            button
+            for button in dialog.buttons.buttons()
+            if button.shortcut() == QKeySequence(f"Alt+{chr(save_key)}")
+        )
+        save_button.setFocus()
+        QApplication.processEvents()
+        assert QApplication.activeWindow() is dialog
+        QTest.keyClick(save_button, save_key, Qt.KeyboardModifier.AltModifier)
+        wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
+        window.settings_action.trigger()
+        dialog = window.findChild(SettingsDialog, "settingsDialog")
+        assert dialog is not None
+        QTest.keyClick(dialog, Qt.Key.Key_Escape)
+        wait_until(lambda: window.findChild(SettingsDialog, "settingsDialog") is None)
+
+
+@pytest.mark.usefixtures("small_preview_frames")
+def test_action_buttons_have_localized_tooltips_and_accessible_names(
+    explorer_window: ExplorerWindow,
+) -> None:
+    window = explorer_window
+    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
+    wait_until(window.open_action.isEnabled)
+    for open_dialog in (
+        window.show_settings,
+        window.show_about,
+        window.show_batches,
+        window.show_gps,
+        window.show_export,
+    ):
+        open_dialog()
+        dialog = next(dialog for dialog in window.findChildren(QDialog) if dialog.isVisible())
+        for language in (1, 0):
+            window.set_ui_language(language)
+            assert (
+                window.export_button.toolTip()
+                == window.export_button.accessibleName()
+                == tr("Export video…")
+            )
+            if isinstance(dialog, BatchDialog):
+                assert dialog.run_all.toolTip() == tr(
+                    "Export all jobs in all saved batches, regardless of batch or job-row selection.",
+                )
+            if isinstance(dialog, ExportDialog):
+                assert dialog.form.browse.toolTip() == tr("Choose FFmpeg executable")
+            for button in window.findChildren(QAbstractButton):
+                if not isinstance(button, QPushButton | QToolButton):
+                    continue
+                if button.objectName().startswith("qt_"):
+                    continue
+                assert button.toolTip(), button.text()
+                assert button.accessibleName(), button.text()
+        dialog.close()
+        QApplication.processEvents()
+
+
 def test_language_switch_preserves_state_and_source_metadata(
     explorer_window: ExplorerWindow,
 ) -> None:
@@ -220,8 +335,10 @@ def test_language_switch_preserves_state_and_source_metadata(
     try:
         window.set_ui_language(1)
         assert get_language() == "de"
-        assert window.open_action.text() == "Aufnahme öffnen…"
-        assert window.reset_button.text() == "Ansicht zurücksetzen"
+        assert window.open_action.text() == "Aufnahme &öffnen…"
+        assert window.reset_button.text() == ""
+        assert window.reset_button.toolTip() == "Ansicht zurücksetzen"
+        assert window.reset_button.accessibleName() == "Ansicht zurücksetzen"
         assert window.reference_toggle.text() == "Kalibrierte Kräfte"
         assert_marker_names(
             ("Startmarkierung", "Endmarkierung", "Schwerkraftmarkierung", "Neigungsmarkierung"),
@@ -260,9 +377,18 @@ def test_language_switch_preserves_state_and_source_metadata(
         assert QCoreApplication.translate("QPlatformTheme", "Cancel") == "Abbrechen"
         resize_workspace(window, 720, 480)
         assert window.inspector_button.text() == "Details"
-        assert window.inspector_button.isVisible()
+        if not window.inspector_button.isVisible():
+            toolbar = window.findChild(QToolBar)
+            assert toolbar is not None
+            overflow = toolbar.findChild(QToolButton, "qt_toolbar_ext_button")
+            assert overflow is not None and overflow.isVisible()
+
+            overflow.click()
+            wait_until(window.inspector_button.isVisible, timeout=2)
+            assert window.inspector_button.isEnabled()
+            overflow.click()
         window.set_ui_language(0)
-        assert window.open_action.text() == "Open recording…"
+        assert window.open_action.text() == "&Open recording…"
         assert "Row:" in window.inspector.ride_metadata.text()
         assert_marker_names(
             ("Start marker", "End marker", "Gravity marker", "Incline marker"),

@@ -11,6 +11,7 @@ from ride_forces_analyzer.ui.presentation.error_report import ErrorReportButton
 from ride_forces_analyzer.i18n import LANGUAGE_CHOICES, Language, tr
 from ride_forces_analyzer.ui.presentation.translation import (
     bind,
+    button_text,
     set_ui_language,
     system_ui_language,
 )
@@ -38,6 +39,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QGridLayout,
     QFileDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -47,6 +49,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QSplitter,
+    QStyle,
     QToolBar,
     QToolButton,
     QVBoxLayout,
@@ -63,6 +66,15 @@ from ride_forces_analyzer.gps.overview import prepare_gps_overview
 from ride_forces_analyzer.ui.presentation.chrome import app_icon
 from ride_forces_analyzer.ui.presentation.taskbar import taskbar_progress
 from ride_forces_analyzer.ui.dialogs.about import AboutDialog
+from ride_forces_analyzer.ui.presentation.icons import (
+    data_export_icon,
+    gps_overview_icon,
+    reset_view_icon,
+    select_visible_icon,
+    settings_icon,
+    video_export_icon,
+    zoom_selection_icon,
+)
 from ride_forces_analyzer.ui.dialogs.settings import APPEARANCE_CHOICES, SettingsDialog
 from ride_forces_analyzer.ui.presentation.updates import UpdateController
 from ride_forces_analyzer.ui.dialogs.gps import gps_dialog
@@ -230,7 +242,11 @@ class ExplorerWindow(QMainWindow):
 
     def _create_toolbar(self) -> None:
         """Create recording actions, export menus and auxiliary-dialog controls."""
-        self.open_action = bind(QAction(self), tr("Open recording…"))
+        self.open_action = bind(QAction(self), tr("&Open recording…"))
+        bind(self.open_action, tr("Open recording…"), "toolTip")
+        self.open_action.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton),
+        )
         self.open_action.setShortcut(QKeySequence.StandardKey.Open)
         self.open_action.triggered.connect(self.choose_file)
         application = QApplication.instance()
@@ -246,19 +262,24 @@ class ExplorerWindow(QMainWindow):
         self.new_window_action.triggered.connect(lambda: self.choose_file(new_window=True))
         self.addAction(self.new_window_action)
         if isinstance(open_widget, QToolButton):
+            button_text(open_widget, tr("Open recording…"), caption=tr("&Open recording…"))
+            open_widget.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
             open_menu = QMenu(open_widget)
             open_menu.addAction(self.new_window_action)
             open_widget.setMenu(open_menu)
             open_widget.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
-        self.gps_button = bind(QPushButton(), tr("GPS overview"))
+        self.gps_button = button_text(QPushButton(), tr("GPS overview"))
+        self.gps_button.setIcon(gps_overview_icon())
         self.gps_button.setEnabled(False)
         self.gps_button.clicked.connect(self.show_gps)
         toolbar.addWidget(self.gps_button)
-        self.export_button = bind(QPushButton(), tr("Export video…"))
+        self.export_button = button_text(QPushButton(), tr("Export video…"))
+        self.export_button.setIcon(video_export_icon())
         self.export_button.setEnabled(False)
         self.export_button.clicked.connect(self.show_export)
         toolbar.addWidget(self.export_button)
-        self.data_export_button = bind(QPushButton(), tr("Data export"))
+        self.data_export_button = button_text(QPushButton(), tr("Data export"))
+        self.data_export_button.setIcon(data_export_icon())
         self.data_export_button.setEnabled(False)
         data_menu = QMenu(self.data_export_button)
         self.csv_action = bind(QAction(self), tr("Export CSV…"))
@@ -274,26 +295,46 @@ class ExplorerWindow(QMainWindow):
         toolbar.addWidget(self.data_export_button)
         self.export_window: QDialog | None = None
         self.batch_window: QDialog | None = None
-        self.batches_button = bind(QPushButton(), tr("Batches…"))
+        self.batches_button = button_text(QPushButton(), tr("Batches…"))
+        self.batches_button.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogDetailedView),
+        )
         self.batches_button.clicked.connect(self.show_batches)
         toolbar.addWidget(self.batches_button)
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         toolbar.addWidget(spacer)
-        self.notes_button = bind(QPushButton(), tr("Import notes"))
+        self.notes_button = button_text(QPushButton(), tr("Import notes"))
+        self.notes_button.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_FileIcon),
+        )
         self.notes_button.setCheckable(True)
         self.notes_button.toggled.connect(self._show_notes)
         notes_action = toolbar.addWidget(self.notes_button)
-        self.inspector_button = bind(QPushButton(), tr("Inspector"))
+        self.inspector_button = button_text(QPushButton(), tr("Inspector"))
+        self.inspector_button.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogInfoView),
+        )
         self.inspector_button.setCheckable(True)
         toolbar.insertWidget(notes_action, self.inspector_button)
         self.addToolBar(toolbar)
         self.settings_action = bind(QAction(self), tr("Settings…"))
+        self.settings_action.setIcon(settings_icon())
         self.settings_action.triggered.connect(self.show_settings)
         toolbar.addAction(self.settings_action)
         self.about_action = bind(QAction(self), tr("About…"))
+        self.about_action.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxInformation),
+        )
         self.about_action.triggered.connect(self.show_about)
         toolbar.addAction(self.about_action)
+        for action in (self.settings_action, self.about_action):
+            action_button = toolbar.widgetForAction(action)
+            if isinstance(action_button, QToolButton):
+                button_text(
+                    action_button,
+                    tr("Settings…") if action is self.settings_action else tr("About…"),
+                )
         self.gps_window: QDialog | None = None
 
     def _create_workspace(self) -> tuple[QWidget, QVBoxLayout]:
@@ -308,8 +349,10 @@ class ExplorerWindow(QMainWindow):
         )
         self.heading.setObjectName("recordingHeading")
         self.heading.setTextFormat(Qt.TextFormat.PlainText)
-        self.heading.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
-        layout.addWidget(self.heading)
+        self.heading.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        self.heading.setMinimumWidth(0)
+        header = QHBoxLayout()
+        header.addWidget(self.heading, 0, Qt.AlignmentFlag.AlignBottom)
         self.header_summary = bind(
             QLabel(),
             tr(
@@ -319,7 +362,18 @@ class ExplorerWindow(QMainWindow):
         )
         self.header_summary.setObjectName("Muted")
         self.header_summary.setTextFormat(Qt.TextFormat.PlainText)
-        layout.addWidget(self.header_summary)
+        for label in (self.heading, self.header_summary):
+            label.ensurePolished()
+            label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom)
+        descent = max(
+            self.heading.fontMetrics().descent(),
+            self.header_summary.fontMetrics().descent(),
+        )
+        for label in (self.heading, self.header_summary):
+            label.setContentsMargins(0, 0, 0, descent - label.fontMetrics().descent())
+        header.addWidget(self.header_summary, 0, Qt.AlignmentFlag.AlignBottom)
+        header.addStretch()
+        layout.addLayout(header)
         self.workspace = QSplitter(Qt.Orientation.Horizontal)
         self.workspace.setChildrenCollapsible(False)
         self.workspace.setHandleWidth(10)
@@ -340,22 +394,41 @@ class ExplorerWindow(QMainWindow):
     def _create_plot(self, plot_layout: QVBoxLayout) -> None:
         """Compose the chart component, visibility switches and view controls."""
         self.chart_tools = QGridLayout()
+        self.chart_tools.setColumnStretch(5, 1)
         self.reference_toggle = bind(QCheckBox(), tr("Calibrated forces"))
         self.reference_toggle.setEnabled(False)
         self.reference_toggle.toggled.connect(self.set_reference_view)
-        self.reset_button = bind(QPushButton(), tr("Reset view"))
+        self.chart_tools.addWidget(self.reference_toggle, 0, 0)
+        divider = QFrame()
+        divider.setFrameShape(QFrame.Shape.VLine)
+        divider.setFrameShadow(QFrame.Shadow.Sunken)
+        self.chart_tools.addWidget(divider, 0, 1)
+        self.reset_button = QPushButton()
+        bind(self.reset_button, tr("Reset view"), "toolTip")
+        bind(self.reset_button, tr("Reset view"), "accessibleName")
+        self.reset_button.setIcon(reset_view_icon())
         self.reset_button.clicked.connect(self.reset_view)
-        self.zoom_button = bind(QPushButton(), tr("Zoom to selection"))
+        self.zoom_button = QPushButton()
+        bind(self.zoom_button, tr("Zoom to selection"), "toolTip")
+        bind(self.zoom_button, tr("Zoom to selection"), "accessibleName")
+        self.zoom_button.setIcon(zoom_selection_icon())
         self.zoom_button.clicked.connect(self.zoom_selection)
-        self.visible_button = bind(QPushButton(), tr("Select visible range"))
+        self.visible_button = QPushButton()
+        bind(self.visible_button, tr("Select visible range"), "toolTip")
+        bind(self.visible_button, tr("Select visible range"), "accessibleName")
+        self.visible_button.setIcon(select_visible_icon())
         self.visible_button.clicked.connect(self.select_visible)
+        for column, button in enumerate(
+            (self.reset_button, self.zoom_button, self.visible_button),
+            start=6,
+        ):
+            self.chart_tools.addWidget(button, 0, column)
         plot_layout.addLayout(self.chart_tools)
         self.plot = ExplorerChart(self.theme, self)
         self.plot.chart_view.sample_requested.connect(self.select_chart_sample)
         self.plot.chart_view.marker_menu_requested.connect(self.show_marker_menu)
         self.plot.range_changed.connect(self._refresh_extrema)
         plot_layout.addWidget(self.plot.chart_view, 1)
-        axes = QHBoxLayout()
         self.visibility: list[QCheckBox] = []
         for index, name in enumerate(("x", "y", "z")):
             toggle = bind(QCheckBox(), tr("Show {0}", name))
@@ -363,9 +436,7 @@ class ExplorerWindow(QMainWindow):
             toggle.setChecked(True)
             toggle.toggled.connect(partial(self.plot.set_channel_visible, index))
             self.visibility.append(toggle)
-            axes.addWidget(toggle)
-        axes.addStretch()
-        plot_layout.insertLayout(1, axes)
+            self.chart_tools.addWidget(toggle, 0, index + 2)
         plot_layout.addWidget(self.plot.airtime_legend)
 
     @Slot(int)
@@ -470,15 +541,6 @@ class ExplorerWindow(QMainWindow):
             Qt.Orientation.Horizontal if wide else Qt.Orientation.Vertical,
         )
         self.inspector.setMaximumWidth(360 if wide else 16777215)
-        for index, control in enumerate(
-            (self.reference_toggle, self.reset_button, self.zoom_button, self.visible_button),
-        ):
-            self.chart_tools.removeWidget(control)
-            self.chart_tools.addWidget(
-                control,
-                0,
-                index,
-            )
         self.inspector_button.setChecked(wide)
         self._toggle_inspector(wide)
         self.workspace.setSizes([max(300, self.width() - 360), 330] if wide else [300, 160])
@@ -850,16 +912,16 @@ class ExplorerWindow(QMainWindow):
         self.reference_toggle.setChecked(outcome.calibrated_enabled)
         self.reference_toggle.blockSignals(False)
         bind(self, f"{outcome.title} · {self._application_title}", "windowTitle")
-        bind(self.heading, outcome.title, "text")
+        park = outcome.source.recording.metadata.location
+        bind(self.heading, f"{outcome.title} · {park}" if park else outcome.title, "text")
         bind(self.header_summary, outcome.overview_text, "text")
         self._draw_channels()
-        bind(
+        button_text(
             self.notes_button,
             tr(
                 "Import notes ({0})",
                 len(outcome.source.diagnostics) + bool(outcome.calibration_error),
             ),
-            "text",
         )
         self._set_controls(True)
         self.update_selection()

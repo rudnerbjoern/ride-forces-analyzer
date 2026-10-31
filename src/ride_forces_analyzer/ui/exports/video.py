@@ -6,11 +6,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.runtime.error_reporting import record_error
-from ride_forces_analyzer.ui.presentation.translation import bind, items
+from ride_forces_analyzer.ui.presentation.translation import bind, button_text, items
 
 # cspell:words pixmap Deutsch
 
 from pathlib import Path
+from PIL import Image
 from dataclasses import replace
 from functools import partial
 
@@ -35,10 +36,12 @@ from PySide6.QtWidgets import (
     QWidget,
     QScrollArea,
     QStackedWidget,
+    QStyle,
     QToolButton,
 )
 
 from ride_forces_analyzer.explorer import ExplorerData
+from ride_forces_analyzer.ui.presentation.icons import video_export_icon
 from ride_forces_analyzer.rendering.encoding import find_ffmpeg
 from ride_forces_analyzer.rendering.progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.ui.exports.progress import show_export_progress
@@ -177,7 +180,7 @@ class ExportDialog(QDialog):
         strip_layout = QHBoxLayout(strip)
         for index, (_, title) in enumerate(PROFILES):
             button = QToolButton()
-            bind(button, tr(title), "text")
+            button_text(button, tr(title))
             button.setCheckable(True)
             button.setAutoExclusive(True)
             button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
@@ -287,19 +290,30 @@ class ExportDialog(QDialog):
         status_layout.addLayout(status_row)
         outer.addWidget(status_panel)
         buttons = QHBoxLayout()
-        self.back = bind(QPushButton(), tr("Back"))
+        buttons.addStretch()
+        self.back = button_text(QPushButton(), tr("Back"), caption=tr("&Back"))
+        self.back.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowBack),
+        )
         self.back.clicked.connect(self._back)
         self.back.setVisible(False)
-        self.next = bind(QPushButton(), tr("Review export →"))
+        self.next = button_text(QPushButton(), tr("Review export"))
+        self.next.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowForward),
+        )
         self.next.setObjectName("Primary")
         self.next.clicked.connect(self._review)
         buttons.addWidget(self.back)
         buttons.addWidget(self.next)
-        self.start = bind(QPushButton(), tr("Export video…"))
+        self.start = button_text(QPushButton(), tr("Export video…"))
+        self.start.setIcon(video_export_icon())
         self.start.setObjectName("Primary")
         self.start.clicked.connect(self._start)
         self.start.setVisible(False)
-        self.cancel = bind(QPushButton(), tr("Close"))
+        self.cancel = button_text(QPushButton(), tr("Close"))
+        self.cancel.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogCloseButton),
+        )
         self.cancel.clicked.connect(self._cancel)
         buttons.addWidget(self.start)
         buttons.addWidget(self.cancel)
@@ -512,7 +526,8 @@ class ExportDialog(QDialog):
         for widget in (self.presets, self.gallery):
             widget.show()
         self.pages.setMaximumWidth(500)
-        self._update_preview_caption()
+        if self.previews.result is not None:
+            self._preview_ready(self.previews.result)
         bind(self.step_label, tr("1 · Set up export · {0}", self.data.title), "text")
         self.back.setVisible(False)
         self.next.setVisible(True)
@@ -556,8 +571,10 @@ class ExportDialog(QDialog):
             encoder,
             render_jobs=self.preferences.render_jobs(),
             overwrite=Path(filename).exists(),
+            background=PreviewBackground(self.background.currentData()),
         )
         worker.signals.progress.connect(self._progress)
+        worker.signals.preview.connect(self._export_preview)
         worker.signals.finished.connect(self._finished)
         worker.signals.failed.connect(self._finished)
         worker.signals.saved.connect(self._export_saved)
@@ -570,13 +587,26 @@ class ExportDialog(QDialog):
             control.setEnabled(False)
         self.start.setEnabled(False)
         self.back.setEnabled(False)
-        bind(self.cancel, tr("Cancel export"), "text")
+        button_text(self.cancel, tr("Cancel export"))
+        self.cancel.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogCancelButton),
+        )
         bind(self.status, tr("Exporting video…"), "text")
         QThreadPool.globalInstance().start(worker)
 
     @Slot(str)
     def _export_saved(self, path: str) -> None:
         self.preferences.remember_export(Path(path))
+
+    @Slot(int, object)
+    def _export_preview(self, frame: int, image: Image.Image) -> None:
+        if self.worker is None or self.worker.cancelled.is_set():
+            return
+        self.preview_view.show_image(image)
+        bind(
+            self.preview_caption,
+            tr("Export preview: frame {0:,}/{1:,}", frame + 1, self.worker.timeline.frame_count),
+        )
 
     @Slot(object)
     def _progress(self, update: ExportProgress) -> None:
@@ -597,7 +627,10 @@ class ExportDialog(QDialog):
         self.form.flip_lateral.setEnabled(False)
         self.start.setEnabled(True)
         self.back.setEnabled(True)
-        bind(self.cancel, tr("Close"), "text")
+        button_text(self.cancel, tr("Close"))
+        self.cancel.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogCloseButton),
+        )
         bind(self.status, message, "text")
 
     @Slot()
