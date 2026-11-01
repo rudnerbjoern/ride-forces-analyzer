@@ -8,11 +8,28 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from ride_forces_analyzer.domain import Recording, RecordingFormat, SourceNumber
 
 _APP_EPOCH = datetime(2001, 1, 1, tzinfo=UTC)
+
+
+def recording_uuid(recording: Recording) -> str | None:
+    """Return the source recording UUID in a comparable form.
+
+    Args:
+        recording: Imported recording retaining its original metadata.
+
+    Returns:
+        Canonical UUID, or None when the source has no valid nonzero UUID.
+    """
+    try:
+        value = UUID(recording.metadata.uuid or "")
+    except ValueError:
+        return None
+    return str(value) if value.int else None
 
 
 @dataclass(frozen=True, slots=True)

@@ -174,9 +174,19 @@ fallback) and System appearance. `AppSettings` can explicitly override language.
 
 The toolbar's Library toggle shows an adjustable left panel, collapsed by default.
 **Import recordings…** explicitly archives one or more `.forces` / `.zforces`
-files off the GUI thread. Per-file results distinguish imports, existing entries
+files off the GUI thread. Per-file results distinguish imports, updated entries, existing entries
 and failures; a failed file does not stop the others. Ordinary **Open recording**
-does not archive files. Recording lists and archive selection remain planned.
+does not archive files. Compact entries group recordings by recording-local day, newest
+first, with unknown dates last. Each shows an emphasized ride name, a muted park
+name and a local clock/export summary. Long names are elided with full tooltips.
+A small icon on the right displays the stored workflow status through a localized
+tooltip; it is read-only, with status editing remaining planned under LIB-08.
+Library/day headings reuse the Inspector section-heading style; entry text uses
+the shared body font and theme text/muted colors, including live theme changes.
+Selecting a recording opens its stored original in the current workspace; failures
+preserve the current chart and explain the problem inside the panel. Read-only
+details include original metadata, recording time/time zone and import time.
+Park/search filters and metadata editors remain planned.
 Hiding it releases its layout space without changing the loaded recording, selection
 or chart viewport.
 

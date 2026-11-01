@@ -14,6 +14,7 @@ from hashlib import sha256
 from importlib.resources import as_file, files
 from pathlib import Path
 import sqlite3
+from typing import Literal
 
 from alembic import command
 from alembic.config import Config
@@ -26,9 +27,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.pool import NullPool
 
 from ride_forces_analyzer.runtime.paths import data_directory
-from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
-from ride_forces_analyzer.importers import ImportSuccess
-from ride_forces_analyzer.importers.library_metadata import project_library_metadata
+from ride_forces_analyzer.analysis.calibration import (
+    CalibrationOverrides,
+    validate_calibration_references,
+)
+from ride_forces_analyzer.importers import ImportSuccess, import_forces_bytes
+from ride_forces_analyzer.importers.library_metadata import project_library_metadata, recording_uuid
 from ride_forces_analyzer.validation.checks import validate_sample_range, validate_sha256
 
 
@@ -53,6 +57,41 @@ class ArchivedSource:
     compressed: bool
     bounds: tuple[int, int]
     calibration: CalibrationOverrides
+
+
+@dataclass(frozen=True, slots=True)
+class LibraryEntry:
+    """Lightweight recording-list metadata without original source BLOBs.
+
+    Attributes:
+        source_sha256: Stable original-byte recording identity.
+        filename: Original basename.
+        source_ride_name: Verbatim source ride name, if available.
+        source_park_name: Verbatim source park name, if available.
+        ride_name: Effective ride name, using an override when set.
+        park_name: Effective park name, using an override when set.
+        recorded_at_utc: Normalized recording instant, or None when unknown.
+        recorded_day: Recording-local grouping date, or None when unknown.
+        day_timezone: Source zone or explicit UTC fallback used for the day.
+        imported_at_utc: First successful archive import time in UTC.
+        export_count: Number of associated export attempts.
+        workflow_status: Current manually assigned recording workflow state.
+        source_uuid: Source recording identity across exports, if valid.
+    """
+
+    source_sha256: str
+    filename: str
+    source_ride_name: str | None
+    source_park_name: str | None
+    ride_name: str | None
+    park_name: str | None
+    recorded_at_utc: str | None
+    recorded_day: str | None
+    day_timezone: str | None
+    imported_at_utc: str
+    export_count: int
+    workflow_status: str
+    source_uuid: str | None = None
 
 
 def default_database_path() -> Path:
@@ -85,8 +124,8 @@ class LibraryStore:
         filename: str,
         bounds: tuple[int, int],
         calibration: CalibrationOverrides,
-    ) -> bool:
-        """Insert a complete import once, preserving every existing entry on duplicates.
+    ) -> tuple[Literal["imported", "updated", "duplicate"], str]:
+        """Archive one recording by UUID, updating its source on a changed export.
 
         Args:
             source: Successful import owning the exact original source bytes.
@@ -95,7 +134,9 @@ class LibraryStore:
             calibration: Reference choices admitted by the existing calibration service.
 
         Returns:
-            True for a new entry; False for byte-identical input already archived.
+            Outcome and current archived digest. Equivalent exports retain the first
+            original; changed exports replace source bytes and source projections,
+            preserving Library additions, valid markers and related history.
 
         Raises:
             ValueError: The filename or bounds are invalid.
@@ -110,17 +151,70 @@ class LibraryStore:
             "Invalid Library bounds",
         )
         metadata = project_library_metadata(source.recording)
+        source_uuid = recording_uuid(source.recording)
         with self.connection() as connection:
+            existing = connection.execute(
+                "SELECT source_sha256, source_bytes, source_format, first_sample, last_sample, "
+                "gravity_index, incline_index, calibration_algorithm_version, "
+                "calibration_window_samples FROM recordings "
+                "WHERE source_sha256=? OR (source_uuid IS NOT NULL AND source_uuid=?)",
+                (source.source_sha256, source_uuid),
+            ).fetchone()
+            if existing is not None:
+                digest = existing[0]
+                if digest == source.source_sha256:
+                    return "duplicate", digest
+                archived = import_forces_bytes(existing[1], compressed=existing[2] == "zforces")
+                if not isinstance(archived, ImportSuccess):
+                    raise LibraryStoreError("Cannot update an unreadable archived recording")
+                if archived.recording.source.root == source.recording.source.root:
+                    return "duplicate", digest
+                validate_sample_range(
+                    existing[3],
+                    existing[4],
+                    len(source.recording.motion.acceleration),
+                    "Existing Library bounds are incompatible with this export",
+                )
+                validate_calibration_references(
+                    source,
+                    CalibrationOverrides(*existing[5:9]),
+                    calculation_time=datetime.now(UTC),
+                )
+                # Keep relationships valid while replacing the byte-based primary key.
+                connection.execute("PRAGMA defer_foreign_keys = ON")
+                connection.execute(
+                    "UPDATE recordings SET source_sha256=?, source_bytes=?, source_filename=?, "
+                    "source_format=?, source_byte_count=?, source_ride_name=?, source_park_name=?, "
+                    "recorded_at_utc=?, recorded_day=?, day_timezone=? WHERE source_sha256=?",
+                    (
+                        source.source_sha256,
+                        source.recording.source.original_bytes,
+                        filename,
+                        source_format,
+                        source.byte_count,
+                        metadata.source_ride_name,
+                        metadata.source_park_name,
+                        metadata.recorded_at_utc,
+                        metadata.recorded_day,
+                        metadata.day_timezone,
+                        digest,
+                    ),
+                )
+                for table in ("export_history", "video_links"):
+                    connection.execute(
+                        f"UPDATE {table} SET recording_sha256=? WHERE recording_sha256=?",
+                        (source.source_sha256, digest),
+                    )
+                return "updated", source.source_sha256
             imported_at = (
                 datetime.now(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
             )
-            cursor = connection.execute(
+            connection.execute(
                 "INSERT INTO recordings (source_sha256, source_bytes, source_filename, source_format, "
                 "source_byte_count, source_ride_name, source_park_name, recorded_at_utc, recorded_day, "
                 "day_timezone, imported_at_utc, first_sample, last_sample, gravity_index, incline_index, "
-                "calibration_algorithm_version, calibration_window_samples, search_text) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '') "
-                "ON CONFLICT(source_sha256) DO NOTHING",
+                "calibration_algorithm_version, calibration_window_samples, source_uuid, search_text) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '')",
                 (
                     source.source_sha256,
                     source.recording.source.original_bytes,
@@ -138,9 +232,37 @@ class LibraryStore:
                     calibration.incline_index,
                     calibration.algorithm_version,
                     calibration.window_samples,
+                    source_uuid,
                 ),
             )
-            return cursor.rowcount == 1
+            return "imported", source.source_sha256
+
+    def entries(self) -> tuple[LibraryEntry, ...]:
+        """Read only list metadata in deterministic newest-first day/instant order.
+
+        Unknown dates come last. Import time descending and source digest ascending
+        resolve ties; the query never selects source BLOBs or parses recordings.
+
+        Returns:
+            Effective names, source/date/import details and export counts.
+
+        Raises:
+            LibraryStoreError: Library metadata could not be read.
+        """
+        with self.connection() as connection:
+            return tuple(
+                LibraryEntry(*row)
+                for row in connection.execute(
+                    "SELECT r.source_sha256, r.source_filename, r.source_ride_name, r.source_park_name, "
+                    "COALESCE(r.ride_name_override, r.source_ride_name), "
+                    "COALESCE(r.park_name_override, r.source_park_name), "
+                    "r.recorded_at_utc, r.recorded_day, r.day_timezone, r.imported_at_utc, "
+                    "(SELECT count(*) FROM export_history h WHERE h.recording_sha256=r.source_sha256), "
+                    "r.workflow_status, r.source_uuid "
+                    "FROM recordings r ORDER BY r.recorded_day DESC, r.recorded_at_utc DESC, "
+                    "r.imported_at_utc DESC, r.source_sha256",
+                )
+            )
 
     def source(self, source_sha256: str) -> ArchivedSource:
         """Read one archived original, verifying its stored identity before decoding.

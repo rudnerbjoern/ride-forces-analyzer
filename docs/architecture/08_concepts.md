@@ -154,10 +154,18 @@ sequentially, preserving completed videos across later failure/cancellation.
 The separate `library.sqlite3` contains recordings, export history and video links,
 plus Alembic's revision table. Explicit import stores only complete successful
 originals, initializing current markers from source/defaults and valid preferences.
-Byte-identical input preserves the entire existing entry and relationships; other
-bytes remain separate. Reopening verifies lengths/digests and uses the stored
+Source UUIDs identify recordings across compressed/plain and changed exports.
+Equivalent source objects preserve the existing entry; changed exports replace
+source fields, retaining first import time, additions, valid markers and relationships.
+Invalid/missing UUIDs fall back to exact-byte identity. The UUID migration merges
+existing duplicates into the earliest entry and retains all export/link relationships.
+Reopening verifies lengths/digests and uses the stored
 compressed/plain format through the existing importer and analysis services.
-Recording-list selection and later workflows remain planned. `LibraryStore` applies bundled major/minor revisions in an
+The grouped list reads metadata and export counts without fetching source BLOBs.
+Selecting one entry reopens only its stored original, using generation-guarded worker
+delivery; a failed open retains the previous chart. Read-only details preserve
+original source/date/import values. Filters and editing remain planned.
+`LibraryStore` applies bundled major/minor revisions in an
 explicit SQLite transaction, rolling back schema, data and revision together on
 failure. Unknown revisions or unversioned existing tables are rejected without
 replacement; current revisions are not rewritten. Every ordinary `sqlite3`

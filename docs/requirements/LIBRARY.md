@@ -1,6 +1,6 @@
 # Library requirements and implementation steps
 
-Status: LIB-01–03 implemented; LIB-04 has a collapsible panel with archive import; remaining functionality planned. This document defines the Library feature
+Status: LIB-01–04 implemented; LIB-05–14 planned. This document defines the Library feature
 and its verifiable implementation steps. It does not authorize implementation or
 Git delivery. Requirements and implementation belong on the same feature branch.
 
@@ -37,10 +37,17 @@ outlined here so the initial schema does not prevent it.
 - Archive the complete original file bytes, original filename, format, byte count
   and SHA-256. Retain compressed input exactly as supplied. Do not rebuild a source
   file from parsed JSON or write changes into the original file.
-- One byte-identical source produces one Library entry, independent of filename
-  or path. Reimport reports that it already exists and preserves its first import
-  time, user fields and export history. Different bytes remain separate entries;
-  a matching ride name, source UUID or recording date alone is not a duplicate.
+- The source recording UUID identifies one Library entry across `.forces` and
+  `.zforces` exports, independent of filename or path. UUID spelling is normalized
+  for comparison without changing the original. Missing, invalid or zero UUIDs
+  fall back to exact-byte identity; names and dates never merge recordings.
+- Equivalent decoded source objects for the same UUID report **Already in Library**
+  and retain the first original bytes. A changed source with the same UUID updates
+  that entry's exact bytes, hash, filename and source metadata. First import time,
+  Library additions, workflow, markers, links and export history remain intact.
+  Incompatible existing markers reject the update without modifying the entry.
+  The last explicitly imported changed export becomes the current source; there
+  is no source-version history or automatic detection of an older export.
 - Store only successful complete imports. A failed file has a visible explanation
   and no partial entry; other selected files may still import.
 - Reopening an archived entry reads its stored bytes through the existing import
@@ -53,14 +60,18 @@ outlined here so the initial schema does not prevent it.
 `LibraryStore.archive()` inserts successful originals with duplicate protection in one
 transaction, recording the first successful import time in UTC and the initial
 `imported` workflow state. It initializes bounds and reference choices using existing
-source/default and valid saved-preference rules; reimport never updates an existing row.
+source/default and valid saved-preference rules. UUID updates replace only source
+fields and reassign related foreign keys atomically. The UUID has a unique index.
+The `1_3_identity` migration backfills UUIDs in existing archives and merges duplicates
+into the earliest entry, retaining that entry's source and Library choices and all
+associated export history and video links. Reimport a changed export to update it.
 Search projections remain unpopulated until LIB-05.
 
 `LibraryArchive.reopen()` verifies the stored byte count and SHA-256, decodes the
 stored format, and uses existing explorer/analysis preparation with the archived
 marker recipe. It needs neither the original external file nor a reconstruction of
-its JSON. The service is available for LIB-04's planned recording-list selection;
-this increment does not introduce a second selection surface.
+its JSON. Selecting a Library recording calls this service through the existing
+background load lifecycle. Failure explains the problem and preserves the current chart.
 
 ### Recording dates and names
 
@@ -245,7 +256,8 @@ in `Z`; `recorded_day` is `YYYY-MM-DD`. Nullable fields use SQL `NULL`.
 The diagram shows all six existing application tables, the three Library tables
 and Alembic's version table, with their columns and database ownership.
 The Library schema, explicit archive import and reopening service are implemented.
-The recording list and remaining workflows are planned.
+The grouped recording list and read-only source/date/import details are implemented;
+filters, editing and remaining workflows are planned.
 `PK` marks primary-key
 columns; the four marked columns in `tiles` form one composite primary key.
 `FK` marks the Library foreign keys. Dashed hash links are optional logical
@@ -302,6 +314,7 @@ erDiagram
 
     recordings["recordings (existing: library.sqlite3)"] {
         TEXT source_sha256 PK
+        TEXT source_uuid UK
         BLOB source_bytes
         TEXT source_filename
         TEXT source_format
@@ -382,7 +395,8 @@ state, not an export result or a history of edits.
 
 | Field                           | SQLite type / constraint            | Purpose                                                                         |
 | ------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------- |
-| `source_sha256`                 | `TEXT PRIMARY KEY NOT NULL`         | Original-byte identity and duplicate detection.                                 |
+| `source_sha256`                 | `TEXT PRIMARY KEY NOT NULL`         | Current source digest; relationships follow source replacements.                |
+| `source_uuid`                   | `TEXT NULL UNIQUE`                  | Canonical source UUID identifying one recording across exports.                 |
 | `source_bytes`                  | `BLOB NOT NULL`                     | Exact original `.forces` or compressed `.zforces` bytes.                        |
 | `source_filename`               | `TEXT NOT NULL`                     | Original basename; opening the archive does not depend on its old path.         |
 | `source_format`                 | `TEXT NOT NULL`                     | `forces` or `zforces`, used to select the decoding path.                        |
@@ -411,7 +425,8 @@ state, not an export result or a history of edits.
 | `search_text`                   | `TEXT NOT NULL`                     | Normalized effective ride and park names for search.                            |
 
 Source bytes, identity, original metadata, recording date/day/time zone and first
-import time are not editable. Effective metadata uses overrides when set, otherwise
+import time are not editable in Library editors. An explicit changed-source reimport
+updates source fields while preserving the first import time. Effective metadata uses overrides when set, otherwise
 source values. The user cannot change the date through the Library editor or its
 update service. `park_key` and
 `search_text` are disposable query projections, updated in the same transaction as
@@ -458,6 +473,7 @@ the initial scope; deleting an original file or output file never deletes histor
 | Index                          | Fields / order                                                                           | Use                                                    |
 | ------------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------ |
 | Primary key                    | `recordings(source_sha256)`                                                              | Exact duplicate lookup and source joins.               |
+| `idx_recordings_uuid`          | `source_uuid` (unique)                                                                   | Recording identity across formats and changed exports. |
 | `idx_recordings_day`           | `recorded_day DESC, recorded_at_utc DESC, imported_at_utc DESC, source_sha256`           | Day groups and stable newest-first entries.            |
 | `idx_recordings_park_day`      | `park_key, recorded_day DESC, recorded_at_utc DESC, imported_at_utc DESC, source_sha256` | Same ordering within a selected park.                  |
 | `idx_export_history_recording` | `recording_sha256, started_at_utc DESC, id DESC`                                         | Selected recording's history, count and latest export. |
@@ -487,15 +503,17 @@ chart area at the same window size. Hidden Library content must not increase the
 window's minimum size or reserve an empty sidebar.
 
 When expanded, keep the panel compact and its width adjustable. Long names use
-elided text/tooltips rather than forcing wide columns or a smaller chart. Recording
+elided text/tooltips rather than widening entries or shrinking the chart. Recording
 details and export history belong inside this panel, not in further permanent
 panes. Collapsing preserves the selection and filters without changing the loaded
 recording, chart zoom or analysis.
 
-1. **Library list in the left panel:** park dropdown and one search field above a table.
+1. **Library list in the left panel:** park dropdown and one search field above the grouped recording list.
    Day group headers run newest to oldest; entries within each day run newest to
-   oldest. Columns show recording time, effective ride name, effective park name
-   and export count. Unknown dates form the final group; ties and unknown-date
+   oldest. Compact entries show the effective ride name in bold, the park beneath
+   it, then local clock time and export count. A small workflow icon on the right
+   exposes the current stored status through a localized tooltip; it does not
+   change the status or provide an editor. Unknown dates form the final group; ties and unknown-date
    entries use import time and source digest for deterministic ordering.
 2. **Selected recording:** open it in the existing analysis workspace to the right.
    Selection loads only that source; an import/open failure preserves the current
@@ -525,6 +543,17 @@ original values remain in recording details. Hide empty day groups after filteri
 show a clear empty result and allow clearing the filters. Reuse existing themed
 controls, icons, tooltips and accessible names for new actions.
 
+The current Library queries only list metadata and export counts, grouping by
+recording-local day. It uses the specified UTC instant/import time/digest ordering;
+unknown dates form the final group. Compact three-line entries show the emphasized ride name, muted park name and
+source-local clock/export summary. Names are elided with full tooltips. Workflow
+icons show stored status through localized tooltips; status editing remains LIB-08. Selecting
+a row loads only that source through the existing worker; day headers are not
+selectable. Details show original file/name/recording/import information and
+additional source metadata after loading, all read-only. List refresh, language
+changes and collapsing preserve selection without reloading the chart.
+Park/search controls and editable details remain LIB-05 onward.
+
 LIB-04 acceptance also checks the default collapsed state, showing/hiding the panel
 and restoring the existing chart area and minimum window size. Group these checks
 with list selection in the same native window session.
@@ -541,7 +570,8 @@ Use [Alembic](https://alembic.sqlalchemy.org/en/latest/) for Library schema evol
   using `major_minor` (initially `1_3` for app 1.3.x). Patch releases share the same
   revision; app version changes without schema changes need no empty migration.
   Released scripts are immutable. A later schema change adds its introducing
-  major/minor revision to the linear chain.
+  major/minor revision to the linear chain. Additional corrections within the
+  unreleased 1.3 feature use a descriptive suffix (`1_3_identity`) in the same chain.
 - Alembic's `alembic_version` table stores the applied revision in its `version_num`
   string column. It replaces a custom `PRAGMA user_version` counter for the Library.
   Existing stores retain their current mechanisms until a separately planned
@@ -591,7 +621,7 @@ backup schedules and including exported videos are outside this design.
 
 ## Iterative implementation and verification
 
-LIB-01–03 and the collapsible LIB-04 panel are implemented; remaining functionality is planned.
+LIB-01–04 are implemented; remaining functionality is planned.
 Implement one increment at a time on the same feature branch;
 its acceptance checks must pass before moving to dependent work. Steps 13–14 are
 the later backup/restore phase, not a prerequisite for the initial Library.
@@ -634,15 +664,14 @@ the later backup/restore phase, not a prerequisite for the initial Library.
    **Observable acceptance:** Both supported formats reopen after the original file
    is moved/deleted. Original lengths/hashes and unknown fields are preserved.
    Reimporting identical bytes preserves the existing entry, first import time,
-   additions, markers and status; different bytes remain separate. A failed file
+   additions, markers and status. Both formats of one UUID produce one entry;
+   changed exports update that entry without resetting Library data or relationships.
+   A failed file
    creates no partial row and does not prevent other selected files from importing.
 
 4. **LIB-04 — Collapsible Library and day groups**
 
-   **Status:** Partial. The initially collapsed, resizable left panel and localized
-   toolbar toggle are implemented. The panel includes LIB-03 archive import with
-   per-file outcomes. Recording lists, day groups, selection and source details
-   remain planned.
+   **Status:** Complete (native Windows list/open/layout acceptance verified).
 
    **Implementation:** Add the initially collapsed left panel, toolbar toggle and
    newest-first grouped recording list. Open selection in the existing workspace

@@ -44,6 +44,12 @@ and restricted local access. Failed forwarding does not start a competing owner.
 macOS file-open events enter the same request queue; Linux desktop launchers pass
 a file path. Requests wait while the target window imports.
 
+Library row selection schedules the existing load worker with an archive digest
+instead of an external path. It reuses archive decoding/analysis and the same
+generation checks, completion and failure delivery. The list is disabled while
+loading; errors remain visible in the panel and status bar without replacing the
+previous chart. Additional original metadata appears only after a successful load.
+
 Each window owns its recording, analysis, playback and child dialogs. Language
 and appearance are shared. Explicit file paths take precedence over optional
 Restore last file; only successful imports update the remembered path.

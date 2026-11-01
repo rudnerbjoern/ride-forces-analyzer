@@ -63,7 +63,7 @@ QToolTip { background: #223044; color: #e3ebf5; border: 1px solid #627d9f; paddi
 
 CONTROL_STYLESHEET = """
 QMenu { background: #111c29; border: 1px solid #3a4d66; }
-QMenu::item:selected:enabled { background: #245fe5; color: white; }
+QMenu::item:selected:enabled, QTreeWidget::item:selected { background: #245fe5; color: white; }
 QComboBox, QDoubleSpinBox, QLineEdit, QListWidget, QTableWidget, QTextEdit {
     background: #111c29; border: 1px solid #3a4d66; border-radius: 5px; padding: 4px;
     selection-background-color: #245fe5; selection-color: white;

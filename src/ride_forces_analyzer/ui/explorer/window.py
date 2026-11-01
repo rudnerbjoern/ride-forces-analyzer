@@ -257,6 +257,7 @@ class ExplorerWindow(QMainWindow):
         toolbar = bind(QToolBar(self), tr("Recording"), "windowTitle")
         toolbar.setMovable(False)
         self.library = LibraryPanel(self)
+        self.library.open_requested.connect(self._open_archived)
         toolbar.addWidget(self.library.toggle_button)
         toolbar.addAction(self.open_action)
         open_widget = toolbar.widgetForAction(self.open_action)
@@ -469,6 +470,7 @@ class ExplorerWindow(QMainWindow):
                 window._refresh_language()
 
     def _refresh_language(self) -> None:
+        self.library.refresh_labels()
         if self.data is not None:
             self._draw_channels()
             self._refresh_sample(self.navigation.slider.value())
@@ -518,6 +520,7 @@ class ExplorerWindow(QMainWindow):
                 if isinstance(window, ExplorerWindow):
                     window.theme = self.theme
                     window.appearance_preference = self.appearance_preference
+                    window.library.refresh_labels()
                     window._style_chart()
                     window._draw_channels()
         else:
@@ -772,7 +775,7 @@ class ExplorerWindow(QMainWindow):
             The pending or loaded source path for external-open deduplication.
         """
         if self._worker is not None:
-            return self._worker.path.resolve()
+            return self._worker.path.resolve() if self._worker.path is not None else None
         if self.data is not None:
             path = self.data.source.recording.source.provenance.path
             return path.resolve() if path is not None else None
@@ -851,8 +854,31 @@ class ExplorerWindow(QMainWindow):
         worker.signals.failed.connect(self._load_failed)
         self._worker = worker
         self.open_action.setEnabled(False)
+        self.library.recordings.setEnabled(False)
         self.progress.show()
         bind(self.statusBar(), tr("Opening {0}…", path.name), "message")
+        QThreadPool.globalInstance().start(worker)
+
+    @Slot(str)
+    def _open_archived(self, source_sha256: str) -> None:
+        """Open the selected archived source through the existing load lifecycle."""
+        if self._worker is not None:
+            return
+        self.navigation.pause()
+        self._load_generation += 1
+        worker = LoadWorker(None, self._load_generation, source_sha256=source_sha256)
+        worker.signals.completed.connect(self._load_completed)
+        worker.signals.failed.connect(self._load_failed)
+        self._worker = worker
+        self.open_action.setEnabled(False)
+        self.library.recordings.setEnabled(False)
+        self.progress.show()
+        entry = self.library.selected_entry
+        bind(
+            self.statusBar(),
+            tr("Opening {0}…", entry.filename if entry else tr("Recording")),
+            "message",
+        )
         QThreadPool.globalInstance().start(worker)
 
     def showEvent(self, event: QShowEvent) -> None:
@@ -904,6 +930,7 @@ class ExplorerWindow(QMainWindow):
             self.gps_window = None
         self.gps_button.setEnabled(prepare_gps_overview(outcome.source.recording) is not None)
         self.data = outcome
+        self.library.show_recording(outcome)
         self.navigation.bind_recording(outcome)
         self.inspector.bind_recording(outcome)
         self.reference_toggle.blockSignals(True)
@@ -1163,10 +1190,13 @@ class ExplorerWindow(QMainWindow):
     def _finish_loading(self) -> None:
         self._worker = None
         self.open_action.setEnabled(True)
+        self.library.recordings.setEnabled(True)
         self.progress.hide()
 
     @Slot(str)
     def _failed(self, message: str) -> None:
+        if self._worker is not None and self._worker.source_sha256 is not None:
+            self.library.show_error(message)
         self._finish_loading()
         bind(self.statusBar(), "", "toolTip")
         bind(self.statusBar(), message, "message")

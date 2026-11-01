@@ -80,9 +80,14 @@ Revision IDs follow the introducing app major/minor version (`1_3` initially),
 independently of patch versions and export-snapshot versions. The three tables and
 indexes exist. `explorer.library.LibraryArchive` composes explicit archive import,
 preference-based initial markers and reopening through existing importer/analysis
-services. Original bytes, first import time and existing additions remain unchanged
-on duplicates. Recording-list selection and later workflows remain planned under
-[LIB-04 onward](../requirements/LIBRARY.md#iterative-implementation-and-verification).
+services. A unique normalized source UUID identifies recordings across exports.
+Equivalent exports retain their original bytes; changed exports replace source
+fields atomically while retaining first import time, additions, valid markers and
+relationships. Sources without a valid UUID use exact-byte identity.
+`LibraryStore.entries()` reads metadata and export counts without
+source BLOBs in stable day/instant/import/digest order. Filtering and later workflows
+remain planned under
+[LIB-05 onward](../requirements/LIBRARY.md#iterative-implementation-and-verification).
 
 ## Analysis boundary
 
@@ -144,7 +149,12 @@ snapshot to each component and coordinates import/analysis delivery.
 toolbar toggle and folder-icon state. The window places its existing workspace
 beside that surface. The panel schedules explicit multi-file archive import through
 a background worker and displays per-file results; the archive service owns all
-import, duplicate and reopening logic outside widgets. Recording lists remain planned.
+import, duplicate and reopening logic outside widgets. A grouped Qt recording list
+uses compact three-line rows with elided names, export counts and read-only
+workflow icons/tooltips; selected-source details
+remain read-only. Selection requests go through the existing `LoadWorker` and window
+load lifecycle, preserving the previous chart on failure. Collapsing and language
+changes retain selection without reloading a source.
 Export preview widgets and background jobs live in
 `ui.exports.preview` and `ui.exports.workers`. `ui.exports.form.ExportForm` owns
 export inputs and retained layout placements. `ui.exports.preview_controller` owns

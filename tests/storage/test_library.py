@@ -2,7 +2,8 @@
 
 # cspell:words xinfo executemany
 
-from contextlib import closing
+from contextlib import closing, contextmanager
+from collections.abc import Generator
 from hashlib import sha256
 from importlib.resources import files
 from pathlib import Path
@@ -10,10 +11,15 @@ import sqlite3
 from typing import Any
 
 from alembic.operations import Operations
+from alembic import command
+from alembic.config import Config
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
 from ride_forces_analyzer import __version__
+from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
+from ride_forces_analyzer.importers import ImportSuccess, import_forces
+from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from ride_forces_analyzer.storage.library import (
     LibraryStore,
     LibraryStoreError,
@@ -45,8 +51,10 @@ def test_fresh_schema_resources_relationships_and_reopen(export_directory: Path)
         assert isinstance(connection, sqlite3.Connection)
         assert connection.execute("PRAGMA foreign_keys").fetchone() == (1,)
         revision = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
-        assert revision == "1_3"
-        assert tuple(map(int, revision.split("_"))) <= tuple(map(int, __version__.split(".")[:2]))
+        assert revision == "1_3_identity"
+        assert tuple(map(int, revision.split("_")[:2])) <= tuple(
+            map(int, __version__.split(".")[:2]),
+        )
         assert {
             row[0]
             for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
@@ -61,7 +69,7 @@ def test_fresh_schema_resources_relationships_and_reopen(export_directory: Path)
             "source_ride_name source_park_name recorded_at_utc recorded_day day_timezone imported_at_utc "
             "first_sample last_sample gravity_index incline_index calibration_algorithm_version "
             "calibration_window_samples ride_name_override park_name_override row_override seat_override "
-            "train_override riding_position_override notes workflow_status park_key search_text",
+            "train_override riding_position_override notes workflow_status park_key search_text source_uuid",
             "export_history": "id recording_sha256 export_kind origin started_at_utc finished_at_utc "
             "duration_seconds status application_version request_json export_snapshot_json output_path "
             "file_size_bytes gpu_encoding error",
@@ -72,6 +80,7 @@ def test_fresh_schema_resources_relationships_and_reopen(export_directory: Path)
                 row[1] for row in connection.execute(f"PRAGMA table_info({table})")
             ] == columns.split()
         indexes = {
+            "idx_recordings_uuid": [("source_uuid", 0)],
             "idx_recordings_day": [
                 ("recorded_day", 1),
                 ("recorded_at_utc", 1),
@@ -185,7 +194,89 @@ def test_failed_initial_migration_rolls_back_schema_data_and_revision(
         )
     LibraryStore(path).initialize()
     with closing(sqlite3.connect(path)) as connection, connection:
-        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("1_3",)
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
+            "1_3_identity",
+        )
+
+
+def test_uuid_upgrade_merges_existing_formats_preserves_relationships_and_rolls_back(
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = LibraryStore(export_directory / "library.sqlite3")
+    upgrade = command.upgrade
+    sources: list[ImportSuccess] = []
+
+    def old_upgrade(config: Config, target: str) -> None:
+        upgrade(config, "1_3")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(command, "upgrade", old_upgrade)
+        with store.connection() as connection:
+            for number, extension in enumerate(("forces", "zforces")):
+                path = next(REAL_FIXTURE_DIRECTORY.glob(f"Manta-*.{extension}"))
+                source = import_forces(path)
+                assert isinstance(source, ImportSuccess)
+                sources.append(source)
+                insert_recording(connection)
+                connection.execute(
+                    "UPDATE recordings SET source_sha256=?,source_bytes=?,source_filename=?,"
+                    "source_format=?,source_byte_count=?,imported_at_utc=?,notes=? "
+                    "WHERE source_sha256=?",
+                    (
+                        source.source_sha256,
+                        source.recording.source.original_bytes,
+                        path.name,
+                        extension,
+                        source.byte_count,
+                        f"2026-11-01T10:0{number}:00Z",
+                        f"notes-{number}",
+                        DIGEST,
+                    ),
+                )
+                calibration = CalibrationOverrides()
+                connection.execute(
+                    "UPDATE recordings SET calibration_algorithm_version=?,calibration_window_samples=?",
+                    (calibration.algorithm_version, calibration.window_samples),
+                )
+                connection.execute(
+                    "INSERT INTO video_links(recording_sha256,url) VALUES (?, 'https://example.com')",
+                    (source.source_sha256,),
+                )
+                connection.execute(
+                    "INSERT INTO export_history(recording_sha256,export_kind,origin,started_at_utc,"
+                    "status,application_version,request_json) VALUES (?, 'csv','single','now',"
+                    "'completed','1.3.0','{}')",
+                    (source.source_sha256,),
+                )
+    before = store.path.read_bytes()
+    create_index = Operations.create_index
+
+    def fail_index(operation: Operations, name: str, *args: Any, **kwargs: Any) -> None:
+        if name == "idx_recordings_uuid":
+            raise SQLAlchemyError("injected UUID migration failure")
+        create_index(operation, name, *args, **kwargs)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Operations, "create_index", fail_index)
+        with pytest.raises(LibraryStoreError, match="injected UUID migration failure"):
+            store.initialize()
+    assert store.path.read_bytes() == before
+    store.initialize()
+    entries = store.entries()
+    assert len(entries) == 1
+    entry = entries[0]
+    assert entry.source_uuid == "be687591-84bb-4469-aac0-e5a16b0744f9"
+    assert entry.source_sha256 == sources[0].source_sha256
+    assert entry.export_count == 2
+    assert store.source(entry.source_sha256).data == sources[0].recording.source.original_bytes
+    with store.connection() as connection:
+        assert connection.execute("SELECT notes FROM recordings").fetchone() == ("notes-0",)
+        assert connection.execute("SELECT count(*) FROM video_links").fetchone() == (2,)
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+    current = store.path.read_bytes()
+    store.initialize()
+    assert store.path.read_bytes() == current
 
 
 def test_ordinary_writes_enforce_constraints_and_rollback(export_directory: Path) -> None:
@@ -220,7 +311,9 @@ def test_ordinary_writes_enforce_constraints_and_rollback(export_directory: Path
     with store.connection() as connection:
         assert connection.execute("SELECT notes FROM recordings").fetchone() == ("",)
         assert connection.execute("PRAGMA foreign_keys").fetchone() == (1,)
-        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("1_3",)
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
+            "1_3_identity",
+        )
 
 
 def test_default_path_and_io_failure(
@@ -235,3 +328,66 @@ def test_default_path_and_io_failure(
     with pytest.raises(LibraryStoreError):
         LibraryStore(parent / "library.sqlite3").initialize()
     assert parent.read_text(encoding="utf-8") == "preserved"
+
+
+def test_list_order_counts_effective_names_and_no_source_blob_reads(
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = LibraryStore(export_directory / "library.sqlite3")
+    rows = [
+        ("a", "2026-11-01", "2026-11-01T14:00:00.000000Z", "2026-11-01T18:00:00.000000Z"),
+        ("b", "2026-11-01", "2026-11-01T14:00:00.000000Z", "2026-11-01T19:00:00.000000Z"),
+        ("c", "2026-11-01", "2026-11-01T14:00:00.000000Z", "2026-11-01T19:00:00.000000Z"),
+        ("d", "2026-11-01", "2026-11-01T15:00:00.000000Z", "2026-11-01T17:00:00.000000Z"),
+        ("e", "2026-10-31", "2026-10-31T20:00:00.000000Z", "2026-11-01T20:00:00.000000Z"),
+        ("f", None, None, "2026-11-01T20:00:00.000000Z"),
+        ("0", None, None, "2026-11-01T21:00:00.000000Z"),
+        ("1", None, None, "2026-11-01T21:00:00.000000Z"),
+    ]
+    with store.connection() as connection:
+        for key, day, instant, imported in rows:
+            connection.execute(
+                "INSERT INTO recordings (source_sha256,source_bytes,source_filename,source_format,"
+                "source_byte_count,source_ride_name,source_park_name,recorded_day,recorded_at_utc,"
+                "day_timezone,imported_at_utc,first_sample,last_sample,calibration_algorithm_version,"
+                "calibration_window_samples,search_text) VALUES (?, X'00', ?, 'forces', 1, ?, 'Park',"
+                "?,?, 'UTC', ?, 0,0,'1',5,'')",
+                (key * 64, f"{key}.forces", f"Ride {key}", day, instant, imported),
+            )
+        connection.execute(
+            "UPDATE recordings SET ride_name_override='Effective ride',park_name_override='Effective park' WHERE source_sha256=?",
+            ("e" * 64,),
+        )
+        for _ in range(2):
+            connection.execute(
+                "INSERT INTO export_history(recording_sha256,export_kind,origin,started_at_utc,status,application_version,request_json) VALUES (?, 'csv','single','2026-11-01T10:00:00.000000Z','failed','1.3.0','{}')",
+                ("b" * 64,),
+            )
+    original_connection = store.connection
+
+    def authorize(
+        action: int,
+        table: str | None,
+        column: str | None,
+        database: str | None,
+        trigger: str | None,
+    ) -> int:
+        if action == sqlite3.SQLITE_READ and table == "recordings" and column == "source_bytes":
+            return sqlite3.SQLITE_DENY
+        return sqlite3.SQLITE_OK
+
+    @contextmanager
+    def metadata_only() -> Generator[sqlite3.Connection, None, None]:
+        with original_connection() as connection:
+            connection.set_authorizer(authorize)
+            yield connection
+
+    monkeypatch.setattr(store, "connection", metadata_only)
+    entries = store.entries()
+    assert [entry.source_sha256[0] for entry in entries] == ["d", "b", "c", "a", "e", "0", "1", "f"]
+    assert [entry.export_count for entry in entries] == [0, 2, 0, 0, 0, 0, 0, 0]
+    assert all(entry.workflow_status == "imported" for entry in entries)
+    corrected = entries[4]
+    assert (corrected.ride_name, corrected.park_name) == ("Effective ride", "Effective park")
+    assert (corrected.source_ride_name, corrected.source_park_name) == ("Ride e", "Park")

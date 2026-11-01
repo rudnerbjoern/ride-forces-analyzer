@@ -1,13 +1,17 @@
 """Archive originals once and reopen them independently of external paths."""
 
+# cspell:words wbits
+
 from hashlib import sha256
 from pathlib import Path
+import json
+import zlib
 
 import pytest
 
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.explorer import ExplorerData
-from ride_forces_analyzer.explorer.library import LibraryArchive
+from ride_forces_analyzer.explorer.library import LibraryArchive, library_details, recording_clock
 from ride_forces_analyzer.importers import ImportSuccess, import_forces_bytes
 from ride_forces_analyzer.storage.library import LibraryStore, LibraryStoreError
 from ride_forces_analyzer.storage.preferences import Preferences
@@ -58,6 +62,12 @@ def test_authorized_originals_reopen_without_external_files(
     assert reopened.source.byte_count == expected[0]
     assert reopened.source.recording.source.provenance.path is None
     assert reopened.analysis is not None
+    entry = archive.store.entries()[0]
+    assert recording_clock(entry) == "10:17:41"
+    details = library_details(entry, reopened)
+    assert "2026-09-17 10:17:41 (America/New_York)" in details
+    assert entry.imported_at_utc in details
+    assert "Row: 3" in details and "Seat: 3" in details
     assert fixture.read_bytes() == raw and fixture.stat().st_mtime_ns == modified
     with archive.store.connection() as connection:
         row = connection.execute(
@@ -110,10 +120,136 @@ def test_duplicate_preserves_complete_entry_and_relationships(
         assert connection.execute("SELECT * FROM recordings").fetchone() == before
         assert connection.execute("SELECT * FROM export_history").fetchall() == history
         assert connection.execute("SELECT * FROM video_links").fetchall() == links
-    # Identical parsed values, UUID and dates do not make different original bytes duplicates.
+    # Without a source UUID, only byte-identical input is considered the same recording.
     renamed.write_bytes(path.read_bytes() + b"\n")
     different = archive.import_paths((renamed,))[0]
     assert different.status == "imported" and different.source_sha256 != source.source_sha256
+    unknown_entry = archive.store.entries()[0]
+    assert unknown_entry.recorded_day is None
+    assert recording_clock(unknown_entry) == "—"
+    assert "Unknown date" in library_details(unknown_entry)
+
+
+def test_all_real_exports_identify_manta_once(archive: LibraryArchive) -> None:
+    paths = tuple(
+        path
+        for path in sorted(REAL_FIXTURE_DIRECTORY.iterdir())
+        if path.suffix in {".forces", ".zforces"}
+    )
+    results = archive.import_paths(paths)
+    assert [result.status for result in results].count("imported") == 5
+    assert [result.status for result in results].count("duplicate") == 1
+    manta = [result for result in results if result.path.stem.startswith("Manta")]
+    assert manta[0].source_sha256 == manta[1].source_sha256
+    assert len(archive.store.entries()) == 5
+    assert sum(entry.source_ride_name == "Manta" for entry in archive.store.entries()) == 1
+    assert all(result.status == "duplicate" for result in archive.import_paths(paths[::-1]))
+    for entry in archive.store.entries():
+        reopened = archive.reopen(entry.source_sha256)
+        assert isinstance(reopened, ExplorerData)
+        assert reopened.source.source_sha256 == entry.source_sha256
+
+
+def test_changed_uuid_export_updates_source_and_preserves_library_state(
+    archive: LibraryArchive,
+    export_directory: Path,
+) -> None:
+    identity = "be687591-84bb-4469-aac0-e5a16b0744f9"
+    source = synthetic_source(uuid=identity, name="Before", location="Park")
+    path = export_directory / "first.forces"
+    path.write_bytes(source.recording.source.original_bytes)
+    assert archive.import_paths((path,))[0].status == "imported"
+    with archive.store.connection() as connection:
+        connection.execute(
+            "UPDATE recordings SET notes='keep',ride_name_override='My ride',"
+            "workflow_status='uploaded',first_sample=1,last_sample=3,gravity_index=4",
+        )
+        connection.execute(
+            "INSERT INTO video_links(recording_sha256,url) VALUES (?, 'https://example.com')",
+            (source.source_sha256,),
+        )
+        connection.execute(
+            "INSERT INTO export_history(recording_sha256,export_kind,origin,started_at_utc,"
+            "status,application_version,request_json) VALUES (?, 'csv','single','now',"
+            "'completed','1.3.0','{\"original\":true}')",
+            (source.source_sha256,),
+        )
+        imported_at = connection.execute("SELECT imported_at_utc FROM recordings").fetchone()[0]
+    changed = synthetic_source(uuid=identity.upper(), name="After", location="New park", row=5)
+    updated_path = export_directory / "changed.zforces"
+    raw = zlib.compress(changed.recording.source.original_bytes, wbits=-15)
+    updated_path.write_bytes(raw)
+    result = archive.import_paths((updated_path,))[0]
+    digest = sha256(raw).hexdigest()
+    assert result.status == "updated" and result.source_sha256 == digest
+    entries = archive.store.entries()
+    assert len(entries) == 1
+    entry = entries[0]
+    assert entry.source_uuid == identity
+    assert entry.source_sha256 == digest and entry.imported_at_utc == imported_at
+    assert entry.source_ride_name == "After" and entry.ride_name == "My ride"
+    assert entry.park_name == "New park" and entry.workflow_status == "uploaded"
+    assert entry.export_count == 1
+    reopened = archive.reopen(digest)
+    assert isinstance(reopened, ExplorerData)
+    assert reopened.source.recording.source.original_bytes == raw
+    assert reopened.source.recording.metadata.name == "After"
+    assert reopened.ride_bounds == (1, 3)
+    with archive.store.connection() as connection:
+        assert connection.execute("SELECT notes,gravity_index FROM recordings").fetchone() == (
+            "keep",
+            4,
+        )
+        assert connection.execute("SELECT recording_sha256 FROM video_links").fetchone() == (
+            digest,
+        )
+        assert connection.execute(
+            "SELECT recording_sha256,request_json FROM export_history",
+        ).fetchone() == (digest, '{"original":true}')
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+    # The new source remains unchanged when imported again in the other format.
+    path.write_bytes(changed.recording.source.original_bytes)
+    duplicate = archive.import_paths((path,))[0]
+    assert duplicate.status == "duplicate" and duplicate.source_sha256 == digest
+    assert archive.store.source(digest).data == raw
+    shortened = synthetic_source(
+        uuid=identity,
+        startIndex=0,
+        endIndex=2,
+        accelerationSequence=[{"x": "0", "y": "0", "z": "1"}] * 3,
+        gravitySequence=[{"x": "0", "y": "0", "z": "1"}] * 3,
+    )
+    path.write_bytes(shortened.recording.source.original_bytes)
+    assert archive.import_paths((path,))[0].status == "failed"
+    assert archive.store.entries() == entries
+    assert archive.store.source(digest).data == raw
+    # A failed replacement is atomic and does not remove the existing source/history.
+    payload = json.loads(changed.recording.source.original_bytes)
+    payload["name"] = "Rejected"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with archive.store.connection() as connection:
+        connection.execute(
+            "CREATE TRIGGER reject_update BEFORE UPDATE ON recordings "
+            "BEGIN SELECT RAISE(ABORT, 'injected update failure'); END",
+        )
+    assert archive.import_paths((path,))[0].status == "failed"
+    assert archive.store.entries() == entries
+    assert archive.store.source(digest).data == raw
+
+
+@pytest.mark.parametrize("identity", [None, "invalid", "00000000-0000-0000-0000-000000000000"])
+def test_unusable_uuid_does_not_merge_distinct_sources(
+    archive: LibraryArchive,
+    export_directory: Path,
+    identity: str | None,
+) -> None:
+    for number in range(2):
+        path = export_directory / f"source-{number}.forces"
+        path.write_bytes(
+            synthetic_source(uuid=identity, name=f"Ride {number}").recording.source.original_bytes,
+        )
+        assert archive.import_paths((path,))[0].status == "imported"
+    assert len(archive.store.entries()) == 2
 
 
 def test_failed_files_and_failed_transaction_do_not_stop_other_imports(

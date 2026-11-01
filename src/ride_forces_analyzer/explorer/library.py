@@ -9,6 +9,7 @@ from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from ride_forces_analyzer.analysis.calibration import (
     CalibrationOverrides,
@@ -16,7 +17,9 @@ from ride_forces_analyzer.analysis.calibration import (
     validate_calibration_references,
 )
 from ride_forces_analyzer.importers import ImportFailure, import_forces, import_forces_bytes
-from ride_forces_analyzer.storage.library import LibraryStore, LibraryStoreError
+from ride_forces_analyzer.storage.library import LibraryEntry, LibraryStore, LibraryStoreError
+from ride_forces_analyzer.i18n import tr
+from ride_forces_analyzer.domain import ValueOrigin
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.validation.checks import validate_sample_range
 
@@ -25,19 +28,110 @@ from .model import ExplorerData
 from .text import failure_text
 
 
+def recording_clock(entry: LibraryEntry) -> str:
+    """Format a recording's clock time at its source location, independently of the host.
+
+    Args:
+        entry: Lightweight Library metadata with an optional recording instant.
+
+    Returns:
+        HH:MM:SS at the recording location, or an em dash for an unknown instant.
+    """
+    if entry.recorded_at_utc is None:
+        return "—"
+    try:
+        instant = datetime.fromisoformat(entry.recorded_at_utc)
+        if instant.tzinfo is None:
+            return "—"
+        zone = ZoneInfo(entry.day_timezone) if entry.day_timezone else UTC
+        return instant.astimezone(zone).strftime("%H:%M:%S")
+    except ValueError, OverflowError, ZoneInfoNotFoundError:
+        return "—"
+
+
+def library_details(entry: LibraryEntry, data: ExplorerData | None = None) -> str:
+    """Format read-only source/date/import details inside the Library panel.
+
+    Args:
+        entry: Selected list entry, retaining original and effective source names.
+        data: Successfully reopened recording supplying additional original metadata.
+
+    Returns:
+        Plain text suitable for a read-only, wrapping detail view.
+    """
+    recorded = (
+        f"{entry.recorded_day} {recording_clock(entry)} ({entry.day_timezone})"
+        if entry.recorded_day is not None
+        else tr("Unknown date")
+    )
+    lines = [
+        f"{tr('Source file')}: {entry.filename}",
+        f"{tr('Recording time')}: {recorded}",
+        f"{tr('Import time (UTC)')}: {entry.imported_at_utc}",
+        f"{tr('Ride')}: {entry.source_ride_name or '—'}",
+        f"{tr('Park')}: {entry.source_park_name or '—'}",
+    ]
+    if data is not None:
+        metadata = data.source.recording.metadata
+        for label, value in (
+            ("Device", metadata.device),
+            ("UUID", metadata.uuid),
+            ("Source date", metadata.date.token if metadata.date is not None else None),
+            ("Source time zone", metadata.timezone),
+            (
+                "Riding position",
+                metadata.riding_position.value
+                if metadata.riding_position is not None
+                and metadata.riding_position.origin is ValueOrigin.SOURCE
+                else None,
+            ),
+        ):
+            if value is not None:
+                lines.append(f"{tr(label)}: {value}")
+        lines.extend(
+            f"{tr(label)}: {value}"
+            for label, value in data.metadata_fields
+            if label not in {"Ride", "Park"}
+        )
+    return "\n".join(lines)
+
+
+def library_row_text(entry: LibraryEntry) -> str:
+    """Format a compact recording entry without table columns.
+
+    Args:
+        entry: Lightweight recording metadata and export count.
+
+    Returns:
+        Three lines containing ride, park and source-local clock/export summary.
+    """
+    exports = (
+        tr("{0} export", entry.export_count)
+        if entry.export_count == 1
+        else tr("{0} exports", entry.export_count)
+    )
+    return "\n".join(
+        (
+            entry.ride_name or tr("Unknown ride"),
+            entry.park_name or tr("Unknown park"),
+            f"{recording_clock(entry)[:5]} · {exports}",
+        ),
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class ArchiveImportResult:
     """One independent archive-import outcome without retained measurement arrays.
 
     Attributes:
         path: Selected original file path, never modified by import.
-        status: New entry, unchanged duplicate, or failed file.
-        source_sha256: Original-byte identity on success, otherwise None.
+        status: New entry, updated source, unchanged duplicate, or failed file.
+        source_sha256: Current archived original-byte identity on success, otherwise None.
         error: Explanation for a failed file, otherwise None.
     """
 
     path: Path
-    status: Literal["imported", "duplicate", "failed"]
+    status: Literal["imported", "updated", "duplicate", "failed"]
     source_sha256: str | None = None
     error: str | None = None
 
@@ -65,7 +159,7 @@ class LibraryArchive:
         self.preferences = preferences if preferences is not None else Preferences()
 
     def import_paths(self, paths: Sequence[Path]) -> tuple[ArchiveImportResult, ...]:
-        """Archive successful files independently, keeping duplicates completely unchanged.
+        """Archive files independently, updating changed exports of known recording UUIDs.
 
         Args:
             paths: Explicitly selected files; ordinary file opening never calls this.
@@ -95,12 +189,12 @@ class LibraryArchive:
                     )
                 except CalibrationReferenceError:
                     calibration = CalibrationOverrides()
-                added = self.store.archive(source, path.name, bounds, calibration)
+                status, digest = self.store.archive(source, path.name, bounds, calibration)
                 results.append(
                     ArchiveImportResult(
                         path,
-                        "imported" if added else "duplicate",
-                        source.source_sha256,
+                        status,
+                        digest,
                     ),
                 )
             except (LibraryStoreError, OSError, ValueError) as error:
