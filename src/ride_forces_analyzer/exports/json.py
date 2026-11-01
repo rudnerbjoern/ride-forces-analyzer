@@ -46,9 +46,23 @@ class JsonExportCancelled(Exception):
 
 
 def _recording_metadata(analysis: RecordingAnalysis) -> dict[str, object]:
-    metadata = analysis.source.recording.metadata
+    metadata = analysis.source.effective_metadata
     result = asdict(metadata)
     result["date"] = metadata.date.token if metadata.date is not None else None
+    if analysis.source.additions.notes:
+        result["notes"] = analysis.source.additions.notes
+    if any(
+        value is not None
+        for value in (
+            analysis.source.additions.row,
+            analysis.source.additions.seat,
+            analysis.source.additions.train,
+        )
+    ):
+        result["attributes"] = [
+            {"id": item.id, "label": item.label, "value": _attribute_value(item.value)}
+            for item in analysis.source.effective_attributes
+        ]
     return result
 
 
@@ -286,7 +300,7 @@ def export_analyzer_json(
         recording["effective_ride_bounds"] = analysis.ride_bounds
         recording["attributes"] = [
             {"id": item.id, "label": item.label, "value": _attribute_value(item.value)}
-            for item in analysis.source.recording.attributes
+            for item in analysis.source.effective_attributes
         ]
         configuration = analysis.configuration
         profile = configuration.profile

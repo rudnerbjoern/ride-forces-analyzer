@@ -191,7 +191,13 @@ The search requires every whitespace-separated term in the combined ride/park na
 using Unicode normalization and case folding. Park and search combine with AND;
 wildcard characters are literal. Empty groups disappear, an empty result is explained,
 and the reset icon clears both filters. Filtering reads metadata only and leaves the
-chart unchanged. Metadata editors remain planned.
+chart unchanged. **Edit metadata…** opens a separate themed dialog for ride, park,
+Row, Seat, Train, imported/Seated/Flying posture and notes. Source placeholders
+distinguish inherited text from additions. Save/reset persist current additions;
+Cancel discards unsaved input. Errors keep the input visible. Original details and
+saved additions remain separately readable in the Library. The workspace and new
+exports use effective values; the original bytes, dates and source metadata stay
+intact. Matching external file opens restore the Library additions as well.
 Hiding it releases its layout space without changing the loaded recording, selection
 or chart viewport; park selection and search text are retained.
 

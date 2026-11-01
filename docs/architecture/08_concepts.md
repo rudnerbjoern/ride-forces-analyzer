@@ -171,7 +171,14 @@ queries. Park choices include all effective names regardless of the current sear
 Selecting one entry reopens only its stored original, using generation-guarded worker
 delivery; a failed open retains the previous chart. Read-only details preserve
 original source/date/import values. Filtering preserves the loaded chart; hiding the
-panel retains the filters. Editing remains planned.
+panel retains the filters. Current metadata additions occupy existing override/notes
+columns. The update boundary rejects original/date fields and atomically refreshes
+effective-name projections. A separate dialog supports Save, Cancel and reset;
+no metadata history is stored. Original metadata remains immutable alongside
+`ImportSuccess.additions`; effective metadata preserves explicit user provenance.
+New export snapshots capture effective metadata as version 2; version-1 snapshots
+and legacy batch jobs without additions retain original-source semantics. Captured
+batch additions remain independent of later Library edits.
 `LibraryStore` applies bundled major/minor revisions in an
 explicit SQLite transaction, rolling back schema, data and revision together on
 failure. Unknown revisions or unversioned existing tables are rejected without

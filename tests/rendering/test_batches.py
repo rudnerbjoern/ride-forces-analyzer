@@ -21,6 +21,8 @@ from typing import cast
 import pytest
 
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
+from ride_forces_analyzer.importers import ImportSuccess
+from ride_forces_analyzer.domain.metadata import RecordingAdditions
 from ride_forces_analyzer import __version__
 from ride_forces_analyzer.exports.batches import BatchReport, build_jobs, make_job, run_batches
 from ride_forces_analyzer.i18n import Language
@@ -41,6 +43,59 @@ from ride_forces_analyzer.rendering.layouts import resolve_geometry
 from ride_forces_analyzer.storage.export_models import BatchJob, SavedBatch, SavedPreset
 from ride_forces_analyzer.storage.exports import ExportStore, ExportStoreError
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
+
+
+def test_saved_metadata_does_not_follow_later_library_edits(
+    manta: ExplorerData,
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ride_forces_analyzer.exports import batches
+    from ride_forces_analyzer.storage.library import LibraryStore
+    from ride_forces_analyzer.explorer.library import LibraryArchive
+
+    monkeypatch.setenv("LOCALAPPDATA", str(export_directory.resolve()))
+    assert manta.analysis is not None
+    additions = RecordingAdditions(ride_name="Captured", riding_position="Seated", notes="Saved")
+    source = ImportSuccess(manta.source.recording, manta.source.diagnostics, additions=additions)
+    analysis = replace(manta.analysis, source=source)
+    job = make_job(analysis, preset(), first=3600, last=3609)
+    assert job.ride == "Captured" and job.metadata_additions == additions
+    assert BatchJob.model_validate_json(job.model_dump_json()) == job
+    path = manta.source.recording.source.provenance.path
+    assert path is not None
+    store = LibraryStore()
+    LibraryArchive(store).import_paths((path,))
+    store.update_metadata(source.source_sha256, {"ride_name": "Later", "riding_position": "Flying"})
+    payload = job.model_dump(mode="json")
+    payload.pop("metadata_additions")
+    legacy = BatchJob.model_validate_json(json.dumps(payload))
+    assert legacy.metadata_additions is None
+    observed: list[ImportSuccess] = []
+
+    def fake_export(
+        timeline: ExportTimeline,
+        target: Path,
+        *args: object,
+        **kwargs: object,
+    ) -> Path:
+        observed.append(timeline.analysis.source)
+        target.write_bytes(b"encoded")
+        return target
+
+    monkeypatch.setattr(batches, "export_video", fake_export)
+    report = run_batches(
+        (SavedBatch(name="Metadata", jobs=(job, legacy), schema_version=1),),
+        export_directory,
+    )
+    assert [result.status for result in report.results] == ["completed", "completed"]
+    assert observed[0].effective_metadata.name == "Captured"
+    assert observed[0].additions == additions
+    assert observed[1].additions == RecordingAdditions()
+    assert observed[1].effective_metadata == manta.source.recording.metadata
+    current = build_jobs((path,), (preset(),), "entire")[0]
+    assert current.ride == "Later" and current.metadata_additions is not None
+    assert current.metadata_additions.riding_position == "Flying"
 
 
 def preset(name: str = "Ribbon", window: int = 11) -> SavedPreset:

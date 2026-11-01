@@ -81,6 +81,8 @@ class LoadWorker(QRunnable):
             else:
                 assert self.path is not None
                 outcome = load_recording(self.path)
+                if isinstance(outcome, ExplorerData):
+                    outcome = LibraryArchive().apply_metadata(outcome)
             if isinstance(outcome, ImportFailure):
                 for diagnostic in outcome.diagnostics:
                     if diagnostic.severity is Severity.ERROR:

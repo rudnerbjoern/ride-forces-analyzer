@@ -98,7 +98,8 @@ The platform data root is LOCALAPPDATA on Windows, absolute XDG_DATA_HOME or
 - `map-cache.sqlite3`: optional cached map tiles and HTTP metadata.
 - `library.sqlite3`: Library schema (recordings, export history, video links and
   Alembic revision); explicit archive import stores exact original bytes.
-  The grouped list filters metadata and opens archived sources; editing and later user workflows remain planned.
+  The grouped list filters and opens archived sources. Current metadata additions
+  persist separately; marker persistence and later user workflows remain planned.
 - `support/`: per-process diagnostic reports.
 
 SQLite writes are transactional. Ordinary file opening leaves recordings external;

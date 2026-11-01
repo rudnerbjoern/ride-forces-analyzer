@@ -16,16 +16,22 @@ from ride_forces_analyzer.analysis.calibration import (
     CalibrationReferenceError,
     validate_calibration_references,
 )
-from ride_forces_analyzer.importers import ImportFailure, import_forces, import_forces_bytes
+from ride_forces_analyzer.importers import (
+    ImportFailure,
+    ImportSuccess,
+    import_forces,
+    import_forces_bytes,
+)
 from ride_forces_analyzer.storage.library import LibraryEntry, LibraryStore, LibraryStoreError
 from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.domain import ValueOrigin
+from ride_forces_analyzer.domain.metadata import RecordingAdditions
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.validation.checks import validate_sample_range
 
 from .loading import present_recording
 from .model import ExplorerData
-from .text import failure_text
+from .text import failure_text, metadata_fields
 
 
 def recording_clock(entry: LibraryEntry) -> str:
@@ -90,9 +96,23 @@ def library_details(entry: LibraryEntry, data: ExplorerData | None = None) -> st
                 lines.append(f"{tr(label)}: {value}")
         lines.extend(
             f"{tr(label)}: {value}"
-            for label, value in data.metadata_fields
+            for label, value in metadata_fields(data, original=True)
             if label not in {"Ride", "Park"}
         )
+        additions = data.source.additions
+        if additions != RecordingAdditions():
+            lines.append(f"{tr('Library additions')}:")
+            for label, value in (
+                ("Ride", additions.ride_name),
+                ("Park", additions.park_name),
+                ("Row", additions.row),
+                ("Seat", additions.seat),
+                ("Train", additions.train),
+                ("Riding position", additions.riding_position),
+                ("Notes", additions.notes or None),
+            ):
+                if value is not None:
+                    lines.append(f"{tr(label)}: {value or '—'}")
     return "\n".join(lines)
 
 
@@ -218,6 +238,7 @@ class LibraryArchive:
         source = import_forces_bytes(archived.data, compressed=archived.compressed)
         if isinstance(source, ImportFailure):
             return source
+        source = ImportSuccess(source.recording, source.diagnostics, additions=archived.additions)
         now = datetime.now(UTC)
         try:
             validate_sample_range(
@@ -245,3 +266,28 @@ class LibraryArchive:
                     ),
                 )
         return data
+
+    def apply_metadata(self, data: ExplorerData) -> ExplorerData:
+        """Apply Library additions to an external open without repeating numerical analysis.
+
+        Args:
+            data: Successfully loaded external recording and optional prepared analysis.
+
+        Returns:
+            Data with current Library additions, or unchanged data for external sources.
+
+        Raises:
+            LibraryStoreError: Library metadata cannot be read.
+            ValueError: Stored additions are invalid.
+        """
+        additions = self.store.metadata(data.source.source_sha256)
+        if additions is None or additions == data.source.additions:
+            return data
+        source = ImportSuccess(data.source.recording, data.source.diagnostics, additions=additions)
+        analysis = replace(data.analysis, source=source) if data.analysis is not None else None
+        return replace(
+            data,
+            source=source,
+            analysis=analysis,
+            title=source.effective_metadata.name or data.title,
+        )

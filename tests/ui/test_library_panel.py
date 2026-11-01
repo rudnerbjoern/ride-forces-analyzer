@@ -1,11 +1,18 @@
 """Native Library interactions, explicit archive import and preserved chart state."""
 
-# cspell:words Seaworld Uhrzeit Heure Importiert Importé Keine passenden Aufnahmen Tous Aucun enregistrement correspondant
+# cspell:words Seaworld Uhrzeit Heure Importiert Importé Keine passenden Aufnahmen Tous Aucun enregistrement correspondant Metadaten bearbeiten métadonnées
 
 from pathlib import Path
 import json
 
-from PySide6.QtWidgets import QApplication, QComboBox, QFileDialog, QLabel
+from PySide6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QDialogButtonBox,
+    QFileDialog,
+    QGroupBox,
+    QLabel,
+)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPalette
 from PySide6.QtTest import QSignalSpy
@@ -216,6 +223,108 @@ def test_library_toggle_preserves_workspace_and_recording(
     assert selected is not None and selected.source_sha256 == archived.source.source_sha256
     assert selected.workflow_status == "markers_verified"
     assert "Ride: Manta updated" in window.library.details.toPlainText()
+
+    # Editing has its own dialog; the Library and workspace keep their dimensions.
+    QApplication.processEvents()
+    editor = window.library.editor
+    panel_width = window.library.panel.width()
+    window_size = window.size()
+    digest = archived.source.source_sha256
+    original_source = archived.source.recording
+    window.library.edit_button.click()
+    assert editor.isVisible() and editor.isWindow()
+    assert editor.windowModality() == Qt.WindowModality.WindowModal
+    assert [group.title() for group in editor.findChildren(QGroupBox)] == [
+        "Recording details",
+        "Notes",
+    ]
+    assert editor.windowTitle() == "Edit metadata…"
+    assert window.library.panel.width() == panel_width and window.size() == window_size
+    assert editor.fields["row"].placeholderText() == "3"
+    for key, value in {
+        "ride_name": "Edited ride",
+        "park_name": "Edited park",
+        "row": "Front",
+        "seat": "Left",
+        "train": "Blue",
+    }.items():
+        editor.fields[key].setText(value)
+    editor.position.setCurrentIndex(editor.position.findData("Seated"))
+    editor.notes.setPlainText("Library notes")
+    QApplication.processEvents()
+    editor.grab().save(".tmp/lib06-metadata-dialog.png")
+    save = editor.buttons.button(QDialogButtonBox.StandardButton.Save)
+    assert save.text().replace("&", "") == "Save" and not save.icon().isNull()
+    notes_group = editor.notes.parentWidget()
+    assert notes_group is not None and editor.buttons.y() > notes_group.y()
+    save.click()
+    wait_until(lambda: window.data is not None and window.data.title == "Edited ride")
+    assert not editor.isVisible() and window.open_action.isEnabled()
+    assert window.data is not None
+    assert window.data.source.recording.metadata == original_source.metadata
+    assert (
+        window.data.source.recording.source.original_bytes == original_source.source.original_bytes
+    )
+    assert window.data.source.source_sha256 == digest
+    assert "Edited ride" in window.heading.text() and "Edited park" in window.heading.text()
+    assert dict(window.data.metadata_fields)["Row"] == "Front"
+    assert "Ride: Manta updated" in window.library.details.toPlainText()
+    assert "Row: 3" in window.library.details.toPlainText()
+    assert window.library.park_filter.findData("Edited park") >= 0
+    window.library.edit_button.click()
+    assert editor.fields["ride_name"].text() == "Edited ride"
+    assert editor.notes.toPlainText() == "Library notes"
+    editor.fields["ride_name"].setText("Cancelled")
+    cancel = editor.buttons.button(QDialogButtonBox.StandardButton.Cancel)
+    cancel.click()
+    assert window.data.title == "Edited ride"
+    stored = store.metadata(digest)
+    assert stored is not None and stored.ride_name == "Edited ride"
+    window.library.edit_button.click()
+    editor.notes.setPlainText("Rejected")
+    with store.connection() as connection:
+        connection.execute(
+            "CREATE TRIGGER reject_metadata BEFORE UPDATE ON recordings "
+            "WHEN NEW.notes='Rejected' BEGIN SELECT RAISE(ABORT, 'injected metadata failure'); END",
+        )
+    save.click()
+    assert editor.isVisible() and editor.error.isVisible()
+    assert "Could not save Library metadata" in editor.error.text()
+    assert store.metadata(digest) == stored
+    assert window.data.title == "Edited ride"
+    with store.connection() as connection:
+        connection.execute("DROP TRIGGER reject_metadata")
+    cancel.click()
+    window.library.edit_button.click()
+    assert editor.fields["ride_name"].text() == "Edited ride"
+    for language, title in (
+        (1, "Metadaten bearbeiten…"),
+        (2, "Modifier les métadonnées…"),
+        (0, "Edit metadata…"),
+    ):
+        window.set_ui_language(language)
+        assert editor.windowTitle() == title
+        assert editor.position.currentData() == "Seated"
+    for appearance in (Appearance.LIGHT, Appearance.MANTA, Appearance.DARK):
+        window.set_appearance(APPEARANCE_CHOICES.index(appearance))
+        QApplication.processEvents()
+        assert editor.fields["ride_name"].palette().color(
+            QPalette.ColorRole.Text,
+        ) == window.inspector.smoothing_label.palette().color(QPalette.ColorRole.WindowText)
+        assert editor.position.currentData() == "Seated"
+        if appearance is Appearance.LIGHT:
+            editor.grab().save(".tmp/lib06-metadata-dialog-light.png")
+    reset = editor.buttons.button(QDialogButtonBox.StandardButton.Reset)
+    reset.click()
+    wait_until(lambda: window.data is not None and window.data.title == "Manta updated")
+    assert not editor.isVisible()
+    archived = window.data
+    assert archived is not None and archived.source.additions.notes == ""
+    assert dict(archived.metadata_fields)["Row"] == "3"
+    assert (
+        archived.source.effective_metadata.riding_position
+        == original_source.metadata.riding_position
+    )
 
     # Unknown dates come last; full names remain available without widening the window.
     long_name = "LongRideName" * 100

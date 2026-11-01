@@ -87,8 +87,12 @@ relationships. Sources without a valid UUID use exact-byte identity.
 `LibraryStore.entries()` reads metadata and export counts without
 source BLOBs in stable day/instant/import/digest order. Park filtering and literal
 multi-term search use persisted Unicode-normalized effective-name projections;
-park choices come from the whole Library. Editing and later workflows remain planned under
-[LIB-06 onward](../requirements/LIBRARY.md#iterative-implementation-and-verification).
+park choices come from the whole Library. `LibraryStore.update_metadata()` validates
+the frozen `domain.metadata.RecordingAdditions`, updates current overrides and
+search projections atomically, and rejects original/date fields. `ImportSuccess`
+keeps additions separate from its original recording and resolves effective values
+for views/exports. Marker persistence and later workflows remain planned under
+[LIB-07 onward](../requirements/LIBRARY.md#iterative-implementation-and-verification).
 
 ## Analysis boundary
 
@@ -153,7 +157,9 @@ a background worker and displays per-file results; the archive service owns all
 import, duplicate and reopening logic outside widgets. A grouped Qt recording list
 uses compact three-line rows with elided names, export counts and read-only
 workflow icons/tooltips, a park dropdown and combined name search; selected-source details
-remain read-only. Selection requests go through the existing `LoadWorker` and window
+remain read-only, with saved additions shown separately. `LibraryMetadataDialog`
+owns the separate metadata form; persistence and validation remain outside widgets.
+Selection requests go through the existing `LoadWorker` and window
 load lifecycle, preserving the previous chart on failure. Collapsing and language
 changes retain selection without reloading a source.
 Export preview widgets and background jobs live in

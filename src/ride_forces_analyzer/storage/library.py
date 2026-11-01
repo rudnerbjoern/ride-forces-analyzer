@@ -7,6 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words sqlalchemy autocommit poolclass timespec
 
 from collections.abc import Generator
+from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -35,6 +36,7 @@ from ride_forces_analyzer.importers import ImportSuccess, import_forces_bytes
 from ride_forces_analyzer.importers.library_metadata import project_library_metadata, recording_uuid
 from ride_forces_analyzer.validation.checks import validate_sample_range, validate_sha256
 from .library_search import library_search_values, normalize_library_text
+from ride_forces_analyzer.domain.metadata import RecordingAdditions
 
 
 class LibraryStoreError(Exception):
@@ -51,6 +53,7 @@ class ArchivedSource:
         compressed: Whether bytes are in the zforces format.
         bounds: Current inclusive recording bounds.
         calibration: Current source/default or validated custom reference choices.
+        additions: Current Library metadata overrides and notes.
     """
 
     data: bytes
@@ -58,6 +61,7 @@ class ArchivedSource:
     compressed: bool
     bounds: tuple[int, int]
     calibration: CalibrationOverrides
+    additions: RecordingAdditions = RecordingAdditions()
 
 
 @dataclass(frozen=True, slots=True)
@@ -323,7 +327,7 @@ class LibraryStore:
             Original bytes, format and current marker choices for one recording.
 
         Raises:
-            ValueError: The requested digest is invalid.
+            ValueError: The requested digest or stored metadata additions are invalid.
             LibraryStoreError: The entry is missing, corrupt or unreadable.
         """
         validate_sha256(source_sha256, "Expected a source SHA-256")
@@ -331,7 +335,9 @@ class LibraryStore:
             row = connection.execute(
                 "SELECT source_bytes, source_filename, source_format, source_byte_count, "
                 "first_sample, last_sample, gravity_index, incline_index, "
-                "calibration_algorithm_version, calibration_window_samples "
+                "calibration_algorithm_version, calibration_window_samples, "
+                "ride_name_override, park_name_override, row_override, seat_override, "
+                "train_override, riding_position_override, notes "
                 "FROM recordings WHERE source_sha256=?",
                 (source_sha256,),
             ).fetchone()
@@ -348,7 +354,83 @@ class LibraryStore:
             raise LibraryStoreError("Invalid archived calibration recipe") from error
         if row[2] not in {"forces", "zforces"}:
             raise LibraryStoreError("Unsupported archived source format")
-        return ArchivedSource(data, row[1], row[2] == "zforces", (row[4], row[5]), calibration)
+        additions = RecordingAdditions.model_validate(
+            dict(zip(RecordingAdditions.model_fields, row[10:], strict=True)),
+        )
+        return ArchivedSource(
+            data,
+            row[1],
+            row[2] == "zforces",
+            (row[4], row[5]),
+            calibration,
+            additions,
+        )
+
+    def metadata(self, source_sha256: str) -> RecordingAdditions | None:
+        """Read current user additions without loading source bytes.
+
+        Args:
+            source_sha256: Exact source digest to look up.
+
+        Returns:
+            Stored additions, or None for a source outside the Library.
+
+        Raises:
+            ValueError: The digest or stored additions are invalid.
+            LibraryStoreError: SQLite access fails.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        with self.connection() as connection:
+            row = connection.execute(
+                "SELECT ride_name_override, park_name_override, row_override, seat_override, "
+                "train_override, riding_position_override, notes FROM recordings WHERE source_sha256=?",
+                (source_sha256,),
+            ).fetchone()
+        return (
+            RecordingAdditions.model_validate(
+                dict(zip(RecordingAdditions.model_fields, row, strict=True)),
+            )
+            if row is not None
+            else None
+        )
+
+    def update_metadata(
+        self,
+        source_sha256: str,
+        values: Mapping[str, object],
+    ) -> RecordingAdditions:
+        """Replace current additions atomically, rejecting source/date fields.
+
+        Args:
+            source_sha256: Archived original-byte identity.
+            values: Editable override fields and notes; an empty mapping resets all.
+
+        Returns:
+            Validated additions persisted for this recording.
+
+        Raises:
+            ValueError: A digest, field, scalar type or riding position is invalid.
+            LibraryStoreError: The recording is missing or the write fails.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        additions = RecordingAdditions.model_validate(dict(values))
+        with self.connection() as connection:
+            row = connection.execute(
+                "SELECT source_ride_name, source_park_name FROM recordings WHERE source_sha256=?",
+                (source_sha256,),
+            ).fetchone()
+            if row is None:
+                raise LibraryStoreError("Recording is not in the Library")
+            metadata = additions.model_dump()
+            ride = additions.ride_name if additions.ride_name is not None else row[0]
+            park = additions.park_name if additions.park_name is not None else row[1]
+            connection.execute(
+                "UPDATE recordings SET ride_name_override=?, park_name_override=?, row_override=?, "
+                "seat_override=?, train_override=?, riding_position_override=?, notes=?, "
+                "park_key=?, search_text=? WHERE source_sha256=?",
+                (*metadata.values(), *library_search_values(ride, park), source_sha256),
+            )
+        return additions
 
     def initialize(self) -> None:
         """Apply packaged Alembic revisions in one explicit SQLite transaction.

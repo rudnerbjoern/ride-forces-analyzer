@@ -2,7 +2,7 @@
 
 <!-- cspell:words NFKC -->
 
-Status: LIB-01–05 implemented; LIB-06–14 planned. This document defines the Library feature
+Status: LIB-01–06 implemented; LIB-07–14 planned. This document defines the Library feature
 and its verifiable implementation steps. It does not authorize implementation or
 Git delivery. Requirements and implementation belong on the same feature branch.
 
@@ -97,7 +97,7 @@ background load lifecycle. Failure explains the problem and preserves the curren
 ### User additions
 
 The user can edit the park name, ride name, row (**Row**), seat (**Seat**), train
-(**Train**) and riding position (**Seated** or **Flying**), plus the planned notes.
+(**Train**) and riding position (**Seated** or **Flying**), plus notes.
 Store these changes as current values in the Library, separate from the original
 source. Row, seat and train overrides are optional text labels; source attributes
 can contain numbers or strings and must not be forced into an integer-only model.
@@ -114,6 +114,31 @@ source and user values. Riding-position changes use the existing Seated/Flying
 behavior; they do not introduce a new force transformation or alter sensor data.
 Saving replaces the current additions; no metadata edit history, audit table or
 version list is required. The separate export history remains unchanged.
+
+**Edit metadata…** opens a separate themed dialog from the selected Library entry.
+Empty text editors inherit their displayed source placeholders; the posture selector
+offers the imported value (including unfamiliar values) or an explicit supported
+override. Save persists the current additions; Cancel discards unsaved input.
+Reset removes all additions and notes. Storage failures keep the dialog and input
+visible. The Library keeps its original read-only details and lists saved additions
+separately; editors do not occupy its narrow panel.
+
+`LibraryStore.update_metadata()` validates only the declared editable fields with
+`RecordingAdditions` and updates additions/search projections atomically. It rejects
+date/import/source fields and invalid posture overrides before writing. Existing
+columns suffice; no schema revision or edit-history table is required.
+`ImportSuccess` retains its immutable original recording alongside separate frozen
+additions and exposes effective metadata/attributes for views and exports.
+Library reopening and byte-identical external opening restore the current additions.
+Riding-position overrides carry `user` provenance and affect the existing display
+ranges only; scientific force stages retain the original source values.
+
+New video `ExportSnapshot` version 2 captures effective names, row/seat/train,
+posture/provenance and notes. Version-1 snapshots without this field remain readable
+and retain original-source semantics. New batch jobs capture the current additions;
+later Library edits cannot change them. Legacy jobs without additions continue to
+use original metadata. JSON data exports use effective metadata and retain source
+dates/unknown attributes; original archived files remain unchanged.
 
 Later concrete fields are added by ordinary Alembic migrations.
 
@@ -261,7 +286,7 @@ The diagram shows all six existing application tables, the three Library tables
 and Alembic's version table, with their columns and database ownership.
 The Library schema, explicit archive import and reopening service are implemented.
 The grouped recording list and read-only source/date/import details are implemented;
-park/name filters are implemented; editing and remaining workflows are planned.
+park/name filters and metadata editing are implemented; remaining workflows are planned.
 `PK` marks primary-key
 columns; the four marked columns in `tiles` form one composite primary key.
 `FK` marks the Library foreign keys. Dashed hash links are optional logical
@@ -525,8 +550,9 @@ recording, chart zoom or analysis.
    Selection loads only that source; an import/open failure preserves the current
    chart and explains the problem. Ordinary file opening remains available.
 3. **Recording details:** show recording time/time zone and import time read-only,
-   along with original metadata. Provide editors for park, ride, Row, Seat, Train,
-   Seated/Flying and notes. Saving or resetting additions updates the effective
+   along with original metadata and separate saved additions. Open a separate
+   **Edit metadata…** dialog for park, ride, Row, Seat, Train, Seated/Flying and notes.
+   Saving or resetting additions updates the effective
    entry metadata, list row, park choices and search results. Show the current marker
    choices and manual workflow dropdown here; reuse the existing explorer controls
    for marker editing instead of adding a second marker editor.
@@ -563,7 +589,8 @@ search. Park selection and whitespace-separated search terms combine with AND.
 Empty groups disappear; an empty result shows **No matching recordings**. The
 search clear action removes its text; the reset icon clears both filters. Filtering
 does not open sources or change the chart. Collapsing retains both controls.
-Editable details remain LIB-06 onward.
+Metadata editing uses the separate dialog; marker persistence and later workflows
+remain LIB-07 onward.
 
 LIB-04 acceptance also checks the default collapsed state, showing/hiding the panel
 and restoring the existing chart area and minimum window size. Group these checks
@@ -632,7 +659,7 @@ backup schedules and including exported videos are outside this design.
 
 ## Iterative implementation and verification
 
-LIB-01–05 are implemented; remaining functionality is planned.
+LIB-01–06 are implemented; remaining functionality is planned.
 Implement one increment at a time on the same feature branch;
 its acceptance checks must pass before moving to dependent work. Steps 13–14 are
 the later backup/restore phase, not a prerequisite for the initial Library.
@@ -709,9 +736,9 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 6. **LIB-06 — Editable recording metadata**
 
-   **Status:** Planned.
+   **Status:** Complete (native Windows service, export-compatibility and metadata-dialog acceptance verified).
 
-   **Implementation:** Add Library-backed editors for park, ride, Row, Seat, Train,
+   **Implementation:** Add a separate Library-backed metadata dialog for park, ride, Row, Seat, Train,
    Seated/Flying and notes, with reset to source values. Apply effective metadata
    to the relevant views/new exports and capture it in the shared export snapshot.
 

@@ -19,12 +19,48 @@ from ride_forces_analyzer.analysis.preparation import (
 from ride_forces_analyzer.exports.csv import export_csv
 from ride_forces_analyzer.domain import SourceNumber
 from ride_forces_analyzer.importers import ImportSuccess, import_forces
+from ride_forces_analyzer.domain.metadata import RecordingAdditions
 from ride_forces_analyzer.exports.json import (
     JSON_SAMPLE_KEYS,
     JsonExportCancelled,
     export_json,
 )
 from tests.exports.test_csv_export import snapshot
+
+
+def test_exports_capture_effective_metadata_and_retain_originals(export_directory: Path) -> None:
+    original = snapshot()
+    source = ImportSuccess(
+        original.source.recording,
+        original.source.diagnostics,
+        additions=RecordingAdditions(
+            ride_name="Edited",
+            park_name="New park",
+            row="Front",
+            seat="Left",
+            train="Blue",
+            riding_position="Flying",
+            notes="Export notes",
+        ),
+    )
+    analysis = replace(original, source=source)
+    path = export_directory / "edited.json"
+    export_json(analysis, path, 0, 2)
+    content = json.loads(path.read_text(encoding="utf-8"))
+    metadata = content["metadata"]["recording"]
+    assert metadata["name"] == "Edited" and metadata["location"] == "New park"
+    assert metadata["riding_position"] == {"value": "Flying", "origin": "user"}
+    assert metadata["notes"] == "Export notes"
+    assert {item["label"]: item["value"] for item in metadata["attributes"]} == {
+        "Row": "Front",
+        "Seat": "Left",
+        "Train": "Blue",
+    }
+    assert analysis.forces is original.forces
+    assert source.recording is original.source.recording
+    assert source.source_sha256 == original.source.source_sha256
+
+
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
 

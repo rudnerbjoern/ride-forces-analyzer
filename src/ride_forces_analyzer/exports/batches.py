@@ -35,6 +35,8 @@ from ride_forces_analyzer.importers import ImportSuccess, import_forces
 from ride_forces_analyzer.runtime.error_reporting import record_error
 from ride_forces_analyzer.storage.export_models import BatchJob, RangeMode, SavedBatch, SavedPreset
 from ride_forces_analyzer.storage.preferences import Preferences
+from ride_forces_analyzer.storage.library import LibraryStore
+from ride_forces_analyzer.domain.metadata import RecordingAdditions
 from ride_forces_analyzer.rendering.encoding import ExportCancelled, export_video
 from ride_forces_analyzer.rendering.model import ExportSnapshot, VideoOutput, prepare_export
 
@@ -45,6 +47,7 @@ def _load_analysis(
     *,
     expected_sha256: str | None = None,
     restore_markers: bool = False,
+    additions: RecordingAdditions | None = None,
 ) -> RecordingAnalysis:
     """Import losslessly, verify identity before analysis, then prepare the full recipe."""
     source = import_forces(path)
@@ -54,11 +57,14 @@ def _load_analysis(
     if expected_sha256 is not None and source.source_sha256 != expected_sha256:
         raise ValueError("Recording bytes changed since this batch was saved")
     if restore_markers:
+        additions = LibraryStore().metadata(source.source_sha256)
         configuration = Preferences().recording_configuration(
             source,
             configuration,
             calculation_time=datetime.now(UTC),
         )
+    if additions is not None:
+        source = ImportSuccess(source.recording, source.diagnostics, additions=additions)
     service = AnalysisService()
     try:
         service.request_analysis(source, configuration, calculation_time=datetime.now(UTC))
@@ -117,7 +123,7 @@ def make_job(
     return BatchJob(
         recording_path=path.resolve(),
         source_sha256=analysis.source.source_sha256,
-        ride=analysis.source.recording.metadata.name or path.stem,
+        ride=analysis.source.effective_metadata.name or path.stem,
         preset=preset.model_copy(
             update={
                 "analysis_configuration": replace(
@@ -130,6 +136,7 @@ def make_job(
         range_mode=mode,
         first_sample=first,
         last_sample=last,
+        metadata_additions=analysis.source.additions,
     )
 
 
@@ -363,6 +370,7 @@ def run_batches(
                         job.recording_path,
                         job.preset.analysis_configuration,
                         expected_sha256=job.source_sha256,
+                        additions=job.metadata_additions,
                     )
                     timeline = prepare_export(
                         analysis,

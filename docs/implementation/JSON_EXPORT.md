@@ -74,6 +74,10 @@ The final `metadata` object contains:
 - `recording`: canonical recording metadata, with absent fields `null`, riding
   position value/origin and source date as its exact numeric token string. No
   epoch or weather-unit conversion is inferred.
+- Library additions resolve effective ride/park/posture values with explicit `user`
+  posture provenance, optional user notes and edited row/seat/train attributes.
+  Original recording dates and untouched attributes retain their source values;
+  exporting never rewrites the archived or external original.
 - `stages`: algorithm, version and parameter pairs for projection, smoothing,
   independent orientation and context.
 

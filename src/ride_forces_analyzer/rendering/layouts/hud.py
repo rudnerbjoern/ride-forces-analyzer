@@ -221,7 +221,7 @@ class HudRenderer(Drawing):
             HISTORY_LABEL_SIZE,
         )
         self.orientation_tick = self._font(self._font_path(), ORIENTATION_TICK_SIZE)
-        posture = timeline.analysis.source.recording.metadata.riding_position
+        posture = timeline.analysis.source.effective_metadata.riding_position
         self.references = tuple(channel.reference for channel in timeline.channels[:3])
         bounds = tuple(
             selected_bounds(channel.values, timeline.first, timeline.last, reference)

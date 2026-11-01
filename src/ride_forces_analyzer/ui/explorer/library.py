@@ -55,6 +55,7 @@ from ride_forces_analyzer.runtime.error_reporting import record_error
 from ride_forces_analyzer.ui.presentation.translation import bind, button_text
 
 from .controls import create_panel
+from .library_editor import LibraryMetadataDialog
 
 
 _WORKFLOW_ICONS = {
@@ -178,6 +179,8 @@ class LibraryPanel(QSplitter):
         park_filter: Effective park selection, including all and unknown parks.
         search: Combined ride/park name search.
         clear_filters: Action restoring all recordings.
+        editor: Dialog for the selected recording's additions.
+        edit_button: Action opening the metadata dialog.
         open_requested: Signal carrying the selected archived source digest.
     """
 
@@ -271,6 +274,14 @@ class LibraryPanel(QSplitter):
         bind(self.details, tr("Recording details"), "accessibleName")
         self.details.hide()
         layout.addWidget(self.details)
+        self.edit_button = button_text(QPushButton(), tr("Edit metadata…"))
+        self.editor = LibraryMetadataDialog(self.panel)
+        self.edit_button.clicked.connect(self._edit_metadata)
+        self.editor.save_requested.connect(self._save_metadata)
+        self.editor.reset_requested.connect(lambda: self._save_metadata({}))
+        layout.addWidget(self.edit_button)
+        self.editor.hide()
+        self.edit_button.hide()
         self.addWidget(self.panel)
         self.panel.hide()
         self.toggle_button = button_text(QPushButton(), tr("Library"))
@@ -398,6 +409,13 @@ class LibraryPanel(QSplitter):
         if self.details.toPlainText() != text:
             self.details.setPlainText(text)
         self.details.setVisible(bool(text))
+        editable = (
+            selected is not None
+            and self._details_data is not None
+            and selected.source_sha256 == self._details_data.source.source_sha256
+        )
+        self.edit_button.setVisible(editable)
+        self.editor.refresh_labels()
 
     def show_recording(self, data: ExplorerData) -> None:
         """Display original metadata only when the loaded source matches the selection.
@@ -408,6 +426,7 @@ class LibraryPanel(QSplitter):
         entry = self.selected_entry
         if entry is not None and entry.source_sha256 == data.source.source_sha256:
             self._details_data = data
+            self.editor.bind_source(data.source)
             self._error = None
             self.refresh_labels()
 
@@ -438,6 +457,29 @@ class LibraryPanel(QSplitter):
         self.park_filter.blockSignals(blocked_park)
         self.search.blockSignals(blocked_search)
         self.refresh()
+
+    @Slot(object)
+    def _save_metadata(self, values: dict[str, object]) -> None:
+        entry = self.selected_entry
+        if entry is None:
+            return
+        try:
+            LibraryStore().update_metadata(entry.source_sha256, values)
+        except (ValueError, LibraryStoreError) as error:
+            self.editor.show_error(tr("Could not save Library metadata: {0}", str(error)))
+            return
+        self._error = None
+        self.editor.accept()
+        self.refresh()
+        self.open_requested.emit(entry.source_sha256)
+
+    @Slot()
+    def _edit_metadata(self) -> None:
+        if self._details_data is not None:
+            self.editor.bind_source(self._details_data.source)
+            self.editor.show()
+            self.editor.raise_()
+            self.editor.activateWindow()
 
     @Slot()
     def _choose_import(self) -> None:

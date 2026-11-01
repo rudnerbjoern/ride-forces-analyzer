@@ -855,6 +855,8 @@ class ExplorerWindow(QMainWindow):
         self._worker = worker
         self.open_action.setEnabled(False)
         self.library.recordings.setEnabled(False)
+        self.library.editor.setEnabled(False)
+        self.library.edit_button.setEnabled(False)
         self.progress.show()
         bind(self.statusBar(), tr("Opening {0}…", path.name), "message")
         QThreadPool.globalInstance().start(worker)
@@ -872,6 +874,8 @@ class ExplorerWindow(QMainWindow):
         self._worker = worker
         self.open_action.setEnabled(False)
         self.library.recordings.setEnabled(False)
+        self.library.editor.setEnabled(False)
+        self.library.edit_button.setEnabled(False)
         self.progress.show()
         entry = self.library.selected_entry
         bind(
@@ -947,7 +951,7 @@ class ExplorerWindow(QMainWindow):
         self.reference_toggle.setChecked(outcome.calibrated_enabled)
         self.reference_toggle.blockSignals(False)
         bind(self, f"{outcome.title} · {self._application_title}", "windowTitle")
-        park = outcome.source.recording.metadata.location
+        park = outcome.source.effective_metadata.location
         bind(self.heading, f"{outcome.title} · {park}" if park else outcome.title, "text")
         bind(self.header_summary, outcome.overview_text, "text")
         self._draw_channels()
@@ -1191,6 +1195,8 @@ class ExplorerWindow(QMainWindow):
         self._worker = None
         self.open_action.setEnabled(True)
         self.library.recordings.setEnabled(True)
+        self.library.editor.setEnabled(True)
+        self.library.edit_button.setEnabled(True)
         self.progress.hide()
 
     @Slot(str)

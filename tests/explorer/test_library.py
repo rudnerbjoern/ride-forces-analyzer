@@ -11,6 +11,8 @@ import pytest
 
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.explorer import ExplorerData
+from ride_forces_analyzer.explorer import load_recording
+from ride_forces_analyzer.domain import SourceNumber, ValueOrigin
 from ride_forces_analyzer.explorer.library import LibraryArchive, library_details, recording_clock
 from ride_forces_analyzer.importers import ImportSuccess, import_forces_bytes
 from ride_forces_analyzer.storage.library import LibraryStore, LibraryStoreError
@@ -148,6 +150,137 @@ def test_all_real_exports_identify_manta_once(archive: LibraryArchive) -> None:
         reopened = archive.reopen(entry.source_sha256)
         assert isinstance(reopened, ExplorerData)
         assert reopened.source.source_sha256 == entry.source_sha256
+
+
+def test_metadata_edits_reload_reset_and_keep_originals_dates_and_history(
+    archive: LibraryArchive,
+) -> None:
+    path = next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces"))
+    result = archive.import_paths((path,))[0]
+    assert result.source_sha256 is not None
+    digest = result.source_sha256
+    before = archive.store.source(digest)
+    original = archive.reopen(digest)
+    assert isinstance(original, ExplorerData)
+    entry = archive.store.entries()[0]
+    values: dict[str, object] = {
+        "ride_name": "Edited ride",
+        "park_name": "Edited park",
+        "row": "Front",
+        "seat": "Left",
+        "train": "Blue",
+        "riding_position": "Seated",
+        "notes": "Keep these notes",
+    }
+    saved = archive.store.update_metadata(digest, values)
+    assert archive.store.metadata(digest) == saved
+    current = archive.reopen(digest)
+    assert isinstance(current, ExplorerData)
+    assert current.source.recording.metadata == original.source.recording.metadata
+    assert current.source.recording.attributes == original.source.recording.attributes
+    assert current.source.recording.motion == original.source.recording.motion
+    assert current.source.source_sha256 == digest
+    assert (
+        current.source.effective_metadata.name == "Edited ride" and current.title == "Edited ride"
+    )
+    posture = current.source.effective_metadata.riding_position
+    assert posture is not None and posture.value == "Seated" and posture.origin is ValueOrigin.USER
+    assert dict(current.metadata_fields) == {
+        "Ride": "Edited ride",
+        "Park": "Edited park",
+        "Train": "Blue",
+        "Row": "Front",
+        "Seat": "Left",
+    }
+    details = library_details(archive.store.entries()[0], current)
+    assert "Ride: Manta" in details and "Row: 3" in details
+    assert "Library additions:" in details and "Row: Front" in details
+    assert current.source.additions.notes == "Keep these notes"
+    assert (
+        archive.store.entries(park="edited PARK", search="EDITED RIDE")[0].source_sha256 == digest
+    )
+    external = load_recording(path)
+    assert isinstance(external, ExplorerData)
+    applied = archive.apply_metadata(external)
+    assert applied.title == "Edited ride" and applied.source.recording is external.source.recording
+    assert applied.analysis is not None and external.analysis is not None
+    assert applied.analysis.forces is external.analysis.forces
+    assert external.source.additions.notes == ""
+    with archive.store.connection() as connection:
+        connection.execute(
+            "UPDATE recordings SET workflow_status='completed',first_sample=100,last_sample=200",
+        )
+        connection.execute(
+            "INSERT INTO video_links(recording_sha256,url) VALUES (?, 'https://example.com')",
+            (digest,),
+        )
+        connection.execute(
+            "INSERT INTO export_history(recording_sha256,export_kind,origin,started_at_utc,status,"
+            "application_version,request_json) VALUES (?, 'csv','single','now','completed','1.3.0','{}')",
+            (digest,),
+        )
+    for invalid in (
+        {"date": "changed"},
+        {"recorded_day": "changed"},
+        {"day_timezone": "UTC"},
+        {"recorded_at_utc": "changed"},
+        {"imported_at_utc": "changed"},
+        {"source_sha256": "a" * 64},
+        {"riding_position": "Standing"},
+        {"row": 1},
+        {"notes": None},
+    ):
+        with pytest.raises(ValueError):
+            archive.store.update_metadata(digest, invalid)
+        assert archive.store.metadata(digest) == saved
+    assert archive.import_paths((path,))[0].status == "duplicate"
+    assert archive.store.metadata(digest) == saved
+    archive.store.update_metadata(digest, {})
+    restored = archive.reopen(digest)
+    assert isinstance(restored, ExplorerData)
+    assert restored.source.effective_metadata == original.source.recording.metadata
+    assert restored.source.effective_attributes == original.source.recording.attributes
+    assert restored.source.additions.notes == ""
+    assert restored.ride_bounds == (100, 200)
+    after = archive.store.source(digest)
+    assert after.data == before.data and sha256(after.data).hexdigest() == digest
+    after_entry = archive.store.entries()[0]
+    assert (
+        after_entry.recorded_at_utc,
+        after_entry.recorded_day,
+        after_entry.day_timezone,
+        after_entry.imported_at_utc,
+    ) == (entry.recorded_at_utc, entry.recorded_day, entry.day_timezone, entry.imported_at_utc)
+    assert after_entry.workflow_status == "completed" and after_entry.export_count == 1
+    with archive.store.connection() as connection:
+        assert connection.execute("SELECT count(*) FROM video_links").fetchone() == (1,)
+
+
+def test_metadata_reset_retains_unfamiliar_source_posture_and_numeric_attributes(
+    archive: LibraryArchive,
+    export_directory: Path,
+) -> None:
+    source = synthetic_source(
+        ridingPosition="Unfamiliar",
+        attributes=[{"id": "row", "label": "Row", "value": 3}],
+    )
+    path = export_directory / "source.forces"
+    path.write_bytes(source.recording.source.original_bytes)
+    archive.import_paths((path,))
+    digest = source.source_sha256
+    archive.store.update_metadata(digest, {"riding_position": "Flying", "row": "Back"})
+    edited = archive.reopen(digest)
+    assert isinstance(edited, ExplorerData)
+    assert edited.source.effective_attributes[0].value == "Back"
+    archive.store.update_metadata(digest, {})
+    reset = archive.reopen(digest)
+    assert isinstance(reset, ExplorerData)
+    assert (
+        reset.source.effective_metadata.riding_position == source.recording.metadata.riding_position
+    )
+    assert reset.source.effective_metadata.riding_position is not None
+    assert reset.source.effective_metadata.riding_position.value == "Unfamiliar"
+    assert isinstance(reset.source.effective_attributes[0].value, SourceNumber)
 
 
 def test_park_and_unicode_name_search_are_combined_and_literal(

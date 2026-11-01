@@ -21,6 +21,7 @@ from pydantic import (
 
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
+from ride_forces_analyzer.domain.metadata import RecordingAdditions
 from ride_forces_analyzer.rendering.model import ExportSettings, analysis_configuration_metadata
 from ride_forces_analyzer.rendering.layouts import registry
 
@@ -163,6 +164,7 @@ class BatchJob(BaseModel, frozen=True, strict=True, extra="forbid"):
         first_sample: First included source sample index, when the job uses explicit
             bounds.
         last_sample: Last included source sample index, when the job uses explicit bounds.
+        metadata_additions: Captured user additions; legacy jobs retain original metadata.
     """
 
     recording_path: Path
@@ -172,6 +174,7 @@ class BatchJob(BaseModel, frozen=True, strict=True, extra="forbid"):
     range_mode: RangeMode
     first_sample: int = Field(ge=0)
     last_sample: int = Field(ge=0)
+    metadata_additions: RecordingAdditions | None = None
 
     @model_validator(mode="after")
     def ordered_range(self) -> Self:

@@ -53,6 +53,9 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   User selection loads a preset and refreshes production previews without changing
   explorer recording/settings. Refreshing the stored list does not apply a preset.
 - Editing/deleting a preset does not change saved job snapshots.
+- New jobs capture current Library metadata additions alongside their analysis
+  recipe. Execution uses those captured additions, independently of later Library
+  edits. Legacy jobs without this optional field use original source metadata.
   Jobs replay their saved overlay language independently of UI language.
 - Presets/jobs persist `settings.extent` as `full_frame` or `content_area`; omission
   uses Full frame without rewriting storage. Unsupported supplied values or

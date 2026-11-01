@@ -109,6 +109,11 @@ encoded. Returning to setup restores the selected static preview.
   video-comment metadata; single/batch exports share it, with no per-video JSON sidecar.
   [Batch reports](EXPORT_BATCHES.md#contracts) retain that snapshot, requested job,
   actual GPU selection, completed bytes and elapsed job duration.
+- Version-2 export snapshots also capture effective ride/park/row/seat/train,
+  riding-position value/provenance and notes. Version-1 snapshots without recording
+  metadata retain their original-source semantics. Library additions are separate
+  from the immutable imported recording; Seated/Flying changes reuse the existing
+  display ranges without transforming sensor values.
 - Layout/aspect/extent/position/language/rate changes and seeking do not recalculate
   analysis. Running exports/previews retain the bound basis/tilt, including custom
   Gravity/Incline references and resets; source directions remain evidence.
