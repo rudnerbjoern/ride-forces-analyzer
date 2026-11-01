@@ -39,6 +39,16 @@ from .library_search import library_search_values, normalize_library_text
 from ride_forces_analyzer.domain.metadata import RecordingAdditions
 
 
+WORKFLOW_STATUSES: tuple[str, ...] = (
+    "imported",
+    "markers_verified",
+    "overlays_created",
+    "video_ready",
+    "uploaded",
+    "completed",
+)
+
+
 class LibraryStoreError(Exception):
     """Library access failed without replacing the database or discarding its data."""
 
@@ -393,6 +403,28 @@ class LibraryStore:
             if row is not None
             else None
         )
+
+    def set_workflow_status(self, source_sha256: str, status: str) -> None:
+        """Persist one manual status without transitions, history or other recording changes.
+
+        Args:
+            source_sha256: Archived recording's original-byte identity.
+            status: One of the six supported workflow states, in any order.
+
+        Raises:
+            ValueError: The digest or workflow status is invalid.
+            LibraryStoreError: The recording is missing or the transaction fails.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        if status not in WORKFLOW_STATUSES:
+            raise ValueError("Invalid Library workflow status")
+        with self.connection() as connection:
+            cursor = connection.execute(
+                "UPDATE recordings SET workflow_status=? WHERE source_sha256=?",
+                (status, source_sha256),
+            )
+            if cursor.rowcount != 1:
+                raise LibraryStoreError("Recording is not in the Library")
 
     def update_metadata(
         self,

@@ -179,6 +179,11 @@ no metadata history is stored. Original metadata remains immutable alongside
 New export snapshots capture effective metadata as version 2; version-1 snapshots
 and legacy batch jobs without additions retain original-source semantics. Captured
 batch additions remain independent of later Library edits.
+Workflow status remains one current scalar. The update boundary admits all six
+fixed states in any order and touches no source, markers, metadata or relationships.
+No export/import/metadata action automatically advances or resets it. The Library
+foreground selector saves a clicked state immediately; failure preserves the old
+value and icon, with a visible explanation. No history or new schema is introduced.
 `LibraryStore` applies bundled major/minor revisions in an
 explicit SQLite transaction, rolling back schema, data and revision together on
 failure. Unknown revisions or unversioned existing tables are rejected without

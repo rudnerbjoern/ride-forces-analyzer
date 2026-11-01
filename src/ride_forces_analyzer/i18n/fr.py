@@ -9,6 +9,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 FRENCH: dict[str, str] = {
     "Library": "Bibliothèque",
     "LIBRARY": "BIBLIOTHÈQUE",
+    "Could not save workflow status: {0}": "Impossible d’enregistrer le statut du processus : {0}",
     "Edit metadata…": "Modifier les métadonnées…",
     "Library additions": "Ajouts de la bibliothèque",
     "Save additions": "Enregistrer les ajouts",

@@ -35,6 +35,7 @@ QLabel#Muted { color: #9eb0c7; }
 QLabel#SectionTitle { color: #b8c9df; font-size: 11px; font-weight: 600; }
 QFrame#Panel { background: #182330; border: 1px solid #2b3b4d; border-radius: 10px; }
 QFrame#ValueCard { background: #111c29; border: 1px solid #2e4055; border-radius: 7px; }
+QFrame#LibraryWorkflowSelector { background: #223044; border: 1px solid #627d9f; border-radius: 7px; }
 QLabel#CurrentValue { font-size: 22px; font-weight: 600; }
 QLabel { background: transparent; border: 0; }
 QSpinBox { background: #111c29; border: 1px solid #3a4d66; border-radius: 5px; padding: 4px; }

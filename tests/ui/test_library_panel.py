@@ -1,6 +1,6 @@
 """Native Library interactions, explicit archive import and preserved chart state."""
 
-# cspell:words Seaworld Uhrzeit Heure Importiert Importé Keine passenden Aufnahmen Tous Aucun enregistrement correspondant Metadaten bearbeiten métadonnées
+# cspell:words Seaworld Uhrzeit Heure Importiert Importé Keine passenden Aufnahmen Tous Aucun enregistrement correspondant Metadaten bearbeiten métadonnées Abgeschlossen Terminé
 
 from pathlib import Path
 import json
@@ -15,10 +15,12 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPalette
-from PySide6.QtTest import QSignalSpy
+from PySide6.QtTest import QSignalSpy, QTest
 import pytest
 
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
+from ride_forces_analyzer.ui.explorer.library_workflow import WorkflowIcon
+from ride_forces_analyzer.storage.library import WORKFLOW_STATUSES
 from ride_forces_analyzer.storage.library import LibraryStore
 from ride_forces_analyzer.explorer.library import LibraryArchive
 from ride_forces_analyzer.storage.preferences import Appearance
@@ -140,7 +142,10 @@ def test_library_toggle_preserves_workspace_and_recording(
         tree.isHeaderHidden()
         and tree.horizontalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
     )
-    assert item.toolTip(1) == "Imported" and not item.icon(1).isNull()
+    status_icon = tree.itemWidget(item, 1)
+    assert isinstance(status_icon, WorkflowIcon)
+    assert item.toolTip(1) == "Imported" and not status_icon.button.icon().isNull()
+    assert window.library.workflow_selector is None
     tree.setCurrentItem(item)
     assert not tree.isEnabled()
     wait_until(window.open_action.isEnabled)
@@ -172,10 +177,93 @@ def test_library_toggle_preserves_workspace_and_recording(
     window.library.refresh()
     current_item = tree.currentItem()
     assert current_item is not None and current_item.toolTip(1) == "Markers verified"
-    assert not current_item.icon(1).isNull() and window.data is archived
+    status_icon = tree.itemWidget(current_item, 1)
+    assert isinstance(status_icon, WorkflowIcon)
+    assert not status_icon.button.icon().isNull() and window.data is archived
+
+    # Inline status selection never selects/reloads the recording or changes the chart.
+    QApplication.processEvents()
+    selected_item = tree.currentItem()
+    viewport = (window.plot.axis_x.min(), window.plot.axis_x.max())
+    row_rect = tree.visualItemRect(current_item)
+    QTest.mouseClick(status_icon.button, Qt.MouseButton.LeftButton)
+    selector = window.library.workflow_selector
+    assert selector is not None
+    wait_until(selector.isVisible)
+    assert list(selector.buttons) == list(WORKFLOW_STATUSES)
+    assert selector.buttons["markers_verified"].isChecked()
+    assert selector.parentWidget() is window
+    assert not selector.isWindow()
+    assert current_item.childCount() == 0 and tree.visualItemRect(current_item) == row_rect
+    assert selector.buttons["markers_verified"].mapTo(
+        window,
+        selector.buttons["markers_verified"].rect().center(),
+    ) == status_icon.button.mapTo(window, status_icon.button.rect().center())
+    xs = [selector.buttons[status].x() for status in WORKFLOW_STATUSES]
+    assert xs == sorted(xs) and len(set(xs)) == 6
+    window.grab().save(".tmp/lib08-workflow.png")
+    QTest.keyClick(selector.buttons["markers_verified"], Qt.Key.Key_Escape)
+    assert window.library.workflow_selector is None
+    assert store.entries()[0].workflow_status == "markers_verified"
+    QTest.mouseClick(status_icon.button, Qt.MouseButton.LeftButton)
+    assert window.library.workflow_selector is not None
+    QTest.mouseClick(window.library.search, Qt.MouseButton.LeftButton)
+    assert window.library.workflow_selector is None
+    QTest.mouseClick(status_icon.button, Qt.MouseButton.LeftButton)
+    QTest.mouseClick(status_icon.button, Qt.MouseButton.LeftButton)
+    assert window.library.workflow_selector is None
+    for status in (
+        "completed",
+        "imported",
+        "video_ready",
+        "overlays_created",
+        "uploaded",
+        "markers_verified",
+    ):
+        QTest.mouseClick(status_icon.button, Qt.MouseButton.LeftButton)
+        selector = window.library.workflow_selector
+        assert selector is not None
+        wait_until(selector.isVisible)
+        QTest.mouseClick(selector.buttons[status], Qt.MouseButton.LeftButton)
+        assert window.library.workflow_selector is None
+        assert store.entries()[0].workflow_status == status
+        assert status_icon.button.toolTip() == current_item.toolTip(1)
+    with store.connection() as connection:
+        connection.execute(
+            "CREATE TRIGGER reject_workflow BEFORE UPDATE OF workflow_status ON recordings "
+            "BEGIN SELECT RAISE(ABORT, 'injected workflow failure'); END",
+        )
+    QTest.mouseClick(status_icon.button, Qt.MouseButton.LeftButton)
+    selector = window.library.workflow_selector
+    assert selector is not None
+    wait_until(selector.isVisible)
+    QTest.mouseClick(selector.buttons["completed"], Qt.MouseButton.LeftButton)
+    assert window.library.workflow_selector is selector
+    assert selector.buttons["markers_verified"].isChecked()
+    assert status_icon.button.toolTip() == "Markers verified"
+    assert "Could not save workflow status" in window.library.details.toPlainText()
+    with store.connection() as connection:
+        connection.execute("DROP TRIGGER reject_workflow")
+    for language, caption in ((1, "Abgeschlossen"), (2, "Terminé"), (0, "Completed")):
+        window.set_ui_language(language)
+        assert selector.buttons["completed"].toolTip() == caption
+        assert selector.buttons["markers_verified"].isChecked()
+    QTest.keyClick(selector.buttons["markers_verified"], Qt.Key.Key_Escape)
+    assert tree.currentItem() is selected_item and window.data is archived
+    assert (window.plot.axis_x.min(), window.plot.axis_x.max()) == viewport
     for appearance in (Appearance.DARK, Appearance.LIGHT, Appearance.MANTA):
+        QTest.mouseClick(status_icon.button, Qt.MouseButton.LeftButton)
+        selector = window.library.workflow_selector
+        assert selector is not None
         window.set_appearance(APPEARANCE_CHOICES.index(appearance))
         QApplication.processEvents()
+        assert selector.buttons["markers_verified"].isChecked()
+        assert selector.buttons["completed"].palette().color(
+            QPalette.ColorRole.ButtonText,
+        ) == status_icon.button.palette().color(QPalette.ColorRole.ButtonText)
+        if appearance is Appearance.LIGHT:
+            window.grab().save(".tmp/lib08-workflow-light.png")
+        QTest.keyClick(selector.buttons["markers_verified"], Qt.Key.Key_Escape)
         heading = window.library.panel.findChild(QLabel, "SectionTitle")
         inspector_heading = window.inspector.findChildren(QLabel, "SectionTitle")[0]
         assert heading is not None and heading.font() == inspector_heading.font()
@@ -481,3 +569,39 @@ def test_library_toggle_preserves_workspace_and_recording(
     assert (window.plot.axis_x.min(), window.plot.axis_x.max()) == pytest.approx((60, 100))
     assert window.navigation.position.value() == 4000
     assert resets.count() == 0
+
+    # Status clicks address their own entry even when a different source is selected.
+    selected_item = tree.currentItem()
+    group = tree.topLevelItem(1)
+    assert group is not None
+    other_item = None
+    for index in range(group.childCount()):
+        candidate = group.child(index)
+        if candidate is not None and candidate.text(0).splitlines()[0] == "No park ride":
+            other_item = candidate
+            break
+    assert other_item is not None
+    other_icon = tree.itemWidget(other_item, 1)
+    assert isinstance(other_icon, WorkflowIcon)
+    QTest.mouseClick(other_icon.button, Qt.MouseButton.LeftButton)
+    selector = window.library.workflow_selector
+    assert selector is not None
+    QTest.mouseClick(selector.buttons["completed"], Qt.MouseButton.LeftButton)
+    assert window.library.workflow_selector is None
+    other_digest = other_item.data(0, Qt.ItemDataRole.UserRole)
+    assert isinstance(other_digest, str)
+    assert (
+        next(
+            entry for entry in store.entries() if entry.source_sha256 == other_digest
+        ).workflow_status
+        == "completed"
+    )
+    assert tree.currentItem() is selected_item and window.data is retained
+    assert LibraryArchive(store).import_paths((no_park,))[0].status == "duplicate"
+    store.update_metadata(other_digest, {"notes": "Current metadata"})
+    assert (
+        next(
+            entry for entry in store.entries() if entry.source_sha256 == other_digest
+        ).workflow_status
+        == "completed"
+    )

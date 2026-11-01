@@ -7,6 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words Demi
 
 from pathlib import Path
+from dataclasses import replace
 
 from PySide6.QtCore import (
     QModelIndex,
@@ -56,16 +57,7 @@ from ride_forces_analyzer.ui.presentation.translation import bind, button_text
 
 from .controls import create_panel
 from .library_editor import LibraryMetadataDialog
-
-
-_WORKFLOW_ICONS = {
-    "imported": ("Imported", QStyle.StandardPixmap.SP_FileIcon),
-    "markers_verified": ("Markers verified", QStyle.StandardPixmap.SP_DialogApplyButton),
-    "overlays_created": ("Overlays created", QStyle.StandardPixmap.SP_FileDialogContentsView),
-    "video_ready": ("Video ready", QStyle.StandardPixmap.SP_MediaPlay),
-    "uploaded": ("Uploaded", QStyle.StandardPixmap.SP_ArrowUp),
-    "completed": ("Completed", QStyle.StandardPixmap.SP_DialogYesButton),
-}
+from .library_workflow import WORKFLOW_ICONS, WorkflowIcon, WorkflowSelector
 
 
 class ParkFilter(QComboBox):
@@ -181,6 +173,7 @@ class LibraryPanel(QSplitter):
         clear_filters: Action restoring all recordings.
         editor: Dialog for the selected recording's additions.
         edit_button: Action opening the metadata dialog.
+        workflow_selector: Foreground status selection layer, or None while closed.
         open_requested: Signal carrying the selected archived source digest.
     """
 
@@ -257,6 +250,7 @@ class LibraryPanel(QSplitter):
         self.recordings.setColumnWidth(1, 32)
         bind(self.recordings, tr("Archived recordings"), "accessibleName")
         self.recordings.currentItemChanged.connect(self._selected)
+        self.recordings.verticalScrollBar().valueChanged.connect(self._close_workflow)
         self.empty_label = bind(QLabel(), tr("No recordings in Library"))
         self.empty_label.setObjectName("Muted")
         self.recordings.setItemDelegateForColumn(
@@ -292,6 +286,9 @@ class LibraryPanel(QSplitter):
         self.toggle_button.toggled.connect(self._toggle)
         self._import_worker: ArchiveImportWorker | None = None
         self._entries: dict[str, LibraryEntry] = {}
+        self._items: dict[str, QTreeWidgetItem] = {}
+        self.workflow_selector: WorkflowSelector | None = None
+        self._workflow_digest: str | None = None
         self._details_data: ExplorerData | None = None
         self._error: str | None = None
         self.refresh_labels()
@@ -311,6 +308,7 @@ class LibraryPanel(QSplitter):
 
     def refresh(self) -> None:
         """Reload lightweight list metadata without opening a recording or losing selection."""
+        self._close_workflow()
         selected = self.selected_entry
         try:
             store = LibraryStore()
@@ -345,6 +343,7 @@ class LibraryPanel(QSplitter):
         blocked = self.recordings.blockSignals(True)
         try:
             self.recordings.clear()
+            self._items.clear()
             group: QTreeWidgetItem | None = None
             day: str | None = None
             for entry in entries:
@@ -358,6 +357,10 @@ class LibraryPanel(QSplitter):
                     group.setExpanded(True)
                 item = QTreeWidgetItem(group)
                 item.setData(0, Qt.ItemDataRole.UserRole, entry.source_sha256)
+                self._items[entry.source_sha256] = item
+                icon = WorkflowIcon(entry.source_sha256, self.recordings)
+                icon.clicked.connect(self._toggle_workflow)
+                self.recordings.setItemWidget(item, 1, icon)
                 if selected is not None and selected.source_sha256 == entry.source_sha256:
                     self.recordings.setCurrentItem(item)
                 elif (
@@ -398,8 +401,10 @@ class LibraryPanel(QSplitter):
                 text = library_row_text(entry)
                 item.setText(0, text)
                 item.setToolTip(0, text)
-                label, icon = _WORKFLOW_ICONS[entry.workflow_status]
-                item.setIcon(1, self.style().standardIcon(icon))
+                label, _ = WORKFLOW_ICONS[entry.workflow_status]
+                icon = self.recordings.itemWidget(item, 1)
+                assert isinstance(icon, WorkflowIcon)
+                icon.refresh_labels(entry.workflow_status)
                 item.setToolTip(1, tr(label))
                 item.setData(1, Qt.ItemDataRole.AccessibleTextRole, tr(label))
         selected = self.selected_entry
@@ -416,6 +421,10 @@ class LibraryPanel(QSplitter):
         )
         self.edit_button.setVisible(editable)
         self.editor.refresh_labels()
+        if self.workflow_selector is not None and self._workflow_digest is not None:
+            self.workflow_selector.refresh_labels(
+                self._entries[self._workflow_digest].workflow_status,
+            )
 
     def show_recording(self, data: ExplorerData) -> None:
         """Display original metadata only when the loaded source matches the selection.
@@ -441,6 +450,7 @@ class LibraryPanel(QSplitter):
 
     @Slot(QTreeWidgetItem, QTreeWidgetItem)
     def _selected(self, current: QTreeWidgetItem | None, previous: QTreeWidgetItem | None) -> None:
+        self._close_workflow()
         self._details_data = None
         self._error = None
         self.refresh_labels()
@@ -457,6 +467,63 @@ class LibraryPanel(QSplitter):
         self.park_filter.blockSignals(blocked_park)
         self.search.blockSignals(blocked_search)
         self.refresh()
+
+    @Slot(str)
+    def _toggle_workflow(self, source_sha256: str) -> None:
+        same = self._workflow_digest == source_sha256
+        self._close_workflow()
+        if same:
+            return
+        item = self._items[source_sha256]
+        icon = self.recordings.itemWidget(item, 1)
+        assert isinstance(icon, WorkflowIcon)
+        status = self._entries[source_sha256].workflow_status
+        selector = WorkflowSelector(icon.button, self.window())
+        selector.refresh_labels(status)
+        selector.chosen.connect(self._save_workflow)
+        selector.dismissed.connect(self._close_workflow)
+        selector.show()
+        selector.adjustSize()
+        layout = selector.layout()
+        assert layout is not None
+        layout.activate()
+        center = icon.button.mapTo(self.window(), icon.button.rect().center())
+        checked_center = selector.buttons[status].geometry().center()
+        bounds = self.window().rect()
+        selector.move(
+            max(0, min(center.x() - checked_center.x(), bounds.width() - selector.width())),
+            max(0, min(center.y() - checked_center.y(), bounds.height() - selector.height())),
+        )
+        self._workflow_digest = source_sha256
+        self.workflow_selector = selector
+        selector.raise_()
+
+    @Slot()
+    def _close_workflow(self) -> None:
+        selector = self.workflow_selector
+        self.workflow_selector = None
+        self._workflow_digest = None
+        if selector is not None:
+            selector.hide()
+            application = QApplication.instance()
+            assert isinstance(application, QApplication)
+            application.removeEventFilter(selector)
+            selector.deleteLater()
+
+    @Slot(str)
+    def _save_workflow(self, status: str) -> None:
+        digest = self._workflow_digest
+        if digest is None:
+            return
+        try:
+            LibraryStore().set_workflow_status(digest, status)
+        except (ValueError, LibraryStoreError) as error:
+            self.show_error(tr("Could not save workflow status: {0}", str(error)))
+            return
+        self._entries[digest] = replace(self._entries[digest], workflow_status=status)
+        self._error = None
+        self._close_workflow()
+        self.refresh_labels()
 
     @Slot(object)
     def _save_metadata(self, values: dict[str, object]) -> None:
@@ -535,6 +602,8 @@ class LibraryPanel(QSplitter):
     def _toggle(self, checked: bool) -> None:
         """Show or hide the content and match the folder icon to its visible state."""
         self.panel.setVisible(checked)
+        if not checked:
+            self._close_workflow()
         if checked:
             self.refresh()
         self.toggle_button.setIcon(

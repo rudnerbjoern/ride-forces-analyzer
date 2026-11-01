@@ -2,7 +2,8 @@
 
 <!-- cspell:words NFKC -->
 
-Status: LIB-01–06 implemented; LIB-07–14 planned. This document defines the Library feature
+Status: LIB-01–06 and LIB-08 implemented; LIB-07 and LIB-09–14 planned.
+This document defines the Library feature
 and its verifiable implementation steps. It does not authorize implementation or
 Git delivery. Requirements and implementation belong on the same feature branch.
 
@@ -185,8 +186,31 @@ Initialize a new Library entry as `imported`. All subsequent changes are manual,
 including moving backwards or repeating work; there are no enforced transition
 prerequisites. Marker/metadata edits, successful exports, video links and external
 publication never advance or reset this status automatically. Store only its current
-value on the entry, without a status history. Expose it as a dropdown in recording
-details; external editing, uploads and publication are confirmed by the user.
+value on the entry, without a status history. External editing, uploads and
+publication are confirmed by the user.
+
+Only the current workflow icon is permanently visible in each Library entry.
+Clicking it shows a horizontal foreground overlay anchored to that icon, with the
+six status icons ordered from left to right as listed above. The current status
+stays at the clicked position and is highlighted; earlier steps appear to its left
+and later steps to its right. Keep the trigger and choices visually icon-only,
+without button frames. The overlay adds no list row and shifts no entries.
+Give the overlay a contrasting background, border and rounded corners using the
+active theme's existing colors; the individual icons remain frameless.
+Every status remains selectable, including moving backwards or skipping steps.
+Localized tooltips and accessible names identify each icon.
+
+Selecting a status saves it immediately, updates the entry's current icon and
+closes the bar. Escape or clicking outside closes it without changing the status.
+Use neither a separate menu/dialog nor a Save button. A failed write retains the
+previous stored status and icon and provides a visible explanation.
+Reuse a themed `QFrame` with `QHBoxLayout`, six checkable `QToolButton` controls and an
+exclusive `QButtonGroup`, following existing theme and icon conventions.
+`LibraryStore.set_workflow_status()` validates the six admitted values and updates
+only the current status in one transaction. It adds neither history nor automatic
+transitions; failed writes leave the entry unchanged. `ui.explorer.library_workflow`
+owns the icon-only trigger and foreground selector; choosing a status never loads
+the source or changes Library selection, chart state or list geometry.
 
 ### Video links
 
@@ -543,8 +567,9 @@ recording, chart zoom or analysis.
    Day group headers run newest to oldest; entries within each day run newest to
    oldest. Compact entries show the effective ride name in bold, the park beneath
    it, then local clock time and export count. A small workflow icon on the right
-   exposes the current stored status through a localized tooltip; it does not
-   change the status or provide an editor. Unknown dates form the final group; ties and unknown-date
+   exposes the current stored status through a localized tooltip and opens the
+   horizontal foreground selector described above; the current icon
+   alone remains permanently visible. Unknown dates form the final group; ties and unknown-date
    entries use import time and source digest for deterministic ordering.
 2. **Selected recording:** open it in the existing analysis workspace to the right.
    Selection loads only that source; an import/open failure preserves the current
@@ -554,7 +579,8 @@ recording, chart zoom or analysis.
    **Edit metadata…** dialog for park, ride, Row, Seat, Train, Seated/Flying and notes.
    Saving or resetting additions updates the effective
    entry metadata, list row, park choices and search results. Show the current marker
-   choices and manual workflow dropdown here; reuse the existing explorer controls
+   choices here; workflow status is selected directly through the entry's icon.
+   Reuse the existing explorer controls
    for marker editing instead of adding a second marker editor.
 4. **Export history:** show the selected recording's attempts newest first, with
    time, format/layout, status, duration and destination. Selecting an attempt
@@ -579,7 +605,9 @@ The current Library queries only list metadata and export counts, grouping by
 recording-local day. It uses the specified UTC instant/import time/digest ordering;
 unknown dates form the final group. Compact three-line entries show the emphasized ride name, muted park name and
 source-local clock/export summary. Names are elided with full tooltips. Workflow
-icons show stored status through localized tooltips; status editing remains LIB-08. Selecting
+icons show stored status through localized tooltips and open the themed, rounded
+foreground selector on click. The current status remains anchored to its original
+icon position; all six states can be chosen without adding a row or reloading a source. Selecting
 a row loads only that source through the existing worker; day headers are not
 selectable. Details show original file/name/recording/import information and
 additional source metadata after loading, all read-only. List refresh, language
@@ -659,7 +687,7 @@ backup schedules and including exported videos are outside this design.
 
 ## Iterative implementation and verification
 
-LIB-01–06 are implemented; remaining functionality is planned.
+LIB-01–06 and LIB-08 are implemented; LIB-07 and LIB-09–14 remain planned.
 Implement one increment at a time on the same feature branch;
 its acceptance checks must pass before moving to dependent work. Steps 13–14 are
 the later backup/restore phase, not a prerequisite for the initial Library.
@@ -764,14 +792,25 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 8. **LIB-08 — Manual workflow status**
 
-   **Status:** Planned.
+   **Status:** Complete (native Windows status persistence and foreground-selector acceptance verified).
 
-   **Implementation:** Add the six approved states to recording details using a
-   localized dropdown. Persist only the current choice; initialize new entries as
-   `imported` and allow the user to move forwards or backwards.
+   **Implementation:** Make each entry's current workflow icon show a foreground
+   overlay of the six approved status icons, anchored at the clicked icon without
+   adding a row or moving entries. Render the trigger and choices without visible
+   button frames. Keep workflow order from left to right, highlight the current status and identify icons with
+   localized tooltips/accessibility labels. Selecting any state saves immediately,
+   updates the current icon and closes the bar. Escape/outside click dismisses it
+   without changes. Persist only the current choice; initialize new entries as
+   `imported`. Reuse themed Qt buttons; no separate menu, dialog or Save action.
 
-   **Observable acceptance:** All states persist after reload without a status
-   history. Marker/metadata changes, successful or failed exports, and video-link
+   **Observable acceptance:** Only the current icon is visible until clicked. The
+   overlay keeps the current status at the clicked icon's position, with earlier
+   steps to its left and later steps to its right. No extra row or visible button
+   chrome appears. Backwards selection and skipping steps both save immediately
+   and persist after reload; no transition rules or status history are introduced.
+   Escape/outside click makes no change, and a failed write keeps the old status/icon
+   with a visible explanation. The selector follows the active theme and UI language.
+   Marker/metadata changes, successful or failed exports, and video-link
    changes neither advance nor reset the status. Reimport retains the current state.
    External video work, uploads and publication require no platform integration.
 

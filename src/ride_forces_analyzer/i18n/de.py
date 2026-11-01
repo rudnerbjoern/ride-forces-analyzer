@@ -10,6 +10,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 GERMAN: dict[str, str] = {
     "Library": "Bibliothek",
     "LIBRARY": "BIBLIOTHEK",
+    "Could not save workflow status: {0}": "Workflow-Status konnte nicht gespeichert werden: {0}",
     "Edit metadata…": "Metadaten bearbeiten…",
     "Library additions": "Bibliotheksergänzungen",
     "Save additions": "Ergänzungen speichern",

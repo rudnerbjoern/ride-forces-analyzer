@@ -23,6 +23,7 @@ from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from ride_forces_analyzer.storage.library import (
     LibraryStore,
     LibraryStoreError,
+    WORKFLOW_STATUSES,
     default_database_path,
 )
 from ride_forces_analyzer.storage.library_search import library_search_values
@@ -329,6 +330,56 @@ def test_default_path_and_io_failure(
     with pytest.raises(LibraryStoreError):
         LibraryStore(parent / "library.sqlite3").initialize()
     assert parent.read_text(encoding="utf-8") == "preserved"
+
+
+def test_manual_workflow_accepts_all_transitions_and_preserves_other_data(
+    export_directory: Path,
+) -> None:
+    store = LibraryStore(export_directory / "library.sqlite3")
+    with store.connection() as connection:
+        insert_recording(connection)
+        connection.execute("UPDATE recordings SET notes='kept',row_override='Front'")
+        connection.execute(
+            "INSERT INTO video_links(recording_sha256,url) VALUES (?, 'https://example.com')",
+            (DIGEST,),
+        )
+        connection.execute(
+            "INSERT INTO export_history(recording_sha256,export_kind,origin,started_at_utc,status,"
+            "application_version,request_json) VALUES (?, 'csv','single','now','completed','1.3.0','{}')",
+            (DIGEST,),
+        )
+        connection.row_factory = sqlite3.Row
+        before = dict(connection.execute("SELECT * FROM recordings").fetchone())
+        before.pop("workflow_status")
+        tables = connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    for status in (*WORKFLOW_STATUSES, *reversed(WORKFLOW_STATUSES), "completed", "imported"):
+        store.set_workflow_status(DIGEST, status)
+        with LibraryStore(store.path).connection() as connection:
+            connection.row_factory = sqlite3.Row
+            current = dict(connection.execute("SELECT * FROM recordings").fetchone())
+            assert current.pop("workflow_status") == status
+            assert current == before
+            assert connection.execute("SELECT count(*) FROM video_links").fetchone()[0] == 1
+            assert connection.execute("SELECT count(*) FROM export_history").fetchone()[0] == 1
+            assert (
+                connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+                == tables
+            )
+    for invalid in ("", "automatic", "COMPLETED"):
+        with pytest.raises(ValueError, match="workflow status"):
+            store.set_workflow_status(DIGEST, invalid)
+    with pytest.raises(ValueError):
+        store.set_workflow_status("invalid", "completed")
+    with pytest.raises(LibraryStoreError, match="not in the Library"):
+        store.set_workflow_status("f" * 64, "completed")
+    with store.connection() as connection:
+        connection.execute(
+            "CREATE TRIGGER reject_status BEFORE UPDATE OF workflow_status ON recordings "
+            "WHEN NEW.workflow_status='uploaded' BEGIN SELECT RAISE(ABORT, 'injected status failure'); END",
+        )
+    with pytest.raises(LibraryStoreError, match="injected status failure"):
+        store.set_workflow_status(DIGEST, "uploaded")
+    assert LibraryStore(store.path).entries()[0].workflow_status == "imported"
 
 
 def test_list_order_counts_effective_names_and_no_source_blob_reads(

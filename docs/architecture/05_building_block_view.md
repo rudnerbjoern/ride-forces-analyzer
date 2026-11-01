@@ -91,7 +91,9 @@ park choices come from the whole Library. `LibraryStore.update_metadata()` valid
 the frozen `domain.metadata.RecordingAdditions`, updates current overrides and
 search projections atomically, and rejects original/date fields. `ImportSuccess`
 keeps additions separate from its original recording and resolves effective values
-for views/exports. Marker persistence and later workflows remain planned under
+for views/exports. `LibraryStore.set_workflow_status()` validates the six manual
+states and updates only that scalar in one transaction, with no history or transition
+rules. Marker persistence and remaining workflows are tracked under
 [LIB-07 onward](../requirements/LIBRARY.md#iterative-implementation-and-verification).
 
 ## Analysis boundary
@@ -155,13 +157,17 @@ toolbar toggle and folder-icon state. The window places its existing workspace
 beside that surface. The panel schedules explicit multi-file archive import through
 a background worker and displays per-file results; the archive service owns all
 import, duplicate and reopening logic outside widgets. A grouped Qt recording list
-uses compact three-line rows with elided names, export counts and read-only
+uses compact three-line rows with elided names, export counts and clickable
 workflow icons/tooltips, a park dropdown and combined name search; selected-source details
 remain read-only, with saved additions shown separately. `LibraryMetadataDialog`
 owns the separate metadata form; persistence and validation remain outside widgets.
 Selection requests go through the existing `LoadWorker` and window
 load lifecycle, preserving the previous chart on failure. Collapsing and language
 changes retain selection without reloading a source.
+`ui.explorer.library_workflow` owns frameless status icons and the themed rounded
+foreground selector. It anchors the current state to its trigger, handles dismissal
+and emits choices; the panel invokes storage and refreshes icons without reopening
+sources or changing list geometry. Persistence and validation remain outside widgets.
 Export preview widgets and background jobs live in
 `ui.exports.preview` and `ui.exports.workers`. `ui.exports.form.ExportForm` owns
 export inputs and retained layout placements. `ui.exports.preview_controller` owns

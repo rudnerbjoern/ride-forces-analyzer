@@ -180,7 +180,13 @@ does not archive files. Compact entries group recordings by recording-local day,
 first, with unknown dates last. Each shows an emphasized ride name, a muted park
 name and a local clock/export summary. Long names are elided with full tooltips.
 A small icon on the right displays the stored workflow status through a localized
-tooltip; it is read-only, with status editing remaining planned under LIB-08.
+tooltip. Clicking the frameless icon opens a rounded foreground layer using theme
+background/border colors. Its six frameless icons follow workflow order; the
+highlighted current state stays at the clicked icon's position, with earlier/later
+steps to its left/right. Choosing any state saves immediately and closes the layer.
+Escape or outside click dismisses it unchanged; failed writes retain the old state
+and explain the failure. No recording load, selection, chart or list-layout change
+is required. Status remains manual, including backwards moves and skipping steps.
 Library/day headings reuse the Inspector section-heading style; entry text uses
 the shared body font and theme text/muted colors, including live theme changes.
 Selecting a recording opens its stored original in the current workspace; failures
