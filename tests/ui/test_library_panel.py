@@ -152,9 +152,10 @@ def test_library_toggle_preserves_workspace_and_recording(
     assert tree.isEnabled() and window.data is not None and window.data is not data
     assert window.data.source.recording.source.provenance.path is None
     assert window.library.details.isReadOnly()
-    details = window.library.details.toPlainText()
-    assert "2026-09-17 10:17:41 (America/New_York)" in details
-    assert "Import time (UTC):" in details and "Row: 3" in details
+    details = " ".join(window.library.details.toPlainText().split())
+    assert "Recording time: 2026-09-17 10:17" in details
+    assert "America/New_York" not in details and "Source date:" not in details
+    assert "Import time:" in details and "Row: 3" in details
     archived = window.data
     window.plot.axis_x.setRange(60, 100)
     window.navigation.position.setValue(4000)
@@ -241,7 +242,9 @@ def test_library_toggle_preserves_workspace_and_recording(
     assert window.library.workflow_selector is selector
     assert selector.buttons["markers_verified"].isChecked()
     assert status_icon.button.toolTip() == "Markers verified"
-    assert "Could not save workflow status" in window.library.details.toPlainText()
+    assert "Could not save workflow status" in " ".join(
+        window.library.details.toPlainText().split(),
+    )
     with store.connection() as connection:
         connection.execute("DROP TRIGGER reject_workflow")
     for language, caption in ((1, "Abgeschlossen"), (2, "Terminé"), (0, "Completed")):
@@ -310,7 +313,7 @@ def test_library_toggle_preserves_workspace_and_recording(
     selected = window.library.selected_entry
     assert selected is not None and selected.source_sha256 == archived.source.source_sha256
     assert selected.workflow_status == "markers_verified"
-    assert "Ride: Manta updated" in window.library.details.toPlainText()
+    assert "Ride: Manta updated" in " ".join(window.library.details.toPlainText().split())
 
     # Editing has its own dialog; the Library and workspace keep their dimensions.
     QApplication.processEvents()
@@ -356,8 +359,8 @@ def test_library_toggle_preserves_workspace_and_recording(
     assert window.data.source.source_sha256 == digest
     assert "Edited ride" in window.heading.text() and "Edited park" in window.heading.text()
     assert dict(window.data.metadata_fields)["Row"] == "Front"
-    assert "Ride: Manta updated" in window.library.details.toPlainText()
-    assert "Row: 3" in window.library.details.toPlainText()
+    assert "Ride: Manta updated" in " ".join(window.library.details.toPlainText().split())
+    assert "Row: 3" in " ".join(window.library.details.toPlainText().split())
     assert window.library.park_filter.findData("Edited park") >= 0
     window.library.edit_button.click()
     assert editor.fields["ride_name"].text() == "Edited ride"
@@ -442,8 +445,8 @@ def test_library_toggle_preserves_workspace_and_recording(
         window.data is not None and window.data.source.source_sha256 == unknown_source.source_sha256
     )
     assert window.size() == window_size and window.library.panel.width() == panel_width
-    assert "Recording time: Unknown date" in window.library.details.toPlainText()
-    assert "Riding position:" not in window.library.details.toPlainText()
+    assert "Recording time: Unknown date" in " ".join(window.library.details.toPlainText().split())
+    assert "Riding position:" not in " ".join(window.library.details.toPlainText().split())
 
     # A failed archived selection leaves the existing chart/selection intact.
     manta_day = tree.topLevelItem(0)
@@ -468,7 +471,7 @@ def test_library_toggle_preserves_workspace_and_recording(
     assert (window.plot.axis_x.min(), window.plot.axis_x.max()) == pytest.approx((60, 100))
     assert window.navigation.position.value() == 4000
     assert (window.inspector.first.value(), window.inspector.last.value()) == (3000, 6000)
-    assert "integrity" in window.library.details.toPlainText()
+    assert "integrity" in " ".join(window.library.details.toPlainText().split())
     assert "Could not open archived recording" in window.statusBar().currentMessage()
     window.library.toggle_button.click()
     QApplication.processEvents()

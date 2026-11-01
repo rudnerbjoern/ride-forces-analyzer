@@ -2,7 +2,7 @@
 
 <!-- cspell:words NFKC -->
 
-Status: LIB-01–08 implemented; LIB-09–14 planned.
+Status: LIB-01–10 implemented; LIB-11–14 planned.
 This document defines the Library feature
 and its verifiable implementation steps. It does not authorize implementation or
 Git delivery. Requirements and implementation belong on the same feature branch.
@@ -243,6 +243,18 @@ new choices are managed in Library settings.
 
 The user can add, edit and remove links; retain the current list in the Library
 without an edit history.
+The selected entry's video icon opens a separate themed `LibraryVideosDialog`.
+Its list and form support Add, selecting a link to edit, Save and Remove. Save
+persists only that link and keeps the dialog open for further edits; Cancel/Escape
+discards the current unsaved form. Errors keep the form visible. The dialog is
+bound to its recording hash and does not load or change chart data.
+`LibraryStore` validates HTTP/HTTPS URLs locally and scopes every update/removal
+to both recording hash and link ID. No source bytes, metadata or workflow fields
+are updated. Existing `video_links` columns suffice.
+`LibraryLabelsEditor` maintains a draft in the Settings Library group. Save writes
+the ordered options as `library_video_labels` JSON; Cancel writes nothing.
+An explicitly saved empty list stays empty; defaults apply only before a list is
+saved. Labels are nonempty distinct texts; an unset link label is stored as empty.
 Allow user-supplied HTTP/HTTPS links without restricting them to a platform list
 or requiring an external platform API. A link may refer to a private, unlisted
 or scheduled upload; its presence does not establish that the video is released
@@ -317,7 +329,8 @@ The diagram shows all six existing application tables, the three Library tables
 and Alembic's version table, with their columns and database ownership.
 The Library schema, explicit archive import and reopening service are implemented.
 The grouped recording list and read-only source/date/import details are implemented;
-park/name filters, metadata/marker editing and manual workflow status are implemented;
+park/name filters, metadata/marker editing, manual workflow status and video links
+with configurable labels are implemented;
 remaining workflows are planned.
 `PK` marks primary-key
 columns; the four marked columns in `tiles` form one composite primary key.
@@ -594,8 +607,8 @@ recording, chart zoom or analysis.
    time, format/layout, status, duration and destination. Selecting an attempt
    exposes its saved settings and **Repeat export…** when supported. This can be
    a section/tab of recording details; it needs no separate window per attempt.
-5. **Video links:** list the selected recording's labels and URLs in its details
-   panel, with a label dropdown and actions to add, edit and remove individual links.
+5. **Video links:** open a separate dialog from the selected recording's video icon,
+   with its link list, label dropdown and actions to add, edit and remove individual links.
    Multiple full-video, Short or other platform links can coexist without affecting
    the chart area.
 6. **Library settings:** manage the video-label dropdown choices in the existing
@@ -618,7 +631,13 @@ foreground selector on click. The current status remains anchored to its origina
 icon position; all six states can be chosen without adding a row or reloading a source. Selecting
 a row loads only that source through the existing worker; day headers are not
 selectable. Details show original file/name/recording/import information and
-additional source metadata after loading, all read-only. List refresh, language
+additional source metadata after loading, all read-only.
+The compact summary uses aligned label/value table rows without blank lines for
+ride/park, recording/import dates and seating/device values, with the source filename
+below. Dates use the UI language's readable date/minute format;
+recording time stays source-local and import time uses the viewer's local clock.
+It omits time-zone fields, raw numeric source dates and the duplicate UUID without
+changing archived data. List refresh, language
 changes and collapsing preserve selection without reloading the chart.
 The park dropdown reads all effective park choices independently of the active
 search. Park selection and whitespace-separated search terms combine with AND.
@@ -626,7 +645,8 @@ Empty groups disappear; an empty result shows **No matching recordings**. The
 search clear action removes its text; the reset icon clears both filters. Filtering
 does not open sources or change the chart. Collapsing retains both controls.
 Metadata editing uses the separate dialog; existing chart controls persist current
-markers to the Library for archived hashes. Later workflows remain LIB-09 onward.
+markers to the Library for archived hashes. Video links use a separate dialog;
+Settings → Library manages label choices. Later workflows remain LIB-11 onward.
 
 LIB-04 acceptance also checks the default collapsed state, showing/hiding the panel
 and restoring the existing chart area and minimum window size. Group these checks
@@ -695,7 +715,7 @@ backup schedules and including exported videos are outside this design.
 
 ## Iterative implementation and verification
 
-LIB-01–08 are implemented; LIB-09–14 remain planned.
+LIB-01–10 are implemented; LIB-11–14 remain planned.
 Implement one increment at a time on the same feature branch;
 its acceptance checks must pass before moving to dependent work. Steps 13–14 are
 the later backup/restore phase, not a prerequisite for the initial Library.
@@ -824,7 +844,7 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 9. **LIB-09 — Video links and label selection**
 
-   **Status:** Planned.
+   **Status:** Complete (native Windows link persistence, isolated edits and themed-dialog acceptance verified).
 
    **Implementation:** Add the video-link list, per-link add/edit/remove actions and
    label dropdown using the six initial choices and stored Library preferences.
@@ -838,7 +858,7 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 10. **LIB-10 — Library settings for video labels**
 
-    **Status:** Planned.
+    **Status:** Complete (native Windows default/custom/empty choices and Settings Save/Cancel acceptance verified).
 
     **Implementation:** Add dropdown-list management under Settings → Library using
     the existing Save/Cancel behavior and `library_video_labels` preference.

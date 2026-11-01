@@ -191,6 +191,14 @@ fixed states in any order and touches no source, markers, metadata or relationsh
 No export/import/metadata action automatically advances or resets it. The Library
 foreground selector saves a clicked state immediately; failure preserves the old
 value and icon, with a visible explanation. No history or new schema is introduced.
+Video links use the existing recording foreign key and local link ID. Individual
+add/edit/remove transactions preserve other links, sources and workflow status.
+HTTP/HTTPS URLs are validated locally; private/scheduled uploads require no online
+verification. Label text stays on each link. Ordered dropdown options live as JSON
+in `preferences.library_video_labels`; first use offers the six initial labels,
+while saved custom and empty lists survive startup. Settings edits a draft until
+Save; Cancel retains the previous list. Removed options remain available when
+editing an existing link that still uses their text.
 `LibraryStore` applies bundled major/minor revisions in an
 explicit SQLite transaction, rolling back schema, data and revision together on
 failure. Unknown revisions or unversioned existing tables are rejected without

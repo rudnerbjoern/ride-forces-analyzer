@@ -4,7 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-# cspell:words sqlalchemy autocommit poolclass timespec
+# cspell:words sqlalchemy autocommit poolclass timespec lastrowid
 
 from collections.abc import Generator
 from collections.abc import Mapping
@@ -16,6 +16,7 @@ from importlib.resources import as_file, files
 from pathlib import Path
 import sqlite3
 from typing import Literal
+from urllib.parse import urlsplit
 
 from alembic import command
 from alembic.config import Config
@@ -34,7 +35,7 @@ from ride_forces_analyzer.analysis.calibration import (
 )
 from ride_forces_analyzer.importers import ImportSuccess, import_forces_bytes
 from ride_forces_analyzer.importers.library_metadata import project_library_metadata, recording_uuid
-from ride_forces_analyzer.validation.checks import validate_sample_range, validate_sha256
+from ride_forces_analyzer.validation.checks import has_type, validate_sample_range, validate_sha256
 from .library_search import library_search_values, normalize_library_text
 from ride_forces_analyzer.domain.metadata import RecordingAdditions
 
@@ -47,6 +48,21 @@ WORKFLOW_STATUSES: tuple[str, ...] = (
     "uploaded",
     "completed",
 )
+
+
+@dataclass(frozen=True, slots=True)
+class VideoLink:
+    """One recording's saved video URL and optional label text.
+
+    Attributes:
+        id: Local link identity, independent of the other recording links.
+        url: User-supplied HTTP/HTTPS URL, without online verification.
+        label: Selected label text, or empty when unset.
+    """
+
+    id: int
+    url: str
+    label: str
 
 
 class LibraryStoreError(Exception):
@@ -375,6 +391,99 @@ class LibraryStore:
             calibration,
             additions,
         )
+
+    def video_links(self, source_sha256: str) -> tuple[VideoLink, ...]:
+        """List one recording's links in insertion order without reading source bytes.
+
+        Args:
+            source_sha256: Archived recording identity.
+
+        Returns:
+            Saved links, including labels removed from the preference choices.
+
+        Raises:
+            ValueError: The source hash is invalid.
+            LibraryStoreError: The Library cannot be read.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        with self.connection() as connection:
+            return tuple(
+                VideoLink(*row)
+                for row in connection.execute(
+                    "SELECT id, url, label FROM video_links WHERE recording_sha256=? ORDER BY id",
+                    (source_sha256,),
+                )
+            )
+
+    def save_video_link(
+        self,
+        source_sha256: str,
+        url: str,
+        label: str = "",
+        *,
+        link_id: int | None = None,
+    ) -> int:
+        """Add or replace one link without changing other links or workflow status.
+
+        Args:
+            source_sha256: Recording owning the link.
+            url: HTTP/HTTPS URL; private and scheduled destinations are allowed.
+            label: Selected text, including unset or previously saved choices.
+            link_id: Existing link to edit, or None to insert a new one.
+
+        Returns:
+            Identity of the saved link.
+
+        Raises:
+            ValueError: The URL, label or source hash is invalid.
+            LibraryStoreError: The recording/link is missing or saving fails.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        if not has_type(url, str) or not has_type(label, str):
+            raise ValueError("Invalid video link")
+        url = url.strip()
+        try:
+            parsed = urlsplit(url)
+            valid = parsed.scheme in {"http", "https"} and bool(parsed.hostname)
+        except ValueError:
+            valid = False
+        if not valid or any(character.isspace() for character in url):
+            raise ValueError("Enter a valid HTTP or HTTPS video URL.")
+        with self.connection() as connection:
+            if link_id is None:
+                cursor = connection.execute(
+                    "INSERT INTO video_links(recording_sha256,url,label) VALUES (?,?,?)",
+                    (source_sha256, url, label),
+                )
+                assert cursor.lastrowid is not None
+                return cursor.lastrowid
+            cursor = connection.execute(
+                "UPDATE video_links SET url=?,label=? WHERE recording_sha256=? AND id=?",
+                (url, label, source_sha256, link_id),
+            )
+            if cursor.rowcount != 1:
+                raise LibraryStoreError("Video link is not in this recording")
+            return link_id
+
+    def remove_video_link(self, source_sha256: str, link_id: int) -> None:
+        """Remove only the addressed link belonging to this recording.
+
+        Args:
+            source_sha256: Recording owning the link.
+            link_id: Local identity of the link to remove.
+
+        Raises:
+            ValueError: The source hash is invalid.
+            LibraryStoreError: The link is missing or removal fails.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        with self.connection() as connection:
+            cursor = connection.execute(
+                "DELETE FROM video_links WHERE recording_sha256=? AND id=?",
+                (source_sha256, link_id),
+            )
+            if cursor.rowcount != 1:
+                raise LibraryStoreError("Video link is not in this recording")
 
     def markers(
         self,

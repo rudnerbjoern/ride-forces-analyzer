@@ -4,10 +4,13 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
+# cspell:words cellspacing
+
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
+from html import escape
 from typing import Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -23,7 +26,7 @@ from ride_forces_analyzer.importers import (
     import_forces_bytes,
 )
 from ride_forces_analyzer.storage.library import LibraryEntry, LibraryStore, LibraryStoreError
-from ride_forces_analyzer.i18n import tr
+from ride_forces_analyzer.i18n import get_language, tr
 from ride_forces_analyzer.domain import ValueOrigin
 from ride_forces_analyzer.domain.metadata import RecordingAdditions
 from ride_forces_analyzer.storage.preferences import Preferences
@@ -56,35 +59,57 @@ def recording_clock(entry: LibraryEntry) -> str:
         return "—"
 
 
-def library_details(entry: LibraryEntry, data: ExplorerData | None = None) -> str:
-    """Format read-only source/date/import details inside the Library panel.
+def _display_datetime(value: str, *, local: bool = False) -> str:
+    """Format a readable Library timestamp without technical zone/precision details.
+
+    Args:
+        value: ISO recording-local or UTC import timestamp.
+        local: Convert an import instant to the viewer's local clock.
+
+    Returns:
+        Localized date and minute, or an em dash for an invalid timestamp.
+    """
+    try:
+        instant = datetime.fromisoformat(value)
+        if local:
+            instant = instant.astimezone()
+        pattern = {"de": "%d.%m.%Y", "fr": "%d/%m/%Y"}.get(get_language(), "%Y-%m-%d")
+        return instant.strftime(f"{pattern} %H:%M")
+    except ValueError, OverflowError:
+        return "—"
+
+
+def library_details(
+    entry: LibraryEntry,
+    data: ExplorerData | None = None,
+    *,
+    rich: bool = False,
+) -> str:
+    """Format relevant read-only recording details without technical time fields.
 
     Args:
         entry: Selected list entry, retaining original and effective source names.
         data: Successfully reopened recording supplying additional original metadata.
+        rich: Render aligned HTML label/value rows for the compact Library view.
 
     Returns:
-        Plain text suitable for a read-only, wrapping detail view.
+        Plain text, or escaped HTML with a compact table and the source filename below.
     """
     recorded = (
-        f"{entry.recorded_day} {recording_clock(entry)} ({entry.day_timezone})"
+        _display_datetime(f"{entry.recorded_day}T{recording_clock(entry)}")
         if entry.recorded_day is not None
         else tr("Unknown date")
     )
-    lines = [
-        f"{tr('Source file')}: {entry.filename}",
-        f"{tr('Recording time')}: {recorded}",
-        f"{tr('Import time (UTC)')}: {entry.imported_at_utc}",
-        f"{tr('Ride')}: {entry.source_ride_name or '—'}",
-        f"{tr('Park')}: {entry.source_park_name or '—'}",
+    rows: list[tuple[str, str]] = [
+        (tr("Ride"), entry.source_ride_name or "—"),
+        (tr("Park"), entry.source_park_name or "—"),
+        (tr("Recording time"), recorded),
+        (tr("Import time"), _display_datetime(entry.imported_at_utc, local=True)),
     ]
     if data is not None:
         metadata = data.source.recording.metadata
         for label, value in (
             ("Device", metadata.device),
-            ("UUID", metadata.uuid),
-            ("Source date", metadata.date.token if metadata.date is not None else None),
-            ("Source time zone", metadata.timezone),
             (
                 "Riding position",
                 metadata.riding_position.value
@@ -94,15 +119,15 @@ def library_details(entry: LibraryEntry, data: ExplorerData | None = None) -> st
             ),
         ):
             if value is not None:
-                lines.append(f"{tr(label)}: {value}")
-        lines.extend(
-            f"{tr(label)}: {value}"
+                rows.append((tr(label), value))
+        rows.extend(
+            (tr(label), value)
             for label, value in metadata_fields(data, original=True)
             if label not in {"Ride", "Park"}
         )
         additions = data.source.additions
         if additions != RecordingAdditions():
-            lines.append(f"{tr('Library additions')}:")
+            rows.append((tr("Library additions"), ""))
             for label, value in (
                 ("Ride", additions.ride_name),
                 ("Park", additions.park_name),
@@ -113,8 +138,23 @@ def library_details(entry: LibraryEntry, data: ExplorerData | None = None) -> st
                 ("Notes", additions.notes or None),
             ):
                 if value is not None:
-                    lines.append(f"{tr(label)}: {value or '—'}")
-    return "\n".join(lines)
+                    rows.append((tr(label), value or "—"))
+    if rich:
+        table = "".join(
+            f'<tr><td valign="top"><b>{escape(label)}:</b>&nbsp;</td>'
+            f'<td valign="top">{escape(value).replace(chr(10), "<br>")}</td></tr>'
+            if value
+            else f'<tr><td colspan="2"><b>{escape(label)}:</b></td></tr>'
+            for label, value in rows
+        )
+        return (
+            f'<table width="100%" border="0" cellspacing="0" cellpadding="0">{table}</table>'
+            f"<div><b>{escape(tr('Source file'))}:</b> {escape(entry.filename)}</div>"
+        )
+    return (
+        "\n".join(f"{label}: {value}" for label, value in rows)
+        + f"\n{tr('Source file')}: {entry.filename}"
+    )
 
 
 def library_row_text(entry: LibraryEntry) -> str:

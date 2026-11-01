@@ -13,6 +13,22 @@ import pytest
 
 from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.storage.preferences import Appearance, Preferences
+from ride_forces_analyzer.storage.preferences import DEFAULT_LIBRARY_VIDEO_LABELS
+
+
+def test_library_video_labels_preserve_custom_and_deliberately_empty_lists(tmp_path: Path) -> None:
+    preferences = Preferences(tmp_path / "preferences.sqlite3")
+    assert preferences.library_video_labels() == DEFAULT_LIBRARY_VIDEO_LABELS
+    assert not preferences.path.exists()
+    labels = ("Private upload", "Shorts", "Scheduled")
+    assert preferences.remember_library_video_labels(labels)
+    assert Preferences(preferences.path).library_video_labels() == labels
+    for invalid in (("",), ("  ",), ("Duplicate", "Duplicate")):
+        with pytest.raises(ValueError):
+            preferences.remember_library_video_labels(invalid)
+    assert preferences.library_video_labels() == labels
+    assert preferences.remember_library_video_labels(())
+    assert Preferences(preferences.path).library_video_labels() == ()
 
 
 def test_render_jobs_survive_restart_and_fit_the_current_computer(

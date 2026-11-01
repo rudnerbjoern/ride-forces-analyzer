@@ -151,9 +151,14 @@ def test_authorized_originals_reopen_without_external_files(
     entry = archive.store.entries()[0]
     assert recording_clock(entry) == "10:17:41"
     details = library_details(entry, reopened)
-    assert "2026-09-17 10:17:41 (America/New_York)" in details
-    assert entry.imported_at_utc in details
+    assert "Recording time: 2026-09-17 10:17" in details
+    assert "Import time:" in details and entry.imported_at_utc not in details
+    assert "America/New_York" not in details
+    assert "Source date:" not in details and "UUID:" not in details
     assert "Row: 3" in details and "Seat: 3" in details
+    assert "\n\n" not in details
+    table = library_details(replace(entry, source_ride_name="<b>Manta</b>"), reopened, rich=True)
+    assert "<table" in table and "&lt;b&gt;Manta&lt;/b&gt;" in table
     assert fixture.read_bytes() == raw and fixture.stat().st_mtime_ns == modified
     with archive.store.connection() as connection:
         row = connection.execute(

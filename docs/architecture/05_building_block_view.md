@@ -171,6 +171,12 @@ changes retain selection without reloading a source.
 foreground selector. It anchors the current state to its trigger, handles dismissal
 and emits choices; the panel invokes storage and refreshes icons without reopening
 sources or changing list geometry. Persistence and validation remain outside widgets.
+`LibraryVideosDialog` provides a separate recording-bound link list/form, opened
+from the selected entry's video icon. `LibraryStore` validates HTTP/HTTPS URLs and
+updates only the addressed link. Settings owns a `LibraryLabelsEditor` draft;
+Save persists its choices in `Preferences.library_video_labels`, while link labels
+retain their stored text independently of later option changes. No online lookup,
+schema extension or automatic workflow transition is involved.
 Export preview widgets and background jobs live in
 `ui.exports.preview` and `ui.exports.workers`. `ui.exports.form.ExportForm` owns
 export inputs and retained layout placements. `ui.exports.preview_controller` owns

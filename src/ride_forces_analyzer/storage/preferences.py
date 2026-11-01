@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 import sqlite3
+import json
 from pydantic import FiniteFloat, TypeAdapter
 
 from .exports import default_database_path
@@ -132,7 +133,11 @@ PreferenceKey = Literal[
     "last_recording_path",
     "update_checked_at",
     "skipped_update",
+    "library_video_labels",
 ]
+
+DEFAULT_LIBRARY_VIDEO_LABELS = ("YouTube", "Shorts", "TikTok", "Reel", "Facebook", "Instagram")
+_VIDEO_LABELS = TypeAdapter(tuple[str, ...])
 
 _LANGUAGE = TypeAdapter(Language)
 _APPEARANCE = TypeAdapter(Appearance)
@@ -451,6 +456,38 @@ class Preferences:
         """
         self._write("appearance", _APPEARANCE.validate_python(value, strict=True).value)
 
+    def library_video_labels(self) -> tuple[str, ...]:
+        """Read Library choices, preserving a deliberately empty saved list.
+
+        Returns:
+            Saved label texts, defaults for an absent preference, or no choices
+            for an unreadable saved JSON value. Reading never rewrites storage.
+        """
+        value = self._read("library_video_labels")
+        if not value:
+            return DEFAULT_LIBRARY_VIDEO_LABELS
+        try:
+            return _VIDEO_LABELS.validate_json(value, strict=True)
+        except ValueError:
+            return ()
+
+    def remember_library_video_labels(self, labels: tuple[str, ...]) -> bool:
+        """Persist label options without renaming or deleting any existing link label.
+
+        Args:
+            labels: Ordered distinct nonempty choices; an empty tuple is valid.
+
+        Returns:
+            Whether the preference was saved successfully.
+
+        Raises:
+            ValueError: Choices contain blank, duplicate or non-text values.
+        """
+        labels = _VIDEO_LABELS.validate_python(labels, strict=True)
+        if any(not label.strip() for label in labels) or len(set(labels)) != len(labels):
+            raise ValueError("Video labels must be nonempty and unique.")
+        return self._write("library_video_labels", json.dumps(labels, ensure_ascii=False))
+
     def export_fps(self) -> StandardFrameRate:
         """Read the default frame-rate choice for new video exports.
 
@@ -626,7 +663,7 @@ class Preferences:
         except OSError, ValueError:
             return
 
-    def _write(self, key: PreferenceKey, value: str) -> None:
+    def _write(self, key: PreferenceKey, value: str) -> bool:
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with closing(sqlite3.connect(self.path, timeout=0.1)) as connection, connection:
@@ -637,6 +674,7 @@ class Preferences:
                     "INSERT OR REPLACE INTO preferences (key, value) VALUES (?, ?)",
                     (key, value),
                 )
+            return True
         except OSError, sqlite3.Error, ValueError:
             # Optional preferences must never prevent opening a recording.
-            return
+            return False

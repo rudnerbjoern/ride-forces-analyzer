@@ -192,11 +192,23 @@ steps to its left/right. Choosing any state saves immediately and closes the lay
 Escape or outside click dismisses it unchanged; failed writes retain the old state
 and explain the failure. No recording load, selection, chart or list-layout change
 is required. Status remains manual, including backwards moves and skipping steps.
+The selected recording's video icon opens a separate themed link dialog. Add
+prepares a new URL/label; selecting an existing row edits that link. Save persists
+only the current form, Remove deletes only that link, and Cancel/Escape closes
+without saving the current draft. Errors preserve input. HTTP/HTTPS links need
+no online verification and do not change workflow status. Settings → Library
+manages ordered label options with Save/Cancel, including a deliberately empty
+list. Existing link labels survive renamed/removed options; the link dropdown
+always offers an unset value and retains its saved label.
 Library/day headings reuse the Inspector section-heading style; entry text uses
 the shared body font and theme text/muted colors, including live theme changes.
 Selecting a recording opens its stored original in the current workspace; failures
 preserve the current chart and explain the problem inside the panel. Read-only
-details include original metadata, recording time/time zone and import time.
+details use a compact label/value table without blank rows for ride/park, readable
+recording/import times and seating/device information, with the source filename
+below. Recording time retains its source-local clock; import time
+uses the viewer's local clock. Technical time-zone fields, the raw numeric source
+date and the duplicate UUID are omitted from this summary; source data stays intact.
 The park dropdown offers all effective Library parks, all parks and unknown parks.
 The search requires every whitespace-separated term in the combined ride/park names,
 using Unicode normalization and case folding. Park and search combine with AND;

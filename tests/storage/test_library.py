@@ -43,6 +43,66 @@ def insert_recording(connection: sqlite3.Connection) -> None:
     )
 
 
+def test_video_links_are_independent_recording_bound_and_offline(export_directory: Path) -> None:
+    store = LibraryStore(export_directory / "library.sqlite3")
+    other = "b" * 64
+    with store.connection() as connection:
+        insert_recording(connection)
+        connection.execute(
+            "INSERT INTO recordings (source_sha256,source_bytes,source_filename,source_format,"
+            "source_byte_count,imported_at_utc,first_sample,last_sample,"
+            "calibration_algorithm_version,calibration_window_samples,search_text) "
+            "SELECT ?,source_bytes,source_filename,source_format,source_byte_count,imported_at_utc,"
+            "first_sample,last_sample,calibration_algorithm_version,calibration_window_samples,search_text "
+            "FROM recordings WHERE source_sha256=?",
+            (other, DIGEST),
+        )
+        before = connection.execute("SELECT * FROM recordings ORDER BY source_sha256").fetchall()
+    first = store.save_video_link(DIGEST, "https://example.invalid/private?scheduled=1", "YouTube")
+    second = store.save_video_link(DIGEST, "https://example.invalid/short", "Shorts")
+    third = store.save_video_link(other, "http://other.invalid/video", "")
+    reopened = LibraryStore(store.path)
+    assert [link.id for link in reopened.video_links(DIGEST)] == [first, second]
+    assert reopened.video_links(other)[0].id == third
+    assert reopened.video_links(other)[0].label == ""
+    store.save_video_link(
+        DIGEST,
+        "https://example.invalid/edited",
+        "Old custom label",
+        link_id=first,
+    )
+    assert store.video_links(DIGEST)[1].id == second
+    for invalid in (
+        "",
+        "file:///video",
+        "ftp://example.invalid/video",
+        "https://",
+        "https://a b/video",
+    ):
+        with pytest.raises(ValueError):
+            store.save_video_link(DIGEST, invalid)
+    with pytest.raises(LibraryStoreError):
+        store.save_video_link(other, "https://other.invalid/changed", link_id=first)
+    with pytest.raises(LibraryStoreError):
+        store.remove_video_link(other, first)
+    with store.connection() as connection:
+        connection.execute(
+            "CREATE TRIGGER reject_link BEFORE UPDATE ON video_links "
+            "BEGIN SELECT RAISE(ABORT, 'injected link failure'); END",
+        )
+    with pytest.raises(LibraryStoreError, match="injected link failure"):
+        store.save_video_link(DIGEST, "https://example.invalid/failure", link_id=first)
+    assert store.video_links(DIGEST)[0].label == "Old custom label"
+    store.remove_video_link(DIGEST, first)
+    assert [link.id for link in LibraryStore(store.path).video_links(DIGEST)] == [second]
+    assert LibraryStore(store.path).video_links(other)[0].id == third
+    with store.connection() as connection:
+        assert (
+            connection.execute("SELECT * FROM recordings ORDER BY source_sha256").fetchall()
+            == before
+        )
+
+
 def test_fresh_schema_resources_relationships_and_reopen(export_directory: Path) -> None:
     store = LibraryStore(export_directory / "library.sqlite3")
     assert not store.path.exists()

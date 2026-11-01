@@ -8,6 +8,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from pathlib import Path
 from dataclasses import replace
+from html import escape
 
 from PySide6.QtCore import (
     QModelIndex,
@@ -34,10 +35,12 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QPushButton,
     QSplitter,
+    QSizePolicy,
     QStyle,
     QStyledItemDelegate,
     QStyleOptionViewItem,
     QTreeWidget,
+    QTextEdit,
     QTreeWidgetItem,
     QToolButton,
     QWidget,
@@ -57,6 +60,8 @@ from ride_forces_analyzer.ui.presentation.translation import bind, button_text
 
 from .controls import create_panel
 from .library_editor import LibraryMetadataDialog
+from .library_videos import LibraryVideosDialog
+from ride_forces_analyzer.ui.presentation.icons import link_icon, metadata_icon
 from .library_workflow import WORKFLOW_ICONS, WorkflowIcon, WorkflowSelector
 
 
@@ -173,6 +178,7 @@ class LibraryPanel(QSplitter):
         clear_filters: Action restoring all recordings.
         editor: Dialog for the selected recording's additions.
         edit_button: Action opening the metadata dialog.
+        videos_button: Icon opening the selected recording's separate video-link dialog.
         workflow_selector: Foreground status selection layer, or None while closed.
         open_requested: Signal carrying the selected archived source digest.
     """
@@ -261,19 +267,34 @@ class LibraryPanel(QSplitter):
         self.empty_label.setMinimumWidth(1)
         layout.addWidget(self.empty_label)
         layout.addWidget(self.recordings, 1)
-        self.details = QPlainTextEdit()
+        self.details = QTextEdit()
         self.details.setReadOnly(True)
         self.details.setMinimumWidth(0)
         self.details.setMaximumHeight(200)
         bind(self.details, tr("Recording details"), "accessibleName")
         self.details.hide()
         layout.addWidget(self.details)
-        self.edit_button = button_text(QPushButton(), tr("Edit metadata…"))
+        self.edit_button = button_text(
+            QPushButton(),
+            tr("Edit metadata…"),
+            caption=tr("Metadata…"),
+        )
         self.editor = LibraryMetadataDialog(self.panel)
         self.edit_button.clicked.connect(self._edit_metadata)
         self.editor.save_requested.connect(self._save_metadata)
         self.editor.reset_requested.connect(lambda: self._save_metadata({}))
-        layout.addWidget(self.edit_button)
+        entry_actions = QHBoxLayout()
+        entry_actions.addWidget(self.edit_button, 1)
+        self.videos_button = button_text(QPushButton(), tr("Video links…"))
+        bind(self.videos_button, tr("Video links…"), "toolTip")
+        bind(self.videos_button, tr("Video links…"), "accessibleName")
+        self.videos_button.clicked.connect(self._edit_videos)
+        self.videos_button.hide()
+        entry_actions.addWidget(self.videos_button, 1)
+        for button in (self.edit_button, self.videos_button):
+            button.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+            button.setMinimumWidth(0)
+        layout.addLayout(entry_actions)
         self.editor.hide()
         self.edit_button.hide()
         self.addWidget(self.panel)
@@ -408,11 +429,12 @@ class LibraryPanel(QSplitter):
                 item.setToolTip(1, tr(label))
                 item.setData(1, Qt.ItemDataRole.AccessibleTextRole, tr(label))
         selected = self.selected_entry
-        text = library_details(selected, self._details_data) if selected is not None else ""
+        text = (
+            library_details(selected, self._details_data, rich=True) if selected is not None else ""
+        )
         if self._error is not None:
-            text = f"{text}\n\n{self._error}".strip()
-        if self.details.toPlainText() != text:
-            self.details.setPlainText(text)
+            text = f"{text}<div>{escape(self._error)}</div>"
+        self.details.setHtml(text)
         self.details.setVisible(bool(text))
         editable = (
             selected is not None
@@ -420,6 +442,13 @@ class LibraryPanel(QSplitter):
             and selected.source_sha256 == self._details_data.source.source_sha256
         )
         self.edit_button.setVisible(editable)
+        self.edit_button.setIcon(
+            metadata_icon(self.edit_button.palette().color(QPalette.ColorRole.ButtonText)),
+        )
+        self.videos_button.setIcon(
+            link_icon(self.videos_button.palette().color(QPalette.ColorRole.ButtonText)),
+        )
+        self.videos_button.setVisible(selected is not None)
         self.editor.refresh_labels()
         if self.workflow_selector is not None and self._workflow_digest is not None:
             self.workflow_selector.refresh_labels(
@@ -467,6 +496,13 @@ class LibraryPanel(QSplitter):
         self.park_filter.blockSignals(blocked_park)
         self.search.blockSignals(blocked_search)
         self.refresh()
+
+    @Slot()
+    def _edit_videos(self) -> None:
+        entry = self.selected_entry
+        if entry is not None:
+            dialog = LibraryVideosDialog(entry.source_sha256, self.panel)
+            dialog.open()
 
     @Slot(str)
     def _toggle_workflow(self, source_sha256: str) -> None:

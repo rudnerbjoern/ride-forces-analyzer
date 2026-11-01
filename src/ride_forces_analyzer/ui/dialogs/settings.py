@@ -26,6 +26,7 @@ from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 from ride_forces_analyzer.storage.map_tiles import TileCache
 from ride_forces_analyzer.ui.presentation.translation import bind, button_text, items
 from ride_forces_analyzer.ui.presentation.updates import UpdateController
+from .library_labels import LibraryLabelsEditor
 
 APPEARANCE_CHOICES = tuple(Appearance)
 
@@ -48,6 +49,8 @@ class SettingsDialog(QDialog):
         check_updates: Button starting a manual update check.
         automatic_updates: Checkbox enabling the daily startup check when settings are saved.
         update_status: Label displaying update-check progress and results.
+        library_labels: Draft label options saved with the other preferences.
+        library_error: Explanation when label preferences cannot be saved.
     """
 
     language_selected = Signal(int)
@@ -136,6 +139,13 @@ class SettingsDialog(QDialog):
         )
         form.addRow(bind(QLabel(), tr("Parallel render jobs")), self.render_jobs)
         layout.addWidget(group)
+        self.library_labels = LibraryLabelsEditor(preferences.library_video_labels(), self)
+        layout.addWidget(self.library_labels)
+        self.library_error = QLabel()
+        self.library_error.setTextFormat(Qt.TextFormat.PlainText)
+        self.library_error.setWordWrap(True)
+        self.library_error.hide()
+        layout.addWidget(self.library_error)
         update_group = bind(QGroupBox(), tr("Updates"), "title")
         update_layout = QVBoxLayout(update_group)
         self.automatic_updates = bind(
@@ -279,6 +289,16 @@ class SettingsDialog(QDialog):
         Returns:
             None.
         """
+        try:
+            saved = self.preferences.remember_library_video_labels(self.library_labels.labels())
+        except ValueError as error:
+            self.library_error.setText(tr(str(error)))
+            self.library_error.show()
+            return
+        if not saved:
+            bind(self.library_error, tr("Could not save video labels. Try again later."))
+            self.library_error.show()
+            return
         self.preferences.remember_restore_last_file(self.restore_last_file.isChecked())
         self.preferences.remember_automatic_updates(self.automatic_updates.isChecked())
         self.preferences.remember_export_fps(EXPORT_FRAME_RATES[self.frame_rate.currentIndex()])
