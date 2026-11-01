@@ -11,6 +11,7 @@ from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.runtime.instance import OpenRequest
 from ride_forces_analyzer.i18n import get_language
+from ride_forces_analyzer.storage.library import LibraryStore
 
 
 class RecordingApplication(QApplication):
@@ -59,14 +60,18 @@ class RecordingApplication(QApplication):
         return super().event(event)
 
     def start(self, request: OpenRequest) -> None:
-        """Create the initial window; explicit requests precede restoration.
+        """Initialize the Library, then create the initial recording window.
 
         Args:
             request: Request carrying the inputs and context for this operation.
 
         Returns:
             None.
+
+        Raises:
+            LibraryStoreError: Library initialization failed; no window is created.
         """
+        LibraryStore().initialize()
         self.create_window(
             Path(request.path) if request.path is not None else None,
             restore_last_file=request.path is None

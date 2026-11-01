@@ -50,7 +50,7 @@ remain with their owning packages;
 | `gps.overview`, `gps.map_background`                                  | Independent route geometry and optional bounded map requests                  |
 | `exports`                                                             | Sample serialization, safe publication and sequential video jobs              |
 | `rendering`                                                           | Layouts, previews, ordered frame generation and encoding                      |
-| `storage`                                                             | SQLite preferences, marker choices, export definitions and map tiles          |
+| `storage`                                                             | SQLite preferences, exports, map tiles and the versioned Library schema       |
 | `i18n`, `rendering.airtime_colors`                                    | Shared language and semantic-color contracts                                  |
 | `ui`                                                                  | Qt controls, dialogs, themes, icons and asynchronous transport                |
 | `runtime.cpu_resources`, `runtime.updates`, `runtime.error_reporting` | CPU topology, optional release lookup and local support reports               |
@@ -72,6 +72,14 @@ defines the admitted epoch, recording-local day and unknown-date policy.
 [Import API](../development/IMPORT_SERVICE.md), [decoder](../development/STRICT_DECODING.md),
 [motion](../development/MOTION_PARSING.md), [optional fields](../development/OPTIONAL_PARSING.md)
 and [domain models](../development/CANONICAL_MODELS.md) define exact contracts.
+
+`storage.library.LibraryStore` owns the separate Library database and applies its
+packaged Alembic revisions before exposing transactional `sqlite3` connections.
+SQLAlchemy is restricted to migrations; ordinary queries use the standard library.
+Revision IDs follow the introducing app major/minor version (`1_3` initially),
+independently of patch versions and export-snapshot versions. The three tables and
+indexes exist; archive import and recording workflows remain planned under
+[LIB-03 onward](../requirements/LIBRARY.md#iterative-implementation-and-verification).
 
 ## Analysis boundary
 

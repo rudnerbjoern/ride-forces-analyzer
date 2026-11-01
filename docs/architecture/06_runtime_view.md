@@ -11,6 +11,12 @@ file-open, save and folder selection share the application palette and styleshee
 `InstanceBroker` acquires local process ownership or forwards the optional file
 path and `--new-window` request to the existing owner.
 
+After instance ownership is acquired, `RecordingApplication.start()` initializes
+the Library and applies pending revisions before creating the first window.
+Additional windows do not repeat startup initialization. A Library error propagates
+to the existing error-reporting path and prevents creation of the initial window;
+the database is not replaced or reset.
+
 ```mermaid
 sequenceDiagram
     actor User

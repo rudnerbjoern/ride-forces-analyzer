@@ -141,14 +141,25 @@ Transparent ProRes and opaque H.264 are separate outputs, published only after
 successful encoding. Existing videos require explicit replacement confirmation;
 failure or cancellation preserves them. Video alignment remains external.
 
-SQLite separates application preferences, versioned export definitions and map
-tiles. Preferences retain language/appearance, folders, restore/update consent,
+SQLite separates application preferences, versioned export definitions, map
+tiles and the Library schema. Preferences retain language/appearance, folders, restore/update consent,
 render-job count and source-bound marker choices. Invalid/unavailable values use
 documented defaults without destroying stored data. Presets/jobs retain complete
 recipes, not recordings or prepared arrays. Omitted optional stored fields use
 declared model defaults, while required fields and supplied values remain strictly
 validated. Reads do not rewrite stored definitions. Batches reimport/check hashes and run
 sequentially, preserving completed videos across later failure/cancellation.
+
+The separate `library.sqlite3` contains recordings, export history and video links,
+plus Alembic's revision table. Its schema is implemented; archiving and workflow
+services remain planned. `LibraryStore` applies bundled major/minor revisions in an
+explicit SQLite transaction, rolling back schema, data and revision together on
+failure. Unknown revisions or unversioned existing tables are rejected without
+replacement; current revisions are not rewritten. Every ordinary `sqlite3`
+connection enables foreign keys and commits or rolls back its transaction.
+Source formats/statuses, byte lengths and nonnegative values have SQL constraints;
+source decoding, hashes and snapshot relationships belong to the later import/export
+services. Existing databases are not migrated or consolidated.
 
 Update lookup stays outside widgets. It requires a matching platform asset;
 download/installation remain manual. [Deployment](07_deployment_view.md#local-export-configuration),

@@ -1,6 +1,6 @@
 # Library requirements and implementation steps
 
-Status: LIB-01 implemented; LIB-04 has an empty collapsible panel; remaining functionality planned. This document defines the Library feature
+Status: LIB-01–02 implemented; LIB-04 has an empty collapsible panel; remaining functionality planned. This document defines the Library feature
 and its verifiable implementation steps. It does not authorize implementation or
 Git delivery. Requirements and implementation belong on the same feature branch.
 
@@ -219,7 +219,7 @@ digits and `Z`; original precision remains in the source token and bytes.
 The unversioned RFDB profile has no independently confirmed date contract, so its
 names are projected but its derived dates remain unknown.
 
-## Proposed database model
+## Library database model
 
 `recordings` has one-to-many relationships with `export_history` and `video_links`.
 A recording is identified by its existing source digest; export attempts and
@@ -229,12 +229,13 @@ in `Z`; `recorded_day` is `YYYY-MM-DD`. Nullable fields use SQL `NULL`.
 
 ### Complete database overview: existing and planned
 
-The diagram shows all six existing application tables, the three planned Library tables
-and Alembic's planned version table, with their columns and database ownership.
-**Existing** describes the current storage code; **planned** describes this proposal.
+The diagram shows all six existing application tables, the three Library tables
+and Alembic's version table, with their columns and database ownership.
+The Library schema is implemented; importing recordings and the related workflows
+remain planned.
 `PK` marks primary-key
 columns; the four marked columns in `tiles` form one composite primary key.
-`FK` marks the proposed Library foreign keys. Dashed hash links are optional logical
+`FK` marks the Library foreign keys. Dashed hash links are optional logical
 matches across database files, not SQL foreign keys or a plan to merge the stores.
 Existing definitions are maintained in
 [preferences](../../src/ride_forces_analyzer/storage/preferences.py),
@@ -286,7 +287,7 @@ erDiagram
         REAL accessed
     }
 
-    recordings["recordings (planned: library.sqlite3)"] {
+    recordings["recordings (existing: library.sqlite3)"] {
         TEXT source_sha256 PK
         BLOB source_bytes
         TEXT source_filename
@@ -316,7 +317,7 @@ erDiagram
         TEXT search_text
     }
 
-    export_history["export_history (planned: library.sqlite3)"] {
+    export_history["export_history (existing: library.sqlite3)"] {
         INTEGER id PK
         TEXT recording_sha256 FK
         TEXT export_kind
@@ -334,19 +335,19 @@ erDiagram
         TEXT error
     }
 
-    alembic_version["alembic_version (planned: library.sqlite3)"] {
+    alembic_version["alembic_version (existing: library.sqlite3)"] {
         VARCHAR version_num PK
     }
 
-    video_links["video_links (planned: library.sqlite3)"] {
+    video_links["video_links (existing: library.sqlite3)"] {
         INTEGER id PK
         TEXT recording_sha256 FK
         TEXT url
         TEXT label
     }
 
-    recordings ||--o{ export_history : "planned FK recording_sha256"
-    recordings ||--o{ video_links : "planned FK recording_sha256"
+    recordings ||--o{ export_history : "FK recording_sha256"
+    recordings ||--o{ video_links : "FK recording_sha256"
     recordings |o..o| recording_bounds : "logical source_sha256 match"
     recordings |o..o| recording_calibration : "logical source_sha256 match"
     batches }o..o{ recordings : "logical job source_sha256 match"
@@ -359,7 +360,7 @@ mutable `presets` rows through a foreign key. Similarly, export history owns its
 saved JSON settings and remains independent of later preset or batch edits.
 JSON contents and original source fields are not additional relational tables.
 `alembic_version` holds technical migration state, not recording or export data.
-Nullability and the planned secondary indexes are specified below.
+Nullability and the secondary indexes are specified below.
 Library marker columns retain the current choices for archived sources; existing
 preference rows remain independent. `workflow_status` is the current manual work
 state, not an export result or a history of edits.
@@ -371,7 +372,7 @@ state, not an export result or a history of edits.
 | `source_sha256`                 | `TEXT PRIMARY KEY NOT NULL`         | Original-byte identity and duplicate detection.                                 |
 | `source_bytes`                  | `BLOB NOT NULL`                     | Exact original `.forces` or compressed `.zforces` bytes.                        |
 | `source_filename`               | `TEXT NOT NULL`                     | Original basename; opening the archive does not depend on its old path.         |
-| `source_format`                 | `TEXT NOT NULL`                     | Existing file format needed to select the decoding path.                        |
+| `source_format`                 | `TEXT NOT NULL`                     | `forces` or `zforces`, used to select the decoding path.                        |
 | `source_byte_count`             | `INTEGER NOT NULL`                  | Expected original length for integrity checks.                                  |
 | `source_ride_name`              | `TEXT NULL`                         | Verbatim source ride name.                                                      |
 | `source_park_name`              | `TEXT NULL`                         | Verbatim source park name.                                                      |
@@ -523,6 +524,11 @@ Use [Alembic](https://alembic.sqlalchemy.org/en/latest/) for Library schema evol
   initial revision creates the Library tables and indexes; later revisions add
   concrete fields or change structures as required. Automatic generation is not required;
   any generated proposal must be reviewed before use.
+- Revision IDs identify the app **major/minor** version introducing a schema,
+  using `major_minor` (initially `1_3` for app 1.3.x). Patch releases share the same
+  revision; app version changes without schema changes need no empty migration.
+  Released scripts are immutable. A later schema change adds its introducing
+  major/minor revision to the linear chain.
 - Alembic's `alembic_version` table stores the applied revision in its `version_num`
   string column. It replaces a custom `PRAGMA user_version` counter for the Library.
   Existing stores retain their current mechanisms until a separately planned
@@ -530,8 +536,7 @@ Use [Alembic](https://alembic.sqlalchemy.org/en/latest/) for Library schema evol
 - Apply pending revisions before accessing Library data, then use the existing
   `sqlite3` approach for normal reads/writes. Package migration scripts with the
   application so upgrades work offline without a separately installed command-line
-  tool. Alembic and SQLAlchemy are planned runtime dependencies; add them through
-  the existing dependency/lockfile process during implementation.
+  tool. Alembic and SQLAlchemy are locked runtime dependencies used for migrations only.
 - Configure SQLite transaction handling explicitly and verify failed schema/data
   changes roll back without advancing the revision or leaving partial changes.
   Use Alembic's [SQLite batch operations](https://alembic.sqlalchemy.org/en/latest/batch.html)
@@ -573,7 +578,7 @@ backup schedules and including exported videos are outside this design.
 
 ## Iterative implementation and verification
 
-LIB-01 and the empty LIB-04 panel are implemented; remaining functionality is planned.
+LIB-01–02 and the empty LIB-04 panel are implemented; remaining functionality is planned.
 Implement one increment at a time on the same feature branch;
 its acceptance checks must pass before moving to dependent work. Steps 13–14 are
 the later backup/restore phase, not a prerequisite for the initial Library.
@@ -591,7 +596,7 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 2. **LIB-02 — SQLite store and Alembic revisions**
 
-   **Status:** Planned.
+   **Status:** Complete (native Windows storage acceptance verified).
 
    **Implementation:** Add the Library SQLite store with Alembic's initial revision,
    the specified tables/indexes, packaged scripts, revision checks and explicit

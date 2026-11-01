@@ -96,8 +96,15 @@ The platform data root is LOCALAPPDATA on Windows, absolute XDG_DATA_HOME or
   render-job count and source-hash-bound marker choices.
 - `exports.sqlite3`: versioned presets and immutable batch jobs.
 - `map-cache.sqlite3`: optional cached map tiles and HTTP metadata.
+- `library.sqlite3`: Library schema (recordings, export history, video links and
+  Alembic revision); archive import and user workflows remain planned.
 - `support/`: per-process diagnostic reports.
 
-SQLite writes are transactional; recordings and rendered media remain external.
+SQLite writes are transactional. Ordinary file opening leaves recordings external;
+the Library schema provides exact source BLOB storage for its planned archive import.
+Rendered media remain external. Library Alembic scripts ship as application
+resources in wheels and native builders; upgrades use the Python API offline,
+without a separately installed CLI. Revisions follow the introducing app major/minor
+version, independently of patch releases.
 Batch output directories contain videos and `run-report.json`.
 [Persistence concepts](08_concepts.md#rendering-and-persistence) describe ownership.

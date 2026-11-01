@@ -19,10 +19,26 @@ from PySide6.QtWidgets import QFileDialog
 from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.runtime.instance import OpenRequest
+from ride_forces_analyzer.storage.library import LibraryStore, default_database_path
 from ride_forces_analyzer.ui.application import RecordingApplication
 from tests.ui.helpers import wait_until
+import sqlite3
+initializations = []
+original_initialize = LibraryStore.initialize
+def initialize(store):
+    initializations.append(store.path)
+    original_initialize(store)
+LibraryStore.initialize = initialize
 app = RecordingApplication([])
 app.settings = AppSettings(language=Language.ENGLISH)
+original_create_window = app.create_window
+def create_window(*args, **kwargs):
+    assert default_database_path().is_file()
+    with sqlite3.connect(default_database_path()) as db:
+        assert db.execute("SELECT version_num FROM alembic_version").fetchone() == ("1_3",)
+    db.close()
+    return original_create_window(*args, **kwargs)
+app.create_window = create_window
 app.start(OpenRequest(path=sys.argv[1]))
 first = app.windows[0]
 wait_until(lambda: first.data is not None and first.open_action.isEnabled())
@@ -71,6 +87,7 @@ assert third.close()
 assert second.close()
 QThreadPool.globalInstance().waitForDone()
 app.processEvents()
+assert len(initializations) == 1
 print("Independent recording windows passed")
 """
     result = subprocess.run(
@@ -82,3 +99,38 @@ print("Independent recording windows passed")
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "Independent recording windows passed" in result.stdout
+
+
+def test_library_initialization_failure_prevents_first_window() -> None:
+    program = """
+from contextlib import closing
+import sqlite3
+from ride_forces_analyzer.runtime.instance import OpenRequest
+from ride_forces_analyzer.storage.library import LibraryStoreError, default_database_path
+from ride_forces_analyzer.ui.application import RecordingApplication
+path = default_database_path()
+path.parent.mkdir(parents=True, exist_ok=True)
+with closing(sqlite3.connect(path)) as db, db:
+    db.execute("CREATE TABLE alembic_version (version_num TEXT PRIMARY KEY)")
+    db.execute("INSERT INTO alembic_version VALUES ('99_0')")
+original = path.read_bytes()
+app = RecordingApplication([])
+try:
+    app.start(OpenRequest())
+except LibraryStoreError:
+    pass
+else:
+    raise AssertionError("Unsupported Library revision was accepted")
+assert not app.windows and not app.ready
+assert path.read_bytes() == original
+print("Library startup failure preserved database and prevented window creation")
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", program],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Library startup failure preserved database" in result.stdout
