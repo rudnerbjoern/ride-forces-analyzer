@@ -706,6 +706,13 @@ class BatchDialog(QDialog):
                 ),
                 "text",
             )
+            history_errors = [item.history_error for item in result.results if item.history_error]
+            if history_errors:
+                bind(
+                    self.status,
+                    f"{self.status.text()}\n{tr('Export history could not be saved: {0}', history_errors[0])}",
+                    "text",
+                )
 
     @Slot(str)
     def _failed(self, message: str) -> None:

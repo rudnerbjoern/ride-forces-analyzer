@@ -61,6 +61,7 @@ from ride_forces_analyzer.ui.presentation.translation import bind, button_text
 from .controls import create_panel
 from .library_editor import LibraryMetadataDialog
 from .library_videos import LibraryVideosDialog
+from .library_exports import LibraryExportsDialog
 from ride_forces_analyzer.ui.presentation.icons import link_icon, metadata_icon
 from .library_workflow import WORKFLOW_ICONS, WorkflowIcon, WorkflowSelector
 
@@ -179,6 +180,7 @@ class LibraryPanel(QSplitter):
         editor: Dialog for the selected recording's additions.
         edit_button: Action opening the metadata dialog.
         videos_button: Icon opening the selected recording's separate video-link dialog.
+        history_button: Action opening its export attempts and saved-settings review.
         workflow_selector: Foreground status selection layer, or None while closed.
         open_requested: Signal carrying the selected archived source digest.
     """
@@ -295,6 +297,13 @@ class LibraryPanel(QSplitter):
             button.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
             button.setMinimumWidth(0)
         layout.addLayout(entry_actions)
+        self.history_button = button_text(QPushButton(), tr("Export history…"))
+        self.history_button.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogDetailedView),
+        )
+        self.history_button.clicked.connect(self._show_history)
+        self.history_button.hide()
+        layout.addWidget(self.history_button)
         self.editor.hide()
         self.edit_button.hide()
         self.addWidget(self.panel)
@@ -449,6 +458,7 @@ class LibraryPanel(QSplitter):
             link_icon(self.videos_button.palette().color(QPalette.ColorRole.ButtonText)),
         )
         self.videos_button.setVisible(selected is not None)
+        self.history_button.setVisible(selected is not None)
         self.editor.refresh_labels()
         if self.workflow_selector is not None and self._workflow_digest is not None:
             self.workflow_selector.refresh_labels(
@@ -496,6 +506,14 @@ class LibraryPanel(QSplitter):
         self.park_filter.blockSignals(blocked_park)
         self.search.blockSignals(blocked_search)
         self.refresh()
+
+    @Slot()
+    def _show_history(self) -> None:
+        entry = self.selected_entry
+        if entry is not None:
+            dialog = LibraryExportsDialog(entry.source_sha256, self.panel)
+            dialog.finished.connect(self.refresh)
+            dialog.open()
 
     @Slot()
     def _edit_videos(self) -> None:

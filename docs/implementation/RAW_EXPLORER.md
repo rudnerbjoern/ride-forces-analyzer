@@ -200,6 +200,11 @@ no online verification and do not change workflow status. Settings → Library
 manages ordered label options with Save/Cancel, including a deliberately empty
 list. Existing link labels survive renamed/removed options; the link dropdown
 always offers an unset value and retains its saved label.
+**Export history…** opens a separate newest-first attempt list, result details and
+saved-settings review. Supported repeats prepare archived bytes and captured
+markers/metadata in a worker, then use the existing video review or data save flow.
+Missing old source/output paths do not prevent repetition. Unsupported recipes
+explain their limitation; every started repeat creates a distinct attempt.
 Library/day headings reuse the Inspector section-heading style; entry text uses
 the shared body font and theme text/muted colors, including live theme changes.
 Selecting a recording opens its stored original in the current workspace; failures

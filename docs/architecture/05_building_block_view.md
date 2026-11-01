@@ -98,6 +98,14 @@ BLOBs; `update_markers()` validates and replaces only that recipe atomically.
 `LibraryArchive` resolves and saves markers in the Library for archived hashes,
 retaining preferences for other input. Fresh opens and new batch jobs use these
 choices; saved jobs and export snapshots retain their captured configuration.
+`storage.library_history.LibraryHistory` persists distinct attempts in the existing
+history table. Its versioned `ExportRequest` captures requested settings; effective
+video settings use the existing `ExportSnapshot`, and data recipes use the admitted
+request representation. `exports.history.ExportAttempt` reports persistence failures
+without changing successful exporter results or deleting output. Single-video/data
+workers and the batch service invoke it around actual attempts, excluding skipped jobs.
+`prepare_repeat()` reconstructs captured analysis/metadata from verified archived
+bytes without consulting current marker/addition/preferences or old output paths.
 
 ## Analysis boundary
 
@@ -177,6 +185,10 @@ updates only the addressed link. Settings owns a `LibraryLabelsEditor` draft;
 Save persists its choices in `Preferences.library_video_labels`, while link labels
 retain their stored text independently of later option changes. No online lookup,
 schema extension or automatic workflow transition is involved.
+`LibraryExportsDialog` owns a separate newest-first attempt list and saved-settings
+summary. Its worker prepares supported repeats through the export-history service;
+the existing video assistant or data destination flow owns review, overwrite
+confirmation, execution and cancellation. The loaded workspace remains independent.
 Export preview widgets and background jobs live in
 `ui.exports.preview` and `ui.exports.workers`. `ui.exports.form.ExportForm` owns
 export inputs and retained layout placements. `ui.exports.preview_controller` owns

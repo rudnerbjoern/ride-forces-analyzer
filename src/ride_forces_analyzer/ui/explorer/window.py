@@ -660,6 +660,7 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(object, str)
     def _data_saved(self, format: DataExportFormat, path: str) -> None:
+        self.library.refresh()
         bind(
             self.statusBar(),
             tr("CSV saved to {0}", path)
@@ -693,6 +694,7 @@ class ExplorerWindow(QMainWindow):
             self,
             current_sample=self.navigation.slider.value(),
         )
+        self.export_window.finished.connect(self.library.refresh)
         self.export_window.show()
 
     @Slot()

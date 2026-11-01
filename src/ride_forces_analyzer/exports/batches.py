@@ -37,6 +37,8 @@ from ride_forces_analyzer.storage.export_models import BatchJob, RangeMode, Save
 from ride_forces_analyzer.explorer.library import LibraryArchive
 from ride_forces_analyzer.storage.library import LibraryStore
 from ride_forces_analyzer.domain.metadata import RecordingAdditions
+from ride_forces_analyzer.exports.history import ExportAttempt
+from ride_forces_analyzer.storage.library_history import ExportRequest
 from ride_forces_analyzer.rendering.encoding import ExportCancelled, export_video
 from ride_forces_analyzer.rendering.model import ExportSnapshot, VideoOutput, prepare_export
 
@@ -186,6 +188,7 @@ class JobResult(BaseModel, frozen=True, strict=True):
         status: Completed, failed, cancelled or skipped outcome.
         output: Path of the successfully completed video, if available.
         error: Explanation of an unsuccessful outcome, if available.
+        history_error: Independent persistence warning; successful output stays completed.
     """
 
     batch: str
@@ -200,6 +203,7 @@ class JobResult(BaseModel, frozen=True, strict=True):
     status: str
     output: Path | None = None
     error: str | None = None
+    history_error: str | None = None
 
 
 class BatchReport(BaseModel, frozen=True, strict=True):
@@ -363,6 +367,18 @@ def run_batches(
                 )
             else:
                 started = monotonic()
+                attempt = ExportAttempt(
+                    ExportRequest(
+                        kind="video",
+                        source_sha256=job.source_sha256,
+                        analysis_configuration=job.preset.analysis_configuration,
+                        first_sample=job.first_sample,
+                        last_sample=job.last_sample,
+                        settings=job.preset.settings,
+                        additions=job.metadata_additions,
+                    ),
+                    origin="batch",
+                )
                 try:
                     if progress:
                         progress(ordinal, total, ExportProgress(ExportPhase.PREPARING), label)
@@ -379,6 +395,7 @@ def run_batches(
                         job.last_sample,
                     )
                     common["export_snapshot"] = timeline.snapshot
+                    attempt.prepared(timeline.snapshot)
                     folder = directory / f"{batch_number:03d}-{_safe_name(batch.name)}"
                     folder.mkdir(exist_ok=True)
                     suffix = (
@@ -417,7 +434,22 @@ def run_batches(
                 except Exception as error:
                     record_error("Batch export job", error)
                     result = JobResult(**common, status="failed", error=str(error))
-                result = result.model_copy(update={"duration_seconds": monotonic() - started})
+                attempt.finish(
+                    "completed"
+                    if result.status == "completed"
+                    else "cancelled"
+                    if result.status == "cancelled"
+                    else "failed",
+                    output=result.output,
+                    gpu=common["gpu_encoding"],
+                    error=result.error,
+                )
+                result = result.model_copy(
+                    update={
+                        "duration_seconds": monotonic() - started,
+                        "history_error": attempt.warning or None,
+                    },
+                )
             results.append(result)
             report = BatchReport(
                 directory=directory,

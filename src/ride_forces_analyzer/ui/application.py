@@ -60,7 +60,7 @@ class RecordingApplication(QApplication):
         return super().event(event)
 
     def start(self, request: OpenRequest) -> None:
-        """Initialize the Library, then create the initial recording window.
+        """Initialize the Library, recover interrupted attempts, then create the first window.
 
         Args:
             request: Request carrying the inputs and context for this operation.
@@ -72,6 +72,9 @@ class RecordingApplication(QApplication):
             LibraryStoreError: Library initialization failed; no window is created.
         """
         LibraryStore().initialize()
+        from ride_forces_analyzer.storage.library_history import LibraryHistory
+
+        LibraryHistory().interrupt_running()
         self.create_window(
             Path(request.path) if request.path is not None else None,
             restore_last_file=request.path is None

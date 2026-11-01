@@ -114,6 +114,11 @@ encoded. Returning to setup restores the selected static preview.
   metadata retain their original-source semantics. Library additions are separate
   from the immutable imported recording; Seated/Flying changes reuse the existing
   display ranges without transforming sensor values.
+  Archived-source attempts retain requested settings before preparation and the
+  effective shared snapshot after preparation, including distinct failed/cancelled
+  results. The Library history review repeats supported recipes from archived bytes
+  and captured metadata through the existing assistant and save flow. History-write
+  failure never removes a published video; unknown results remain unknown.
 - Layout/aspect/extent/position/language/rate changes and seeking do not recalculate
   analysis. Running exports/previews retain the bound basis/tilt, including custom
   Gravity/Incline references and resets; source directions remain evidence.

@@ -12,7 +12,8 @@ file-open, save and folder selection share the application palette and styleshee
 path and `--new-window` request to the existing owner.
 
 After instance ownership is acquired, `RecordingApplication.start()` initializes
-the Library and applies pending revisions before creating the first window.
+the Library, applies pending revisions and marks leftover running export attempts
+as interrupted before creating the first window. Unknown finish time/duration stays unknown.
 Additional windows do not repeat startup initialization. A Library error propagates
 to the existing error-reporting path and prevents creation of the initial window;
 the database is not replaced or reset.
@@ -197,6 +198,10 @@ A shared worker serializes CSV or JSON and transports progress/cancellation.
 Confirmed replacement commits atomically after success; failure/cancellation
 preserves an existing file and removes temporary output. Only success remembers
 the destination folder. The worker retains its bound snapshot until completion.
+For archived hashes, worker execution starts an attempt with frozen requested
+settings. Existing data validation admits its effective recipe before serialization.
+Actual completion/cancellation/failure is saved independently of exporter output;
+history-write errors are reported without deleting successful files.
 
 ## Video export runtime
 
@@ -212,6 +217,11 @@ Preparing the timeline captures its export-owned settings/analysis snapshot.
 Single and batch encoding embed the same snapshot in the video comment; batch
 reporting collects that snapshot without creating another analysis representation
 or a per-video JSON sidecar.
+For archived hashes, Start captures a requested recipe before timeline/encoder
+preparation. It records preparation failures and destination-picker cancellation.
+The worker attaches the shared effective snapshot and finalizes its actual outcome;
+destination and queue waiting are excluded from monotonic attempt duration.
+Successful output survives a history-write failure, which remains visible separately.
 
 A worker streams the native Content-area image or Full-frame layout region to
 FFmpeg, which retains native dimensions or pads to the chosen canvas. The local render-job
@@ -262,3 +272,9 @@ independently of current assistant settings and later preset edits.
 Per-job failures allow later jobs to continue. Cancellation skips pending jobs and
 preserves completed videos. Closing the dialog requests cancellation and waits for
 the active encoder. Definitions survive restart; automatic resume is outside scope.
+Each started archived-source job creates its own Library attempt before import;
+skipped jobs create none. The report and Library retain requested/effective settings,
+observed backend and actual results; `history_error` reports independent persistence
+failures. The Library history dialog prepares repeats in a worker from archived bytes
+and saved recipes. Video repeats use the assistant's review; data repeats use the
+existing save/overwrite flow. A started repeat creates a fresh attempt.

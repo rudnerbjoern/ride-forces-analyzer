@@ -199,6 +199,18 @@ in `preferences.library_video_labels`; first use offers the six initial labels,
 while saved custom and empty lists survive startup. Settings edits a draft until
 Save; Cancel retains the previous list. Removed options remain available when
 editing an existing link that still uses their text.
+Export history keeps requested and effective recipes separately. Each actual
+single-video/data/batch attempt has a distinct row and terminal result; skipped
+jobs create none. Completion follows publication, retaining completed bytes/path,
+observed backend and monotonic duration without queue/destination-picker waiting.
+History failures remain separate warnings and never roll back successful files.
+At startup, leftover running rows become interrupted with unknown completion facts.
+Repeats read archived exact bytes and captured metadata/analysis, retaining legacy
+original-source semantics. Supported video snapshots are checked against recomputed
+geometry/timing and opened in the existing review; data repeats retain their format
+and range. Unsupported versions/algorithms or changed archived identities explain
+why repetition is unavailable. Current presets/markers/additions and old paths do
+not modify saved history. The schema and manual workflow status remain unchanged.
 `LibraryStore` applies bundled major/minor revisions in an
 explicit SQLite transaction, rolling back schema, data and revision together on
 failure. Unknown revisions or unversioned existing tables are rejected without

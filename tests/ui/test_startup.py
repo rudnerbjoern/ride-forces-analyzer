@@ -45,6 +45,9 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
 
         def inspect_window():
             try:
+                recovered = history.entries(source.source_sha256)[0]
+                assert recovered.status == "interrupted"
+                assert recovered.finished_at is None and recovered.duration is None
                 windows = [widget for widget in QApplication.topLevelWidgets() if widget.isVisible()]
                 assert len(windows) == 1
                 window = windows[0]
@@ -105,6 +108,17 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
 
         QMainWindow.show = checked_show
         QApplication.exec = checked_exec
+        from tests.analysis.test_recording_preparation import synthetic_source
+        from ride_forces_analyzer.analysis.preparation import source_app_configuration
+        from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
+        from ride_forces_analyzer.storage.library_history import LibraryHistory, ExportRequest
+        source = synthetic_source(name="Interrupted ride")
+        history = LibraryHistory()
+        history.store.archive(source, "interrupted.forces", (2, 6), CalibrationOverrides())
+        history.start(ExportRequest(
+            kind="csv", source_sha256=source.source_sha256,
+            analysis_configuration=source_app_configuration(), first_sample=2, last_sample=6,
+        ), "single")
         LAUNCH_APPLICATION
     """)
     script = (

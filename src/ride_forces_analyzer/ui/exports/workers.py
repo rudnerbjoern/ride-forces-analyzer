@@ -20,6 +20,8 @@ from PySide6.QtCore import (
 )
 
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
+from ride_forces_analyzer.exports.history import ExportAttempt
+from ride_forces_analyzer.storage.library_history import ExportRequest
 from ride_forces_analyzer.rendering.encoding import ExportCancelled, export_video
 from ride_forces_analyzer.rendering.model import (
     ExportLayout,
@@ -31,6 +33,7 @@ from ride_forces_analyzer.rendering.preview import (
     build_previews,
     preview_rendered_region,
 )
+from ride_forces_analyzer.rendering.progress import ExportProgress
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 
 
@@ -150,6 +153,7 @@ class ExportWorker(QRunnable):
             destination.
         cancelled: Event used to request cancellation without publishing partial output.
         signals: Qt result, failure and progress signal transport owned by the worker.
+        attempt: History lifecycle started before preparation, or created on execution.
     """
 
     def __init__(
@@ -161,6 +165,7 @@ class ExportWorker(QRunnable):
         render_jobs: int = 1,
         overwrite: bool = False,
         background: PreviewBackground = PreviewBackground.CHECKER,
+        attempt: ExportAttempt | None = None,
     ) -> None:
         """Initialize export worker and its owned state.
 
@@ -174,6 +179,7 @@ class ExportWorker(QRunnable):
             overwrite: Whether the caller explicitly permits replacing an existing
                 destination.
             background: Display-only backdrop used for live frame previews.
+            attempt: Optional history lifecycle covering earlier preparation.
 
         Returns:
             None.
@@ -185,6 +191,7 @@ class ExportWorker(QRunnable):
         self.render_jobs = render_jobs
         self.overwrite = overwrite
         self.background = background
+        self.attempt = attempt
         self.cancelled = Event()
         self.signals = ExportSignals()
 
@@ -195,7 +202,25 @@ class ExportWorker(QRunnable):
         Returns:
             None.
         """
+        attempt = self.attempt or ExportAttempt(
+            ExportRequest.capture(
+                self.timeline.analysis,
+                "video",
+                self.timeline.first,
+                self.timeline.last,
+                self.timeline.settings,
+            ),
+        )
+        attempt.resume()
+        attempt.prepared(self.timeline.snapshot)
+        gpu: bool | None = None
         try:
+
+            def progress(update: ExportProgress) -> None:
+                nonlocal gpu
+                if update.use_gpu is not None:
+                    gpu = update.use_gpu
+                self.signals.progress.emit(update)
 
             def preview(frame: int, raw: bytes) -> None:
                 image = preview_rendered_region(self.timeline, raw, self.background)
@@ -206,16 +231,29 @@ class ExportWorker(QRunnable):
                 self.destination,
                 ffmpeg=self.ffmpeg,
                 cancelled=self.cancelled,
-                progress=self.signals.progress.emit,
+                progress=progress,
                 frame_preview=preview,
                 render_jobs=self.render_jobs,
                 overwrite=self.overwrite,
             )
         except ExportCancelled:
-            self.signals.finished.emit(tr("Export cancelled. No incomplete output was kept."))
+            attempt.finish("cancelled", gpu=gpu, error="Export cancelled")
+            message = tr("Export cancelled. No incomplete output was kept.")
+            self.signals.finished.emit(self._history_message(message, attempt))
         except Exception as error:
             record_error("Video export", error)
-            self.signals.failed.emit(tr("Export failed: {0}", error))
+            attempt.finish("failed", gpu=gpu, error=str(error))
+            self.signals.failed.emit(
+                self._history_message(tr("Export failed: {0}", error), attempt),
+            )
         else:
+            attempt.finish("completed", output=path, gpu=gpu)
             self.signals.saved.emit(str(path))
-            self.signals.finished.emit(tr("Saved {0}", path))
+            self.signals.finished.emit(self._history_message(tr("Saved {0}", path), attempt))
+
+    def _history_message(self, message: str, attempt: ExportAttempt) -> str:
+        return (
+            f"{message}\n{tr('Export history could not be saved: {0}', attempt.warning)}"
+            if attempt.warning
+            else message
+        )

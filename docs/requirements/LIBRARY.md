@@ -2,7 +2,7 @@
 
 <!-- cspell:words NFKC -->
 
-Status: LIB-01–10 implemented; LIB-11–14 planned.
+Status: LIB-01–12 implemented; LIB-13–14 planned.
 This document defines the Library feature
 and its verifiable implementation steps. It does not authorize implementation or
 Git delivery. Requirements and implementation belong on the same feature branch.
@@ -294,6 +294,34 @@ status decision.
 - Unsupported snapshot/algorithm versions explain why repetition is unavailable;
   they are not silently replaced with current defaults. Matching saved settings
   do not promise byte-identical output across application versions or encoders.
+
+`storage.library_history.LibraryHistory` owns the existing attempt table.
+`ExportRequest` version 1 freezes the requested format, range, complete analysis
+configuration, metadata additions/effective labels and video settings when applicable.
+Effective video recipes retain the shared `ExportSnapshot`; data exports use the
+versioned request representation after existing data validation succeeds.
+`exports.history.ExportAttempt` wraps the single-video, data-worker and batch-job
+execution paths. A video attempt begins when Start initiates preparation; cancelling
+destination selection records cancellation. Data attempts begin when their worker
+executes, after destination/overwrite confirmation. Batch jobs begin before source
+loading; skipped jobs never enter the lifecycle. Monotonic duration includes preparation
+and execution but excludes destination-picker and worker-queue waiting.
+Only actual successful publication records completed path/size; observed encoder
+selection stays unknown until reported. History failures are reported separately
+from successful export results. Batch reports retain an independent `history_error`.
+At application startup, leftover running rows become interrupted, retaining unknown
+finish time/duration instead of inventing a completion.
+
+**Export history…** opens a separate themed `LibraryExportsDialog` for the selected
+recording, listing attempts newest first and showing results/requested or effective
+settings. Repeat preparation runs in a worker and reads verified archived bytes,
+captured metadata and the saved analysis recipe without current preference/Library
+overrides. Supported video snapshots open the existing assistant's review page;
+data recipes use the existing destination and overwrite-confirmation flow.
+Every started repeat is a new attempt. Saved requests and snapshots are never
+rewritten. An unsupported recipe or archived-byte mismatch explains the limitation;
+a changed-source reimport can make an older exact-byte recipe unavailable.
+The previous external source and output paths are not used for repeat preparation.
 
 ### Admitted source date contract
 
@@ -606,7 +634,7 @@ recording, chart zoom or analysis.
 4. **Export history:** show the selected recording's attempts newest first, with
    time, format/layout, status, duration and destination. Selecting an attempt
    exposes its saved settings and **Repeat export…** when supported. This can be
-   a section/tab of recording details; it needs no separate window per attempt.
+   a shared recording-bound dialog; it needs no separate window per attempt.
 5. **Video links:** open a separate dialog from the selected recording's video icon,
    with its link list, label dropdown and actions to add, edit and remove individual links.
    Multiple full-video, Short or other platform links can coexist without affecting
@@ -646,7 +674,8 @@ search clear action removes its text; the reset icon clears both filters. Filter
 does not open sources or change the chart. Collapsing retains both controls.
 Metadata editing uses the separate dialog; existing chart controls persist current
 markers to the Library for archived hashes. Video links use a separate dialog;
-Settings → Library manages label choices. Later workflows remain LIB-11 onward.
+Settings → Library manages label choices. **Export history…** opens a separate
+attempt list and saved-settings review. Portable backup/restore remains LIB-13 onward.
 
 LIB-04 acceptance also checks the default collapsed state, showing/hiding the panel
 and restoring the existing chart area and minimum window size. Group these checks
@@ -715,7 +744,7 @@ backup schedules and including exported videos are outside this design.
 
 ## Iterative implementation and verification
 
-LIB-01–10 are implemented; LIB-11–14 remain planned.
+LIB-01–12 are implemented; LIB-13–14 remain planned.
 Implement one increment at a time on the same feature branch;
 its acceptance checks must pass before moving to dependent work. Steps 13–14 are
 the later backup/restore phase, not a prerequisite for the initial Library.
@@ -870,7 +899,7 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 11. **LIB-11 — Export attempt history**
 
-    **Status:** Planned.
+    **Status:** Complete (native Windows single/batch/data outcomes, history-write failures and startup interruption recovery verified).
 
     **Implementation:** Connect history to existing single-video, batch and data-export
     paths for archived sources. Store requested/effective snapshots, results, duration,
@@ -884,7 +913,7 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 12. **LIB-12 — Repeat export from saved settings**
 
-    **Status:** Planned.
+    **Status:** Complete (native Windows archived-source repeat, captured recipes/metadata, unsupported versions and overwrite protection verified).
 
     **Implementation:** Add saved-settings review and repeat export using archived
     source bytes, captured markers/metadata and existing export services.

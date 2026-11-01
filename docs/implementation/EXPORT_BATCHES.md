@@ -14,7 +14,8 @@ are defined in the [release guide](../development/RELEASE.md#linux-and-macos-pac
 Local SQLite presets and reusable batches; multiple presets per recording and
 multiple recordings per batch. Selected/all batches form one sequential queue coordinated by `exports.batches`.
 Each recording × preset produces a separate video, never concatenated rides.
-The ride/media library remains outside this scope; see the [roadmap](../ROADMAP.md).
+Recording archives and per-attempt history belong to the separate
+[Library](../requirements/LIBRARY.md#export-history-and-repeat-export).
 
 Architecture owns [storage/component boundaries](../architecture/05_building_block_view.md#video-export-boundary),
 [database location](../architecture/07_deployment_view.md#local-export-configuration)
@@ -106,6 +107,10 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   including import/analysis, rendering, encoding and final publication or failure/
   cancellation handling. It excludes queue waiting and report writes; skipped
   jobs retain `null` rather than a fabricated duration.
+  Started archived-source jobs also retain requested/effective recipes and results
+  in the Library; skipped jobs create no attempt. A separate `history_error` warns
+  of Library persistence failure without changing a completed result or removing
+  its output. Library history is available without locating the run report.
   Progress wraps the shared `ExportProgress` with job index/count and label.
   Separate bars show the frame-weighted overall queue and the current video's
   submitted frames. Before rendering, each distinct source is imported to calculate
@@ -117,5 +122,6 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
 - Cancellation stops the active encode and skips remaining jobs; remove incomplete
   output, preserve completed videos. Parent close/Escape cannot abandon an active export.
 - Definitions survive restart, without embedded sensor data or automatic relocated-file
-  discovery. Moving/changing a source requires a new job. Automatic resume and a
-  persistent execution-history UI remain outside scope.
+  discovery. Moving/changing a source requires a new job. Automatic resume remains
+  outside this queue's scope. Library
+  history supports a separate repeat from archived bytes and frozen settings.

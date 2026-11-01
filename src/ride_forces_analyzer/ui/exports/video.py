@@ -50,6 +50,7 @@ from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.rendering.model import (
     VideoOutput,
     PROFILES,
+    ExportSnapshot,
     prepare_export,
     prepare_export_analysis,
 )
@@ -158,6 +159,7 @@ class ExportDialog(QDialog):
             self.analysis.replay_origin if current_sample is None else current_sample
         )
         self.worker: ExportWorker | None = None
+        self._saved_review_pending = False
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         content_scroll = QScrollArea()
@@ -331,6 +333,24 @@ class ExportDialog(QDialog):
         self.presets.refresh()
         self._schedule_preview()
 
+    def restore_snapshot(self, snapshot: "ExportSnapshot") -> None:
+        """Restore a supported saved export and open review after its preview is ready.
+
+        Args:
+            snapshot: Effective snapshot already prepared against archived source bytes.
+        """
+        self._saved_review_pending = True
+        self._load_preset(
+            SavedPreset(
+                schema_version=1,
+                name=tr("Saved export"),
+                settings=snapshot.settings,
+                smoothing_window=snapshot.smoothing_window,
+                range_mode="selection",
+                analysis_configuration=snapshot.analysis_configuration,
+            ),
+        )
+
     @Slot(object)
     def _load_preset(self, preset: SavedPreset) -> None:
         try:
@@ -426,6 +446,10 @@ class ExportDialog(QDialog):
         self.next.setEnabled(self.worker is None)
         self.start.setEnabled(self.worker is None)
         self._update_summary()
+
+        if self._saved_review_pending:
+            self._saved_review_pending = False
+            self._review()
 
     @Slot(str)
     def _preview_failed(self, message: str) -> None:
@@ -544,19 +568,36 @@ class ExportDialog(QDialog):
         try:
             settings = self.form.settings()
             first, last = self._bounds()
+            from ride_forces_analyzer.exports.history import ExportAttempt
+            from ride_forces_analyzer.storage.library_history import ExportRequest
+
+            attempt = ExportAttempt(
+                ExportRequest.capture(self.analysis, "video", first, last, settings),
+            )
+        except ValueError as error:
+            bind(self.status, tr(str(error)), "text")
+            return
+        try:
             timeline = prepare_export(self.analysis, settings, first, last)
             encoder = find_ffmpeg(
                 Path(self.form.encoder.text()) if self.form.encoder.text() else None,
             )
         except (ValueError, OSError) as error:
+            attempt.finish("failed", error=str(error))
             record_error("Export preparation", error)
-            bind(self.status, tr(str(error)), "text")
+            message: str = tr(str(error))
+            if attempt.warning:
+                message = (
+                    f"{message}\n{tr('Export history could not be saved: {0}', attempt.warning)}"
+                )
+            bind(self.status, message, "text")
             return
         suffix = ".mov" if settings.output == VideoOutput.TRANSPARENT else ".mp4"
         source_path = self.data.source.recording.source.provenance.path
         stem = source_path.stem if source_path is not None else "ride-forces"
         name = f"{stem} - {self.form.layout_profile.currentText()}{suffix}"
         suggested = Path(self.preferences.export_directory()) / name
+        attempt.pause()
         filename, _ = QFileDialog.getSaveFileName(
             self,
             tr("Save video"),
@@ -564,6 +605,13 @@ class ExportDialog(QDialog):
             tr("Video (*{0})", suffix),
         )
         if not filename:
+            attempt.finish("cancelled", error="Destination selection cancelled")
+            if attempt.warning:
+                bind(
+                    self.status,
+                    tr("Export history could not be saved: {0}", attempt.warning),
+                    "text",
+                )
             return
         worker = ExportWorker(
             timeline,
@@ -572,6 +620,7 @@ class ExportDialog(QDialog):
             render_jobs=self.preferences.render_jobs(),
             overwrite=Path(filename).exists(),
             background=PreviewBackground(self.background.currentData()),
+            attempt=attempt,
         )
         worker.signals.progress.connect(self._progress)
         worker.signals.preview.connect(self._export_preview)
