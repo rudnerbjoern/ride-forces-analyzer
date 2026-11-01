@@ -50,6 +50,13 @@ chapter 9 retains decision status and rationale.
 - [Editable calibration markers](development/ANALYSIS_MODELS.md#reference-calibration):
   source-evidenced Gravity/Incline calibration, persistence and partial recalculation.
 
+## Planned features
+
+- [Library requirements and implementation steps](requirements/LIBRARY.md):
+  local recording archive, editable metadata and markers, manual workflow, video
+  links, date/park/search views, reusable export history and later portable
+  backup/restore. Requirements complete; implementation planned.
+
 ## Unified analysis
 
 - [Unified recording analysis API](development/ANALYSIS_MODELS.md#unified-recording-analysis):
