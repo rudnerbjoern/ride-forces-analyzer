@@ -8,7 +8,8 @@
 and provenance. Typed values supplement that evidence; unknown fields, ordering,
 GPS slots and null/absence distinctions remain intact. Defaults never alter source data.
 
-Path imports expand bounded Raw-DEFLATE `.zforces` before JSON validation.
+Path imports and explicitly compressed byte imports expand bounded Raw-DEFLATE
+`.zforces` before JSON validation.
 Provenance identifies the original compressed file, while the tree represents
 decoded JSON. Both file formats use the same downstream contracts.
 
@@ -151,15 +152,19 @@ validated. Reads do not rewrite stored definitions. Batches reimport/check hashe
 sequentially, preserving completed videos across later failure/cancellation.
 
 The separate `library.sqlite3` contains recordings, export history and video links,
-plus Alembic's revision table. Its schema is implemented; archiving and workflow
-services remain planned. `LibraryStore` applies bundled major/minor revisions in an
+plus Alembic's revision table. Explicit import stores only complete successful
+originals, initializing current markers from source/defaults and valid preferences.
+Byte-identical input preserves the entire existing entry and relationships; other
+bytes remain separate. Reopening verifies lengths/digests and uses the stored
+compressed/plain format through the existing importer and analysis services.
+Recording-list selection and later workflows remain planned. `LibraryStore` applies bundled major/minor revisions in an
 explicit SQLite transaction, rolling back schema, data and revision together on
 failure. Unknown revisions or unversioned existing tables are rejected without
 replacement; current revisions are not rewritten. Every ordinary `sqlite3`
 connection enables foreign keys and commits or rolls back its transaction.
 Source formats/statuses, byte lengths and nonnegative values have SQL constraints;
-source decoding, hashes and snapshot relationships belong to the later import/export
-services. Existing databases are not migrated or consolidated.
+archive import validates source decoding and byte identity; complete snapshot
+relationships belong to the later export-history service. Existing databases are not migrated or consolidated.
 
 Update lookup stays outside widgets. It requires a matching platform asset;
 download/installation remain manual. [Deployment](07_deployment_view.md#local-export-configuration),

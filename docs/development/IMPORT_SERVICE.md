@@ -26,7 +26,7 @@ result = import_forces_bytes(b"{}")  # Structured INVALID_SCHEMA_VERSION failure
 | API                                                                          | Contract                                                                                           |
 | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `import_forces(path: Path, *, limits=DEFAULT_LIMITS) -> ImportResult`        | Bounded read-only local binary I/O                                                                 |
-| `import_forces_bytes(data: bytes, *, limits=DEFAULT_LIMITS) -> ImportResult` | Immutable bytes; no filesystem access                                                              |
+| `import_forces_bytes(data, *, compressed=False, limits=...) -> ImportResult` | Immutable bytes; no filesystem access                                                              |
 | Execution                                                                    | Synchronous, offline, Qt-independent; caller schedules work; no internal thread/progress interface |
 
 Architecture owns [composition](../architecture/05_building_block_view.md#importer-composition-and-interfaces),
@@ -36,7 +36,8 @@ and [source ownership](../architecture/08_concepts.md#source-ownership-and-valid
 ## Application analysis handoff
 
 - Path imports support `.forces` JSON and `.zforces` Raw-DEFLATE recordings through
-  the same validation/analysis path. Bytes-only imports accept uncompressed JSON.
+  the same validation/analysis path. Bytes-only imports accept uncompressed JSON
+  by default and use explicit `compressed=True` for bounded Raw-DEFLATE input.
   [Decoding](STRICT_DECODING.md) defines compression limits and original provenance.
 - Import success means lossless parsing, not analysis. Import remains usable
   without NumPy/Qt and retains bytes, metadata, unknown fields and independent GPS.

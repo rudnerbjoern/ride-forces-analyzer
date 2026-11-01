@@ -61,14 +61,24 @@ def import_forces(path: Path, *, limits: ImportLimits = DEFAULT_LIMITS) -> Impor
     return _complete(decode_forces(path, limits=limits), limits)
 
 
-def import_forces_bytes(data: bytes, *, limits: ImportLimits = DEFAULT_LIMITS) -> ImportResult:
+def import_forces_bytes(
+    data: bytes,
+    *,
+    compressed: bool = False,
+    limits: ImportLimits = DEFAULT_LIMITS,
+) -> ImportResult:
     """Import exact immutable bytes without filesystem or network access.
 
     Args:
         data: Input data in the representation declared by the parameter type.
+        compressed: Decode zforces bytes with the existing bounded Raw-DEFLATE decoder.
         limits: Resource limits applied to the operation.
 
     Returns:
         Imported recording and capability diagnostics, or a structured import failure.
+
+    Raises:
+        TypeError: Data is not immutable bytes or compressed is not a bool.
+        ValueError: Limits is not an ImportLimits instance.
     """
-    return _complete(decode_forces_bytes(data, limits=limits), limits)
+    return _complete(decode_forces_bytes(data, compressed=compressed, limits=limits), limits)

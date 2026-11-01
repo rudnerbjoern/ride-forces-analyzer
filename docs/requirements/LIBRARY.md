@@ -1,6 +1,6 @@
 # Library requirements and implementation steps
 
-Status: LIB-01–02 implemented; LIB-04 has an empty collapsible panel; remaining functionality planned. This document defines the Library feature
+Status: LIB-01–03 implemented; LIB-04 has a collapsible panel with archive import; remaining functionality planned. This document defines the Library feature
 and its verifiable implementation steps. It does not authorize implementation or
 Git delivery. Requirements and implementation belong on the same feature branch.
 
@@ -45,9 +45,22 @@ outlined here so the initial schema does not prevent it.
   and no partial entry; other selected files may still import.
 - Reopening an archived entry reads its stored bytes through the existing import
   and analysis path. Moving or deleting the external original must not break it.
-  Compressed bytes need the existing bounded decoding path: the current public
-  bytes-only import API accepts uncompressed JSON, so it cannot simply be used
-  unchanged for archived `.zforces` files.
+  Archived `.zforces` bytes use the importer's explicit `compressed=True` option
+  and the same bounded Raw-DEFLATE path as file imports. No temporary source file
+  or JSON reconstruction is used.
+
+`explorer.library.LibraryArchive.import_paths()` imports selected files independently.
+`LibraryStore.archive()` inserts successful originals with duplicate protection in one
+transaction, recording the first successful import time in UTC and the initial
+`imported` workflow state. It initializes bounds and reference choices using existing
+source/default and valid saved-preference rules; reimport never updates an existing row.
+Search projections remain unpopulated until LIB-05.
+
+`LibraryArchive.reopen()` verifies the stored byte count and SHA-256, decodes the
+stored format, and uses existing explorer/analysis preparation with the archived
+marker recipe. It needs neither the original external file nor a reconstruction of
+its JSON. The service is available for LIB-04's planned recording-list selection;
+this increment does not introduce a second selection surface.
 
 ### Recording dates and names
 
@@ -231,8 +244,8 @@ in `Z`; `recorded_day` is `YYYY-MM-DD`. Nullable fields use SQL `NULL`.
 
 The diagram shows all six existing application tables, the three Library tables
 and Alembic's version table, with their columns and database ownership.
-The Library schema is implemented; importing recordings and the related workflows
-remain planned.
+The Library schema, explicit archive import and reopening service are implemented.
+The recording list and remaining workflows are planned.
 `PK` marks primary-key
 columns; the four marked columns in `tiles` form one composite primary key.
 `FK` marks the Library foreign keys. Dashed hash links are optional logical
@@ -578,7 +591,7 @@ backup schedules and including exported videos are outside this design.
 
 ## Iterative implementation and verification
 
-LIB-01–02 and the empty LIB-04 panel are implemented; remaining functionality is planned.
+LIB-01–03 and the collapsible LIB-04 panel are implemented; remaining functionality is planned.
 Implement one increment at a time on the same feature branch;
 its acceptance checks must pass before moving to dependent work. Steps 13–14 are
 the later backup/restore phase, not a prerequisite for the initial Library.
@@ -612,7 +625,7 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 3. **LIB-03 — Archive import and reopening**
 
-   **Status:** Planned.
+   **Status:** Complete (native Windows archive and import-panel acceptance verified).
 
    **Implementation:** Add explicit archive import, duplicate detection and reopening
    from stored bytes through existing decoding/analysis services. Initialize current
@@ -627,8 +640,9 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 4. **LIB-04 — Collapsible Library and day groups**
 
    **Status:** Partial. The initially collapsed, resizable left panel and localized
-   toolbar toggle are implemented. The panel contains only its title; recording
-   lists, day groups, selection and source details remain planned.
+   toolbar toggle are implemented. The panel includes LIB-03 archive import with
+   per-file outcomes. Recording lists, day groups, selection and source details
+   remain planned.
 
    **Implementation:** Add the initially collapsed left panel, toolbar toggle and
    newest-first grouped recording list. Open selection in the existing workspace

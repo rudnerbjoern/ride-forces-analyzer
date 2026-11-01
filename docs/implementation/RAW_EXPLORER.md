@@ -173,7 +173,10 @@ Startup restores valid saved choices, otherwise the registered OS language (Engl
 fallback) and System appearance. `AppSettings` can explicitly override language.
 
 The toolbar's Library toggle shows an adjustable left panel, collapsed by default.
-It currently contains only the Library title; recording lists and actions are planned.
+**Import recordings…** explicitly archives one or more `.forces` / `.zforces`
+files off the GUI thread. Per-file results distinguish imports, existing entries
+and failures; a failed file does not stop the others. Ordinary **Open recording**
+does not archive files. Recording lists and archive selection remain planned.
 Hiding it releases its layout space without changing the loaded recording, selection
 or chart viewport.
 

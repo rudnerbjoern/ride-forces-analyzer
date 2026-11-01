@@ -65,7 +65,7 @@ indices; `optional` parses metadata, attributes and GPS slots. `service` compose
 them using one diagnostic budget. Only complete-service success returns a
 `Recording`; subset APIs do not imply complete import.
 `importers.library_metadata` projects verbatim ride/park names and source-evidenced
-recording dates for the planned Library without storage or Qt dependencies.
+recording dates for the Library without storage or Qt dependencies.
 The [Library contract](../requirements/LIBRARY.md#admitted-source-date-contract)
 defines the admitted epoch, recording-local day and unknown-date policy.
 
@@ -78,8 +78,11 @@ packaged Alembic revisions before exposing transactional `sqlite3` connections.
 SQLAlchemy is restricted to migrations; ordinary queries use the standard library.
 Revision IDs follow the introducing app major/minor version (`1_3` initially),
 independently of patch versions and export-snapshot versions. The three tables and
-indexes exist; archive import and recording workflows remain planned under
-[LIB-03 onward](../requirements/LIBRARY.md#iterative-implementation-and-verification).
+indexes exist. `explorer.library.LibraryArchive` composes explicit archive import,
+preference-based initial markers and reopening through existing importer/analysis
+services. Original bytes, first import time and existing additions remain unchanged
+on duplicates. Recording-list selection and later workflows remain planned under
+[LIB-04 onward](../requirements/LIBRARY.md#iterative-implementation-and-verification).
 
 ## Analysis boundary
 
@@ -139,7 +142,9 @@ and viewport following. The window composes these widgets, binds the same prepar
 snapshot to each component and coordinates import/analysis delivery.
 `ui.explorer.library.LibraryPanel` owns the collapsible Library surface, localized
 toolbar toggle and folder-icon state. The window places its existing workspace
-beside that surface; Library content remains limited to a title until later increments.
+beside that surface. The panel schedules explicit multi-file archive import through
+a background worker and displays per-file results; the archive service owns all
+import, duplicate and reopening logic outside widgets. Recording lists remain planned.
 Export preview widgets and background jobs live in
 `ui.exports.preview` and `ui.exports.workers`. `ui.exports.form.ExportForm` owns
 export inputs and retained layout placements. `ui.exports.preview_controller` owns

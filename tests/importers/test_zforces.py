@@ -15,7 +15,9 @@ from ride_forces_analyzer.importers import (
     ImportFailure,
     ImportSuccess,
     decode_forces,
+    decode_forces_bytes,
     import_forces,
+    import_forces_bytes,
 )
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
@@ -72,6 +74,17 @@ def test_expanded_byte_limit_is_inclusive_and_extension_is_case_insensitive(
     assert isinstance(result, DecodeSuccess)
     assert result.source.original_bytes == data
     assert result.source.root is not None and result.source.root["extension"] == "a" * 1024
+    archived = import_forces_bytes(data, compressed=True)
+    assert isinstance(archived, ImportSuccess)
+    assert archived.recording.source.original_bytes == data
+    assert archived.recording.source.root == result.source.root
+    bounded = decode_forces_bytes(
+        data,
+        compressed=True,
+        limits=replace(DEFAULT_LIMITS, max_bytes=len(_DOCUMENT) - 1),
+    )
+    assert isinstance(bounded, ImportFailure)
+    assert bounded.diagnostics[0].code == "RESOURCE_LIMIT_EXCEEDED"
     too_small = decode_forces(path, limits=replace(DEFAULT_LIMITS, max_bytes=len(_DOCUMENT) - 1))
     assert isinstance(too_small, ImportFailure)
     assert too_small.diagnostics[0].code == "RESOURCE_LIMIT_EXCEEDED"
@@ -107,6 +120,10 @@ def test_invalid_compressed_streams_fail_with_original_provenance(
     assert result.source is not None and result.source.original_bytes == data
     assert result.source_sha256 == sha256(data).hexdigest()
     assert result.source.root is None
+    archived = import_forces_bytes(data, compressed=True)
+    assert isinstance(archived, ImportFailure)
+    assert archived.diagnostics[0].code == "INVALID_COMPRESSION"
+    assert archived.source is not None and archived.source.original_bytes == data
 
 
 @pytest.mark.parametrize(

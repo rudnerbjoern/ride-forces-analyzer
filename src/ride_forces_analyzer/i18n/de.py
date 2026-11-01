@@ -9,6 +9,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 GERMAN: dict[str, str] = {
     "Library": "Bibliothek",
+    "Import recordings…": "Aufnahmen importieren…",
+    "Library import results": "Ergebnisse des Bibliotheksimports",
+    "Import recordings into Library": "Aufnahmen in die Bibliothek importieren",
+    "Imported": "Importiert",
+    "Already in Library": "Bereits in der Bibliothek",
+    "Import failed: {0}": "Import fehlgeschlagen: {0}",
     "Export preview: frame {0:,}/{1:,}": "Exportvorschau: Frame {0:,}/{1:,}",
     "&Open recording…": "Aufnahme &öffnen…",
     "&Back": "&Zurück",

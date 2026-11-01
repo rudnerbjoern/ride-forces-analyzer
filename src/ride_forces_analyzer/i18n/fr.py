@@ -8,6 +8,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 FRENCH: dict[str, str] = {
     "Library": "Bibliothèque",
+    "Import recordings…": "Importer des enregistrements…",
+    "Library import results": "Résultats de l’import dans la bibliothèque",
+    "Import recordings into Library": "Importer des enregistrements dans la bibliothèque",
+    "Imported": "Importé",
+    "Already in Library": "Déjà dans la bibliothèque",
+    "Import failed: {0}": "Échec de l’import : {0}",
     "Export preview: frame {0:,}/{1:,}": "Aperçu de l’export : image {0:,}/{1:,}",
     "&Open recording…": "&Ouvrir un enregistrement…",
     "&Back": "&Retour",
