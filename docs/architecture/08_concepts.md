@@ -1,5 +1,7 @@
 # 8. Cross-cutting Concepts
 
+<!-- cspell:words NFKC -->
+
 [Architecture index](README.md)
 
 ## Source ownership and validation
@@ -162,9 +164,14 @@ existing duplicates into the earliest entry and retains all export/link relation
 Reopening verifies lengths/digests and uses the stored
 compressed/plain format through the existing importer and analysis services.
 The grouped list reads metadata and export counts without fetching source BLOBs.
+Park keys and combined name text use NFKC normalization and case folding, populated
+on import/update and backfilled for existing rows by the search migration. Park
+selection and literal search terms combine with AND in parameterized metadata
+queries. Park choices include all effective names regardless of the current search.
 Selecting one entry reopens only its stored original, using generation-guarded worker
 delivery; a failed open retains the previous chart. Read-only details preserve
-original source/date/import values. Filters and editing remain planned.
+original source/date/import values. Filtering preserves the loaded chart; hiding the
+panel retains the filters. Editing remains planned.
 `LibraryStore` applies bundled major/minor revisions in an
 explicit SQLite transaction, rolling back schema, data and revision together on
 failure. Unknown revisions or unversioned existing tables are rejected without

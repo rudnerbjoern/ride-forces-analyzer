@@ -10,6 +10,10 @@ SPDX-License-Identifier: GPL-3.0-or-later
 GERMAN: dict[str, str] = {
     "Library": "Bibliothek",
     "LIBRARY": "BIBLIOTHEK",
+    "All parks": "Alle Parks",
+    "Search ride or park…": "Fahrt oder Park suchen…",
+    "Clear filters": "Filter zurücksetzen",
+    "No matching recordings": "Keine passenden Aufnahmen",
     "Updated in Library": "In Bibliothek aktualisiert",
     "{0} export": "{0} Export",
     "{0} exports": "{0} Exporte",

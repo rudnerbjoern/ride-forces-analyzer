@@ -186,9 +186,14 @@ the shared body font and theme text/muted colors, including live theme changes.
 Selecting a recording opens its stored original in the current workspace; failures
 preserve the current chart and explain the problem inside the panel. Read-only
 details include original metadata, recording time/time zone and import time.
-Park/search filters and metadata editors remain planned.
+The park dropdown offers all effective Library parks, all parks and unknown parks.
+The search requires every whitespace-separated term in the combined ride/park names,
+using Unicode normalization and case folding. Park and search combine with AND;
+wildcard characters are literal. Empty groups disappear, an empty result is explained,
+and the reset icon clears both filters. Filtering reads metadata only and leaves the
+chart unchanged. Metadata editors remain planned.
 Hiding it releases its layout space without changing the loaded recording, selection
-or chart viewport.
+or chart viewport; park selection and search text are retained.
 
 The loaded heading combines ride and optional park names, with device/sample/rate
 metadata on a shared baseline. Calibration and curve visibility occupy one row;

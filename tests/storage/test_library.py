@@ -1,6 +1,6 @@
 """Library schema, exact source storage, revision guards and transaction rollback."""
 
-# cspell:words xinfo executemany
+# cspell:words xinfo executemany Straße strasse
 
 from contextlib import closing, contextmanager
 from collections.abc import Generator
@@ -25,6 +25,7 @@ from ride_forces_analyzer.storage.library import (
     LibraryStoreError,
     default_database_path,
 )
+from ride_forces_analyzer.storage.library_search import library_search_values
 
 RAW = b' {"unknown":[1.000,true],"GPS":"retained"}\r\n'
 DIGEST = sha256(RAW).hexdigest()
@@ -51,7 +52,7 @@ def test_fresh_schema_resources_relationships_and_reopen(export_directory: Path)
         assert isinstance(connection, sqlite3.Connection)
         assert connection.execute("PRAGMA foreign_keys").fetchone() == (1,)
         revision = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
-        assert revision == "1_3_identity"
+        assert revision == "1_3_search"
         assert tuple(map(int, revision.split("_")[:2])) <= tuple(
             map(int, __version__.split(".")[:2]),
         )
@@ -195,7 +196,7 @@ def test_failed_initial_migration_rolls_back_schema_data_and_revision(
     LibraryStore(path).initialize()
     with closing(sqlite3.connect(path)) as connection, connection:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "1_3_identity",
+            "1_3_search",
         )
 
 
@@ -312,7 +313,7 @@ def test_ordinary_writes_enforce_constraints_and_rollback(export_directory: Path
         assert connection.execute("SELECT notes FROM recordings").fetchone() == ("",)
         assert connection.execute("PRAGMA foreign_keys").fetchone() == (1,)
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "1_3_identity",
+            "1_3_search",
         )
 
 
@@ -359,6 +360,13 @@ def test_list_order_counts_effective_names_and_no_source_blob_reads(
             "UPDATE recordings SET ride_name_override='Effective ride',park_name_override='Effective park' WHERE source_sha256=?",
             ("e" * 64,),
         )
+        for key, *_ in rows:
+            ride = "Effective ride" if key == "e" else f"Ride {key}"
+            park = "Effective park" if key == "e" else "Park"
+            connection.execute(
+                "UPDATE recordings SET park_key=?,search_text=? WHERE source_sha256=?",
+                (*library_search_values(ride, park), key * 64),
+            )
         for _ in range(2):
             connection.execute(
                 "INSERT INTO export_history(recording_sha256,export_kind,origin,started_at_utc,status,application_version,request_json) VALUES (?, 'csv','single','2026-11-01T10:00:00.000000Z','failed','1.3.0','{}')",
@@ -391,3 +399,52 @@ def test_list_order_counts_effective_names_and_no_source_blob_reads(
     corrected = entries[4]
     assert (corrected.ride_name, corrected.park_name) == ("Effective ride", "Effective park")
     assert (corrected.source_ride_name, corrected.source_park_name) == ("Ride e", "Park")
+    assert store.entries(park="effective PARK", search="RIDE") == (corrected,)
+    assert store.parks() == ("Effective park", "Park")
+    assert store.entries(search="absent") == ()
+    assert store.entries() == entries
+
+
+def test_search_projection_upgrade_uses_effective_names_and_rolls_back(
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = LibraryStore(export_directory / "library.sqlite3")
+    upgrade = command.upgrade
+
+    def old_upgrade(config: Config, target: str) -> None:
+        upgrade(config, "1_3_identity")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(command, "upgrade", old_upgrade)
+        with store.connection() as connection:
+            insert_recording(connection)
+            connection.execute(
+                "UPDATE recordings SET source_ride_name='Original',source_park_name='Old park',"
+                "ride_name_override='Straße',park_name_override='Café Park',notes='kept'",
+            )
+    before = store.path.read_bytes()
+    with closing(sqlite3.connect(store.path)) as connection, connection:
+        connection.execute(
+            "CREATE TRIGGER reject_projection BEFORE UPDATE OF search_text ON recordings "
+            "BEGIN SELECT RAISE(ABORT, 'injected projection failure'); END",
+        )
+    rejected = store.path.read_bytes()
+    with pytest.raises(LibraryStoreError, match="injected projection failure"):
+        store.initialize()
+    assert store.path.read_bytes() == rejected
+    with closing(sqlite3.connect(store.path)) as connection, connection:
+        connection.execute("DROP TRIGGER reject_projection")
+    store.initialize()
+    assert store.path.read_bytes() != before
+    entry = store.entries(park="CAFÉ PARK", search="strasse")[0]
+    assert entry.source_ride_name == "Original" and entry.ride_name == "Straße"
+    assert store.parks() == ("Café Park",)
+    with store.connection() as connection:
+        assert connection.execute("SELECT source_bytes,notes FROM recordings").fetchone() == (
+            RAW,
+            "kept",
+        )
+    current = store.path.read_bytes()
+    store.initialize()
+    assert store.path.read_bytes() == current

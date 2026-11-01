@@ -1,6 +1,8 @@
 # Library requirements and implementation steps
 
-Status: LIB-01–04 implemented; LIB-05–14 planned. This document defines the Library feature
+<!-- cspell:words NFKC -->
+
+Status: LIB-01–05 implemented; LIB-06–14 planned. This document defines the Library feature
 and its verifiable implementation steps. It does not authorize implementation or
 Git delivery. Requirements and implementation belong on the same feature branch.
 
@@ -65,7 +67,9 @@ fields and reassign related foreign keys atomically. The UUID has a unique index
 The `1_3_identity` migration backfills UUIDs in existing archives and merges duplicates
 into the earliest entry, retaining that entry's source and Library choices and all
 associated export history and video links. Reimport a changed export to update it.
-Search projections remain unpopulated until LIB-05.
+Normalized effective-name projections are populated on first import and source
+updates. The `1_3_search` migration backfills existing rows using metadata only,
+including any Library name overrides, without reading original BLOBs.
 
 `LibraryArchive.reopen()` verifies the stored byte count and SHA-256, decodes the
 stored format, and uses existing explorer/analysis preparation with the archived
@@ -257,7 +261,7 @@ The diagram shows all six existing application tables, the three Library tables
 and Alembic's version table, with their columns and database ownership.
 The Library schema, explicit archive import and reopening service are implemented.
 The grouped recording list and read-only source/date/import details are implemented;
-filters, editing and remaining workflows are planned.
+park/name filters are implemented; editing and remaining workflows are planned.
 `PK` marks primary-key
 columns; the four marked columns in `tiles` form one composite primary key.
 `FK` marks the Library foreign keys. Dashed hash links are optional logical
@@ -488,9 +492,11 @@ field. Split whitespace-separated terms and require every term to occur in the
 combined ride/park text. Normalize names and query terms consistently with Python
 Unicode normalization and `casefold`; preserve the displayed spelling. Parameterize
 queries and treat `%`, `_` and escape characters as literal user input.
+The metadata queries use parameterized `instr` predicates for literal substring
+matching and Python NFKC normalization with `casefold` for both names and terms.
 SQLite's default `LIKE` does not provide general Unicode case folding; see its
 [documented behavior](https://www.sqlite.org/lang_expr.html#the_like_glob_regexp_match_and_extract_operators).
-A leading-wildcard contains search scans this small metadata set; these B-tree
+A contains search scans this small metadata set; these B-tree
 indexes do not accelerate it. A dedicated full-text index, ranking and query
 language are not required for the requested ride/park search.
 
@@ -552,7 +558,12 @@ a row loads only that source through the existing worker; day headers are not
 selectable. Details show original file/name/recording/import information and
 additional source metadata after loading, all read-only. List refresh, language
 changes and collapsing preserve selection without reloading the chart.
-Park/search controls and editable details remain LIB-05 onward.
+The park dropdown reads all effective park choices independently of the active
+search. Park selection and whitespace-separated search terms combine with AND.
+Empty groups disappear; an empty result shows **No matching recordings**. The
+search clear action removes its text; the reset icon clears both filters. Filtering
+does not open sources or change the chart. Collapsing retains both controls.
+Editable details remain LIB-06 onward.
 
 LIB-04 acceptance also checks the default collapsed state, showing/hiding the panel
 and restoring the existing chart area and minimum window size. Group these checks
@@ -621,7 +632,7 @@ backup schedules and including exported videos are outside this design.
 
 ## Iterative implementation and verification
 
-LIB-01–04 are implemented; remaining functionality is planned.
+LIB-01–05 are implemented; remaining functionality is planned.
 Implement one increment at a time on the same feature branch;
 its acceptance checks must pass before moving to dependent work. Steps 13–14 are
 the later backup/restore phase, not a prerequisite for the initial Library.
@@ -685,7 +696,7 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 5. **LIB-05 — Park filter and ride/park search**
 
-   **Status:** Planned.
+   **Status:** Complete (native Windows filtering, migration and shared-window acceptance verified).
 
    **Implementation:** Add the park dropdown and combined name search over the
    existing Library list using the documented metadata projections.

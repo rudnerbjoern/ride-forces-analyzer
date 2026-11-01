@@ -85,9 +85,10 @@ Equivalent exports retain their original bytes; changed exports replace source
 fields atomically while retaining first import time, additions, valid markers and
 relationships. Sources without a valid UUID use exact-byte identity.
 `LibraryStore.entries()` reads metadata and export counts without
-source BLOBs in stable day/instant/import/digest order. Filtering and later workflows
-remain planned under
-[LIB-05 onward](../requirements/LIBRARY.md#iterative-implementation-and-verification).
+source BLOBs in stable day/instant/import/digest order. Park filtering and literal
+multi-term search use persisted Unicode-normalized effective-name projections;
+park choices come from the whole Library. Editing and later workflows remain planned under
+[LIB-06 onward](../requirements/LIBRARY.md#iterative-implementation-and-verification).
 
 ## Analysis boundary
 
@@ -151,7 +152,7 @@ beside that surface. The panel schedules explicit multi-file archive import thro
 a background worker and displays per-file results; the archive service owns all
 import, duplicate and reopening logic outside widgets. A grouped Qt recording list
 uses compact three-line rows with elided names, export counts and read-only
-workflow icons/tooltips; selected-source details
+workflow icons/tooltips, a park dropdown and combined name search; selected-source details
 remain read-only. Selection requests go through the existing `LoadWorker` and window
 load lifecycle, preserving the previous chart on failure. Collapsing and language
 changes retain selection without reloading a source.

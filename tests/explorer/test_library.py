@@ -1,6 +1,6 @@
 """Archive originals once and reopen them independently of external paths."""
 
-# cspell:words wbits
+# cspell:words wbits Straße strasse Ｒｉｄｅ
 
 from hashlib import sha256
 from pathlib import Path
@@ -150,6 +150,40 @@ def test_all_real_exports_identify_manta_once(archive: LibraryArchive) -> None:
         assert reopened.source.source_sha256 == entry.source_sha256
 
 
+def test_park_and_unicode_name_search_are_combined_and_literal(
+    archive: LibraryArchive,
+    export_directory: Path,
+) -> None:
+    names = (
+        ("Straße Ｒｉｄｅ", "Café Park"),
+        ("100%_Fun\\O'Clock", "CAFE\u0301 PARK"),
+        ("Unknown ride", None),
+        ("Other ride", "Other park"),
+    )
+    for index, (ride, park) in enumerate(names):
+        path = export_directory / f"source-{index}.forces"
+        path.write_bytes(synthetic_source(name=ride, location=park).recording.source.original_bytes)
+        assert archive.import_paths((path,))[0].status == "imported"
+    store = archive.store
+    assert len(store.entries()) == 4
+    assert len(store.parks()) == 2
+    assert {entry.ride_name for entry in store.entries(park="café PARK")} == {
+        names[0][0],
+        names[1][0],
+    }
+    assert [entry.ride_name for entry in store.entries(search=" STRASSE  cafe\u0301 \t ride ")] == [
+        names[0][0],
+    ]
+    assert [entry.ride_name for entry in store.entries(park="", search="unknown")] == [names[2][0]]
+    assert store.entries(park="", search="strasse") == ()
+    assert store.entries(park="Other park", search="café") == ()
+    for literal in ("%", "_", "\\", "'"):
+        assert [entry.ride_name for entry in store.entries(search=literal)] == [names[1][0]]
+    assert store.entries(search="' OR 1=1 --") == ()
+    assert store.entries(search="strasse missing") == ()
+    assert store.entries(search=" \t ") == store.entries()
+
+
 def test_changed_uuid_export_updates_source_and_preserves_library_state(
     archive: LibraryArchive,
     export_directory: Path,
@@ -189,6 +223,9 @@ def test_changed_uuid_export_updates_source_and_preserves_library_state(
     assert entry.source_sha256 == digest and entry.imported_at_utc == imported_at
     assert entry.source_ride_name == "After" and entry.ride_name == "My ride"
     assert entry.park_name == "New park" and entry.workflow_status == "uploaded"
+    assert archive.store.entries(park="NEW PARK", search="my RIDE") == entries
+    assert archive.store.entries(search="Before") == ()
+    assert archive.store.parks() == ("New park",)
     assert entry.export_count == 1
     reopened = archive.reopen(digest)
     assert isinstance(reopened, ExplorerData)

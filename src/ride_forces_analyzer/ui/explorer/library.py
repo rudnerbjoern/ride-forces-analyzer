@@ -23,9 +23,13 @@ from PySide6.QtGui import QFont, QFontMetrics, QPainter, QPalette
 from PySide6.QtWidgets import (
     QFileDialog,
     QAbstractItemView,
+    QApplication,
+    QComboBox,
     QFrame,
     QHeaderView,
+    QHBoxLayout,
     QLabel,
+    QLineEdit,
     QPlainTextEdit,
     QPushButton,
     QSplitter,
@@ -34,6 +38,7 @@ from PySide6.QtWidgets import (
     QStyleOptionViewItem,
     QTreeWidget,
     QTreeWidgetItem,
+    QToolButton,
     QWidget,
 )
 
@@ -60,6 +65,20 @@ _WORKFLOW_ICONS = {
     "uploaded": ("Uploaded", QStyle.StandardPixmap.SP_ArrowUp),
     "completed": ("Completed", QStyle.StandardPixmap.SP_DialogYesButton),
 }
+
+
+class ParkFilter(QComboBox):
+    """Open the Library park popup without the transient Qt scroll-animation window."""
+
+    def showPopup(self) -> None:
+        """Show this popup immediately, restoring the shared animation preference afterward."""
+        effect = Qt.UIEffect.UI_AnimateCombo
+        enabled = QApplication.isEffectEnabled(effect)
+        QApplication.setEffectEnabled(effect, False)
+        try:
+            super().showPopup()
+        finally:
+            QApplication.setEffectEnabled(effect, enabled)
 
 
 class LibraryRowDelegate(QStyledItemDelegate):
@@ -156,6 +175,9 @@ class LibraryPanel(QSplitter):
         recordings: Newest-first recording rows under day headers that cannot be selected.
         details: Read-only source/date/import details for the selected recording.
         empty_label: Empty-Library explanation.
+        park_filter: Effective park selection, including all and unknown parks.
+        search: Combined ride/park name search.
+        clear_filters: Action restoring all recordings.
         open_requested: Signal carrying the selected archived source digest.
     """
 
@@ -187,6 +209,31 @@ class LibraryPanel(QSplitter):
         bind(self.import_results, tr("Library import results"), "accessibleName")
         self.import_results.hide()
         layout.addWidget(self.import_results)
+        self.park_filter = ParkFilter()
+        self.park_filter.setSizeAdjustPolicy(
+            QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon,
+        )
+        self.park_filter.setMinimumContentsLength(10)
+        self.park_filter.setMinimumWidth(0)
+        bind(self.park_filter, tr("Park"), "accessibleName")
+        bind(self.park_filter, tr("Park"), "toolTip")
+        layout.addWidget(self.park_filter)
+        search_row = QHBoxLayout()
+        self.search = QLineEdit()
+        self.search.setMinimumWidth(0)
+        self.search.setClearButtonEnabled(True)
+        bind(self.search, tr("Search ride or park…"), "placeholderText")
+        bind(self.search, tr("Search ride or park…"), "accessibleName")
+        search_row.addWidget(self.search, 1)
+        self.clear_filters = QToolButton()
+        self.clear_filters.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogResetButton),
+        )
+        bind(self.clear_filters, tr("Clear filters"), "toolTip")
+        bind(self.clear_filters, tr("Clear filters"), "accessibleName")
+        self.clear_filters.clicked.connect(self._clear_filters)
+        search_row.addWidget(self.clear_filters)
+        layout.addLayout(search_row)
         self.recordings = QTreeWidget()
         self.recordings.setColumnCount(2)
         self.recordings.setHeaderHidden(True)
@@ -207,7 +254,6 @@ class LibraryPanel(QSplitter):
         self.recordings.setColumnWidth(1, 32)
         bind(self.recordings, tr("Archived recordings"), "accessibleName")
         self.recordings.currentItemChanged.connect(self._selected)
-        layout.addWidget(self.recordings, 1)
         self.empty_label = bind(QLabel(), tr("No recordings in Library"))
         self.empty_label.setObjectName("Muted")
         self.recordings.setItemDelegateForColumn(
@@ -217,7 +263,7 @@ class LibraryPanel(QSplitter):
         self.empty_label.setWordWrap(True)
         self.empty_label.setMinimumWidth(1)
         layout.addWidget(self.empty_label)
-        self.recordings.hide()
+        layout.addWidget(self.recordings, 1)
         self.details = QPlainTextEdit()
         self.details.setReadOnly(True)
         self.details.setMinimumWidth(0)
@@ -238,6 +284,8 @@ class LibraryPanel(QSplitter):
         self._details_data: ExplorerData | None = None
         self._error: str | None = None
         self.refresh_labels()
+        self.park_filter.currentIndexChanged.connect(self.refresh)
+        self.search.textChanged.connect(self.refresh)
 
     @property
     def selected_entry(self) -> LibraryEntry | None:
@@ -254,7 +302,30 @@ class LibraryPanel(QSplitter):
         """Reload lightweight list metadata without opening a recording or losing selection."""
         selected = self.selected_entry
         try:
-            entries = LibraryStore().entries()
+            store = LibraryStore()
+            park = self.park_filter.currentData()
+            parks = store.parks()
+            if [self.park_filter.itemData(index) for index in range(self.park_filter.count())] != [
+                None,
+                "",
+                *parks,
+            ]:
+                blocked = self.park_filter.blockSignals(True)
+                try:
+                    self.park_filter.clear()
+                    self.park_filter.addItem(tr("All parks"), None)
+                    self.park_filter.addItem(tr("Unknown park"), "")
+                    for name in parks:
+                        self.park_filter.addItem(name, name)
+                    index = self.park_filter.findData(park)
+                    self.park_filter.setCurrentIndex(max(0, index))
+                finally:
+                    self.park_filter.blockSignals(blocked)
+            park = self.park_filter.currentData()
+            entries = store.entries(
+                park=park if isinstance(park, str) else None,
+                search=self.search.text(),
+            )
         except LibraryStoreError as error:
             record_error("Library list", error)
             self.show_error(tr("Could not read Library: {0}", str(error)))
@@ -288,13 +359,20 @@ class LibraryPanel(QSplitter):
         finally:
             self.recordings.blockSignals(blocked)
         self.empty_label.setVisible(not entries)
-        self.recordings.setVisible(bool(entries))
         self.refresh_labels()
 
     def refresh_labels(self) -> None:
         """Refresh translated headings and details while keeping selection and chart state."""
         self._heading.ensurePolished()
         self.empty_label.ensurePolished()
+        if self.park_filter.count():
+            self.park_filter.setItemText(0, tr("All parks"))
+            self.park_filter.setItemText(1, tr("Unknown park"))
+        filtered = self.park_filter.currentIndex() > 0 or bool(self.search.text().strip())
+        self.clear_filters.setEnabled(filtered)
+        self.empty_label.setText(
+            tr("No matching recordings") if filtered else tr("No recordings in Library"),
+        )
         for index in range(self.recordings.topLevelItemCount()):
             group = self.recordings.topLevelItem(index)
             assert group is not None
@@ -350,6 +428,16 @@ class LibraryPanel(QSplitter):
         entry = self.selected_entry
         if entry is not None:
             self.open_requested.emit(entry.source_sha256)
+
+    @Slot()
+    def _clear_filters(self) -> None:
+        blocked_park = self.park_filter.blockSignals(True)
+        blocked_search = self.search.blockSignals(True)
+        self.park_filter.setCurrentIndex(0)
+        self.search.clear()
+        self.park_filter.blockSignals(blocked_park)
+        self.search.blockSignals(blocked_search)
+        self.refresh()
 
     @Slot()
     def _choose_import(self) -> None:

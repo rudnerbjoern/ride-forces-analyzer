@@ -34,6 +34,7 @@ from ride_forces_analyzer.analysis.calibration import (
 from ride_forces_analyzer.importers import ImportSuccess, import_forces_bytes
 from ride_forces_analyzer.importers.library_metadata import project_library_metadata, recording_uuid
 from ride_forces_analyzer.validation.checks import validate_sample_range, validate_sha256
+from .library_search import library_search_values, normalize_library_text
 
 
 class LibraryStoreError(Exception):
@@ -205,6 +206,17 @@ class LibraryStore:
                         f"UPDATE {table} SET recording_sha256=? WHERE recording_sha256=?",
                         (source.source_sha256, digest),
                     )
+                names = connection.execute(
+                    "SELECT COALESCE(ride_name_override, source_ride_name), "
+                    "COALESCE(park_name_override, source_park_name) FROM recordings "
+                    "WHERE source_sha256=?",
+                    (source.source_sha256,),
+                ).fetchone()
+                assert names is not None
+                connection.execute(
+                    "UPDATE recordings SET park_key=?, search_text=? WHERE source_sha256=?",
+                    (*library_search_values(*names), source.source_sha256),
+                )
                 return "updated", source.source_sha256
             imported_at = (
                 datetime.now(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
@@ -213,8 +225,9 @@ class LibraryStore:
                 "INSERT INTO recordings (source_sha256, source_bytes, source_filename, source_format, "
                 "source_byte_count, source_ride_name, source_park_name, recorded_at_utc, recorded_day, "
                 "day_timezone, imported_at_utc, first_sample, last_sample, gravity_index, incline_index, "
-                "calibration_algorithm_version, calibration_window_samples, source_uuid, search_text) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '')",
+                "calibration_algorithm_version, calibration_window_samples, source_uuid, "
+                "park_key, search_text) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     source.source_sha256,
                     source.recording.source.original_bytes,
@@ -233,15 +246,20 @@ class LibraryStore:
                     calibration.algorithm_version,
                     calibration.window_samples,
                     source_uuid,
+                    *library_search_values(metadata.source_ride_name, metadata.source_park_name),
                 ),
             )
             return "imported", source.source_sha256
 
-    def entries(self) -> tuple[LibraryEntry, ...]:
+    def entries(self, *, park: str | None = None, search: str = "") -> tuple[LibraryEntry, ...]:
         """Read only list metadata in deterministic newest-first day/instant order.
 
         Unknown dates come last. Import time descending and source digest ascending
         resolve ties; the query never selects source BLOBs or parses recordings.
+
+        Args:
+            park: Park spelling/key, empty string for unknown parks, or None for all.
+            search: Whitespace-separated terms required in combined ride/park names.
 
         Returns:
             Effective names, source/date/import details and export counts.
@@ -249,6 +267,17 @@ class LibraryStore:
         Raises:
             LibraryStoreError: Library metadata could not be read.
         """
+        clauses: list[str] = []
+        parameters: list[str] = []
+        if park is not None:
+            key = normalize_library_text(park)
+            clauses.append("r.park_key=?" if key else "r.park_key IS NULL")
+            if key:
+                parameters.append(key)
+        for term in normalize_library_text(search).split():
+            clauses.append("instr(r.search_text, ?) > 0")
+            parameters.append(term)
+        where = " WHERE " + " AND ".join(clauses) if clauses else ""
         with self.connection() as connection:
             return tuple(
                 LibraryEntry(*row)
@@ -259,8 +288,28 @@ class LibraryStore:
                     "r.recorded_at_utc, r.recorded_day, r.day_timezone, r.imported_at_utc, "
                     "(SELECT count(*) FROM export_history h WHERE h.recording_sha256=r.source_sha256), "
                     "r.workflow_status, r.source_uuid "
-                    "FROM recordings r ORDER BY r.recorded_day DESC, r.recorded_at_utc DESC, "
+                    f"FROM recordings r{where} ORDER BY r.recorded_day DESC, r.recorded_at_utc DESC, "
                     "r.imported_at_utc DESC, r.source_sha256",
+                    parameters,
+                )
+            )
+
+    def parks(self) -> tuple[str, ...]:
+        """Return distinct effective park spellings from the whole Library.
+
+        Returns:
+            One deterministic display spelling per normalized park key, in key order.
+            Unknown parks are represented separately by the filter control.
+
+        Raises:
+            LibraryStoreError: Library metadata could not be read.
+        """
+        with self.connection() as connection:
+            return tuple(
+                row[0]
+                for row in connection.execute(
+                    "SELECT min(COALESCE(park_name_override, source_park_name)) FROM recordings "
+                    "WHERE park_key IS NOT NULL GROUP BY park_key ORDER BY park_key",
                 )
             )
 

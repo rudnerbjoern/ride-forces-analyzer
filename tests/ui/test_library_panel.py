@@ -1,17 +1,19 @@
 """Native Library interactions, explicit archive import and preserved chart state."""
 
-# cspell:words Seaworld Uhrzeit Heure Importiert Importé
+# cspell:words Seaworld Uhrzeit Heure Importiert Importé Keine passenden Aufnahmen Tous Aucun enregistrement correspondant
 
 from pathlib import Path
 import json
 
-from PySide6.QtWidgets import QApplication, QFileDialog, QLabel
+from PySide6.QtWidgets import QApplication, QComboBox, QFileDialog, QLabel
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPalette
+from PySide6.QtTest import QSignalSpy
 import pytest
 
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from ride_forces_analyzer.storage.library import LibraryStore
+from ride_forces_analyzer.explorer.library import LibraryArchive
 from ride_forces_analyzer.storage.preferences import Appearance
 from ride_forces_analyzer.ui.dialogs.settings import APPEARANCE_CHOICES
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
@@ -279,3 +281,94 @@ def test_library_toggle_preserves_workspace_and_recording(
     assert window.data is retained
     selected = window.library.selected_entry
     assert selected is not None and selected.source_sha256 == unknown_source.source_sha256
+
+    # Filters read metadata without opening a recording or changing the chart.
+    parks = window.library.park_filter
+    search = window.library.search
+    QApplication.processEvents()
+    filter_position = parks.pos()
+    search_position = search.pos()
+    # Unknown parks initially have no results; the controls must stay at the top.
+    parks.setCurrentIndex(parks.findData(""))
+    QApplication.processEvents()
+    assert tree.topLevelItemCount() == 0 and window.library.empty_label.isVisible()
+    assert tree.isVisible() and window.library.empty_label.y() < tree.y()
+    assert parks.pos() == filter_position
+    assert search.pos() == search_position
+    window.library.clear_filters.click()
+    no_park = export_directory / "no-park.forces"
+    no_park.write_bytes(synthetic_source(name="No park ride").recording.source.original_bytes)
+    assert LibraryArchive(store).import_paths((no_park,))[0].status == "imported"
+    window.library.refresh()
+    choices = [parks.itemData(index) for index in range(parks.count())]
+    assert choices[:2] == [None, ""]
+    assert "Seaworld Orlando" in choices and long_park in choices
+    resets = QSignalSpy(parks.model().modelReset)
+    native_show = QComboBox.showPopup
+    animation_states: list[bool] = []
+
+    def observe_popup(combo: QComboBox) -> None:
+        animation_states.append(QApplication.isEffectEnabled(Qt.UIEffect.UI_AnimateCombo))
+        native_show(combo)
+
+    effect = Qt.UIEffect.UI_AnimateCombo
+    previous = QApplication.isEffectEnabled(effect)
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(QComboBox, "showPopup", observe_popup)
+            for enabled in (False, True):
+                QApplication.setEffectEnabled(effect, enabled)
+                parks.showPopup()
+                assert parks.view().isVisible()
+                assert QApplication.isEffectEnabled(effect) == enabled
+                parks.hidePopup()
+        assert animation_states == [False, False]
+    finally:
+        QApplication.setEffectEnabled(effect, previous)
+    parks.showPopup()
+    wait_until(parks.view().isVisible)
+    parks.setCurrentIndex(1)
+    QApplication.processEvents()
+    assert parks.currentData() == ""
+    assert resets.count() == 0
+    assert parks.view().isVisible()
+    parks.hidePopup()
+    parks.setCurrentIndex(parks.findData("Seaworld Orlando"))
+    search.setText("MANTA orlando")
+    assert tree.topLevelItemCount() == 1
+    group = tree.topLevelItem(0)
+    assert group is not None and group.childCount() == 1
+    assert [parks.itemData(index) for index in range(parks.count())] == choices
+    search.setText("missing")
+    assert tree.topLevelItemCount() == 0
+    assert window.library.empty_label.isVisible()
+    assert window.library.empty_label.text() == "No matching recordings"
+    for language, caption, empty in (
+        (1, "Alle Parks", "Keine passenden Aufnahmen"),
+        (2, "Tous les parcs", "Aucun enregistrement correspondant"),
+        (0, "All parks", "No matching recordings"),
+    ):
+        window.set_ui_language(language)
+        assert parks.itemText(0) == caption
+        assert window.library.empty_label.text() == empty
+        assert parks.currentData() == "Seaworld Orlando" and search.text() == "missing"
+    search.clear()
+    assert tree.topLevelItemCount() == 1
+    parks.setCurrentIndex(parks.findData(""))
+    search.setText("no park")
+    group = tree.topLevelItem(0)
+    assert group is not None and group.text(0) == "Unknown date" and group.childCount() == 1
+    window.library.toggle_button.click()
+    window.library.toggle_button.click()
+    assert parks.currentData() == "" and search.text() == "no park"
+    assert tree.topLevelItemCount() == 1
+    window.library.clear_filters.click()
+    assert parks.currentData() is None and search.text() == ""
+    assert not window.library.clear_filters.isEnabled()
+    assert tree.topLevelItemCount() == 2
+    group = tree.topLevelItem(1)
+    assert group is not None and group.childCount() == 2
+    assert window.data is retained and window.open_action.isEnabled()
+    assert (window.plot.axis_x.min(), window.plot.axis_x.max()) == pytest.approx((60, 100))
+    assert window.navigation.position.value() == 4000
+    assert resets.count() == 0

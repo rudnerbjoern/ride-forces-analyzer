@@ -9,6 +9,10 @@ SPDX-License-Identifier: GPL-3.0-or-later
 FRENCH: dict[str, str] = {
     "Library": "Bibliothèque",
     "LIBRARY": "BIBLIOTHÈQUE",
+    "All parks": "Tous les parcs",
+    "Search ride or park…": "Rechercher une attraction ou un parc…",
+    "Clear filters": "Réinitialiser les filtres",
+    "No matching recordings": "Aucun enregistrement correspondant",
     "Updated in Library": "Mis à jour dans la bibliothèque",
     "{0} export": "{0} export",
     "{0} exports": "{0} exports",
