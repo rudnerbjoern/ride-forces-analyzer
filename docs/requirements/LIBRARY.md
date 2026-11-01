@@ -1,6 +1,6 @@
 # Library requirements and implementation steps
 
-Status: LIB-01 implemented; LIB-02–14 planned. This document defines the Library feature
+Status: LIB-01 implemented; LIB-04 has an empty collapsible panel; remaining functionality planned. This document defines the Library feature
 and its verifiable implementation steps. It does not authorize implementation or
 Git delivery. Requirements and implementation belong on the same feature branch.
 
@@ -573,7 +573,8 @@ backup schedules and including exported videos are outside this design.
 
 ## Iterative implementation and verification
 
-LIB-01 is implemented; subsequent steps remain planned. Implement one increment at a time on the same feature branch;
+LIB-01 and the empty LIB-04 panel are implemented; remaining functionality is planned.
+Implement one increment at a time on the same feature branch;
 its acceptance checks must pass before moving to dependent work. Steps 13–14 are
 the later backup/restore phase, not a prerequisite for the initial Library.
 
@@ -620,7 +621,9 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 4. **LIB-04 — Collapsible Library and day groups**
 
-   **Status:** Planned.
+   **Status:** Partial. The initially collapsed, resizable left panel and localized
+   toolbar toggle are implemented. The panel contains only its title; recording
+   lists, day groups, selection and source details remain planned.
 
    **Implementation:** Add the initially collapsed left panel, toolbar toggle and
    newest-first grouped recording list. Open selection in the existing workspace

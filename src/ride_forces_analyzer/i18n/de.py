@@ -8,6 +8,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words AUSSERHALB Drittanbieterhinweise Kalibrierungsmarkierung Kalibrierungsreferenz Markierungsindex Metadatenfeld Rundungsgrenzen Vertikalkraft
 
 GERMAN: dict[str, str] = {
+    "Library": "Bibliothek",
     "Export preview: frame {0:,}/{1:,}": "Exportvorschau: Frame {0:,}/{1:,}",
     "&Open recording…": "Aufnahme &öffnen…",
     "&Back": "&Zurück",

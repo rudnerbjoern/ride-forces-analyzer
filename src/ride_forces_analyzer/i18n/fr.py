@@ -7,6 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # CSpell checks English keys and French translations using the file override.
 
 FRENCH: dict[str, str] = {
+    "Library": "Bibliothèque",
     "Export preview: frame {0:,}/{1:,}": "Aperçu de l’export : image {0:,}/{1:,}",
     "&Open recording…": "&Ouvrir un enregistrement…",
     "&Back": "&Retour",

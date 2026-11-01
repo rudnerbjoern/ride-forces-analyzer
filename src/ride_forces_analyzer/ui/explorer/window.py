@@ -89,6 +89,7 @@ if TYPE_CHECKING:
 
 from .controls import create_panel
 from .inspector import ExplorerInspector
+from .library import LibraryPanel
 from .navigation import ExplorerNavigation
 from ride_forces_analyzer.ui.exports.data_controller import DataExportController
 from .chart import ExplorerChart
@@ -126,6 +127,7 @@ class ExplorerWindow(QMainWindow):
         batches_button: Button for batches button.
         notes_button: Button for notes button.
         inspector_button: Button for inspector button.
+        library: Collapsible Library component and its toolbar toggle.
         settings_action: Action opening application settings.
         about_action: Action opening application information.
         gps_window: Open GPS-context dialog, when present.
@@ -254,6 +256,8 @@ class ExplorerWindow(QMainWindow):
             apply_theme(application, self.theme)
         toolbar = bind(QToolBar(self), tr("Recording"), "windowTitle")
         toolbar.setMovable(False)
+        self.library = LibraryPanel(self)
+        toolbar.addWidget(self.library.toggle_button)
         toolbar.addAction(self.open_action)
         open_widget = toolbar.widgetForAction(self.open_action)
         open_widget.setObjectName("Primary")
@@ -378,7 +382,10 @@ class ExplorerWindow(QMainWindow):
         self.workspace = QSplitter(Qt.Orientation.Horizontal)
         self.workspace.setChildrenCollapsible(False)
         self.workspace.setHandleWidth(10)
-        layout.addWidget(self.workspace, 1)
+        self.library.addWidget(self.workspace)
+        self.library.setStretchFactor(1, 1)
+        self.library.setSizes([260, 1000])
+        layout.addWidget(self.library, 1)
         self.plot_panel, plot_layout = create_panel()
         self.plot_scroll = QScrollArea()
         self.plot_scroll.setObjectName("plotScroll")

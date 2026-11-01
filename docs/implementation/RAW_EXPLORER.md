@@ -172,6 +172,11 @@ immediately; Save persists the choices and Cancel restores the previous theme.
 Startup restores valid saved choices, otherwise the registered OS language (English
 fallback) and System appearance. `AppSettings` can explicitly override language.
 
+The toolbar's Library toggle shows an adjustable left panel, collapsed by default.
+It currently contains only the Library title; recording lists and actions are planned.
+Hiding it releases its layout space without changing the loaded recording, selection
+or chart viewport.
+
 The loaded heading combines ride and optional park names, with device/sample/rate
 metadata on a shared baseline. Calibration and curve visibility occupy one row;
 the three icon-only view controls sit at its right edge with translated tooltips

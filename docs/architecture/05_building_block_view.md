@@ -129,6 +129,9 @@ signals. `ui.explorer.navigation.ExplorerNavigation` owns sample controls, force
 cards and timer transport for the existing `SamplePlayback` clock, including cursor
 and viewport following. The window composes these widgets, binds the same prepared
 snapshot to each component and coordinates import/analysis delivery.
+`ui.explorer.library.LibraryPanel` owns the collapsible Library surface, localized
+toolbar toggle and folder-icon state. The window places its existing workspace
+beside that surface; Library content remains limited to a title until later increments.
 Export preview widgets and background jobs live in
 `ui.exports.preview` and `ui.exports.workers`. `ui.exports.form.ExportForm` owns
 export inputs and retained layout placements. `ui.exports.preview_controller` owns
