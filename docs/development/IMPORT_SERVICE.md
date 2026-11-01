@@ -117,6 +117,15 @@ No successful warning set is silently truncated.
 budgets are not peak-RAM/throughput guarantees. Motion/optional guides define
 warnings; the decoder guide defines whole-document errors.
 
+## Library metadata projection
+
+`importers.library_metadata.project_library_metadata(recording)` returns an immutable
+projection of source ride/park names and recording dates. Import itself retains
+exact numeric tokens and source text without conversion. The separate
+[Library date contract](../requirements/LIBRARY.md#admitted-source-date-contract)
+defines the source-evidenced epoch, recording-local day and unknown-date behavior.
+It performs no archiving, file writes or UI work.
+
 ## Later versions
 
 1. Obtain authorized evidence; inventory schema differences and update the source-contract ADR.

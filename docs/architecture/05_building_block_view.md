@@ -64,6 +64,10 @@ strict JSON and source-profile dispatch. `motion` validates vectors and independ
 indices; `optional` parses metadata, attributes and GPS slots. `service` composes
 them using one diagnostic budget. Only complete-service success returns a
 `Recording`; subset APIs do not imply complete import.
+`importers.library_metadata` projects verbatim ride/park names and source-evidenced
+recording dates for the planned Library without storage or Qt dependencies.
+The [Library contract](../requirements/LIBRARY.md#admitted-source-date-contract)
+defines the admitted epoch, recording-local day and unknown-date policy.
 
 [Import API](../development/IMPORT_SERVICE.md), [decoder](../development/STRICT_DECODING.md),
 [motion](../development/MOTION_PARSING.md), [optional fields](../development/OPTIONAL_PARSING.md)

@@ -1,6 +1,6 @@
 # Library requirements and implementation steps
 
-Status: requirements complete; implementation planned. This document defines the Library feature
+Status: LIB-01 implemented; LIB-02–14 planned. This document defines the Library feature
 and its verifiable implementation steps. It does not authorize implementation or
 Git delivery. Requirements and implementation belong on the same feature branch.
 
@@ -55,7 +55,7 @@ outlined here so the initial schema does not prevent it.
   Use the existing metadata mapping: `name` for ride and `location` for park.
   Missing values stay missing; UI placeholders are not stored as source values.
 - Verify the recording-date epoch, unit and time-zone meaning against original-app
-  evidence and authorized fixtures before implementing date conversion. Currently
+  evidence and authorized fixtures before implementing date conversion.
   `RecordingMetadata.date` retains an exact numeric token without epoch interpretation;
   a file's modification time or import time is not its recording time.
 - Retain the raw date/time-zone values in the original bytes. Store a normalized
@@ -198,6 +198,26 @@ status decision.
 - Unsupported snapshot/algorithm versions explain why repetition is unavailable;
   they are not silently replaced with current defaults. Matching saved settings
   do not promise byte-identical output across application versions or encoders.
+
+### Admitted source date contract
+
+The Library projection uses seconds since **2001-01-01 00:00:00 UTC** for
+Ride Forces schema 2.2.0. The authorized Manta source retains the exact token
+`811347461.3309591` and `America/New_York`. The owner confirmed the original-app
+reading as **2026-09-17, 10:18 local time**, Row 3 / Seat 3. Conversion produces
+2026-09-17 10:17:41.330959 at that location: agreement within one minute, without
+claiming second-level display agreement or a verified rounding policy.
+The app developer also identifies recording date/time zone as source data in the
+[privacy policy](https://rideforces.com/privacy/); that policy alone does not establish the epoch.
+
+`importers.library_metadata.project_library_metadata()` projects the existing
+importer models. It preserves source names, exact date tokens and time-zone text.
+The recording day uses the recording location's source zone, regardless of where
+the file is later opened. Missing/invalid zones use explicit UTC; missing, invalid
+or unrepresentable dates remain unknown. Normalized UTC text uses six fractional
+digits and `Z`; original precision remains in the source token and bytes.
+The unversioned RFDB profile has no independently confirmed date contract, so its
+names are projected but its derived dates remain unknown.
 
 ## Proposed database model
 
@@ -553,11 +573,13 @@ backup schedules and including exported videos are outside this design.
 
 ## Iterative implementation and verification
 
-All steps are planned. Implement one increment at a time on the same feature branch;
+LIB-01 is implemented; subsequent steps remain planned. Implement one increment at a time on the same feature branch;
 its acceptance checks must pass before moving to dependent work. Steps 13–14 are
 the later backup/restore phase, not a prerequisite for the initial Library.
 
 1. **LIB-01 — Source metadata and recording dates**
+
+   **Status:** Complete (native Windows acceptance verified).
 
    **Implementation:** Verify source name/date/time-zone contracts; implement the
    small metadata projection with existing importer models.
@@ -567,6 +589,8 @@ the later backup/restore phase, not a prerequisite for the initial Library.
    does not change with the computer's time zone; original tokens/bytes remain intact.
 
 2. **LIB-02 — SQLite store and Alembic revisions**
+
+   **Status:** Planned.
 
    **Implementation:** Add the Library SQLite store with Alembic's initial revision,
    the specified tables/indexes, packaged scripts, revision checks and explicit
@@ -582,6 +606,8 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 3. **LIB-03 — Archive import and reopening**
 
+   **Status:** Planned.
+
    **Implementation:** Add explicit archive import, duplicate detection and reopening
    from stored bytes through existing decoding/analysis services. Initialize current
    marker/calibration choices and workflow status without changing source bytes.
@@ -593,6 +619,8 @@ the later backup/restore phase, not a prerequisite for the initial Library.
    creates no partial row and does not prevent other selected files from importing.
 
 4. **LIB-04 — Collapsible Library and day groups**
+
+   **Status:** Planned.
 
    **Implementation:** Add the initially collapsed left panel, toolbar toggle and
    newest-first grouped recording list. Open selection in the existing workspace
@@ -606,6 +634,8 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 5. **LIB-05 — Park filter and ride/park search**
 
+   **Status:** Planned.
+
    **Implementation:** Add the park dropdown and combined name search over the
    existing Library list using the documented metadata projections.
 
@@ -616,6 +646,8 @@ the later backup/restore phase, not a prerequisite for the initial Library.
    Hiding/showing the Library panel retains the selected filters and search text.
 
 6. **LIB-06 — Editable recording metadata**
+
+   **Status:** Planned.
 
    **Implementation:** Add Library-backed editors for park, ride, Row, Seat, Train,
    Seated/Flying and notes, with reset to source values. Apply effective metadata
@@ -629,6 +661,8 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 7. **LIB-07 — Library-backed recording markers**
 
+   **Status:** Planned.
+
    **Implementation:** Connect the existing Start/End/Gravity/Incline controls and
    reset actions to the Library's current bounds and calibration-reference recipe
    for archived source hashes. Preserve existing preferences for non-archived input.
@@ -641,6 +675,8 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 8. **LIB-08 — Manual workflow status**
 
+   **Status:** Planned.
+
    **Implementation:** Add the six approved states to recording details using a
    localized dropdown. Persist only the current choice; initialize new entries as
    `imported` and allow the user to move forwards or backwards.
@@ -651,6 +687,8 @@ the later backup/restore phase, not a prerequisite for the initial Library.
    External video work, uploads and publication require no platform integration.
 
 9. **LIB-09 — Video links and label selection**
+
+   **Status:** Planned.
 
    **Implementation:** Add the video-link list, per-link add/edit/remove actions and
    label dropdown using the six initial choices and stored Library preferences.
@@ -664,6 +702,8 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 10. **LIB-10 — Library settings for video labels**
 
+    **Status:** Planned.
+
     **Implementation:** Add dropdown-list management under Settings → Library using
     the existing Save/Cancel behavior and `library_video_labels` preference.
 
@@ -673,6 +713,8 @@ the later backup/restore phase, not a prerequisite for the initial Library.
     empty lists are not replaced by defaults on startup/upgrade.
 
 11. **LIB-11 — Export attempt history**
+
+    **Status:** Planned.
 
     **Implementation:** Connect history to existing single-video, batch and data-export
     paths for archived sources. Store requested/effective snapshots, results, duration,
@@ -686,6 +728,8 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 12. **LIB-12 — Repeat export from saved settings**
 
+    **Status:** Planned.
+
     **Implementation:** Add saved-settings review and repeat export using archived
     source bytes, captured markers/metadata and existing export services.
 
@@ -697,6 +741,8 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 13. **LIB-13 — Portable backup, later**
 
+    **Status:** Planned.
+
     **Implementation:** Export the versioned portable Library ZIP from a consistent
     database read, including label choices in the manifest.
 
@@ -706,6 +752,8 @@ the later backup/restore phase, not a prerequisite for the initial Library.
     partial archives; old output paths are history, not required restore inputs.
 
 14. **LIB-14 — Full Library restore, later**
+
+    **Status:** Planned.
 
     **Implementation:** Validate the portable archive and restore the Library after
     explicit replacement confirmation, retaining unrelated application preferences.
