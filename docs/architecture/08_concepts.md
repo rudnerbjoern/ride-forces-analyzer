@@ -179,6 +179,13 @@ no metadata history is stored. Original metadata remains immutable alongside
 New export snapshots capture effective metadata as version 2; version-1 snapshots
 and legacy batch jobs without additions retain original-source semantics. Captured
 batch additions remain independent of later Library edits.
+Current marker bounds and calibration recipes use the existing recording columns.
+The Library is authoritative for archived exact-byte hashes, including external
+opens; non-archived inputs retain preference storage. Existing validation admits
+Gravity/Incline references outside Start/End. All four choices save atomically only
+after an adopted analysis result; failure leaves the previous stored recipe intact.
+Reset restores source defaults. Marker edits leave source bytes, dates, additions,
+workflow status and previously captured jobs/export snapshots unchanged.
 Workflow status remains one current scalar. The update boundary admits all six
 fixed states in any order and touches no source, markers, metadata or relationships.
 No export/import/metadata action automatically advances or resets it. The Library

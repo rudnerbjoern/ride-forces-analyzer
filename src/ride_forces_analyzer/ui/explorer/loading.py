@@ -13,7 +13,6 @@ from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
 from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.explorer.library import LibraryArchive
-from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.runtime.error_reporting import record_error
 from ride_forces_analyzer.importers import ImportFailure, Severity
 
@@ -94,7 +93,7 @@ class LoadWorker(QRunnable):
             ):
                 snapshot = outcome.analysis
                 now = datetime.now(UTC)
-                configuration = Preferences().recording_configuration(
+                configuration = LibraryArchive().recording_configuration(
                     outcome.source,
                     snapshot.configuration,
                     calculation_time=now,

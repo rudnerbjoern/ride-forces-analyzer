@@ -27,6 +27,7 @@ from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.domain import ValueOrigin
 from ride_forces_analyzer.domain.metadata import RecordingAdditions
 from ride_forces_analyzer.storage.preferences import Preferences
+from ride_forces_analyzer.analysis.recording import AnalysisConfiguration
 from ride_forces_analyzer.validation.checks import validate_sample_range
 
 from .loading import present_recording
@@ -254,7 +255,9 @@ class LibraryArchive:
             snapshot = data.analysis
             configuration = replace(
                 snapshot.configuration,
-                ride_bounds=archived.bounds,
+                ride_bounds=None
+                if archived.bounds == (source.recording.indices.start, source.recording.indices.end)
+                else archived.bounds,
                 calibration=archived.calibration,
             )
             if configuration != snapshot.configuration:
@@ -266,6 +269,68 @@ class LibraryArchive:
                     ),
                 )
         return data
+
+    def recording_configuration(
+        self,
+        source: ImportSuccess,
+        configuration: AnalysisConfiguration,
+        *,
+        calculation_time: datetime,
+    ) -> AnalysisConfiguration:
+        """Resolve Library markers first, retaining preferences for non-archived input.
+
+        Args:
+            source: Lossless import identified by its original-byte hash.
+            configuration: Fresh analysis configuration, never a saved job recipe.
+            calculation_time: Timestamp for preference reference validation.
+
+        Returns:
+            Configuration using the authoritative current marker choices.
+
+        Raises:
+            ValueError: Archived choices are invalid.
+            LibraryStoreError: The Library cannot be read.
+        """
+        markers = self.store.markers(source)
+        if markers is None:
+            return self.preferences.recording_configuration(
+                source,
+                configuration,
+                calculation_time=calculation_time,
+            )
+        bounds, calibration = markers
+        indices = source.recording.indices
+        return replace(
+            configuration,
+            ride_bounds=None if bounds == (indices.start, indices.end) else bounds,
+            calibration=calibration,
+        )
+
+    def remember_recording_markers(
+        self,
+        source: ImportSuccess,
+        bounds: tuple[int, int] | None,
+        calibration: CalibrationOverrides,
+    ) -> bool:
+        """Save admitted marker choices to their owning Library or preference store.
+
+        Args:
+            source: Import identifying the recording and original defaults.
+            bounds: Inclusive bounds, or None to reset to source defaults.
+            calibration: Admitted calibration reference recipe.
+
+        Returns:
+            True on success; False on storage failure without fallback writes.
+
+        Raises:
+            ValueError: Marker choices are invalid.
+        """
+        try:
+            if self.store.update_markers(source, bounds, calibration):
+                return True
+        except LibraryStoreError:
+            return False
+        return self.preferences.remember_recording_markers(source, bounds, calibration)
 
     def apply_metadata(self, data: ExplorerData) -> ExplorerData:
         """Apply Library additions to an external open without repeating numerical analysis.

@@ -2,7 +2,7 @@
 
 <!-- cspell:words NFKC -->
 
-Status: LIB-01–06 and LIB-08 implemented; LIB-07 and LIB-09–14 planned.
+Status: LIB-01–08 implemented; LIB-09–14 planned.
 This document defines the Library feature
 and its verifiable implementation steps. It does not authorize implementation or
 Git delivery. Requirements and implementation belong on the same feature branch.
@@ -163,6 +163,13 @@ indices and may lie outside those bounds. Reset restores the existing source/def
 behavior. Keep only the current choices, without an edit history. New exports use
 those choices; existing saved jobs and export snapshots retain their captured recipe.
 The original recording bytes, recording date and import time remain unchanged.
+`LibraryStore.markers()` reads and validates the current recipe without fetching
+source bytes; `update_markers()` updates only its existing columns atomically.
+`LibraryArchive` routes current marker reads/writes to the Library for archived
+hashes and otherwise to preferences. Storage failures do not fall back to stale
+preferences. Reset stores original bounds and the default calibration recipe;
+source-default bounds resolve without introducing originally absent marker lines.
+Fresh batch jobs capture these choices; executing saved jobs does no current-marker lookup.
 
 ### Manual workflow status
 
@@ -310,7 +317,8 @@ The diagram shows all six existing application tables, the three Library tables
 and Alembic's version table, with their columns and database ownership.
 The Library schema, explicit archive import and reopening service are implemented.
 The grouped recording list and read-only source/date/import details are implemented;
-park/name filters and metadata editing are implemented; remaining workflows are planned.
+park/name filters, metadata/marker editing and manual workflow status are implemented;
+remaining workflows are planned.
 `PK` marks primary-key
 columns; the four marked columns in `tiles` form one composite primary key.
 `FK` marks the Library foreign keys. Dashed hash links are optional logical
@@ -617,8 +625,8 @@ search. Park selection and whitespace-separated search terms combine with AND.
 Empty groups disappear; an empty result shows **No matching recordings**. The
 search clear action removes its text; the reset icon clears both filters. Filtering
 does not open sources or change the chart. Collapsing retains both controls.
-Metadata editing uses the separate dialog; marker persistence and later workflows
-remain LIB-07 onward.
+Metadata editing uses the separate dialog; existing chart controls persist current
+markers to the Library for archived hashes. Later workflows remain LIB-09 onward.
 
 LIB-04 acceptance also checks the default collapsed state, showing/hiding the panel
 and restoring the existing chart area and minimum window size. Group these checks
@@ -687,7 +695,7 @@ backup schedules and including exported videos are outside this design.
 
 ## Iterative implementation and verification
 
-LIB-01–06 and LIB-08 are implemented; LIB-07 and LIB-09–14 remain planned.
+LIB-01–08 are implemented; LIB-09–14 remain planned.
 Implement one increment at a time on the same feature branch;
 its acceptance checks must pass before moving to dependent work. Steps 13–14 are
 the later backup/restore phase, not a prerequisite for the initial Library.
@@ -778,7 +786,7 @@ the later backup/restore phase, not a prerequisite for the initial Library.
 
 7. **LIB-07 — Library-backed recording markers**
 
-   **Status:** Planned.
+   **Status:** Complete (native Windows marker persistence, reset and export-recipe acceptance verified).
 
    **Implementation:** Connect the existing Start/End/Gravity/Incline controls and
    reset actions to the Library's current bounds and calibration-reference recipe

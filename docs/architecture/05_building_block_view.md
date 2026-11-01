@@ -93,8 +93,11 @@ search projections atomically, and rejects original/date fields. `ImportSuccess`
 keeps additions separate from its original recording and resolves effective values
 for views/exports. `LibraryStore.set_workflow_status()` validates the six manual
 states and updates only that scalar in one transaction, with no history or transition
-rules. Marker persistence and remaining workflows are tracked under
-[LIB-07 onward](../requirements/LIBRARY.md#iterative-implementation-and-verification).
+rules. `LibraryStore.markers()` reads current bounds/calibration without source
+BLOBs; `update_markers()` validates and replaces only that recipe atomically.
+`LibraryArchive` resolves and saves markers in the Library for archived hashes,
+retaining preferences for other input. Fresh opens and new batch jobs use these
+choices; saved jobs and export snapshots retain their captured configuration.
 
 ## Analysis boundary
 

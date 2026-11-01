@@ -66,17 +66,22 @@ sample, independently of their order or the ride bounds. Requests use the analys
 worker/UI guards; latest changes supersede pending work. Only an adopted successful
 result saves all four choices in one transaction. Invalid references retain the
 last valid view and saved choices, with a localized error message.
-Individual resets preserve other choices; reset all clears both local records and
-restores the original source calibration. An absent original marker becomes absent.
+Individual resets preserve other choices; reset all restores the original bounds
+and source calibration, clearing preference overrides or replacing the Library's
+current recipe. An absent original marker becomes absent.
 Effective marker lines, sample values, context and extrema update together.
 Ride-bound changes also refresh replay labels, reset viewport and marker-based
 export ranges; calibration-only changes preserve zoom. From/To selection and
 original source indices remain unchanged. Opening the menu pauses playback.
 
-`preferences.sqlite3` stores bounds and versioned Gravity/Incline recipes by the
-original source SHA-256, independently of file path. Reopening restores valid
+For archived hashes, `library.sqlite3` owns the current bounds and versioned
+Gravity/Incline recipe; both Library reopening and byte-identical external opening
+restore it. The existing controls save to that entry without changing its source,
+dates or manual workflow status. Non-archived input retains `preferences.sqlite3`
+storage by the original source SHA-256, independently of file path. Reopening restores valid
 local choices through the shared analysis configuration. Missing, invalid or
-unreadable entries use source defaults without deleting stored records.
+unreadable preference entries use source defaults without deleting stored records.
+Invalid Library markers fail opening rather than using stale preference values.
 Write failure retains the last saved transaction, keeps the session adjustment and
 reports that it was not saved. Closed/rebound sources and stale deliveries cannot
 save markers. No source bytes or source JSON fields are rewritten.

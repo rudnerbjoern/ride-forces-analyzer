@@ -34,7 +34,7 @@ from ride_forces_analyzer.analysis.service import AnalysisService
 from ride_forces_analyzer.importers import ImportSuccess, import_forces
 from ride_forces_analyzer.runtime.error_reporting import record_error
 from ride_forces_analyzer.storage.export_models import BatchJob, RangeMode, SavedBatch, SavedPreset
-from ride_forces_analyzer.storage.preferences import Preferences
+from ride_forces_analyzer.explorer.library import LibraryArchive
 from ride_forces_analyzer.storage.library import LibraryStore
 from ride_forces_analyzer.domain.metadata import RecordingAdditions
 from ride_forces_analyzer.rendering.encoding import ExportCancelled, export_video
@@ -58,7 +58,7 @@ def _load_analysis(
         raise ValueError("Recording bytes changed since this batch was saved")
     if restore_markers:
         additions = LibraryStore().metadata(source.source_sha256)
-        configuration = Preferences().recording_configuration(
+        configuration = LibraryArchive().recording_configuration(
             source,
             configuration,
             calculation_time=datetime.now(UTC),

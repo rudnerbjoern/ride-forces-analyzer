@@ -376,6 +376,84 @@ class LibraryStore:
             additions,
         )
 
+    def markers(
+        self,
+        source: ImportSuccess,
+    ) -> tuple[tuple[int, int], CalibrationOverrides] | None:
+        """Read and validate current markers without fetching archived source bytes.
+
+        Args:
+            source: Exact-byte import used to validate source-sample references.
+
+        Returns:
+            Current bounds and calibration, or None for a non-archived source.
+
+        Raises:
+            ValueError: Stored bounds or calibration references are invalid.
+            LibraryStoreError: The Library cannot be read.
+        """
+        with self.connection() as connection:
+            row = connection.execute(
+                "SELECT first_sample, last_sample, gravity_index, incline_index, "
+                "calibration_algorithm_version, calibration_window_samples "
+                "FROM recordings WHERE source_sha256=?",
+                (source.source_sha256,),
+            ).fetchone()
+        if row is None:
+            return None
+        bounds = (row[0], row[1])
+        calibration = CalibrationOverrides(*row[2:])
+        validate_sample_range(
+            *bounds,
+            len(source.recording.motion.acceleration),
+            "Invalid Library bounds",
+        )
+        validate_calibration_references(source, calibration, calculation_time=datetime.now(UTC))
+        return bounds, calibration
+
+    def update_markers(
+        self,
+        source: ImportSuccess,
+        bounds: tuple[int, int] | None,
+        calibration: CalibrationOverrides,
+    ) -> bool:
+        """Atomically replace only an archived recording's current marker recipe.
+
+        Args:
+            source: Exact-byte import supplying sample and calibration validation.
+            bounds: Inclusive bounds, or None to restore original source bounds.
+            calibration: Admitted reference recipe; default restores source calibration.
+
+        Returns:
+            True when updated, False when the source is not archived.
+
+        Raises:
+            ValueError: Bounds or calibration references are invalid.
+            LibraryStoreError: The transaction fails, retaining previous values.
+        """
+        indices = source.recording.indices
+        effective = bounds if bounds is not None else (indices.start, indices.end)
+        validate_sample_range(
+            *effective,
+            len(source.recording.motion.acceleration),
+            "Invalid Library bounds",
+        )
+        validate_calibration_references(source, calibration, calculation_time=datetime.now(UTC))
+        with self.connection() as connection:
+            cursor = connection.execute(
+                "UPDATE recordings SET first_sample=?, last_sample=?, gravity_index=?, incline_index=?, "
+                "calibration_algorithm_version=?, calibration_window_samples=? WHERE source_sha256=?",
+                (
+                    *effective,
+                    calibration.gravity_index,
+                    calibration.incline_index,
+                    calibration.algorithm_version,
+                    calibration.window_samples,
+                    source.source_sha256,
+                ),
+            )
+            return cursor.rowcount == 1
+
     def metadata(self, source_sha256: str) -> RecordingAdditions | None:
         """Read current user additions without loading source bytes.
 

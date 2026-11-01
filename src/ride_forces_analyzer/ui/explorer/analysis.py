@@ -25,6 +25,7 @@ from ride_forces_analyzer.analysis.service import (
 )
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.storage.preferences import Preferences
+from ride_forces_analyzer.explorer.library import LibraryArchive
 from ride_forces_analyzer.i18n import diagnostic_message
 from datetime import UTC, datetime
 
@@ -337,7 +338,10 @@ class AnalysisController(QObject):
             return
         markers = snapshot.configuration.ride_bounds, snapshot.configuration.calibration
         if binding.save_markers or markers != binding.markers:
-            saved = self.preferences.remember_recording_markers(snapshot.source, *markers)
+            saved = LibraryArchive(preferences=self.preferences).remember_recording_markers(
+                snapshot.source,
+                *markers,
+            )
             binding.markers = markers
             binding.save_markers = False
             self.markers_saved.emit(saved)

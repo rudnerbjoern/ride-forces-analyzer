@@ -5,6 +5,7 @@ from ride_forces_analyzer.rendering.model import StandardFrameRate
 from ride_forces_analyzer.analysis.preparation import (
     source_app_configuration,
 )
+from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 
 # cspell:words Xnotes
 
@@ -37,6 +38,7 @@ from ride_forces_analyzer.rendering.model import (
     ExportSettings,
     ExportSnapshot,
     ExportTimeline,
+    prepare_export,
 )
 from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
 from ride_forces_analyzer.rendering.layouts import resolve_geometry
@@ -60,6 +62,7 @@ def test_saved_metadata_does_not_follow_later_library_edits(
     source = ImportSuccess(manta.source.recording, manta.source.diagnostics, additions=additions)
     analysis = replace(manta.analysis, source=source)
     job = make_job(analysis, preset(), first=3600, last=3609)
+    old_snapshot = prepare_export(analysis, preset().settings, 3600, 3609).snapshot
     assert job.ride == "Captured" and job.metadata_additions == additions
     assert BatchJob.model_validate_json(job.model_dump_json()) == job
     path = manta.source.recording.source.provenance.path
@@ -67,11 +70,14 @@ def test_saved_metadata_does_not_follow_later_library_edits(
     store = LibraryStore()
     LibraryArchive(store).import_paths((path,))
     store.update_metadata(source.source_sha256, {"ride_name": "Later", "riding_position": "Flying"})
+    markers = CalibrationOverrides(gravity_index=source.recording.indices.gravity)
+    store.update_markers(source, (4000, 5000), markers)
     payload = job.model_dump(mode="json")
     payload.pop("metadata_additions")
     legacy = BatchJob.model_validate_json(json.dumps(payload))
     assert legacy.metadata_additions is None
     observed: list[ImportSuccess] = []
+    observed_configurations: list[object] = []
 
     def fake_export(
         timeline: ExportTimeline,
@@ -80,6 +86,7 @@ def test_saved_metadata_does_not_follow_later_library_edits(
         **kwargs: object,
     ) -> Path:
         observed.append(timeline.analysis.source)
+        observed_configurations.append(timeline.analysis.configuration)
         target.write_bytes(b"encoded")
         return target
 
@@ -93,9 +100,16 @@ def test_saved_metadata_does_not_follow_later_library_edits(
     assert observed[0].additions == additions
     assert observed[1].additions == RecordingAdditions()
     assert observed[1].effective_metadata == manta.source.recording.metadata
+    assert observed_configurations == [
+        job.preset.analysis_configuration,
+        legacy.preset.analysis_configuration,
+    ]
+    assert old_snapshot.analysis_configuration == analysis.configuration
     current = build_jobs((path,), (preset(),), "entire")[0]
     assert current.ride == "Later" and current.metadata_additions is not None
     assert current.metadata_additions.riding_position == "Flying"
+    assert current.preset.analysis_configuration.ride_bounds == (4000, 5000)
+    assert current.preset.analysis_configuration.calibration == markers
 
 
 def preset(name: str = "Ribbon", window: int = 11) -> SavedPreset:

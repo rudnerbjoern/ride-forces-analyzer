@@ -3,6 +3,8 @@
 # cspell:words wbits Straße strasse Ｒｉｄｅ
 
 from hashlib import sha256
+from dataclasses import replace
+from datetime import UTC, datetime
 from pathlib import Path
 import json
 import zlib
@@ -10,6 +12,7 @@ import zlib
 import pytest
 
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
+from ride_forces_analyzer.analysis.preparation import source_app_configuration
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.explorer import load_recording
 from ride_forces_analyzer.domain import SourceNumber, ValueOrigin
@@ -27,6 +30,87 @@ def archive(export_directory: Path) -> LibraryArchive:
         LibraryStore(export_directory / "library.sqlite3"),
         Preferences(export_directory / "preferences.sqlite3"),
     )
+
+
+def test_marker_authority_validation_and_atomic_failure(archive: LibraryArchive) -> None:
+    path = next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces"))
+    data = load_recording(path)
+    assert isinstance(data, ExplorerData)
+    source = data.source
+    digest = source.source_sha256
+    archive.preferences.remember_recording_markers(source, (3000, 4000), CalibrationOverrides())
+    assert archive.import_paths((path,))[0].status == "imported"
+    assert archive.store.markers(source) == ((3000, 4000), CalibrationOverrides())
+    archive.store.set_workflow_status(digest, "uploaded")
+    before = archive.store.source(digest)
+    entry = archive.store.entries()[0]
+    indices = source.recording.indices
+    assert indices.gravity is not None and indices.incline is not None
+    calibration = CalibrationOverrides(gravity_index=indices.gravity, incline_index=indices.incline)
+    assert indices.gravity < 5000 and indices.incline < 5000
+    assert archive.remember_recording_markers(source, (5000, 6000), calibration)
+    # Preferences deliberately disagree; byte identity makes the Library authoritative.
+    configuration = archive.recording_configuration(
+        source,
+        source_app_configuration(),
+        calculation_time=datetime.now(UTC),
+    )
+    assert configuration.ride_bounds == (5000, 6000)
+    assert configuration.calibration == calibration
+    reopened = archive.reopen(digest)
+    assert isinstance(reopened, ExplorerData) and reopened.analysis is not None
+    assert reopened.ride_bounds == (5000, 6000)
+    assert reopened.analysis.configuration.calibration == calibration
+    for bounds in ((-1, 5), (6, 5), (0, len(source.recording.motion.acceleration)), (True, 5)):
+        with pytest.raises(ValueError):
+            archive.store.update_markers(source, bounds, calibration)
+    with pytest.raises(ValueError):
+        archive.store.update_markers(
+            source,
+            (5000, 6000),
+            CalibrationOverrides(gravity_index=len(source.recording.motion.acceleration)),
+        )
+    assert archive.store.markers(source) == ((5000, 6000), calibration)
+    with archive.store.connection() as connection:
+        connection.execute(
+            "CREATE TRIGGER reject_markers BEFORE UPDATE OF first_sample ON recordings "
+            "BEGIN SELECT RAISE(ABORT, 'injected marker failure'); END",
+        )
+    assert not archive.remember_recording_markers(source, None, CalibrationOverrides())
+    assert archive.store.markers(source) == ((5000, 6000), calibration)
+    assert archive.preferences.recording_bounds(digest) == (3000, 4000)
+    with archive.store.connection() as connection:
+        connection.execute("DROP TRIGGER reject_markers")
+    assert archive.remember_recording_markers(source, None, CalibrationOverrides())
+    assert archive.store.markers(source) == ((indices.start, indices.end), CalibrationOverrides())
+    assert archive.store.source(digest) == replace(before, bounds=(indices.start, indices.end))
+    assert archive.store.entries()[0] == entry
+
+
+def test_reset_keeps_absent_source_markers_absent(archive: LibraryArchive) -> None:
+    imported = synthetic_source(
+        startIndex=None,
+        endIndex=None,
+        gravityIndex=None,
+        inclineIndex=None,
+    )
+    indices = imported.recording.indices
+    archive.store.archive(
+        imported,
+        "missing.forces",
+        (indices.start, indices.end),
+        CalibrationOverrides(),
+    )
+    assert archive.remember_recording_markers(imported, (1, 2), CalibrationOverrides())
+    assert archive.remember_recording_markers(imported, None, CalibrationOverrides())
+    reopened = archive.reopen(imported.source_sha256)
+    assert isinstance(reopened, ExplorerData) and reopened.markers == ()
+    configuration = archive.recording_configuration(
+        imported,
+        source_app_configuration(),
+        calculation_time=datetime.now(UTC),
+    )
+    assert configuration.ride_bounds is None
 
 
 @pytest.mark.parametrize("extension", ["forces", "zforces"])

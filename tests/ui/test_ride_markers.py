@@ -12,6 +12,8 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QMenu
 
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
+from ride_forces_analyzer.explorer.library import LibraryArchive
+from ride_forces_analyzer.storage.library import LibraryStore
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration
 from ride_forces_analyzer.analysis.service import AnalysisService
@@ -303,3 +305,45 @@ def test_chart_context_markers_save_reopen_and_reset_independently(
     assert window.data.analysis.calibration is None
     assert window.data.source.recording.indices == indices
     assert SOURCE.read_bytes() == original_bytes
+
+    # The same controls target the archive once this exact source is imported.
+    store = LibraryStore()
+    assert LibraryArchive(store).import_paths((SOURCE,))[0].status == "imported"
+    digest = data.source.source_sha256
+    store.set_workflow_status(digest, "completed")
+    window.library.refresh()
+    window.library.open_requested.emit(digest)
+    wait_until(lambda: window.open_action.isEnabled())
+    assert window.data is not None
+    choose(1800, "Set start here")
+    expect((1800, original[1]))
+    choose(9100, "Set end here")
+    expect((1800, 9100))
+    choose(gravity, "Set gravity here")
+    wait_until(lambda: store.source(digest).calibration.gravity_index == gravity)
+    choose(incline, "Set incline here")
+    wait_until(lambda: store.source(digest).calibration.incline_index == incline)
+    saved = store.source(digest)
+    assert saved.bounds == (1800, 9100)
+    assert window.preferences.recording_bounds(digest) is None
+    assert window.preferences.recording_calibration(digest) is None
+    window.open_path(SOURCE)
+    wait_until(lambda: window.open_action.isEnabled())
+    expect((1800, 9100))
+    assert window.data is not None and window.data.analysis is not None
+    assert window.data.analysis.configuration.calibration == saved.calibration
+    choose(5000, "Reset gravity to original")
+    wait_until(lambda: store.source(digest).calibration.gravity_index is None)
+    assert store.source(digest).calibration.incline_index == incline
+    choose(5000, "Reset start to original")
+    expect((original[0], 9100))
+    choose(5000, "Reset all ride markers")
+    expect(original)
+    assert store.source(digest).calibration == CalibrationOverrides()
+    window.library.open_requested.emit(digest)
+    wait_until(lambda: window.open_action.isEnabled())
+    expect(original)
+    assert window.data is not None and window.data.analysis is not None
+    assert window.data.analysis.configuration.calibration == CalibrationOverrides()
+    assert store.entries()[0].workflow_status == "completed"
+    assert store.source(digest).data == original_bytes == SOURCE.read_bytes()
