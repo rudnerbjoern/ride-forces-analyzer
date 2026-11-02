@@ -266,19 +266,24 @@ def test_handled_import_and_export_worker_failures_reach_report(export_directory
         """
 from ride_forces_analyzer.ui.explorer import loading
 from ride_forces_analyzer.ui.exports import data as data_export
+from ride_forces_analyzer.analysis.preparation import source_app_configuration
+from ride_forces_analyzer.exports.formats import DataExportFormat
+from tests.analysis.test_recording_preparation import prepare_snapshot
+os.environ["LOCALAPPDATA"] = str(directory.resolve())
 path = reports.initialize_error_reporting()
 assert path is not None
 loading.LoadWorker(directory / "missing.forces").run()
 def broken_import(*args, **kwargs):
     raise RuntimeError("unexpected import failure")
-loading.load_recording = broken_import
+loading.import_recording = broken_import
 loading.LoadWorker(directory / "missing.forces").run()
 def broken_export(*args, **kwargs):
     raise OSError("export write failure")
 data_export.export_csv = broken_export
-data_export.DataWorker(None, directory / "output.csv", 0, 0, "csv").run()
+analysis = prepare_snapshot(source_app_configuration())
+data_export.DataWorker(analysis, directory / "output.csv", 0, 0, DataExportFormat.CSV).run()
 text = path.read_text(encoding="utf-8")
-assert "Import:" in text
+assert "LibraryStoreError:" in text
 assert "Import worker:" in text and "RuntimeError: unexpected import failure" in text
 assert "Data export:" in text and "OSError: export write failure" in text
 """,
