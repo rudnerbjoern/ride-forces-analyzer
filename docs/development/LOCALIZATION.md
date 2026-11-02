@@ -71,6 +71,10 @@ Use `tr("Template {0}", value)` for application text, with complete sentences an
 matching placeholders. Bind widget text through the existing Qt helper; do not
 translate source identifiers, object names, enum keys, filenames or user content.
 Keep every registered translated catalog complete and preserve English fallback.
+Keep German and French catalogs in the same feature sections and key order, with
+English comments identifying each section. Sort English keys alphabetically within
+each section. Remove obsolete keys only after checking literal and dynamic uses,
+including model labels, status values and translated exception messages.
 Rendering must pass
 the language from ExportSettings rather than read the current UI locale.
 

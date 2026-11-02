@@ -4,8 +4,7 @@ from ride_forces_analyzer.analysis.preparation import (
     source_app_configuration,
 )
 
-# cspell:words Messpunkte Fahrtzeit Vorgabe Deutsch Neigung geladen autouse textbbox Rechts Beschleunigung Bremsen
-# cspell:words Préréglage chargé Inclinaison
+# cspell:words Messpunkte Fahrtzeit Vorgabe Deutsch Neigung geladen autouse textbbox Rechts Beschleunigung Bremsen Préréglage chargé Inclinaison
 
 from dataclasses import replace
 from collections.abc import Iterator
@@ -70,10 +69,23 @@ def test_catalog_preserves_placeholders(catalog: dict[str, str]) -> None:
             if name is not None
         )
 
-    assert catalog.keys() == GERMAN.keys()
+    assert tuple(catalog) == tuple(GERMAN)
     for source, translated in catalog.items():
         assert translated.strip(), source
         assert fields(translated) == fields(source), source
+
+
+def test_catalog_sources_have_unique_keys_and_matching_sections() -> None:
+    sections: list[list[str]] = []
+    for language in ("de", "fr"):
+        path = Path("src/ride_forces_analyzer/i18n") / f"{language}.py"
+        source = path.read_text(encoding="utf-8")
+        sections.append(re.findall(r"^    # (.+)\.$", source, re.MULTILINE))
+        for node in ast.walk(ast.parse(source)):
+            if isinstance(node, ast.Dict):
+                keys = [ast.literal_eval(key) for key in node.keys if key is not None]
+                assert len(keys) == len(set(keys)), path
+    assert sections[0] and sections[0] == sections[1]
 
 
 def test_language_registration_matches_the_typed_public_contract() -> None:
@@ -97,7 +109,7 @@ def test_declared_diagnostics_and_literal_ui_templates_have_translations() -> No
     for path in (root / "importers").glob("*.py"):
         codes.update(re.findall(r'"([A-Z][A-Z0-9_]{3,})"', path.read_text(encoding="utf-8")))
     assert codes - {"DEFAULT_LIMITS"} <= DIAGNOSTIC_GERMAN.keys()
-    assert DIAGNOSTIC_FRENCH.keys() == DIAGNOSTIC_GERMAN.keys()
+    assert tuple(DIAGNOSTIC_FRENCH) == tuple(DIAGNOSTIC_GERMAN)
     for path in [
         *(root / "ui").rglob("*.py"),
         *(root / "rendering").glob("*.py"),

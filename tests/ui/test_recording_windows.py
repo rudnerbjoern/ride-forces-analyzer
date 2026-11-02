@@ -1,8 +1,6 @@
 """Independent recording windows share only application preferences."""
 
-# cspell:words Importieren importieren
-
-# cspell:words neuem Fenster öffnen
+# cspell:words Importieren importieren neuem Fenster öffnen
 
 import subprocess
 import sys

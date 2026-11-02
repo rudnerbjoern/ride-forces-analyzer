@@ -4,9 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-# cspell:words ole32 CLSCTX HRESULT hwnd CoInitializeEx CoUninitialize CoCreateInstance
-# cspell:words ITaskbarList HrInit TaskbarButtonCreated RegisterWindowMessageW
-# cspell:words COINIT APARTMENTTHREADED clsid vtable WINFUNCTYPE ulonglong TBPF NOPROGRESS
+# cspell:words ole32 CLSCTX HRESULT hwnd CoInitializeEx CoUninitialize CoCreateInstance ITaskbarList HrInit TaskbarButtonCreated RegisterWindowMessageW COINIT APARTMENTTHREADED clsid vtable WINFUNCTYPE ulonglong TBPF NOPROGRESS
 
 from __future__ import annotations
 

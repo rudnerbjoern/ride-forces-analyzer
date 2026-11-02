@@ -1,8 +1,6 @@
 """Library context actions target the clicked recording and reuse the existing dialogs."""
 
-# cspell:words Metadaten bearbeiten Videolinks Exportverlauf métadonnées Liens vidéo Historique exports
-# cspell:words Entfernen Supprimer
-# cspell:words neuem Fenster öffnen Ouvrir dans une nouvelle fenêtre
+# cspell:words Metadaten bearbeiten Videolinks Exportverlauf métadonnées Liens vidéo Historique exports Entfernen Supprimer neuem Fenster öffnen Ouvrir dans une nouvelle fenêtre
 
 from PySide6.QtCore import QPoint, QTimer, Qt
 from PySide6.QtGui import QContextMenuEvent
