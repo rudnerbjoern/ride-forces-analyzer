@@ -76,6 +76,8 @@ it does not guarantee lower total runner minutes.
   releases reuse full CI and always require the plugin job.
 - Shared Qt/Node transport, control contracts and interoperability fixtures select both
   application and plugin checks.
+- Plugin tests build the self-contained local artifact, validate it with the official
+  offline CLI and exercise SDK/app WebSocket hosts; they need no installed device software.
 - Commit-policy Markdown selects docs/skills. Code-only/skill-only/plugin-only runs supply
   CSpell; standalone dependency-contract runs also supply CSpell. Mixed runs with
   docs use its CSpell check.

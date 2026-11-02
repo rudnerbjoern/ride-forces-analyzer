@@ -79,7 +79,7 @@ error. Exception messages may contain personal paths; nothing is uploaded.
 
 `runtime.stream_deck.ControlServer` and the plugin's `AnalyzerTransport` exchange
 application-owned text frames. `RecordingApplication` owns one `StreamDeckController`;
-SDK action wiring remains planned.
+the separate plugin shares one connection across visible SDK keys.
 
 ```mermaid
 sequenceDiagram
@@ -120,7 +120,8 @@ validate commands, responses and full state events; matching
 [TypeScript types](../../plugins/stream-deck/src/protocol.ts) describe plugin messages.
 Shared examples cover both languages. The application's Qt-thread controller routes
 commands through existing controls/services and publishes state from their signals.
-Plugin-side message validation and SDK actions remain planned.
+The plugin validates incoming messages before state-driven rendering or command
+generation. Its configurable SDK key action covers the agreed command types.
 
 ### Envelopes and compatibility
 
@@ -209,6 +210,12 @@ clients. Library navigation reads the existing sorted/filtered tree. Marker appl
 uses the existing analysis queue, blocks conflicting requests while pending and
 confirms only adopted values; the analysis controller retains persistence ownership.
 Unset calibration markers cannot be adjusted until an existing value is available.
+
+The plugin's `ControlClient` accepts increasing state sequences within a server
+session, discards stale contexts and correlates responses with outstanding request
+IDs. Connection loss clears pending actions and cached state. `ControlAction`
+updates only changed key presentations; icons/titles and actual on/off values are
+independent of command acknowledgement. Unsupported protocol messages disable control.
 
 ## Library actions and shared windows
 

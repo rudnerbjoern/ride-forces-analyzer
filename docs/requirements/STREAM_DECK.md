@@ -2,8 +2,8 @@
 
 <!-- cspell:words Elgato streamdeck -->
 
-Status: Initial scope agreed; SDK bootstrap and loopback transport components present.
-Application action routing is present; plugin actions and device features remain planned.
+Status: Windows application routing and configurable plugin keys implemented.
+Device profiles, dials/touch, InfoBar and physical device acceptance remain planned.
 
 ## Confirmed scope
 
@@ -27,8 +27,8 @@ Application action routing is present; plugin actions and device features remain
 - The [initial action scope](#action-scope) is confirmed.
 - Distribution: one `.streamDeckPlugin` asset on Analyzer GitHub releases, with
   device-specific Plus and Neo profiles.
-- Implemented scope covers the SDK bootstrap, loopback transport, typed control
-  contract, application actions and tests.
+- Implemented scope covers loopback transport, typed control contract, application
+  actions, configurable SDK keys, local installation and tests.
 
 ## Goal and constraints
 
@@ -310,7 +310,8 @@ Loopback WebSocket uses Qt's server and Node's native client. The
 defines discovery, local access and reconnects. Native Windows exchange and recovery
 are verified. The [control contract](../architecture/06_runtime_view.md#stream-deck-control-contract)
 defines typed commands, responses and feedback. Application dispatch uses existing
-GUI actions and analysis services; device-side SDK actions remain planned.
+GUI actions and analysis services. The SDK key action exposes these commands through
+per-key settings and confirmed feedback; device profiles/dials/InfoBar remain planned.
 SDK/tooling versions are fixed in the [workspace manifest](../../plugins/stream-deck/package.json)
 and [root npm lockfile](../../package-lock.json); transport and contract use existing dependencies.
 
@@ -395,7 +396,7 @@ The sizes below describe SDK assets/layouts, not native LCD resolutions.
 
 ## Proposed implementation steps
 
-Device integration remains planned; the SDK bootstrap has local tests and a conditional CI job.
+Key bindings have local tests and a conditional CI job; device-specific integration remains planned.
 
 1. **Name:** Agree scope
 
@@ -439,7 +440,7 @@ Device integration remains planned; the SDK bootstrap has local tests and a cond
 
 5. **Name:** Add Stream Deck plugin
 
-   - **Status:** In progress; SDK bootstrap, transport, protocol types and local/CI tests.
+   - **Status:** Complete on Windows; device-specific and physical acceptance remain in later steps.
    - **Content:** Lock the official TypeScript SDK/tooling versions; implement agreed key
      actions and state feedback.
    - **Acceptance criteria:** The plugin installs locally, executes agreed commands,

@@ -13,9 +13,7 @@
   ],
   "nodejs-testing.pretest": [
     "node",
-    "node_modules/typescript/bin/tsc",
-    "--project",
-    "plugins/stream-deck/tsconfig.json"
+    "plugins/stream-deck/scripts/build-plugin.mjs"
   ],
   "python.languageServer": "Pylance",
   "python.analysis.diagnosticMode": "workspace",

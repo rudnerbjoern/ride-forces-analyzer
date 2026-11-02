@@ -36,12 +36,18 @@ migrations only; ordinary database access continues to use `sqlite3`. Alembic al
 requires Mako and MarkupSafe, covered by the existing runtime notice collector.
 
 The [Stream Deck workspace](../../plugins/stream-deck/package.json) declares its SDK
-and TypeScript tools; the root npm lockfile covers all workspaces. The Analyzer
-has no additional Python runtime dependency for this stub.
+and TypeScript tools; the root npm lockfile covers all workspaces. The official
+CLI validates/links the local plugin; esbuild bundles runtime dependencies. Neither
+tool is included in the installed plugin. No Python runtime dependency is added.
 
 The SDK's `@elgato/utils` dependency uses Zod's `v4-mini` API. A scoped root override
 selects patched Zod for the [collection-validation advisory](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5);
 [consumer tests](../../plugins/stream-deck/tests/sdk.test.mjs) cover option and RPC schemas.
+
+A `filelist`-scoped override selects patched `minimatch` for
+[glob amplification](https://github.com/advisories/GHSA-g3hv-75wg-m249) in the CLI's
+installed dependency graph. Plugin tests verify that package's Windows matching
+and exclusions; the CLI remains a development-only tool.
 
 ## Dependency updates
 

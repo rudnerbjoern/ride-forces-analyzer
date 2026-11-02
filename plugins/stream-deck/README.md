@@ -1,34 +1,62 @@
-# Stream Deck plugin stub
+# Stream Deck plugin
 
-Private TypeScript workspace using the official SDK. One plugin serves Plus and
-Neo; device-specific actions and profiles remain planned.
+Windows key controls using Elgato's TypeScript SDK. The configurable **Analyzer
+control** action covers the [agreed commands](../../docs/architecture/06_runtime_view.md#actions).
+Device menus/profiles, Plus dials/touch and Neo InfoBar remain planned.
 
-Use the repository's [Windows setup](../../docs/development/SETUP.md), which installs
-workspace dependencies from the root npm lockfile. Run from the repository root:
+## Local build and installation
+
+Use the repository's [Windows setup](../../docs/development/SETUP.md). From the repository root:
 
 ```powershell
 npm run test:stream-deck
-npm run typecheck --workspace plugins/stream-deck
-npm run build --workspace plugins/stream-deck
-uv run --locked pytest tests/support/test_stream_deck.py tests/support/test_control_contract.py
+npm run link:plugin --workspace plugins/stream-deck
+npm run restart:plugin --workspace plugins/stream-deck
 ```
 
-Node tests build TypeScript and cover the SDK bootstrap and local client discovery,
-state exchange and reconnects. Python tests additionally verify real Qt/Node
-interoperability. Shared protocol examples validate the Python wire models and
-TypeScript command/feedback types. Both run offline without a device or Stream Deck software.
-Build output is ignored under
-`plugins/stream-deck/dist/`; `src/index.ts` is the SDK connection entry point.
+Tests compile TypeScript, bundle the plugin, run official offline validation and
+exercise the built process against local SDK/app WebSocket hosts. They require no
+Stream Deck software or hardware. VS Code's Node test provider performs the same
+build before running selected tests. [CI selection](../../docs/development/CI.md#routing-and-required-gate)
+runs plugin tests for affected changes and always for releases/full CI.
 
-VS Code's Testing view discovers these tests through the recommended `node:test`
-runner extension and builds TypeScript before each run. See [editor setup](../../docs/development/SETUP.md#vs-code-and-test-explorer).
+For a build without tests, use `npm run build:plugin --workspace plugins/stream-deck`.
+`validate:plugin` runs the official CLI with `--no-update-check`.
 
-The [CI selector](../../docs/development/CI.md#routing-and-required-gate) runs plugin
-tests for affected PR changes and always for releases and full CI.
+Local installation requires Stream Deck 7.6+. The CLI links
+`io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin` into Stream Deck's plugin
+directory. The stable reverse-DNS ID derives from the project's GitHub Pages address.
+The folder contains manifest, icons and inspector sources; ignored build output
+adds self-contained JavaScript, the project license and bundled-runtime notices.
+It does not need repository `node_modules` at runtime. A release `.streamDeckPlugin`
+asset and bundled profiles remain planned.
 
-The [transport components](../../docs/architecture/06_runtime_view.md#stream-deck-transport)
-are reusable; the application's actions are connected. SDK action wiring, manifest, device assets and profiles
-remain planned. The stub is not an installable plugin package.
-The [control contract](../../docs/architecture/06_runtime_view.md#stream-deck-control-contract)
-defines application messages separately from transport authentication.
-See the [agreed requirements](../../docs/requirements/STREAM_DECK.md).
+## Configure keys
+
+1. Enable **Settings → Application → Enable Stream Deck** in Analyzer.
+2. Drag **Ride Forces Analyzer → Analyzer control** onto a key.
+3. Choose the command and applicable direction, sample step, curve or marker.
+4. Keep the intended Explorer active. Input fields, dialogs and background use block commands.
+
+Create separate marker Preview, Apply and Discard keys. Preview steps are ±1/±10
+source samples. Library browsing selects one visible entry cyclically; Open opens
+the selection in the current Explorer. Generic key bindings are available on Plus
+and Neo; device-specific layouts and hardware acceptance remain open.
+
+## Feedback and connection
+
+- Keys show confirmed playback/curve state, selected Library entry, position,
+  smoothing, speed and marker values. Preview, pending and failed marker states
+  remain distinct from adopted values.
+- Active/inactive, unavailable, pending, failed and disconnected states have
+  distinct vector icons. Automatic key-state toggling is disabled; a press or
+  acknowledgement alone never changes the displayed toggle value.
+- Settings persist per key through Stream Deck. User-defined key icons/titles
+  take precedence over plugin updates.
+- Disconnection clears actionable state and pending requests. Reconnect requires
+  a fresh snapshot; commands are never replayed. Invalid/incompatible protocol
+  messages disable control. See the [wire contract](../../docs/architecture/06_runtime_view.md#stream-deck-control-contract).
+
+The manifest currently targets Windows. macOS discovery is prepared but native
+application/plugin/device behavior is unverified. Physical device acceptance
+belongs to the [remaining integration steps](../../docs/requirements/STREAM_DECK.md#proposed-implementation-steps).

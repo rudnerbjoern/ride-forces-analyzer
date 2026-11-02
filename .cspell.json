@@ -51,6 +51,7 @@
     "**/uv.lock"
   ],
   "words": [
+    "imgs",
     "AHRS",
     "Aileron",
     "Alembic",

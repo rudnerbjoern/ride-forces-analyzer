@@ -134,7 +134,7 @@ in `pyproject.toml` and the lockfile rather than installing packages through the
 The **Testing** view discovers pytest under `tests/`, refreshes on Python saves
 and supports individual tests or **Run All Tests**. unittest is disabled; the
 working directory is the repository root. The Node provider discovers the Stream Deck
-tests under `plugins/stream-deck/tests/` and compiles TypeScript before each run.
+tests under `plugins/stream-deck/tests/` and builds the self-contained plugin before each run.
 It uses Node from VS Code's process PATH. Other npm and skill tests run separately.
 Pylance/Pyright share strict `[tool.pyright]` settings in `pyproject.toml`; Ruff
 uses the locked `.venv/Scripts/ruff.exe` and formats on save.
