@@ -18,12 +18,19 @@ const skillInputs = new Set([
   ".github/commit-message-instructions.md",
 ]);
 
+const streamDeckInputs = new Set([
+  "package.json", "package-lock.json", ".node-version", ".vscode/settings.json",
+  ".github/workflows/ci.yml", ".github/workflows/source-release.yml",
+  ".github/scripts/ci-changes.mjs", "tests/ci/changes.test.mjs",
+]);
+
 export function classifyChanges(filenames) {
   let code = false;
   let documentation = false;
   let skills = false;
   let workflows = false;
   let dependencies = false;
+  let streamDeck = false;
   for (const filename of filenames) {
     if (filename === ".cspell.json") {
       dependencies = true;
@@ -42,6 +49,13 @@ export function classifyChanges(filenames) {
       documentation = true;
       continue;
     }
+    if (filename.startsWith("plugins/stream-deck/")) {
+      streamDeck = true;
+      continue;
+    }
+    if (streamDeckInputs.has(filename)) {
+      streamDeck = true;
+    }
     if (filename.startsWith(".agents/skills/")) {
       skills = true;
       continue;
@@ -57,7 +71,8 @@ export function classifyChanges(filenames) {
       code = true;
     }
   }
-  return { code, documentation, skills, workflows, dependencies: dependencies || code, posix: false };
+  return { code, documentation, skills, workflows, dependencies: dependencies || code,
+    posix: false, "stream-deck": streamDeck };
 }
 
 export function changedPaths(base, head, cwd = process.cwd()) {
@@ -88,12 +103,13 @@ export function writeOutputs(selection, output) {
     throw new Error("GITHUB_OUTPUT is required");
   }
   appendFileSync(output,
-    `code=${selection.code}\ndocumentation=${selection.documentation}\nskills=${selection.skills}\nworkflows=${selection.workflows}\ndependencies=${selection.dependencies}\nposix=${selection.posix}\n`, "utf8");
+    `code=${selection.code}\ndocumentation=${selection.documentation}\nskills=${selection.skills}\nworkflows=${selection.workflows}\ndependencies=${selection.dependencies}\nposix=${selection.posix}\nstream-deck=${selection["stream-deck"]}\n`, "utf8");
 }
 
 export function selectChecks(eventName, base, head, cwd = process.cwd(), fullChecks = false) {
   if (eventName === "workflow_dispatch" || fullChecks) {
-    return { code: true, documentation: true, skills: true, workflows: true, dependencies: true, posix: true };
+    return { code: true, documentation: true, skills: true, workflows: true,
+      dependencies: true, posix: true, "stream-deck": true };
   }
   if (eventName === "pull_request") {
     return classifyChanges(changedPaths(base, head, cwd));
@@ -105,5 +121,5 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const selection = selectChecks(process.env.GITHUB_EVENT_NAME, process.env.PR_BASE_SHA,
     process.env.PR_HEAD_SHA, process.cwd(), process.env.CI_FULL_CHECKS === "true");
   writeOutputs(selection, process.env.GITHUB_OUTPUT);
-  console.log(`Code checks: ${selection.code}; documentation checks: ${selection.documentation}; skill checks: ${selection.skills}; workflow checks: ${selection.workflows}; dependency checks: ${selection.dependencies}; POSIX checks: ${selection.posix}`);
+  console.log(`Code checks: ${selection.code}; documentation checks: ${selection.documentation}; skill checks: ${selection.skills}; workflow checks: ${selection.workflows}; dependency checks: ${selection.dependencies}; POSIX checks: ${selection.posix}; Stream Deck checks: ${selection["stream-deck"]}`);
 }

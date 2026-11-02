@@ -2,6 +2,7 @@
   "globs": [
     "*.md",
     "docs/**/*.md",
+    "plugins/**/*.md",
     ".github/**/*.md",
     ".agents/skills/**/*.md"
   ],

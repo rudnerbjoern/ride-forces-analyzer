@@ -15,9 +15,13 @@ owns system design and scientific boundaries.
 | M7 — Video synchronization | Closed   | Not feasible within project scope: no simple, reliable automation with available data; alignment remains in external video editors                                                      |
 | M8 — Windows release       | Complete | Portable EXE, standard/complete ZIPs, notices and tag pipeline; owner-confirmed clean-Windows EXE launch; accepted redistribution scope                                                 |
 | M9 — Linux / macOS         | Partial  | Native Linux x64/macOS arm64/x64 packages and mandatory runtime CI; clean-machine qualification remains open                                                                            |
+| M10 — Stream Deck          | Partial  | [Library/Explorer integration](requirements/STREAM_DECK.md): scope agreed, SDK/test stub present; transport, controls, Plus/Neo profiles, hardware checks and release asset remain.     |
 
 ## Product boundaries
 
+- Stream Deck targets Windows with Plus and Neo, using Stream Deck 7.6 or later.
+  macOS compatibility remains unverified. Detailed controls, mockups and the
+  implementation sequence belong in the [Stream Deck requirements](requirements/STREAM_DECK.md).
 - [Display/scientific policy](architecture/08_concepts.md#scientific-provenance-and-gates):
   usable imports support calibrated display with raw fallback. Manta's scoped
   confirmation does not qualify arbitrary recordings/windows;

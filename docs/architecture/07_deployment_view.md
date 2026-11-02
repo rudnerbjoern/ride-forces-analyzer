@@ -27,7 +27,11 @@ access as applicable.
 
 Development and local regression checks run on native Windows.
 `setup.ps1` creates the locked environment; `start.ps1` starts the application
-without dependency synchronization. Node supplies development checks only.
+without dependency synchronization. Node supplies development checks and builds
+the separate [Stream Deck plugin stub](../../plugins/stream-deck/README.md).
+An installable plugin package and native device verification remain planned.
+Planned delivery is one `.streamDeckPlugin` asset beside the Analyzer GitHub release
+packages, including device-specific Plus and Neo profiles.
 [Windows setup](../development/SETUP.md) owns versions and commands.
 
 NumPy serves analysis buffers, Pint explicit unit conversion and SciPy passive

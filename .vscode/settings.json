@@ -8,6 +8,15 @@
   ],
   "python.testing.cwd": "${workspaceFolder}",
   "python.testing.autoTestDiscoverOnSaveEnabled": true,
+  "nodejs-testing.include": [
+    "plugins/stream-deck/tests"
+  ],
+  "nodejs-testing.pretest": [
+    "node",
+    "node_modules/typescript/bin/tsc",
+    "--project",
+    "plugins/stream-deck/tsconfig.json"
+  ],
   "python.languageServer": "Pylance",
   "python.analysis.diagnosticMode": "workspace",
   "ruff.enable": true,

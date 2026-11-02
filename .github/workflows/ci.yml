@@ -59,6 +59,7 @@ jobs:
       workflows: ${{ steps.changes.outputs.workflows }}
       dependencies: ${{ steps.changes.outputs.dependencies }}
       posix: ${{ steps.changes.outputs.posix }}
+      stream-deck: ${{ steps.changes.outputs.stream-deck }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -79,7 +80,7 @@ jobs:
         run: npm ci --no-audit --no-fund
       - if: ${{ steps.changes.outputs.dependencies == 'true' }}
         run: npm run test:dependencies
-      - if: ${{ steps.changes.outputs.dependencies == 'true' && steps.changes.outputs.code != 'true' && steps.changes.outputs.documentation != 'true' && steps.changes.outputs.skills != 'true' }}
+      - if: ${{ steps.changes.outputs.dependencies == 'true' && steps.changes.outputs.code != 'true' && steps.changes.outputs.documentation != 'true' && steps.changes.outputs.skills != 'true' && steps.changes.outputs.stream-deck != 'true' }}
         run: npm run spellcheck
 
   actionlint:
@@ -234,6 +235,27 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run test:docs
 
+  stream-deck:
+    name: Stream Deck plugin
+    needs: dependency-check
+    if: ${{ needs.dependency-check.outputs.stream-deck == 'true' }}
+    runs-on: windows-latest
+    timeout-minutes: 5
+    env:
+      NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.revision || github.sha }}
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+      - run: npm ci --no-audit --no-fund
+      - run: npm run test:stream-deck
+      - if: ${{ needs.dependency-check.outputs.code != 'true' && needs.dependency-check.outputs.documentation != 'true' && needs.dependency-check.outputs.skills != 'true' }}
+        run: npm run spellcheck
+
   posix:
     needs: dependency-check
     if: ${{ needs.dependency-check.outputs.posix == 'true' }}
@@ -243,7 +265,7 @@ jobs:
       upload-packages: ${{ inputs.upload-packages || false }}
 
   check:
-    needs: [dependency-check, code, ui, documentation, skills, gitleaks, actionlint, posix]
+    needs: [dependency-check, code, ui, documentation, skills, gitleaks, actionlint, posix, stream-deck]
     if: ${{ always() }}
     runs-on: windows-latest
     timeout-minutes: 5
@@ -256,12 +278,14 @@ jobs:
           CODE_REQUIRED: ${{ needs.dependency-check.outputs.code }}
           UI_REQUIRED: ${{ needs.dependency-check.outputs.code }}
           POSIX_REQUIRED: ${{ needs.dependency-check.outputs.posix }}
+          STREAM_DECK_REQUIRED: ${{ needs.dependency-check.outputs.stream-deck }}
           DOCUMENTATION_REQUIRED: ${{ needs.dependency-check.outputs.documentation }}
           SKILLS_REQUIRED: ${{ needs.dependency-check.outputs.skills }}
           WORKFLOWS_REQUIRED: ${{ needs.dependency-check.outputs.workflows }}
           CODE_RESULT: ${{ needs.code.result }}
           UI_RESULT: ${{ needs.ui.result }}
           POSIX_RESULT: ${{ needs.posix.result }}
+          STREAM_DECK_RESULT: ${{ needs.stream-deck.result }}
           DOCUMENTATION_RESULT: ${{ needs.documentation.result }}
           SKILLS_RESULT: ${{ needs.skills.result }}
           WORKFLOWS_RESULT: ${{ needs.actionlint.result }}
@@ -275,7 +299,7 @@ jobs:
           if ($env:CONTRACTS_REQUIRED -ne 'true' -and $env:CONTRACTS_REQUIRED -ne 'false') {
             throw 'Missing or invalid contract-test selection.'
           }
-          foreach ($suite in @('CODE', 'UI', 'DOCUMENTATION', 'SKILLS', 'WORKFLOWS', 'POSIX')) {
+          foreach ($suite in @('CODE', 'UI', 'DOCUMENTATION', 'SKILLS', 'WORKFLOWS', 'POSIX', 'STREAM_DECK')) {
             $required = [Environment]::GetEnvironmentVariable("${suite}_REQUIRED")
             $result = [Environment]::GetEnvironmentVariable("${suite}_RESULT")
             if ($required -ne 'true' -and $required -ne 'false') {

@@ -26,7 +26,7 @@ These jobs qualify target packages; they do not add a Linux/macOS developer setu
 | Main pushes              | No duplicate validation run                                                                                                                                                    |
 | Dependency resolution    | Locked Python commands throughout                                                                                                                                              |
 | Scanner/linter downloads | Three retries for all transfer errors; 30 s connection / 120 s per attempt; TLS certificate/revocation and SHA-256 checks mandatory; exhausted retries fail                    |
-| Time limits              | Non-UI application 15 min; UI/skills/actionlint/Gitleaks 10 min; detection/docs/final gate 5 min                                                                               |
+| Time limits              | Non-UI application 15 min; UI/skills/actionlint/Gitleaks 10 min; detection/docs/plugin/final gate 5 min                                                                        |
 
 All three pytest jobs use `-ra --durations=20`. Completed commands, including failures,
 upload separate application/UI/skill JUnit XML artifacts for 14 days.
@@ -52,6 +52,7 @@ the merge gate. Hosted runs do not reuse test results.
 | `documentation`    | Any Markdown path, including source/tests/skills and deletions/renames; locked Node install and `npm run test:docs`                                                                                      |
 | `code`             | Non-Markdown application/source/test/script and shared Python/Node/Git/editor inputs, excluding CI metadata and Node/PowerShell contracts; application lint/format/types and pytest excluding `tests/ui` |
 | `ui`               | Same selection as `code`; complete `tests/ui` serially on a separate Windows runner                                                                                                                      |
+| `stream-deck`      | Affected plugin/shared Node/CI inputs; manual/full and release runs always; locked Node install, strict TypeScript build and `npm run test:stream-deck`                                                  |
 | `posix`            | Manual full CI and release calls only; native Linux x64/macOS arm64/x64 build and runtime checks; skipped for all PR changes                                                                             |
 | `skills`           | Non-Markdown skill implementation/tests, consumed commit policy, Python manifest/lock/version and Git/editor settings; separate skill Ruff/mypy/pytest                                                   |
 | `check`            | Always evaluate detection, contract-selection validity and selected job results: selected = success, unselected = skipped                                                                                |
@@ -62,13 +63,18 @@ code is selected, including manual/release runs. UI tests remain serial per desk
 A second Windows setup can reduce wall-clock waiting when runners are available;
 it does not guarantee lower total runner minutes.
 
-- Markdown-only and skill-only changes skip application tests. CI metadata,
+- Markdown-only, plugin-only and skill-only changes skip application tests. CI metadata,
   Node/PowerShell workflow contracts and selector changes select dependency/syntax
   checks without application/UI/skill tests, including CI/native package workflow
   changes. Python release-helper changes retain conservative application validation;
   shared toolchain/manifest inputs also select application and skill checks.
   Mixed changes select the union of affected suites.
-- Commit-policy Markdown selects docs/skills. Code-only/skill-only runs supply
+- Plugin selection covers non-Markdown files under `plugins/stream-deck/`, root
+  package manifests/lock, Node version and VS Code test settings, plus the CI/release
+  workflows, selector and selector tests. Plugin-only changes select no Python/UI
+  suites. Failed, cancelled or missing selected plugin results block `check`;
+  releases reuse full CI and always require the plugin job.
+- Commit-policy Markdown selects docs/skills. Code-only/skill-only/plugin-only runs supply
   CSpell; standalone dependency-contract runs also supply CSpell. Mixed runs with
   docs use its CSpell check.
 - The complete PR diff remains authoritative after documentation-only follow-up commits.

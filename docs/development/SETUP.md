@@ -40,7 +40,7 @@ its bundled npm. Then run:
 ```
 
 This additionally verifies the Node version and runs locked `npm ci` with its
-cache under `.tmp/`. Node is a development dependency only.
+cache under `.tmp/`. Node is not an Analyzer runtime dependency.
 
 If Windows blocks local scripts, invoke the requested script for that process:
 
@@ -99,6 +99,8 @@ npm run test:docs
 ```
 
 For separate package verification, `uv build` writes ignored `dist/` artifacts.
+The [Stream Deck workspace](../../plugins/stream-deck/README.md) has separate local
+TypeScript build and Node test commands; setup installs its locked dependencies.
 Installed checks work offline. Coverage and limits are described in
 [code and documentation quality](CODE_QUALITY.md) and
 [CI selection](CI.md). Application pytest/Test Explorer discovers `tests/` only;
@@ -114,7 +116,8 @@ routine runner logs stay in `.tmp/`.
 ## VS Code and Test Explorer
 
 Open the folder in Windows VS Code and install the extensions recommended in
-`.vscode/extensions.json`: Python, Pylance, Ruff, markdownlint and Code Spell Checker.
+`.vscode/extensions.json`: Python, Pylance, Ruff, markdownlint, Code Spell Checker
+and [node:test runner](https://marketplace.visualstudio.com/items?itemName=connor4312.nodejs-testing).
 The default interpreter is `.venv/Scripts/python.exe`. An existing interpreter
 selection takes precedence: use **Python: Select Interpreter** to select that file.
 
@@ -130,7 +133,9 @@ in `pyproject.toml` and the lockfile rather than installing packages through the
 
 The **Testing** view discovers pytest under `tests/`, refreshes on Python saves
 and supports individual tests or **Run All Tests**. unittest is disabled; the
-working directory is the repository root. npm and skill tests run separately.
+working directory is the repository root. The Node provider discovers the Stream Deck
+tests under `plugins/stream-deck/tests/` and compiles TypeScript before each run.
+It uses Node from VS Code's process PATH. Other npm and skill tests run separately.
 Pylance/Pyright share strict `[tool.pyright]` settings in `pyproject.toml`; Ruff
 uses the locked `.venv/Scripts/ruff.exe` and formats on save.
 **Run Tests with Coverage** uses the locked development dependency `pytest-cov`.

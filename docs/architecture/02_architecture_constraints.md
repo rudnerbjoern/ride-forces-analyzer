@@ -11,7 +11,8 @@
   Version pins and installation commands are authoritative in
   [project configuration](../../pyproject.toml) and [Windows setup](../development/SETUP.md).
 - Use typed Python, Pydantic for bootstrap settings, Ruff, mypy, Pylance/Pyright
-  and pytest. Node tools serve development/type/documentation checks only.
+  and pytest. Node supports development checks and the separate Stream Deck plugin;
+  the Analyzer remains a native Python/Qt application.
 - Application processing must work offline. Installing dependencies and obtaining
   reference documentation can require network access.
   Optional map backgrounds and release checks are independent network actions;

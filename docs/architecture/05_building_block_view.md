@@ -61,6 +61,10 @@ remain with their owning packages;
 
 Source modules are under [ride_forces_analyzer](../../src/ride_forces_analyzer/).
 
+The separate [Stream Deck workspace](../../plugins/stream-deck/README.md) contains
+the official TypeScript SDK bootstrap and hardware-free Node tests. Actions,
+device profiles and the local Analyzer control interface remain planned.
+
 ## Importer composition and interfaces
 
 `decoder` owns bounded Path/bytes input, compressed expansion, lexical preflight,

@@ -69,6 +69,8 @@ chapter 9 retains decision status and rationale.
 
 ## Development and publication
 
+- [Stream Deck integration](requirements/STREAM_DECK.md): agreed scope and planned device controls;
+  [TypeScript stub and local tests](../plugins/stream-deck/README.md).
 - [Windows setup and checks](development/SETUP.md), [contributions](../CONTRIBUTING.md),
   [agent rules](../AGENTS.md), [private security reports](../SECURITY.md).
 - [Code and documentation quality](development/CODE_QUALITY.md),

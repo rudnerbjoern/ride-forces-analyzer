@@ -8,7 +8,8 @@ Accepted: native Windows development and native Windows/Linux/macOS distribution
 using Python/uv and PySide6 for offline processing of read-only `.forces` and
 `.zforces` recordings. Sensor capture is out of scope. Domain/analysis stay outside Qt,
 and frame generation stays separate from encoding. Pydantic validates settings;
-Node supports development checks only. [Constraints](02_architecture_constraints.md)
+Node supports development checks and the separate Stream Deck plugin.
+[Constraints](02_architecture_constraints.md)
 and [Windows setup](../development/SETUP.md) own tool/version details. Python and
 Node dependencies are reproducible through `uv.lock` and `package-lock.json`.
 
