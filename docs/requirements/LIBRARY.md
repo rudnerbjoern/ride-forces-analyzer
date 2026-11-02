@@ -2,7 +2,7 @@
 
 <!-- cspell:words NFKC -->
 
-Status: LIB-01–12 implemented; LIB-13–14 planned.
+Status: LIB-01–14 implemented.
 This document defines the Library feature
 and its verifiable implementation steps. It does not authorize implementation or
 Git delivery. Requirements and implementation belong on the same feature branch.
@@ -27,8 +27,8 @@ queries continue to use `sqlite3`; an ORM conversion is not part of this feature
 
 This is an archive of individual recordings: two recordings of the same ride are
 two entries. Original recordings, GPS and unknown source fields remain intact.
-Videos remain external files. Backup/restore is a later increment, with its format
-outlined here so the initial schema does not prevent it.
+Videos and overlays remain external files. Settings → Library provides portable ZIP
+backup and explicit full replacement from a validated backup.
 
 ## Required behavior
 
@@ -351,15 +351,15 @@ video links use local integer keys.
 All timestamps below are UTC ISO 8601 text in one fixed precision/format ending
 in `Z`; `recorded_day` is `YYYY-MM-DD`. Nullable fields use SQL `NULL`.
 
-### Complete database overview: existing and planned
+### Complete database overview
 
 The diagram shows all six existing application tables, the three Library tables
 and Alembic's version table, with their columns and database ownership.
 The Library schema, explicit archive import and reopening service are implemented.
 The grouped recording list and read-only source/date/import details are implemented;
 park/name filters, metadata/marker editing, manual workflow status and video links
-with configurable labels are implemented;
-remaining workflows are planned.
+with configurable labels, reusable export history and portable backup/restore
+are implemented.
 `PK` marks primary-key
 columns; the four marked columns in `tiles` form one composite primary key.
 `FK` marks the Library foreign keys. Dashed hash links are optional logical
@@ -675,13 +675,14 @@ does not open sources or change the chart. Collapsing retains both controls.
 Metadata editing uses the separate dialog; existing chart controls persist current
 markers to the Library for archived hashes. Video links use a separate dialog;
 Settings → Library manages label choices. **Export history…** opens a separate
-attempt list and saved-settings review. Portable backup/restore remains LIB-13 onward.
+attempt list and saved-settings review. Settings → Library provides **Backup…** and
+**Restore…** actions independently of the recording list.
 
 LIB-04 acceptance also checks the default collapsed state, showing/hiding the panel
 and restoring the existing chart area and minimum window size. Group these checks
 with list selection in the same native window session.
 
-## Schema evolution and future portable backup
+## Schema evolution and portable backup
 
 Use [Alembic](https://alembic.sqlalchemy.org/en/latest/) for Library schema evolution:
 
@@ -716,7 +717,7 @@ Do not introduce a generic custom-field editor or a custom migration framework.
 Rebuild only derived metadata/search projections when needed. Snapshot schema
 versions and backup-format versions remain independent of Alembic revisions.
 
-For the later backup increment, use one ZIP with a versioned `manifest.json`,
+Portable backups use one ZIP with a versioned `manifest.json`,
 UTF-8 `recordings.jsonl`, `exports.jsonl` and `video_links.jsonl`, and exact original files under
 `sources/<sha256>.forces` or `sources/<sha256>.zforces`. Each JSON Lines entry is
 one metadata/history object; originals are binary members, avoiding JSON rewriting
@@ -731,23 +732,50 @@ This format covers the Library and its video-label choices, not videos, map cach
 unrelated global preferences or the independent preset/batch stores. It is portable through the standard-library
 [SQLite](https://docs.python.org/3.14/library/sqlite3.html) and
 [ZIP](https://docs.python.org/3.14/library/zipfile.html) facilities; backup/restore
-needs no further dependencies beyond the planned migration libraries.
-Create backups from a consistent database read and publish the ZIP
-only when complete. Restore validates format versions, members, lengths, hashes
+needs no additional dependencies.
+Create backups from a consistent SQLite online snapshot and publish the ZIP
+only when complete. Read saved video-label choices once before writing members;
+unsaved Settings drafts are excluded. Restore validates format versions, members, lengths, hashes
 and relationships before replacing the active Library. Reject path traversal,
 duplicate/unexpected members and unbounded expansion using the existing resource
 limit approach. A failed restore preserves the active Library.
 
-Start with explicit full-Library restore and replacement confirmation.
+Settings actions run outside the GUI thread with cooperative cancellation. Restore
+requires explicit full-Library replacement confirmation and applies immediately;
+Settings Cancel does not undo a completed restore. The label editor refreshes after
+restore; other unsaved Settings choices retain their usual Save/Cancel behavior.
+
+Missing optional fields use SQL NULL or existing domain/schema defaults. Missing
+source projections are recovered from the archived original, bounds use source
+indices, calibration uses the default recipe and workflow defaults to imported.
+Missing import timestamps remain unknown (empty text); missing historical recipes
+remain empty and cannot be repeated. Incomplete saved links retain empty URL/label
+values for later editing. Missing label options use the six defaults, while an
+explicitly empty list stays empty. Unknown fields are ignored. Essential source
+bytes, unambiguous identity, integrity and valid relationships remain required;
+invalid supplied values are rejected rather than silently rewriting them.
+
+Restore stages a current-schema Library and validates it before opening a single
+SQLite transaction spanning the active Library and its attached label preferences.
+It replaces only Library tables and `library_video_labels`; unrelated preferences
+remain unchanged. Restored unfinished attempts become interrupted. Active running
+exports must finish, or be recovered at application restart, before replacement.
+Standard rollback journal mode is required for atomic multi-database replacement.
+Cancellation or a write failure before commit rolls back both data and labels.
+
+ZIP processing is bounded to 4 GiB compressed/expanded, 100,000 members and rows per
+metadata file, 256 MiB per JSON Lines file and the existing source-import byte limit
+per original and metadata row. Traversal, symlinks, encryption, duplicate source
+identities and unexpected members are rejected; members are not extracted by name.
+
 Merging two libraries, conflict resolution, automatic
 backup schedules and including exported videos are outside this design.
 
 ## Iterative implementation and verification
 
-LIB-01–12 are implemented; LIB-13–14 remain planned.
-Implement one increment at a time on the same feature branch;
-its acceptance checks must pass before moving to dependent work. Steps 13–14 are
-the later backup/restore phase, not a prerequisite for the initial Library.
+LIB-01–14 are implemented on the Library feature branch. Each step retains its
+observable acceptance below; portable backup/restore includes the complete Library
+and its saved video-label choices, excluding external media.
 
 1. **LIB-01 — Source metadata and recording dates**
 
@@ -924,9 +952,9 @@ the later backup/restore phase, not a prerequisite for the initial Library.
     attempt. Unsupported versions explain the limitation without overwriting history;
     existing overwrite protection remains effective.
 
-13. **LIB-13 — Portable backup, later**
+13. **LIB-13 — Portable backup**
 
-    **Status:** Planned.
+    **Status:** Complete (native Windows ZIP, cancellation, integrity and Settings acceptance verified).
 
     **Implementation:** Export the versioned portable Library ZIP from a consistent
     database read, including label choices in the manifest.
@@ -936,9 +964,9 @@ the later backup/restore phase, not a prerequisite for the initial Library.
     Unused custom label options are included. Cancelled/failed backups do not publish
     partial archives; old output paths are history, not required restore inputs.
 
-14. **LIB-14 — Full Library restore, later**
+14. **LIB-14 — Full Library restore**
 
-    **Status:** Planned.
+    **Status:** Complete (native Windows tolerant restore, rollback, archived reopening and saved-recipe acceptance verified).
 
     **Implementation:** Validate the portable archive and restore the Library after
     explicit replacement confirmation, retaining unrelated application preferences.
@@ -957,6 +985,5 @@ When implementing the applicable steps, update the relevant existing
 [building-block](../architecture/05_building_block_view.md),
 [persistence](../architecture/08_concepts.md#rendering-and-persistence) and
 [deployment](../architecture/07_deployment_view.md#local-export-configuration)
-descriptions in place: their present statement that recordings stay outside SQLite
-describes the current application, not this proposed Library. Keep implementation
+descriptions in place to reflect archived source ownership. Keep implementation
 logic out of Qt widgets and reuse the existing importer and export boundaries.

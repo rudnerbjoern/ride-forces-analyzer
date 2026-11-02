@@ -72,6 +72,31 @@ class LibraryLabelsEditor(QGroupBox):
         """
         return tuple(self.choices.item(index).text() for index in range(self.choices.count()))
 
+    def set_labels(self, labels: tuple[str, ...]) -> None:
+        """Replace the draft with choices from a committed Library restore.
+
+        Args:
+            labels: Restored saved preference choices, including an empty tuple.
+        """
+        self.choices.clear()
+        self.choices.addItems(labels)
+        self.name.clear()
+        self._update_actions()
+
+    def set_busy(self, busy: bool) -> None:
+        """Protect the draft during a transfer without clearing unsaved input.
+
+        Args:
+            busy: Whether backup/restore work is still running.
+        """
+        self.choices.setDisabled(busy)
+        self.name.setDisabled(busy)
+        if busy:
+            for button in (self.add, self.rename, self.remove):
+                button.setEnabled(False)
+        else:
+            self._update_actions()
+
     def _selected(self) -> None:
         item = self.choices.currentItem()
         self.name.setText(item.text() if self.choices.currentRow() >= 0 else "")

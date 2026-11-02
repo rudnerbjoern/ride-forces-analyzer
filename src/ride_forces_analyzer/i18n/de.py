@@ -8,6 +8,21 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words AUSSERHALB Drittanbieterhinweise Kalibrierungsmarkierung Kalibrierungsreferenz Markierungsindex Metadatenfeld Rundungsgrenzen Vertikalkraft
 
 GERMAN: dict[str, str] = {
+    "Backup…": "Sichern…",
+    "Restore…": "Wiederherstellen…",
+    "Back up the saved Library to one ZIP archive": "Gespeicherte Bibliothek in einem ZIP-Archiv sichern",
+    "Replace the Library from a ZIP archive": "Bibliothek aus einem ZIP-Archiv wiederherstellen",
+    "Back up Library": "Bibliothek sichern",
+    "Restore Library": "Bibliothek wiederherstellen",
+    "ZIP archives (*.zip)": "ZIP-Archive (*.zip)",
+    "Replace Library?": "Bibliothek ersetzen?",
+    "This replaces the entire Library and its video-label choices. Continue?": "Die gesamte Bibliothek und ihre Video-Bezeichnungen werden ersetzt. Fortfahren?",
+    "Backing up Library…": "Bibliothek wird gesichert…",
+    "Restoring Library…": "Bibliothek wird wiederhergestellt…",
+    "Library transfer failed: {0}": "Bibliothek konnte nicht übertragen werden: {0}",
+    "Library transfer cancelled.": "Übertragung der Bibliothek abgebrochen.",
+    "Library restored.": "Bibliothek wiederhergestellt.",
+    "Library backup saved.": "Bibliothek gesichert.",
     "Source value": "Quellwert",
     "{0} bytes": "{0} Bytes",
     "Encoder": "Encoder",

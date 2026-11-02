@@ -50,12 +50,12 @@ chapter 9 retains decision status and rationale.
 - [Editable calibration markers](development/ANALYSIS_MODELS.md#reference-calibration):
   source-evidenced Gravity/Incline calibration, persistence and partial recalculation.
 
-## Planned features
+## Library
 
 - [Library requirements and implementation steps](requirements/LIBRARY.md):
   local recording archive, editable metadata and markers, manual workflow, video
-  links, date/park/search views, reusable export history and later portable
-  backup/restore. Requirements complete; implementation planned.
+  links, date/park/search views, reusable export history and portable ZIP
+  backup/restore. All fourteen implementation steps are complete.
 
 ## Unified analysis
 

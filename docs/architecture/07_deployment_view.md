@@ -99,13 +99,19 @@ The platform data root is LOCALAPPDATA on Windows, absolute XDG_DATA_HOME or
 - `library.sqlite3`: Library schema (recordings, export history, video links and
   Alembic revision); explicit archive import stores exact original bytes.
   The grouped list filters and opens archived sources. Current metadata additions
-  persist separately; marker persistence and later user workflows remain planned.
+  and markers persist separately; manual workflow, video links and immutable
+  export recipes remain associated with the archived recording.
 - `support/`: per-process diagnostic reports.
 
 SQLite writes are transactional. Ordinary file opening leaves recordings external;
 explicit Library import stores complete source BLOBs, including compressed input,
 so archive reopening is independent of the old external path.
-Rendered media remain external. Library Alembic scripts ship as application
+Rendered media remain external. Settings → Library can create a single portable ZIP
+containing archived originals, Library records and saved video-label choices, then
+restore it with explicit full-replacement confirmation. Overlays/videos, map caches,
+unrelated preferences and preset/batch stores are excluded. Restore stages and
+validates all content before atomically replacing Library data and label choices.
+Library Alembic scripts ship as application
 resources in wheels and native builders; upgrades use the Python API offline,
 without a separately installed CLI. Revisions follow the introducing app major/minor
 version, independently of patch releases.

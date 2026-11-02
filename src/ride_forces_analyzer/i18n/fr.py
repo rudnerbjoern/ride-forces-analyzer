@@ -7,6 +7,21 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # CSpell checks English keys and French translations using the file override.
 
 FRENCH: dict[str, str] = {
+    "Backup…": "Sauvegarder…",
+    "Restore…": "Restaurer…",
+    "Back up the saved Library to one ZIP archive": "Sauvegarder la bibliothèque dans une archive ZIP",
+    "Replace the Library from a ZIP archive": "Restaurer la bibliothèque depuis une archive ZIP",
+    "Back up Library": "Sauvegarder la bibliothèque",
+    "Restore Library": "Restaurer la bibliothèque",
+    "ZIP archives (*.zip)": "Archives ZIP (*.zip)",
+    "Replace Library?": "Remplacer la bibliothèque ?",
+    "This replaces the entire Library and its video-label choices. Continue?": "Toute la bibliothèque et ses libellés vidéo seront remplacés. Continuer ?",
+    "Backing up Library…": "Sauvegarde de la bibliothèque…",
+    "Restoring Library…": "Restauration de la bibliothèque…",
+    "Library transfer failed: {0}": "Échec du transfert de la bibliothèque : {0}",
+    "Library transfer cancelled.": "Transfert de la bibliothèque annulé.",
+    "Library restored.": "Bibliothèque restaurée.",
+    "Library backup saved.": "Bibliothèque sauvegardée.",
     "Source value": "Valeur d’origine",
     "{0} bytes": "{0} octets",
     "Encoder": "Encodeur",

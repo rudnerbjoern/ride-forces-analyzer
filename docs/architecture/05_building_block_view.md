@@ -107,6 +107,12 @@ workers and the batch service invoke it around actual attempts, excluding skippe
 `prepare_repeat()` reconstructs captured analysis/metadata from verified archived
 bytes without consulting current marker/addition/preferences or old output paths.
 
+`storage.library_backup.LibraryBackup` writes a portable ZIP from a consistent
+SQLite snapshot and stages validated restores in a separate Library. Existing
+importers validate exact source bytes; bounded JSON/ZIP checks protect metadata,
+relationships and expansion. One transaction replaces Library tables and attached
+video-label preferences, leaving unrelated stores and external media untouched.
+
 ## Analysis boundary
 
 `analysis.models` exposes immutable base contracts through explicit package exports.
@@ -185,6 +191,11 @@ updates only the addressed link. Settings owns a `LibraryLabelsEditor` draft;
 Save persists its choices in `Preferences.library_video_labels`, while link labels
 retain their stored text independently of later option changes. No online lookup,
 schema extension or automatic workflow transition is involved.
+`ui.dialogs.library_transfer.LibraryTransferControls` adds paired backup/restore
+actions to that same Settings section. A worker owns storage calls; the UI owns
+native path pickers, replacement confirmation, cancellation and completion feedback.
+Settings remains open until a cancelled worker has safely finished. Committed
+restore refreshes the label draft and Library list without reloading the workspace.
 `LibraryExportsDialog` owns a separate newest-first attempt list and saved-settings
 summary. Its worker prepares supported repeats through the export-history service;
 the existing video assistant or data destination flow owns review, overwrite

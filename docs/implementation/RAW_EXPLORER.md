@@ -174,13 +174,18 @@ No vertical zoom.
 
 Settings → Application selects a workspace theme and UI language. Appearance previews
 immediately; Save persists the choices and Cancel restores the previous theme.
+Settings sections scroll when needed; Save/Cancel stay visible outside the scroll
+area, so content changes do not force the dialog beyond the available screen.
+Sections keep their natural height; additional window space stays below them.
 Startup restores valid saved choices, otherwise the registered OS language (English
 fallback) and System appearance. `AppSettings` can explicitly override language.
 
 The toolbar's Library toggle shows an adjustable left panel, collapsed by default.
 **Import recordings…** explicitly archives one or more `.forces` / `.zforces`
 files off the GUI thread. Per-file results distinguish imports, updated entries, existing entries
-and failures; a failed file does not stop the others. Ordinary **Open recording**
+and failures in the import button tooltip; failures also appear in the existing
+details area. No separate import-log field occupies Library space. A failed file
+does not stop the others. Ordinary **Open recording**
 does not archive files. Compact entries group recordings by recording-local day, newest
 first, with unknown dates last. Each shows an emphasized ride name, a muted park
 name and a local clock/export summary. Long names are elided with full tooltips.
@@ -200,6 +205,13 @@ no online verification and do not change workflow status. Settings → Library
 manages ordered label options with Save/Cancel, including a deliberately empty
 list. Existing link labels survive renamed/removed options; the link dropdown
 always offers an unset value and retains its saved label.
+Settings → Library also provides paired **Backup…** / **Restore…** actions using
+native ZIP pickers and cancellable background workers. Backups include saved
+Library data and label choices, excluding unsaved drafts and external videos or
+overlays. Restore requires full-replacement confirmation, validates the archive
+before committing and refreshes the Library list and saved label choices. It is an
+immediate action; Settings Cancel does not undo a successful restore. Closing
+Settings during transfer requests cancellation and waits for safe completion.
 **Export history…** opens a separate newest-first attempt list, result details and
 saved-settings review. Supported repeats prepare archived bytes and captured
 markers/metadata in a worker, then use the existing video review or data save flow.

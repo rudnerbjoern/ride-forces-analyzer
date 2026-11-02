@@ -217,8 +217,18 @@ failure. Unknown revisions or unversioned existing tables are rejected without
 replacement; current revisions are not rewritten. Every ordinary `sqlite3`
 connection enables foreign keys and commits or rolls back its transaction.
 Source formats/statuses, byte lengths and nonnegative values have SQL constraints;
-archive import validates source decoding and byte identity; complete snapshot
-relationships belong to the later export-history service. Existing databases are not migrated or consolidated.
+archive import validates source decoding and byte identity. History recipes retain
+captured source relationships. Independent existing databases are not consolidated.
+Portable Library ZIPs include exact source members and bounded JSON Lines metadata,
+with separately versioned manifests and saved label choices. Backup uses SQLite's
+online snapshot API. Restore validates members, lengths/hashes, decoding, indices
+and relationships in a staged current-schema Library. Missing optional fields use
+NULL or established defaults; essential identity/integrity remains mandatory.
+Only after explicit confirmation does one SQLite transaction replace the active
+Library tables and the attached preferences' label key. Standard rollback journals
+preserve atomicity across those files; active exports block replacement. Restored
+running attempts become interrupted. Cancellation and failures roll back both;
+external source/output paths and unrelated preferences are never restore inputs.
 
 Update lookup stays outside widgets. It requires a matching platform asset;
 download/installation remain manual. [Deployment](07_deployment_view.md#local-export-configuration),

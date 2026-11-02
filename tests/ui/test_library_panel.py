@@ -6,6 +6,7 @@ from pathlib import Path
 import json
 
 from PySide6.QtWidgets import (
+    QPlainTextEdit,
     QApplication,
     QComboBox,
     QDialogButtonBox,
@@ -110,15 +111,22 @@ def test_library_toggle_preserves_workspace_and_recording(
     monkeypatch.setattr(QFileDialog, "getOpenFileNames", choose)
     window.library.import_button.click()
     wait_until(window.library.import_button.isEnabled)
-    report = window.library.import_results.toPlainText()
+    report = window.library.import_button.toolTip()
     assert "Imported" in report and "bad.forces: Import failed:" in report
-    assert window.library.import_results.isVisible()
+    assert "bad.forces: Import failed:" in window.library.details.toPlainText()
+    assert (
+        window.library.panel.findChild(
+            QPlainTextEdit,
+            options=Qt.FindChildOption.FindDirectChildrenOnly,
+        )
+        is None
+    )
     with store.connection() as connection:
         assert connection.execute("SELECT count(*) FROM recordings").fetchone() == (1,)
     paths[:] = paths[:1]
     window.library.import_button.click()
     wait_until(window.library.import_button.isEnabled)
-    assert "Already in Library" in window.library.import_results.toPlainText()
+    assert "Already in Library" in window.library.import_button.toolTip()
     paths.clear()
     window.library.import_button.click()
     assert window.library.import_button.isEnabled()
@@ -288,7 +296,7 @@ def test_library_toggle_preserves_workspace_and_recording(
     paths[:] = [str(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.zforces")))]
     window.library.import_button.click()
     wait_until(window.library.import_button.isEnabled)
-    assert "Already in Library" in window.library.import_results.toPlainText()
+    assert "Already in Library" in window.library.import_button.toolTip()
     day = tree.topLevelItem(0)
     assert day is not None and day.childCount() == 1
     assert window.data is archived
@@ -306,7 +314,7 @@ def test_library_toggle_preserves_workspace_and_recording(
             and window.data.source.recording.metadata.name == "Manta updated"
         ),
     )
-    assert "Updated in Library" in window.library.import_results.toPlainText()
+    assert "Updated in Library" in window.library.import_button.toolTip()
     assert len(store.entries()) == 1
     archived = window.data
     assert archived is not None

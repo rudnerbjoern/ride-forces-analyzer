@@ -32,7 +32,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QPlainTextEdit,
     QPushButton,
     QSplitter,
     QSizePolicy,
@@ -170,7 +169,6 @@ class LibraryPanel(QSplitter):
         panel: Initially hidden Library content and explicit archive-import controls.
         toggle_button: Localized toolbar control with open/closed folder icons.
         import_button: Explicit multi-file archive import action.
-        import_results: Read-only per-file outcomes from the latest import.
         recordings: Newest-first recording rows under day headers that cannot be selected.
         details: Read-only source/date/import details for the selected recording.
         empty_label: Empty-Library explanation.
@@ -206,13 +204,6 @@ class LibraryPanel(QSplitter):
         )
         self.import_button.clicked.connect(self._choose_import)
         layout.addWidget(self.import_button)
-        self.import_results = QPlainTextEdit()
-        self.import_results.setReadOnly(True)
-        self.import_results.setMinimumWidth(0)
-        self.import_results.setMaximumHeight(160)
-        bind(self.import_results, tr("Library import results"), "accessibleName")
-        self.import_results.hide()
-        layout.addWidget(self.import_results)
         self.park_filter = ParkFilter()
         self.park_filter.setSizeAdjustPolicy(
             QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon,
@@ -622,6 +613,7 @@ class LibraryPanel(QSplitter):
     @Slot(object)
     def _import_finished(self, results: tuple[ArchiveImportResult, ...]) -> None:
         lines: list[str] = []
+        failures: list[str] = []
         for result in results:
             message = (
                 tr("Imported")
@@ -632,12 +624,16 @@ class LibraryPanel(QSplitter):
                 if result.status == "duplicate"
                 else tr("Import failed: {0}", result.error or "")
             )
-            lines.append(f"{result.path.name}: {message}")
-        self.import_results.setPlainText("\n".join(lines))
-        self.import_results.show()
+            line = f"{result.path.name}: {message}"
+            lines.append(line)
+            if result.status not in {"imported", "updated", "duplicate"}:
+                failures.append(line)
+        self.import_button.setToolTip("\n".join(lines))
         self.import_button.setEnabled(True)
         self._import_worker = None
         self.refresh()
+        if failures:
+            self.show_error("\n".join(failures))
         selected = self.selected_entry
         if selected is not None and any(
             result.status == "updated" and result.source_sha256 == selected.source_sha256
@@ -647,8 +643,7 @@ class LibraryPanel(QSplitter):
 
     @Slot(str)
     def _import_failed(self, message: str) -> None:
-        self.import_results.setPlainText(tr("Import failed: {0}", message))
-        self.import_results.show()
+        self.show_error(tr("Import failed: {0}", message))
         self.import_button.setEnabled(True)
         self._import_worker = None
 

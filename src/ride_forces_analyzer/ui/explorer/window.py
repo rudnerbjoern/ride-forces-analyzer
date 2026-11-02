@@ -731,6 +731,7 @@ class ExplorerWindow(QMainWindow):
         dialog.appearance_previewed.connect(self._preview_appearance)
         dialog.rejected.connect(lambda: self._preview_appearance(previous_appearance))
         dialog.appearance_selected.connect(self.set_appearance)
+        dialog.library_restored.connect(self.library.refresh)
         dialog.open()
 
     @Slot()

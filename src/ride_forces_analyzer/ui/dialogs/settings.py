@@ -5,15 +5,18 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 from PySide6.QtCore import QEvent, QSignalBlocker, Qt, Signal, Slot
+from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QComboBox,
     QCheckBox,
     QDialog,
     QDialogButtonBox,
     QFormLayout,
+    QFrame,
     QGroupBox,
     QLabel,
     QPushButton,
+    QScrollArea,
     QStyle,
     QVBoxLayout,
     QWidget,
@@ -27,6 +30,7 @@ from ride_forces_analyzer.storage.map_tiles import TileCache
 from ride_forces_analyzer.ui.presentation.translation import bind, button_text, items
 from ride_forces_analyzer.ui.presentation.updates import UpdateController
 from .library_labels import LibraryLabelsEditor
+from .library_transfer import LibraryTransferControls
 
 APPEARANCE_CHOICES = tuple(Appearance)
 
@@ -51,11 +55,14 @@ class SettingsDialog(QDialog):
         update_status: Label displaying update-check progress and results.
         library_labels: Draft label options saved with the other preferences.
         library_error: Explanation when label preferences cannot be saved.
+        library_transfer: Explicit backup/restore actions, separate from Save/Cancel.
+        library_restored: Notification after a full Library replacement commits.
     """
 
     language_selected = Signal(int)
     appearance_selected = Signal(int)
     appearance_previewed = Signal(int)
+    library_restored = Signal()
 
     def __init__(
         self,
@@ -82,8 +89,18 @@ class SettingsDialog(QDialog):
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.setWindowModality(Qt.WindowModality.WindowModal)
         bind(self, tr("Settings"), "windowTitle")
-        self.resize(540, 320)
-        layout = QVBoxLayout(self)
+        self.resize(540, min(760, self.screen().availableGeometry().height() - 80))
+        outer = QVBoxLayout(self)
+        scroll = QScrollArea()
+        scroll.setObjectName("settingsContentScroll")
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        body = QWidget()
+        layout = QVBoxLayout(body)
+        layout.setContentsMargins(0, 0, 0, 0)
+        scroll.setWidget(body)
+        outer.addWidget(scroll, 1)
         application = bind(QGroupBox(), tr("Application"), "title")
         application_form = QFormLayout(application)
         self.language = QComboBox()
@@ -146,6 +163,13 @@ class SettingsDialog(QDialog):
         self.library_error.setWordWrap(True)
         self.library_error.hide()
         layout.addWidget(self.library_error)
+        self.library_transfer = LibraryTransferControls(preferences, self.library_labels)
+        library_layout = self.library_labels.layout()
+        assert library_layout is not None
+        library_layout.addWidget(self.library_transfer)
+        self.library_transfer.restored.connect(self._library_restored)
+        self.library_transfer.status.connect(self._library_status)
+        self.library_transfer.busy_changed.connect(self._library_busy)
         update_group = bind(QGroupBox(), tr("Updates"), "title")
         update_layout = QVBoxLayout(update_group)
         self.automatic_updates = bind(
@@ -179,6 +203,7 @@ class SettingsDialog(QDialog):
         privacy.setWordWrap(True)
         update_layout.addWidget(privacy)
         layout.addWidget(update_group)
+        layout.addStretch(1)
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
         )
@@ -198,7 +223,41 @@ class SettingsDialog(QDialog):
         )
         self.buttons.accepted.connect(self.save)
         self.buttons.rejected.connect(self.reject)
-        layout.addWidget(self.buttons)
+        outer.addWidget(self.buttons)
+
+    @Slot()
+    def _library_restored(self) -> None:
+        self.library_labels.set_labels(self.preferences.library_video_labels())
+        self.library_restored.emit()
+
+    @Slot(str)
+    def _library_status(self, message: str) -> None:
+        self.library_error.setText(message)
+        self.library_error.setVisible(bool(message))
+
+    @Slot(bool)
+    def _library_busy(self, busy: bool) -> None:
+        self.buttons.setDisabled(busy)
+        self.library_labels.set_busy(busy)
+
+    def reject(self) -> None:
+        """Cancel a running transfer before allowing Settings to close."""
+        if self.library_transfer.busy:
+            self.library_transfer.cancel()
+            return
+        super().reject()
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        """Keep transfer ownership alive until cancellation or commit completes.
+
+        Args:
+            event: Native close request.
+        """
+        if self.library_transfer.busy:
+            self.library_transfer.cancel()
+            event.ignore()
+            return
+        super().closeEvent(event)
 
     @Slot(object)
     def _update_status(self, message: object) -> None:
