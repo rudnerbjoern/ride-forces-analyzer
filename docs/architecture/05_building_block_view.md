@@ -65,7 +65,8 @@ The separate [Stream Deck workspace](../../plugins/stream-deck/README.md) contai
 the official TypeScript SDK bootstrap, transport client and hardware-free Node tests.
 `runtime.stream_deck` provides the matching Qt loopback transport. Application
 wire models live in `runtime.control_contract`, paired with plugin protocol types.
-Action dispatch, startup wiring and device profiles remain planned.
+`ui.stream_deck.StreamDeckController` owns optional server startup, GUI-thread
+action routing and coalesced state feedback. SDK actions and device profiles remain planned.
 
 ## Importer composition and interfaces
 

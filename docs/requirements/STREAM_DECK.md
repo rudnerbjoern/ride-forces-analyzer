@@ -3,7 +3,7 @@
 <!-- cspell:words Elgato streamdeck -->
 
 Status: Initial scope agreed; SDK bootstrap and loopback transport components present.
-Application control bindings and device features remain planned.
+Application action routing is present; plugin actions and device features remain planned.
 
 ## Confirmed scope
 
@@ -13,7 +13,7 @@ Application control bindings and device features remain planned.
 - Integration: separate plugin and local control interface; no hotkey simulation.
 - Plugin: official Elgato TypeScript SDK (`@elgato/streamdeck`), using Stream Deck's Node.js runtime.
 - Preferred transport: loopback WebSocket with the same protocol on Windows and macOS.
-- Planned application setting: **Enable Stream Deck**, off by default and persisted
+- Application setting: **Enable Stream Deck**, off by default and persisted
   in user preferences; the control server runs only while enabled.
 - Stream Deck + and Neo use the [menu hierarchy](#menu-structure) below.
 - Application control is foreground-only; no operation while another application has focus.
@@ -28,7 +28,7 @@ Application control bindings and device features remain planned.
 - Distribution: one `.streamDeckPlugin` asset on Analyzer GitHub releases, with
   device-specific Plus and Neo profiles.
 - Implemented scope covers the SDK bootstrap, loopback transport, typed control
-  contract and tests.
+  contract, application actions and tests.
 
 ## Goal and constraints
 
@@ -309,7 +309,8 @@ Loopback WebSocket uses Qt's server and Node's native client. The
 [transport contract](../architecture/06_runtime_view.md#stream-deck-transport)
 defines discovery, local access and reconnects. Native Windows exchange and recovery
 are verified. The [control contract](../architecture/06_runtime_view.md#stream-deck-control-contract)
-defines typed commands, responses and feedback; application dispatch remains planned.
+defines typed commands, responses and feedback. Application dispatch uses existing
+GUI actions and analysis services; device-side SDK actions remain planned.
 SDK/tooling versions are fixed in the [workspace manifest](../../plugins/stream-deck/package.json)
 and [root npm lockfile](../../package-lock.json); transport and contract use existing dependencies.
 
@@ -423,7 +424,7 @@ Device integration remains planned; the SDK bootstrap has local tests and a cond
 
 4. **Name:** Connect application actions
 
-   - **Status:** Planned.
+   - **Status:** Complete on Windows; native macOS behavior remains unverified.
    - **Content:** Route commands on the GUI thread through existing controllers/services.
      Add the **Enable Stream Deck** switch to application settings and persist it
      through the existing user-preference storage; manage the control-server lifecycle.

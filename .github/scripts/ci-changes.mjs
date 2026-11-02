@@ -24,6 +24,7 @@ const streamDeckInputs = new Set([
   ".github/scripts/ci-changes.mjs", "tests/ci/changes.test.mjs",
   "src/ride_forces_analyzer/runtime/stream_deck.py",
   "src/ride_forces_analyzer/runtime/control_contract.py",
+  "src/ride_forces_analyzer/ui/stream_deck.py", "tests/ui/test_stream_deck.py",
   "tests/support/test_stream_deck.py", "tests/support/stream_deck_client.mjs",
   "tests/support/test_control_contract.py",
 ]);

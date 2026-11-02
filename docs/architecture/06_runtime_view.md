@@ -78,7 +78,8 @@ error. Exception messages may contain personal paths; nothing is uploaded.
 ## Stream Deck transport
 
 `runtime.stream_deck.ControlServer` and the plugin's `AnalyzerTransport` exchange
-application-owned text frames. Application startup and SDK action wiring remain planned.
+application-owned text frames. `RecordingApplication` owns one `StreamDeckController`;
+SDK action wiring remains planned.
 
 ```mermaid
 sequenceDiagram
@@ -107,14 +108,19 @@ sequenceDiagram
 - Native Windows Qt/Node exchange and restart recovery are verified. macOS uses
   the same APIs and its existing Application Support path; native socket,
   permissions, process and device behavior remain unverified.
+- **Settings → Application → Enable Stream Deck** is off by default and saved in
+  existing user preferences. Startup reads it; Save applies changes to the shared
+  server. Cancel leaves it unchanged. Disabling disconnects clients and removes
+  discovery; application shutdown also closes the server.
 
 ## Stream Deck control contract
 
 [Python wire models](../../src/ride_forces_analyzer/runtime/control_contract.py)
 validate commands, responses and full state events; matching
 [TypeScript types](../../plugins/stream-deck/src/protocol.ts) describe plugin messages.
-Shared examples cover both languages. Application dispatch, client message validation
-and state publication remain planned integration work.
+Shared examples cover both languages. The application's Qt-thread controller routes
+commands through existing controls/services and publishes state from their signals.
+Plugin-side message validation and SDK actions remain planned.
 
 ### Envelopes and compatibility
 
@@ -132,7 +138,8 @@ and state publication remain planned integration work.
   Copy the latest target into commands; reject mismatches as `stale_target`, never
   redirect queued work to another Explorer. An Explorer without a recording can use Library actions.
 - Responses contain `type: "response"`, the request `id` and addressed `target`.
-  `status: "ok"` confirms completion; `pending` acknowledges asynchronous work only.
+  `status: "ok"` confirms the GUI action was invoked; import/open outcomes continue
+  through the existing loading workflow and state feedback. `pending` acknowledges analysis only.
   Pending requests receive a final `ok` or `error` with the same ID after adoption/failure.
 - Error responses use `status: "error"`, `code` and nullable availability `reason`.
   Codes: `invalid_command`, `unsupported_protocol`, `stale_target`, `unavailable`,
@@ -144,7 +151,7 @@ and state publication remain planned integration work.
 - Client-local connection states are `disconnected`, `connecting`, `connected` and
   `incompatible`. Connection loss clears actionable target/preview feedback; never
   replay commands or assume an interrupted apply succeeded. No disconnected frame is sent.
-  Disabling the planned opt-in setting stops the server rather than sending control commands.
+  Disabling the opt-in setting stops the server rather than sending control commands.
 
 ### Actions
 
@@ -195,6 +202,13 @@ interaction decision; no valid preview means apply is unavailable.
   retains the last adopted value; concurrent applies must not overwrite newer markers.
 - Existing `runtime.instance.OpenRequest` JSON and one-shot acknowledgements remain
   unchanged on their separate local socket; no control envelope is added there.
+
+The controller rejects stale targets and duplicate request IDs before dispatch.
+Responses go only to their originating client; state is shared with authenticated
+clients. Library navigation reads the existing sorted/filtered tree. Marker apply
+uses the existing analysis queue, blocks conflicting requests while pending and
+confirms only adopted values; the analysis controller retains persistence ownership.
+Unset calibration markers cannot be adjusted until an existing value is available.
 
 ## Library actions and shared windows
 

@@ -196,6 +196,9 @@ Your saved choices are remembered. The chart adapts
 to the available window space; smaller windows let you switch between the chart
 and inspector.
 
+The optional **Enable Stream Deck** setting is off by default. Device controls
+are still in development; see the [integration scope](docs/requirements/STREAM_DECK.md).
+
 ![The same Voltron Nevera sample in the light workspace, with the airtime context strip, Ejector Airtime value card and selection inspector](docs/images/workspace-light.png)
 
 *The same ride and selected moment, in the light theme.*

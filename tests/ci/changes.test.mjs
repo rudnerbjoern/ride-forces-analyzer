@@ -41,6 +41,7 @@ for (const filename of [".node-version", "package.json", "package-lock.json", ".
 
 for (const filename of ["src/ride_forces_analyzer/runtime/stream_deck.py",
   "src/ride_forces_analyzer/runtime/control_contract.py",
+  "src/ride_forces_analyzer/ui/stream_deck.py", "tests/ui/test_stream_deck.py",
   "tests/support/test_stream_deck.py", "tests/support/stream_deck_client.mjs",
   "tests/support/test_control_contract.py"]) {
   test(`Shared Qt/Node transport inputs select both application and plugin checks: ${filename}`, () => {

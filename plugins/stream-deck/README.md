@@ -27,7 +27,7 @@ The [CI selector](../../docs/development/CI.md#routing-and-required-gate) runs p
 tests for affected PR changes and always for releases and full CI.
 
 The [transport components](../../docs/architecture/06_runtime_view.md#stream-deck-transport)
-are reusable; application/SDK action wiring, manifest, device assets and profiles
+are reusable; the application's actions are connected. SDK action wiring, manifest, device assets and profiles
 remain planned. The stub is not an installable plugin package.
 The [control contract](../../docs/architecture/06_runtime_view.md#stream-deck-control-contract)
 defines application messages separately from transport authentication.

@@ -39,11 +39,13 @@ class ControlServer(QObject):
 
     Attributes:
         received: Signal carrying authenticated application text frames.
+        command_received: Authenticated sender and text for request/response routing.
         endpoint_path: Private discovery file shared with the plugin.
         server: Qt server bound exclusively to IPv4 loopback.
     """
 
     received = Signal(str)
+    command_received = Signal(object, str)
 
     def __init__(self, endpoint_path: Path | None = None, parent: QObject | None = None) -> None:
         """Create a stopped transport without opening sockets or files.
@@ -136,6 +138,21 @@ class ControlServer(QObject):
             if current == published:
                 self.endpoint_path.unlink(missing_ok=True)
 
+    def reply(self, client: QWebSocket, message: str) -> None:
+        """Send one response only to its authenticated originating connection.
+
+        Args:
+            client: Connection that issued the request.
+            message: Serialized application response.
+
+        Raises:
+            ValueError: The UTF-8 response exceeds the transport message limit.
+        """
+        if len(message.encode("utf-8")) > MAX_MESSAGE_BYTES:
+            raise ValueError("Stream Deck response exceeds the transport message limit")
+        if client in self._authenticated:
+            client.sendTextMessage(message)
+
     def _accept(self) -> None:
         while self.server.hasPendingConnections():
             client = self.server.nextPendingConnection()
@@ -171,6 +188,7 @@ class ControlServer(QObject):
                 client.sendTextMessage(self._state)
             return
         self.received.emit(message)
+        self.command_received.emit(client, message)
 
     def _discard(self, client: QWebSocket) -> None:
         self._authenticated.discard(client)
