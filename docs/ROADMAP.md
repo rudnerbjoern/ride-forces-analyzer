@@ -15,7 +15,7 @@ owns system design and scientific boundaries.
 | M7 — Video synchronization | Closed   | Not feasible within project scope: no simple, reliable automation with available data; alignment remains in external video editors                                                      |
 | M8 — Windows release       | Complete | Portable EXE, standard/complete ZIPs, notices and tag pipeline; owner-confirmed clean-Windows EXE launch; accepted redistribution scope                                                 |
 | M9 — Linux / macOS         | Partial  | Native Linux x64/macOS arm64/x64 packages and mandatory runtime CI; clean-machine qualification remains open                                                                            |
-| M10 — Stream Deck          | Partial  | [Library/Explorer integration](requirements/STREAM_DECK.md): SDK and Windows transport verified; app bindings, controls, Plus/Neo profiles, hardware checks and release asset remain.   |
+| M10 — Stream Deck          | Partial  | [Library/Explorer integration](requirements/STREAM_DECK.md): SDK, protocol and Windows transport verified; app bindings, device profiles, hardware checks and release asset remain.     |
 
 ## Product boundaries
 

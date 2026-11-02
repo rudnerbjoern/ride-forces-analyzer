@@ -99,13 +99,102 @@ sequenceDiagram
   A fresh token is generated at each start; the file requests owner read/write permissions.
 - Handshake version 1 and the token are required within five seconds. Browser
   origins and binary messages are rejected; incoming and published state frames
-  are bounded to 64 KiB. Application command validation belongs to the later control contract.
+  are bounded to 64 KiB. The application contract below defines payload validation;
+  transport-to-action dispatch remains planned.
 - The client retries after one second, including missing/invalid discovery and
   connection failure. Disconnected sends return false; stop cancels retries and
   stale connection attempts. Reconnected peers receive the latest state.
 - Native Windows Qt/Node exchange and restart recovery are verified. macOS uses
   the same APIs and its existing Application Support path; native socket,
   permissions, process and device behavior remain unverified.
+
+## Stream Deck control contract
+
+[Python wire models](../../src/ride_forces_analyzer/runtime/control_contract.py)
+validate commands, responses and full state events; matching
+[TypeScript types](../../plugins/stream-deck/src/protocol.ts) describe plugin messages.
+Shared examples cover both languages. Application dispatch, client message validation
+and state publication remain planned integration work.
+
+### Envelopes and compatibility
+
+- Application protocol `version: 1` is independent of discovery/authentication version 1.
+  Authenticate first; transport `ready` is not an application state event.
+- Require an exact application version. Invalid shapes, unknown fields/actions,
+  coercions and non-finite numbers are rejected. Contract changes require a new version.
+  Unsupported versions produce `unsupported_protocol` in the server's supported envelope;
+  the client enters `incompatible` and disables commands.
+- Commands contain `type: "command"`, unique per-connection `id`, explicit `target`
+  and typed `action`. Duplicate IDs are rejected without repeated execution.
+- A target contains opaque `window_id`, nullable source `recording_id` and integer
+  `generation`. Window IDs last for the process; generation changes when the active
+  target or its loaded recording changes, including reopening the same source.
+  Copy the latest target into commands; reject mismatches as `stale_target`, never
+  redirect queued work to another Explorer. An Explorer without a recording can use Library actions.
+- Responses contain `type: "response"`, the request `id` and addressed `target`.
+  `status: "ok"` confirms completion; `pending` acknowledges asynchronous work only.
+  Pending requests receive a final `ok` or `error` with the same ID after adoption/failure.
+- Error responses use `status: "error"`, `code` and nullable availability `reason`.
+  Codes: `invalid_command`, `unsupported_protocol`, `stale_target`, `unavailable`,
+  `analysis_failed`. IDs/targets may be null only when the request cannot be identified.
+- State events contain `type: "state"`, a non-secret server `session_id`, monotonic
+  `sequence` and the complete current snapshot. Publish after authentication and
+  relevant application changes; coalesce playback updates. Ignore older sequences
+  within a session; a reconnect starts from a fresh snapshot, not cached toggle values.
+- Client-local connection states are `disconnected`, `connecting`, `connected` and
+  `incompatible`. Connection loss clears actionable target/preview feedback; never
+  replay commands or assume an interrupted apply succeeded. No disconnected frame is sent.
+  Disabling the planned opt-in setting stops the server rather than sending control commands.
+
+### Actions
+
+| `action.name`                                 | Arguments                               | Behavior                                                               |
+| --------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------- |
+| `library.move`                                | `direction: -1 \| 1`                    | One visible sorted/filtered entry; cyclic boundaries                   |
+| `library.open`                                | None                                    | Open selection in the addressed current Explorer                       |
+| `library.import`                              | None                                    | Open the existing import dialog                                        |
+| `playback.toggle`                             | None                                    | Invoke actual play/pause                                               |
+| `playback.speed.step`, `playback.speed.reset` | Step: `direction: -1 \| 1`; reset: none | Adjacent supported speed; reset to 1×                                  |
+| `position.step`                               | `steps: -10 \| -1 \| 1 \| 10`           | Source samples; pause playback and clamp bounds                        |
+| `view.zoom`                                   | `direction: -1 \| 1`                    | Decrease/increase time magnification through existing chart navigation |
+| `view.reset`, `view.selection`                | None                                    | Reset viewport or zoom to the existing selection                       |
+| `smoothing.step`, `smoothing.reset`           | Step: `direction: -1 \| 1`; reset: none | Adjacent existing odd window or application default                    |
+| `curve.set`                                   | `curve`, `enabled: boolean`             | Set `first`, `second`, `third`, `combined` or `calibrated` control     |
+| `marker.preview`                              | `marker`, `steps: -10 \| -1 \| 1 \| 10` | Pause playback; adjust only that preview within valid bounds           |
+| `marker.apply`, `marker.discard`              | `marker`                                | Adopt or discard only that marker's preview                            |
+
+Markers are `start`, `gravity`, `incline`, `end`. First/second/third curve slots
+follow the current chart axes; state supplies actual raw/directional labels.
+Fine/coarse selection and menu navigation stay local to the plugin. Other view,
+curve, smoothing and speed actions leave playback running; marker apply/discard
+does not resume it. Initial positions for unset markers remain an open device
+interaction decision; no valid preview means apply is unavailable.
+
+### Feedback and availability
+
+- Global and per-action availability are `{available: true}` or
+  `{available: false, reason: ...}`. Global blocking overrides individual controls;
+  missing controls are unsupported. Reasons cover foreground loss, input focus,
+  modal dialogs, absent windows/recordings/selections, empty Library, busy analysis,
+  unsupported data, missing previews and invalid marker positions.
+- `target: null` explicitly means no active Explorer. Library feedback contains
+  visible count and the selected entry's identity, title and zero-based index;
+  an empty list has count zero and null selection.
+- Playback exposes actual playing/speed, current sample, source time, formatted
+  replay label and last valid sample. View feedback exposes source-time bounds
+  and the actual odd smoothing window. Missing data uses null, not invented values.
+- Curves expose label, confirmed effective `active` value and independent availability.
+  Combined is unavailable in raw mode. Device visuals follow actual application state.
+- Each marker exposes nullable `applied` and `preview` positions, status
+  `applied`/`preview`/`pending`/`failed`, apply `request_id`, nullable failure code and
+  per-marker preview/apply/discard availability. Positions carry sample, source time
+  and the application's replay label; no sampling-rate inference occurs in the plugin.
+- Previews survive menu changes, but target/recording changes discard them. Preview
+  changes never recalculate or persist analysis. Apply stays pending until successful
+  adoption; only then update `applied` and persist through existing services. Failure
+  retains the last adopted value; concurrent applies must not overwrite newer markers.
+- Existing `runtime.instance.OpenRequest` JSON and one-shot acknowledgements remain
+  unchanged on their separate local socket; no control envelope is added there.
 
 ## Library actions and shared windows
 

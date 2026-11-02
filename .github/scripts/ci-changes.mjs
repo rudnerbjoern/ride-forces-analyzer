@@ -23,7 +23,9 @@ const streamDeckInputs = new Set([
   ".github/workflows/ci.yml", ".github/workflows/source-release.yml",
   ".github/scripts/ci-changes.mjs", "tests/ci/changes.test.mjs",
   "src/ride_forces_analyzer/runtime/stream_deck.py",
+  "src/ride_forces_analyzer/runtime/control_contract.py",
   "tests/support/test_stream_deck.py", "tests/support/stream_deck_client.mjs",
+  "tests/support/test_control_contract.py",
 ]);
 
 export function classifyChanges(filenames) {

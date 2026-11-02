@@ -27,7 +27,8 @@ Application control bindings and device features remain planned.
 - The [initial action scope](#action-scope) is confirmed.
 - Distribution: one `.streamDeckPlugin` asset on Analyzer GitHub releases, with
   device-specific Plus and Neo profiles.
-- Implemented scope covers the SDK bootstrap, loopback transport components and tests.
+- Implemented scope covers the SDK bootstrap, loopback transport, typed control
+  contract and tests.
 
 ## Goal and constraints
 
@@ -307,9 +308,10 @@ simulate keyboard input. The existing file-open transport remains separate.
 Loopback WebSocket uses Qt's server and Node's native client. The
 [transport contract](../architecture/06_runtime_view.md#stream-deck-transport)
 defines discovery, local access and reconnects. Native Windows exchange and recovery
-are verified; application command/state contracts and wiring remain planned.
+are verified. The [control contract](../architecture/06_runtime_view.md#stream-deck-control-contract)
+defines typed commands, responses and feedback; application dispatch remains planned.
 SDK/tooling versions are fixed in the [workspace manifest](../../plugins/stream-deck/package.json)
-and [root npm lockfile](../../package-lock.json); additional transport dependencies remain undecided.
+and [root npm lockfile](../../package-lock.json); transport and contract use existing dependencies.
 
 The plugin's SDK connection to Stream Deck and its connection to the Analyzer are
 separate. No native macOS integration test has been performed.
@@ -412,11 +414,12 @@ Device integration remains planned; the SDK bootstrap has local tests and a cond
 
 3. **Name:** Define control contract
 
-   - **Status:** Planned.
+   - **Status:** Complete; typed Python/TypeScript models and shared contract tests.
    - **Content:** Define typed commands, responses, state events and protocol compatibility.
    - **Acceptance criteria:** The contract covers agreed actions, window identity and
      active/available states, displayed values and preview/application status;
      unavailable/disconnected states are explicit. Existing file-open requests remain compatible.
+     See the [control contract](../architecture/06_runtime_view.md#stream-deck-control-contract).
 
 4. **Name:** Connect application actions
 
@@ -435,7 +438,7 @@ Device integration remains planned; the SDK bootstrap has local tests and a cond
 
 5. **Name:** Add Stream Deck plugin
 
-   - **Status:** In progress; SDK bootstrap, transport client and local/CI tests only.
+   - **Status:** In progress; SDK bootstrap, transport, protocol types and local/CI tests.
    - **Content:** Lock the official TypeScript SDK/tooling versions; implement agreed key
      actions and state feedback.
    - **Acceptance criteria:** The plugin installs locally, executes agreed commands,

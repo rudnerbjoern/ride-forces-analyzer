@@ -64,7 +64,8 @@ Source modules are under [ride_forces_analyzer](../../src/ride_forces_analyzer/)
 The separate [Stream Deck workspace](../../plugins/stream-deck/README.md) contains
 the official TypeScript SDK bootstrap, transport client and hardware-free Node tests.
 `runtime.stream_deck` provides the matching Qt loopback transport. Application
-commands, startup wiring and device profiles remain planned.
+wire models live in `runtime.control_contract`, paired with plugin protocol types.
+Action dispatch, startup wiring and device profiles remain planned.
 
 ## Importer composition and interfaces
 
