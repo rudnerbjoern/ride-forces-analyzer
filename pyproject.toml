@@ -22,7 +22,7 @@ dependencies = [
 analysis = [
     "numpy>=2.5.4",
     "pandas>=3.0.6",
-    "pint==0.26.1",
+    "pint==0.26.2",
     "pyqtgraph>=0.14.0",
     "scipy==1.18.1",
 ]
