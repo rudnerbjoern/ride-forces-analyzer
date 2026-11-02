@@ -75,6 +75,44 @@ Startup removes completed-process
 reports and preserves active ones. Report failure must not replace the original
 error. Exception messages may contain personal paths; nothing is uploaded.
 
+## Library actions and shared windows
+
+For **Open in new window…**, the panel emits an archive digest through the window.
+`RecordingApplication` registers an independent Explorer in the same process and
+schedules `open_archived()`. Each window owns its analysis, playback and chart state.
+
+Confirmed removal follows the storage transaction before publishing one change:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Panel as Originating Library panel
+    participant Store as LibraryStore
+    participant App as RecordingApplication
+    participant Other as Other Library panels
+    User->>Panel: Confirm Remove (default is No)
+    Panel->>Store: remove_recording(digest)
+    alt Committed removal
+        Store-->>Panel: Archive and links/history removed
+        Panel->>Panel: Refresh list and filters
+        Panel->>App: changed(origin)
+        App->>Other: library_changed(origin)
+        Other->>Other: Refresh list without reloading chart
+    else Failed transaction or running export
+        Store-->>Panel: Preserve data and explain failure
+    end
+```
+
+Every panel subscribes, including hidden panels; the origin skips its own forwarded
+notification because it already refreshed. Cancelled/failed removals publish no
+change. Loaded analyses, samples, zoom and playback are unaffected, and Qt removes
+destroyed-panel subscriptions automatically. External originals/outputs stay intact.
+
+Repeat preparation and backup/restore run in workers; transfer closure requests
+cancellation and waits for safe completion. [Library storage](../development/LIBRARY.md)
+owns transaction/recipe rules; [Explorer interactions](../implementation/RAW_EXPLORER.md#library-interactions)
+own dialog, selection, scrolling, accessibility and layout behavior.
+
 ## Optional update discovery
 
 A worker performs an opt-in startup check at most once per day or an explicit

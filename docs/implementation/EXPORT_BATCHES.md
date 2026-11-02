@@ -15,7 +15,7 @@ Local SQLite presets and reusable batches; multiple presets per recording and
 multiple recordings per batch. Selected/all batches form one sequential queue coordinated by `exports.batches`.
 Each recording × preset produces a separate video, never concatenated rides.
 Recording archives and per-attempt history belong to the separate
-[Library](../requirements/LIBRARY.md#export-history-and-repeat-export).
+[Library](../development/LIBRARY.md#export-history-and-repeat-export).
 
 Architecture owns [storage/component boundaries](../architecture/05_building_block_view.md#video-export-boundary),
 [database location](../architecture/07_deployment_view.md#local-export-configuration)
@@ -24,10 +24,10 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
 ## Contracts
 
 | Saved object    | Required contents                                                                                                                                                                      |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Preset          | Layout, position, export area, landscape/portrait aspect, overlay language, output mode, fps, time context, axis inversion, GPU preference, odd 1–51 sample smoothing and range policy |
 | Analysis recipe | Explicit versioned projection, smoothing, independent orientation, context/events, input dependencies and source-app policy; smoothing matches preset window                           |
-| Job             | Archived source SHA-256 (or a legacy absolute source path), title, concrete inclusive source range and complete preset snapshot                                                        |
+| Job             | Archived source SHA-256 (or an absolute source path), title, concrete inclusive source range and complete preset snapshot                                                              |
 | Storage         | Recipes/definitions only; archived source bytes belong to the Library; external originals remain read-only                                                                             |
 
 - Writes are transactional; preset/batch names are unique. Damaged/unsupported
@@ -56,13 +56,12 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
 - Editing/deleting a preset does not change saved job snapshots.
 - Jobs queued from archived Explorer data use their Library digest without an
   external source path. Execution and frame planning read verified archived bytes;
-  the batch editor also archives newly added files before capturing jobs. Existing
-  path-bound jobs retain their file/digest checks. Removing the
+  the batch editor also archives added files before capturing jobs.
+  Path-bound jobs retain their file/digest checks. Removing the
   Library source makes those archived jobs unavailable.
-- New jobs capture current Library metadata additions alongside their analysis
-  recipe. Execution uses those captured additions, independently of later Library
-  edits. Legacy jobs without this optional field use original source metadata.
-  Jobs replay their saved overlay language independently of UI language.
+- Jobs execute captured metadata/analysis and overlay language independently of
+  current Library edits and UI language. [Metadata compatibility](../development/LIBRARY.md#metadata-additions-and-export-compatibility)
+  defines the supported saved representations.
 - Presets/jobs persist `settings.extent` as `full_frame` or `content_area`; omission
   uses Full frame without rewriting storage. Unsupported supplied values or
   combinations, including HUD Content area, are rejected.

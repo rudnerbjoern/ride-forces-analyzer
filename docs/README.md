@@ -52,10 +52,13 @@ chapter 9 retains decision status and rationale.
 
 ## Library
 
-- [Library requirements and implementation steps](requirements/LIBRARY.md):
-  local recording archive, editable metadata and markers, manual workflow, video
-  links, date/park/search views, reusable export history and portable ZIP
-  backup/restore. All fourteen implementation steps are complete.
+- [Library storage and service contracts](development/LIBRARY.md): archive identity,
+  metadata/markers, manual workflow, video links, export history, schema migrations
+  and portable ZIP backup/restore.
+- [Library data model](architecture/08_concepts.md#library-data-model): relationships
+  and database ownership; [recording-date evidence](development/IMPORT_SERVICE.md#admitted-recording-date-contract).
+- [Library interactions](implementation/RAW_EXPLORER.md#library-interactions): grouped
+  recording list, filtering, context actions, dialogs and shared Explorer windows.
 
 ## Unified analysis
 

@@ -97,15 +97,15 @@ The platform data root is LOCALAPPDATA on Windows, absolute XDG_DATA_HOME or
 - `exports.sqlite3`: versioned presets and immutable batch jobs.
 - `map-cache.sqlite3`: optional cached map tiles and HTTP metadata.
 - `library.sqlite3`: Library schema (recordings, export history, video links and
-  Alembic revision); explicit archive import stores exact original bytes.
+  Alembic revision); archive-first imports store exact original bytes.
   The grouped list filters and opens archived sources. Current metadata additions
   and markers persist separately; manual workflow, video links and immutable
   export recipes remain associated with the archived recording.
 - `support/`: per-process diagnostic reports.
 
-SQLite writes are transactional. Ordinary file opening leaves recordings external;
-explicit Library import stores complete source BLOBs, including compressed input,
-so archive reopening is independent of the old external path.
+SQLite writes are transactional. Every Explorer file-open request imports complete
+source BLOBs, including compressed input, before opening the archived source.
+Reopening is independent of the external path; external originals stay read-only.
 Rendered media remain external. Settings → Library can create a single portable ZIP
 containing archived originals, Library records and saved video-label choices, then
 restore it with explicit full-replacement confirmation. Overlays/videos, map caches,
@@ -116,4 +116,6 @@ resources in wheels and native builders; upgrades use the Python API offline,
 without a separately installed CLI. Revisions follow the introducing app major/minor
 version, independently of patch releases.
 Batch output directories contain videos and `run-report.json`.
-[Persistence concepts](08_concepts.md#rendering-and-persistence) describe ownership.
+[Persistence concepts](08_concepts.md#rendering-and-persistence) describe ownership;
+[Library storage](../development/LIBRARY.md#portable-backup-and-restore) defines
+the portable format, bounds and atomic replacement contract.

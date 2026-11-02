@@ -9,6 +9,9 @@ flowchart TB
     Entry["__main__: settings and instance ownership"] --> Application["ui.application: recording windows"]
     Application --> UI["ui: widgets and worker transport"]
     UI --> Importer["importers: decode and validate"]
+    UI --> Archive["explorer.library: archive import and reopening"]
+    Archive --> Importer
+    Archive --> Storage
     Importer --> Domain["domain: immutable source and recording"]
     UI --> Controller["ui.explorer.analysis: scheduling and delivery guards"]
     Controller --> Service["analysis.service: revisions and subscriptions"]
@@ -26,6 +29,7 @@ flowchart TB
     Rendering --> Encoding["rendering.encoding: FFmpeg"]
     UI --> Batches["exports.batches: sequential jobs"]
     Batches --> Importer
+    Batches --> Archive
     Batches --> Rendering
     UI --> Storage["storage: preferences, recipes and tile cache"]
     Batches --> Storage
@@ -66,52 +70,23 @@ them using one diagnostic budget. Only complete-service success returns a
 `Recording`; subset APIs do not imply complete import.
 `importers.library_metadata` projects verbatim ride/park names and source-evidenced
 recording dates for the Library without storage or Qt dependencies.
-The [Library contract](../requirements/LIBRARY.md#admitted-source-date-contract)
+The [recording-date contract](../development/IMPORT_SERVICE.md#admitted-recording-date-contract)
 defines the admitted epoch, recording-local day and unknown-date policy.
 
 [Import API](../development/IMPORT_SERVICE.md), [decoder](../development/STRICT_DECODING.md),
 [motion](../development/MOTION_PARSING.md), [optional fields](../development/OPTIONAL_PARSING.md)
 and [domain models](../development/CANONICAL_MODELS.md) define exact contracts.
 
-`storage.library.LibraryStore` owns the separate Library database and applies its
-packaged Alembic revisions before exposing transactional `sqlite3` connections.
-SQLAlchemy is restricted to migrations; ordinary queries use the standard library.
-Revision IDs follow the introducing app major/minor version (`1_3` initially),
-independently of patch versions and export-snapshot versions. The three tables and
-indexes exist. `explorer.library.LibraryArchive` composes explicit archive import,
-preference-based initial markers and reopening through existing importer/analysis
-services. A unique normalized source UUID identifies recordings across exports.
-Equivalent exports retain their original bytes; changed exports replace source
-fields atomically while retaining first import time, additions, valid markers and
-relationships. Sources without a valid UUID use exact-byte identity.
-`LibraryStore.entries()` reads metadata and export counts without
-source BLOBs in stable day/instant/import/digest order. Park filtering and literal
-multi-term search use persisted Unicode-normalized effective-name projections;
-park choices come from the whole Library. `LibraryStore.update_metadata()` validates
-the frozen `domain.metadata.RecordingAdditions`, updates current overrides and
-search projections atomically, and rejects original/date fields. `ImportSuccess`
-keeps additions separate from its original recording and resolves effective values
-for views/exports. `LibraryStore.set_workflow_status()` validates the six manual
-states and updates only that scalar in one transaction, with no history or transition
-rules. `LibraryStore.markers()` reads current bounds/calibration without source
-BLOBs; `update_markers()` validates and replaces only that recipe atomically.
-`LibraryArchive` resolves and saves markers in the Library for archived hashes,
-retaining preferences for other input. Fresh opens and new batch jobs use these
-choices; saved jobs and export snapshots retain their captured configuration.
-`storage.library_history.LibraryHistory` persists distinct attempts in the existing
-history table. Its versioned `ExportRequest` captures requested settings; effective
-video settings use the existing `ExportSnapshot`, and data recipes use the admitted
-request representation. `exports.history.ExportAttempt` reports persistence failures
-without changing successful exporter results or deleting output. Single-video/data
-workers and the batch service invoke it around actual attempts, excluding skipped jobs.
-`prepare_repeat()` reconstructs captured analysis/metadata from verified archived
-bytes without consulting current marker/addition/preferences or old output paths.
+| Library component                                                         | Responsibility                                                                                                     |
+|---------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| `storage.library.LibraryStore`                                            | SQLite transactions, source/metadata/marker validation, filtering, workflow and links; bundled schema migrations   |
+| `explorer.library.LibraryArchive`                                         | Archive-first import, identity resolution, initial preferences and archived-source reopening                       |
+| `storage.library_history.LibraryHistory`, `exports.history.ExportAttempt` | Requested/effective recipes, attempt outcomes and repeat preparation independently of successful media publication |
+| `storage.library_backup.LibraryBackup`                                    | Consistent online snapshots, bounded portable ZIP validation and atomic Library/label replacement                  |
 
-`storage.library_backup.LibraryBackup` writes a portable ZIP from a consistent
-SQLite snapshot and stages validated restores in a separate Library. Existing
-importers validate exact source bytes; bounded JSON/ZIP checks protect metadata,
-relationships and expansion. One transaction replaces Library tables and attached
-video-label preferences, leaving unrelated stores and external media untouched.
+Library services stay outside widgets and reuse importer/analysis/export contracts.
+[Storage contracts](../development/LIBRARY.md) own schema, identity, metadata,
+markers, workflow, links, recipes, migrations and portable-format limits.
 
 ## Analysis boundary
 
@@ -169,42 +144,17 @@ signals. `ui.explorer.navigation.ExplorerNavigation` owns sample controls, force
 cards and timer transport for the existing `SamplePlayback` clock, including cursor
 and viewport following. The window composes these widgets, binds the same prepared
 snapshot to each component and coordinates import/analysis delivery.
-`ui.explorer.library.LibraryPanel` owns the collapsible Library surface, localized
-toolbar toggle and folder-icon state. It has no separate file import control. The window places its existing workspace
-beside that surface. The main toolbar schedules archive-first file imports through
-a background worker and displays per-file results; the archive service owns all
-import, duplicate and reopening logic outside widgets. A grouped Qt recording list
-uses compact three-line rows with elided names, export counts and clickable
-workflow icons/tooltips, a park dropdown and combined name search; selected-source details
-remain read-only, with saved additions shown separately. A recording context menu
-opens metadata editing, video links and export history through the existing dialogs,
-and offers recording removal after confirmation. `LibraryStore.remove_recording()`
-deletes the archive and its links/history atomically, refusing running exports;
-external files and the loaded chart remain unchanged. Failure retains the entry.
-day headings and empty space have no menu. `LibraryMetadataDialog`
-owns the separate metadata form; persistence and validation remain outside widgets.
-Selection requests go through the existing `LoadWorker` and window
-load lifecycle, preserving the previous chart on failure. Collapsing and language
-changes retain selection without reloading a source.
-`ui.explorer.library_workflow` owns frameless status icons and the themed rounded
-foreground selector. It anchors the current state to its trigger, handles dismissal
-and emits choices; the panel invokes storage and refreshes icons without reopening
-sources or changing list geometry. Persistence and validation remain outside widgets.
-`LibraryVideosDialog` provides a separate recording-bound link list/form, opened
-from the selected entry's context menu. `LibraryStore` validates HTTP/HTTPS URLs and
-updates only the addressed link. Settings owns a `LibraryLabelsEditor` draft;
-Save persists its choices in `Preferences.library_video_labels`, while link labels
-retain their stored text independently of later option changes. No online lookup,
-schema extension or automatic workflow transition is involved.
-`ui.dialogs.library_transfer.LibraryTransferControls` adds paired backup/restore
-actions to that same Settings section. A worker owns storage calls; the UI owns
-native path pickers, replacement confirmation, cancellation and completion feedback.
-Settings remains open until a cancelled worker has safely finished. Committed
-restore refreshes the label draft and Library list without reloading the workspace.
-`LibraryExportsDialog` owns a separate newest-first attempt list and saved-settings
-summary. Its worker prepares supported repeats through the export-history service;
-the existing video assistant or data destination flow owns review, overwrite
-confirmation, execution and cancellation. The loaded workspace remains independent.
+`ui.explorer.library.LibraryPanel` owns the collapsible list, filters, read-only
+details and context actions; `LibraryMetadataDialog`, `LibraryVideosDialog` and
+`LibraryExportsDialog` own recording-bound forms/review. Workers call Library
+services; widgets own display, input and transport, not validation or persistence.
+`ui.explorer.library_workflow` owns frameless status triggers and the anchored
+selector, using `QFrame`/`QHBoxLayout`, six checkable `QToolButton` controls and an
+exclusive `QButtonGroup`. `LibraryLabelsEditor` owns the Settings draft;
+`LibraryTransferControls` owns ZIP pickers, confirmation and worker cancellation.
+[Explorer interactions](../implementation/RAW_EXPLORER.md#library-interactions)
+define layout, controls, selection, scrolling, accessibility and dialog behavior.
+
 Export preview widgets and background jobs live in
 `ui.exports.preview` and `ui.exports.workers`. `ui.exports.form.ExportForm` owns
 export inputs and retained layout placements. `ui.exports.preview_controller` owns
@@ -213,21 +163,11 @@ preview debounce, captured requests, worker revisions and stale-result rejection
 dialog. `ui.exports.video` coordinates these components with review/start/cancellation;
 analysis changes for loaded recipes still use the existing preparation service.
 
-`RecordingApplication` owns windows and queued file-open requests. External paths
-enter the archive-first load worker; multi-file imports run sequentially before
-only the first successful archive digest is opened in the current window. An explicit
-new-window import opens that first result in one additional registered window.
-`InstanceBroker` owns local locking/IPC. Each recording window owns its analysis
-controller; language and appearance are shared application preferences. The Library's
-**Open in new window…** action emits an archive digest through `ExplorerWindow`;
-the application registers another window and calls its `open_archived()` load
-lifecycle. It reuses stored bytes and current Library edits without an external path
-or another application process.
-Committed recording removals emit a panel change notification, forwarded through
-`RecordingApplication.library_changed`. Every Library panel subscribes and refreshes
-its list; the originating panel skips the broadcast because it already refreshed.
-Qt disconnects destroyed panels automatically. Loaded analyses and chart state
-remain independent of these list updates.
+`RecordingApplication` owns recording windows, queued file requests and the
+`library_changed` signal; `InstanceBroker` owns local locking/IPC. Windows own
+independent analysis controllers, playback and chart state while sharing language
+and appearance. [Runtime](06_runtime_view.md#library-actions-and-shared-windows)
+defines archive-window requests and Library-panel subscriptions.
 
 `gps.overview` prepares independent approximate route segments. `gps.map_background`
 projects route and tiles consistently and owns bounded HTTPS/image composition;
@@ -309,8 +249,9 @@ coordinates assistant pages and the video-export lifecycle.
 `storage.export_models` defines immutable presets/jobs; `storage.exports` owns
 SQLite schema and transactions. `exports.batches` imports and checks each
 source before applying its saved recipe and running exports sequentially.
-`ui.exports.batches` edits queues and transports results. Recordings and rendered media
-never enter SQLite.
+`ui.exports.batches` edits queues and transports results. The export database holds
+recipes and job definitions; exact source bytes belong to the Library database,
+and rendered media remain external files.
 
 [Layout API](../development/EXPORT_LAYOUTS.md), [video contracts](../implementation/VIDEO_EXPORT.md)
 and [batch contracts](../implementation/EXPORT_BATCHES.md) own detailed rules.

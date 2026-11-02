@@ -40,8 +40,7 @@ its bundled npm. Then run:
 ```
 
 This additionally verifies the Node version and runs locked `npm ci` with its
-cache under `.tmp/`. Node is a development dependency only. Optional Python
-packages do not imply that their planned product features are implemented.
+cache under `.tmp/`. Node is a development dependency only.
 
 If Windows blocks local scripts, invoke the requested script for that process:
 

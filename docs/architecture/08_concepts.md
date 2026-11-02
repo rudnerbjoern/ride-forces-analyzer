@@ -144,96 +144,126 @@ Transparent ProRes and opaque H.264 are separate outputs, published only after
 successful encoding. Existing videos require explicit replacement confirmation;
 failure or cancellation preserves them. Video alignment remains external.
 
-SQLite separates application preferences, versioned export definitions, map
-tiles and the Library schema. Preferences retain language/appearance, folders, restore/update consent,
-render-job count and source-bound marker choices. Invalid/unavailable values use
-documented defaults without destroying stored data. Presets/jobs retain complete
-recipes, not recordings or prepared arrays. Omitted optional stored fields use
-declared model defaults, while required fields and supplied values remain strictly
-validated. Reads do not rewrite stored definitions. Batches read Library bytes or legacy source paths, check hashes and run
-sequentially, preserving completed videos across later failure/cancellation.
+SQLite separates preferences, export definitions, map tiles and the Library.
+Preferences retain application/view choices; presets/jobs retain captured recipes,
+not prepared arrays. Reads validate supplied values without rewriting definitions.
+Missing optional fields use declared defaults; damaged/unknown stores are preserved.
 
-The separate `library.sqlite3` contains recordings, export history and video links,
-plus Alembic's revision table. Every Explorer file-open request archives its input
-before opening the stored bytes. Import stores only complete successful originals, initializing current markers from source/defaults and valid preferences.
-Source UUIDs identify recordings across compressed/plain and changed exports.
-Equivalent source objects preserve the existing entry; changed exports replace
-source fields, retaining first import time, additions, valid markers and relationships.
-Invalid/missing UUIDs fall back to exact-byte identity. The UUID migration merges
-existing duplicates into the earliest entry and retains all export/link relationships.
-Reopening verifies lengths/digests and uses the stored
-compressed/plain format through the existing importer and analysis services.
-The grouped list reads metadata and export counts without fetching source BLOBs.
-Park keys and combined name text use NFKC normalization and case folding, populated
-on import/update and backfilled for existing rows by the search migration. Park
-selection and literal search terms combine with AND in parameterized metadata
-queries. Park choices include all effective names regardless of the current search.
-Selecting one entry reopens only its stored original, using generation-guarded worker
-delivery; a failed open retains the previous chart. Read-only details preserve
-original source/date/import values. Filtering preserves the loaded chart; hiding the
-panel retains the filters. Current metadata additions occupy existing override/notes
-columns. The update boundary rejects original/date fields and atomically refreshes
-effective-name projections. A separate dialog supports Save, Cancel and reset;
-no metadata history is stored. Original metadata remains immutable alongside
-`ImportSuccess.additions`; effective metadata preserves explicit user provenance.
-New export snapshots capture effective metadata as version 2; version-1 snapshots
-and legacy batch jobs without additions retain original-source semantics. Captured
-batch additions remain independent of later Library edits.
-Current marker bounds and calibration recipes use the existing recording columns.
-The Library is authoritative for archived exact-byte hashes, including external
-imports of existing recordings. Older preference recipes initialize a newly archived recording.
-Startup restoration retains the last Library digest, independently of any external
-path; removed entries are skipped. Legacy last-file preferences use the same import path. Existing validation admits
-Gravity/Incline references outside Start/End. All four choices save atomically only
-after an adopted analysis result; failure leaves the previous stored recipe intact.
-Reset restores source defaults. Marker edits leave source bytes, dates, additions,
-workflow status and previously captured jobs/export snapshots unchanged.
-Workflow status remains one current scalar. The update boundary admits all six
-fixed states in any order and touches no source, markers, metadata or relationships.
-No export/import/metadata action automatically advances or resets it. The Library
-foreground selector saves a clicked state immediately; failure preserves the old
-value and icon, with a visible explanation. No history or new schema is introduced.
-Video links use the existing recording foreign key and local link ID. Individual
-add/edit/remove transactions preserve other links, sources and workflow status.
-HTTP/HTTPS URLs are validated locally; private/scheduled uploads require no online
-verification. Label text stays on each link. Ordered dropdown options live as JSON
-in `preferences.library_video_labels`; first use offers the six initial labels,
-while saved custom and empty lists survive startup. Settings edits a draft until
-Save; Cancel retains the previous list. Removed options remain available when
-editing an existing link that still uses their text.
-Export history keeps requested and effective recipes separately. Each actual
-single-video/data/batch attempt has a distinct row and terminal result; skipped
-jobs create none. Completion follows publication, retaining completed bytes/path,
-observed backend and monotonic duration without queue/destination-picker waiting.
-History failures remain separate warnings and never roll back successful files.
-At startup, leftover running rows become interrupted with unknown completion facts.
-Repeats read archived exact bytes and captured metadata/analysis, retaining legacy
-original-source semantics. Supported video snapshots are checked against recomputed
-geometry/timing and opened in the existing review; data repeats retain their format
-and range. Unsupported versions/algorithms or changed archived identities explain
-why repetition is unavailable. Current presets/markers/additions and old paths do
-not modify saved history. The schema and manual workflow status remain unchanged.
-`LibraryStore` applies bundled major/minor revisions in an
-explicit SQLite transaction, rolling back schema, data and revision together on
-failure. Unknown revisions or unversioned existing tables are rejected without
-replacement; current revisions are not rewritten. Every ordinary `sqlite3`
-connection enables foreign keys and commits or rolls back its transaction.
-Source formats/statuses, byte lengths and nonnegative values have SQL constraints;
-archive import validates source decoding and byte identity. History recipes retain
-captured source relationships. Independent existing databases are not consolidated.
-Portable Library ZIPs include exact source members and bounded JSON Lines metadata,
-with separately versioned manifests and saved label choices. Backup uses SQLite's
-online snapshot API. Restore validates members, lengths/hashes, decoding, indices
-and relationships in a staged current-schema Library. Missing optional fields use
-NULL or established defaults; essential identity/integrity remains mandatory.
-Only after explicit confirmation does one SQLite transaction replace the active
-Library tables and the attached preferences' label key. Standard rollback journals
-preserve atomicity across those files; active exports block replacement. Restored
-running attempts become interrupted. Cancellation and failures roll back both;
-external source/output paths and unrelated preferences are never restore inputs.
+Explorer imports archive complete original bytes before analysis. Normalized UUIDs
+identify recordings across exports; invalid UUIDs fall back to byte identity.
+Source replacement retains current user choices and relationships atomically.
+Original data, editable additions/current markers and immutable export recipes have
+separate ownership. A recording's manual workflow is independent of edits/exports;
+video labels remain link text while dropdown choices live in preferences.
+
+Library transactions validate formats, status, byte identity and foreign keys.
+Lists/search read normalized effective-name metadata without source BLOBs. Reopening
+verifies archived bytes; repeating an export uses its captured metadata/analysis.
+History failure never changes successful output. Startup interrupts unfinished
+attempts without inventing completion facts. Portable restore validates staged
+content before one transaction replaces Library tables and the attached label key;
+rollback preserves both, excluding unrelated stores and external media.
+[Library contracts](../development/LIBRARY.md) define the detailed validation,
+compatibility, migration, query and backup rules. [Runtime](06_runtime_view.md)
+defines worker delivery, marker adoption, restoration and shared-window updates.
 
 Update lookup stays outside widgets. It requires a matching platform asset;
 download/installation remain manual. [Deployment](07_deployment_view.md#local-export-configuration),
 [video contracts](../implementation/VIDEO_EXPORT.md), [batch contracts](../implementation/EXPORT_BATCHES.md)
 and [release discovery](../development/RELEASE.md#in-application-update-discovery)
 own storage paths and detailed policies.
+
+## Library data model
+
+The diagram shows all six existing application tables, the three Library tables
+and Alembic's technical version table. Tables are grouped by database filename.
+`PK` marks primary keys; the four `tiles` key columns form one composite key.
+`FK` marks Library foreign keys; dashed hash links are logical relationships
+across independent stores, not SQL foreign keys or database consolidation.
+The existing table definitions live in [preferences](../../src/ride_forces_analyzer/storage/preferences.py),
+[exports](../../src/ride_forces_analyzer/storage/exports.py) and
+[map tiles](../../src/ride_forces_analyzer/storage/map_tiles.py).
+
+```mermaid
+erDiagram
+    direction LR
+
+    preferences["preferences (preferences.sqlite3)"] {
+        TEXT key PK
+        TEXT value
+    }
+
+    recording_bounds["recording_bounds (preferences.sqlite3)"] {
+        TEXT source_sha256 PK
+        INTEGER first_sample
+        INTEGER last_sample
+    }
+
+    recording_calibration["recording_calibration (preferences.sqlite3)"] {
+        TEXT source_sha256 PK
+        INTEGER gravity_index
+        INTEGER incline_index
+        TEXT algorithm_version
+        INTEGER window_samples
+    }
+
+    presets["presets (exports.sqlite3)"] {
+        TEXT name PK "COLLATE NOCASE"
+        TEXT payload "JSON: complete saved preset"
+    }
+
+    batches["batches (exports.sqlite3)"] {
+        TEXT name PK "COLLATE NOCASE"
+        TEXT payload "JSON: ordered jobs with preset snapshots"
+    }
+
+    tiles["tiles (map-cache.sqlite3)"] {
+        TEXT provider PK
+        INTEGER zoom PK
+        INTEGER x PK
+        INTEGER y PK
+        BLOB data
+        REAL expires
+        TEXT etag
+        TEXT modified
+        REAL accessed
+    }
+
+    recordings["recordings (library.sqlite3)"] {
+        TEXT source_sha256 PK
+        TEXT source_uuid UK
+    }
+
+    export_history["export_history (library.sqlite3)"] {
+        INTEGER id PK
+        TEXT recording_sha256 FK
+    }
+
+    alembic_version["alembic_version (library.sqlite3)"] {
+        VARCHAR version_num PK
+    }
+
+    video_links["video_links (library.sqlite3)"] {
+        INTEGER id PK
+        TEXT recording_sha256 FK
+    }
+
+    recordings ||--o{ export_history : "FK recording_sha256"
+    recordings ||--o{ video_links : "FK recording_sha256"
+    recordings |o..o| recording_bounds : "logical source_sha256 match"
+    recordings |o..o| recording_calibration : "logical source_sha256 match"
+    batches }o..o{ recordings : "logical job source_sha256 match"
+```
+
+Preference marker/calibration rows and path-bound batch jobs may refer to
+recordings outside the Library. Explorer imports and batch additions archive
+their inputs; the lower-level importer is independently usable.
+Batch jobs embed complete preset snapshots in `payload`; they do not reference
+mutable `presets` rows through a foreign key. Similarly, export history owns its
+saved JSON settings and remains independent of later preset or batch edits.
+JSON contents and original source fields are not additional relational tables.
+`alembic_version` holds technical migration state, not recording or export data.
+Nullability and secondary indexes belong to the [Library storage contract](../development/LIBRARY.md#database-tables-and-query-contracts).
+Library marker columns retain the current choices for archived sources; existing
+preference rows remain independent. `workflow_status` is the current manual work
+state, not an export result or a history of edits.

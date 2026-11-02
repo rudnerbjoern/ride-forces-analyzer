@@ -32,7 +32,7 @@ text/HTML formatting, inclusive selections and loading. Existing imports of
 
 **Settings → Application → Restore last file** is off by default and saved only on
 Save. Successful loads retain the Library source SHA-256 independently of that
-opt-in. Startup reopens archived bytes; removed entries are skipped. Legacy saved
+opt-in. Startup reopens archived bytes; removed entries are skipped. Saved
 paths use the archive-first import worker. Earlier manual requests take precedence.
 Import failures preserve the previous recording and last successful identity.
 
@@ -161,7 +161,7 @@ No vertical zoom.
 | Area                 | Contract                                                                                                                                                                                               |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Default size         | Requested 1280×820; Windows can reduce it to accommodate available desktop/native frame                                                                                                                |
-| Main layout          | Global Open/GPS/notes/Inspector; local calibration/zoom/curve controls; current-value cards below chart                                                                                                |
+| Main layout          | Global Import/GPS/notes/Inspector; local calibration/zoom/curve controls; current-value cards below chart                                                                                              |
 | Inspector groups     | Display, Selection, Visible range extrema, Recording, Technical details                                                                                                                                |
 | Normal desktop       | Chart adapts to workspace height; controls/cards visible without plot-area scrolling, including 1280×720                                                                                               |
 | Very small workspace | 240-pixel chart minimum; scrolling keeps controls reachable                                                                                                                                            |
@@ -180,17 +180,24 @@ Sections keep their natural height; additional window space stays below them.
 Startup restores valid saved choices, otherwise the registered OS language (English
 fallback) and System appearance. `AppSettings` can explicitly override language.
 
+## Library interactions
+
 The toolbar's Library toggle shows an adjustable left panel, collapsed by default.
+The chart takes priority: hidden content reserves no sidebar space and does not
+increase the window's minimum size. Expanding/collapsing restores the available
+chart area at the same window size; details and dialogs add no permanent pane.
 The main **Import…** action archives `.forces` / `.zforces` files off the GUI
 thread and opens their Library bytes. The panel has no separate import button.
 Multiple selections or drops archive all files and open only the first successful
 result in the current Explorer. An explicit new-window import opens just that
 first result in one additional window. Failures appear in the status bar and
 Library details without stopping the other files or adding an import-log field. Compact entries group recordings by recording-local day, newest
-first, with unknown dates last. Each shows an emphasized ride name, a muted park
+first, with unknown dates last. Ties use import time and source digest for stable
+ordering. Each shows an emphasized ride name, a muted park
 name and a local clock/export summary. Long names are elided with full tooltips.
 A small icon on the right displays the stored workflow status through a localized
-tooltip. Clicking the frameless icon opens a rounded foreground layer using theme
+tooltip and accessible name; only the current icon is permanently visible.
+Clicking the frameless icon opens a rounded foreground layer using theme
 background/border colors. Its six frameless icons follow workflow order; the
 highlighted current state stays at the clicked icon's position, with earlier/later
 steps to its left/right. Choosing any state saves immediately and closes the layer.
@@ -230,16 +237,48 @@ The park dropdown offers all effective Library parks, all parks and unknown park
 The search requires every whitespace-separated term in the combined ride/park names,
 using Unicode normalization and case folding. Park and search combine with AND;
 wildcard characters are literal. Empty groups disappear, an empty result is explained,
-and the reset icon clears both filters. Filtering reads metadata only and leaves the
+the search-clear action removes only its text, and the reset icon clears both
+filters. Filtering reads metadata only and leaves the
 chart unchanged. **Edit metadata…** opens a separate themed dialog for ride, park,
 Row, Seat, Train, imported/Seated/Flying posture and notes. Source placeholders
 distinguish inherited text from additions. Save/reset persist current additions;
 Cancel discards unsaved input. Errors keep the input visible. Original details and
 saved additions remain separately readable in the Library. The workspace and new
 exports use effective values; the original bytes, dates and source metadata stay
-intact. Matching external file opens restore the Library additions as well.
+intact. The posture selector retains unfamiliar source values; only an explicit
+override chooses Seated/Flying. Reset clears all additions and notes, restoring
+source values. Matching external file opens restore the Library additions as well.
 Hiding it releases its layout space without changing the loaded recording, selection
 or chart viewport; park selection and search text are retained.
+Opening a recording selects its matching row and scrolls it into view within the
+active filters. Expanding the collapsed panel reveals the selection again
+without another load. List refreshes and language changes preserve selection.
+
+Right-clicking a recording selects that entry and offers **Open in new window…**,
+**Edit metadata…**, **Video links…**, **Export history…**, then a separator and
+**Remove…**. The themed actions have icons, replacing the buttons below the list.
+Day headings and empty space have no menu. Metadata editing stays disabled until
+the selected source loads successfully. All captions, tooltips and accessible
+names use the existing English/German/French localization.
+
+**Open in new window…** opens the archived recording with its current additions
+and markers in another Explorer in the same application instance. It needs no
+external file. Each window owns analysis, playback and chart state; language and
+appearance remain shared.
+
+**Remove…** has a trash icon and opens confirmation naming the recording and its
+permanently removed archived bytes, metadata, markers, video links and export
+history. Both Yes/No buttons have matching icons; **No** is the default. Cancellation
+preserves all data. Running exports block removal. Failure retains the entry and
+shows an explanation; success refreshes filters and lists across all open Explorer
+windows, including hidden panels, through the shared Library change notification.
+Cancelled/failed removals publish no change. Loaded recordings, zoom, selection
+range and playback stay unchanged; the removed Library selection/details disappear.
+External originals and exported media are never deleted.
+The [Library service contracts](../development/LIBRARY.md) own storage validation,
+the six manual workflow states, label defaults and snapshot compatibility.
+
+## Workspace appearance
 
 The loaded heading combines ride and optional park names, with device/sample/rate
 metadata on a shared baseline. Calibration and curve visibility occupy one row;

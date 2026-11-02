@@ -39,23 +39,23 @@ CLI success does not verify editor feedback.
 Python suites: `tests/<subsystem>/test_<behavior>.py`. Behavior names and subsystem
 folders identify scope; no additional marker matrix is required.
 
-| Directory                        | Responsibility                                                                    |
-| -------------------------------- | --------------------------------------------------------------------------------- |
-| domain                           | Source ownership and immutable recording models                                   |
-| importers                        | Decoding, motion, optional fields, diagnostics and Path/bytes import              |
-| analysis                         | Models, device/frame math, source references, context/events, service and extrema |
-| explorer                         | Qt-independent presentation, selections and GPS geometry                          |
-| rendering                        | Frames, layouts, previews, encoding, progress, estimates and batches              |
-| storage                          | Persistent application preferences                                                |
-| localization                     | Translation catalog, overlay text and OS language defaults                        |
-| ui                               | Native Qt startup, explorer, dialogs, appearance and interactions                 |
-| updates                          | Release discovery, transport and update preferences                               |
-| recordings                       | Original fixture hashes and recursive schema inventory                            |
-| fixtures                         | Data only: original recordings and recursive schema inventory                     |
-| packaging                        | Release policy, source archives and native Windows/Linux/macOS packages           |
-| tooling                          | Application settings/version and Ruff contracts                                   |
-| support                          | Fixture paths, pinned identities and inventory helper                             |
-| types / dependencies / ci / docs | Separate Node type, dependency, CI and documentation checks                       |
+| Directory                        | Responsibility                                                                           |
+|----------------------------------|------------------------------------------------------------------------------------------|
+| domain                           | Source ownership and immutable recording models                                          |
+| importers                        | Decoding, motion, optional fields, diagnostics and Path/bytes import                     |
+| analysis                         | Models, device/frame math, source references, context/events, service and extrema        |
+| explorer                         | Qt-independent presentation, selections and GPS geometry                                 |
+| rendering                        | Frames, layouts, previews, encoding, progress, estimates and batches                     |
+| storage                          | Preferences, Library schema/transactions, export definitions and portable backup/restore |
+| localization                     | Translation catalog, overlay text and OS language defaults                               |
+| ui                               | Native Qt startup, explorer, dialogs, appearance and interactions                        |
+| updates                          | Release discovery, transport and update preferences                                      |
+| recordings                       | Original fixture hashes and recursive schema inventory                                   |
+| fixtures                         | Data only: original recordings and recursive schema inventory                            |
+| packaging                        | Release policy, source archives and native Windows/Linux/macOS packages                  |
+| tooling                          | Application settings/version and Ruff contracts                                          |
+| support                          | Fixture paths, pinned identities and inventory helper                                    |
+| types / dependencies / ci / docs | Separate Node type, dependency, CI and documentation checks                              |
 
 - Run a subsystem/file directly: `uv run --locked pytest tests/importers` or
   `uv run --locked pytest tests/ui/test_export.py`.

@@ -6,7 +6,8 @@
 
 ```mermaid
 flowchart LR
-    Original["Read-only .forces / .zforces"] --> Importer["Bounded version-aware importer"]
+    Original["Read-only .forces / .zforces"] --> Archive["Validate and archive original bytes"]
+    Archive --> Importer["Decode archived bytes with bounded importer"]
     Importer --> Recording["Immutable recording and original source"]
     Recording --> Analysis["Shared analysis snapshot"]
     Analysis --> Explorer["Charts, inspector and playback"]
@@ -18,6 +19,8 @@ flowchart LR
     Encoder --> Overlay["Transparent ProRes 4444 MOV"]
 ```
 
+Explorer file requests archive successful inputs before reopening stored bytes;
+the lower-level importer remains independently usable without storage or Qt.
 The importer establishes structural validity and provenance. Analysis separately
 prepares display quantities. Video alignment remains in external editing software.
 
@@ -32,7 +35,9 @@ prepares display quantities. Video alignment remains in external editing softwar
 - Keep frame generation separate from encoding. Layouts own geometry and styling;
   the encoder consumes ordered region bytes and pads the output canvas.
 - Store application preferences, marker overrides and export definitions locally
-  in SQLite. Original recordings remain external read-only files.
+  in separate SQLite stores. The Library retains exact imported source bytes and
+  per-recording metadata, markers, manual workflow, links and export history.
+  External originals remain read-only; rendered media remain external files.
 
 [Building blocks](05_building_block_view.md) identify ownership;
 [runtime](06_runtime_view.md) describes scheduling and failure handling.

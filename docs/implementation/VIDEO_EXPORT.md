@@ -49,7 +49,7 @@ the [HUD demo](https://youtu.be/JGcNPKoKU1Q) uses the supplied
   fail. Unsupported layout keys are rejected without remapping or database cleanup.
 - `rendering.model` exposes `VideoAspect.LANDSCAPE`/`PORTRAIT` (JSON `landscape`/`portrait`,
   text conversion via `VideoAspect(value)`) and `VideoOutput.TRANSPARENT`/`OPAQUE`
-  (JSON `transparent`/`opaque`). These settings require no storage migration.
+  (JSON `transparent`/`opaque`).
 - Overlay language initially follows UI language, then independently selects EN/DE/FR.
   Frames/previews share translated labels/numbers; replay clocks, geometry, values,
   signs and units do not change. Glyph bounds are checked in every layout/aspect.
@@ -109,16 +109,10 @@ encoded. Returning to setup restores the selected static preview.
   video-comment metadata; single/batch exports share it, with no per-video JSON sidecar.
   [Batch reports](EXPORT_BATCHES.md#contracts) retain that snapshot, requested job,
   actual GPU selection, completed bytes and elapsed job duration.
-- Version-2 export snapshots also capture effective ride/park/row/seat/train,
-  riding-position value/provenance and notes. Version-1 snapshots without recording
-  metadata retain their original-source semantics. Library additions are separate
-  from the immutable imported recording; Seated/Flying changes reuse the existing
-  display ranges without transforming sensor values.
-  Archived-source attempts retain requested settings before preparation and the
-  effective shared snapshot after preparation, including distinct failed/cancelled
-  results. The Library history review repeats supported recipes from archived bytes
-  and captured metadata through the existing assistant and save flow. History-write
-  failure never removes a published video; unknown results remain unknown.
+- Snapshots retain the export's effective metadata independently of current Library
+  edits. [Library contracts](../development/LIBRARY.md#metadata-additions-and-export-compatibility)
+  define metadata versions; [attempt history](../development/LIBRARY.md#export-history-and-repeat-export)
+  defines requested/effective recipes, outcomes and repeat behavior.
 - Layout/aspect/extent/position/language/rate changes and seeking do not recalculate
   analysis. Running exports/previews retain the bound basis/tilt, including custom
   Gravity/Incline references and resets; source directions remain evidence.
@@ -262,7 +256,7 @@ shell services leave exports unaffected. See Microsoft's
 Each distinct file is counted once, including matching HUD outputs from different
 batch folders. Tables retain recording, layout, extent, dimensions, exact frame rate,
 frame count, bytes including container overhead, and bytes/(width × height × frames).
-Full-frame and Ribbon/Column native-area dimensions establish aspect; older
+Full-frame and Ribbon/Column native-area dimensions establish aspect;
 Corner Instruments/G-Orbit native-area dimensions fit both aspects and cannot do so.
 
 The 16 portrait references use the same Voltron Nevera interval: samples 4000–4999
@@ -404,7 +398,7 @@ Portrait Full-frame overrides:
 | MP4 / `h264_nvenc`       | All five layouts        | All four non-HUD layouts      | All four supported layouts (20.02 s) |
 
 - Missing: landscape/native-area CPU ProRes; explicit portrait Content-area references
-  for all encoders. Older Corners/Orbit native-area measurements retain no aspect.
+  for all encoders. Corners/Orbit native-area measurements retain no aspect.
 - Portrait Full frame covers all four supported layouts/encoders only for one 20.02-s
   Voltron interval at 23.976 fps. Longer references use 59.94 fps; remaining combinations
   at 23.976 fps and other rates, including default 50 fps, lack equivalent evidence.

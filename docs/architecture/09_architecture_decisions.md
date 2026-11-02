@@ -23,6 +23,27 @@ absence and never alter source. Expected input failures are structured outcomes;
 caller misuse raises. [Import APIs](../development/IMPORT_SERVICE.md) and
 [source concepts](08_concepts.md#source-ownership-and-validation) own details.
 
+## Library persistence and identity
+
+Accepted and implemented: Explorer file-open requests archive exact original bytes
+before reopening from the Library. This preserves source evidence and permits
+reopening without the old file. A normalized source UUID identifies the recording
+across exports; equivalent decoded sources retain the original entry, while an
+explicit changed export replaces source fields atomically. Invalid/missing UUIDs
+use byte identity. There is no automatic source-version history or older-export
+detection. User additions, current markers and manual workflow stay separate from
+immutable originals; saved export recipes retain their captured values.
+
+The Library has its own SQLite database. Reuse `sqlite3` for normal queries and
+bundled Alembic/SQLAlchemy migrations for one versioned schema chain, without an
+ORM conversion or consolidation of existing stores. Video-label choices remain
+in preferences. Portable ZIP restore validates a staged Library before one
+transaction replaces Library tables and the attached label preference. This keeps
+unrelated preferences and external media outside replacement. No automatic backup
+schedule, Library merging or generic custom-field framework is implemented.
+[Persistence concepts](08_concepts.md#rendering-and-persistence) and
+[storage contracts](../development/LIBRARY.md) own details.
+
 ## Physical qualification
 
 Deferred: successful parsing, valid numerical transforms and plausible magnitudes
