@@ -16,6 +16,19 @@ from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 from ride_forces_analyzer.storage.preferences import DEFAULT_LIBRARY_VIDEO_LABELS
 
 
+def test_last_library_recording_survives_reload_and_rejects_invalid_identity(
+    tmp_path: Path,
+) -> None:
+    preferences = Preferences(tmp_path / "preferences.sqlite3")
+    assert preferences.last_library_recording() is None
+    digest = "a" * 64
+    preferences.remember_library_recording(digest)
+    assert Preferences(preferences.path).last_library_recording() == digest
+    with pytest.raises(ValueError):
+        preferences.remember_library_recording("invalid")
+    assert preferences.last_library_recording() == digest
+
+
 def test_library_video_labels_preserve_custom_and_deliberately_empty_lists(tmp_path: Path) -> None:
     preferences = Preferences(tmp_path / "preferences.sqlite3")
     assert preferences.library_video_labels() == DEFAULT_LIBRARY_VIDEO_LABELS

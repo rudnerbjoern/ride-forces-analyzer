@@ -170,8 +170,8 @@ cards and timer transport for the existing `SamplePlayback` clock, including cur
 and viewport following. The window composes these widgets, binds the same prepared
 snapshot to each component and coordinates import/analysis delivery.
 `ui.explorer.library.LibraryPanel` owns the collapsible Library surface, localized
-toolbar toggle and folder-icon state. The window places its existing workspace
-beside that surface. The panel schedules explicit multi-file archive import through
+toolbar toggle and folder-icon state. It has no separate file import control. The window places its existing workspace
+beside that surface. The main toolbar schedules archive-first file imports through
 a background worker and displays per-file results; the archive service owns all
 import, duplicate and reopening logic outside widgets. A grouped Qt recording list
 uses compact three-line rows with elided names, export counts and clickable
@@ -213,9 +213,21 @@ preview debounce, captured requests, worker revisions and stale-result rejection
 dialog. `ui.exports.video` coordinates these components with review/start/cancellation;
 analysis changes for loaded recipes still use the existing preparation service.
 
-`RecordingApplication` owns windows and queued file-open requests.
+`RecordingApplication` owns windows and queued file-open requests. External paths
+enter the archive-first load worker; multi-file imports run sequentially before
+only the first successful archive digest is opened in the current window. An explicit
+new-window import opens that first result in one additional registered window.
 `InstanceBroker` owns local locking/IPC. Each recording window owns its analysis
-controller; language and appearance are shared application preferences.
+controller; language and appearance are shared application preferences. The Library's
+**Open in new window…** action emits an archive digest through `ExplorerWindow`;
+the application registers another window and calls its `open_archived()` load
+lifecycle. It reuses stored bytes and current Library edits without an external path
+or another application process.
+Committed recording removals emit a panel change notification, forwarded through
+`RecordingApplication.library_changed`. Every Library panel subscribes and refreshes
+its list; the originating panel skips the broadcast because it already refreshed.
+Qt disconnects destroyed panels automatically. Loaded analyses and chart state
+remain independent of these list updates.
 
 `gps.overview` prepares independent approximate route segments. `gps.map_background`
 projects route and tiles consistently and owns bounded HTTPS/image composition;

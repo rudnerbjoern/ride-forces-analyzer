@@ -72,7 +72,9 @@ class DataExportController(QObject):
         self.starting.emit()
         source_path = analysis.source.recording.source.provenance.path
         suffix = ".csv" if format is DataExportFormat.CSV else ".json"
-        stem = source_path.stem if source_path else "recording"
+        from ride_forces_analyzer.explorer.library import recording_filename
+
+        stem = Path(recording_filename(analysis.source)).stem
         name = f"{stem}{'.analyzer' if format is DataExportFormat.ANALYZER_JSON else ''}{suffix}"
         directory = self.preferences.export_directory()
         suggested = (

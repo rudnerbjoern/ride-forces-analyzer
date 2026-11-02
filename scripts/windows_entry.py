@@ -11,7 +11,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Explore ride recordings and export video overlays.",
     )
-    parser.add_argument("file", nargs="?", type=Path, help="Open a .forces or .zforces recording.")
+    parser.add_argument(
+        "file",
+        nargs="?",
+        type=Path,
+        help="Import a .forces or .zforces recording into the Library and open it.",
+    )
     parser.add_argument(
         "--new-window",
         action="store_true",

@@ -14,13 +14,14 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QLabel,
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtGui import QPalette
 from PySide6.QtTest import QSignalSpy, QTest
 import pytest
 
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from ride_forces_analyzer.ui.explorer.library_workflow import WorkflowIcon
+from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.storage.library import WORKFLOW_STATUSES
 from ride_forces_analyzer.storage.library import LibraryStore
 from ride_forces_analyzer.explorer.library import LibraryArchive
@@ -29,6 +30,49 @@ from ride_forces_analyzer.ui.dialogs.settings import APPEARANCE_CHOICES
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from tests.ui.helpers import resize_workspace, wait_until
 from tests.analysis.test_recording_preparation import synthetic_source
+
+
+def test_import_reveals_selected_recording_below_the_visible_list(
+    explorer_window: ExplorerWindow,
+    export_directory: Path,
+) -> None:
+    window = explorer_window
+    library = window.library
+    store = LibraryStore()
+    for index in range(24):
+        source = synthetic_source(name=f"Newer ride {index}", date=1_000_000)
+        store.archive(source, "ride.forces", (2, 6), CalibrationOverrides())
+    library.toggle_button.click()
+    tree = library.recordings
+    wait_until(lambda: tree.verticalScrollBar().maximum() > 0)
+    tree.scrollToTop()
+    first = synthetic_source(name="Older first ride", date=0)
+    second = synthetic_source(name="Older second ride", date=86400)
+    paths = (export_directory / "first.forces", export_directory / "second.forces")
+    for path, source in zip(paths, (first, second), strict=True):
+        path.write_bytes(source.recording.source.original_bytes)
+    opened = QSignalSpy(library.open_requested)
+    window.import_paths(paths)
+    wait_until(window.open_action.isEnabled)
+    QApplication.processEvents()
+    item = tree.currentItem()
+    assert item is not None and item.data(0, Qt.ItemDataRole.UserRole) == first.source_sha256
+    assert tree.viewport().rect().contains(tree.visualItemRect(item))
+    assert len(store.entries()) == 26 and opened.count() == 0
+
+    # A reused entry is revealed even when the Library was collapsed during import.
+    tree.scrollToTop()
+    assert not tree.viewport().rect().contains(tree.visualItemRect(item))
+    library.toggle_button.click()
+    window.import_paths(paths)
+    wait_until(window.open_action.isEnabled)
+    current = window.data
+    library.toggle_button.click()
+    QApplication.processEvents()
+    item = tree.currentItem()
+    assert item is not None and item.data(0, Qt.ItemDataRole.UserRole) == first.source_sha256
+    assert tree.viewport().rect().contains(tree.visualItemRect(item))
+    assert window.data is current and opened.count() == 0
 
 
 def test_library_toggle_preserves_workspace_and_recording(
@@ -95,10 +139,10 @@ def test_library_toggle_preserves_workspace_and_recording(
         assert window.library.panel.isVisible() == window.library.toggle_button.isChecked()
         assert window.size() == compact_size
 
-    # Ordinary opening does not archive; only the Library's explicit import does.
+    # Every external open archives before loading; the toolbar also accepts multiple files.
     store = LibraryStore()
     with store.connection() as connection:
-        assert connection.execute("SELECT count(*) FROM recordings").fetchone() == (0,)
+        assert connection.execute("SELECT count(*) FROM recordings").fetchone() == (1,)
     resize_workspace(window, 1920, 1040)
     window.library.toggle_button.click()
     bad = export_directory / "bad.forces"
@@ -109,10 +153,10 @@ def test_library_toggle_preserves_workspace_and_recording(
         return paths, ""
 
     monkeypatch.setattr(QFileDialog, "getOpenFileNames", choose)
-    window.library.import_button.click()
-    wait_until(window.library.import_button.isEnabled)
-    report = window.library.import_button.toolTip()
-    assert "Imported" in report and "bad.forces: Import failed:" in report
+    window.choose_file(new_window=True)
+    wait_until(window.open_action.isEnabled)
+    report = window.statusBar().currentMessage()
+    assert "bad.forces: Import failed:" in report
     assert "bad.forces: Import failed:" in window.library.details.toPlainText()
     assert (
         window.library.panel.findChild(
@@ -124,12 +168,12 @@ def test_library_toggle_preserves_workspace_and_recording(
     with store.connection() as connection:
         assert connection.execute("SELECT count(*) FROM recordings").fetchone() == (1,)
     paths[:] = paths[:1]
-    window.library.import_button.click()
-    wait_until(window.library.import_button.isEnabled)
-    assert "Already in Library" in window.library.import_button.toolTip()
+    window.choose_file(new_window=True)
+    wait_until(window.open_action.isEnabled)
+    assert len(store.entries()) == 1
     paths.clear()
-    window.library.import_button.click()
-    assert window.library.import_button.isEnabled()
+    window.choose_file(new_window=True)
+    assert window.open_action.isEnabled()
     assert window.data is data
     assert (window.plot.axis_x.min(), window.plot.axis_x.max()) == pytest.approx((60, 100))
     assert window.navigation.position.value() == 4000
@@ -154,6 +198,7 @@ def test_library_toggle_preserves_workspace_and_recording(
     assert isinstance(status_icon, WorkflowIcon)
     assert item.toolTip(1) == "Imported" and not status_icon.button.icon().isNull()
     assert window.library.workflow_selector is None
+    tree.setCurrentIndex(QModelIndex())
     tree.setCurrentItem(item)
     assert not tree.isEnabled()
     wait_until(window.open_action.isEnabled)
@@ -294,9 +339,9 @@ def test_library_toggle_preserves_workspace_and_recording(
 
     # The other export format is the same entry and does not reload the workspace.
     paths[:] = [str(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.zforces")))]
-    window.library.import_button.click()
-    wait_until(window.library.import_button.isEnabled)
-    assert "Already in Library" in window.library.import_button.toolTip()
+    window.choose_file(new_window=True)
+    wait_until(window.open_action.isEnabled)
+    assert len(store.entries()) == 1
     day = tree.topLevelItem(0)
     assert day is not None and day.childCount() == 1
     assert window.data is archived
@@ -306,15 +351,14 @@ def test_library_toggle_preserves_workspace_and_recording(
     payload["name"] = "Manta updated"
     updated_path.write_text(json.dumps(payload), encoding="utf-8")
     paths[:] = [str(updated_path)]
-    window.library.import_button.click()
-    wait_until(window.library.import_button.isEnabled)
+    window.open_action.trigger()
+    wait_until(window.open_action.isEnabled)
     wait_until(
         lambda: (
             window.data is not None
             and window.data.source.recording.metadata.name == "Manta updated"
         ),
     )
-    assert "Updated in Library" in window.library.import_button.toolTip()
     assert len(store.entries()) == 1
     archived = window.data
     assert archived is not None
@@ -437,8 +481,8 @@ def test_library_toggle_preserves_workspace_and_recording(
     window.library.panel.grab().save(".tmp/library-panel-preview.png")
     window_size = window.size()
     panel_width = window.library.panel.width()
-    window.library.import_button.click()
-    wait_until(window.library.import_button.isEnabled)
+    window.choose_file(new_window=True)
+    wait_until(window.open_action.isEnabled)
     assert window.data is archived
     assert tree.topLevelItemCount() == 2
     unknown_day = tree.topLevelItem(1)

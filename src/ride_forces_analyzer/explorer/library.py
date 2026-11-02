@@ -25,6 +25,7 @@ from ride_forces_analyzer.importers import (
     import_forces,
     import_forces_bytes,
 )
+from ride_forces_analyzer.importers.library_metadata import recording_uuid
 from ride_forces_analyzer.storage.library import LibraryEntry, LibraryStore, LibraryStoreError
 from ride_forces_analyzer.i18n import get_language, tr
 from ride_forces_analyzer.domain import ValueOrigin
@@ -223,12 +224,13 @@ class LibraryArchive:
         """Archive files independently, updating changed exports of known recording UUIDs.
 
         Args:
-            paths: Explicitly selected files; ordinary file opening never calls this.
+            paths: Files supplied by the import button, file drop or external open request.
 
         Returns:
             One ordered result per file; an expected failure does not stop later files.
         """
         results: list[ArchiveImportResult] = []
+        identities: dict[str, str] = {}
         for path in paths:
             try:
                 source = import_forces(path)
@@ -251,6 +253,15 @@ class LibraryArchive:
                 except CalibrationReferenceError:
                     calibration = CalibrationOverrides()
                 status, digest = self.store.archive(source, path.name, bounds, calibration)
+                uuid = recording_uuid(source.recording)
+                if uuid is not None:
+                    for index, previous in enumerate(results):
+                        if (
+                            previous.source_sha256 is not None
+                            and identities.get(previous.source_sha256) == uuid
+                        ):
+                            results[index] = replace(previous, source_sha256=digest)
+                    identities[digest] = uuid
                 results.append(
                     ArchiveImportResult(
                         path,
@@ -396,3 +407,41 @@ class LibraryArchive:
             analysis=analysis,
             title=source.effective_metadata.name or data.title,
         )
+
+
+def recording_filename(source: ImportSuccess, fallback: str = "recording") -> str:
+    """Resolve a recording's basename for export suggestions without external reads.
+
+    Args:
+        source: Imported recording identified by its exact original bytes.
+        fallback: Name used when neither source provenance nor Library is available.
+
+    Returns:
+        Original basename from provenance or the Library, otherwise the fallback.
+    """
+    path = source.recording.source.provenance.path
+    if path is not None:
+        return path.name
+    try:
+        return LibraryStore().filename(source.source_sha256) or fallback
+    except LibraryStoreError:
+        return fallback
+
+
+def import_recording(path: Path) -> ExplorerData | ImportFailure:
+    """Archive a file and open the authoritative Library source instead of its path.
+
+    Args:
+        path: Original recording to import without modifying its bytes.
+
+    Returns:
+        Prepared archived recording, or a structured archived-source decoding failure.
+
+    Raises:
+        LibraryStoreError: Import, persistence or reopening failed.
+    """
+    archive = LibraryArchive()
+    result = archive.import_paths((path,))[0]
+    if result.source_sha256 is None:
+        raise LibraryStoreError(result.error or "Recording import failed")
+    return archive.reopen(result.source_sha256)

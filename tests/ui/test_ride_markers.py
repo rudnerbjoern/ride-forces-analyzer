@@ -195,7 +195,8 @@ def test_chart_context_markers_save_reopen_and_reset_independently(
     expect((1700, original[1]))
     choose(9000, "Set end here")
     expect((1700, 9000))
-    assert window.preferences.recording_bounds(data.source.source_sha256) == (1700, 9000)
+    store = LibraryStore()
+    assert store.markers(data.source) == ((1700, 9000), CalibrationOverrides())
     assert window.data is not None and window.data.replay_text(1700) == "00:00.00"
     choose(1000, "Set end here", enabled=False)
     expect((1700, 9000))
@@ -224,7 +225,9 @@ def test_chart_context_markers_save_reopen_and_reset_independently(
     assert window.data.analysis.orientation is orientation
     assert dict(window.data.markers)["gravityIndex"] == gravity
     assert dict(window.data.markers)["inclineIndex"] == incline
-    saved_calibration = window.preferences.recording_calibration(data.source.source_sha256)
+    saved_markers = store.markers(data.source)
+    assert saved_markers is not None
+    saved_calibration = saved_markers[1]
     assert saved_calibration == window.data.analysis.configuration.calibration
     window.open_path(SOURCE)
     wait_until(lambda: window.data is not None and window.data.source is not data.source)
@@ -273,7 +276,7 @@ def test_chart_context_markers_save_reopen_and_reset_independently(
         ),
     )
     assert window.preferences.recording_calibration(data.source.source_sha256) is None
-    assert window.preferences.recording_bounds(data.source.source_sha256) == (original[0], 9000)
+    assert store.markers(data.source) == ((original[0], 9000), CalibrationOverrides())
     choose(5000, "Reset end to original")
     expect(original)
     assert window.preferences.recording_bounds(data.source.source_sha256) is None
@@ -306,9 +309,8 @@ def test_chart_context_markers_save_reopen_and_reset_independently(
     assert window.data.source.recording.indices == indices
     assert SOURCE.read_bytes() == original_bytes
 
-    # The same controls target the archive once this exact source is imported.
-    store = LibraryStore()
-    assert LibraryArchive(store).import_paths((SOURCE,))[0].status == "imported"
+    # Reimport retains the same archive and its authoritative marker recipe.
+    assert LibraryArchive(store).import_paths((SOURCE,))[0].status == "duplicate"
     digest = data.source.source_sha256
     store.set_workflow_status(digest, "completed")
     window.library.refresh()

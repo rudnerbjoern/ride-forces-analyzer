@@ -593,8 +593,9 @@ class ExportDialog(QDialog):
             bind(self.status, message, "text")
             return
         suffix = ".mov" if settings.output == VideoOutput.TRANSPARENT else ".mp4"
-        source_path = self.data.source.recording.source.provenance.path
-        stem = source_path.stem if source_path is not None else "ride-forces"
+        from ride_forces_analyzer.explorer.library import recording_filename
+
+        stem = Path(recording_filename(self.data.source, "ride-forces")).stem
         name = f"{stem} - {self.form.layout_profile.currentText()}{suffix}"
         suggested = Path(self.preferences.export_directory()) / name
         attempt.pause()

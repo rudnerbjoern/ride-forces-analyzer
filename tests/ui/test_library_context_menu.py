@@ -2,10 +2,11 @@
 
 # cspell:words Metadaten bearbeiten Videolinks Exportverlauf métadonnées Liens vidéo Historique exports
 # cspell:words Entfernen Supprimer
+# cspell:words neuem Fenster öffnen Ouvrir dans une nouvelle fenêtre
 
 from PySide6.QtCore import QPoint, QTimer, Qt
 from PySide6.QtGui import QContextMenuEvent
-from PySide6.QtTest import QTest
+from PySide6.QtTest import QSignalSpy, QTest
 from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton
 
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
@@ -70,6 +71,7 @@ def test_recording_context_menu_targets_rows_and_opens_dialogs(
     assert window.data is not None and window.data.source.source_sha256 == digest
     actions = [action for action in menu.actions() if not action.isSeparator()]
     assert actions == [
+        library.new_window_action,
         library.edit_action,
         library.videos_action,
         library.history_action,
@@ -80,6 +82,16 @@ def test_recording_context_menu_targets_rows_and_opens_dialogs(
     size = window.size()
     panel_width = library.panel.width()
 
+    requests = QSignalSpy(window.archive_window_requested)
+    retained = window.data
+    QTest.mouseClick(
+        menu,
+        Qt.MouseButton.LeftButton,
+        pos=menu.actionGeometry(library.new_window_action).center(),
+    )
+    assert requests.count() == 1 and requests.at(0) == [digest]
+    assert window.data is retained and not menu.isVisible()
+    right_click(tree.visualItemRect(second).center())
     QTest.mouseClick(
         menu,
         Qt.MouseButton.LeftButton,
@@ -116,9 +128,30 @@ def test_recording_context_menu_targets_rows_and_opens_dialogs(
 
     retained = window.data
     for language, captions in (
-        (0, ["Edit metadata…", "Video links…", "Export history…", "Remove…"]),
-        (1, ["Metadaten bearbeiten…", "Videolinks…", "Exportverlauf…", "Entfernen…"]),
-        (2, ["Modifier les métadonnées…", "Liens vidéo…", "Historique des exports…", "Supprimer…"]),
+        (
+            0,
+            ["Open in new window…", "Edit metadata…", "Video links…", "Export history…", "Remove…"],
+        ),
+        (
+            1,
+            [
+                "In neuem Fenster öffnen …",
+                "Metadaten bearbeiten…",
+                "Videolinks…",
+                "Exportverlauf…",
+                "Entfernen…",
+            ],
+        ),
+        (
+            2,
+            [
+                "Ouvrir dans une nouvelle fenêtre…",
+                "Modifier les métadonnées…",
+                "Liens vidéo…",
+                "Historique des exports…",
+                "Supprimer…",
+            ],
+        ),
     ):
         window.set_ui_language(language)
         window.set_appearance(language % 2)
@@ -156,7 +189,9 @@ def test_recording_context_menu_targets_rows_and_opens_dialogs(
         )
 
     before = store.entries()
+    changes = QSignalSpy(library.changed)
     remove(QMessageBox.StandardButton.No)
+    assert changes.count() == 0
     assert store.entries() == before and tree.currentItem() is second
     assert prompts[0][0] == "Remove recording?"
     assert f'Remove "{entry.ride_name}"' in prompts[0][1]
@@ -170,12 +205,14 @@ def test_recording_context_menu_targets_rows_and_opens_dialogs(
             "BEGIN SELECT RAISE(ABORT, 'injected removal failure'); END",
         )
     remove(QMessageBox.StandardButton.Yes)
+    assert changes.count() == 0
     assert store.entries() == before and tree.currentItem() is second
     assert "Could not remove recording" in library.details.toPlainText()
     assert window.data is retained
     with store.connection() as connection:
         connection.execute("DROP TRIGGER reject_removal")
     remove(QMessageBox.StandardButton.Yes)
+    assert changes.count() == 1 and changes.at(0) == [library]
     assert [item.source_sha256 for item in store.entries()] == [
         source.source_sha256 for source in sources if source.source_sha256 != digest
     ]

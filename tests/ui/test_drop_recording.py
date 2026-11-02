@@ -4,8 +4,10 @@ from pathlib import Path
 
 from PySide6.QtCore import QMimeData, QPoint, QPointF, Qt, QUrl
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
+from PySide6.QtTest import QSignalSpy
 
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
+from ride_forces_analyzer.storage.library import LibraryStore
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from tests.ui.helpers import wait_until
 
@@ -48,6 +50,24 @@ def test_drop_imports_recording(explorer_window: ExplorerWindow) -> None:
             lambda: explorer_window.data is not None and explorer_window.open_action.isEnabled(),
         )
         assert explorer_window.data is not None and explorer_window.data.title == "Manta"
+        assert explorer_window.data.source.recording.source.provenance.path is None
+        assert len(LibraryStore().entries()) == 1
+
+    retained = explorer_window.data
+    requested = QSignalSpy(explorer_window.archive_window_requested)
+    paths = [
+        next(REAL_FIXTURE_DIRECTORY.glob(pattern))
+        for pattern in ("Taron*.forces", "Manta*.zforces")
+    ]
+    mime, enter, drop = drop_events([QUrl.fromLocalFile(str(path.resolve())) for path in paths])
+    explorer_window.dragEnterEvent(enter)
+    explorer_window.dropEvent(drop)
+    assert enter.isAccepted() and drop.isAccepted() and mime.hasUrls()
+    wait_until(explorer_window.open_action.isEnabled)
+    assert requested.count() == 0 and len(LibraryStore().entries()) == 2
+    assert explorer_window.data is not None and explorer_window.data.title == "Taron"
+    assert explorer_window.data is not retained
+    assert explorer_window.data.source.recording.source.provenance.path is None
 
 
 def test_drop_rejects_unrelated_payloads(
@@ -62,7 +82,7 @@ def test_drop_rejects_unrelated_payloads(
         [QUrl("https://example.org/recording.forces")],
         [QUrl.fromLocalFile(str(unrelated))],
         [QUrl.fromLocalFile(str(export_directory))],
-        [QUrl.fromLocalFile(str(recording))] * 2,
+        [QUrl.fromLocalFile(str(recording)), QUrl.fromLocalFile(str(unrelated))],
     ):
         mime, enter, drop = drop_events(urls)
         explorer_window.dragEnterEvent(enter)

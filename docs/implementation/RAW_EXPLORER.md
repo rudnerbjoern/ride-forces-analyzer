@@ -17,24 +17,24 @@ text/HTML formatting, inclusive selections and loading. Existing imports of
 `ExplorerData`, `SampleRange`, `load_recording`, `present_recording` and
 `failure_text` remain available from the package. Qt workers stay in `ui.explorer.loading`.
 
-| Area                 | Contract                                                                                                                                                        |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| About                | Version, purpose, copyright, licenses, app/RFDB links and independence; live English/German/French and appearance themes                                        |
-| Open                 | Local `.forces` / `.zforces` in one dialog; background import/analysis preserves bytes, unknown fields, absent sensors and source arrays                        |
-| Failure/cancellation | Retain the last usable recording and service binding                                                                                                            |
-| Folder memory        | Successful imports remember their directory across restarts in `preferences.sqlite3` beside the export database; cancellation/failure preserves previous folder |
-| Preference failures  | Missing folder/unreadable storage uses dialog defaults; write failures do not block import                                                                      |
-| Curves               | Every sample; three independently visible colored channels                                                                                                      |
-| Display mode         | Calibrated by default when source directions are usable; otherwise raw with a calibration diagnostic                                                            |
-| Direction            | Calibrated lateral +/− = right/left; longitudinal +/− = acceleration/braking; raw x/y/z have unknown units and no rider-direction claims                        |
-| Snapshot adoption    | Refresh chart, context, cards, technical details and visible-range extrema together, without repeating preparation                                              |
-| Shutdown/rebind      | Release subscriptions; reject late/superseded imports, results and failures, including after reopening                                                          |
+| Area                 | Contract                                                                                                                                                                                              |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| About                | Version, purpose, copyright, licenses, app/RFDB links and independence; live English/German/French and appearance themes                                                                              |
+| Import               | Main toolbar, local file drops and external file requests archive `.forces` / `.zforces` before loading Library bytes; multiple selections import all files and open only the first successful result |
+| Failure/cancellation | Retain the last usable recording and service binding                                                                                                                                                  |
+| Folder memory        | Successful imports remember their directory across restarts in `preferences.sqlite3` beside the export database; cancellation/failure preserves previous folder                                       |
+| Preference failures  | Missing folder/unreadable storage uses dialog defaults; write failures do not block import                                                                                                            |
+| Curves               | Every sample; three independently visible colored channels                                                                                                                                            |
+| Display mode         | Calibrated by default when source directions are usable; otherwise raw with a calibration diagnostic                                                                                                  |
+| Direction            | Calibrated lateral +/− = right/left; longitudinal +/− = acceleration/braking; raw x/y/z have unknown units and no rider-direction claims                                                              |
+| Snapshot adoption    | Refresh chart, context, cards, technical details and visible-range extrema together, without repeating preparation                                                                                    |
+| Shutdown/rebind      | Release subscriptions; reject late/superseded imports, results and failures, including after reopening                                                                                                |
 
 **Settings → Application → Restore last file** is off by default and saved only on
-Save. Successful imports retain an absolute file path independently of that opt-in.
-At startup, an enabled option loads the existing file using the normal worker;
-missing files/directories are ignored. Earlier manual import requests take precedence.
-Failures preserve the last successful path and use normal import diagnostics.
+Save. Successful loads retain the Library source SHA-256 independently of that
+opt-in. Startup reopens archived bytes; removed entries are skipped. Legacy saved
+paths use the archive-first import worker. Earlier manual requests take precedence.
+Import failures preserve the previous recording and last successful identity.
 
 Projection follows the [source-app decision](../architecture/09_architecture_decisions.md#source-app-projection).
 Feature availability does not establish per-source scientific verification.
@@ -75,10 +75,10 @@ export ranges; calibration-only changes preserve zoom. From/To selection and
 original source indices remain unchanged. Opening the menu pauses playback.
 
 For archived hashes, `library.sqlite3` owns the current bounds and versioned
-Gravity/Incline recipe; both Library reopening and byte-identical external opening
+Gravity/Incline recipe; both Library reopening and external reimport
 restore it. The existing controls save to that entry without changing its source,
-dates or manual workflow status. Non-archived input retains `preferences.sqlite3`
-storage by the original source SHA-256, independently of file path. Reopening restores valid
+dates or manual workflow status. New file imports initialize their Library recipe from any existing
+`preferences.sqlite3` choices by original source SHA-256. Reopening restores valid
 local choices through the shared analysis configuration. Missing, invalid or
 unreadable preference entries use source defaults without deleting stored records.
 Invalid Library markers fail opening rather than using stale preference values.
@@ -181,12 +181,12 @@ Startup restores valid saved choices, otherwise the registered OS language (Engl
 fallback) and System appearance. `AppSettings` can explicitly override language.
 
 The toolbar's Library toggle shows an adjustable left panel, collapsed by default.
-**Import recordings…** explicitly archives one or more `.forces` / `.zforces`
-files off the GUI thread. Per-file results distinguish imports, updated entries, existing entries
-and failures in the import button tooltip; failures also appear in the existing
-details area. No separate import-log field occupies Library space. A failed file
-does not stop the others. Ordinary **Open recording**
-does not archive files. Compact entries group recordings by recording-local day, newest
+The main **Import…** action archives `.forces` / `.zforces` files off the GUI
+thread and opens their Library bytes. The panel has no separate import button.
+Multiple selections or drops archive all files and open only the first successful
+result in the current Explorer. An explicit new-window import opens just that
+first result in one additional window. Failures appear in the status bar and
+Library details without stopping the other files or adding an import-log field. Compact entries group recordings by recording-local day, newest
 first, with unknown dates last. Each shows an emphasized ride name, a muted park
 name and a local clock/export summary. Long names are elided with full tooltips.
 A small icon on the right displays the stored workflow status through a localized
@@ -197,7 +197,7 @@ steps to its left/right. Choosing any state saves immediately and closes the lay
 Escape or outside click dismisses it unchanged; failed writes retain the old state
 and explain the failure. No recording load, selection, chart or list-layout change
 is required. Status remains manual, including backwards moves and skipping steps.
-The selected recording's video icon opens a separate themed link dialog. Add
+The selected recording's **Video links…** context action opens a separate themed link dialog. Add
 prepares a new URL/label; selecting an existing row edits that link. Save persists
 only the current form, Remove deletes only that link, and Cancel/Escape closes
 without saving the current draft. Errors preserve input. HTTP/HTTPS links need

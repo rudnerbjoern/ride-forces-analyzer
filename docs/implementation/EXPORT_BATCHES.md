@@ -27,8 +27,8 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Preset          | Layout, position, export area, landscape/portrait aspect, overlay language, output mode, fps, time context, axis inversion, GPU preference, odd 1–51 sample smoothing and range policy |
 | Analysis recipe | Explicit versioned projection, smoothing, independent orientation, context/events, input dependencies and source-app policy; smoothing matches preset window                           |
-| Job             | Absolute source path, original SHA-256, title, concrete inclusive source range and complete preset snapshot                                                                            |
-| Storage         | Recipes/definitions only; no source bytes or stage buffers; originals remain external/read-only                                                                                        |
+| Job             | Archived source SHA-256 (or a legacy absolute source path), title, concrete inclusive source range and complete preset snapshot                                                        |
+| Storage         | Recipes/definitions only; archived source bytes belong to the Library; external originals remain read-only                                                                             |
 
 - Writes are transactional; preset/batch names are unique. Damaged/unsupported
   databases are reported, never silently replaced.
@@ -54,6 +54,11 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   User selection loads a preset and refreshes production previews without changing
   explorer recording/settings. Refreshing the stored list does not apply a preset.
 - Editing/deleting a preset does not change saved job snapshots.
+- Jobs queued from archived Explorer data use their Library digest without an
+  external source path. Execution and frame planning read verified archived bytes;
+  the batch editor also archives newly added files before capturing jobs. Existing
+  path-bound jobs retain their file/digest checks. Removing the
+  Library source makes those archived jobs unavailable.
 - New jobs capture current Library metadata additions alongside their analysis
   recipe. Execution uses those captured additions, independently of later Library
   edits. Legacy jobs without this optional field use original source metadata.

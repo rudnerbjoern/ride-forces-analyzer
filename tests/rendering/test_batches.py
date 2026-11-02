@@ -47,6 +47,45 @@ from ride_forces_analyzer.storage.exports import ExportStore, ExportStoreError
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
 
+def test_archived_jobs_export_without_external_paths_and_keep_captured_metadata(
+    manta: ExplorerData,
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ride_forces_analyzer.exports import batches
+    from ride_forces_analyzer.storage.library import LibraryStore
+    from ride_forces_analyzer.explorer.library import LibraryArchive
+
+    monkeypatch.setenv("LOCALAPPDATA", str(export_directory.resolve()))
+    store = LibraryStore()
+    store.archive(manta.source, "ride.forces", manta.ride_bounds, CalibrationOverrides())
+    opened = LibraryArchive(store).reopen(manta.source.source_sha256)
+    assert isinstance(opened, ExplorerData) and opened.analysis is not None
+    job = make_job(opened.analysis, preset(), first=3600, last=3609)
+    assert job.recording_path is None
+    assert BatchJob.model_validate_json(job.model_dump_json()) == job
+    store.update_metadata(job.source_sha256, {"ride_name": "Changed after queuing"})
+    names: list[str | None] = []
+
+    def reject_file_read(path: Path) -> ImportSuccess:
+        raise AssertionError("An archived batch must not read an external file")
+
+    def export(timeline: ExportTimeline, target: Path, **kwargs: object) -> Path:
+        names.append(timeline.analysis.source.effective_metadata.name)
+        target.write_bytes(b"encoded")
+        return target
+
+    monkeypatch.setattr(batches, "import_forces", reject_file_read)
+    monkeypatch.setattr(batches, "export_video", export)
+    batch = SavedBatch(schema_version=1, name="Archived", jobs=(job,))
+    report = run_batches((batch,), export_directory)
+    assert [result.status for result in report.results] == ["completed"]
+    assert names == [manta.source.effective_metadata.name]
+    store.remove_recording(job.source_sha256)
+    missing = run_batches((batch,), export_directory / "missing")
+    assert [result.status for result in missing.results] == ["failed"]
+
+
 def test_saved_metadata_does_not_follow_later_library_edits(
     manta: ExplorerData,
     export_directory: Path,
@@ -390,7 +429,12 @@ def test_unrecognized_database_is_not_replaced(export_directory: Path, kind: str
     assert path.read_bytes() == original
 
 
-def test_multiple_rides_cross_multiple_presets_and_custom_bounds(manta: ExplorerData) -> None:
+def test_multiple_rides_cross_multiple_presets_and_custom_bounds(
+    manta: ExplorerData,
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LOCALAPPDATA", str(export_directory.resolve()))
     assert manta.analysis is not None
     paths = tuple(
         next(REAL_FIXTURE_DIRECTORY.glob(f"{ride}-*.forces")) for ride in ("Manta", "Kraken")
@@ -408,6 +452,7 @@ def test_multiple_rides_cross_multiple_presets_and_custom_bounds(manta: Explorer
     )
     jobs = build_jobs(paths, chosen, "entire")
     assert len(jobs) == 4
+    assert all(job.recording_path is None for job in jobs)
     assert [job.preset.settings.extent for job in jobs] == [
         ExportExtent.FULL_FRAME,
         ExportExtent.CONTENT_AREA,

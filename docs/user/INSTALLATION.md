@@ -92,8 +92,9 @@ processing and video export work offline.
 
 ## Open your first recording
 
-Click **Open recording** and choose a `.forces` or `.zforces` file exported from the Ride Forces
-app. Follow [Explore a recording](EXPLORER.md) for chart navigation, selection,
+Click **Import…** and choose a `.forces` or `.zforces` file exported from the Ride Forces
+app. It is archived in your local Library and opened from the stored bytes.
+The external file stays unchanged. Follow [Explore a recording](EXPLORER.md) for chart navigation, selection,
 settings and GPS, or the [video export guide](VIDEO_EXPORT.md) to create an overlay.
 
 ## Check for updates
@@ -125,6 +126,9 @@ files before sharing them in issues or with other people; they are not
 automatically made anonymous.
 
 ## Open a recording directly
+
+Command-line and operating-system file-open requests import the file into the
+Library first, then open its archived data. Existing entries are reused.
 
 Pass a `.forces` or `.zforces` path when starting the application. Quote paths
 containing spaces. This takes priority over **Restore last file**.

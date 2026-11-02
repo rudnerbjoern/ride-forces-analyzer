@@ -11,8 +11,9 @@ from datetime import UTC, datetime
 
 from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
-from ride_forces_analyzer.explorer import ExplorerData, load_recording
-from ride_forces_analyzer.explorer.library import LibraryArchive
+from ride_forces_analyzer.explorer import ExplorerData
+from ride_forces_analyzer.explorer.library import LibraryArchive, import_recording
+from ride_forces_analyzer.storage.library import LibraryStoreError
 from ride_forces_analyzer.runtime.error_reporting import record_error
 from ride_forces_analyzer.importers import ImportFailure, Severity
 
@@ -34,7 +35,7 @@ class LoadWorker(QRunnable):
 
     Attributes:
         path: External source path, or None when reopening an archived source.
-        source_sha256: Archived source identity, or None for ordinary file opening.
+        source_sha256: Archived source identity, or None when importing an external file.
         generation: Request generation used to reject late worker deliveries.
         signals: Qt result, failure and progress signal transport owned by the worker.
     """
@@ -79,7 +80,7 @@ class LoadWorker(QRunnable):
                 outcome = LibraryArchive().reopen(self.source_sha256)
             else:
                 assert self.path is not None
-                outcome = load_recording(self.path)
+                outcome = import_recording(self.path)
                 if isinstance(outcome, ExplorerData):
                     outcome = LibraryArchive().apply_metadata(outcome)
             if isinstance(outcome, ImportFailure):
@@ -112,7 +113,51 @@ class LoadWorker(QRunnable):
                 self.generation,
                 tr("Could not open archived recording: {0}", str(error))
                 if self.source_sha256 is not None
+                else str(error)
+                if isinstance(error, LibraryStoreError)
                 else tr("Unexpected load error. The previous recording is unchanged."),
             )
         else:
             self.signals.completed.emit(self.generation, outcome)
+
+
+class ArchiveImportSignals(QObject):
+    """Transport background archive outcomes without accessing widgets.
+
+    Attributes:
+        completed: Ordered per-file import results.
+        failed: Explanation of an unexpected worker failure.
+    """
+
+    completed = Signal(object)
+    failed = Signal(str)
+
+
+class ArchiveImportWorker(QRunnable):
+    """Run explicit archive imports off the GUI thread.
+
+    Attributes:
+        paths: Selected local recording paths.
+        signals: Completion/error transport to the importing Explorer window.
+    """
+
+    def __init__(self, paths: tuple[Path, ...]) -> None:
+        """Retain selected paths for processing by the archive service.
+
+        Args:
+            paths: Supported recordings selected through the file dialog.
+        """
+        super().__init__()
+        self.paths = paths
+        self.signals = ArchiveImportSignals()
+
+    @Slot()
+    def run(self) -> None:
+        """Import files independently and report results through queued Qt signals."""
+        try:
+            results = LibraryArchive().import_paths(self.paths)
+        except Exception as error:
+            record_error("Library import worker", error)
+            self.signals.failed.emit(str(error))
+        else:
+            self.signals.completed.emit(results)

@@ -34,9 +34,13 @@ backup and explicit full replacement from a validated backup.
 
 ### Import and source ownership
 
-- An explicit Library import accepts one or more recordings in the already
-  supported `.forces` and `.zforces` formats through the existing importer.
-  Ordinary **Open recording** remains usable without automatically archiving a file.
+- Every external open request imports `.forces` and `.zforces` recordings into
+  the Library before opening the archived source. The main **Import…** action,
+  local file drops, command-line paths, desktop file events and restored legacy
+  paths share this pipeline. There is no separate import button in the Library.
+  All selected/dropped files are imported; only the first successful result opens
+  in the current window. The explicit **Import in new window…** action opens that
+  first result in one new window instead. Other successful results remain in the Library.
 - Archive the complete original file bytes, original filename, format, byte count
   and SHA-256. Retain compressed input exactly as supplied. Do not rebuild a source
   file from parsed JSON or write changes into the original file.
@@ -44,7 +48,7 @@ backup and explicit full replacement from a validated backup.
   `.zforces` exports, independent of filename or path. UUID spelling is normalized
   for comparison without changing the original. Missing, invalid or zero UUIDs
   fall back to exact-byte identity; names and dates never merge recordings.
-- Equivalent decoded source objects for the same UUID report **Already in Library**
+- Equivalent decoded source objects for the same UUID reuse the existing entry
   and retain the first original bytes. A changed source with the same UUID updates
   that entry's exact bytes, hash, filename and source metadata. First import time,
   Library additions, workflow, markers, links and export history remain intact.
@@ -356,7 +360,7 @@ in `Z`; `recorded_day` is `YYYY-MM-DD`. Nullable fields use SQL `NULL`.
 
 The diagram shows all six existing application tables, the three Library tables
 and Alembic's version table, with their columns and database ownership.
-The Library schema, explicit archive import and reopening service are implemented.
+The Library schema, archive import and reopening service are implemented.
 The grouped recording list and read-only source/date/import details are implemented;
 park/name filters, metadata/marker editing, manual workflow status and video links
 with configurable labels, reusable export history and portable backup/restore
@@ -626,7 +630,7 @@ recording, chart zoom or analysis.
    entries use import time and source digest for deterministic ordering.
 2. **Selected recording:** open it in the existing analysis workspace to the right.
    Selection loads only that source; an import/open failure preserves the current
-   chart and explains the problem. Ordinary file opening remains available.
+   chart and explains the problem. External files use the same archive-first path.
 3. **Recording details:** show recording time/time zone and import time read-only,
    along with original metadata and separate saved additions. Open a separate
    **Edit metadata…** dialog for park, ride, Row, Seat, Train, Seated/Flying and notes.
@@ -664,6 +668,8 @@ icon position; all six states can be chosen without adding a row or reloading a 
 a row loads only that source through the existing worker; day headers are not
 selectable. Details show original file/name/recording/import information and
 additional source metadata after loading, all read-only.
+Opening a recording selects its Library row and scrolls it into view within the
+active filters. Reopening the collapsed panel also reveals the selected row.
 The compact summary uses aligned label/value table rows without blank lines for
 ride/park, recording/import dates and seating/device values, with the source filename
 below. Dates use the UI language's readable date/minute format;
@@ -676,15 +682,23 @@ search. Park selection and whitespace-separated search terms combine with AND.
 Empty groups disappear; an empty result shows **No matching recordings**. The
 search clear action removes its text; the reset icon clears both filters. Filtering
 does not open sources or change the chart. Collapsing retains both controls.
-Right-clicking a recording opens **Edit metadata…**, **Video links…** and
+Right-clicking a recording offers **Open in new window…**, **Edit metadata…**, **Video links…** and
 **Export history…** in a themed context menu for that recording, followed by a
 separator and **Remove…** with a trash icon. Removal requires confirmation naming
 the recording and its permanently removed Library data; **No** is the default.
 Cancellation preserves the entry. Success refreshes the list and filters while
 keeping the loaded chart; errors retain the entry with a visible explanation.
+Successful removal broadcasts a change to Library panels in all open Explorer
+windows, including hidden panels. Their lists and selection update without
+reloading the displayed recordings or changing zoom/playback. Cancellation and
+failed removal publish no change.
 These actions
 replace the buttons below the list; day headings and empty space have no menu.
 Metadata editing is disabled until the selected source loads successfully.
+**Open in new window…** creates another Explorer in the same application process
+and loads the archived bytes with current Library metadata and markers. It needs
+no external original path. Each window owns its analysis, playback and chart view;
+language and appearance remain shared.
 Metadata editing uses the separate dialog; existing chart controls persist current
 markers to the Library for archived hashes. Video links use a separate dialog;
 Settings → Library manages label choices. **Export history…** opens a separate
@@ -819,9 +833,9 @@ and its saved video-label choices, excluding external media.
 
 3. **LIB-03 — Archive import and reopening**
 
-   **Status:** Complete (native Windows archive and import-panel acceptance verified).
+   **Status:** Complete (native Windows archive and file-import acceptance verified).
 
-   **Implementation:** Add explicit archive import, duplicate detection and reopening
+   **Implementation:** Add archive import, duplicate detection and reopening
    from stored bytes through existing decoding/analysis services. Initialize current
    marker/calibration choices and workflow status without changing source bytes.
 

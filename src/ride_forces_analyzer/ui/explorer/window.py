@@ -78,7 +78,10 @@ from ride_forces_analyzer.ui.presentation.icons import (
 from ride_forces_analyzer.ui.dialogs.settings import APPEARANCE_CHOICES, SettingsDialog
 from ride_forces_analyzer.ui.presentation.updates import UpdateController
 from ride_forces_analyzer.ui.dialogs.gps import gps_dialog
-from ride_forces_analyzer.ui.explorer.loading import LoadWorker
+from ride_forces_analyzer.ui.explorer.loading import ArchiveImportWorker, LoadWorker
+from ride_forces_analyzer.explorer.library import ArchiveImportResult
+from ride_forces_analyzer.storage.library import LibraryStore, LibraryStoreError
+from ride_forces_analyzer.runtime.error_reporting import record_error
 from ride_forces_analyzer.ui.presentation.theme import THEMES, apply_theme, system_theme
 
 
@@ -101,6 +104,7 @@ class ExplorerWindow(QMainWindow):
 
     Attributes:
         new_window_requested: Qt signal for new window requested notifications.
+        archive_window_requested: Signal requesting another window for a Library digest.
         closed: Qt signal for closed notifications.
         _application_title: Configured application title used in window captions.
         preferences: Local application preference access for this window or controller.
@@ -114,7 +118,11 @@ class ExplorerWindow(QMainWindow):
         _accept_results: Whether the window still accepts asynchronous results.
         _load_generation: Generation identifying the current recording-open request.
         _worker: Current recording-import worker.
-        open_action: Action opening a recording in this window.
+        _import_worker: Current multi-file archive import, if any.
+        _import_in_new_window: Whether the first imported result needs a separate window.
+        _pending_import_failures: Other-file failures retained while opening the first result.
+        _recording_path: Last successful external import request, for request deduplication.
+        open_action: Main import action, opening a single result in this window.
         new_window_action: Action opening a separate explorer window.
         gps_button: Button for gps button.
         export_button: Button for export button.
@@ -152,6 +160,7 @@ class ExplorerWindow(QMainWindow):
     """
 
     new_window_requested = Signal(object)
+    archive_window_requested = Signal(str)
     closed = Signal()
 
     def __init__(self, settings: AppSettings, *, restore_last_file: bool = True) -> None:
@@ -205,6 +214,10 @@ class ExplorerWindow(QMainWindow):
         self._accept_results = True
         self._load_generation = 0
         self._worker: LoadWorker | None = None
+        self._import_worker: ArchiveImportWorker | None = None
+        self._import_in_new_window = False
+        self._pending_import_failures = ""
+        self._recording_path: Path | None = None
         self._create_toolbar()
         self._wide_layout: bool | None = None
         body, layout = self._create_workspace()
@@ -244,8 +257,8 @@ class ExplorerWindow(QMainWindow):
 
     def _create_toolbar(self) -> None:
         """Create recording actions, export menus and auxiliary-dialog controls."""
-        self.open_action = bind(QAction(self), tr("&Open recording…"))
-        bind(self.open_action, tr("Open recording…"), "toolTip")
+        self.open_action = bind(QAction(self), tr("&Import…"))
+        bind(self.open_action, tr("Import recordings…"), "toolTip")
         self.open_action.setIcon(
             self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton),
         )
@@ -257,17 +270,18 @@ class ExplorerWindow(QMainWindow):
         toolbar = bind(QToolBar(self), tr("Recording"), "windowTitle")
         toolbar.setMovable(False)
         self.library = LibraryPanel(self)
-        self.library.open_requested.connect(self._open_archived)
+        self.library.open_requested.connect(self.open_archived)
+        self.library.new_window_requested.connect(self.archive_window_requested.emit)
         toolbar.addWidget(self.library.toggle_button)
         toolbar.addAction(self.open_action)
         open_widget = toolbar.widgetForAction(self.open_action)
         open_widget.setObjectName("Primary")
-        self.new_window_action = bind(QAction(self), tr("Open in new window…"))
+        self.new_window_action = bind(QAction(self), tr("Import in new window…"))
         self.new_window_action.setShortcut(QKeySequence("Ctrl+Shift+O"))
         self.new_window_action.triggered.connect(lambda: self.choose_file(new_window=True))
         self.addAction(self.new_window_action)
         if isinstance(open_widget, QToolButton):
-            button_text(open_widget, tr("Open recording…"), caption=tr("&Open recording…"))
+            button_text(open_widget, tr("Import recordings…"), caption=tr("&Import…"))
             open_widget.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
             open_menu = QMenu(open_widget)
             open_menu.addAction(self.new_window_action)
@@ -350,7 +364,7 @@ class ExplorerWindow(QMainWindow):
         layout.setSpacing(6)
         self.heading = bind(
             QLabel(),
-            tr("Open a .forces or .zforces recording to explore your ride"),
+            tr("Import a .forces or .zforces recording to explore your ride"),
         )
         self.heading.setObjectName("recordingHeading")
         self.heading.setTextFormat(Qt.TextFormat.PlainText)
@@ -362,7 +376,7 @@ class ExplorerWindow(QMainWindow):
         self.header_summary = bind(
             QLabel(),
             tr(
-                "Choose Open recording or press {0}",
+                "Choose Import or press {0}",
                 self.open_action.shortcut().toString(QKeySequence.SequenceFormat.NativeText),
             ),
         )
@@ -594,6 +608,7 @@ class ExplorerWindow(QMainWindow):
         self._accept_results = False
         self._load_generation += 1
         self._worker = None
+        self._import_worker = None
         if self.analysis_controller is not None:
             self.analysis_controller.close()
         super().closeEvent(event)
@@ -758,17 +773,17 @@ class ExplorerWindow(QMainWindow):
         Returns:
             None.
         """
-        filename, _ = QFileDialog.getOpenFileName(
+        filenames, _ = QFileDialog.getOpenFileNames(
             self,
-            tr("Open Ride Forces recording"),
+            tr("Import recordings into Library"),
             self.preferences.recording_directory(),
             tr("Ride Forces (*.forces *.zforces);;All files (*)"),
         )
-        if filename:
-            if new_window:
-                self.new_window_requested.emit(Path(filename))
-            else:
-                self.open_path(Path(filename))
+        if filenames:
+            self.import_paths(
+                tuple(Path(filename) for filename in filenames),
+                new_window=new_window,
+            )
 
     @property
     def recording_path(self) -> Path | None:
@@ -779,10 +794,7 @@ class ExplorerWindow(QMainWindow):
         """
         if self._worker is not None:
             return self._worker.path.resolve() if self._worker.path is not None else None
-        if self.data is not None:
-            path = self.data.source.recording.source.provenance.path
-            return path.resolve() if path is not None else None
-        return None
+        return self._recording_path
 
     @Slot()
     def _restore_last_file(self) -> None:
@@ -792,22 +804,33 @@ class ExplorerWindow(QMainWindow):
             or not self.preferences.restore_last_file()
         ):
             return
+        digest = self.preferences.last_library_recording()
+        if digest is not None:
+            try:
+                if LibraryStore().metadata(digest) is not None:
+                    self.open_archived(digest)
+            except LibraryStoreError as error:
+                record_error("Restore last recording", error)
+            return
         path = self.preferences.last_recording()
         if path is not None:
             self.open_path(path)
 
-    def _dropped_recording(self, event: QDropEvent) -> Path | None:
-        """Accept one local recording while the existing importer is idle."""
+    def _dropped_recordings(self, event: QDropEvent) -> tuple[Path, ...]:
+        """Accept local recordings while neither loading nor batch import is active."""
         mime = event.mimeData()
-        if self._worker is not None:
-            return None
+        if self._worker is not None or self._import_worker is not None:
+            return ()
         urls = mime.urls()
-        if len(urls) != 1 or not urls[0].isLocalFile():
-            return None
-        path = Path(urls[0].toLocalFile())
-        if path.suffix.lower() not in {".forces", ".zforces"} or not path.is_file():
-            return None
-        return path
+        if not urls or any(not url.isLocalFile() for url in urls):
+            return ()
+        paths = tuple(Path(url.toLocalFile()) for url in urls)
+        if any(
+            path.suffix.lower() not in {".forces", ".zforces"} or not path.is_file()
+            for path in paths
+        ):
+            return ()
+        return paths
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
         """Accept supported local recording-file drag payloads.
@@ -818,7 +841,7 @@ class ExplorerWindow(QMainWindow):
         Returns:
             None.
         """
-        if self._dropped_recording(event) is not None:
+        if self._dropped_recordings(event):
             event.acceptProposedAction()
         else:
             event.ignore()
@@ -832,12 +855,74 @@ class ExplorerWindow(QMainWindow):
         Returns:
             None.
         """
-        path = self._dropped_recording(event)
-        if path is None:
+        paths = self._dropped_recordings(event)
+        if not paths:
             event.ignore()
             return
-        self.open_path(path)
+        self.import_paths(paths)
         event.acceptProposedAction()
+
+    def import_paths(self, paths: tuple[Path, ...], *, new_window: bool = False) -> None:
+        """Import every selected file and open only the first successful result.
+
+        Args:
+            paths: Original files from the picker or a local file drop.
+            new_window: Open the first result in a separate window instead of this one.
+        """
+        if not paths or self._worker is not None or self._import_worker is not None:
+            return
+        if len(paths) == 1 and not new_window:
+            self.open_path(paths[0])
+            return
+        self.navigation.pause()
+        self._load_generation += 1
+        worker = ArchiveImportWorker(paths)
+        worker.signals.completed.connect(self._imports_finished)
+        worker.signals.failed.connect(self._imports_failed)
+        self._import_worker = worker
+        self._import_in_new_window = new_window
+        self.open_action.setEnabled(False)
+        self.new_window_action.setEnabled(False)
+        self.library.recordings.setEnabled(False)
+        self.library.editor.setEnabled(False)
+        self.library.refresh_labels()
+        self.progress.show()
+        bind(self.statusBar(), tr("Import recordings…"), "message")
+        QThreadPool.globalInstance().start(worker)
+
+    @Slot(object)
+    def _imports_finished(self, results: tuple[ArchiveImportResult, ...]) -> None:
+        if not self._accept_results:
+            return
+        self._finish_loading()
+        self.library.refresh()
+        failures = [
+            f"{result.path.name}: {tr('Import failed: {0}', result.error or '')}"
+            for result in results
+            if result.source_sha256 is None
+        ]
+        if failures:
+            self.library.show_error("\n".join(failures))
+        bind(
+            self.statusBar(),
+            tr("Import failed: {0}", "\n".join(failures)) if failures else tr("Imported"),
+            "message",
+        )
+        first = next((result for result in results if result.source_sha256 is not None), None)
+        if first is not None and first.source_sha256 is not None:
+            self.preferences.remember_recording(first.path)
+            if self._import_in_new_window:
+                self.archive_window_requested.emit(first.source_sha256)
+            else:
+                self.open_archived(first.source_sha256)
+                self._pending_import_failures = "\n".join(failures)
+
+    @Slot(str)
+    def _imports_failed(self, message: str) -> None:
+        if self._accept_results:
+            self._finish_loading()
+            self.library.show_error(tr("Import failed: {0}", message))
+            bind(self.statusBar(), tr("Import failed: {0}", message), "message")
 
     def open_path(self, path: Path) -> None:
         """Schedule read-only import of a recording while retaining the previous view.
@@ -848,8 +933,9 @@ class ExplorerWindow(QMainWindow):
         Returns:
             None.
         """
-        if self._worker is not None:
+        if self._worker is not None or self._import_worker is not None:
             return
+        self._pending_import_failures = ""
         self.navigation.pause()
         self._load_generation += 1
         worker = LoadWorker(path, self._load_generation)
@@ -857,18 +943,24 @@ class ExplorerWindow(QMainWindow):
         worker.signals.failed.connect(self._load_failed)
         self._worker = worker
         self.open_action.setEnabled(False)
+        self.new_window_action.setEnabled(False)
         self.library.recordings.setEnabled(False)
         self.library.editor.setEnabled(False)
         self.library.edit_action.setEnabled(False)
         self.progress.show()
-        bind(self.statusBar(), tr("Opening {0}…", path.name), "message")
+        bind(self.statusBar(), tr("Importing {0}…", path.name), "message")
         QThreadPool.globalInstance().start(worker)
 
     @Slot(str)
-    def _open_archived(self, source_sha256: str) -> None:
-        """Open the selected archived source through the existing load lifecycle."""
-        if self._worker is not None:
+    def open_archived(self, source_sha256: str) -> None:
+        """Open an archived source through the existing load lifecycle.
+
+        Args:
+            source_sha256: Exact-byte identity of a recording stored in the Library.
+        """
+        if self._worker is not None or self._import_worker is not None:
             return
+        self._pending_import_failures = ""
         self.navigation.pause()
         self._load_generation += 1
         worker = LoadWorker(None, self._load_generation, source_sha256=source_sha256)
@@ -876,6 +968,7 @@ class ExplorerWindow(QMainWindow):
         worker.signals.failed.connect(self._load_failed)
         self._worker = worker
         self.open_action.setEnabled(False)
+        self.new_window_action.setEnabled(False)
         self.library.recordings.setEnabled(False)
         self.library.editor.setEnabled(False)
         self.library.edit_action.setEnabled(False)
@@ -928,9 +1021,15 @@ class ExplorerWindow(QMainWindow):
         self.navigation.pause()
         if self.analysis_controller is not None:
             self.analysis_controller.bind_snapshot(outcome.analysis)
-        path = outcome.source.recording.source.provenance.path
+        path = (
+            self._worker.path
+            if self._worker is not None
+            else outcome.source.recording.source.provenance.path
+        )
+        self._recording_path = path.resolve() if path is not None else None
         if path is not None:
             self.preferences.remember_recording(path)
+        self.preferences.remember_library_recording(outcome.source.source_sha256)
         if self.gps_window is not None:
             self.gps_window.close()
             self.gps_window.deleteLater()
@@ -979,6 +1078,14 @@ class ExplorerWindow(QMainWindow):
             else tr("Loaded — drag to zoom, navigate samples or select an interval"),
             "message",
         )
+        if self._pending_import_failures:
+            self.library.show_error(self._pending_import_failures)
+            bind(
+                self.statusBar(),
+                tr("Import failed: {0}", self._pending_import_failures),
+                "message",
+            )
+            self._pending_import_failures = ""
 
     @Slot(float, QPoint)
     def show_marker_menu(self, fraction: float, position: QPoint) -> None:
@@ -1196,7 +1303,9 @@ class ExplorerWindow(QMainWindow):
 
     def _finish_loading(self) -> None:
         self._worker = None
+        self._import_worker = None
         self.open_action.setEnabled(True)
+        self.new_window_action.setEnabled(True)
         self.library.recordings.setEnabled(True)
         self.library.editor.setEnabled(True)
         self.library.refresh_labels()
@@ -1204,6 +1313,9 @@ class ExplorerWindow(QMainWindow):
 
     @Slot(str)
     def _failed(self, message: str) -> None:
+        if self._pending_import_failures:
+            message = f"{self._pending_import_failures}\n{message}"
+            self._pending_import_failures = ""
         if self._worker is not None and self._worker.source_sha256 is not None:
             self.library.show_error(message)
         self._finish_loading()

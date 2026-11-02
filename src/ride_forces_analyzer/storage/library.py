@@ -281,6 +281,27 @@ class LibraryStore:
             )
             return "imported", source.source_sha256
 
+    def filename(self, source_sha256: str) -> str | None:
+        """Read an archived basename without loading the original source bytes.
+
+        Args:
+            source_sha256: Exact-byte identity of the archived recording.
+
+        Returns:
+            Stored basename, or None when the recording is not archived.
+
+        Raises:
+            ValueError: The source hash is invalid.
+            LibraryStoreError: The Library cannot be read.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        with self.connection() as connection:
+            row = connection.execute(
+                "SELECT source_filename FROM recordings WHERE source_sha256=?",
+                (source_sha256,),
+            ).fetchone()
+        return str(row[0]) if row is not None else None
+
     def remove_recording(self, source_sha256: str) -> None:
         """Remove one archived recording and its links and export history atomically.
 

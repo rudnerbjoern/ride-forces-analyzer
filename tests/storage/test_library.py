@@ -64,6 +64,7 @@ def test_remove_recording_removes_only_its_archive_links_and_history(
     for digest in (DIGEST, other):
         store.save_video_link(digest, "https://example.invalid/video", "YouTube")
     store.update_metadata(DIGEST, {"notes": "Remove these additions"})
+    assert store.filename(DIGEST) == "ride.forces"
     with store.connection() as connection:
         retained = connection.execute(
             "SELECT * FROM recordings WHERE source_sha256=?",
@@ -71,6 +72,7 @@ def test_remove_recording_removes_only_its_archive_links_and_history(
         ).fetchone()
     store.remove_recording(DIGEST)
     reopened = LibraryStore(store.path)
+    assert reopened.filename(DIGEST) is None
     with reopened.connection() as connection:
         assert connection.execute("SELECT * FROM recordings").fetchall() == [retained]
         for table in ("video_links", "export_history"):

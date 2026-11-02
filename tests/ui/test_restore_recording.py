@@ -51,11 +51,16 @@ def test_successful_recording_restores_on_new_window_and_failed_open_keeps_path(
     export_directory: Path,
 ) -> None:
     window = explorer_window
-    source = next(REAL_FIXTURE_DIRECTORY.glob(f"Manta-*.{extension}"))
+    fixture = next(REAL_FIXTURE_DIRECTORY.glob(f"Manta-*.{extension}"))
+    source = export_directory / f"imported.{extension}"
+    source.write_bytes(fixture.read_bytes())
     window.open_path(source)
     wait_until(window.open_action.isEnabled)
     assert window.data is not None
     assert window.preferences.last_recording() == source.resolve()
+    digest = window.data.source.source_sha256
+    assert window.preferences.last_library_recording() == digest
+    source.unlink()
     window.preferences.remember_restore_last_file(True)
     restored = ExplorerWindow(AppSettings(language=Language.ENGLISH))
     try:
@@ -65,7 +70,8 @@ def test_successful_recording_restores_on_new_window_and_failed_open_keeps_path(
         assert restored.data.source.source_sha256 == window.data.source.source_sha256
         restored.open_path(export_directory / "missing.forces")
         wait_until(restored.open_action.isEnabled)
-        assert restored.preferences.last_recording() == source.resolve()
+        assert restored.preferences.last_recording() is None
+        assert restored.preferences.last_library_recording() == digest
         assert restored.data is not None
         assert restored.data.source.source_sha256 == window.data.source.source_sha256
     finally:

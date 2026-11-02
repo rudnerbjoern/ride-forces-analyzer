@@ -227,11 +227,11 @@ def test_open_chart_navigation_selection_and_integrity(
         original = path.read_bytes()
         mtime = path.stat().st_mtime_ns
 
-        def chosen(*args: object, **kwargs: object) -> tuple[str, str]:
+        def chosen(*args: object, **kwargs: object) -> tuple[list[str], str]:
             assert args[3] == "Ride Forces (*.forces *.zforces);;All files (*)"
-            return str(path), "Ride Forces (*.forces *.zforces)"
+            return [str(path)], "Ride Forces (*.forces *.zforces)"
 
-        monkeypatch.setattr(QFileDialog, "getOpenFileName", chosen)
+        monkeypatch.setattr(QFileDialog, "getOpenFileNames", chosen)
         window.open_action.trigger()
         wait_until(window.open_action.isEnabled)
         data = window.data
@@ -555,10 +555,10 @@ def test_failed_and_cancelled_opens_preserve_previous_recording(
     assert previous is not None
     points = window.plot.series[0].count()
 
-    def cancelled(*args: object, **kwargs: object) -> tuple[str, str]:
-        return "", ""
+    def cancelled(*args: object, **kwargs: object) -> tuple[list[str], str]:
+        return [], ""
 
-    monkeypatch.setattr(QFileDialog, "getOpenFileName", cancelled)
+    monkeypatch.setattr(QFileDialog, "getOpenFileNames", cancelled)
     window.open_action.trigger()
     assert window.data is previous
     window.open_path(Path(".tmp/this-recording-does-not-exist.forces"))
@@ -606,7 +606,7 @@ def test_background_loading_keeps_event_loop_alive_and_recovers_worker_errors(
             raise RuntimeError("Timed out waiting for test release")
         raise RuntimeError("Synthetic worker error")
 
-    monkeypatch.setattr(loading, "load_recording", delayed)
+    monkeypatch.setattr(loading, "import_recording", delayed)
     timer.start()
     try:
         window.open_path(Path("synthetic.forces"))
@@ -632,11 +632,11 @@ from PySide6.QtCore import QTimer
 from ride_forces_analyzer.ui.explorer import loading
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from ride_forces_analyzer.__main__ import main
-original_load = loading.load_recording
+original_load = loading.import_recording
 def delayed(path):
     time.sleep(0.2)
     return original_load(path)
-loading.load_recording = delayed
+loading.import_recording = delayed
 original_init = ExplorerWindow.__init__
 def initialize(self, settings, *, restore_last_file=True):
     original_init(self, settings, restore_last_file=restore_last_file)
@@ -667,7 +667,7 @@ def test_optional_markers_are_absent_and_labels_follow_time_view(
     def load_synthetic(path: Path) -> ExplorerData:
         return view
 
-    monkeypatch.setattr(loading, "load_recording", load_synthetic)
+    monkeypatch.setattr(loading, "import_recording", load_synthetic)
     window.open_path(Path("synthetic.forces"))
     wait_until(window.open_action.isEnabled)
     assert (
@@ -710,7 +710,7 @@ def test_load_and_reset_use_independent_marker_defaults(
         def load_synthetic(path: Path) -> ExplorerData:
             return data
 
-        monkeypatch.setattr(loading, "load_recording", load_synthetic)
+        monkeypatch.setattr(loading, "import_recording", load_synthetic)
         window = explorer_window
         window.open_path(Path("synthetic.forces"))
         wait_until(window.open_action.isEnabled)
@@ -1159,7 +1159,7 @@ def test_focus_header_preserves_literal_device_metadata(
     def load_synthetic(path: Path) -> ExplorerData:
         return view
 
-    monkeypatch.setattr(loading, "load_recording", load_synthetic)
+    monkeypatch.setattr(loading, "import_recording", load_synthetic)
     explorer_window.open_path(Path("synthetic-header.forces"))
     wait_until(explorer_window.open_action.isEnabled)
     assert explorer_window.header_summary.text() == view.overview_text

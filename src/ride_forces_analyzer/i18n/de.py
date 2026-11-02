@@ -8,6 +8,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words AUSSERHALB Drittanbieterhinweise Kalibrierungsmarkierung Kalibrierungsreferenz Markierungsindex Metadatenfeld Rundungsgrenzen Vertikalkraft
 
 GERMAN: dict[str, str] = {
+    "&Import…": "&Importieren…",
+    "Import in new window…": "In neuem Fenster importieren …",
+    "Import a .forces or .zforces recording to explore your ride": "Importiere eine .forces- oder .zforces-Aufnahme, um deine Fahrt zu erkunden",
+    "Choose Import or press {0}": "Importieren wählen oder {0} drücken",
+    "Importing {0}…": "{0} wird importiert…",
+    "Only file-backed or archived recordings can be queued": "Nur Aufnahmen aus Dateien oder der Bibliothek können einem Stapel hinzugefügt werden",
     "Backup…": "Sichern…",
     "Restore…": "Wiederherstellen…",
     "Back up the saved Library to one ZIP archive": "Gespeicherte Bibliothek in einem ZIP-Archiv sichern",

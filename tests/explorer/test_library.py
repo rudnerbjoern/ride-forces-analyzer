@@ -565,3 +565,19 @@ def test_corrupt_archived_bytes_are_rejected_without_replacing_entry(
     with pytest.raises(LibraryStoreError, match="integrity"):
         archive.reopen(source.source_sha256)
     assert archive.store.path.read_bytes() == before
+
+
+def test_multi_import_results_use_the_final_uuid_identity(
+    archive: LibraryArchive,
+    export_directory: Path,
+) -> None:
+    identity = "12345678-1234-1234-1234-123456789abc"
+    paths = (export_directory / "first.forces", export_directory / "second.forces")
+    for path, name in zip(paths, ("First", "Updated"), strict=True):
+        path.write_bytes(synthetic_source(uuid=identity, name=name).recording.source.original_bytes)
+    results = archive.import_paths(paths)
+    assert [result.status for result in results] == ["imported", "updated"]
+    digest = archive.store.entries()[0].source_sha256
+    assert [result.source_sha256 for result in results] == [digest, digest]
+    reopened = archive.reopen(digest)
+    assert isinstance(reopened, ExplorerData) and reopened.title == "Updated"

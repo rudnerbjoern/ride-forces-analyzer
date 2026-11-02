@@ -24,11 +24,16 @@ def test_choose_file_remembers_success_but_not_failure_or_cancel(
         selected = str(recording)
         directories: list[str] = []
 
-        def choose(parent: object, title: str, directory: str, filters: str) -> tuple[str, str]:
+        def choose(
+            parent: object,
+            title: str,
+            directory: str,
+            filters: str,
+        ) -> tuple[list[str], str]:
             directories.append(directory)
-            return selected, ""
+            return [selected] if selected else [], ""
 
-        monkeypatch.setattr(QFileDialog, "getOpenFileName", choose)
+        monkeypatch.setattr(QFileDialog, "getOpenFileNames", choose)
         window.choose_file()
         wait_until(window.open_action.isEnabled)
         assert directories == [""]

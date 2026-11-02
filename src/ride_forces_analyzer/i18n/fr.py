@@ -7,6 +7,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # CSpell checks English keys and French translations using the file override.
 
 FRENCH: dict[str, str] = {
+    "&Import…": "&Importer…",
+    "Import in new window…": "Importer dans une nouvelle fenêtre…",
+    "Import a .forces or .zforces recording to explore your ride": "Importez un enregistrement .forces ou .zforces pour explorer votre parcours",
+    "Choose Import or press {0}": "Choisissez Importer ou appuyez sur {0}",
+    "Importing {0}…": "Importation de {0}…",
+    "Only file-backed or archived recordings can be queued": "Seuls les enregistrements provenant d’un fichier ou de la bibliothèque peuvent être ajoutés à la file",
     "Backup…": "Sauvegarder…",
     "Restore…": "Restaurer…",
     "Back up the saved Library to one ZIP archive": "Sauvegarder la bibliothèque dans une archive ZIP",

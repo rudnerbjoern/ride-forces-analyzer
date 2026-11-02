@@ -1,8 +1,11 @@
 # Explore a recording
 
-Open a `.forces` or compressed `.zforces` file with **Open recording**, or **Ctrl+O** (**⌘O** on macOS).
+Choose **Import…**, or press **Ctrl+O** (**⌘O** on macOS), to select `.forces` or compressed `.zforces` files.
+Every file is imported into the local Library before its archived data is opened.
+Existing entries are reused; an updated export of the same recording updates that
+entry while keeping your Library edits, markers, links and export history.
 
-On Windows, **Alt** reveals native access-key underlines for Open recording, Save,
+On Windows, **Alt** reveals native access-key underlines for Import, Save,
 Back and Browse. Press **Alt** with the underlined letter to activate the control;
 letters follow the selected UI language. Press **Alt** again to hide the underlines.
 Alt combined with another key activates its command without changing this toggle.
@@ -10,24 +13,40 @@ Alt combined with another key activates its command without changing this toggle
 RFDB `.forces` recordings use the same dialog and need no conversion. Features
 requiring missing recording data, such as GPS or tilt, remain unavailable.
 Both formats appear in the same file dialog; no manual extraction is needed.
-You can also drag one `.forces` or `.zforces` file into the main window.
-Drops are unavailable while a recording is loading; other files, folders and
-multiple files are not accepted.
+You can also drag `.forces` or `.zforces` files into the main window. A single
+file opens in the current window after import. Selecting or dropping multiple
+files imports them all and opens only the first successful recording in the current
+Explorer window. The remaining recordings are available in the Library. Failed imports are reported without preventing
+other selected files from importing.
+Drops are unavailable while an import is active; other files, folders and remote
+URLs are not accepted.
 The application reads the recording without changing the original file.
 The instructions below use the English interface labels.
 
 ![Recording explorer with force curves, airtime strip and inspector](../images/workspace-dark.png)
 
+## Use your Library
+
+The **Library** toolbar button shows or hides your local recording list. There is
+one **Import…** button in the main toolbar; the Library panel needs no separate
+import button. Filter by park or search ride and park names to find an entry.
+Select a recording to open its archived data without the original file.
+Right-click a recording for **Open in new window…**, **Edit metadata…**,
+**Video links…**, **Export history…** and **Remove…**. Removal asks for confirmation
+and leaves external files unchanged. Settings → Library provides backup and restore.
+
 ## Compare recordings in separate windows
 
-Use the arrow beside **Open recording** and choose **Open in new window…**,
-or press **Ctrl+Shift+O** (**⌘Shift+O** on macOS), then select another recording.
-You can also open the same file again this way to compare different smoothing
+Use the arrow beside **Import…** and choose **Import in new window…**,
+or press **Ctrl+Shift+O** (**⌘Shift+O** on macOS), then select another recording. When selecting multiple files this way, all are
+imported and only the first successful result opens in one new window.
+For an already imported ride, right-click its Library entry and choose
+**Open in new window…**. You can open the same ride more than once to compare smoothing
 settings. Place the windows side by side using your operating system.
 
 Each window has its own recording, selection, zoom, playback and smoothing.
 Closing one window leaves the others open. Language and appearance apply to all
-windows. Saved ride-marker adjustments remain shared per file; existing windows
+windows. Saved ride-marker adjustments remain shared per Library recording; existing windows
 retain their current analysis, while subsequently opened windows load saved markers.
 Closing the last window closes the application.
 
@@ -156,8 +175,9 @@ Changing appearance or language keeps your recording, selection, zoom and smooth
 
 Enable **Settings → Application → Restore last file** to reopen your last successfully
 loaded `.forces` or `.zforces` recording at the next launch. This option is off by
-default. The application remembers the file's path; the original file must remain
-there. Missing files are skipped. **Save** applies the option; **Cancel** leaves it
+default. The application remembers the Library recording and reopens its archived bytes,
+even if the original file has been moved or deleted. Removed Library entries are skipped.
+A previously saved file path is imported once when upgrading from older preferences. **Save** applies the option; **Cancel** leaves it
 unchanged. Disabling it starts with an empty workspace.
 
 ## Open the GPS overview

@@ -1,4 +1,4 @@
-"""Collapsible Library surface, toolbar toggle and explicit archive-import transport.
+"""Collapsible Library list, recording actions and toolbar toggle.
 
 Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
@@ -6,7 +6,6 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # cspell:words Demi
 
-from pathlib import Path
 from dataclasses import replace
 from html import escape
 
@@ -15,16 +14,13 @@ from PySide6.QtCore import (
     QObject,
     QPoint,
     QPersistentModelIndex,
-    QRunnable,
     QSize,
     Qt,
-    QThreadPool,
     Signal,
     Slot,
 )
 from PySide6.QtGui import QAction, QFont, QFontMetrics, QMouseEvent, QPainter, QPalette
 from PySide6.QtWidgets import (
-    QFileDialog,
     QAbstractItemView,
     QApplication,
     QComboBox,
@@ -49,8 +45,6 @@ from PySide6.QtWidgets import (
 
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.explorer.library import (
-    ArchiveImportResult,
-    LibraryArchive,
     library_details,
     library_row_text,
 )
@@ -183,9 +177,8 @@ class LibraryPanel(QSplitter):
     """Own the left Library surface beside the existing analysis workspace.
 
     Attributes:
-        panel: Initially hidden Library content and explicit archive-import controls.
+        panel: Initially hidden Library list, filters and recording actions.
         toggle_button: Localized toolbar control with open/closed folder icons.
-        import_button: Explicit multi-file archive import action.
         recordings: Newest-first recording rows under day headers that cannot be selected.
         details: Read-only source/date/import details for the selected recording.
         empty_label: Empty-Library explanation.
@@ -194,15 +187,20 @@ class LibraryPanel(QSplitter):
         clear_filters: Action restoring all recordings.
         editor: Dialog for the selected recording's additions.
         context_menu: Recording actions opened by right-clicking a Library row.
+        new_window_action: Action opening the recording in another explorer window.
         edit_action: Action opening the metadata dialog after the source loads.
         videos_action: Action opening the selected recording's separate video-link dialog.
         history_action: Action opening its export attempts and saved-settings review.
         remove_action: Action removing the recording after explicit confirmation.
         workflow_selector: Foreground status selection layer, or None while closed.
         open_requested: Signal carrying the selected archived source digest.
+        new_window_requested: Signal requesting a separate window for the selected archive.
+        changed: Committed removal notification carrying this panel as its origin.
     """
 
     open_requested = Signal(str)
+    new_window_requested = Signal(str)
+    changed = Signal(object)
 
     def __init__(self, parent: QWidget) -> None:
         """Build the Library import surface and its adjustable horizontal container.
@@ -217,12 +215,6 @@ class LibraryPanel(QSplitter):
         heading = self.panel.findChild(QLabel, "SectionTitle")
         assert heading is not None
         self._heading = heading
-        self.import_button = button_text(QPushButton(), tr("Import recordings…"))
-        self.import_button.setIcon(
-            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton),
-        )
-        self.import_button.clicked.connect(self._choose_import)
-        layout.addWidget(self.import_button)
         self.park_filter = ParkFilter()
         self.park_filter.setSizeAdjustPolicy(
             QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon,
@@ -289,6 +281,12 @@ class LibraryPanel(QSplitter):
         self.details.hide()
         layout.addWidget(self.details)
         self.context_menu = QMenu(self.recordings)
+        self.new_window_action = bind(QAction(self.context_menu), tr("Open in new window…"))
+        self.new_window_action.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarNormalButton),
+        )
+        self.new_window_action.triggered.connect(self._open_in_new_window)
+        self.context_menu.addAction(self.new_window_action)
         self.edit_action = bind(QAction(self.context_menu), tr("Edit metadata…"))
         self.editor = LibraryMetadataDialog(self.panel)
         self.edit_action.triggered.connect(self._edit_metadata)
@@ -317,7 +315,6 @@ class LibraryPanel(QSplitter):
         )
         self.toggle_button.setCheckable(True)
         self.toggle_button.toggled.connect(self._toggle)
-        self._import_worker: ArchiveImportWorker | None = None
         self._entries: dict[str, LibraryEntry] = {}
         self._items: dict[str, QTreeWidgetItem] = {}
         self.workflow_selector: WorkflowSelector | None = None
@@ -408,6 +405,16 @@ class LibraryPanel(QSplitter):
         self.empty_label.setVisible(not entries)
         self.refresh_labels()
 
+    @Slot(object)
+    def refresh_after_change(self, origin: object) -> None:
+        """Refresh another window's Library change without reloading the current chart.
+
+        Args:
+            origin: Panel that already refreshed after committing the change.
+        """
+        if origin is not self:
+            self.refresh()
+
     def refresh_labels(self) -> None:
         """Refresh translated headings and details while keeping selection and chart state."""
         self._heading.ensurePolished()
@@ -463,6 +470,7 @@ class LibraryPanel(QSplitter):
         )
         self.videos_action.setEnabled(selected is not None)
         self.history_action.setEnabled(selected is not None)
+        self.new_window_action.setEnabled(selected is not None)
         self.remove_action.setEnabled(selected is not None and self.recordings.isEnabled())
         self.editor.refresh_labels()
         if self.workflow_selector is not None and self._workflow_digest is not None:
@@ -471,17 +479,36 @@ class LibraryPanel(QSplitter):
             )
 
     def show_recording(self, data: ExplorerData) -> None:
-        """Display original metadata only when the loaded source matches the selection.
+        """Select and reveal the loaded Library recording and display its metadata.
 
         Args:
             data: Successfully loaded explorer data from the existing load lifecycle.
         """
-        entry = self.selected_entry
-        if entry is not None and entry.source_sha256 == data.source.source_sha256:
-            self._details_data = data
-            self.editor.bind_source(data.source)
-            self._error = None
-            self.refresh_labels()
+        if data.source.source_sha256 not in self._entries:
+            self.refresh()
+        blocked = self.recordings.blockSignals(True)
+        try:
+            item = self._items.get(data.source.source_sha256)
+            if item is not None:
+                self.recordings.setCurrentItem(item)
+            else:
+                self.recordings.setCurrentIndex(QModelIndex())
+        finally:
+            self.recordings.blockSignals(blocked)
+        self._details_data = data
+        self.editor.bind_source(data.source)
+        self._error = None
+        self.refresh_labels()
+        self._scroll_to_selection()
+
+    def _scroll_to_selection(self) -> None:
+        """Reveal the selected row after the details area and panel geometry settle."""
+        item = self.recordings.currentItem()
+        if item is not None:
+            layout = self.panel.layout()
+            if layout is not None:
+                layout.activate()
+            self.recordings.scrollToItem(item, QAbstractItemView.ScrollHint.EnsureVisible)
 
     def show_error(self, message: str) -> None:
         """Explain a list/open failure inside the panel without changing the current chart.
@@ -527,6 +554,13 @@ class LibraryPanel(QSplitter):
         self.context_menu.popup(self.recordings.viewport().mapToGlobal(position))
 
     @Slot()
+    def _open_in_new_window(self) -> None:
+        """Request another explorer window for the selected archived recording."""
+        entry = self.selected_entry
+        if entry is not None:
+            self.new_window_requested.emit(entry.source_sha256)
+
+    @Slot()
     def _remove_recording(self) -> None:
         """Confirm removal of the selected archive entry and refresh the Library list."""
         entry = self.selected_entry
@@ -561,6 +595,7 @@ class LibraryPanel(QSplitter):
             return
         self._error = None
         self.refresh()
+        self.changed.emit(self)
 
     @Slot()
     def _show_history(self) -> None:
@@ -657,60 +692,6 @@ class LibraryPanel(QSplitter):
             self.editor.raise_()
             self.editor.activateWindow()
 
-    @Slot()
-    def _choose_import(self) -> None:
-        filenames, _ = QFileDialog.getOpenFileNames(
-            self,
-            tr("Import recordings into Library"),
-            "",
-            tr("Ride Forces (*.forces *.zforces);;All files (*)"),
-        )
-        if not filenames:
-            return
-        self.import_button.setEnabled(False)
-        worker = ArchiveImportWorker(tuple(Path(filename) for filename in filenames))
-        worker.signals.completed.connect(self._import_finished)
-        worker.signals.failed.connect(self._import_failed)
-        self._import_worker = worker
-        QThreadPool.globalInstance().start(worker)
-
-    @Slot(object)
-    def _import_finished(self, results: tuple[ArchiveImportResult, ...]) -> None:
-        lines: list[str] = []
-        failures: list[str] = []
-        for result in results:
-            message = (
-                tr("Imported")
-                if result.status == "imported"
-                else tr("Updated in Library")
-                if result.status == "updated"
-                else tr("Already in Library")
-                if result.status == "duplicate"
-                else tr("Import failed: {0}", result.error or "")
-            )
-            line = f"{result.path.name}: {message}"
-            lines.append(line)
-            if result.status not in {"imported", "updated", "duplicate"}:
-                failures.append(line)
-        self.import_button.setToolTip("\n".join(lines))
-        self.import_button.setEnabled(True)
-        self._import_worker = None
-        self.refresh()
-        if failures:
-            self.show_error("\n".join(failures))
-        selected = self.selected_entry
-        if selected is not None and any(
-            result.status == "updated" and result.source_sha256 == selected.source_sha256
-            for result in results
-        ):
-            self.open_requested.emit(selected.source_sha256)
-
-    @Slot(str)
-    def _import_failed(self, message: str) -> None:
-        self.show_error(tr("Import failed: {0}", message))
-        self.import_button.setEnabled(True)
-        self._import_worker = None
-
     @Slot(bool)
     def _toggle(self, checked: bool) -> None:
         """Show or hide the content and match the folder icon to its visible state."""
@@ -719,6 +700,7 @@ class LibraryPanel(QSplitter):
             self._close_workflow()
         if checked:
             self.refresh()
+            self._scroll_to_selection()
         self.toggle_button.setIcon(
             self.style().standardIcon(
                 QStyle.StandardPixmap.SP_DirOpenIcon
@@ -727,45 +709,3 @@ class LibraryPanel(QSplitter):
             ),
         )
         self.updateGeometry()
-
-
-class ArchiveImportSignals(QObject):
-    """Transport background archive outcomes without accessing widgets.
-
-    Attributes:
-        completed: Ordered per-file import results.
-        failed: Explanation of an unexpected worker failure.
-    """
-
-    completed = Signal(object)
-    failed = Signal(str)
-
-
-class ArchiveImportWorker(QRunnable):
-    """Run explicit archive imports off the GUI thread.
-
-    Attributes:
-        paths: Selected local recording paths.
-        signals: Completion/error transport to the Library component.
-    """
-
-    def __init__(self, paths: tuple[Path, ...]) -> None:
-        """Retain selected paths for processing by the archive service.
-
-        Args:
-            paths: Supported recordings selected through the file dialog.
-        """
-        super().__init__()
-        self.paths = paths
-        self.signals = ArchiveImportSignals()
-
-    @Slot()
-    def run(self) -> None:
-        """Import files independently and report results through queued Qt signals."""
-        try:
-            results = LibraryArchive().import_paths(self.paths)
-        except Exception as error:
-            record_error("Library import worker", error)
-            self.signals.failed.emit(str(error))
-        else:
-            self.signals.completed.emit(results)

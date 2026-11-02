@@ -150,12 +150,12 @@ render-job count and source-bound marker choices. Invalid/unavailable values use
 documented defaults without destroying stored data. Presets/jobs retain complete
 recipes, not recordings or prepared arrays. Omitted optional stored fields use
 declared model defaults, while required fields and supplied values remain strictly
-validated. Reads do not rewrite stored definitions. Batches reimport/check hashes and run
+validated. Reads do not rewrite stored definitions. Batches read Library bytes or legacy source paths, check hashes and run
 sequentially, preserving completed videos across later failure/cancellation.
 
 The separate `library.sqlite3` contains recordings, export history and video links,
-plus Alembic's revision table. Explicit import stores only complete successful
-originals, initializing current markers from source/defaults and valid preferences.
+plus Alembic's revision table. Every Explorer file-open request archives its input
+before opening the stored bytes. Import stores only complete successful originals, initializing current markers from source/defaults and valid preferences.
 Source UUIDs identify recordings across compressed/plain and changed exports.
 Equivalent source objects preserve the existing entry; changed exports replace
 source fields, retaining first import time, additions, valid markers and relationships.
@@ -181,7 +181,9 @@ and legacy batch jobs without additions retain original-source semantics. Captur
 batch additions remain independent of later Library edits.
 Current marker bounds and calibration recipes use the existing recording columns.
 The Library is authoritative for archived exact-byte hashes, including external
-opens; non-archived inputs retain preference storage. Existing validation admits
+imports of existing recordings. Older preference recipes initialize a newly archived recording.
+Startup restoration retains the last Library digest, independently of any external
+path; removed entries are skipped. Legacy last-file preferences use the same import path. Existing validation admits
 Gravity/Incline references outside Start/End. All four choices save atomically only
 after an adopted analysis result; failure leaves the previous stored recipe intact.
 Reset restores source defaults. Marker edits leave source bytes, dates, additions,

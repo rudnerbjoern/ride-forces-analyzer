@@ -50,9 +50,13 @@ when you first open the app.
 Follow the [installation guide](docs/user/INSTALLATION.md) for download
 verification, Linux prerequisites and first-launch instructions.
 
-### 2. Open your ride
+### 2. Import your ride
 
-Click **Open recording** or press **Ctrl+O** (**⌘O** on macOS) and choose your `.forces` or `.zforces` file.
+Click **Import…** or press **Ctrl+O** (**⌘O** on macOS) and choose your `.forces` or `.zforces` file.
+The application archives it in your local Library and opens the stored recording.
+You can also drop recording files onto the window. All selected files are imported;
+only the first successful recording opens in the current Explorer window.
+Existing Library entries are reused.
 Click a point in the chart to inspect that sample, move through the ride with the
 slider, or zoom into a section with the mouse wheel or by dragging across the plot.
 Use **Play / Pause** beside the sample slider to follow the ride at **0.5×, 1× or 2× speed** (default **1×**).

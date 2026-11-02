@@ -28,7 +28,7 @@ def open_source(
     def loaded(path: Path) -> ExplorerData:
         return data
 
-    monkeypatch.setattr(loading, "load_recording", loaded)
+    monkeypatch.setattr(loading, "import_recording", loaded)
     window.open_path(Path("synthetic.forces"))
     wait_until(window.open_action.isEnabled)
     return data
@@ -202,7 +202,7 @@ def test_late_import_cannot_replace_reopened_window_source_or_error_status(
             raise OSError("Old import failed")
         return late
 
-    monkeypatch.setattr(loading, "load_recording", blocked)
+    monkeypatch.setattr(loading, "import_recording", blocked)
     window.open_path(Path("late.forces"))
     try:
         assert entered.wait(5)
@@ -228,7 +228,7 @@ def test_loaded_snapshot_restores_its_smoothing_window(
     def loaded(path: Path) -> ExplorerData:
         return data
 
-    monkeypatch.setattr(loading, "load_recording", loaded)
+    monkeypatch.setattr(loading, "import_recording", loaded)
     explorer_window.open_path(Path("prepared.forces"))
     wait_until(explorer_window.open_action.isEnabled)
     assert explorer_window.data is not None

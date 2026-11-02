@@ -35,7 +35,7 @@ def test_arrow_keys_step_samples_only_when_paused_and_outside_inputs(
     def load_sample(path: Path) -> ExplorerData:
         return recording
 
-    monkeypatch.setattr(loading, "load_recording", load_sample)
+    monkeypatch.setattr(loading, "import_recording", load_sample)
     window.open_path(Path(".tmp/arrow-recording.forces"))
     wait_until(window.open_action.isEnabled)
     window.activateWindow()
@@ -88,7 +88,7 @@ def test_play_pause_seek_end_and_translations(
     def load_sample(path: Path) -> ExplorerData:
         return recording
 
-    monkeypatch.setattr(loading, "load_recording", load_sample)
+    monkeypatch.setattr(loading, "import_recording", load_sample)
     window.open_path(Path(".tmp/playback-recording.forces"))
     wait_until(window.open_action.isEnabled)
     assert window.navigation.play_button.isEnabled()
@@ -193,7 +193,7 @@ def test_open_and_export_pause_without_reusing_the_old_clock(
     def load_sample(path: Path) -> ExplorerData:
         return recording
 
-    monkeypatch.setattr(loading, "load_recording", load_sample)
+    monkeypatch.setattr(loading, "import_recording", load_sample)
     window.open_path(Path(".tmp/playback-recording.forces"))
     wait_until(window.open_action.isEnabled)
     window.navigation.toggle_playback()
@@ -224,7 +224,7 @@ def test_speed_dropdown_changes_running_and_paused_playback(
     def load_sample(path: Path) -> ExplorerData:
         return recording
 
-    monkeypatch.setattr(loading, "load_recording", load_sample)
+    monkeypatch.setattr(loading, "import_recording", load_sample)
     window.open_path(Path(".tmp/playback-recording.forces"))
     wait_until(window.open_action.isEnabled)
     assert window.navigation.playback_speed.isEnabled()
@@ -262,7 +262,7 @@ def test_zoomed_playback_slides_without_changing_zoom_or_selection(
     def load_sample(path: Path) -> ExplorerData:
         return recording
 
-    monkeypatch.setattr(loading, "load_recording", load_sample)
+    monkeypatch.setattr(loading, "import_recording", load_sample)
     window.open_path(Path(".tmp/playback-recording.forces"))
     wait_until(window.open_action.isEnabled)
     for calibrated in (False, True):

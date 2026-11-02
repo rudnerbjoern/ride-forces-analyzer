@@ -76,7 +76,7 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
                 heading = window.findChild(QLabel, "recordingHeading")
                 assert heading is not None
                 assert heading.text() == str(tr(
-                    "Open a .forces or .zforces recording to explore your ride",
+                    "Import a .forces or .zforces recording to explore your ride",
                     language=system_ui_language(),
                 ))
                 if sys.platform == "win32":

@@ -45,6 +45,13 @@ and restricted local access. Failed forwarding does not start a competing owner.
 macOS file-open events enter the same request queue; Linux desktop launchers pass
 a file path. Requests wait while the target window imports.
 
+External file requests first archive the original through `LibraryArchive.import_paths()`
+and then reopen the returned Library digest, preserving existing entry data on
+duplicates. The main Import action and file drops share this path; multiple files
+are archived sequentially and only the first successful result opens in the current
+window, or one new window when explicitly requested. A repeated
+external path targets its existing window and still runs the import before opening, so
+updated exports at that path are processed.
 Library row selection schedules the existing load worker with an archive digest
 instead of an external path. It reuses archive decoding/analysis and the same
 generation checks, completion and failure delivery. The list is disabled while
@@ -53,7 +60,8 @@ previous chart. Additional original metadata appears only after a successful loa
 
 Each window owns its recording, analysis, playback and child dialogs. Language
 and appearance are shared. Explicit file paths take precedence over optional
-Restore last file; only successful imports update the remembered path.
+Restore last file; successful loads remember the Library digest for startup restoration, while file
+requests also retain their last import directory and routing path.
 
 Support reports collect handled/unhandled errors, Qt warnings/critical/fatal
 messages with severity/category and best-effort native crash stacks. Qt diagnostics

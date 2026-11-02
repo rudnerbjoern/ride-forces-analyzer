@@ -156,7 +156,7 @@ class BatchJob(BaseModel, frozen=True, strict=True, extra="forbid"):
     """Batch job contract and owned data.
 
     Attributes:
-        recording_path: Path of the source recording used by the saved job.
+        recording_path: Legacy external source path, or None for an archived recording.
         source_sha256: SHA-256 identity of the original recording bytes.
         ride: Recording name or resolved recording for this export job.
         preset: Validated immutable export preset to store or apply.
@@ -167,7 +167,7 @@ class BatchJob(BaseModel, frozen=True, strict=True, extra="forbid"):
         metadata_additions: Captured user additions; legacy jobs retain original metadata.
     """
 
-    recording_path: Path
+    recording_path: Path | None = None
     source_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     ride: str
     preset: SavedPreset
@@ -189,7 +189,7 @@ class BatchJob(BaseModel, frozen=True, strict=True, extra="forbid"):
         """
         if self.last_sample < self.first_sample:
             raise ValueError("Last sample must not precede first sample")
-        if not self.recording_path.is_absolute():
+        if self.recording_path is not None and not self.recording_path.is_absolute():
             raise ValueError("Batch recordings require absolute file paths")
         return self
 

@@ -131,6 +131,7 @@ PreferenceKey = Literal[
     "automatic_updates",
     "restore_last_file",
     "last_recording_path",
+    "last_library_recording_sha256",
     "update_checked_at",
     "skipped_update",
     "library_video_labels",
@@ -392,6 +393,30 @@ class Preferences:
             except OSError, ValueError:
                 pass
         return None
+
+    def last_library_recording(self) -> str | None:
+        """Return the last successfully opened Library identity, if valid.
+
+        Returns:
+            Original-byte SHA-256, or None for missing or invalid preferences.
+        """
+        value = self._read("last_library_recording_sha256")
+        try:
+            return _recording_hash(value)
+        except ValueError:
+            pass
+        return None
+
+    def remember_library_recording(self, source_sha256: str) -> None:
+        """Remember an archived recording for startup without an external file dependency.
+
+        Args:
+            source_sha256: Exact-byte SHA-256 of the successfully opened Library source.
+
+        Raises:
+            ValueError: The source identity is invalid.
+        """
+        self._write("last_library_recording_sha256", _recording_hash(source_sha256))
 
     def _directory(self, key: DirectoryKey) -> str:
         value = self._read(key)
