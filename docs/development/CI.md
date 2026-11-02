@@ -74,6 +74,8 @@ it does not guarantee lower total runner minutes.
   workflows, selector and selector tests. Plugin-only changes select no Python/UI
   suites. Failed, cancelled or missing selected plugin results block `check`;
   releases reuse full CI and always require the plugin job.
+- Shared Qt/Node transport implementation and interoperability fixtures select both
+  application and plugin checks.
 - Commit-policy Markdown selects docs/skills. Code-only/skill-only/plugin-only runs supply
   CSpell; standalone dependency-contract runs also supply CSpell. Mixed runs with
   docs use its CSpell check.

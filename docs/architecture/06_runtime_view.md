@@ -75,6 +75,38 @@ Startup removes completed-process
 reports and preserves active ones. Report failure must not replace the original
 error. Exception messages may contain personal paths; nothing is uploaded.
 
+## Stream Deck transport
+
+`runtime.stream_deck.ControlServer` and the plugin's `AnalyzerTransport` exchange
+application-owned text frames. Application startup and SDK action wiring remain planned.
+
+```mermaid
+sequenceDiagram
+    participant Qt as Qt ControlServer
+    participant File as Per-user discovery file
+    participant Plugin as TypeScript client
+    Qt->>File: Atomically publish version, port and session token
+    Plugin->>File: Read endpoint on each connection attempt
+    Plugin->>Qt: Connect to IPv4 loopback; authenticate first frame
+    Qt-->>Plugin: Ready and latest published state
+    Plugin->>Qt: Command text
+    Qt-->>Plugin: State text
+    Note over Qt,Plugin: Reconnect repeats discovery/authentication; commands are never queued
+```
+
+- Bind only `127.0.0.1` on a dynamic port. Discovery is `stream-deck.json` in the
+  existing application-data directory; only the owner removes its published file.
+  A fresh token is generated at each start; the file requests owner read/write permissions.
+- Handshake version 1 and the token are required within five seconds. Browser
+  origins and binary messages are rejected; incoming and published state frames
+  are bounded to 64 KiB. Application command validation belongs to the later control contract.
+- The client retries after one second, including missing/invalid discovery and
+  connection failure. Disconnected sends return false; stop cancels retries and
+  stale connection attempts. Reconnected peers receive the latest state.
+- Native Windows Qt/Node exchange and restart recovery are verified. macOS uses
+  the same APIs and its existing Application Support path; native socket,
+  permissions, process and device behavior remain unverified.
+
 ## Library actions and shared windows
 
 For **Open in new window…**, the panel emits an archive digest through the window.

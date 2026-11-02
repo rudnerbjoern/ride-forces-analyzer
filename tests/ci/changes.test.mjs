@@ -39,6 +39,13 @@ for (const filename of [".node-version", "package.json", "package-lock.json", ".
   });
 }
 
+for (const filename of ["src/ride_forces_analyzer/runtime/stream_deck.py",
+  "tests/support/test_stream_deck.py", "tests/support/stream_deck_client.mjs"]) {
+  test(`Shared Qt/Node transport inputs select both application and plugin checks: ${filename}`, () => {
+    assert.deepEqual(classifyChanges([filename]), selected("code", "dependencies", "stream-deck"));
+  });
+}
+
 for (const filename of ["plugins/stream-deck/src/plugin.ts", "plugins/stream-deck/src/index.ts",
   "plugins/stream-deck/tests/plugin.test.mjs", "plugins/stream-deck/tests/sdk.test.mjs",
   "plugins/stream-deck/tsconfig.json", "plugins/stream-deck/package.json",

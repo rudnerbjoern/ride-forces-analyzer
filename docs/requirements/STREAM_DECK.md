@@ -2,8 +2,8 @@
 
 <!-- cspell:words Elgato streamdeck -->
 
-Status: Initial scope agreed; SDK bootstrap and local test scaffold present.
-Analyzer controls, transport and device features remain planned.
+Status: Initial scope agreed; SDK bootstrap and loopback transport components present.
+Application control bindings and device features remain planned.
 
 ## Confirmed scope
 
@@ -13,6 +13,8 @@ Analyzer controls, transport and device features remain planned.
 - Integration: separate plugin and local control interface; no hotkey simulation.
 - Plugin: official Elgato TypeScript SDK (`@elgato/streamdeck`), using Stream Deck's Node.js runtime.
 - Preferred transport: loopback WebSocket with the same protocol on Windows and macOS.
+- Planned application setting: **Enable Stream Deck**, off by default and persisted
+  in user preferences; the control server runs only while enabled.
 - Stream Deck + and Neo use the [menu hierarchy](#menu-structure) below.
 - Application control is foreground-only; no operation while another application has focus.
 - The currently active Explorer is the control target; no active Explorer means
@@ -25,7 +27,7 @@ Analyzer controls, transport and device features remain planned.
 - The [initial action scope](#action-scope) is confirmed.
 - Distribution: one `.streamDeckPlugin` asset on Analyzer GitHub releases, with
   device-specific Plus and Neo profiles.
-- Implemented scope is limited to the SDK bootstrap and local test scaffold.
+- Implemented scope covers the SDK bootstrap, loopback transport components and tests.
 
 ## Goal and constraints
 
@@ -302,10 +304,11 @@ in the Node.js runtime provided by Stream Deck.
 The plugin sends commands and receives actual application state; it does not
 simulate keyboard input. The existing file-open transport remains separate.
 
-Loopback WebSocket is the preferred transport for Windows and macOS. A candidate
-is Qt's WebSocket server in the Analyzer and a WebSocket client in the plugin.
-Endpoint discovery, local access, protocol compatibility and reconnects still need
-verification. SDK/tooling versions are fixed in the [workspace manifest](../../plugins/stream-deck/package.json)
+Loopback WebSocket uses Qt's server and Node's native client. The
+[transport contract](../architecture/06_runtime_view.md#stream-deck-transport)
+defines discovery, local access and reconnects. Native Windows exchange and recovery
+are verified; application command/state contracts and wiring remain planned.
+SDK/tooling versions are fixed in the [workspace manifest](../../plugins/stream-deck/package.json)
 and [root npm lockfile](../../package-lock.json); additional transport dependencies remain undecided.
 
 The plugin's SDK connection to Stream Deck and its connection to the Analyzer are
@@ -400,10 +403,12 @@ Device integration remains planned; the SDK bootstrap has local tests and a cond
 
 2. **Name:** Verify WebSocket transport
 
-   - **Status:** Planned.
+   - **Status:** Complete on Windows; native macOS behavior remains unverified.
    - **Content:** Check the Qt server/plugin client, endpoint discovery, local access and reconnects.
    - **Acceptance criteria:** Command/state exchange and reconnects work over loopback
      WebSocket on Windows; record macOS feasibility and any unverified native behavior.
+     Platform feasibility and limits are recorded in the
+     [runtime transport contract](../architecture/06_runtime_view.md#stream-deck-transport).
 
 3. **Name:** Define control contract
 
@@ -417,15 +422,20 @@ Device integration remains planned; the SDK bootstrap has local tests and a cond
 
    - **Status:** Planned.
    - **Content:** Route commands on the GUI thread through existing controllers/services.
+     Add the **Enable Stream Deck** switch to application settings and persist it
+     through the existing user-preference storage; manage the control-server lifecycle.
    - **Acceptance criteria:** Commands affect the designated window and match GUI behavior;
      GUI changes produce matching feedback without separate analysis calculations.
      Switching the active Explorer changes the control target; no active Explorer
      leaves application controls unavailable.
      Marker changes are persisted only after successful analysis adoption.
+     Stream Deck is disabled for new users; the preference survives application restarts.
+     Enabling starts the control server; disabling disconnects clients, stops the
+     server and removes its discovery file. Startup respects the saved preference.
 
 5. **Name:** Add Stream Deck plugin
 
-   - **Status:** In progress; SDK bootstrap and local/CI test scaffold only.
+   - **Status:** In progress; SDK bootstrap, transport client and local/CI tests only.
    - **Content:** Lock the official TypeScript SDK/tooling versions; implement agreed key
      actions and state feedback.
    - **Acceptance criteria:** The plugin installs locally, executes agreed commands,

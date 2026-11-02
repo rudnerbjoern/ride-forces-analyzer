@@ -22,6 +22,8 @@ const streamDeckInputs = new Set([
   "package.json", "package-lock.json", ".node-version", ".vscode/settings.json",
   ".github/workflows/ci.yml", ".github/workflows/source-release.yml",
   ".github/scripts/ci-changes.mjs", "tests/ci/changes.test.mjs",
+  "src/ride_forces_analyzer/runtime/stream_deck.py",
+  "tests/support/test_stream_deck.py", "tests/support/stream_deck_client.mjs",
 ]);
 
 export function classifyChanges(filenames) {
