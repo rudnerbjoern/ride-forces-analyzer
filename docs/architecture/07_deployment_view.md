@@ -31,7 +31,9 @@ without dependency synchronization. Node supplies development checks and builds
 the separate [Stream Deck plugin](../../plugins/stream-deck/README.md).
 Its Windows `.sdPlugin` folder can be installed locally with Elgato's CLI.
 Compiled JavaScript bundles its runtime dependencies; project/runtime licenses
-are assembled beside it. Stream Deck supplies Node.js, independently of development Node.
+are assembled beside it, together with Plus/Neo `.streamDeckProfile` archives.
+Profiles use native folders and existing key commands; import selects the matching
+device profile. Stream Deck supplies Node.js, independently of development Node.
 Native device verification remains open.
 Planned delivery is one `.streamDeckPlugin` asset beside the Analyzer GitHub release
 packages, including device-specific Plus and Neo profiles.

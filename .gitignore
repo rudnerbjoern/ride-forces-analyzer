@@ -26,6 +26,7 @@ build/
 /plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/ui/control.js
 /plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/LICENSE
 /plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/THIRD_PARTY_NOTICES.txt
+/plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/profiles/
 
 # Keep the temporary directory, but ignore its contents.
 /.tmp/*

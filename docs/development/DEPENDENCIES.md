@@ -37,8 +37,9 @@ requires Mako and MarkupSafe, covered by the existing runtime notice collector.
 
 The [Stream Deck workspace](../../plugins/stream-deck/package.json) declares its SDK
 and TypeScript tools; the root npm lockfile covers all workspaces. The official
-CLI validates/links the local plugin; esbuild bundles runtime dependencies. Neither
-tool is included in the installed plugin. No Python runtime dependency is added.
+CLI validates/links the local plugin; esbuild bundles runtime dependencies and
+`zip.js` creates native device-profile archives. These build tools are excluded
+from the installed runtime. No Python runtime dependency is added.
 
 The SDK's `@elgato/utils` dependency uses Zod's `v4-mini` API. A scoped root override
 selects patched Zod for the [collection-validation advisory](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5);

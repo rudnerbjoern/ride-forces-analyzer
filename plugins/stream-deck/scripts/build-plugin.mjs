@@ -3,9 +3,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import { spawnSync } from "node:child_process";
+import { buildProfiles } from "./build-profiles.mjs";
 
 const workspace = fileURLToPath(new URL("../", import.meta.url));
 const plugin = path.join(workspace, "io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin");
+await buildProfiles();
 const compiled = spawnSync(process.execPath, [path.join(workspace, "../../node_modules/typescript/bin/tsc"),
   "--project", path.join(workspace, "tsconfig.json")], { stdio: "inherit", cwd: workspace });
 if (compiled.error) throw compiled.error;

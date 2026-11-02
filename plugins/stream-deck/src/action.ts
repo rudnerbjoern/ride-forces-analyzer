@@ -5,7 +5,7 @@ import { ControlClient } from "./client.js";
 import { controlSettings, requestedAction, type ControlSettings } from "./controls.js";
 import { keyFeedback } from "./feedback.js";
 
-/** One configurable key action; folders, dials and device profiles have separate implementation steps. */
+/** One configurable application key action, independent of native folder navigation. */
 @action({ UUID: "io.github.rudnerbjoern.ride-forces-analyzer.control" })
 export class ControlAction extends SingletonAction<ControlSettings> {
     private readonly keys = new Map<string, { action: KeyAction<ControlSettings>; settings: ControlSettings | undefined; signature?: string }>();

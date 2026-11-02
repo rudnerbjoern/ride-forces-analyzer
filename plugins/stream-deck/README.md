@@ -2,7 +2,8 @@
 
 Windows key controls using Elgato's TypeScript SDK. The configurable **Analyzer
 control** action covers the [agreed commands](../../docs/architecture/06_runtime_view.md#actions).
-Device menus/profiles, Plus dials/touch and Neo InfoBar remain planned.
+Plus and Neo profiles provide native Library/Explorer menus and key controls.
+Plus dials/touch, marker editors and Neo InfoBar remain planned.
 
 ## Local build and installation
 
@@ -29,7 +30,24 @@ directory. The stable reverse-DNS ID derives from the project's GitHub Pages add
 The folder contains manifest, icons and inspector sources; ignored build output
 adds self-contained JavaScript, the project license and bundled-runtime notices.
 It does not need repository `node_modules` at runtime. A release `.streamDeckPlugin`
-asset and bundled profiles remain planned.
+asset remains planned. Builds also create `profiles/plus.streamDeckProfile` and
+`profiles/neo.streamDeckProfile` inside that folder; double-click the matching
+archive to import it into Stream Deck. Existing user profiles are preserved.
+
+## Device menus
+
+Both profiles provide Start → Library / Explorer → Playback / View / Curves / Markers.
+Native folders handle navigation; Home returns to Start on the invoking device,
+including when Analyzer is disconnected. Back stays on key 1 and Home on key 8
+in every submenu. Stream Deck fixes native folder Back at key 1 during import;
+the preferred key 5 placement is unsupported. Start has no Back/Home keys.
+
+Library includes Previous/Next/Open/Import keys. Playback provides Play/Pause and
+Position, Smoothing and Speed folders with existing key actions; Position includes
+fine/coarse steps and zoom. View / Curves contains the five curve/mode controls and
+Reset view. Marker folders reserve Start/Gravity/Incline/End in order; editor
+bindings belong to their later integration steps. No dial or InfoBar is required
+to navigate the menus or use the assigned controls.
 
 ## Configure keys
 
@@ -41,7 +59,7 @@ asset and bundled profiles remain planned.
 Create separate marker Preview, Apply and Discard keys. Preview steps are ±1/±10
 source samples. Library browsing selects one visible entry cyclically; Open opens
 the selection in the current Explorer. Generic key bindings are available on Plus
-and Neo; device-specific layouts and hardware acceptance remain open.
+and Neo; physical device acceptance remains open.
 
 ## Feedback and connection
 

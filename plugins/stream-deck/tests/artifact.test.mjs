@@ -78,7 +78,7 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
   });
   let output = "";
   const info = { application: { version: "7.6.0", platform: "windows", language: "en", font: "Arial", platformVersion: "10" },
-    plugin: { uuid, version: "0.1.0.0" }, devices: [{ id: "test-device", name: "Test Neo", type: 7,
+    plugin: { uuid, version: "0.1.0.0" }, devices: [{ id: "test-device", name: "Test Neo", type: 9,
       size: { columns: 4, rows: 2 } }], devicePixelRatio: 1,
     colors: { buttonMouseOverBackgroundColor: "#000", buttonPressedBackgroundColor: "#000", buttonPressedBorderColor: "#000", buttonPressedTextColor: "#fff", highlightColor: "#fff" } };
   const child = spawn(process.execPath, ["bin/plugin.js", "-port", String(host.address().port),
@@ -122,6 +122,15 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
     await waitUntil(() => commands.length === 2, diagnostic);
     assert.deepEqual(commands[1].target, snapshot.target);
     assert.notEqual(commands[1].id, commands[0].id);
+    const homeEvent = { ...event, action: `${uuid}.home`, context: "test-home",
+      payload: { ...event.payload, settings: {} } };
+    hostSocket.send(JSON.stringify({ ...homeEvent, event: "willAppear" }));
+    hostSocket.send(JSON.stringify({ ...homeEvent, event: "keyDown" }));
+    await waitUntil(() => hostMessages.some(value => value.event === "switchToProfile"), diagnostic);
+    const navigation = hostMessages.find(value => value.event === "switchToProfile");
+    assert.equal(navigation.device, "test-device");
+    assert.deepEqual(navigation.payload, { profile: "profiles/neo", page: 0 });
+    assert.equal(commands.length, 2, "Home must not apply previews or send application commands");
     send("willDisappear");
   } finally {
     if (child.exitCode === null && child.signalCode === null) {

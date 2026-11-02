@@ -67,8 +67,10 @@ the official SDK key action, validated transport client, manifest, inspector and
 wire models live in `runtime.control_contract`, paired with plugin protocol types.
 `ui.stream_deck.StreamDeckController` owns optional server startup, GUI-thread
 action routing and coalesced state feedback. The plugin's shared client correlates
-requests and drives visible keys from confirmed snapshots. Device profiles and
-dial/InfoBar bindings remain planned.
+requests and drives visible keys from confirmed snapshots. Build-time profile
+definitions produce native Plus/Neo folder layouts; a local Home action returns
+to the invoking device's bundled Start page. Dial/InfoBar and marker editor
+bindings remain planned.
 
 ## Importer composition and interfaces
 

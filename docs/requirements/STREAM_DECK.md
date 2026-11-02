@@ -3,7 +3,7 @@
 <!-- cspell:words Elgato streamdeck -->
 
 Status: Windows application routing and configurable plugin keys implemented.
-Device profiles, dials/touch, InfoBar and physical device acceptance remain planned.
+Plus/Neo native menu profiles implemented; dials/touch, InfoBar and physical device acceptance remain planned.
 
 ## Confirmed scope
 
@@ -28,7 +28,7 @@ Device profiles, dials/touch, InfoBar and physical device acceptance remain plan
 - Distribution: one `.streamDeckPlugin` asset on Analyzer GitHub releases, with
   device-specific Plus and Neo profiles.
 - Implemented scope covers loopback transport, typed control contract, application
-  actions, configurable SDK keys, local installation and tests.
+  actions, configurable SDK keys, native menu profiles, local installation and tests.
 
 ## Goal and constraints
 
@@ -66,8 +66,8 @@ Keep the normal page navigation separate from plugin status displays.
 
 ## Device controls
 
-The shared menu hierarchy, Library navigation, marker interactions and Neo layout
-below are confirmed; other assignments remain proposals.
+Key assignments below match the bundled native profiles. Dial/touch, marker
+editors and InfoBar assignments remain planned.
 
 ### Menu structure
 
@@ -85,16 +85,18 @@ Start
         └── Start · Gravity · Incline · End
 ```
 
-Keep Back at bottom-left (key 5) and Home at bottom-right (key 8) on both devices
-where supported, across menus, editors and additional pages. Number keys left to
-right, top row first. Leave these positions unassigned on Start. Verify placement
-with the chosen profile/folder navigation before finalizing device layouts.
+Back uses top-left (key 1) and Home bottom-right (key 8) in both native profiles.
+Stream Deck forces native folder Back to key 1 on import; the preferred key 5
+position is not supported. Number keys left to right, top row first.
+Start has Library/Explorer keys and no Back/Home keys.
 
 Use bundled device-specific profiles with native nested folders and pages,
 rather than a custom menu engine. Profiles can include the agreed key, dial and
 display assignments. Plugin-driven navigation can switch bundled profiles and
-pages; it cannot switch to arbitrary user-created profiles. Exact layout and
-Plus dial assignments per menu remain open and require hardware verification.
+pages; it cannot switch to arbitrary user-created profiles. Home switches the invoking
+device to its bundled Start page. Profiles provide existing key controls for Library,
+playback, position, zoom, smoothing, speed and curves; marker folders reserve the
+agreed order for later editors. Plus dial assignments remain planned.
 Changing menus must not silently confirm marker previews or change the target window.
 
 ### Library navigation
@@ -140,8 +142,8 @@ Marker dial presses still apply the corresponding preview. Neo uses the separate
 
 ### Plus mockups
 
-Proposed physical placement of confirmed actions and candidate controls, following
-the shared Back/Home positions. Each page
+Native profile key placement and planned dial/touch assignments, following
+the supported Back/Home positions. Each page
 has two key rows, followed by four touch fields and four dials where assigned.
 Blank positions are unassigned; menu-only pages leave touch fields/dials unassigned.
 Labels represent icons with short titles or values; final artwork remains open.
@@ -156,26 +158,26 @@ Start:
 Library:
 
 ```text
-[ Import ] [ ] [ ] [      ]
-[ Back   ] [ ] [ ] [ Home ]
+[ Back ] [ Import ] [ Previous ] [ Next ]
+[ Open ] [        ] [          ] [ Home ]
 Touch: [ Selected entry ] [ ] [ ] [ ]
 Dials: [ Browse / Open  ] [ ] [ ] [ ]
 ```
 
-The first Library dial rotates through entries cyclically and opens on press.
+The planned first Library dial rotates through entries cyclically and opens on press.
 
 Explorer:
 
 ```text
-[ Playback ] [ View / Curves ] [ Markers ] [      ]
-[ Back     ] [               ] [         ] [ Home ]
+[ Back ] [ Playback ] [ View / Curves ] [ Markers ]
+[      ] [          ] [               ] [ Home    ]
 ```
 
 Playback, using the candidate assignments in [Navigation page](#navigation-page):
 
 ```text
-[ Play / Pause ] [ ] [ ] [      ]
-[ Back         ] [ Fine / Coarse ] [ ] [ Home ]
+[ Back  ] [ Play / Pause ] [ Position ] [ Smoothing ]
+[ Speed ] [              ] [          ] [ Home      ]
 Touch: [ Time/sample + mode ] [ View interval ] [ Window size ] [ Speed/state ]
 Dials: [ Position           ] [ View          ] [ Smoothing   ] [ Speed       ]
 ```
@@ -183,9 +185,13 @@ Dials: [ Position           ] [ View          ] [ Smoothing   ] [ Speed       ]
 View / Curves, candidate controls:
 
 ```text
-[ Curve 1 ] [ Curve 2    ] [ Curve 3  ] [ Reset view ]
-[ Back    ] [ Calibrated ] [ Combined ] [ Home       ]
+[ Back       ] [ Curve 1    ] [ Curve 2  ] [ Curve 3 ]
+[ Reset view ] [ Calibrated ] [ Combined ] [ Home    ]
 ```
+
+Position opens a key page with - coarse / - fine / + fine / + coarse and Zoom -/+;
+Smoothing and Speed open decrement/reset/increment key pages. The planned
+Fine/Coarse dial-mode key belongs to the Plus navigation step.
 
 Curve labels follow the application's current view; visibility and availability
 follow actual application state. Dial assignments for this page remain open.
@@ -198,8 +204,8 @@ switch additional pages within a section; Back returns to the parent menu.
 Library page, top and bottom key rows:
 
 ```text
-[ Previous ] [ Next ] [ Open ] [ Import ]
-[ Back     ] [      ] [      ] [ Home   ]
+[ Back   ] [ Previous ] [ Next ] [ Open ]
+[ Import ] [          ] [      ] [ Home ]
 InfoBar: selected Library entry
 ```
 
@@ -208,15 +214,15 @@ Previous/Next use the cyclic selection defined in [Library navigation](#library-
 Marker selection, top and bottom key rows:
 
 ```text
-[ Start ] [ Gravity ] [ Incline ] [ End  ]
-[ Back  ] [         ] [         ] [ Home ]
+[ Back ] [ Start ] [ Gravity ] [ Incline ]
+[ End  ] [       ] [         ] [ Home    ]
 ```
 
-Selecting a marker opens its editor:
+Selecting a marker opens its reserved folder. Planned editor bindings:
 
 ```text
-[ - coarse ] [ - fine  ] [ + fine ] [ + coarse ]
-[ Back     ] [ Discard ] [ Apply  ] [ Home     ]
+[ Back     ] [ - coarse ] [ - fine ] [ + fine ]
+[ + coarse ] [ Discard  ] [ Apply  ] [ Home   ]
 ```
 
 Adjustment keys change only the selected marker's preview. Apply submits that
@@ -242,8 +248,8 @@ The dial order and preview/press interaction are owner-specified.
 Proposed physical layout; marker order and dial/touch interaction are confirmed:
 
 ```text
-[      ] [ ] [ ] [      ]
-[ Back ] [ Fine / Coarse ] [ ] [ Home ]
+[ Back ] [ ] [ ] [      ]
+[      ] [ Fine / Coarse ] [ ] [ Home ]
 Touch: [ Start + mode ] [ Gravity + mode ] [ Incline + mode ] [ End + mode ]
 Dials: [ Start        ] [ Gravity        ] [ Incline        ] [ End        ]
 ```
@@ -396,7 +402,8 @@ The sizes below describe SDK assets/layouts, not native LCD resolutions.
 
 ## Proposed implementation steps
 
-Key bindings have local tests and a conditional CI job; device-specific integration remains planned.
+Key bindings and native menu profiles have local tests and a conditional CI job;
+dials, marker editors, InfoBar and physical device checks remain planned.
 
 1. **Name:** Agree scope
 
@@ -449,7 +456,8 @@ Key bindings have local tests and a conditional CI job; device-specific integrat
 
 6. **Name:** Add device menus and profiles
 
-   - **Status:** Planned.
+   - **Status:** Complete on Windows; native import and SDK key navigation verified.
+     Physical device acceptance belongs to step 12.
    - **Content:** Create Plus and Neo profiles with the confirmed menu hierarchy.
    - **Acceptance criteria:** Both profiles provide Library and Explorer menus;
      Back/Home retain their shared positions wherever supported. Key-only operation
