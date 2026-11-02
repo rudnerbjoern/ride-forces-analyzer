@@ -37,9 +37,10 @@ required modules; users do not install Python.
 
 ## Validation and release boundary
 
-PR CI selects checks by changed scope; release calls validate the tagged revision
-and require native package checks before publication. Local acceptance and explicit
-owner delivery authorization remain separate from CI.
+PR CI selects Windows checks by changed scope. Native Linux/macOS package builds
+and execution checks run in manual full CI and release calls, which validate the
+tagged revision before publication. Local acceptance and explicit owner delivery
+authorization remain separate from CI.
 [CI routing](../development/CI.md) and [release policy](../development/RELEASE.md)
 own exact gates.
 

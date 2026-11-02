@@ -13,10 +13,6 @@ const ciInputs = new Set([
   ".github/dependabot.yml", ".github/labeler.yml", ".github/release.yml",
 ]);
 
-const nativeInputs = new Set([
-  ".github/workflows/ci.yml", ".github/workflows/posix-packages.yml",
-]);
-
 const skillInputs = new Set([
   "pyproject.toml", "uv.lock", ".python-version", ".gitignore", ".gitattributes", ".editorconfig",
   ".github/commit-message-instructions.md",
@@ -28,7 +24,6 @@ export function classifyChanges(filenames) {
   let skills = false;
   let workflows = false;
   let dependencies = false;
-  let posix = false;
   for (const filename of filenames) {
     if (filename === ".cspell.json") {
       dependencies = true;
@@ -39,9 +34,6 @@ export function classifyChanges(filenames) {
     if (ci) {
       workflows = true;
       dependencies = true;
-    }
-    if (nativeInputs.has(filename)) {
-      posix = true;
     }
     if (skillInputs.has(filename)) {
       skills = true;
@@ -65,7 +57,7 @@ export function classifyChanges(filenames) {
       code = true;
     }
   }
-  return { code, documentation, skills, workflows, dependencies: dependencies || code, posix: posix || code };
+  return { code, documentation, skills, workflows, dependencies: dependencies || code, posix: false };
 }
 
 export function changedPaths(base, head, cwd = process.cwd()) {

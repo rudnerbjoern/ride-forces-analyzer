@@ -28,13 +28,13 @@ for (const filename of ["src/ride_forces_analyzer/importers/service.py", "tests/
   "tests/localization/test_catalog.py", "tests/ui/test_french.py",
   ".node-version", "ffmpeg.json", "package.json", "package-lock.json", ".vscode/settings.json", "tools/check.ps1"]) {
   test(`Application/shared tooling input selects application checks: ${filename}`, () => {
-    assert.deepEqual(classifyChanges([filename]), selected("code", "dependencies", "posix"));
+    assert.deepEqual(classifyChanges([filename]), selected("code", "dependencies"));
   });
 }
 
 for (const filename of ["pyproject.toml", "uv.lock", ".python-version", ".gitignore", ".gitattributes", ".editorconfig"]) {
   test(`Shared Python/Git input selects application and skill checks: ${filename}`, () => {
-    assert.deepEqual(classifyChanges([filename]), selected("code", "dependencies", "posix", "skills"));
+    assert.deepEqual(classifyChanges([filename]), selected("code", "dependencies", "skills"));
   });
 }
 
@@ -55,14 +55,14 @@ for (const filename of [".github/labeler.yml", ".github/dependabot.yml", ".githu
 }
 
 for (const filename of [".github/workflows/posix-packages.yml", ".github/workflows/ci.yml"]) {
-  test(`Native/caller workflow selects POSIX independently: ${filename}`, () => {
-    assert.deepEqual(classifyChanges([filename]), selected("dependencies", "workflows", "posix"));
+  test(`Native/caller workflow changes select contracts without package builds: ${filename}`, () => {
+    assert.deepEqual(classifyChanges([filename]), selected("dependencies", "workflows"));
   });
 }
 
 test("Python release helpers retain conservative application validation", () => {
   assert.deepEqual(classifyChanges([".github/scripts/check-release-policy.py"]),
-    selected("code", "dependencies", "workflows", "posix"));
+    selected("code", "dependencies", "workflows"));
 });
 
 test("Mixed labeling and native workflow changes skip application and skill tests", () => {
@@ -70,7 +70,7 @@ test("Mixed labeling and native workflow changes skip application and skill test
     ".github/labeler.yml", ".github/workflows/ci.yml", ".github/workflows/posix-packages.yml",
     ".github/workflows/source-release.yml", "docs/development/CI.md", "tests/ci/changes.test.mjs",
     "tests/dependencies/labels.test.mjs", "tests/dependencies/dependabot.test.mjs", ".github/scripts/ci-changes.mjs",
-  ]), selected("dependencies", "workflows", "documentation", "posix"));
+  ]), selected("dependencies", "workflows", "documentation"));
 });
 
 test("The commit policy selects documentation and its consuming skill", () => {
@@ -79,7 +79,7 @@ test("The commit policy selects documentation and its consuming skill", () => {
 
 test("Mixed application, documentation and skill changes select all affected suites", () => {
   assert.deepEqual(classifyChanges(["src/import.py", "README.md", ".agents/skills/github-delivery/scripts/git_delivery.py"]),
-    selected("code", "documentation", "skills", "dependencies", "posix"));
+    selected("code", "documentation", "skills", "dependencies"));
 });
 
 test("CSpell configuration selects dependency contracts and the standalone spellcheck path", () => {
@@ -93,7 +93,7 @@ for (const filenames of [[], ["docs/diagram.svg"], [".markdownlint-cli2.jsonc"]]
 }
 
 test("Mixed application and documentation changes select both", () => {
-  assert.deepEqual(classifyChanges(["docs/API.md", "src/import.py"]), selected("code", "documentation", "dependencies", "posix"));
+  assert.deepEqual(classifyChanges(["docs/API.md", "src/import.py"]), selected("code", "documentation", "dependencies"));
 });
 
 test("Manual CI selects every suite without PR revisions; unsupported events fail closed", () => {
@@ -147,12 +147,14 @@ test("Real PR diffs cover renames, deletions, divergent base and cumulative chan
     assert.deepEqual(changedPaths(base, head, directory).sort(),
       ["docs/deleted.md", "docs/renamed.md", "src/old.py"]);
     assert.deepEqual(classifyChanges(changedPaths(base, head, directory)),
-      selected("code", "documentation", "dependencies", "posix"));
+      selected("code", "documentation", "dependencies"));
     await put("docs/final notes.md", "# Final notes\n");
     const finalHead = commit("Synthetic documentation update");
     // A docs-only last commit must not hide earlier unmerged code changes.
     assert.deepEqual(classifyChanges(changedPaths(base, finalHead, directory)),
-      selected("code", "documentation", "dependencies", "posix"));
+      selected("code", "documentation", "dependencies"));
+    assert.deepEqual(selectChecks("pull_request", base, finalHead, directory),
+      selected("code", "documentation", "dependencies"));
     git("switch", "base");
     await put("src/base_only.py", "value = 2\n");
     const divergentBase = commit("Synthetic base-only change");
@@ -173,7 +175,7 @@ test("Real PR diffs cover renames, deletions, divergent base and cumulative chan
     assert.ifError(cli.error);
     assert.equal(cli.status, 0, cli.stdout + cli.stderr);
     assert.match(cli.stdout, /Code checks: true; documentation checks: true; skill checks: false/);
-    assert.ok((await readFile(output, "utf8")).endsWith("code=true\ndocumentation=true\nskills=false\nworkflows=false\ndependencies=true\nposix=true\n"));
+    assert.ok((await readFile(output, "utf8")).endsWith("code=true\ndocumentation=true\nskills=false\nworkflows=false\ndependencies=true\nposix=false\n"));
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -199,7 +201,7 @@ test("PR runs cancel only superseded runs of the same workflow and have bounded 
   }
 });
 
-test("Native package uploads require release opt-in while PRs still build and verify", async () => {
+test("Full CI retains native build verification and release-only uploads", async () => {
   const [ci, packages, release] = await Promise.all([
     readFile(path.join(root, ".github/workflows/ci.yml"), "utf8"),
     readFile(path.join(root, ".github/workflows/posix-packages.yml"), "utf8"),
