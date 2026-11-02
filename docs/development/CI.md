@@ -6,12 +6,12 @@ This guide defines workflow routing and gates; [setup](SETUP.md) owns local comm
 Development checks remain on Windows. The reusable
 [native package workflow](../../.github/workflows/posix-packages.yml) additionally
 builds and executes Linux x64 and macOS arm64/x64 packages on their own runners.
-`posix` runs for application/shared inputs or changes to the CI/native package
-workflows. The final `check` gate requires every selected target to succeed.
+`posix` runs only for manual full CI and release calls; PRs skip native package
+jobs. The final `check` gate requires every selected target to succeed.
 Each target has a 30-minute budget, uses locked dependencies, tests native platform
 contracts and executes the extracted frozen app with a real CPU encode. Linux uses
-Xvfb; macOS verifies app signatures. PR and manual CI runs build and verify packages
-without uploading them. Only release calls enable `upload-packages`; verified
+Xvfb; macOS verifies app signatures. Manual CI builds and verifies packages without
+uploading them. Only release calls enable `upload-packages`; verified
 packages and their checksum files are then retained for 14 days for publication.
 They contain neither recordings nor user databases.
 These jobs qualify target packages; they do not add a Linux/macOS developer setup.
@@ -52,7 +52,7 @@ the merge gate. Hosted runs do not reuse test results.
 | `documentation`    | Any Markdown path, including source/tests/skills and deletions/renames; locked Node install and `npm run test:docs`                                                                                      |
 | `code`             | Non-Markdown application/source/test/script and shared Python/Node/Git/editor inputs, excluding CI metadata and Node/PowerShell contracts; application lint/format/types and pytest excluding `tests/ui` |
 | `ui`               | Same selection as `code`; complete `tests/ui` serially on a separate Windows runner                                                                                                                      |
-| `posix`            | Application/shared inputs, `.github/workflows/ci.yml` or `.github/workflows/posix-packages.yml`; native Linux x64/macOS arm64/x64 build and runtime checks                                               |
+| `posix`            | Manual full CI and release calls only; native Linux x64/macOS arm64/x64 build and runtime checks; skipped for all PR changes                                                                             |
 | `skills`           | Non-Markdown skill implementation/tests, consumed commit policy, Python manifest/lock/version and Git/editor settings; separate skill Ruff/mypy/pytest                                                   |
 | `check`            | Always evaluate detection, contract-selection validity and selected job results: selected = success, unselected = skipped                                                                                |
 
@@ -64,9 +64,9 @@ it does not guarantee lower total runner minutes.
 
 - Markdown-only and skill-only changes skip application tests. CI metadata,
   Node/PowerShell workflow contracts and selector changes select dependency/syntax
-  checks without application/UI/skill tests. Changing the CI/native package workflow
-  additionally selects POSIX. Python release-helper changes retain conservative
-  application validation; shared toolchain/manifest inputs also retain full checks.
+  checks without application/UI/skill tests, including CI/native package workflow
+  changes. Python release-helper changes retain conservative application validation;
+  shared toolchain/manifest inputs also select application and skill checks.
   Mixed changes select the union of affected suites.
 - Commit-policy Markdown selects docs/skills. Code-only/skill-only runs supply
   CSpell; standalone dependency-contract runs also supply CSpell. Mixed runs with

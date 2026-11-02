@@ -80,6 +80,18 @@ test("Documentation and lint consumers share the declared Markdown parser releas
   }
 });
 
+test("Markdownlint uses patched RE2JS and still detects spaces inside links", async () => {
+  const metadata = JSON.parse(await readFile(
+    new URL("../package.json", pathToFileURL(markdown.resolve("re2js"))), "utf8"));
+  assert.equal(metadata.version, "2.8.7");
+  const { lint } = await import(pathToFileURL(markdownCli.resolve("markdownlint/promise")));
+  const result = await lint({
+    strings: { sample: "[ ride](https://example.com)\n" },
+    config: { default: false, MD039: true },
+  });
+  assert.deepEqual(result.sample.map(error => error.ruleNames[0]), ["MD039"]);
+});
+
 for (const [name, consumer] of [["markdownlint", markdownCli], ["CSpell", spellConfig]]) {
   test(`${name} TOML parser preserves flat keys and nested configuration`, () => {
     const { parse } = consumer("smol-toml");
