@@ -155,6 +155,8 @@ GERMAN: dict[str, str] = {
     "This replaces the entire Library and its video-label choices. Continue?": "Die gesamte Bibliothek und ihre Video-Bezeichnungen werden ersetzt. Fortfahren?",
     "ZIP archives (*.zip)": "ZIP-Archive (*.zip)",
     # Explorer charts, navigation and selection.
+    "Combined Forces": "Kombinierte Kräfte",
+    "Combined Forces (g)": "Kombinierte Kräfte (g)",
     "Elapsed time (s)": "Vergangene Zeit (s)",
     "From sample": "Von Messpunkt",
     "Inclusive sample indices": "Messpunkte einschließlich der Grenzen",

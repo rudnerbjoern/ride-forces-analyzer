@@ -4,7 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-from math import ceil
+from math import ceil, isfinite
 
 from PySide6.QtCharts import QCategoryAxis, QChart, QChartView, QLineSeries, QValueAxis
 from PySide6.QtCore import QObject, QPointF, Qt, Signal, Slot
@@ -37,6 +37,7 @@ class ExplorerChart(QObject):
         axis_x: Recording-time axis, replaced with replay labels on recording load.
         axis_y: Force or raw-value axis, fixed to the snapshot's value range.
         series: Three source-aligned force or raw-channel curves.
+        combined_series: Additional Combined curve segments, separated by missing samples.
         force_references: Horizontal reference lines at 0 g and 1 g in calibrated view.
         selection_band: Shaded inclusive export selection.
         vertical_context_bars: Visible provisional vertical-context graphics.
@@ -106,6 +107,7 @@ class ExplorerChart(QObject):
         self.chart.addAxis(self.axis_x, Qt.AlignmentFlag.AlignBottom)
         self.chart.addAxis(self.axis_y, Qt.AlignmentFlag.AlignLeft)
         self.series: list[QLineSeries] = []
+        self.combined_series: list[QLineSeries] = []
         self.vertical_context_bars: list[QGraphicsRectItem] = []
         self.vertical_context_ranges: tuple[tuple[str, int, int], ...] = ()
         for name, color in (("x", "#2563eb"), ("y", "#ea580c"), ("z", "#059669")):
@@ -169,6 +171,8 @@ class ExplorerChart(QObject):
         self.chart.setBackgroundBrush(background)
         self.chart_view.setBackgroundBrush(background)
         self._style_axes()
+        for line in self.combined_series:
+            line.setPen(QPen(QColor(self.theme.chart_combined_force_color), 1.5))
         for reference_line in self.force_references.values():
             reference_line.setPen(
                 QPen(
@@ -223,8 +227,40 @@ class ExplorerChart(QObject):
                 [QPointF(self.data.time_at(index), value) for index, value in enumerate(values)],
             )
         self.chart.setTitle("")
+        self._draw_combined()
         self._draw_vertical_context()
         self._redraw_force_references()
+
+    def _draw_combined(self) -> None:
+        """Draw prepared Combined values without connecting missing sample gaps."""
+        for line in self.combined_series:
+            self.chart.removeSeries(line)
+            line.deleteLater()
+        self.combined_series.clear()
+        if self.data is None or not self.data.combined_enabled:
+            return
+        values = self.data.combined_channel
+        if values is None:
+            return
+        segments: list[list[QPointF]] = [[]]
+        for index, value in enumerate(values):
+            if isfinite(value):
+                segments[-1].append(QPointF(self.data.time_at(index), float(value)))
+            elif segments[-1]:
+                segments.append([])
+        for points in segments:
+            if not points:
+                continue
+            line = QLineSeries()
+            line.setName(str(tr("Combined Forces (g)")))
+            line.setPen(QPen(QColor(self.theme.chart_combined_force_color), 1.5))
+            line.replace(points)
+            line.setPointsVisible(len(points) == 1)
+            self.chart.addSeries(line)
+            line.attachAxis(self.axis_x)
+            line.attachAxis(self.axis_y)
+            line.setVisible(self.data.combined_enabled)
+            self.combined_series.append(line)
 
     @Slot()
     def _redraw_force_references(self) -> None:

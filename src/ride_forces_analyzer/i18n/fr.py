@@ -154,6 +154,8 @@ FRENCH: dict[str, str] = {
     "This replaces the entire Library and its video-label choices. Continue?": "Toute la bibliothèque et ses libellés vidéo seront remplacés. Continuer ?",
     "ZIP archives (*.zip)": "Archives ZIP (*.zip)",
     # Explorer charts, navigation and selection.
+    "Combined Forces": "Forces combinées",
+    "Combined Forces (g)": "Forces combinées (g)",
     "Elapsed time (s)": "Temps écoulé (s)",
     "From sample": "De l’échantillon",
     "Inclusive sample indices": "Indices des échantillons, bornes incluses",

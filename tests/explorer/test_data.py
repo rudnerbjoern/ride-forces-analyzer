@@ -339,6 +339,39 @@ def test_calibrated_axis_includes_reference_levels(synthetic_recording: Recordin
     assert view.with_calibration(False).value_range == (-1, 1)
 
 
+def test_combined_curve_reuses_prepared_samples_and_expands_only_its_display_bounds(
+    synthetic_recording: Recording,
+) -> None:
+    from ride_forces_analyzer.domain import RecordingVectors
+
+    recording = replace(
+        synthetic_recording,
+        motion=MotionSequence([Vector3(3, 4, 0), Vector3(-3, -4, 0)]),
+        vectors=RecordingVectors(
+            vertical_direction=Vector3(1, 0, 0),
+            lateral_direction=Vector3(0, 1, 0),
+            longitudinal_direction=Vector3(0, 0, 1),
+        ),
+    )
+    view = present_recording(ImportSuccess(recording)).with_smoothing(1).with_calibration(True)
+    assert not view.combined_enabled
+    assert view.combined_channel is not None
+    assert tuple(view.combined_channel) == (5, 5)
+    enabled = view.with_combined(True)
+    assert enabled.analysis is view.analysis
+    assert enabled.value_range == (-4.2, 5.25)
+    assert view.value_range == (-4.2, 4.2)
+    assert enabled.with_combined(False).value_range == view.value_range
+    raw = enabled.with_calibration(False)
+    assert raw.combined_channel is None
+    assert raw.with_calibration(True).value_range == enabled.value_range
+    smoothed = enabled.with_smoothing(3)
+    assert smoothed.combined_enabled
+    assert smoothed.combined_channel is not None
+    assert tuple(smoothed.combined_channel) == (0, 0)
+    assert smoothed.value_range == (-1.05, 1.05)
+
+
 def test_focus_metadata_rows_and_sample_cards(synthetic_recording: Recording) -> None:
     view = present_recording(ImportSuccess(synthetic_recording))
     assert view.metadata_rows_text == "\n".join(

@@ -24,7 +24,7 @@ text/HTML formatting, inclusive selections and loading. Existing imports of
 | Failure/cancellation | Retain the last usable recording and service binding                                                                                                                                                  |
 | Folder memory        | Successful imports remember their directory across restarts in `preferences.sqlite3` beside the export database; cancellation/failure preserves previous folder                                       |
 | Preference failures  | Missing folder/unreadable storage uses dialog defaults; write failures do not block import                                                                                                            |
-| Curves               | Every sample; three independently visible colored channels                                                                                                                                            |
+| Curves               | Every sample; three directional/raw channels and an optional independently visible Combined curve                                                                                                     |
 | Display mode         | Calibrated by default when source directions are usable; otherwise raw with a calibration diagnostic                                                                                                  |
 | Direction            | Calibrated lateral +/− = right/left; longitudinal +/− = acceleration/braking; raw x/y/z have unknown units and no rider-direction claims                                                              |
 | Snapshot adoption    | Refresh chart, context, cards, technical details and visible-range extrema together, without repeating preparation                                                                                    |
@@ -40,6 +40,10 @@ Projection follows the [source-app decision](../architecture/09_architecture_dec
 Feature availability does not establish per-source scientific verification.
 Changing display mode, selection, cursor or viewport does not prepare analysis again.
 Missing calibrated values remain unavailable; raw x/y/z appear only in raw mode.
+
+Combined reads the prepared smoothing buffer. Its violet curve starts off per
+recording; raw view hides its checkbox. Usable calibrated samples are required.
+Choices survive mode/smoothing changes; missing samples leave gaps.
 
 [Vertical airtime context](AIRTIME.md) uses one prepared classification:
 
@@ -111,7 +115,7 @@ fractional rates show explicit seconds. Readouts also retain recording seconds.
 Force bounds remain fixed across the complete displayed recording: signed channel
 extrema plus 5% outward padding, including zero. All-zero raw data uses [−1, 1];
 calibrated bounds include at least [−1.05, 1.05], with explicit −1/0/+1 g labels.
-No vertical zoom.
+Combined extrema are included only while its curve is enabled. No vertical zoom.
 
 ## Sample playback
 
