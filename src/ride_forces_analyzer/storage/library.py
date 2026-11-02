@@ -281,6 +281,39 @@ class LibraryStore:
             )
             return "imported", source.source_sha256
 
+    def remove_recording(self, source_sha256: str) -> None:
+        """Remove one archived recording and its links and export history atomically.
+
+        Args:
+            source_sha256: Exact-byte identity of the recording to remove.
+
+        Raises:
+            ValueError: The source hash is invalid.
+            LibraryStoreError: The recording is missing, has a running export or
+                the transaction fails. All Library data is retained on failure.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        with self.connection() as connection:
+            if connection.execute(
+                "SELECT 1 FROM export_history WHERE recording_sha256=? AND status='running'",
+                (source_sha256,),
+            ).fetchone():
+                raise LibraryStoreError("A recording with a running export cannot be removed.")
+            connection.execute(
+                "DELETE FROM video_links WHERE recording_sha256=?",
+                (source_sha256,),
+            )
+            connection.execute(
+                "DELETE FROM export_history WHERE recording_sha256=?",
+                (source_sha256,),
+            )
+            cursor = connection.execute(
+                "DELETE FROM recordings WHERE source_sha256=?",
+                (source_sha256,),
+            )
+            if cursor.rowcount != 1:
+                raise LibraryStoreError("Recording is not in the Library")
+
     def entries(self, *, park: str | None = None, search: str = "") -> tuple[LibraryEntry, ...]:
         """Read only list metadata in deterministic newest-first day/instant order.
 

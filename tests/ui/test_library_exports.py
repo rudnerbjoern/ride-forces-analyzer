@@ -95,7 +95,7 @@ def test_history_review_and_repeat_keep_saved_values_and_overwrite_protection(
     window.library.recordings.setCurrentItem(item)
     wait_until(window.open_action.isEnabled)
     current = window.data
-    window.library.history_button.click()
+    window.library.history_action.trigger()
     dialog = window.findChild(LibraryExportsDialog)
     assert dialog is not None and dialog.isVisible()
     assert dialog.attempts.count() == 6

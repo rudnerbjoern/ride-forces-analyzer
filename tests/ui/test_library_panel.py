@@ -330,7 +330,7 @@ def test_library_toggle_preserves_workspace_and_recording(
     window_size = window.size()
     digest = archived.source.source_sha256
     original_source = archived.source.recording
-    window.library.edit_button.click()
+    window.library.edit_action.trigger()
     assert editor.isVisible() and editor.isWindow()
     assert editor.windowModality() == Qt.WindowModality.WindowModal
     assert [group.title() for group in editor.findChildren(QGroupBox)] == [
@@ -370,7 +370,7 @@ def test_library_toggle_preserves_workspace_and_recording(
     assert "Ride: Manta updated" in " ".join(window.library.details.toPlainText().split())
     assert "Row: 3" in " ".join(window.library.details.toPlainText().split())
     assert window.library.park_filter.findData("Edited park") >= 0
-    window.library.edit_button.click()
+    window.library.edit_action.trigger()
     assert editor.fields["ride_name"].text() == "Edited ride"
     assert editor.notes.toPlainText() == "Library notes"
     editor.fields["ride_name"].setText("Cancelled")
@@ -379,7 +379,7 @@ def test_library_toggle_preserves_workspace_and_recording(
     assert window.data.title == "Edited ride"
     stored = store.metadata(digest)
     assert stored is not None and stored.ride_name == "Edited ride"
-    window.library.edit_button.click()
+    window.library.edit_action.trigger()
     editor.notes.setPlainText("Rejected")
     with store.connection() as connection:
         connection.execute(
@@ -394,7 +394,7 @@ def test_library_toggle_preserves_workspace_and_recording(
     with store.connection() as connection:
         connection.execute("DROP TRIGGER reject_metadata")
     cancel.click()
-    window.library.edit_button.click()
+    window.library.edit_action.trigger()
     assert editor.fields["ride_name"].text() == "Edited ride"
     for language, title in (
         (1, "Metadaten bearbeiten…"),
@@ -481,6 +481,7 @@ def test_library_toggle_preserves_workspace_and_recording(
     assert (window.inspector.first.value(), window.inspector.last.value()) == (3000, 6000)
     assert "integrity" in " ".join(window.library.details.toPlainText().split())
     assert "Could not open archived recording" in window.statusBar().currentMessage()
+    assert not window.library.edit_action.isEnabled()
     window.library.toggle_button.click()
     QApplication.processEvents()
     assert window.workspace.width() == workspace_width

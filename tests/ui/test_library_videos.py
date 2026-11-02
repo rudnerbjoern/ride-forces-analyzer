@@ -38,11 +38,10 @@ def test_library_video_dialog_and_settings_save_cancel(explorer_window: Explorer
     wait_until(window.open_action.isEnabled)
     data = window.data
     assert data is not None
-    assert window.library.edit_button.size() == window.library.videos_button.size()
-    assert not window.library.videos_button.icon().isNull()
+    assert not window.library.videos_action.icon().isNull()
 
     def open_links() -> LibraryVideosDialog:
-        window.library.videos_button.click()
+        window.library.videos_action.trigger()
         dialog = window.findChild(LibraryVideosDialog)
         assert dialog is not None and dialog.isVisible()
         return dialog

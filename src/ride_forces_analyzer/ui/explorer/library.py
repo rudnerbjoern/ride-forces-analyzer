@@ -13,6 +13,7 @@ from html import escape
 from PySide6.QtCore import (
     QModelIndex,
     QObject,
+    QPoint,
     QPersistentModelIndex,
     QRunnable,
     QSize,
@@ -21,7 +22,7 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
-from PySide6.QtGui import QFont, QFontMetrics, QPainter, QPalette
+from PySide6.QtGui import QAction, QFont, QFontMetrics, QMouseEvent, QPainter, QPalette
 from PySide6.QtWidgets import (
     QFileDialog,
     QAbstractItemView,
@@ -32,9 +33,10 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMenu,
+    QMessageBox,
     QPushButton,
     QSplitter,
-    QSizePolicy,
     QStyle,
     QStyledItemDelegate,
     QStyleOptionViewItem,
@@ -77,6 +79,21 @@ class ParkFilter(QComboBox):
             super().showPopup()
         finally:
             QApplication.setEffectEnabled(effect, enabled)
+
+
+class LibraryRecordingTree(QTreeWidget):
+    """Defer right-click selection until the context menu can start the source load."""
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        """Keep a right-click from disabling the list before its context-menu event.
+
+        Args:
+            event: Mouse press delivered to the recording viewport.
+        """
+        if event.button() == Qt.MouseButton.RightButton:
+            event.accept()
+            return
+        super().mousePressEvent(event)
 
 
 class LibraryRowDelegate(QStyledItemDelegate):
@@ -176,9 +193,11 @@ class LibraryPanel(QSplitter):
         search: Combined ride/park name search.
         clear_filters: Action restoring all recordings.
         editor: Dialog for the selected recording's additions.
-        edit_button: Action opening the metadata dialog.
-        videos_button: Icon opening the selected recording's separate video-link dialog.
-        history_button: Action opening its export attempts and saved-settings review.
+        context_menu: Recording actions opened by right-clicking a Library row.
+        edit_action: Action opening the metadata dialog after the source loads.
+        videos_action: Action opening the selected recording's separate video-link dialog.
+        history_action: Action opening its export attempts and saved-settings review.
+        remove_action: Action removing the recording after explicit confirmation.
         workflow_selector: Foreground status selection layer, or None while closed.
         open_requested: Signal carrying the selected archived source digest.
     """
@@ -229,7 +248,7 @@ class LibraryPanel(QSplitter):
         self.clear_filters.clicked.connect(self._clear_filters)
         search_row.addWidget(self.clear_filters)
         layout.addLayout(search_row)
-        self.recordings = QTreeWidget()
+        self.recordings = LibraryRecordingTree()
         self.recordings.setColumnCount(2)
         self.recordings.setHeaderHidden(True)
         self.recordings.setFrameShape(QFrame.Shape.NoFrame)
@@ -249,6 +268,8 @@ class LibraryPanel(QSplitter):
         self.recordings.setColumnWidth(1, 32)
         bind(self.recordings, tr("Archived recordings"), "accessibleName")
         self.recordings.currentItemChanged.connect(self._selected)
+        self.recordings.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.recordings.customContextMenuRequested.connect(self._show_context_menu)
         self.recordings.verticalScrollBar().valueChanged.connect(self._close_workflow)
         self.empty_label = bind(QLabel(), tr("No recordings in Library"))
         self.empty_label.setObjectName("Muted")
@@ -267,36 +288,27 @@ class LibraryPanel(QSplitter):
         bind(self.details, tr("Recording details"), "accessibleName")
         self.details.hide()
         layout.addWidget(self.details)
-        self.edit_button = button_text(
-            QPushButton(),
-            tr("Edit metadata…"),
-            caption=tr("Metadata…"),
-        )
+        self.context_menu = QMenu(self.recordings)
+        self.edit_action = bind(QAction(self.context_menu), tr("Edit metadata…"))
         self.editor = LibraryMetadataDialog(self.panel)
-        self.edit_button.clicked.connect(self._edit_metadata)
+        self.edit_action.triggered.connect(self._edit_metadata)
         self.editor.save_requested.connect(self._save_metadata)
         self.editor.reset_requested.connect(lambda: self._save_metadata({}))
-        entry_actions = QHBoxLayout()
-        entry_actions.addWidget(self.edit_button, 1)
-        self.videos_button = button_text(QPushButton(), tr("Video links…"))
-        bind(self.videos_button, tr("Video links…"), "toolTip")
-        bind(self.videos_button, tr("Video links…"), "accessibleName")
-        self.videos_button.clicked.connect(self._edit_videos)
-        self.videos_button.hide()
-        entry_actions.addWidget(self.videos_button, 1)
-        for button in (self.edit_button, self.videos_button):
-            button.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
-            button.setMinimumWidth(0)
-        layout.addLayout(entry_actions)
-        self.history_button = button_text(QPushButton(), tr("Export history…"))
-        self.history_button.setIcon(
+        self.videos_action = bind(QAction(self.context_menu), tr("Video links…"))
+        self.videos_action.triggered.connect(self._edit_videos)
+        self.history_action = bind(QAction(self.context_menu), tr("Export history…"))
+        self.history_action.setIcon(
             self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogDetailedView),
         )
-        self.history_button.clicked.connect(self._show_history)
-        self.history_button.hide()
-        layout.addWidget(self.history_button)
+        self.history_action.triggered.connect(self._show_history)
+        for action in (self.edit_action, self.videos_action, self.history_action):
+            self.context_menu.addAction(action)
+        self.context_menu.addSeparator()
+        self.remove_action = bind(QAction(self.context_menu), tr("Remove…"))
+        self.remove_action.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_TrashIcon))
+        self.remove_action.triggered.connect(self._remove_recording)
+        self.context_menu.addAction(self.remove_action)
         self.editor.hide()
-        self.edit_button.hide()
         self.addWidget(self.panel)
         self.panel.hide()
         self.toggle_button = button_text(QPushButton(), tr("Library"))
@@ -441,15 +453,17 @@ class LibraryPanel(QSplitter):
             and self._details_data is not None
             and selected.source_sha256 == self._details_data.source.source_sha256
         )
-        self.edit_button.setVisible(editable)
-        self.edit_button.setIcon(
-            metadata_icon(self.edit_button.palette().color(QPalette.ColorRole.ButtonText)),
+        self.edit_action.setEnabled(editable and self.editor.isEnabled())
+        color = self.context_menu.palette().color(QPalette.ColorRole.WindowText)
+        self.edit_action.setIcon(
+            metadata_icon(color),
         )
-        self.videos_button.setIcon(
-            link_icon(self.videos_button.palette().color(QPalette.ColorRole.ButtonText)),
+        self.videos_action.setIcon(
+            link_icon(color),
         )
-        self.videos_button.setVisible(selected is not None)
-        self.history_button.setVisible(selected is not None)
+        self.videos_action.setEnabled(selected is not None)
+        self.history_action.setEnabled(selected is not None)
+        self.remove_action.setEnabled(selected is not None and self.recordings.isEnabled())
         self.editor.refresh_labels()
         if self.workflow_selector is not None and self._workflow_digest is not None:
             self.workflow_selector.refresh_labels(
@@ -496,6 +510,56 @@ class LibraryPanel(QSplitter):
         self.search.clear()
         self.park_filter.blockSignals(blocked_park)
         self.search.blockSignals(blocked_search)
+        self.refresh()
+
+    @Slot(QPoint)
+    def _show_context_menu(self, position: QPoint) -> None:
+        """Open recording actions for the clicked row, excluding headings and empty space.
+
+        Args:
+            position: Context-menu position in recording viewport coordinates.
+        """
+        item = self.recordings.itemAt(position)
+        if item is None or not isinstance(item.data(0, Qt.ItemDataRole.UserRole), str):
+            return
+        self._close_workflow()
+        self.recordings.setCurrentItem(item)
+        self.context_menu.popup(self.recordings.viewport().mapToGlobal(position))
+
+    @Slot()
+    def _remove_recording(self) -> None:
+        """Confirm removal of the selected archive entry and refresh the Library list."""
+        entry = self.selected_entry
+        if entry is None:
+            return
+        confirmation = QMessageBox(
+            QMessageBox.Icon.Question,
+            tr("Remove recording?"),
+            tr(
+                'Remove "{0}" from the Library?\n\n'
+                "The archived recording, metadata, markers, video links and export history "
+                "will be permanently removed. Original files and exported videos remain unchanged.",
+                entry.ride_name or entry.filename,
+            ),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            self,
+        )
+        for standard, icon in (
+            (QMessageBox.StandardButton.Yes, QStyle.StandardPixmap.SP_DialogYesButton),
+            (QMessageBox.StandardButton.No, QStyle.StandardPixmap.SP_DialogNoButton),
+        ):
+            confirmation.button(standard).setIcon(confirmation.style().standardIcon(icon))
+        confirmation.setDefaultButton(QMessageBox.StandardButton.No)
+        answer = confirmation.exec()
+        confirmation.deleteLater()
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            LibraryStore().remove_recording(entry.source_sha256)
+        except LibraryStoreError as error:
+            self.show_error(tr("Could not remove recording: {0}", tr(str(error))))
+            return
+        self._error = None
         self.refresh()
 
     @Slot()

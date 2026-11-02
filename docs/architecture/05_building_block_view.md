@@ -176,7 +176,12 @@ a background worker and displays per-file results; the archive service owns all
 import, duplicate and reopening logic outside widgets. A grouped Qt recording list
 uses compact three-line rows with elided names, export counts and clickable
 workflow icons/tooltips, a park dropdown and combined name search; selected-source details
-remain read-only, with saved additions shown separately. `LibraryMetadataDialog`
+remain read-only, with saved additions shown separately. A recording context menu
+opens metadata editing, video links and export history through the existing dialogs,
+and offers recording removal after confirmation. `LibraryStore.remove_recording()`
+deletes the archive and its links/history atomically, refusing running exports;
+external files and the loaded chart remain unchanged. Failure retains the entry.
+day headings and empty space have no menu. `LibraryMetadataDialog`
 owns the separate metadata form; persistence and validation remain outside widgets.
 Selection requests go through the existing `LoadWorker` and window
 load lifecycle, preserving the previous chart on failure. Collapsing and language
@@ -186,7 +191,7 @@ foreground selector. It anchors the current state to its trigger, handles dismis
 and emits choices; the panel invokes storage and refreshes icons without reopening
 sources or changing list geometry. Persistence and validation remain outside widgets.
 `LibraryVideosDialog` provides a separate recording-bound link list/form, opened
-from the selected entry's video icon. `LibraryStore` validates HTTP/HTTPS URLs and
+from the selected entry's context menu. `LibraryStore` validates HTTP/HTTPS URLs and
 updates only the addressed link. Settings owns a `LibraryLabelsEditor` draft;
 Save persists its choices in `Preferences.library_video_labels`, while link labels
 retain their stored text independently of later option changes. No online lookup,

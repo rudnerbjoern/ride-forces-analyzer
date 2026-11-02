@@ -859,7 +859,7 @@ class ExplorerWindow(QMainWindow):
         self.open_action.setEnabled(False)
         self.library.recordings.setEnabled(False)
         self.library.editor.setEnabled(False)
-        self.library.edit_button.setEnabled(False)
+        self.library.edit_action.setEnabled(False)
         self.progress.show()
         bind(self.statusBar(), tr("Opening {0}…", path.name), "message")
         QThreadPool.globalInstance().start(worker)
@@ -878,7 +878,7 @@ class ExplorerWindow(QMainWindow):
         self.open_action.setEnabled(False)
         self.library.recordings.setEnabled(False)
         self.library.editor.setEnabled(False)
-        self.library.edit_button.setEnabled(False)
+        self.library.edit_action.setEnabled(False)
         self.progress.show()
         entry = self.library.selected_entry
         bind(
@@ -1199,7 +1199,7 @@ class ExplorerWindow(QMainWindow):
         self.open_action.setEnabled(True)
         self.library.recordings.setEnabled(True)
         self.library.editor.setEnabled(True)
-        self.library.edit_button.setEnabled(True)
+        self.library.refresh_labels()
         self.progress.hide()
 
     @Slot(str)

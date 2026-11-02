@@ -32,15 +32,94 @@ RAW = b' {"unknown":[1.000,true],"GPS":"retained"}\r\n'
 DIGEST = sha256(RAW).hexdigest()
 
 
-def insert_recording(connection: sqlite3.Connection) -> None:
+def insert_recording(connection: sqlite3.Connection, digest: str = DIGEST) -> None:
     connection.execute(
         "INSERT INTO recordings (source_sha256, source_bytes, source_filename, source_format, "
         "source_byte_count, imported_at_utc, first_sample, last_sample, "
         "calibration_algorithm_version, calibration_window_samples, search_text) "
         "VALUES (?, ?, 'ride.forces', 'forces', ?, '2026-11-01T10:00:00.000000Z', "
         "0, 10, 'source', 11, '')",
-        (DIGEST, RAW, len(RAW)),
+        (digest, RAW, len(RAW)),
     )
+
+
+def test_remove_recording_removes_only_its_archive_links_and_history(
+    export_directory: Path,
+) -> None:
+    store = LibraryStore(export_directory / "library.sqlite3")
+    other = "b" * 64
+    original = export_directory / "original.forces"
+    output = export_directory / "export.csv"
+    original.write_bytes(RAW)
+    output.write_bytes(b"exported data")
+    with store.connection() as connection:
+        for digest in (DIGEST, other):
+            insert_recording(connection, digest)
+            connection.execute(
+                "INSERT INTO export_history(recording_sha256,export_kind,origin,started_at_utc,"
+                "status,application_version,request_json,output_path) "
+                "VALUES (?,'csv','single','2026-11-01T10:00:00Z','completed',?,'{}',?)",
+                (digest, __version__, str(output)),
+            )
+    for digest in (DIGEST, other):
+        store.save_video_link(digest, "https://example.invalid/video", "YouTube")
+    store.update_metadata(DIGEST, {"notes": "Remove these additions"})
+    with store.connection() as connection:
+        retained = connection.execute(
+            "SELECT * FROM recordings WHERE source_sha256=?",
+            (other,),
+        ).fetchone()
+    store.remove_recording(DIGEST)
+    reopened = LibraryStore(store.path)
+    with reopened.connection() as connection:
+        assert connection.execute("SELECT * FROM recordings").fetchall() == [retained]
+        for table in ("video_links", "export_history"):
+            assert connection.execute(
+                f"SELECT recording_sha256 FROM {table}",
+            ).fetchall() == [(other,)]
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+    assert original.read_bytes() == RAW and output.read_bytes() == b"exported data"
+    with pytest.raises(LibraryStoreError, match="not in the Library"):
+        reopened.remove_recording(DIGEST)
+    with pytest.raises(ValueError):
+        reopened.remove_recording("invalid")
+
+
+@pytest.mark.parametrize("failure", ["running", "write"])
+def test_remove_recording_failure_preserves_all_library_data(
+    export_directory: Path,
+    failure: str,
+) -> None:
+    store = LibraryStore(export_directory / "library.sqlite3")
+    tables = ("recordings", "video_links", "export_history")
+    with store.connection() as connection:
+        insert_recording(connection)
+        connection.execute(
+            "INSERT INTO export_history(recording_sha256,export_kind,origin,started_at_utc,"
+            "status,application_version,request_json) VALUES (?,'csv','single',?,?,?,'{}')",
+            (
+                DIGEST,
+                "2026-11-01T10:00:00Z",
+                "running" if failure == "running" else "completed",
+                __version__,
+            ),
+        )
+        if failure == "write":
+            connection.execute(
+                "CREATE TRIGGER reject_removal BEFORE DELETE ON recordings "
+                "BEGIN SELECT RAISE(ABORT, 'injected removal failure'); END",
+            )
+    store.save_video_link(DIGEST, "https://example.invalid/video", "YouTube")
+    with store.connection() as connection:
+        before = {
+            table: connection.execute(f"SELECT * FROM {table}").fetchall() for table in tables
+        }
+    with pytest.raises(LibraryStoreError, match="running export|injected removal failure"):
+        store.remove_recording(DIGEST)
+    with store.connection() as connection:
+        assert {
+            table: connection.execute(f"SELECT * FROM {table}").fetchall() for table in tables
+        } == before
 
 
 def test_video_links_are_independent_recording_bound_and_offline(export_directory: Path) -> None:

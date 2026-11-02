@@ -243,7 +243,8 @@ new choices are managed in Library settings.
 
 The user can add, edit and remove links; retain the current list in the Library
 without an edit history.
-The selected entry's video icon opens a separate themed `LibraryVideosDialog`.
+The selected entry's **Video links…** context action opens a separate themed
+`LibraryVideosDialog`.
 Its list and form support Add, selecting a link to edit, Save and Remove. Save
 persists only that link and keeps the dialog open for further edits; Cancel/Escape
 discards the current unsaved form. Errors keep the form visible. The dialog is
@@ -567,8 +568,11 @@ not every recording BLOB or parsed measurement array.
 Use foreign keys on every connection and validate the admitted formats/statuses,
 nonnegative sizes/durations and snapshot/source relationships in the storage/service
 boundary. Keep existing Pydantic snapshot validation. There is no presets, batch-run
-or per-frame duplication in this database. Removal of Library entries is outside
-the initial scope; deleting an original file or output file never deletes history.
+or per-frame duplication in this database. Removing a Library entry deletes its
+archived bytes, additions, markers, video links and export history in one transaction.
+A running export for that recording blocks removal; a failure preserves all data.
+External original/output files are never removed. Deleting an external original
+or output file never deletes Library history.
 
 ### Indexes and query behavior
 
@@ -635,7 +639,7 @@ recording, chart zoom or analysis.
    time, format/layout, status, duration and destination. Selecting an attempt
    exposes its saved settings and **Repeat export…** when supported. This can be
    a shared recording-bound dialog; it needs no separate window per attempt.
-5. **Video links:** open a separate dialog from the selected recording's video icon,
+5. **Video links:** open a separate dialog from the recording's context menu,
    with its link list, label dropdown and actions to add, edit and remove individual links.
    Multiple full-video, Short or other platform links can coexist without affecting
    the chart area.
@@ -672,6 +676,15 @@ search. Park selection and whitespace-separated search terms combine with AND.
 Empty groups disappear; an empty result shows **No matching recordings**. The
 search clear action removes its text; the reset icon clears both filters. Filtering
 does not open sources or change the chart. Collapsing retains both controls.
+Right-clicking a recording opens **Edit metadata…**, **Video links…** and
+**Export history…** in a themed context menu for that recording, followed by a
+separator and **Remove…** with a trash icon. Removal requires confirmation naming
+the recording and its permanently removed Library data; **No** is the default.
+Cancellation preserves the entry. Success refreshes the list and filters while
+keeping the loaded chart; errors retain the entry with a visible explanation.
+These actions
+replace the buttons below the list; day headings and empty space have no menu.
+Metadata editing is disabled until the selected source loads successfully.
 Metadata editing uses the separate dialog; existing chart controls persist current
 markers to the Library for archived hashes. Video links use a separate dialog;
 Settings → Library manages label choices. **Export history…** opens a separate
