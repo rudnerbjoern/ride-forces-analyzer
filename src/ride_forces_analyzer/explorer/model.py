@@ -35,6 +35,7 @@ class ExplorerData:
         notes: Retained diagnostic text for the recording or current operation.
         value_range: Visible force-value range.
         calibrated_enabled: Whether calibrated channels are selected.
+        combined_enabled: Whether the additional Combined curve is selected.
         calibration_error: Reason calibration is unavailable, when present.
         analysis: Prepared recording-analysis snapshot used by this operation.
         _prepared_channels: Cached channels prepared for the explorer.
@@ -49,6 +50,7 @@ class ExplorerData:
     calibrated_enabled: bool = False
     calibration_error: str | None = None
     analysis: "RecordingAnalysis | None" = None
+    combined_enabled: bool = False
     _prepared_channels: "tuple[PlotChannel, PlotChannel, PlotChannel] | None" = field(
         init=False,
         repr=False,
@@ -138,6 +140,31 @@ class ExplorerData:
         return text.channel_names(self)
 
     @property
+    def combined_channel(self) -> "PlotChannel | None":
+        """Return prepared Combined samples only in an available calibrated view.
+
+        Returns:
+            Immutable samples, including NaN gaps, or None when unavailable.
+        """
+        if not self.calibrated_enabled or self.analysis is None:
+            return None
+        combined = self.analysis.forces.smoothed.combined
+        if combined is None or not any(combined.valid_rows):
+            return None
+        return combined.values
+
+    def with_combined(self, enabled: bool) -> "ExplorerData":
+        """Select the Combined curve and update its presentation bounds.
+
+        Args:
+            enabled: Whether to include the Combined curve in the calibrated plot.
+
+        Returns:
+            Presentation data reusing the same prepared analysis snapshot.
+        """
+        return replace(self, combined_enabled=enabled).with_calibration(self.calibrated_enabled)
+
+    @property
     def vertical_context_segments(self) -> tuple[tuple[str, int, int], ...]:
         """Inclusive drawing ranges sharing boundary points, only for calibrated g.
 
@@ -173,6 +200,10 @@ class ExplorerData:
         active = enabled and self.calibration_available
         channels = self._prepared_channels if active and self._prepared_channels else self.channels
         finite = [float(value) for axis in channels for value in axis if isfinite(value)]
+        if active and self.combined_enabled and self.analysis is not None:
+            combined = self.analysis.forces.smoothed.combined
+            if combined is not None:
+                finite.extend(float(value) for value in combined.values if isfinite(value))
         low = min(0.0, min(finite, default=0.0))
         high = max(0.0, max(finite, default=0.0))
         bounds = (float(low * 1.05), float(high * 1.05)) if low < high else (-1.0, 1.0)

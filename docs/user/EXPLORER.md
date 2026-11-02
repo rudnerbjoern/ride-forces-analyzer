@@ -91,6 +91,8 @@ right-click opens the menu without changing zoom or selecting a sample.
   around the pointer. **Reset view** returns to the recording's start/end markers,
   or the available recording boundaries when markers are absent.
 - Show or hide individual force curves using their controls.
+  **Combined Forces** toggles the violet magnitude of the smoothed device axes.
+  Its checkbox starts off per recording, requires usable calibrated data and is hidden in raw view.
 
 Click the **Play** icon to the right of the sample slider to follow the recording at
 **1×** speed by default. The dropdown beside it selects **0.5×**, **1×** or **2×**;

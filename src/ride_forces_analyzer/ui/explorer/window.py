@@ -114,6 +114,7 @@ class ExplorerWindow(QMainWindow):
         appearance_preference: Stored light, dark or system appearance choice.
         theme: Application appearance palette.
         data: Prepared view data, retained bytes or item payload owned by this object.
+        combined_toggle: Independent visibility control for the prepared Combined curve.
         analysis_controller: Controller coordinating background analysis and view updates.
         _accept_results: Whether the window still accepts asynchronous results.
         _load_generation: Generation identifying the current recording-open request.
@@ -417,7 +418,7 @@ class ExplorerWindow(QMainWindow):
     def _create_plot(self, plot_layout: QVBoxLayout) -> None:
         """Compose the chart component, visibility switches and view controls."""
         self.chart_tools = QGridLayout()
-        self.chart_tools.setColumnStretch(5, 1)
+        self.chart_tools.setColumnStretch(6, 1)
         self.reference_toggle = bind(QCheckBox(), tr("Calibrated forces"))
         self.reference_toggle.setEnabled(False)
         self.reference_toggle.toggled.connect(self.set_reference_view)
@@ -443,7 +444,7 @@ class ExplorerWindow(QMainWindow):
         self.visible_button.clicked.connect(self.select_visible)
         for column, button in enumerate(
             (self.reset_button, self.zoom_button, self.visible_button),
-            start=6,
+            start=7,
         ):
             self.chart_tools.addWidget(button, 0, column)
         plot_layout.addLayout(self.chart_tools)
@@ -460,6 +461,13 @@ class ExplorerWindow(QMainWindow):
             toggle.toggled.connect(partial(self.plot.set_channel_visible, index))
             self.visibility.append(toggle)
             self.chart_tools.addWidget(toggle, 0, index + 2)
+        self.combined_toggle = bind(QCheckBox(), tr("Combined Forces"))
+        self.combined_toggle.setObjectName("combinedVisibility")
+        bind(self.combined_toggle, tr("Combined Forces (g)"), "toolTip")
+        self.combined_toggle.setEnabled(False)
+        self.combined_toggle.hide()
+        self.combined_toggle.toggled.connect(self.set_combined_view)
+        self.chart_tools.addWidget(self.combined_toggle, 0, 5)
         plot_layout.addWidget(self.plot.airtime_legend)
 
     @Slot(int)
@@ -1189,6 +1197,26 @@ class ExplorerWindow(QMainWindow):
             bind(self.visibility[i], name, "toolTip")
             color = (self.theme.forces if self.data.calibrated_enabled else self.theme.raw)[i]
             self.visibility[i].setStyleSheet(f"QCheckBox {{ color: {color}; }}")
+        self.combined_toggle.blockSignals(True)
+        self.combined_toggle.setChecked(self.data.combined_enabled)
+        self.combined_toggle.blockSignals(False)
+        self.combined_toggle.setEnabled(self.data.combined_channel is not None)
+        self.combined_toggle.setVisible(self.data.calibrated_enabled)
+        self.combined_toggle.setStyleSheet(
+            f"QCheckBox {{ color: {self.theme.combined_force_color}; }}",
+        )
+
+    @Slot(bool)
+    def set_combined_view(self, enabled: bool) -> None:
+        """Toggle the additional curve without recalculating analysis.
+
+        Args:
+            enabled: Whether the Combined curve should be displayed.
+        """
+        if self.data is None:
+            return
+        self.data = self.data.with_combined(enabled)
+        self._refresh_analysis_view()
 
     @Slot(int)
     def set_smoothing(self, position: int) -> None:

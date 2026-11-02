@@ -161,6 +161,25 @@ class Theme:
         return QColor(self.background).lightness() < 128
 
     @property
+    def combined_force_color(self) -> str:
+        """Return the Combined control color for the workspace background.
+
+        Returns:
+            A violet color contrasting with the current workspace.
+        """
+        return "#c4a7ff" if self.is_dark else "#6d28d9"
+
+    @property
+    def chart_combined_force_color(self) -> str:
+        """Return the Combined curve color for the chart background.
+
+        Returns:
+            A violet color contrasting with the chart surface.
+        """
+        dark = QColor(self.chart_background or self.panel).lightness() < 128
+        return "#c4a7ff" if dark else "#6d28d9"
+
+    @property
     def vertical_context_colors(self) -> dict[str, str]:
         """Return the semantic vertical-force context colors for this theme.
 
