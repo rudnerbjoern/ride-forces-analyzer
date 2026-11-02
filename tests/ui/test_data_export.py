@@ -43,7 +43,7 @@ def test_data_uses_selected_snapshot_range_and_remembers_only_success(
     def load_sample(path: Path) -> ExplorerData:
         return recording
 
-    monkeypatch.setattr(loading, "load_recording", load_sample)
+    monkeypatch.setattr(loading, "import_recording", load_sample)
     window.open_path(Path(".tmp/csv-recording.forces"))
     wait_until(window.open_action.isEnabled)
     assert window.data_export_button.isEnabled()
@@ -209,7 +209,7 @@ def test_data_cancellation_keeps_the_worker_snapshot_and_cleans_up(
     def load_sample(path: Path) -> ExplorerData:
         return recording
 
-    monkeypatch.setattr(loading, "load_recording", load_sample)
+    monkeypatch.setattr(loading, "import_recording", load_sample)
     window.open_path(Path(".tmp/csv-recording.forces"))
     wait_until(window.open_action.isEnabled)
     for format in DataExportFormat:

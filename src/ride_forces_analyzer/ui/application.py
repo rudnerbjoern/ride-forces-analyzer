@@ -3,7 +3,7 @@
 from collections import deque
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QTimer, Slot
+from PySide6.QtCore import QEvent, QTimer, Signal, Slot
 from PySide6.QtGui import QFileOpenEvent
 from PySide6.QtWidgets import QApplication
 
@@ -11,6 +11,7 @@ from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.runtime.instance import OpenRequest
 from ride_forces_analyzer.i18n import get_language
+from ride_forces_analyzer.storage.library import LibraryStore
 
 
 class RecordingApplication(QApplication):
@@ -22,7 +23,10 @@ class RecordingApplication(QApplication):
         ready: Callback invoked when initialization completes.
         settings: Validated settings controlling this operation.
         delivery_timer: Timer scheduling delivery timer.
+        library_changed: Library change broadcast carrying the originating panel.
     """
+
+    library_changed = Signal(object)
 
     def __init__(self, arguments: list[str]) -> None:
         """Initialize the recording application and its state.
@@ -59,14 +63,21 @@ class RecordingApplication(QApplication):
         return super().event(event)
 
     def start(self, request: OpenRequest) -> None:
-        """Create the initial window; explicit requests precede restoration.
+        """Initialize the Library, recover interrupted attempts, then create the first window.
 
         Args:
             request: Request carrying the inputs and context for this operation.
 
         Returns:
             None.
+
+        Raises:
+            LibraryStoreError: Library initialization failed; no window is created.
         """
+        LibraryStore().initialize()
+        from ride_forces_analyzer.storage.library_history import LibraryHistory
+
+        LibraryHistory().interrupt_running()
         self.create_window(
             Path(request.path) if request.path is not None else None,
             restore_last_file=request.path is None
@@ -103,6 +114,9 @@ class RecordingApplication(QApplication):
             window.appearance_preference = appearance
             window.apply_appearance()
         window.new_window_requested.connect(self._new_window_requested)
+        window.archive_window_requested.connect(self._new_archive_window_requested)
+        window.library.changed.connect(self.library_changed.emit)
+        self.library_changed.connect(window.library.refresh_after_change)
         window.closed.connect(lambda: self._closed(window))
         window.show()
         if path is not None:
@@ -113,6 +127,17 @@ class RecordingApplication(QApplication):
     def _new_window_requested(self, path: object) -> None:
         if isinstance(path, Path):
             self.receive_request(OpenRequest(path=str(path.resolve()), new_window=True))
+
+    @Slot(str)
+    def _new_archive_window_requested(self, source_sha256: str) -> None:
+        """Create an independent window in this process and load its archived source.
+
+        Args:
+            source_sha256: Exact-byte identity of the Library recording to reopen.
+        """
+        window = self.create_window()
+        window.open_archived(source_sha256)
+        self._activate(window)
 
     def _closed(self, window: ExplorerWindow) -> None:
         if window in self.windows:
@@ -158,7 +183,11 @@ class RecordingApplication(QApplication):
                     None,
                 )
                 if existing is not None:
+                    if not existing.open_action.isEnabled():
+                        self.delivery_timer.start()
+                        return
                     self.pending_requests.popleft()
+                    existing.open_path(path)
                     self._activate(existing)
                     continue
             active = self.activeWindow()

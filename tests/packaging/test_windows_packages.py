@@ -125,6 +125,12 @@ def test_release_build_outputs_only_windows_downloads_and_checksums(
 
         def run(arguments: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
             if "PyInstaller" in arguments:
+                assert "ride_forces_analyzer.storage.library" in arguments
+                assert "sqlalchemy.dialects.sqlite" in arguments
+                assert (
+                    f"{root / 'src/ride_forces_analyzer/storage/library_migrations'}"
+                    ":ride_forces_analyzer/storage/library_migrations" in arguments
+                )
                 assert arguments[arguments.index("--additional-hooks-dir") + 1] == str(
                     root / "packaging/hooks",
                 )

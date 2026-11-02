@@ -1,0 +1,781 @@
+"""Transactional Library schema upgrades and ordinary SQLite connections.
+
+Copyright (c) 2026 Björn Rudner.
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
+
+# cspell:words sqlalchemy autocommit poolclass timespec lastrowid
+
+from collections.abc import Generator
+from collections.abc import Mapping
+from contextlib import contextmanager
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from hashlib import sha256
+from importlib.resources import as_file, files
+from pathlib import Path
+import sqlite3
+from typing import Literal
+from urllib.parse import urlsplit
+
+from alembic import command
+from alembic.config import Config
+from alembic.migration import MigrationContext
+from alembic.script import ScriptDirectory
+from alembic.util.exc import CommandError
+from sqlalchemy import create_engine
+from sqlalchemy.engine import URL
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.pool import NullPool
+
+from ride_forces_analyzer.runtime.paths import data_directory
+from ride_forces_analyzer.analysis.calibration import (
+    CalibrationOverrides,
+    validate_calibration_references,
+)
+from ride_forces_analyzer.importers import ImportSuccess, import_forces_bytes
+from ride_forces_analyzer.importers.library_metadata import project_library_metadata, recording_uuid
+from ride_forces_analyzer.validation.checks import has_type, validate_sample_range, validate_sha256
+from .library_search import library_search_values, normalize_library_text
+from ride_forces_analyzer.domain.metadata import RecordingAdditions
+
+
+WORKFLOW_STATUSES: tuple[str, ...] = (
+    "imported",
+    "markers_verified",
+    "overlays_created",
+    "video_ready",
+    "uploaded",
+    "completed",
+)
+
+
+@dataclass(frozen=True, slots=True)
+class VideoLink:
+    """One recording's saved video URL and optional label text.
+
+    Attributes:
+        id: Local link identity, independent of the other recording links.
+        url: User-supplied HTTP/HTTPS URL, without online verification.
+        label: Selected label text, or empty when unset.
+    """
+
+    id: int
+    url: str
+    label: str
+
+
+class LibraryStoreError(Exception):
+    """Library access failed without replacing the database or discarding its data."""
+
+
+@dataclass(frozen=True, slots=True)
+class ArchivedSource:
+    """Original archive bytes and current marker recipe for reopening.
+
+    Attributes:
+        data: Complete original bytes, including compression and unknown fields.
+        filename: Original basename, independent of the previous external path.
+        compressed: Whether bytes are in the zforces format.
+        bounds: Current inclusive recording bounds.
+        calibration: Current source/default or validated custom reference choices.
+        additions: Current Library metadata overrides and notes.
+    """
+
+    data: bytes
+    filename: str
+    compressed: bool
+    bounds: tuple[int, int]
+    calibration: CalibrationOverrides
+    additions: RecordingAdditions = RecordingAdditions()
+
+
+@dataclass(frozen=True, slots=True)
+class LibraryEntry:
+    """Lightweight recording-list metadata without original source BLOBs.
+
+    Attributes:
+        source_sha256: Stable original-byte recording identity.
+        filename: Original basename.
+        source_ride_name: Verbatim source ride name, if available.
+        source_park_name: Verbatim source park name, if available.
+        ride_name: Effective ride name, using an override when set.
+        park_name: Effective park name, using an override when set.
+        recorded_at_utc: Normalized recording instant, or None when unknown.
+        recorded_day: Recording-local grouping date, or None when unknown.
+        day_timezone: Source zone or explicit UTC fallback used for the day.
+        imported_at_utc: First successful archive import time in UTC.
+        export_count: Number of associated export attempts.
+        workflow_status: Current manually assigned recording workflow state.
+        source_uuid: Source recording identity across exports, if valid.
+    """
+
+    source_sha256: str
+    filename: str
+    source_ride_name: str | None
+    source_park_name: str | None
+    ride_name: str | None
+    park_name: str | None
+    recorded_at_utc: str | None
+    recorded_day: str | None
+    day_timezone: str | None
+    imported_at_utc: str
+    export_count: int
+    workflow_status: str
+    source_uuid: str | None = None
+
+
+def default_database_path() -> Path:
+    """Return the Library database location without creating it.
+
+    Returns:
+        The existing application data directory's library.sqlite3 path.
+    """
+    return data_directory() / "library.sqlite3"
+
+
+class LibraryStore:
+    """Own schema initialization and transactional SQLite access to the Library.
+
+    Attributes:
+        path: Database path; existing preferences and export stores are independent.
+    """
+
+    def __init__(self, path: Path | None = None) -> None:
+        """Select the database without opening it.
+
+        Args:
+            path: Explicit database path, or the application-local default.
+        """
+        self.path = (path if path is not None else default_database_path()).resolve()
+
+    def archive(
+        self,
+        source: ImportSuccess,
+        filename: str,
+        bounds: tuple[int, int],
+        calibration: CalibrationOverrides,
+    ) -> tuple[Literal["imported", "updated", "duplicate"], str]:
+        """Archive one recording by UUID, updating its source on a changed export.
+
+        Args:
+            source: Successful import owning the exact original source bytes.
+            filename: Original supported basename, not an external storage dependency.
+            bounds: Valid inclusive bounds resolved from source/defaults and preferences.
+            calibration: Reference choices admitted by the existing calibration service.
+
+        Returns:
+            Outcome and current archived digest. Equivalent exports retain the first
+            original; changed exports replace source bytes and source projections,
+            preserving Library additions, valid markers and related history.
+
+        Raises:
+            ValueError: The filename or bounds are invalid.
+            LibraryStoreError: The transaction could not be committed.
+        """
+        source_format = Path(filename).suffix.lower().removeprefix(".")
+        if Path(filename).name != filename or source_format not in {"forces", "zforces"}:
+            raise ValueError("Expected a forces or zforces basename")
+        validate_sample_range(
+            *bounds,
+            len(source.recording.motion.acceleration),
+            "Invalid Library bounds",
+        )
+        metadata = project_library_metadata(source.recording)
+        source_uuid = recording_uuid(source.recording)
+        with self.connection() as connection:
+            existing = connection.execute(
+                "SELECT source_sha256, source_bytes, source_format, first_sample, last_sample, "
+                "gravity_index, incline_index, calibration_algorithm_version, "
+                "calibration_window_samples FROM recordings "
+                "WHERE source_sha256=? OR (source_uuid IS NOT NULL AND source_uuid=?)",
+                (source.source_sha256, source_uuid),
+            ).fetchone()
+            if existing is not None:
+                digest = existing[0]
+                if digest == source.source_sha256:
+                    return "duplicate", digest
+                archived = import_forces_bytes(existing[1], compressed=existing[2] == "zforces")
+                if not isinstance(archived, ImportSuccess):
+                    raise LibraryStoreError("Cannot update an unreadable archived recording")
+                if archived.recording.source.root == source.recording.source.root:
+                    return "duplicate", digest
+                validate_sample_range(
+                    existing[3],
+                    existing[4],
+                    len(source.recording.motion.acceleration),
+                    "Existing Library bounds are incompatible with this export",
+                )
+                validate_calibration_references(
+                    source,
+                    CalibrationOverrides(*existing[5:9]),
+                    calculation_time=datetime.now(UTC),
+                )
+                # Keep relationships valid while replacing the byte-based primary key.
+                connection.execute("PRAGMA defer_foreign_keys = ON")
+                connection.execute(
+                    "UPDATE recordings SET source_sha256=?, source_bytes=?, source_filename=?, "
+                    "source_format=?, source_byte_count=?, source_ride_name=?, source_park_name=?, "
+                    "recorded_at_utc=?, recorded_day=?, day_timezone=? WHERE source_sha256=?",
+                    (
+                        source.source_sha256,
+                        source.recording.source.original_bytes,
+                        filename,
+                        source_format,
+                        source.byte_count,
+                        metadata.source_ride_name,
+                        metadata.source_park_name,
+                        metadata.recorded_at_utc,
+                        metadata.recorded_day,
+                        metadata.day_timezone,
+                        digest,
+                    ),
+                )
+                for table in ("export_history", "video_links"):
+                    connection.execute(
+                        f"UPDATE {table} SET recording_sha256=? WHERE recording_sha256=?",
+                        (source.source_sha256, digest),
+                    )
+                names = connection.execute(
+                    "SELECT COALESCE(ride_name_override, source_ride_name), "
+                    "COALESCE(park_name_override, source_park_name) FROM recordings "
+                    "WHERE source_sha256=?",
+                    (source.source_sha256,),
+                ).fetchone()
+                assert names is not None
+                connection.execute(
+                    "UPDATE recordings SET park_key=?, search_text=? WHERE source_sha256=?",
+                    (*library_search_values(*names), source.source_sha256),
+                )
+                return "updated", source.source_sha256
+            imported_at = (
+                datetime.now(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
+            )
+            connection.execute(
+                "INSERT INTO recordings (source_sha256, source_bytes, source_filename, source_format, "
+                "source_byte_count, source_ride_name, source_park_name, recorded_at_utc, recorded_day, "
+                "day_timezone, imported_at_utc, first_sample, last_sample, gravity_index, incline_index, "
+                "calibration_algorithm_version, calibration_window_samples, source_uuid, "
+                "park_key, search_text) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    source.source_sha256,
+                    source.recording.source.original_bytes,
+                    filename,
+                    source_format,
+                    source.byte_count,
+                    metadata.source_ride_name,
+                    metadata.source_park_name,
+                    metadata.recorded_at_utc,
+                    metadata.recorded_day,
+                    metadata.day_timezone,
+                    imported_at,
+                    *bounds,
+                    calibration.gravity_index,
+                    calibration.incline_index,
+                    calibration.algorithm_version,
+                    calibration.window_samples,
+                    source_uuid,
+                    *library_search_values(metadata.source_ride_name, metadata.source_park_name),
+                ),
+            )
+            return "imported", source.source_sha256
+
+    def filename(self, source_sha256: str) -> str | None:
+        """Read an archived basename without loading the original source bytes.
+
+        Args:
+            source_sha256: Exact-byte identity of the archived recording.
+
+        Returns:
+            Stored basename, or None when the recording is not archived.
+
+        Raises:
+            ValueError: The source hash is invalid.
+            LibraryStoreError: The Library cannot be read.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        with self.connection() as connection:
+            row = connection.execute(
+                "SELECT source_filename FROM recordings WHERE source_sha256=?",
+                (source_sha256,),
+            ).fetchone()
+        return str(row[0]) if row is not None else None
+
+    def remove_recording(self, source_sha256: str) -> None:
+        """Remove one archived recording and its links and export history atomically.
+
+        Args:
+            source_sha256: Exact-byte identity of the recording to remove.
+
+        Raises:
+            ValueError: The source hash is invalid.
+            LibraryStoreError: The recording is missing, has a running export or
+                the transaction fails. All Library data is retained on failure.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        with self.connection() as connection:
+            if connection.execute(
+                "SELECT 1 FROM export_history WHERE recording_sha256=? AND status='running'",
+                (source_sha256,),
+            ).fetchone():
+                raise LibraryStoreError("A recording with a running export cannot be removed.")
+            connection.execute(
+                "DELETE FROM video_links WHERE recording_sha256=?",
+                (source_sha256,),
+            )
+            connection.execute(
+                "DELETE FROM export_history WHERE recording_sha256=?",
+                (source_sha256,),
+            )
+            cursor = connection.execute(
+                "DELETE FROM recordings WHERE source_sha256=?",
+                (source_sha256,),
+            )
+            if cursor.rowcount != 1:
+                raise LibraryStoreError("Recording is not in the Library")
+
+    def entries(self, *, park: str | None = None, search: str = "") -> tuple[LibraryEntry, ...]:
+        """Read only list metadata in deterministic newest-first day/instant order.
+
+        Unknown dates come last. Import time descending and source digest ascending
+        resolve ties; the query never selects source BLOBs or parses recordings.
+
+        Args:
+            park: Park spelling/key, empty string for unknown parks, or None for all.
+            search: Whitespace-separated terms required in combined ride/park names.
+
+        Returns:
+            Effective names, source/date/import details and export counts.
+
+        Raises:
+            LibraryStoreError: Library metadata could not be read.
+        """
+        clauses: list[str] = []
+        parameters: list[str] = []
+        if park is not None:
+            key = normalize_library_text(park)
+            clauses.append("r.park_key=?" if key else "r.park_key IS NULL")
+            if key:
+                parameters.append(key)
+        for term in normalize_library_text(search).split():
+            clauses.append("instr(r.search_text, ?) > 0")
+            parameters.append(term)
+        where = " WHERE " + " AND ".join(clauses) if clauses else ""
+        with self.connection() as connection:
+            return tuple(
+                LibraryEntry(*row)
+                for row in connection.execute(
+                    "SELECT r.source_sha256, r.source_filename, r.source_ride_name, r.source_park_name, "
+                    "COALESCE(r.ride_name_override, r.source_ride_name), "
+                    "COALESCE(r.park_name_override, r.source_park_name), "
+                    "r.recorded_at_utc, r.recorded_day, r.day_timezone, r.imported_at_utc, "
+                    "(SELECT count(*) FROM export_history h WHERE h.recording_sha256=r.source_sha256), "
+                    "r.workflow_status, r.source_uuid "
+                    f"FROM recordings r{where} ORDER BY r.recorded_day DESC, r.recorded_at_utc DESC, "
+                    "r.imported_at_utc DESC, r.source_sha256",
+                    parameters,
+                )
+            )
+
+    def parks(self) -> tuple[str, ...]:
+        """Return distinct effective park spellings from the whole Library.
+
+        Returns:
+            One deterministic display spelling per normalized park key, in key order.
+            Unknown parks are represented separately by the filter control.
+
+        Raises:
+            LibraryStoreError: Library metadata could not be read.
+        """
+        with self.connection() as connection:
+            return tuple(
+                row[0]
+                for row in connection.execute(
+                    "SELECT min(COALESCE(park_name_override, source_park_name)) FROM recordings "
+                    "WHERE park_key IS NOT NULL GROUP BY park_key ORDER BY park_key",
+                )
+            )
+
+    def source(self, source_sha256: str) -> ArchivedSource:
+        """Read one archived original, verifying its stored identity before decoding.
+
+        Args:
+            source_sha256: Exact original-byte recording identity.
+
+        Returns:
+            Original bytes, format and current marker choices for one recording.
+
+        Raises:
+            ValueError: The requested digest or stored metadata additions are invalid.
+            LibraryStoreError: The entry is missing, corrupt or unreadable.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        with self.connection() as connection:
+            row = connection.execute(
+                "SELECT source_bytes, source_filename, source_format, source_byte_count, "
+                "first_sample, last_sample, gravity_index, incline_index, "
+                "calibration_algorithm_version, calibration_window_samples, "
+                "ride_name_override, park_name_override, row_override, seat_override, "
+                "train_override, riding_position_override, notes "
+                "FROM recordings WHERE source_sha256=?",
+                (source_sha256,),
+            ).fetchone()
+        if row is None:
+            raise LibraryStoreError("Recording is not in the Library")
+        if not isinstance(row[0], bytes):
+            raise LibraryStoreError("Archived source integrity check failed")
+        data = row[0]
+        if len(data) != row[3] or sha256(data).hexdigest() != source_sha256:
+            raise LibraryStoreError("Archived source integrity check failed")
+        try:
+            calibration = CalibrationOverrides(row[6], row[7], row[8], row[9])
+        except (ValueError, TypeError) as error:
+            raise LibraryStoreError("Invalid archived calibration recipe") from error
+        if row[2] not in {"forces", "zforces"}:
+            raise LibraryStoreError("Unsupported archived source format")
+        additions = RecordingAdditions.model_validate(
+            dict(zip(RecordingAdditions.model_fields, row[10:], strict=True)),
+        )
+        return ArchivedSource(
+            data,
+            row[1],
+            row[2] == "zforces",
+            (row[4], row[5]),
+            calibration,
+            additions,
+        )
+
+    def video_links(self, source_sha256: str) -> tuple[VideoLink, ...]:
+        """List one recording's links in insertion order without reading source bytes.
+
+        Args:
+            source_sha256: Archived recording identity.
+
+        Returns:
+            Saved links, including labels removed from the preference choices.
+
+        Raises:
+            ValueError: The source hash is invalid.
+            LibraryStoreError: The Library cannot be read.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        with self.connection() as connection:
+            return tuple(
+                VideoLink(*row)
+                for row in connection.execute(
+                    "SELECT id, url, label FROM video_links WHERE recording_sha256=? ORDER BY id",
+                    (source_sha256,),
+                )
+            )
+
+    def save_video_link(
+        self,
+        source_sha256: str,
+        url: str,
+        label: str = "",
+        *,
+        link_id: int | None = None,
+    ) -> int:
+        """Add or replace one link without changing other links or workflow status.
+
+        Args:
+            source_sha256: Recording owning the link.
+            url: HTTP/HTTPS URL; private and scheduled destinations are allowed.
+            label: Selected text, including unset or previously saved choices.
+            link_id: Existing link to edit, or None to insert a new one.
+
+        Returns:
+            Identity of the saved link.
+
+        Raises:
+            ValueError: The URL, label or source hash is invalid.
+            LibraryStoreError: The recording/link is missing or saving fails.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        if not has_type(url, str) or not has_type(label, str):
+            raise ValueError("Invalid video link")
+        url = url.strip()
+        try:
+            parsed = urlsplit(url)
+            valid = parsed.scheme in {"http", "https"} and bool(parsed.hostname)
+        except ValueError:
+            valid = False
+        if not valid or any(character.isspace() for character in url):
+            raise ValueError("Enter a valid HTTP or HTTPS video URL.")
+        with self.connection() as connection:
+            if link_id is None:
+                cursor = connection.execute(
+                    "INSERT INTO video_links(recording_sha256,url,label) VALUES (?,?,?)",
+                    (source_sha256, url, label),
+                )
+                assert cursor.lastrowid is not None
+                return cursor.lastrowid
+            cursor = connection.execute(
+                "UPDATE video_links SET url=?,label=? WHERE recording_sha256=? AND id=?",
+                (url, label, source_sha256, link_id),
+            )
+            if cursor.rowcount != 1:
+                raise LibraryStoreError("Video link is not in this recording")
+            return link_id
+
+    def remove_video_link(self, source_sha256: str, link_id: int) -> None:
+        """Remove only the addressed link belonging to this recording.
+
+        Args:
+            source_sha256: Recording owning the link.
+            link_id: Local identity of the link to remove.
+
+        Raises:
+            ValueError: The source hash is invalid.
+            LibraryStoreError: The link is missing or removal fails.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        with self.connection() as connection:
+            cursor = connection.execute(
+                "DELETE FROM video_links WHERE recording_sha256=? AND id=?",
+                (source_sha256, link_id),
+            )
+            if cursor.rowcount != 1:
+                raise LibraryStoreError("Video link is not in this recording")
+
+    def markers(
+        self,
+        source: ImportSuccess,
+    ) -> tuple[tuple[int, int], CalibrationOverrides] | None:
+        """Read and validate current markers without fetching archived source bytes.
+
+        Args:
+            source: Exact-byte import used to validate source-sample references.
+
+        Returns:
+            Current bounds and calibration, or None for a non-archived source.
+
+        Raises:
+            ValueError: Stored bounds or calibration references are invalid.
+            LibraryStoreError: The Library cannot be read.
+        """
+        with self.connection() as connection:
+            row = connection.execute(
+                "SELECT first_sample, last_sample, gravity_index, incline_index, "
+                "calibration_algorithm_version, calibration_window_samples "
+                "FROM recordings WHERE source_sha256=?",
+                (source.source_sha256,),
+            ).fetchone()
+        if row is None:
+            return None
+        bounds = (row[0], row[1])
+        calibration = CalibrationOverrides(*row[2:])
+        validate_sample_range(
+            *bounds,
+            len(source.recording.motion.acceleration),
+            "Invalid Library bounds",
+        )
+        validate_calibration_references(source, calibration, calculation_time=datetime.now(UTC))
+        return bounds, calibration
+
+    def update_markers(
+        self,
+        source: ImportSuccess,
+        bounds: tuple[int, int] | None,
+        calibration: CalibrationOverrides,
+    ) -> bool:
+        """Atomically replace only an archived recording's current marker recipe.
+
+        Args:
+            source: Exact-byte import supplying sample and calibration validation.
+            bounds: Inclusive bounds, or None to restore original source bounds.
+            calibration: Admitted reference recipe; default restores source calibration.
+
+        Returns:
+            True when updated, False when the source is not archived.
+
+        Raises:
+            ValueError: Bounds or calibration references are invalid.
+            LibraryStoreError: The transaction fails, retaining previous values.
+        """
+        indices = source.recording.indices
+        effective = bounds if bounds is not None else (indices.start, indices.end)
+        validate_sample_range(
+            *effective,
+            len(source.recording.motion.acceleration),
+            "Invalid Library bounds",
+        )
+        validate_calibration_references(source, calibration, calculation_time=datetime.now(UTC))
+        with self.connection() as connection:
+            cursor = connection.execute(
+                "UPDATE recordings SET first_sample=?, last_sample=?, gravity_index=?, incline_index=?, "
+                "calibration_algorithm_version=?, calibration_window_samples=? WHERE source_sha256=?",
+                (
+                    *effective,
+                    calibration.gravity_index,
+                    calibration.incline_index,
+                    calibration.algorithm_version,
+                    calibration.window_samples,
+                    source.source_sha256,
+                ),
+            )
+            return cursor.rowcount == 1
+
+    def metadata(self, source_sha256: str) -> RecordingAdditions | None:
+        """Read current user additions without loading source bytes.
+
+        Args:
+            source_sha256: Exact source digest to look up.
+
+        Returns:
+            Stored additions, or None for a source outside the Library.
+
+        Raises:
+            ValueError: The digest or stored additions are invalid.
+            LibraryStoreError: SQLite access fails.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        with self.connection() as connection:
+            row = connection.execute(
+                "SELECT ride_name_override, park_name_override, row_override, seat_override, "
+                "train_override, riding_position_override, notes FROM recordings WHERE source_sha256=?",
+                (source_sha256,),
+            ).fetchone()
+        return (
+            RecordingAdditions.model_validate(
+                dict(zip(RecordingAdditions.model_fields, row, strict=True)),
+            )
+            if row is not None
+            else None
+        )
+
+    def set_workflow_status(self, source_sha256: str, status: str) -> None:
+        """Persist one manual status without transitions, history or other recording changes.
+
+        Args:
+            source_sha256: Archived recording's original-byte identity.
+            status: One of the six supported workflow states, in any order.
+
+        Raises:
+            ValueError: The digest or workflow status is invalid.
+            LibraryStoreError: The recording is missing or the transaction fails.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        if status not in WORKFLOW_STATUSES:
+            raise ValueError("Invalid Library workflow status")
+        with self.connection() as connection:
+            cursor = connection.execute(
+                "UPDATE recordings SET workflow_status=? WHERE source_sha256=?",
+                (status, source_sha256),
+            )
+            if cursor.rowcount != 1:
+                raise LibraryStoreError("Recording is not in the Library")
+
+    def update_metadata(
+        self,
+        source_sha256: str,
+        values: Mapping[str, object],
+    ) -> RecordingAdditions:
+        """Replace current additions atomically, rejecting source/date fields.
+
+        Args:
+            source_sha256: Archived original-byte identity.
+            values: Editable override fields and notes; an empty mapping resets all.
+
+        Returns:
+            Validated additions persisted for this recording.
+
+        Raises:
+            ValueError: A digest, field, scalar type or riding position is invalid.
+            LibraryStoreError: The recording is missing or the write fails.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        additions = RecordingAdditions.model_validate(dict(values))
+        with self.connection() as connection:
+            row = connection.execute(
+                "SELECT source_ride_name, source_park_name FROM recordings WHERE source_sha256=?",
+                (source_sha256,),
+            ).fetchone()
+            if row is None:
+                raise LibraryStoreError("Recording is not in the Library")
+            metadata = additions.model_dump()
+            ride = additions.ride_name if additions.ride_name is not None else row[0]
+            park = additions.park_name if additions.park_name is not None else row[1]
+            connection.execute(
+                "UPDATE recordings SET ride_name_override=?, park_name_override=?, row_override=?, "
+                "seat_override=?, train_override=?, riding_position_override=?, notes=?, "
+                "park_key=?, search_text=? WHERE source_sha256=?",
+                (*metadata.values(), *library_search_values(ride, park), source_sha256),
+            )
+        return additions
+
+    def initialize(self) -> None:
+        """Apply packaged Alembic revisions in one explicit SQLite transaction.
+
+        Current databases are read without rewriting schema or data. Unknown
+        revisions and unversioned existing tables are rejected without replacement.
+        A failed upgrade rolls back both DDL and data, including the revision row.
+
+        Raises:
+            LibraryStoreError: Database access or migration failed.
+        """
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            with as_file(files("ride_forces_analyzer.storage.library_migrations")) as location:
+                config = Config()
+                config.set_main_option("script_location", str(location).replace("%", "%%"))
+                scripts = ScriptDirectory.from_config(config)
+                engine = create_engine(
+                    URL.create("sqlite", database=str(self.path)),
+                    connect_args={"isolation_level": None},
+                    poolclass=NullPool,
+                )
+                try:
+                    with engine.connect() as connection:
+                        connection.exec_driver_sql("PRAGMA foreign_keys = ON")
+                        connection.exec_driver_sql("BEGIN IMMEDIATE")
+                        try:
+                            current = MigrationContext.configure(connection).get_current_heads()
+                            known = {revision.revision for revision in scripts.walk_revisions()}
+                            if len(current) > 1 or any(item not in known for item in current):
+                                raise LibraryStoreError("Unsupported Library schema revision")
+                            tables = connection.exec_driver_sql(
+                                "SELECT name FROM sqlite_master WHERE type='table' "
+                                "AND name NOT GLOB 'sqlite_*'",
+                            ).fetchall()
+                            if not current and tables:
+                                raise LibraryStoreError("Existing Library has no schema revision")
+                            if current != (scripts.get_current_head(),):
+                                config.attributes["connection"] = connection
+                                command.upgrade(config, "head")
+                            connection.commit()
+                        except Exception:
+                            connection.rollback()
+                            raise
+                finally:
+                    engine.dispose()
+        except (OSError, sqlite3.Error, SQLAlchemyError, CommandError) as error:
+            raise LibraryStoreError(f"Library database: {error}") from error
+
+    @contextmanager
+    def connection(self) -> Generator[sqlite3.Connection, None, None]:
+        """Open a foreign-key-enabled SQLite transaction after applying migrations.
+
+        Yields:
+            Standard-library connection for ordinary parameterized reads/writes.
+
+        Raises:
+            LibraryStoreError: Initialization or database access failed; writes roll back.
+        """
+        self.initialize()
+        try:
+            connection = sqlite3.connect(self.path, isolation_level=None, timeout=5)
+            try:
+                connection.execute("PRAGMA foreign_keys = ON")
+                connection.execute("BEGIN")
+                try:
+                    yield connection
+                    connection.commit()
+                except Exception:
+                    connection.rollback()
+                    raise
+            finally:
+                connection.close()
+        except (sqlite3.Error, OSError) as error:
+            raise LibraryStoreError(f"Library database: {error}") from error

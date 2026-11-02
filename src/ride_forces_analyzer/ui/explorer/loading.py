@@ -11,8 +11,9 @@ from datetime import UTC, datetime
 
 from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
-from ride_forces_analyzer.explorer import ExplorerData, load_recording
-from ride_forces_analyzer.storage.preferences import Preferences
+from ride_forces_analyzer.explorer import ExplorerData
+from ride_forces_analyzer.explorer.library import LibraryArchive, import_recording
+from ride_forces_analyzer.storage.library import LibraryStoreError
 from ride_forces_analyzer.runtime.error_reporting import record_error
 from ride_forces_analyzer.importers import ImportFailure, Severity
 
@@ -33,23 +34,37 @@ class LoadWorker(QRunnable):
     """Load worker contract and owned data.
 
     Attributes:
-        path: Filesystem path read or written by this operation.
+        path: External source path, or None when reopening an archived source.
+        source_sha256: Archived source identity, or None when importing an external file.
         generation: Request generation used to reject late worker deliveries.
         signals: Qt result, failure and progress signal transport owned by the worker.
     """
 
-    def __init__(self, path: Path, generation: int = 0) -> None:
+    def __init__(
+        self,
+        path: Path | None,
+        generation: int = 0,
+        *,
+        source_sha256: str | None = None,
+    ) -> None:
         """Initialize load worker and its owned state.
 
         Args:
-            path: Filesystem path read or written by this operation.
+            path: External recording path, or None for an archived source.
             generation: Request generation used to reject late worker deliveries.
+            source_sha256: Archive identity, supplied instead of a path.
 
         Returns:
             None.
+
+        Raises:
+            ValueError: Exactly one external path or archived identity is required.
         """
         super().__init__()
+        if (path is None) == (source_sha256 is None):
+            raise ValueError("Select one external path or archived source")
         self.path = path
+        self.source_sha256 = source_sha256
         self.generation = generation
         self.signals = LoadSignals()
 
@@ -61,15 +76,25 @@ class LoadWorker(QRunnable):
             None.
         """
         try:
-            outcome = load_recording(self.path)
+            if self.source_sha256 is not None:
+                outcome = LibraryArchive().reopen(self.source_sha256)
+            else:
+                assert self.path is not None
+                outcome = import_recording(self.path)
+                if isinstance(outcome, ExplorerData):
+                    outcome = LibraryArchive().apply_metadata(outcome)
             if isinstance(outcome, ImportFailure):
                 for diagnostic in outcome.diagnostics:
                     if diagnostic.severity is Severity.ERROR:
                         record_error("Import", message=f"{diagnostic.code}: {diagnostic.message}")
-            if isinstance(outcome, ExplorerData) and outcome.analysis is not None:
+            if (
+                self.source_sha256 is None
+                and isinstance(outcome, ExplorerData)
+                and outcome.analysis is not None
+            ):
                 snapshot = outcome.analysis
                 now = datetime.now(UTC)
-                configuration = Preferences().recording_configuration(
+                configuration = LibraryArchive().recording_configuration(
                     outcome.source,
                     snapshot.configuration,
                     calculation_time=now,
@@ -86,7 +111,53 @@ class LoadWorker(QRunnable):
             record_error("Import worker", error)
             self.signals.failed.emit(
                 self.generation,
-                tr("Unexpected load error. The previous recording is unchanged."),
+                tr("Could not open archived recording: {0}", str(error))
+                if self.source_sha256 is not None
+                else str(error)
+                if isinstance(error, LibraryStoreError)
+                else tr("Unexpected load error. The previous recording is unchanged."),
             )
         else:
             self.signals.completed.emit(self.generation, outcome)
+
+
+class ArchiveImportSignals(QObject):
+    """Transport background archive outcomes without accessing widgets.
+
+    Attributes:
+        completed: Ordered per-file import results.
+        failed: Explanation of an unexpected worker failure.
+    """
+
+    completed = Signal(object)
+    failed = Signal(str)
+
+
+class ArchiveImportWorker(QRunnable):
+    """Run explicit archive imports off the GUI thread.
+
+    Attributes:
+        paths: Selected local recording paths.
+        signals: Completion/error transport to the importing Explorer window.
+    """
+
+    def __init__(self, paths: tuple[Path, ...]) -> None:
+        """Retain selected paths for processing by the archive service.
+
+        Args:
+            paths: Supported recordings selected through the file dialog.
+        """
+        super().__init__()
+        self.paths = paths
+        self.signals = ArchiveImportSignals()
+
+    @Slot()
+    def run(self) -> None:
+        """Import files independently and report results through queued Qt signals."""
+        try:
+            results = LibraryArchive().import_paths(self.paths)
+        except Exception as error:
+            record_error("Library import worker", error)
+            self.signals.failed.emit(str(error))
+        else:
+            self.signals.completed.emit(results)

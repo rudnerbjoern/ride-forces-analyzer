@@ -14,7 +14,8 @@ are defined in the [release guide](../development/RELEASE.md#linux-and-macos-pac
 Local SQLite presets and reusable batches; multiple presets per recording and
 multiple recordings per batch. Selected/all batches form one sequential queue coordinated by `exports.batches`.
 Each recording × preset produces a separate video, never concatenated rides.
-The ride/media library remains outside this scope; see the [roadmap](../ROADMAP.md).
+Recording archives and per-attempt history belong to the separate
+[Library](../development/LIBRARY.md#export-history-and-repeat-export).
 
 Architecture owns [storage/component boundaries](../architecture/05_building_block_view.md#video-export-boundary),
 [database location](../architecture/07_deployment_view.md#local-export-configuration)
@@ -23,11 +24,11 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
 ## Contracts
 
 | Saved object    | Required contents                                                                                                                                                                      |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Preset          | Layout, position, export area, landscape/portrait aspect, overlay language, output mode, fps, time context, axis inversion, GPU preference, odd 1–51 sample smoothing and range policy |
 | Analysis recipe | Explicit versioned projection, smoothing, independent orientation, context/events, input dependencies and source-app policy; smoothing matches preset window                           |
-| Job             | Absolute source path, original SHA-256, title, concrete inclusive source range and complete preset snapshot                                                                            |
-| Storage         | Recipes/definitions only; no source bytes or stage buffers; originals remain external/read-only                                                                                        |
+| Job             | Archived source SHA-256 (or an absolute source path), title, concrete inclusive source range and complete preset snapshot                                                              |
+| Storage         | Recipes/definitions only; archived source bytes belong to the Library; external originals remain read-only                                                                             |
 
 - Writes are transactional; preset/batch names are unique. Damaged/unsupported
   databases are reported, never silently replaced.
@@ -53,7 +54,14 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   User selection loads a preset and refreshes production previews without changing
   explorer recording/settings. Refreshing the stored list does not apply a preset.
 - Editing/deleting a preset does not change saved job snapshots.
-  Jobs replay their saved overlay language independently of UI language.
+- Jobs queued from archived Explorer data use their Library digest without an
+  external source path. Execution and frame planning read verified archived bytes;
+  the batch editor also archives added files before capturing jobs.
+  Path-bound jobs retain their file/digest checks. Removing the
+  Library source makes those archived jobs unavailable.
+- Jobs execute captured metadata/analysis and overlay language independently of
+  current Library edits and UI language. [Metadata compatibility](../development/LIBRARY.md#metadata-additions-and-export-compatibility)
+  defines the supported saved representations.
 - Presets/jobs persist `settings.extent` as `full_frame` or `content_area`; omission
   uses Full frame without rewriting storage. Unsupported supplied values or
   combinations, including HUD Content area, are rejected.
@@ -103,6 +111,10 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   including import/analysis, rendering, encoding and final publication or failure/
   cancellation handling. It excludes queue waiting and report writes; skipped
   jobs retain `null` rather than a fabricated duration.
+  Started archived-source jobs also retain requested/effective recipes and results
+  in the Library; skipped jobs create no attempt. A separate `history_error` warns
+  of Library persistence failure without changing a completed result or removing
+  its output. Library history is available without locating the run report.
   Progress wraps the shared `ExportProgress` with job index/count and label.
   Separate bars show the frame-weighted overall queue and the current video's
   submitted frames. Before rendering, each distinct source is imported to calculate
@@ -114,5 +126,6 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
 - Cancellation stops the active encode and skips remaining jobs; remove incomplete
   output, preserve completed videos. Parent close/Escape cannot abandon an active export.
 - Definitions survive restart, without embedded sensor data or automatic relocated-file
-  discovery. Moving/changing a source requires a new job. Automatic resume and a
-  persistent execution-history UI remain outside scope.
+  discovery. Moving/changing a source requires a new job. Automatic resume remains
+  outside this queue's scope. Library
+  history supports a separate repeat from archived bytes and frozen settings.

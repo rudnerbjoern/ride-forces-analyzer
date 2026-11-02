@@ -14,6 +14,9 @@ from PySide6.QtWidgets import QMessageBox, QProgressDialog, QWidget
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from ride_forces_analyzer.exports.csv import CsvExportCancelled, export_csv
 from ride_forces_analyzer.exports.formats import DataExportFormat
+from ride_forces_analyzer.exports.history import ExportAttempt
+from ride_forces_analyzer.exports.validation import validate_export
+from ride_forces_analyzer.storage.library_history import ExportRequest
 from ride_forces_analyzer.exports.json import JsonExportCancelled, export_json, export_analyzer_json
 from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.runtime.error_reporting import record_error
@@ -28,11 +31,13 @@ class DataSignals(QObject):
         progress: Qt signal for progress notifications.
         completed: Qt signal for completed notifications.
         failed: Qt signal for failed notifications.
+        warning: Signal reporting history failures independently of export success.
     """
 
     progress = Signal(int)
     completed = Signal(object)
     failed = Signal(str)
+    warning = Signal(str)
 
 
 class DataWorker(QRunnable):
@@ -87,7 +92,11 @@ class DataWorker(QRunnable):
         Returns:
             None.
         """
+        request = ExportRequest.capture(self.analysis, self.format.value, self.first, self.last)
+        attempt = ExportAttempt(request)
         try:
+            validate_export(self.analysis, self.path, self.first, self.last, self.format)
+            attempt.prepared(request)
             exporter = {
                 DataExportFormat.CSV: export_csv,
                 DataExportFormat.JSON: export_json,
@@ -103,12 +112,17 @@ class DataWorker(QRunnable):
                 progress=self.signals.progress.emit,
             )
         except CsvExportCancelled, JsonExportCancelled:
+            attempt.finish("cancelled", error="Export cancelled")
             self.signals.completed.emit(None)
         except Exception as error:
             record_error("Data export", error)
+            attempt.finish("failed", error=str(error))
             self.signals.failed.emit(str(error))
         else:
+            attempt.finish("completed", output=self.path)
             self.signals.completed.emit(self.path)
+        if attempt.warning:
+            self.signals.warning.emit(tr("Export history could not be saved: {0}", attempt.warning))
 
 
 class DataExportDialog(QProgressDialog):
@@ -174,8 +188,13 @@ class DataExportDialog(QProgressDialog):
         self.worker.signals.progress.connect(self.setValue)
         self.worker.signals.completed.connect(self._completed)
         self.worker.signals.failed.connect(self._failed)
+        self.worker.signals.warning.connect(self._history_warning)
         self.canceled.connect(self.worker.cancelled.set)
         QTimer.singleShot(0, lambda: QThreadPool.globalInstance().start(self.worker))
+
+    @Slot(str)
+    def _history_warning(self, message: str) -> None:
+        QMessageBox.warning(self.parentWidget(), tr("Export history"), message)
 
     @Slot(object)
     def _completed(self, path: object) -> None:

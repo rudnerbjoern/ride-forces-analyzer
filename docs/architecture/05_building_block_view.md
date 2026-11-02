@@ -9,6 +9,9 @@ flowchart TB
     Entry["__main__: settings and instance ownership"] --> Application["ui.application: recording windows"]
     Application --> UI["ui: widgets and worker transport"]
     UI --> Importer["importers: decode and validate"]
+    UI --> Archive["explorer.library: archive import and reopening"]
+    Archive --> Importer
+    Archive --> Storage
     Importer --> Domain["domain: immutable source and recording"]
     UI --> Controller["ui.explorer.analysis: scheduling and delivery guards"]
     Controller --> Service["analysis.service: revisions and subscriptions"]
@@ -26,6 +29,7 @@ flowchart TB
     Rendering --> Encoding["rendering.encoding: FFmpeg"]
     UI --> Batches["exports.batches: sequential jobs"]
     Batches --> Importer
+    Batches --> Archive
     Batches --> Rendering
     UI --> Storage["storage: preferences, recipes and tile cache"]
     Batches --> Storage
@@ -50,7 +54,7 @@ remain with their owning packages;
 | `gps.overview`, `gps.map_background`                                  | Independent route geometry and optional bounded map requests                  |
 | `exports`                                                             | Sample serialization, safe publication and sequential video jobs              |
 | `rendering`                                                           | Layouts, previews, ordered frame generation and encoding                      |
-| `storage`                                                             | SQLite preferences, marker choices, export definitions and map tiles          |
+| `storage`                                                             | SQLite preferences, exports, map tiles and the versioned Library schema       |
 | `i18n`, `rendering.airtime_colors`                                    | Shared language and semantic-color contracts                                  |
 | `ui`                                                                  | Qt controls, dialogs, themes, icons and asynchronous transport                |
 | `runtime.cpu_resources`, `runtime.updates`, `runtime.error_reporting` | CPU topology, optional release lookup and local support reports               |
@@ -64,10 +68,25 @@ strict JSON and source-profile dispatch. `motion` validates vectors and independ
 indices; `optional` parses metadata, attributes and GPS slots. `service` composes
 them using one diagnostic budget. Only complete-service success returns a
 `Recording`; subset APIs do not imply complete import.
+`importers.library_metadata` projects verbatim ride/park names and source-evidenced
+recording dates for the Library without storage or Qt dependencies.
+The [recording-date contract](../development/IMPORT_SERVICE.md#admitted-recording-date-contract)
+defines the admitted epoch, recording-local day and unknown-date policy.
 
 [Import API](../development/IMPORT_SERVICE.md), [decoder](../development/STRICT_DECODING.md),
 [motion](../development/MOTION_PARSING.md), [optional fields](../development/OPTIONAL_PARSING.md)
 and [domain models](../development/CANONICAL_MODELS.md) define exact contracts.
+
+| Library component                                                         | Responsibility                                                                                                     |
+|---------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| `storage.library.LibraryStore`                                            | SQLite transactions, source/metadata/marker validation, filtering, workflow and links; bundled schema migrations   |
+| `explorer.library.LibraryArchive`                                         | Archive-first import, identity resolution, initial preferences and archived-source reopening                       |
+| `storage.library_history.LibraryHistory`, `exports.history.ExportAttempt` | Requested/effective recipes, attempt outcomes and repeat preparation independently of successful media publication |
+| `storage.library_backup.LibraryBackup`                                    | Consistent online snapshots, bounded portable ZIP validation and atomic Library/label replacement                  |
+
+Library services stay outside widgets and reuse importer/analysis/export contracts.
+[Storage contracts](../development/LIBRARY.md) own schema, identity, metadata,
+markers, workflow, links, recipes, migrations and portable-format limits.
 
 ## Analysis boundary
 
@@ -125,6 +144,17 @@ signals. `ui.explorer.navigation.ExplorerNavigation` owns sample controls, force
 cards and timer transport for the existing `SamplePlayback` clock, including cursor
 and viewport following. The window composes these widgets, binds the same prepared
 snapshot to each component and coordinates import/analysis delivery.
+`ui.explorer.library.LibraryPanel` owns the collapsible list, filters, read-only
+details and context actions; `LibraryMetadataDialog`, `LibraryVideosDialog` and
+`LibraryExportsDialog` own recording-bound forms/review. Workers call Library
+services; widgets own display, input and transport, not validation or persistence.
+`ui.explorer.library_workflow` owns frameless status triggers and the anchored
+selector, using `QFrame`/`QHBoxLayout`, six checkable `QToolButton` controls and an
+exclusive `QButtonGroup`. `LibraryLabelsEditor` owns the Settings draft;
+`LibraryTransferControls` owns ZIP pickers, confirmation and worker cancellation.
+[Explorer interactions](../implementation/RAW_EXPLORER.md#library-interactions)
+define layout, controls, selection, scrolling, accessibility and dialog behavior.
+
 Export preview widgets and background jobs live in
 `ui.exports.preview` and `ui.exports.workers`. `ui.exports.form.ExportForm` owns
 export inputs and retained layout placements. `ui.exports.preview_controller` owns
@@ -133,9 +163,11 @@ preview debounce, captured requests, worker revisions and stale-result rejection
 dialog. `ui.exports.video` coordinates these components with review/start/cancellation;
 analysis changes for loaded recipes still use the existing preparation service.
 
-`RecordingApplication` owns windows and queued file-open requests.
-`InstanceBroker` owns local locking/IPC. Each recording window owns its analysis
-controller; language and appearance are shared application preferences.
+`RecordingApplication` owns recording windows, queued file requests and the
+`library_changed` signal; `InstanceBroker` owns local locking/IPC. Windows own
+independent analysis controllers, playback and chart state while sharing language
+and appearance. [Runtime](06_runtime_view.md#library-actions-and-shared-windows)
+defines archive-window requests and Library-panel subscriptions.
 
 `gps.overview` prepares independent approximate route segments. `gps.map_background`
 projects route and tiles consistently and owns bounded HTTPS/image composition;
@@ -217,8 +249,9 @@ coordinates assistant pages and the video-export lifecycle.
 `storage.export_models` defines immutable presets/jobs; `storage.exports` owns
 SQLite schema and transactions. `exports.batches` imports and checks each
 source before applying its saved recipe and running exports sequentially.
-`ui.exports.batches` edits queues and transports results. Recordings and rendered media
-never enter SQLite.
+`ui.exports.batches` edits queues and transports results. The export database holds
+recipes and job definitions; exact source bytes belong to the Library database,
+and rendered media remain external files.
 
 [Layout API](../development/EXPORT_LAYOUTS.md), [video contracts](../implementation/VIDEO_EXPORT.md)
 and [batch contracts](../implementation/EXPORT_BATCHES.md) own detailed rules.

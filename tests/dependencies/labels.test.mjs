@@ -73,9 +73,13 @@ test("PR type labels use anchored feature/fix branches and combine with file lab
   for (const [branch, files, expected] of [
     ["feat/json-export", source, ["enhancement"]],
     ["feat/json-export", [...source, "docs/user/JSON_EXPORT.md"], ["documentation", "enhancement"]],
+    ["feature/library", source, ["enhancement"]],
+    ["feature/library", [...source, "README.md", "pyproject.toml"],
+      ["dependencies", "documentation", "enhancement"]],
     ["fix/json-export", source, ["bug"]],
     ["fix/json-export", [...source, "README.md"], ["bug", "documentation"]],
     ["chore/feat/json-export", source, []],
+    ["chore/feature/library", source, []],
     ["defeat/json-export", source, []],
     ["refactor/json-export", source, []],
     ["dependabot/uv/python-security", ["uv.lock"], ["dependencies"]],

@@ -11,6 +11,13 @@ file-open, save and folder selection share the application palette and styleshee
 `InstanceBroker` acquires local process ownership or forwards the optional file
 path and `--new-window` request to the existing owner.
 
+After instance ownership is acquired, `RecordingApplication.start()` initializes
+the Library, applies pending revisions and marks leftover running export attempts
+as interrupted before creating the first window. Unknown finish time/duration stays unknown.
+Additional windows do not repeat startup initialization. A Library error propagates
+to the existing error-reporting path and prevents creation of the initial window;
+the database is not replaced or reset.
+
 ```mermaid
 sequenceDiagram
     actor User
@@ -38,9 +45,23 @@ and restricted local access. Failed forwarding does not start a competing owner.
 macOS file-open events enter the same request queue; Linux desktop launchers pass
 a file path. Requests wait while the target window imports.
 
+External file requests first archive the original through `LibraryArchive.import_paths()`
+and then reopen the returned Library digest, preserving existing entry data on
+duplicates. The main Import action and file drops share this path; multiple files
+are archived sequentially and only the first successful result opens in the current
+window, or one new window when explicitly requested. A repeated
+external path targets its existing window and still runs the import before opening, so
+updated exports at that path are processed.
+Library row selection schedules the existing load worker with an archive digest
+instead of an external path. It reuses archive decoding/analysis and the same
+generation checks, completion and failure delivery. The list is disabled while
+loading; errors remain visible in the panel and status bar without replacing the
+previous chart. Additional original metadata appears only after a successful load.
+
 Each window owns its recording, analysis, playback and child dialogs. Language
 and appearance are shared. Explicit file paths take precedence over optional
-Restore last file; only successful imports update the remembered path.
+Restore last file; successful loads remember the Library digest for startup restoration, while file
+requests also retain their last import directory and routing path.
 
 Support reports collect handled/unhandled errors, Qt warnings/critical/fatal
 messages with severity/category and best-effort native crash stacks. Qt diagnostics
@@ -53,6 +74,44 @@ Clicking opens the report directory through the platform desktop service.
 Startup removes completed-process
 reports and preserves active ones. Report failure must not replace the original
 error. Exception messages may contain personal paths; nothing is uploaded.
+
+## Library actions and shared windows
+
+For **Open in new window…**, the panel emits an archive digest through the window.
+`RecordingApplication` registers an independent Explorer in the same process and
+schedules `open_archived()`. Each window owns its analysis, playback and chart state.
+
+Confirmed removal follows the storage transaction before publishing one change:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Panel as Originating Library panel
+    participant Store as LibraryStore
+    participant App as RecordingApplication
+    participant Other as Other Library panels
+    User->>Panel: Confirm Remove (default is No)
+    Panel->>Store: remove_recording(digest)
+    alt Committed removal
+        Store-->>Panel: Archive and links/history removed
+        Panel->>Panel: Refresh list and filters
+        Panel->>App: changed(origin)
+        App->>Other: library_changed(origin)
+        Other->>Other: Refresh list without reloading chart
+    else Failed transaction or running export
+        Store-->>Panel: Preserve data and explain failure
+    end
+```
+
+Every panel subscribes, including hidden panels; the origin skips its own forwarded
+notification because it already refreshed. Cancelled/failed removals publish no
+change. Loaded analyses, samples, zoom and playback are unaffected, and Qt removes
+destroyed-panel subscriptions automatically. External originals/outputs stay intact.
+
+Repeat preparation and backup/restore run in workers; transfer closure requests
+cancellation and waits for safe completion. [Library storage](../development/LIBRARY.md)
+owns transaction/recipe rules; [Explorer interactions](../implementation/RAW_EXPLORER.md#library-interactions)
+own dialog, selection, scrolling, accessibility and layout behavior.
 
 ## Optional update discovery
 
@@ -185,6 +244,10 @@ A shared worker serializes CSV or JSON and transports progress/cancellation.
 Confirmed replacement commits atomically after success; failure/cancellation
 preserves an existing file and removes temporary output. Only success remembers
 the destination folder. The worker retains its bound snapshot until completion.
+For archived hashes, worker execution starts an attempt with frozen requested
+settings. Existing data validation admits its effective recipe before serialization.
+Actual completion/cancellation/failure is saved independently of exporter output;
+history-write errors are reported without deleting successful files.
 
 ## Video export runtime
 
@@ -200,6 +263,11 @@ Preparing the timeline captures its export-owned settings/analysis snapshot.
 Single and batch encoding embed the same snapshot in the video comment; batch
 reporting collects that snapshot without creating another analysis representation
 or a per-video JSON sidecar.
+For archived hashes, Start captures a requested recipe before timeline/encoder
+preparation. It records preparation failures and destination-picker cancellation.
+The worker attaches the shared effective snapshot and finalizes its actual outcome;
+destination and queue waiting are excluded from monotonic attempt duration.
+Successful output survives a history-write failure, which remains visible separately.
 
 A worker streams the native Content-area image or Full-frame layout region to
 FFmpeg, which retains native dimensions or pads to the chosen canvas. The local render-job
@@ -250,3 +318,9 @@ independently of current assistant settings and later preset edits.
 Per-job failures allow later jobs to continue. Cancellation skips pending jobs and
 preserves completed videos. Closing the dialog requests cancellation and waits for
 the active encoder. Definitions survive restart; automatic resume is outside scope.
+Each started archived-source job creates its own Library attempt before import;
+skipped jobs create none. The report and Library retain requested/effective settings,
+observed backend and actual results; `history_error` reports independent persistence
+failures. The Library history dialog prepares repeats in a worker from archived bytes
+and saved recipes. Video repeats use the assistant's review; data repeats use the
+existing save/overwrite flow. A started repeat creates a fresh attempt.

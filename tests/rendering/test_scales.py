@@ -3,6 +3,7 @@
 # cspell:words getpixel getcolor
 
 from datetime import UTC, datetime
+from typing import Literal
 
 import pytest
 from PIL import ImageColor
@@ -24,6 +25,39 @@ from ride_forces_analyzer.rendering.model import (
     prepare_export,
 )
 from tests.analysis.test_recording_preparation import synthetic_source
+from ride_forces_analyzer.domain.metadata import RecordingAdditions
+from ride_forces_analyzer.importers import ImportSuccess
+
+
+@pytest.mark.parametrize("posture,expected", [("Seated", (-1.5, 5)), ("Flying", (-4, 3))])
+def test_library_posture_overrides_only_the_existing_display_range(
+    posture: Literal["Seated", "Flying"],
+    expected: tuple[float, float],
+) -> None:
+    original = synthetic_source(
+        ridingPosition="Flying" if posture == "Seated" else "Seated",
+        accelerationSequence=[{"x": 0, "y": 0, "z": 1}] * 7,
+    )
+    source = ImportSuccess(
+        original.recording,
+        additions=RecordingAdditions(riding_position=posture),
+    )
+    analysis = prepare_recording_analysis(
+        source,
+        source_app_configuration(),
+        revision=0,
+        calculation_time=datetime.now(UTC),
+    )
+    for layout in (ExportLayout.ORBIT, ExportLayout.HUD):
+        timeline = prepare_export(analysis, ExportSettings(layout=layout), 2, 6)
+        assert timeline.value_at(timeline.channels[0], 3) == 1
+        renderer = create_renderer(timeline)
+        if isinstance(renderer, OrbitRenderer):
+            assert (renderer.vertical.low, renderer.vertical.high) == expected
+        else:
+            assert isinstance(renderer, HudRenderer)
+            assert renderer.scales[0][:2] == expected
+    assert source.recording is original.recording
 
 
 def test_other_channels_retain_zero_reference_and_integer_ticks() -> None:

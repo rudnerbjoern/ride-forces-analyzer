@@ -129,6 +129,7 @@ def test_bound_calibration_jobs_ignore_later_preferences_and_preserve_preset_sco
     assert len(seen) == 5
     assert timeline.analysis is changed and timeline.analysis.configuration.calibration == choice
     assert preferences.remember_recording_calibration(source, choice)
+    assert saved.recording_path is not None
     jobs = batches.build_jobs((saved.recording_path,), (preset,), "markers")
     assert jobs[0].preset.analysis_configuration.calibration == choice
     assert jobs[0].first_sample == 1 and jobs[0].last_sample == 10

@@ -27,38 +27,62 @@ from ride_forces_analyzer.analysis.recording import (
     AnalysisConfiguration,
     RecordingAnalysis,
 )
-from ride_forces_analyzer.analysis.preparation import (
-    source_app_configuration,
-)
 from ride_forces_analyzer.analysis.service import AnalysisService
-from ride_forces_analyzer.importers import ImportSuccess, import_forces
+from ride_forces_analyzer.importers import (
+    ImportFailure,
+    ImportSuccess,
+    import_forces,
+    import_forces_bytes,
+)
 from ride_forces_analyzer.runtime.error_reporting import record_error
 from ride_forces_analyzer.storage.export_models import BatchJob, RangeMode, SavedBatch, SavedPreset
-from ride_forces_analyzer.storage.preferences import Preferences
+from ride_forces_analyzer.explorer.library import import_recording
+from ride_forces_analyzer.storage.library import LibraryStore, LibraryStoreError
+from ride_forces_analyzer.domain.metadata import RecordingAdditions
+from ride_forces_analyzer.exports.history import ExportAttempt
+from ride_forces_analyzer.storage.library_history import ExportRequest
 from ride_forces_analyzer.rendering.encoding import ExportCancelled, export_video
 from ride_forces_analyzer.rendering.model import ExportSnapshot, VideoOutput, prepare_export
 
 
+def _batch_source(path: Path | None, source_sha256: str | None) -> ImportSuccess | ImportFailure:
+    """Read an archived batch source, retaining file reads for existing path-bound jobs.
+
+    Args:
+        path: Legacy external source, or None for a Library-backed job.
+        source_sha256: Exact archived identity required when no path is supplied.
+
+    Returns:
+        Lossless source import or structured decoding failure.
+
+    Raises:
+        ValueError: Neither a file nor an archived identity is available.
+        LibraryStoreError: The archived source is missing or fails integrity checks.
+    """
+    if path is not None:
+        return import_forces(path)
+    if source_sha256 is None:
+        raise ValueError("An archived recording identity is required")
+    archived = LibraryStore().source(source_sha256)
+    return import_forces_bytes(archived.data, compressed=archived.compressed)
+
+
 def _load_analysis(
-    path: Path,
+    path: Path | None,
     configuration: AnalysisConfiguration,
     *,
     expected_sha256: str | None = None,
-    restore_markers: bool = False,
+    additions: RecordingAdditions | None = None,
 ) -> RecordingAnalysis:
     """Import losslessly, verify identity before analysis, then prepare the full recipe."""
-    source = import_forces(path)
+    source = _batch_source(path, expected_sha256)
     if not isinstance(source, ImportSuccess):
         details = "; ".join(f"{item.code}: {item.message}" for item in source.diagnostics[:5])
-        raise ValueError(f"{path.name}: {details}")
+        raise ValueError(f"{path.name if path is not None else expected_sha256}: {details}")
     if expected_sha256 is not None and source.source_sha256 != expected_sha256:
         raise ValueError("Recording bytes changed since this batch was saved")
-    if restore_markers:
-        configuration = Preferences().recording_configuration(
-            source,
-            configuration,
-            calculation_time=datetime.now(UTC),
-        )
+    if additions is not None:
+        source = ImportSuccess(source.recording, source.diagnostics, additions=additions)
     service = AnalysisService()
     try:
         service.request_analysis(source, configuration, calculation_time=datetime.now(UTC))
@@ -95,13 +119,13 @@ def make_job(
         Immutable export job bound to the source identity and selected preset.
 
     Raises:
-        ValueError: Only file-backed recordings can be queued. A selection preset needs
+        ValueError: The source must be file-backed or archived. A selection preset needs
             explicit bounds for this recording. Invalid export sample interval. If the
             supplied settings or operation state are invalid.
     """
     path = analysis.source.recording.source.provenance.path
-    if path is None:
-        raise ValueError("Only file-backed recordings can be queued")
+    if path is None and LibraryStore().metadata(analysis.source.source_sha256) is None:
+        raise ValueError("Only file-backed or archived recordings can be queued")
     mode = range_mode or preset.range_mode
     if mode == "markers":
         first, last = analysis.ride_bounds
@@ -115,9 +139,10 @@ def make_job(
         reason = analysis.forces.smoothed.availability.reason
         raise ValueError(reason.message if reason else "Calibrated forces are unavailable")
     return BatchJob(
-        recording_path=path.resolve(),
+        recording_path=path.resolve() if path is not None else None,
         source_sha256=analysis.source.source_sha256,
-        ride=analysis.source.recording.metadata.name or path.stem,
+        ride=analysis.source.effective_metadata.name
+        or (path.stem if path is not None else "recording"),
         preset=preset.model_copy(
             update={
                 "analysis_configuration": replace(
@@ -130,6 +155,7 @@ def make_job(
         range_mode=mode,
         first_sample=first,
         last_sample=last,
+        metadata_additions=analysis.source.additions,
     )
 
 
@@ -155,8 +181,13 @@ def build_jobs(
         raise ValueError("Choose at least one recording and one preset")
     jobs: list[BatchJob] = []
     for path in paths:
-        analysis = _load_analysis(path, source_app_configuration(), restore_markers=True)
-        jobs.extend(make_job(analysis, preset, range_mode=range_mode) for preset in presets)
+        try:
+            data = import_recording(path)
+        except LibraryStoreError as error:
+            raise ValueError(str(error)) from error
+        if isinstance(data, ImportFailure) or data.analysis is None:
+            raise ValueError("Prepared recording analysis is unavailable")
+        jobs.extend(make_job(data.analysis, preset, range_mode=range_mode) for preset in presets)
     return tuple(jobs)
 
 
@@ -179,6 +210,7 @@ class JobResult(BaseModel, frozen=True, strict=True):
         status: Completed, failed, cancelled or skipped outcome.
         output: Path of the successfully completed video, if available.
         error: Explanation of an unsuccessful outcome, if available.
+        history_error: Independent persistence warning; successful output stays completed.
     """
 
     batch: str
@@ -193,6 +225,7 @@ class JobResult(BaseModel, frozen=True, strict=True):
     status: str
     output: Path | None = None
     error: str | None = None
+    history_error: str | None = None
 
 
 class BatchReport(BaseModel, frozen=True, strict=True):
@@ -253,21 +286,22 @@ def _planned_frame_counts(batches: Sequence[SavedBatch], cancelled: Event) -> tu
     Returns:
         Frame budgets per job; unreadable sources have no known frame budget.
     """
-    rates: dict[Path, float | None] = {}
+    rates: dict[tuple[Path | None, str], float | None] = {}
     counts: list[int] = []
     for batch in batches:
         for job in batch.jobs:
-            if job.recording_path not in rates and not cancelled.is_set():
+            key = (job.recording_path, job.source_sha256)
+            if key not in rates and not cancelled.is_set():
                 try:
-                    source = import_forces(job.recording_path)
-                    rates[job.recording_path] = (
+                    source = _batch_source(job.recording_path, job.source_sha256)
+                    rates[key] = (
                         source.recording.motion.sample_rate.value
                         if isinstance(source, ImportSuccess)
                         else None
                     )
-                except OSError, ValueError:
-                    rates[job.recording_path] = None
-            rate = rates.get(job.recording_path)
+                except OSError, ValueError, LibraryStoreError:
+                    rates[key] = None
+            rate = rates.get(key)
             counts.append(
                 ceil(
                     Fraction(job.last_sample - job.first_sample + 1)
@@ -356,6 +390,18 @@ def run_batches(
                 )
             else:
                 started = monotonic()
+                attempt = ExportAttempt(
+                    ExportRequest(
+                        kind="video",
+                        source_sha256=job.source_sha256,
+                        analysis_configuration=job.preset.analysis_configuration,
+                        first_sample=job.first_sample,
+                        last_sample=job.last_sample,
+                        settings=job.preset.settings,
+                        additions=job.metadata_additions,
+                    ),
+                    origin="batch",
+                )
                 try:
                     if progress:
                         progress(ordinal, total, ExportProgress(ExportPhase.PREPARING), label)
@@ -363,6 +409,7 @@ def run_batches(
                         job.recording_path,
                         job.preset.analysis_configuration,
                         expected_sha256=job.source_sha256,
+                        additions=job.metadata_additions,
                     )
                     timeline = prepare_export(
                         analysis,
@@ -371,6 +418,7 @@ def run_batches(
                         job.last_sample,
                     )
                     common["export_snapshot"] = timeline.snapshot
+                    attempt.prepared(timeline.snapshot)
                     folder = directory / f"{batch_number:03d}-{_safe_name(batch.name)}"
                     folder.mkdir(exist_ok=True)
                     suffix = (
@@ -409,7 +457,22 @@ def run_batches(
                 except Exception as error:
                     record_error("Batch export job", error)
                     result = JobResult(**common, status="failed", error=str(error))
-                result = result.model_copy(update={"duration_seconds": monotonic() - started})
+                attempt.finish(
+                    "completed"
+                    if result.status == "completed"
+                    else "cancelled"
+                    if result.status == "cancelled"
+                    else "failed",
+                    output=result.output,
+                    gpu=common["gpu_encoding"],
+                    error=result.error,
+                )
+                result = result.model_copy(
+                    update={
+                        "duration_seconds": monotonic() - started,
+                        "history_error": attempt.warning or None,
+                    },
+                )
             results.append(result)
             report = BatchReport(
                 directory=directory,

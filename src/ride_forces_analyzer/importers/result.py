@@ -9,7 +9,8 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from ride_forces_analyzer.validation.checks import has_type
-from ride_forces_analyzer.domain.models import Recording
+from ride_forces_analyzer.domain.models import Attribute, Recording, RecordingMetadata
+from ride_forces_analyzer.domain.metadata import RecordingAdditions
 from ride_forces_analyzer.domain.source import SourceEnvelope
 
 from .diagnostics import ImportDiagnostic, Severity, ordered_diagnostics
@@ -23,34 +24,64 @@ class ImportSuccess:
         success: Discriminator identifying whether the import stage succeeded.
         recording: Validated recording whose original source data remains unchanged.
         diagnostics: Structured diagnostics retaining stable codes and source locations.
+        additions: Current user metadata, separate from the original recording.
     """
 
     success: Literal[True] = field(init=False)
     recording: Recording = field(repr=False)
     diagnostics: tuple[ImportDiagnostic, ...]
+    additions: RecordingAdditions
 
-    def __init__(self, recording: Recording, diagnostics: Sequence[ImportDiagnostic] = ()) -> None:
+    def __init__(
+        self,
+        recording: Recording,
+        diagnostics: Sequence[ImportDiagnostic] = (),
+        *,
+        additions: RecordingAdditions = RecordingAdditions(),
+    ) -> None:
         """Initialize import success and its owned state.
 
         Args:
             recording: Validated recording whose original source data remains unchanged.
             diagnostics: Structured diagnostics or their collector.
+            additions: Immutable current Library additions, if any.
 
         Returns:
             None.
 
         Raises:
-            TypeError: Import success requires a complete typed Recording.
+            TypeError: The recording or immutable additions have an incompatible type.
             ValueError: Successful results cannot contain error diagnostics.
         """
         if not has_type(recording, Recording):
             raise TypeError("Import success requires a complete typed Recording")
+        if not has_type(additions, RecordingAdditions):
+            raise TypeError("Recording additions require RecordingAdditions")
         ordered = ordered_diagnostics(diagnostics)
         if any(item.severity is Severity.ERROR for item in ordered):
             raise ValueError("Successful results cannot contain error diagnostics")
         object.__setattr__(self, "success", True)
         object.__setattr__(self, "recording", recording)
         object.__setattr__(self, "diagnostics", ordered)
+        object.__setattr__(self, "additions", additions)
+
+    @property
+    def effective_metadata(self) -> RecordingMetadata:
+        """Return effective display/export metadata, retaining original metadata separately.
+
+        Returns:
+            Imported metadata with the current explicit user overrides applied.
+        """
+        return self.additions.metadata(self.recording.metadata)
+
+    @property
+    def effective_attributes(self) -> tuple[Attribute, ...]:
+        """Return effective attribute text without modifying imported attributes.
+
+        Returns:
+            Row/seat/train overrides alongside all unmodified source attributes.
+        """
+        return self.additions.attributes(self.recording.attributes)
 
     @property
     def schema_version(self) -> str | None:

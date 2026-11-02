@@ -159,10 +159,8 @@ source-data exclusions and hashes, then runs each actual EXE in an isolated fold
 with Python/Qt environment overrides removed and PATH limited to Windows System32.
 It exercises the visible GUI, German/light presentation, real recording import,
 4K rendering and a real CPU encode using the complete package's encoder.
-Automated package checks provide native workstation validation. The owner confirms
-that the standalone EXE also starts successfully on a clean Windows system without
-preinstalled Python or the development environment. This manual launch confirmation
-is specific to the EXE; no Windows version or package version was recorded.
+Automated package checks provide native workstation validation; they do not
+establish clean-machine compatibility across supported packages and targets.
 
 **Accepted redistribution scope:** `packaging/redistribution.json` is accepted. Official
 Qt/PySide 6.12.0 sources are downloaded and pinned; a static

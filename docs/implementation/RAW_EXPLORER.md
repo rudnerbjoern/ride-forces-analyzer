@@ -17,24 +17,24 @@ text/HTML formatting, inclusive selections and loading. Existing imports of
 `ExplorerData`, `SampleRange`, `load_recording`, `present_recording` and
 `failure_text` remain available from the package. Qt workers stay in `ui.explorer.loading`.
 
-| Area                 | Contract                                                                                                                                                        |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| About                | Version, purpose, copyright, licenses, app/RFDB links and independence; live English/German/French and appearance themes                                        |
-| Open                 | Local `.forces` / `.zforces` in one dialog; background import/analysis preserves bytes, unknown fields, absent sensors and source arrays                        |
-| Failure/cancellation | Retain the last usable recording and service binding                                                                                                            |
-| Folder memory        | Successful imports remember their directory across restarts in `preferences.sqlite3` beside the export database; cancellation/failure preserves previous folder |
-| Preference failures  | Missing folder/unreadable storage uses dialog defaults; write failures do not block import                                                                      |
-| Curves               | Every sample; three independently visible colored channels                                                                                                      |
-| Display mode         | Calibrated by default when source directions are usable; otherwise raw with a calibration diagnostic                                                            |
-| Direction            | Calibrated lateral +/− = right/left; longitudinal +/− = acceleration/braking; raw x/y/z have unknown units and no rider-direction claims                        |
-| Snapshot adoption    | Refresh chart, context, cards, technical details and visible-range extrema together, without repeating preparation                                              |
-| Shutdown/rebind      | Release subscriptions; reject late/superseded imports, results and failures, including after reopening                                                          |
+| Area                 | Contract                                                                                                                                                                                              |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| About                | Version, purpose, copyright, licenses, app/RFDB links and independence; live English/German/French and appearance themes                                                                              |
+| Import               | Main toolbar, local file drops and external file requests archive `.forces` / `.zforces` before loading Library bytes; multiple selections import all files and open only the first successful result |
+| Failure/cancellation | Retain the last usable recording and service binding                                                                                                                                                  |
+| Folder memory        | Successful imports remember their directory across restarts in `preferences.sqlite3` beside the export database; cancellation/failure preserves previous folder                                       |
+| Preference failures  | Missing folder/unreadable storage uses dialog defaults; write failures do not block import                                                                                                            |
+| Curves               | Every sample; three independently visible colored channels                                                                                                                                            |
+| Display mode         | Calibrated by default when source directions are usable; otherwise raw with a calibration diagnostic                                                                                                  |
+| Direction            | Calibrated lateral +/− = right/left; longitudinal +/− = acceleration/braking; raw x/y/z have unknown units and no rider-direction claims                                                              |
+| Snapshot adoption    | Refresh chart, context, cards, technical details and visible-range extrema together, without repeating preparation                                                                                    |
+| Shutdown/rebind      | Release subscriptions; reject late/superseded imports, results and failures, including after reopening                                                                                                |
 
 **Settings → Application → Restore last file** is off by default and saved only on
-Save. Successful imports retain an absolute file path independently of that opt-in.
-At startup, an enabled option loads the existing file using the normal worker;
-missing files/directories are ignored. Earlier manual import requests take precedence.
-Failures preserve the last successful path and use normal import diagnostics.
+Save. Successful loads retain the Library source SHA-256 independently of that
+opt-in. Startup reopens archived bytes; removed entries are skipped. Saved
+paths use the archive-first import worker. Earlier manual requests take precedence.
+Import failures preserve the previous recording and last successful identity.
 
 Projection follows the [source-app decision](../architecture/09_architecture_decisions.md#source-app-projection).
 Feature availability does not establish per-source scientific verification.
@@ -66,17 +66,22 @@ sample, independently of their order or the ride bounds. Requests use the analys
 worker/UI guards; latest changes supersede pending work. Only an adopted successful
 result saves all four choices in one transaction. Invalid references retain the
 last valid view and saved choices, with a localized error message.
-Individual resets preserve other choices; reset all clears both local records and
-restores the original source calibration. An absent original marker becomes absent.
+Individual resets preserve other choices; reset all restores the original bounds
+and source calibration, clearing preference overrides or replacing the Library's
+current recipe. An absent original marker becomes absent.
 Effective marker lines, sample values, context and extrema update together.
 Ride-bound changes also refresh replay labels, reset viewport and marker-based
 export ranges; calibration-only changes preserve zoom. From/To selection and
 original source indices remain unchanged. Opening the menu pauses playback.
 
-`preferences.sqlite3` stores bounds and versioned Gravity/Incline recipes by the
-original source SHA-256, independently of file path. Reopening restores valid
+For archived hashes, `library.sqlite3` owns the current bounds and versioned
+Gravity/Incline recipe; both Library reopening and external reimport
+restore it. The existing controls save to that entry without changing its source,
+dates or manual workflow status. New file imports initialize their Library recipe from any existing
+`preferences.sqlite3` choices by original source SHA-256. Reopening restores valid
 local choices through the shared analysis configuration. Missing, invalid or
-unreadable entries use source defaults without deleting stored records.
+unreadable preference entries use source defaults without deleting stored records.
+Invalid Library markers fail opening rather than using stale preference values.
 Write failure retains the last saved transaction, keeps the session adjustment and
 reports that it was not saved. Closed/rebound sources and stale deliveries cannot
 save markers. No source bytes or source JSON fields are rewritten.
@@ -156,7 +161,7 @@ No vertical zoom.
 | Area                 | Contract                                                                                                                                                                                               |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Default size         | Requested 1280×820; Windows can reduce it to accommodate available desktop/native frame                                                                                                                |
-| Main layout          | Global Open/GPS/notes/Inspector; local calibration/zoom/curve controls; current-value cards below chart                                                                                                |
+| Main layout          | Global Import/GPS/notes/Inspector; local calibration/zoom/curve controls; current-value cards below chart                                                                                              |
 | Inspector groups     | Display, Selection, Visible range extrema, Recording, Technical details                                                                                                                                |
 | Normal desktop       | Chart adapts to workspace height; controls/cards visible without plot-area scrolling, including 1280×720                                                                                               |
 | Very small workspace | 240-pixel chart minimum; scrolling keeps controls reachable                                                                                                                                            |
@@ -169,8 +174,111 @@ No vertical zoom.
 
 Settings → Application selects a workspace theme and UI language. Appearance previews
 immediately; Save persists the choices and Cancel restores the previous theme.
+Settings sections scroll when needed; Save/Cancel stay visible outside the scroll
+area, so content changes do not force the dialog beyond the available screen.
+Sections keep their natural height; additional window space stays below them.
 Startup restores valid saved choices, otherwise the registered OS language (English
 fallback) and System appearance. `AppSettings` can explicitly override language.
+
+## Library interactions
+
+The toolbar's Library toggle shows an adjustable left panel, collapsed by default.
+The chart takes priority: hidden content reserves no sidebar space and does not
+increase the window's minimum size. Expanding/collapsing restores the available
+chart area at the same window size; details and dialogs add no permanent pane.
+The main **Import…** action archives `.forces` / `.zforces` files off the GUI
+thread and opens their Library bytes. The panel has no separate import button.
+Multiple selections or drops archive all files and open only the first successful
+result in the current Explorer. An explicit new-window import opens just that
+first result in one additional window. Failures appear in the status bar and
+Library details without stopping the other files or adding an import-log field. Compact entries group recordings by recording-local day, newest
+first, with unknown dates last. Ties use import time and source digest for stable
+ordering. Each shows an emphasized ride name, a muted park
+name and a local clock/export summary. Long names are elided with full tooltips.
+A small icon on the right displays the stored workflow status through a localized
+tooltip and accessible name; only the current icon is permanently visible.
+Clicking the frameless icon opens a rounded foreground layer using theme
+background/border colors. Its six frameless icons follow workflow order; the
+highlighted current state stays at the clicked icon's position, with earlier/later
+steps to its left/right. Choosing any state saves immediately and closes the layer.
+Escape or outside click dismisses it unchanged; failed writes retain the old state
+and explain the failure. No recording load, selection, chart or list-layout change
+is required. Status remains manual, including backwards moves and skipping steps.
+The selected recording's **Video links…** context action opens a separate themed link dialog. Add
+prepares a new URL/label; selecting an existing row edits that link. Save persists
+only the current form, Remove deletes only that link, and Cancel/Escape closes
+without saving the current draft. Errors preserve input. HTTP/HTTPS links need
+no online verification and do not change workflow status. Settings → Library
+manages ordered label options with Save/Cancel, including a deliberately empty
+list. Existing link labels survive renamed/removed options; the link dropdown
+always offers an unset value and retains its saved label.
+Settings → Library also provides paired **Backup…** / **Restore…** actions using
+native ZIP pickers and cancellable background workers. Backups include saved
+Library data and label choices, excluding unsaved drafts and external videos or
+overlays. Restore requires full-replacement confirmation, validates the archive
+before committing and refreshes the Library list and saved label choices. It is an
+immediate action; Settings Cancel does not undo a successful restore. Closing
+Settings during transfer requests cancellation and waits for safe completion.
+**Export history…** opens a separate newest-first attempt list, result details and
+saved-settings review. Supported repeats prepare archived bytes and captured
+markers/metadata in a worker, then use the existing video review or data save flow.
+Missing old source/output paths do not prevent repetition. Unsupported recipes
+explain their limitation; every started repeat creates a distinct attempt.
+Library/day headings reuse the Inspector section-heading style; entry text uses
+the shared body font and theme text/muted colors, including live theme changes.
+Selecting a recording opens its stored original in the current workspace; failures
+preserve the current chart and explain the problem inside the panel. Read-only
+details use a compact label/value table without blank rows for ride/park, readable
+recording/import times and seating/device information, with the source filename
+below. Recording time retains its source-local clock; import time
+uses the viewer's local clock. Technical time-zone fields, the raw numeric source
+date and the duplicate UUID are omitted from this summary; source data stays intact.
+The park dropdown offers all effective Library parks, all parks and unknown parks.
+The search requires every whitespace-separated term in the combined ride/park names,
+using Unicode normalization and case folding. Park and search combine with AND;
+wildcard characters are literal. Empty groups disappear, an empty result is explained,
+the search-clear action removes only its text, and the reset icon clears both
+filters. Filtering reads metadata only and leaves the
+chart unchanged. **Edit metadata…** opens a separate themed dialog for ride, park,
+Row, Seat, Train, imported/Seated/Flying posture and notes. Source placeholders
+distinguish inherited text from additions. Save/reset persist current additions;
+Cancel discards unsaved input. Errors keep the input visible. Original details and
+saved additions remain separately readable in the Library. The workspace and new
+exports use effective values; the original bytes, dates and source metadata stay
+intact. The posture selector retains unfamiliar source values; only an explicit
+override chooses Seated/Flying. Reset clears all additions and notes, restoring
+source values. Matching external file opens restore the Library additions as well.
+Hiding it releases its layout space without changing the loaded recording, selection
+or chart viewport; park selection and search text are retained.
+Opening a recording selects its matching row and scrolls it into view within the
+active filters. Expanding the collapsed panel reveals the selection again
+without another load. List refreshes and language changes preserve selection.
+
+Right-clicking a recording selects that entry and offers **Open in new window…**,
+**Edit metadata…**, **Video links…**, **Export history…**, then a separator and
+**Remove…**. The themed actions have icons, replacing the buttons below the list.
+Day headings and empty space have no menu. Metadata editing stays disabled until
+the selected source loads successfully. All captions, tooltips and accessible
+names use the existing English/German/French localization.
+
+**Open in new window…** opens the archived recording with its current additions
+and markers in another Explorer in the same application instance. It needs no
+external file. Each window owns analysis, playback and chart state; language and
+appearance remain shared.
+
+**Remove…** has a trash icon and opens confirmation naming the recording and its
+permanently removed archived bytes, metadata, markers, video links and export
+history. Both Yes/No buttons have matching icons; **No** is the default. Cancellation
+preserves all data. Running exports block removal. Failure retains the entry and
+shows an explanation; success refreshes filters and lists across all open Explorer
+windows, including hidden panels, through the shared Library change notification.
+Cancelled/failed removals publish no change. Loaded recordings, zoom, selection
+range and playback stay unchanged; the removed Library selection/details disappear.
+External originals and exported media are never deleted.
+The [Library service contracts](../development/LIBRARY.md) own storage validation,
+the six manual workflow states, label defaults and snapshot compatibility.
+
+## Workspace appearance
 
 The loaded heading combines ride and optional park names, with device/sample/rate
 metadata on a shared baseline. Calibration and curve visibility occupy one row;

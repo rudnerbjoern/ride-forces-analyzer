@@ -20,6 +20,8 @@ from ride_forces_analyzer import __version__
 from ride_forces_analyzer.analysis.models import SampleValues
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration, RecordingAnalysis
 from ride_forces_analyzer.i18n import Language
+from ride_forces_analyzer.importers import ImportSuccess
+from ride_forces_analyzer.domain import SourceNumber, ValueOrigin
 from .layouts.contracts import LayoutPosition
 from .layouts.contracts import ExportLayout as ExportLayout
 from .layouts.contracts import ExportExtent as ExportExtent
@@ -368,6 +370,63 @@ def analysis_configuration_metadata(configuration: AnalysisConfiguration) -> dic
     }
 
 
+class ExportRecordingMetadata(BaseModel, frozen=True, strict=True, extra="forbid"):
+    """Capture effective recording labels and provenance independently of later edits.
+
+    Attributes:
+        ride_name: Effective ride name, if available.
+        park_name: Effective park name, if available.
+        row: Effective row text, if available.
+        seat: Effective seat text, if available.
+        train: Effective train text, if available.
+        riding_position: Effective posture, preserving unfamiliar imported values.
+        riding_position_origin: Source, default or explicit user provenance.
+        notes: Captured user notes.
+    """
+
+    ride_name: str | None = None
+    park_name: str | None = None
+    row: str | None = None
+    seat: str | None = None
+    train: str | None = None
+    riding_position: str | None = None
+    riding_position_origin: ValueOrigin | None = None
+    notes: str = ""
+
+    @classmethod
+    def from_source(cls, source: ImportSuccess) -> "ExportRecordingMetadata":
+        """Capture effective text without retaining source arrays or mutable Library state.
+
+        Args:
+            source: Immutable source and current user additions bound to the export.
+
+        Returns:
+            Effective recording metadata owned by this export.
+        """
+        values: dict[str, str | None] = {}
+        for item in source.effective_attributes:
+            if item.label.casefold() in {"row", "seat", "train"}:
+                values[item.label.casefold()] = (
+                    item.value.token
+                    if isinstance(item.value, SourceNumber)
+                    else item.value
+                    if isinstance(item.value, str)
+                    else None
+                )
+        metadata = source.effective_metadata
+        posture = metadata.riding_position
+        return cls(
+            ride_name=metadata.name,
+            park_name=metadata.location,
+            row=values.get("row"),
+            seat=values.get("seat"),
+            train=values.get("train"),
+            riding_position=posture.value if posture is not None else None,
+            riding_position_origin=posture.origin if posture is not None else None,
+            notes=source.additions.notes,
+        )
+
+
 class ExportSnapshot(BaseModel, frozen=True, strict=True):
     """Own the effective settings and analysis recipe of any prepared video export.
 
@@ -384,9 +443,10 @@ class ExportSnapshot(BaseModel, frozen=True, strict=True):
         smoothing_window: Effective smoothing window in source samples.
         output_dimensions: Resolved output width and height in pixels.
         planned_frame_count: Prepared output frame count, not encoded completion.
+        recording_metadata: Captured effective labels; absent in legacy version-1 snapshots.
     """
 
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 2
     application_version: str = __version__
     source_sha256: str
     settings: ExportSettings
@@ -398,6 +458,7 @@ class ExportSnapshot(BaseModel, frozen=True, strict=True):
     smoothing_window: int
     output_dimensions: tuple[int, int]
     planned_frame_count: int
+    recording_metadata: ExportRecordingMetadata | None = None
 
     @field_serializer("analysis_configuration")
     def serialize_configuration(self, value: AnalysisConfiguration) -> dict[str, object]:
@@ -465,6 +526,7 @@ class ExportTimeline:
                 smoothing_window=self.smoothing_window,
                 output_dimensions=resolve_geometry(self.settings).output_size,
                 planned_frame_count=self.frame_count,
+                recording_metadata=ExportRecordingMetadata.from_source(self.analysis.source),
             ),
         )
 

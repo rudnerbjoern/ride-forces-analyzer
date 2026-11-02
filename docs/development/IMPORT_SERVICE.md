@@ -26,7 +26,7 @@ result = import_forces_bytes(b"{}")  # Structured INVALID_SCHEMA_VERSION failure
 | API                                                                          | Contract                                                                                           |
 | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `import_forces(path: Path, *, limits=DEFAULT_LIMITS) -> ImportResult`        | Bounded read-only local binary I/O                                                                 |
-| `import_forces_bytes(data: bytes, *, limits=DEFAULT_LIMITS) -> ImportResult` | Immutable bytes; no filesystem access                                                              |
+| `import_forces_bytes(data, *, compressed=False, limits=...) -> ImportResult` | Immutable bytes; no filesystem access                                                              |
 | Execution                                                                    | Synchronous, offline, Qt-independent; caller schedules work; no internal thread/progress interface |
 
 Architecture owns [composition](../architecture/05_building_block_view.md#importer-composition-and-interfaces),
@@ -36,7 +36,8 @@ and [source ownership](../architecture/08_concepts.md#source-ownership-and-valid
 ## Application analysis handoff
 
 - Path imports support `.forces` JSON and `.zforces` Raw-DEFLATE recordings through
-  the same validation/analysis path. Bytes-only imports accept uncompressed JSON.
+  the same validation/analysis path. Bytes-only imports accept uncompressed JSON
+  by default and use explicit `compressed=True` for bounded Raw-DEFLATE input.
   [Decoding](STRICT_DECODING.md) defines compression limits and original provenance.
 - Import success means lossless parsing, not analysis. Import remains usable
   without NumPy/Qt and retains bytes, metadata, unknown fields and independent GPS.
@@ -116,6 +117,41 @@ No successful warning set is silently truncated.
 [Decoder limits](STRICT_DECODING.md#resource-policy) own defaults/configuration;
 budgets are not peak-RAM/throughput guarantees. Motion/optional guides define
 warnings; the decoder guide defines whole-document errors.
+
+## Library metadata projection
+
+`importers.library_metadata.project_library_metadata(recording)` returns an immutable
+projection of source ride/park names and recording dates. Source `name` maps to
+ride and `location` to park without changing spelling. Missing names stay missing;
+UI placeholders are never stored as source values. Import retains exact numeric
+tokens and time-zone text without conversion; projection performs no archiving,
+file writes or UI work. File modification/import time is never recording time.
+
+### Admitted recording date contract
+
+The Library projection uses seconds since **2001-01-01 00:00:00 UTC** for
+Ride Forces schema 2.2.0. The authorized Manta source retains the exact token
+`811347461.3309591` and `America/New_York`. The owner confirmed the original-app
+reading as **2026-09-17, 10:18 local time**, Row 3 / Seat 3. Conversion produces
+2026-09-17 10:17:41.330959 at that location: agreement within one minute, without
+claiming second-level display agreement or a verified rounding policy.
+The app developer also identifies recording date/time zone as source data in the
+[privacy policy](https://rideforces.com/privacy/); that policy alone does not establish the epoch.
+
+`importers.library_metadata.project_library_metadata()` projects the existing
+importer models. It preserves source names, exact date tokens and time-zone text.
+The recording day uses the recording location's source zone, regardless of where
+the file is later opened. Missing/invalid zones use explicit UTC; missing, invalid
+or unrepresentable dates remain unknown. Normalized UTC text uses six fractional
+digits and `Z`; original precision remains in the source token and bytes.
+The unversioned RFDB profile has no independently confirmed date contract, so its
+names are projected but its derived dates remain unknown.
+
+An unavailable/uninterpretable recording date remains usable and appears in the
+Library's **Unknown date** group after dated entries. Store the normalized UTC
+instant only for the admitted source contract. The importing computer's time zone
+never determines a recording day. First successful archive insertion captures
+import time separately; [Library storage](LIBRARY.md) owns those transactions.
 
 ## Later versions
 

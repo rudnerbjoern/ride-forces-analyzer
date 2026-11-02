@@ -70,7 +70,7 @@ if __name__ == "__main__":
         "recording",
         nargs="?",
         type=Path,
-        help="Open a .forces or .zforces recording.",
+        help="Import a .forces or .zforces recording into the Library and open it.",
     )
     parser.add_argument(
         "--new-window",

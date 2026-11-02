@@ -7,12 +7,75 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from pathlib import Path
 from math import cos, pi, sin
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QIcon, QImage, QPainter, QPainterPath, QPen, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 
 ICON_SOURCE = Path(__file__).with_name("app-icon.svg")
 ICON_SIZES = (16, 24, 32, 48, 64, 128, 256, 512, 1024)
+
+
+def metadata_icon(color: QColor) -> QIcon:
+    """Draw a document and pencil in the current theme's text color.
+
+    Args:
+        color: Active button foreground color.
+
+    Returns:
+        A transparent 20-pixel edit icon rendered at double pixel density.
+    """
+    pixmap = QPixmap(40, 40)
+    pixmap.setDevicePixelRatio(2)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setPen(QPen(color, 1.4))
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+    document = QPainterPath()
+    document.moveTo(14, 7)
+    document.lineTo(14, 5)
+    document.lineTo(11, 2)
+    document.lineTo(2, 2)
+    document.lineTo(2, 18)
+    document.lineTo(14, 18)
+    painter.drawPath(document)
+    painter.drawLine(5, 6, 10, 6)
+    painter.drawLine(5, 9, 8, 9)
+    pencil = QPainterPath()
+    pencil.moveTo(9, 13)
+    pencil.lineTo(16, 6)
+    pencil.lineTo(18, 8)
+    pencil.lineTo(11, 15)
+    pencil.lineTo(8, 16)
+    pencil.closeSubpath()
+    painter.setBrush(color)
+    painter.drawPath(pencil)
+    painter.end()
+    return QIcon(pixmap)
+
+
+def link_icon(color: QColor) -> QIcon:
+    """Draw two connected chain links in the current theme's text color.
+
+    Args:
+        color: Active button foreground color.
+
+    Returns:
+        A transparent 20-pixel link icon rendered at double pixel density.
+    """
+    pixmap = QPixmap(40, 40)
+    pixmap.setDevicePixelRatio(2)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setPen(QPen(color, 1.8))
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+    painter.translate(10, 10)
+    painter.rotate(-40)
+    painter.drawRoundedRect(QRectF(-9, -3.5, 11, 7), 3.5, 3.5)
+    painter.drawRoundedRect(QRectF(-2, -3.5, 11, 7), 3.5, 3.5)
+    painter.end()
+    return QIcon(pixmap)
 
 
 def data_export_icon() -> QIcon:

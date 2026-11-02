@@ -124,22 +124,25 @@ def smoothing_text(data: ExplorerData) -> str:
     return tr("{0} samples • ±{1:g} ms • Centered mean", window, half_ms)
 
 
-def metadata_fields(data: ExplorerData) -> tuple[tuple[str, str], ...]:
+def metadata_fields(data: ExplorerData, *, original: bool = False) -> tuple[tuple[str, str], ...]:
     """Return the recording metadata as localized label/value pairs.
 
     Args:
         data: Bound explorer presentation data.
+        original: Whether to show original source values instead of current additions.
 
     Returns:
         The recording metadata as localized label/value pairs.
     """
     recording = data.source.recording
+    metadata = recording.metadata if original else data.source.effective_metadata
+    attributes = recording.attributes if original else data.source.effective_attributes
     fields = [
-        ("Ride", recording.metadata.name),
-        ("Park", recording.metadata.location),
+        ("Ride", metadata.name),
+        ("Park", metadata.location),
     ]
     for label in ("Train", "Row", "Seat"):
-        for attribute in recording.attributes:
+        for attribute in attributes:
             if attribute.label.casefold() == label.casefold():
                 value = attribute.value
                 if isinstance(value, SourceNumber):

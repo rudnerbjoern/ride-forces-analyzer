@@ -44,7 +44,7 @@ def present_recording(
         tuple(vector.y for vector in motion.acceleration),
         tuple(vector.z for vector in motion.acceleration),
     )
-    name = recording.metadata.name
+    name = source.effective_metadata.name
     path = recording.source.provenance.path
     title = name or (path.stem if path is not None else tr("Recording"))
     device = recording.metadata.device or tr("Unknown device")

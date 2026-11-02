@@ -22,7 +22,7 @@ def inspect_source(path: Path) -> int | None:
 ```
 
 `decode_forces(path: Path, *, limits=DEFAULT_LIMITS)` reads local regular files
-only. `decode_forces_bytes(data: bytes, *, limits=DEFAULT_LIMITS)` performs no
+only. `decode_forces_bytes(data, *, compressed=False, limits=DEFAULT_LIMITS)` performs no
 file access. Both return DecodeSuccess | ImportFailure. These stage-specific
 names distinguish decoded sources from the separately implemented
 [complete import_forces API](IMPORT_SERVICE.md).
@@ -33,7 +33,8 @@ before the same strict JSON/schema pipeline, without an extraction file.
 `max_bytes` bounds both original and expanded bytes; expansion stops at the
 budget plus one. Invalid, truncated, concatenated streams and trailing bytes
 fail with `INVALID_COMPRESSION`; ZIP, GZIP and zlib containers are not accepted.
-Bytes-only APIs continue to accept uncompressed JSON without format guessing.
+Bytes-only APIs default to uncompressed JSON. Explicit `compressed=True` selects
+the same bounded Raw-DEFLATE decoder without format guessing or filesystem access.
 Original bytes, byte count, digest and path always refer to the original file;
 the immutable source tree represents its decoded JSON. Expanded oversize input
 retains no source/count/hash, matching the resource-failure policy below.

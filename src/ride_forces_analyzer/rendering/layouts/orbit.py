@@ -171,7 +171,7 @@ class OrbitRenderer(Drawing):
         """
         super().__init__(timeline, *NATIVE_SIZE)
         vertical = timeline.channels[0]
-        posture = timeline.analysis.source.recording.metadata.riding_position
+        posture = timeline.analysis.source.effective_metadata.riding_position
         low, high = selected_bounds(
             vertical.values,
             timeline.first,

@@ -10,7 +10,7 @@ from ride_forces_analyzer.ui.explorer.loading import LoadWorker
 from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
 
-def test_worker_restores_calibration_after_rename_but_not_for_changed_content(
+def test_worker_restores_archived_calibration_after_rename_and_equivalent_export(
     tmp_path: Path,
 ) -> None:
     original_path = next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces"))
@@ -55,6 +55,9 @@ def test_worker_restores_calibration_after_rename_but_not_for_changed_content(
     assert restored.source.recording.source.original_bytes == original_bytes
     renamed.write_bytes(original_bytes + b" ")
     different = load()
-    assert different.analysis is not None and different.analysis.calibration is None
-    assert different.ride_bounds == (source.recording.indices.start, source.recording.indices.end)
+    assert different.analysis is not None
+    assert different.analysis.configuration.calibration == choice
+    assert different.ride_bounds == (3600, 3700)
+    assert different.source.source_sha256 == source.source_sha256
+    assert different.source.recording.source.original_bytes == original_bytes
     assert original_path.read_bytes() == original_bytes

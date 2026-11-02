@@ -1,5 +1,7 @@
 # 8. Cross-cutting Concepts
 
+<!-- cspell:words NFKC -->
+
 [Architecture index](README.md)
 
 ## Source ownership and validation
@@ -8,7 +10,8 @@
 and provenance. Typed values supplement that evidence; unknown fields, ordering,
 GPS slots and null/absence distinctions remain intact. Defaults never alter source data.
 
-Path imports expand bounded Raw-DEFLATE `.zforces` before JSON validation.
+Path imports and explicitly compressed byte imports expand bounded Raw-DEFLATE
+`.zforces` before JSON validation.
 Provenance identifies the original compressed file, while the tree represents
 decoded JSON. Both file formats use the same downstream contracts.
 
@@ -141,17 +144,126 @@ Transparent ProRes and opaque H.264 are separate outputs, published only after
 successful encoding. Existing videos require explicit replacement confirmation;
 failure or cancellation preserves them. Video alignment remains external.
 
-SQLite separates application preferences, versioned export definitions and map
-tiles. Preferences retain language/appearance, folders, restore/update consent,
-render-job count and source-bound marker choices. Invalid/unavailable values use
-documented defaults without destroying stored data. Presets/jobs retain complete
-recipes, not recordings or prepared arrays. Omitted optional stored fields use
-declared model defaults, while required fields and supplied values remain strictly
-validated. Reads do not rewrite stored definitions. Batches reimport/check hashes and run
-sequentially, preserving completed videos across later failure/cancellation.
+SQLite separates preferences, export definitions, map tiles and the Library.
+Preferences retain application/view choices; presets/jobs retain captured recipes,
+not prepared arrays. Reads validate supplied values without rewriting definitions.
+Missing optional fields use declared defaults; damaged/unknown stores are preserved.
+
+Explorer imports archive complete original bytes before analysis. Normalized UUIDs
+identify recordings across exports; invalid UUIDs fall back to byte identity.
+Source replacement retains current user choices and relationships atomically.
+Original data, editable additions/current markers and immutable export recipes have
+separate ownership. A recording's manual workflow is independent of edits/exports;
+video labels remain link text while dropdown choices live in preferences.
+
+Library transactions validate formats, status, byte identity and foreign keys.
+Lists/search read normalized effective-name metadata without source BLOBs. Reopening
+verifies archived bytes; repeating an export uses its captured metadata/analysis.
+History failure never changes successful output. Startup interrupts unfinished
+attempts without inventing completion facts. Portable restore validates staged
+content before one transaction replaces Library tables and the attached label key;
+rollback preserves both, excluding unrelated stores and external media.
+[Library contracts](../development/LIBRARY.md) define the detailed validation,
+compatibility, migration, query and backup rules. [Runtime](06_runtime_view.md)
+defines worker delivery, marker adoption, restoration and shared-window updates.
 
 Update lookup stays outside widgets. It requires a matching platform asset;
 download/installation remain manual. [Deployment](07_deployment_view.md#local-export-configuration),
 [video contracts](../implementation/VIDEO_EXPORT.md), [batch contracts](../implementation/EXPORT_BATCHES.md)
 and [release discovery](../development/RELEASE.md#in-application-update-discovery)
 own storage paths and detailed policies.
+
+## Library data model
+
+The diagram shows all six existing application tables, the three Library tables
+and Alembic's technical version table. Tables are grouped by database filename.
+`PK` marks primary keys; the four `tiles` key columns form one composite key.
+`FK` marks Library foreign keys; dashed hash links are logical relationships
+across independent stores, not SQL foreign keys or database consolidation.
+The existing table definitions live in [preferences](../../src/ride_forces_analyzer/storage/preferences.py),
+[exports](../../src/ride_forces_analyzer/storage/exports.py) and
+[map tiles](../../src/ride_forces_analyzer/storage/map_tiles.py).
+
+```mermaid
+erDiagram
+    direction LR
+
+    preferences["preferences (preferences.sqlite3)"] {
+        TEXT key PK
+        TEXT value
+    }
+
+    recording_bounds["recording_bounds (preferences.sqlite3)"] {
+        TEXT source_sha256 PK
+        INTEGER first_sample
+        INTEGER last_sample
+    }
+
+    recording_calibration["recording_calibration (preferences.sqlite3)"] {
+        TEXT source_sha256 PK
+        INTEGER gravity_index
+        INTEGER incline_index
+        TEXT algorithm_version
+        INTEGER window_samples
+    }
+
+    presets["presets (exports.sqlite3)"] {
+        TEXT name PK "COLLATE NOCASE"
+        TEXT payload "JSON: complete saved preset"
+    }
+
+    batches["batches (exports.sqlite3)"] {
+        TEXT name PK "COLLATE NOCASE"
+        TEXT payload "JSON: ordered jobs with preset snapshots"
+    }
+
+    tiles["tiles (map-cache.sqlite3)"] {
+        TEXT provider PK
+        INTEGER zoom PK
+        INTEGER x PK
+        INTEGER y PK
+        BLOB data
+        REAL expires
+        TEXT etag
+        TEXT modified
+        REAL accessed
+    }
+
+    recordings["recordings (library.sqlite3)"] {
+        TEXT source_sha256 PK
+        TEXT source_uuid UK
+    }
+
+    export_history["export_history (library.sqlite3)"] {
+        INTEGER id PK
+        TEXT recording_sha256 FK
+    }
+
+    alembic_version["alembic_version (library.sqlite3)"] {
+        VARCHAR version_num PK
+    }
+
+    video_links["video_links (library.sqlite3)"] {
+        INTEGER id PK
+        TEXT recording_sha256 FK
+    }
+
+    recordings ||--o{ export_history : "FK recording_sha256"
+    recordings ||--o{ video_links : "FK recording_sha256"
+    recordings |o..o| recording_bounds : "logical source_sha256 match"
+    recordings |o..o| recording_calibration : "logical source_sha256 match"
+    batches }o..o{ recordings : "logical job source_sha256 match"
+```
+
+Preference marker/calibration rows and path-bound batch jobs may refer to
+recordings outside the Library. Explorer imports and batch additions archive
+their inputs; the lower-level importer is independently usable.
+Batch jobs embed complete preset snapshots in `payload`; they do not reference
+mutable `presets` rows through a foreign key. Similarly, export history owns its
+saved JSON settings and remains independent of later preset or batch edits.
+JSON contents and original source fields are not additional relational tables.
+`alembic_version` holds technical migration state, not recording or export data.
+Nullability and secondary indexes belong to the [Library storage contract](../development/LIBRARY.md#database-tables-and-query-contracts).
+Library marker columns retain the current choices for archived sources; existing
+preference rows remain independent. `workflow_status` is the current manual work
+state, not an export result or a history of edits.

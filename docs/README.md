@@ -50,6 +50,16 @@ chapter 9 retains decision status and rationale.
 - [Editable calibration markers](development/ANALYSIS_MODELS.md#reference-calibration):
   source-evidenced Gravity/Incline calibration, persistence and partial recalculation.
 
+## Library
+
+- [Library storage and service contracts](development/LIBRARY.md): archive identity,
+  metadata/markers, manual workflow, video links, export history, schema migrations
+  and portable ZIP backup/restore.
+- [Library data model](architecture/08_concepts.md#library-data-model): relationships
+  and database ownership; [recording-date evidence](development/IMPORT_SERVICE.md#admitted-recording-date-contract).
+- [Library interactions](implementation/RAW_EXPLORER.md#library-interactions): grouped
+  recording list, filtering, context actions, dialogs and shared Explorer windows.
+
 ## Unified analysis
 
 - [Unified recording analysis API](development/ANALYSIS_MODELS.md#unified-recording-analysis):

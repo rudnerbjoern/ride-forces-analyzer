@@ -36,10 +36,12 @@ class ValueOrigin(StrEnum):
     Attributes:
         SOURCE: Named value for source (`source`).
         DEFAULT: Named value for default (`default`).
+        USER: Explicit Library metadata override (`user`).
     """
 
     SOURCE = "source"
     DEFAULT = "default"
+    USER = "user"
 
 
 class RecordingFormat(StrEnum):
@@ -61,7 +63,7 @@ class SampleRate:
     Attributes:
         value: Candidate value to validate, format or store.
         origin: Origin marker distinguishing retained source data from an admitted
-            default.
+            default or explicit Library override.
     """
 
     value: float = 50.0

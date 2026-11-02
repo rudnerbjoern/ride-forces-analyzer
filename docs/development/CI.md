@@ -119,7 +119,7 @@ it does not guarantee lower total runner minutes.
   templates assign `bug`/`enhancement`; [PR template](../../.github/pull_request_template.md)
   requests scope, actual local validation and review. Templates activate on `main`,
   without rewriting existing issues/PRs.
-- [Label rules](../../.github/labeler.yml): `enhancement` for `feat/` head branches,
+- [Label rules](../../.github/labeler.yml): `enhancement` for `feat/` or `feature/` head branches,
   `bug` for `fix/` head branches; type labels are additive with file labels.
   `documentation` covers Markdown and `docs/images/`,
   `dependencies` for manifests/locks/Dependabot, `ci` for workflows/CI scripts/tests

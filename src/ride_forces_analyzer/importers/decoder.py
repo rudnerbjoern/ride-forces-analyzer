@@ -179,14 +179,20 @@ def _rfdb_shape(root: Mapping[str, SourceValue]) -> bool:
 _SCHEMAS = {"2.2.0": _schema_220}
 
 
-def _decode(data: bytes, limits: ImportLimits, path: Path | None = None) -> DecodeResult:
+def _decode(
+    data: bytes,
+    limits: ImportLimits,
+    path: Path | None = None,
+    *,
+    compressed: bool = False,
+) -> DecodeResult:
     if len(data) > limits.max_bytes:
         return _failure("RESOURCE_LIMIT_EXCEEDED", "Resource budget exceeded: max_bytes")
     source = SourceEnvelope(data, source_path=path)
     if not data:
         return _failure("EMPTY_INPUT", "Source input is empty", source=source)
     document = data
-    if path is not None and path.suffix.lower() == ".zforces":
+    if compressed or (path is not None and path.suffix.lower() == ".zforces"):
         try:
             stream = zlib.decompressobj(wbits=-15)
             document = stream.decompress(data, limits.max_bytes + 1)
@@ -241,11 +247,17 @@ def _decode(data: bytes, limits: ImportLimits, path: Path | None = None) -> Deco
         )
 
 
-def decode_forces_bytes(data: bytes, *, limits: ImportLimits = DEFAULT_LIMITS) -> DecodeResult:
+def decode_forces_bytes(
+    data: bytes,
+    *,
+    compressed: bool = False,
+    limits: ImportLimits = DEFAULT_LIMITS,
+) -> DecodeResult:
     """Decode exact immutable bytes without any path access or motion conversion.
 
     Args:
         data: Input data in the representation declared by the parameter type.
+        compressed: Decode Raw-DEFLATE zforces bytes using the same bounded path as files.
         limits: Resource limits applied to the operation.
 
     Returns:
@@ -253,13 +265,15 @@ def decode_forces_bytes(data: bytes, *, limits: ImportLimits = DEFAULT_LIMITS) -
 
     Raises:
         ValueError: limits must be an ImportLimits instance.
-        TypeError: data must be immutable bytes.
+        TypeError: data must be immutable bytes and compressed must be a bool.
     """
     if not has_type(limits, ImportLimits):
         raise ValueError("limits must be an ImportLimits instance")
     if not has_type(data, bytes):
         raise TypeError("data must be immutable bytes")
-    return _decode(data, limits)
+    if type(compressed) is not bool:
+        raise TypeError("compressed must be a bool")
+    return _decode(data, limits, compressed=compressed)
 
 
 def decode_forces(path: Path, *, limits: ImportLimits = DEFAULT_LIMITS) -> DecodeResult:

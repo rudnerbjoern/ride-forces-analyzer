@@ -30,6 +30,10 @@ platform baselines and native validation.
   [third-party inventory](../../THIRD_PARTY_NOTICES.md) owns Qt Charts/FFmpeg terms,
   fonts/materials and the accepted distribution scope.
 
+Alembic and SQLAlchemy are runtime dependencies for the Library's packaged schema
+migrations only; ordinary database access continues to use `sqlite3`. Alembic also
+requires Mako and MarkupSafe, covered by the existing runtime notice collector.
+
 ## Dependency updates
 
 [Dependabot YAML](../../.github/dependabot.yml) configures native GitHub updates

@@ -8,7 +8,7 @@ The steps below use English interface labels. German and French are also availab
 
 ## Before you start
 
-- Open your recording with **Open recording**.
+- Open your recording with **Import…**.
 - Install FFmpeg for video export. The **Windows Complete ZIP** includes it;
   other downloads use a separately installed FFmpeg. Follow the
   [installation instructions](INSTALLATION.md#enable-video-export).

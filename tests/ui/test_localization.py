@@ -1,7 +1,6 @@
 """Native language switching and localized layouts over unchanged recording data."""
 
-# cspell:words Aufnahme öffnen Ansicht zurücksetzen Kalibrierte Kräfte Reihe Fahrtzeit Messpunkte zurück Abbrechen prüfen Bahn Schließen Hochformat Meine Vorgabe exportieren Quellwert bleibt erhalten
-# cspell:words Oben Unten rechts Schwerkraftmarkierung Neigungsmarkierung Startmarkierung Endmarkierung Schwerkraft hier setzen Original Neigung einschließlich
+# cspell:words Importieren importieren Aufnahme öffnen Ansicht zurücksetzen Kalibrierte Kräfte Reihe Fahrtzeit Messpunkte zurück Abbrechen prüfen Bahn Schließen Hochformat Meine Vorgabe exportieren Quellwert bleibt erhalten Oben Unten rechts Schwerkraftmarkierung Neigungsmarkierung Startmarkierung Endmarkierung Schwerkraft hier setzen Original Neigung einschließlich
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -204,11 +203,11 @@ def test_native_alt_access_keys_preserve_standard_open_shortcut(
     window = explorer_window
     opened: list[bool] = []
 
-    def choose(*args: object, **kwargs: object) -> tuple[str, str]:
+    def choose(*args: object, **kwargs: object) -> tuple[list[str], str]:
         opened.append(True)
-        return "", ""
+        return [], ""
 
-    monkeypatch.setattr(QFileDialog, "getOpenFileName", choose)
+    monkeypatch.setattr(QFileDialog, "getOpenFileNames", choose)
     assert window.open_action.shortcut() == QKeySequence(QKeySequence.StandardKey.Open)
     window.activateWindow()
     wait_until(window.isActiveWindow)
@@ -227,9 +226,9 @@ def test_native_alt_access_keys_preserve_standard_open_shortcut(
     assert open_button.grab().toImage() == initial
     for count, (language, open_key, save_key) in enumerate(
         (
-            (0, Qt.Key.Key_O, Qt.Key.Key_S),
-            (1, Qt.Key.Key_Odiaeresis, Qt.Key.Key_S),
-            (2, Qt.Key.Key_O, Qt.Key.Key_E),
+            (0, Qt.Key.Key_I, Qt.Key.Key_S),
+            (1, Qt.Key.Key_I, Qt.Key.Key_S),
+            (2, Qt.Key.Key_I, Qt.Key.Key_E),
         ),
         start=1,
     ):
@@ -297,9 +296,18 @@ def test_action_buttons_have_localized_tooltips_and_accessible_names(
             for button in window.findChildren(QAbstractButton):
                 if not isinstance(button, QPushButton | QToolButton):
                     continue
-                if button.objectName().startswith("qt_"):
+                if (
+                    button.objectName().startswith("qt_")
+                    or button.metaObject().className() == "QLineEditIconButton"
+                ):
                     continue
-                assert button.toolTip(), button.text()
+                assert button.toolTip(), (
+                    button.metaObject().className(),
+                    button.objectName(),
+                    button.text(),
+                    type(button.parent()).__name__,
+                    type(dialog).__name__,
+                )
                 assert button.accessibleName(), button.text()
         dialog.close()
         QApplication.processEvents()
@@ -340,7 +348,7 @@ def test_language_switch_preserves_state_and_source_metadata(
     try:
         window.set_ui_language(1)
         assert get_language() == "de"
-        assert window.open_action.text() == "Aufnahme &öffnen…"
+        assert window.open_action.text() == "&Importieren…"
         assert window.reset_button.text() == ""
         assert window.reset_button.toolTip() == "Ansicht zurücksetzen"
         assert window.reset_button.accessibleName() == "Ansicht zurücksetzen"
@@ -393,7 +401,7 @@ def test_language_switch_preserves_state_and_source_metadata(
             assert window.inspector_button.isEnabled()
             overflow.click()
         window.set_ui_language(0)
-        assert window.open_action.text() == "&Open recording…"
+        assert window.open_action.text() == "&Import…"
         assert "Row:" in window.inspector.ride_metadata.text()
         assert_marker_names(
             ("Start marker", "End marker", "Gravity marker", "Incline marker"),
