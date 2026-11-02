@@ -37,7 +37,7 @@ jobs:
           persist-credentials: false
           ref: ${{ inputs.tag || github.sha }}
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v10.3.0
+      - uses: astral-sh/setup-uv@v10.3.2
         with:
           version: '0.13.0'
           python-version: '3.14.6'
@@ -93,7 +93,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ needs.source.outputs.commit }}
-      - uses: astral-sh/setup-uv@v10.3.0
+      - uses: astral-sh/setup-uv@v10.3.2
         with:
           version: '0.13.0'
           python-version: '3.14.6'
