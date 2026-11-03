@@ -19,7 +19,7 @@ verify_merged_prs = cast(Callable[[object, str], None], MODULE["verify_merged_pr
 
 @pytest.mark.parametrize(
     "version,preview",
-    [("0.1.0", True), ("1.1.0", False), ("1.1.0rc1", True)],
+    [("0.1.0", True), ("2.0.0", False), ("1.1.0rc1", True)],
 )
 def test_release_classification(version: str, preview: bool) -> None:
     assert is_prerelease(f"v{version}", version) is preview

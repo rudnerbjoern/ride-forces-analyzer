@@ -122,8 +122,7 @@ depends on calibration and smoothing; they are not a measurement of what a rider
 
 During export, the large preview follows the rendered video approximately every
 two video seconds and also shows its first and last frame. The selected backdrop
-remains preview-only; these updates reuse rendered frames rather than generating
-additional ones. Returning with **Back** restores the setup preview.
+remains preview-only. Returning with **Back** restores the setup preview.
 
 On Windows, the taskbar icon also shows export progress while the window is
 minimized. For batches it shows overall queue progress. The indicator disappears
@@ -187,5 +186,4 @@ how saved jobs retain their recording paths and settings.
   MP4 when you want a smaller standalone video with a black background.
 
 [Installation](INSTALLATION.md) ·
-[Layout gallery](../EXPORT_LAYOUTS.md) ·
-[Technical export reference](../implementation/VIDEO_EXPORT.md)
+[Layout gallery](../EXPORT_LAYOUTS.md)

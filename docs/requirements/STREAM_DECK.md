@@ -11,8 +11,8 @@
 - Open: physical Plus operation, native Neo/Mobile import and operation, and all
   native macOS integration checks.
 - Distribution: self-contained development folder, three profile archives and an
-  officially packed `.streamDeckPlugin`. Native archive installation and release
-  publication remain open.
+  officially packed `.streamDeckPlugin` with a separate release checksum. Native
+  archive installation remains open.
 
 ## Scope and constraints
 
@@ -309,9 +309,8 @@ or acceptance work. Native acceptance is tracked explicitly in steps 6 and 12.
       local link/restart workflow. The [pack command](../../plugins/stream-deck/README.md#installable-archive)
       prepares the `.streamDeckPlugin` release asset without installing or publishing it.
       Release CI retains the tested archive and checksum; the publication job verifies
-      and attaches both. Hosted execution/publication has not been verified for this change.
-    - **Open:** Native archive-install/update acceptance and separately authorized
-      publication of the GitHub release asset.
+      and attaches both to the application release.
+    - **Open:** Native archive-install/update acceptance.
       Marketplace publication is not part of this step.
 
 ## Acceptance gates

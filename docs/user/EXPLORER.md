@@ -223,5 +223,4 @@ download the needed images again.
 - **Opening failed:** check the message and import notes. The last usable
   recording remains available; an error does not overwrite the original file.
 
-[Installation](INSTALLATION.md) · [Video export](VIDEO_EXPORT.md) ·
-[Technical explorer reference](../implementation/RAW_EXPLORER.md)
+[Installation](INSTALLATION.md) · [Video export](VIDEO_EXPORT.md)

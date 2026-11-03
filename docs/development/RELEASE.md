@@ -51,7 +51,7 @@ To retry publication of an existing tag after a workflow correction, dispatch th
 current workflow from `main` with the `tag` input, for example:
 
 ```powershell
-gh workflow run source-release.yml --ref main -f tag=v1.3.0
+gh workflow run source-release.yml --ref main -f tag=v2.0.0
 ```
 
 Quality checks use the current workflow definition and check out the resolved

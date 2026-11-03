@@ -103,7 +103,4 @@ acceleration and red for braking, changing color at zero crossings.
 
 [Open the complete 4K placement view](images/voltron-column.png).
 
-Fixed reference settings and regeneration commands are maintained in the
-[central image guide](images/README.md#image-content-and-reproduction).
-
-[Back to the project](../README.md) · [Export behavior](implementation/VIDEO_EXPORT.md)
+[Back to the project](../README.md) · [Video export guide](user/VIDEO_EXPORT.md)

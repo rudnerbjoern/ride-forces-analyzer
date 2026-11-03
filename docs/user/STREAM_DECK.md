@@ -6,22 +6,18 @@ the target; device commands do not open a second window.
 
 The Plus and Neo profiles use the same colored icons and short key captions.
 The examples use the English plugin labels. The Analyzer can use its own selected
-interface language. The Windows backend and plugin software are tested; physical Plus operation
-remains unverified. Neo/Mobile import and hardware operation, native archive
-installation and macOS acceptance remain open. Requires Stream Deck **7.6+**;
+interface language. Physical Plus operation, Neo/Mobile import and operation,
+plugin installation/update and macOS operation remain unverified.
+Requires Stream Deck **7.6+**;
 the plugin runs on the desktop, alongside Analyzer.
 
 ## Set up the controls
 
 1. Obtain `Ride-Forces-Analyzer.streamDeckPlugin` and
    `PLUGIN-SHA256SUMS.txt` from the same [GitHub release](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)
-   when those assets are available. Compare its SHA-256 with the checksum file
+   and compare the archive SHA-256 with the checksum file
    (`Get-FileHash` on Windows, `shasum -a 256` on macOS), then double-click the
-   archive and confirm Stream Deck's installation prompt. No Python, Node
-   development installation or developer mode is needed to use a packaged plugin.
-   Until publication, use the [local Windows build](../../plugins/stream-deck/README.md#installable-archive).
-   If the plugin is already linked for development, retain that setup until you
-   deliberately switch to archive installation; both use the same plugin ID.
+   archive and confirm Stream Deck's installation prompt.
 2. Import the matching bundled profile as described below and select the correct
    connected device in Stream Deck's import dialog.
    Existing profiles remain available.
@@ -31,8 +27,7 @@ the plugin runs on the desktop, alongside Analyzer.
 4. Select **Ride Forces Analyzer +** or **Ride Forces Analyzer Neo** in Stream Deck. On Start, select **Start app**
    in the software preview and choose your Analyzer EXE or a Windows shortcut in
    the native **Open** action's file field. The bundled profile leaves this path
-   empty because it depends on your installation. The port discovery file does
-   not contain an executable path.
+   empty because it depends on your installation.
 5. Bring the intended Analyzer Explorer to the foreground and click the chart.
 
 ### Find and import the device profile
@@ -52,19 +47,17 @@ The files are in the installed plugin's `profiles` subfolder:
 - Windows: `%APPDATA%\Elgato\StreamDeck\Plugins\io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin\profiles`
 - macOS: `~/Library/Application Support/com.elgato.StreamDeck/Plugins/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/profiles`
 
-For local builds, use `.tmp/stream-deck/...sdPlugin/profiles` in the repository
-instead. Pair Mobile with the desktop Stream Deck app before importing its profile.
+Pair Mobile with the desktop Stream Deck app before importing its profile.
 Do not replace unrelated profiles or import a Neo/Mobile profile onto Plus.
 
 Operate the **physical LCD keys, dials and touch strip**. Clicking a key in the
 Stream Deck desktop application's preview selects its configuration; it does not
-execute that key. Keep Analyzer in the foreground when testing application controls.
+execute that key. Keep Analyzer in the foreground when using application controls.
 
 ## macOS availability
 
-The plugin manifest permits **macOS 15+** with **Stream Deck 7.6+**. The same
-JavaScript plugin and profiles are prepared for installation there. Native Mac
-installation, connection, focus handling and device operation are **unverified**.
+The plugin requires **macOS 15+** with **Stream Deck 7.6+**. Mac installation
+and operation are **unverified**.
 Use the Mac Analyzer `.app` and set **Start app** to that `.app` in Stream Deck;
 the Windows EXE/shortcut instructions above apply only to Windows.
 
@@ -87,9 +80,9 @@ to execute it. See [locks and connection changes](#understand-locks-and-connecti
 
 ![Stream Deck Plus software illustration of all seven profile pages, two rows of four keys, aligned touch-strip fields and four dials](../images/stream-deck-plus-controls.png)
 
-*Software illustration from all seven actual generated Plus profile pages and
-production plugin feedback. Each panel shows its keys, touch strip and four dials.
-All values and marker states are examples, not a device photograph or a hardware test. [Open the full-size image](../images/stream-deck-plus-controls.png).*
+*Software illustration of all seven Plus profile pages with keys, touch strip
+and four dials. Values and marker states are examples.
+[Open the full-size image](../images/stream-deck-plus-controls.png).*
 
 The colored illustration identifies the function. A separate badge indicates its
 current state; a dimmed icon can still show the last confirmed value.
@@ -104,8 +97,8 @@ current state; a dimmed icon can still show the last confirmed value.
 | Amber lock               | Control unavailable; the text gives the reason.                   |
 | Gray disconnected symbol | No usable connection. Cached values are cleared.                  |
 
-A press or acknowledgement does not turn a toggle on by itself. The display follows
-confirmed program state, including changes you make with the mouse in Analyzer.
+The display follows confirmed program state, including changes you make with
+the mouse in Analyzer. Wait for the displayed state to change after pressing a key.
 
 ## Move through the menus
 
@@ -220,17 +213,13 @@ configure the app path once, as described above. The Plus profile is separate.
 
 ![Stream Deck Neo software illustration of all fourteen prepared pages, two rows of four keys, contextual InfoBar values and the two native Touch Points](../images/stream-deck-neo-controls.png)
 
-*Software illustration from the actual generated Neo profile and plugin feedback.
-All values are fixed examples. No Neo is connected; native import, page switching,
-physical legibility and hardware operation remain unverified. [Open full size](../images/stream-deck-neo-controls.png).*
+*Software illustration of the Neo profile. Values are examples;
+device operation remains unverified. [Open full size](../images/stream-deck-neo-controls.png).*
 
 The **left/right Touch Points** are native previous/next-page controls. The
 profile provides two main pages: **Start** and **Quick controls**. Quick controls
 contains Play/Pause, Zoom −/+, Reset view, Zoom to selection and Reset speed.
-They work through existing application commands. The InfoBar itself is display-only;
-its action does not receive Touch Point presses. See
-[Elgato's Neo controls](https://www.elgato.com/us/en/p/stream-deck-neo) and
-[InfoBar API](https://docs.elgato.com/streamdeck/sdk/guides/neo-infobar/).
+The InfoBar displays information; use the Touch Points beside it to switch pages.
 
 Folders stay reachable from Start. Back is key **1**, Home is key **8**; on Quick
 controls both return to Start. In Position and each marker editor, the two center
@@ -246,8 +235,7 @@ The InfoBar follows confirmed program state: selected Library entry and index,
 position/time and playback speed, curve visibility, smoothing or marker state.
 Marker name/state is on the first line, the current preview/adopted position on
 the second, and the last applied value on the third. Long text is elided within
-the display; disconnected state clears program values. No extra analysis or
-commands are triggered by the InfoBar.
+the display; disconnected state clears program values.
 
 ## Mobile: limited six-key preview
 
@@ -256,11 +244,11 @@ three buttons**. Pair Stream Deck Mobile with the Stream Deck desktop app, choos
 its six-key layout and import `mobile.streamDeckProfile` onto that Mobile device.
 The plugin still requires Stream Deck 7.6 or later and **Enable Stream Deck** in
 Analyzer. [Elgato's setup instructions](https://help.elgato.com/hc/en-us/articles/16786832942221-Elgato-Stream-Deck-Mobile-2-0-Getting-Started)
-cover pairing; it is handled by Stream Deck, not by an extra Analyzer network server.
+cover pairing with the desktop Stream Deck app.
 
 ![Stream Deck Mobile limited preview showing the four actual six-key pages Start, Library, Playback and View, with Back and no Home button](../images/stream-deck-mobile-controls.png)
 
-*Software illustration from the generated Mobile profile and fixed plugin examples.
+*Software illustration of the Mobile profile with example values.
 Mobile import, pairing and actual phone operation remain unverified.*
 
 - **Start:** Start app, Library, Playback and Website. Configure the Analyzer EXE or
@@ -293,4 +281,4 @@ lost, application controls become unavailable. After reconnecting, wait for fres
 values. Commands are not queued or replayed; do not assume an interrupted marker
 apply succeeded. Check the adopted marker in Analyzer before retrying.
 
-[Explore recordings](EXPLORER.md) · [Plugin installation and configuration](../../plugins/stream-deck/README.md)
+[Explore recordings](EXPLORER.md) · [Installation and updates](INSTALLATION.md)
