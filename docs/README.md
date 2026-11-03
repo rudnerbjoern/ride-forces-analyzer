@@ -29,6 +29,8 @@ chapter 9 retains decision status and rationale.
   sizes, choose Full frame or Content area and read the instruments.
 - [Presets and batches](user/EXPORT_BATCHES.md): reuse settings, queue recordings
   and find results or handle failed jobs.
+- [Stream Deck +/Neo controls and Mobile preview](user/STREAM_DECK.md): set up the profile, read icons and
+  live values, navigate recordings and preview/apply markers.
 
 ## Current product and API contracts
 
@@ -69,6 +71,8 @@ chapter 9 retains decision status and rationale.
 
 ## Development and publication
 
+- [Stream Deck integration](requirements/STREAM_DECK.md): implemented controls and open native acceptance;
+  [plugin builds, installation and independent versioning](../plugins/stream-deck/README.md).
 - [Windows setup and checks](development/SETUP.md), [contributions](../CONTRIBUTING.md),
   [agent rules](../AGENTS.md), [private security reports](../SECURITY.md).
 - [Code and documentation quality](development/CODE_QUALITY.md),

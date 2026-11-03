@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 144 144">
+  <!-- Copyright (c) 2026 Björn Rudner. SPDX-License-Identifier: GPL-3.0-or-later -->
+  <rect width="144" height="144" rx="16" fill="#172338"/>
+  <g stroke="#8290a6" fill="none" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(20 -4) scale(.72)"><path d="M52 30l43 32-43 32z"/></g>
+    <g transform="translate(0 -96)"><circle cx="116" cy="116" r="19" fill="#172338"/><path d="M108 108l16 16m0-16-16 16"/></g>
+  </g>
+</svg>

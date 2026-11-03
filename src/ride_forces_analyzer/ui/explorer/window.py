@@ -106,6 +106,8 @@ class ExplorerWindow(QMainWindow):
         new_window_requested: Qt signal for new window requested notifications.
         archive_window_requested: Signal requesting another window for a Library digest.
         closed: Qt signal for closed notifications.
+        recording_changed: Notification after a recording is successfully replaced.
+        stream_deck_selected: Notification after the saved integration choice changes.
         _application_title: Configured application title used in window captions.
         preferences: Local application preference access for this window or controller.
         _marker_save_failed: Whether the latest marker-persistence attempt failed.
@@ -163,6 +165,8 @@ class ExplorerWindow(QMainWindow):
     new_window_requested = Signal(object)
     archive_window_requested = Signal(str)
     closed = Signal()
+    recording_changed = Signal()
+    stream_deck_selected = Signal(bool)
 
     def __init__(self, settings: AppSettings, *, restore_last_file: bool = True) -> None:
         """Initialize explorer window and its owned state.
@@ -755,6 +759,7 @@ class ExplorerWindow(QMainWindow):
         dialog.rejected.connect(lambda: self._preview_appearance(previous_appearance))
         dialog.appearance_selected.connect(self.set_appearance)
         dialog.library_restored.connect(self.library.refresh)
+        dialog.stream_deck_selected.connect(self.stream_deck_selected.emit)
         dialog.open()
 
     @Slot()
@@ -1078,6 +1083,7 @@ class ExplorerWindow(QMainWindow):
         self.navigation.slider.setValue(outcome.ride_bounds[0])
         self.show_sample(self.navigation.slider.value())
         self._finish_loading()
+        self.recording_changed.emit()
         bind(self.statusBar(), "", "toolTip")
         bind(
             self.statusBar(),

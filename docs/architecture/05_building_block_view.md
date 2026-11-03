@@ -61,6 +61,24 @@ remain with their owning packages;
 
 Source modules are under [ride_forces_analyzer](../../src/ride_forces_analyzer/).
 
+The separate [Stream Deck workspace](../../plugins/stream-deck/README.md) contains
+the official SDK key action, validated transport client, manifest, inspector and local tests.
+`runtime.stream_deck` provides the matching Qt loopback transport. Application
+wire models live in `runtime.control_contract`, paired with plugin protocol types.
+`ui.stream_deck.StreamDeckController` owns optional server startup, GUI-thread
+action routing and coalesced state feedback. The plugin's shared client correlates
+requests and drives visible keys from confirmed snapshots. Build-time profile
+definitions produce native Plus/Neo folder layouts and a reduced six-key Mobile
+preview (Library/playback/view, Back only); Start uses native Elgato
+Open (user-configured executable/shortcut) and Website actions independently of
+the control transport; a local Home action returns
+to the invoking device's bundled Start page. Plus gesture handlers map each notch,
+press and marker touch to existing commands. Selection dials reuse Inspector
+selection controls and publish separate bounds without marker persistence; a device-local fine/coarse mode
+changes only position/marker step size. Neo editors use the shared key action;
+Neo supplies Start/Quick native pages for its two Touch Points;
+InfoBar is display-only with encoded icons and bounded text. Both displays derive values and status from snapshots.
+
 ## Importer composition and interfaces
 
 `decoder` owns bounded Path/bytes input, compressed expansion, lexical preflight,

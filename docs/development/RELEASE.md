@@ -4,7 +4,8 @@ The [release workflow](../../.github/workflows/source-release.yml) handles
 owner-authorized pushes of `v*` tags. Windows remains the development environment;
 Linux/macOS packages are built and executed by native target workers in reusable CI.
 The workflow validates tagged sources and prepares a standalone Windows x64 EXE,
-standard/complete ZIPs, a Linux x64 tarball and macOS arm64/x64 app ZIPs. The accepted
+standard/complete ZIPs, a Linux x64 tarball, macOS arm64/x64 app ZIPs and a separate
+Stream Deck plugin archive. The accepted
 redistribution scope and its verification limits are documented below.
 Windows releases use portable EXE/ZIP packages. An installer and uninstaller are
 optional future extensions outside M8 completion; no installer is included.
@@ -31,7 +32,7 @@ policy, package construction and publication.
   and verifies all original recording bytes against the fixture inventory.
   Wheel and source-distribution builds must also succeed.
 - Only the publication job receives `contents: write`. It downloads this run's
-  verified native packages, platform checksum files and notes, verifies all package hashes,
+  verified native packages, plugin archive, checksum files and notes, verifies all package hashes,
   and rechecks the remote tag target immediately before publication.
 - Publication uses `gh release create --verify-tag`, attaches all native downloads and checksum files, and
   prepends the short [release introduction](RELEASE_NOTES.md) to GitHub-generated
@@ -99,6 +100,36 @@ Limit exhaustion is an unavailable check, never a false up-to-date result.
 Automatic failures are silent; manual failures provide a retry-later message.
 The popup opens the validated repository release URL in the browser, postpones
 the notice, or saves the skipped tag. Nothing downloads or installs automatically.
+
+## Stream Deck plugin deliverable
+
+The plugin version is independent of `project.version`. Its package, native manifest
+and lock metadata must agree; use the [plugin version workflow](../../plugins/stream-deck/README.md#independent-plugin-version)
+once for changed plugin code/data after the preceding release. Development commits
+reuse that upcoming version; an app-only release need not bump it. Builds use the
+preceding reachable app release tag as their comparison point, including when
+validating a newly tagged candidate.
+
+Full release CI runs the plugin tests and official offline validation/packing.
+With `upload-packages: true`, the plugin job packs the tested folder without
+rebuilding and retains these two files from the same run:
+
+- `Ride-Forces-Analyzer.streamDeckPlugin`
+- `PLUGIN-SHA256SUMS.txt`
+
+The publication job requires both, verifies the exact checksum inventory and hash,
+and attaches them alongside the six application downloads and their checksums.
+The archive contains the self-contained runtime, license notices, icons/layouts
+and Plus/Neo/Mobile profiles. Local preparation uses
+`npm run pack:built-plugin --workspace plugins/stream-deck` after successful plugin
+tests, or `npm run pack:plugin --workspace plugins/stream-deck` for build plus pack.
+Both write under `.tmp/stream-deck-package/`; an existing archive is protected unless
+explicitly replaced with `-- --force`.
+
+The [user guide](../user/STREAM_DECK.md) owns installation/profile selection.
+Native archive installation/update, physical controls and macOS plugin integration
+remain unverified. A successful pack/upload does not close those acceptance items.
+Marketplace publication and automatic plugin updates are not configured.
 
 ## Shared application icon
 

@@ -1,0 +1,173 @@
+import { createHash } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { TextReader, Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from "@zip.js/zip.js";
+
+// cspell:words backtoparent openchild
+
+const uuid = "io.github.rudnerbjoern.ride-forces-analyzer";
+
+// Native folders own navigation; application controls reuse the configurable SDK action.
+const folder = (title, page) => ({ title, page });
+const control = (operation, settings = {}) => ({ operation, ...settings });
+const pages = {
+  start: { name: "Start", keys: [folder("Library", "library"), folder("Explorer", "explorer")] },
+  library: { name: "Library", keys: [control("library.move", { direction: -1 }),
+    control("library.move", { direction: 1 }), control("library.open"), control("library.import")] },
+  explorer: { name: "Explorer", keys: [folder("Playback", "playback"),
+    folder("View / Curves", "view"), folder("Markers", "markers"), folder("Selection", "selection")] },
+  playback: { name: "Playback", keys: [control("playback.toggle"), folder("Position", "position"),
+    folder("Smoothing", "smoothing"), folder("Speed", "speed")] },
+  quick: { name: "Quick controls", keys: [control("playback.toggle"), control("view.zoom", { direction: -1 }),
+    control("view.zoom", { direction: 1 }), control("view.reset"), control("view.selection"), control("playback.speed.reset")] },
+  selection: { name: "Selection", keys: [control("view.selection")] },
+  position: { name: "Position", keys: [-10, -1, 1, 10].map(steps => control("position.step", { steps })),
+    extra: [control("view.zoom", { direction: -1 }), control("view.zoom", { direction: 1 })] },
+  smoothing: { name: "Smoothing", keys: [control("smoothing.step", { direction: -1 }),
+    control("smoothing.reset"), control("smoothing.step", { direction: 1 })] },
+  speed: { name: "Playback speed", keys: [control("playback.speed.step", { direction: -1 }),
+    control("playback.speed.reset"), control("playback.speed.step", { direction: 1 })] },
+  view: { name: "View / Curves", keys: [control("curve.set", { curve: "first" }),
+    control("curve.set", { curve: "second" }), control("curve.set", { curve: "third" }), control("view.reset")],
+    extra: [control("curve.set", { curve: "calibrated" }), control("curve.set", { curve: "combined" })] },
+  markers: { name: "Markers", keys: [folder("Start", "marker-start"), folder("Gravity", "marker-gravity"),
+    folder("Incline", "marker-incline"), folder("End", "marker-end")] },
+  "marker-start": { name: "Start marker", keys: [] },
+  "marker-gravity": { name: "Gravity marker", keys: [] },
+  "marker-incline": { name: "Incline marker", keys: [] },
+  "marker-end": { name: "End marker", keys: [] },
+};
+
+// Keep the six-key Mobile preview limited to browsing and playback/view navigation.
+const mobilePages = {
+  start: { name: "Start", keys: [folder("Library", "library"), folder("Playback", "playback")] },
+  library: pages.library,
+  playback: { name: "Playback", keys: [control("playback.toggle"), folder("View", "view"),
+    control("position.step", { steps: -1 }), control("position.step", { steps: 1 }), control("view.reset")] },
+  view: { name: "View", keys: [control("view.zoom", { direction: -1 }), control("view.zoom", { direction: 1 }),
+    control("view.reset"), control("view.selection"), control("playback.toggle")] },
+};
+
+/** Stable identities keep rebuilt bundled profiles tied to the same native pages. */
+function identity(value) {
+  const bytes = createHash("sha256").update(`${uuid}/${value}`).digest().subarray(0, 16);
+  bytes[6] = (bytes[6] & 15) | 80;
+  bytes[8] = (bytes[8] & 63) | 128;
+  const hex = bytes.toString("hex");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+function key(id, name, action, settings, title) {
+  return { ActionID: identity(id), LinkedTitle: true, Name: name, Settings: settings, State: 0,
+    States: title ? [{ Title: title, TitleAlignment: "bottom", FontSize: 10, ShowTitle: true }] : [{}], UUID: action };
+}
+
+/** Assemble Plus, Neo and limited Mobile archives from shared native folder/key assignments. */
+export async function buildProfiles(plugin) {
+  const { keyImage } = await import("../dist/feedback.js");
+  const metadata = JSON.parse(await readFile(path.join(plugin, "manifest.json"), "utf8"));
+  await mkdir(path.join(plugin, "profiles"), { recursive: true });
+  for (const [device, model] of [["plus", "20GBD9901"], ["neo", "20GBJ9901"], ["mobile", "VSD2/WiFi"]]) {
+    const columns = device === "mobile" ? 3 : 4;
+    const homePosition = `${columns - 1},1`;
+    const profileId = identity(device);
+    const root = `${profileId.toUpperCase()}.sdProfile`;
+    const pageId = name => identity(`${device}/${name}`);
+    const writer = new ZipWriter(new Uint8ArrayWriter(), { level: 0, lastModDate: new Date("2026-01-01T00:00:00Z") });
+    const add = (filename, data) => writer.add(`${root}/${filename}`, new TextReader(JSON.stringify(data, null, 2) + "\n"));
+    await add("manifest.json", { Device: { Model: model, UUID: "" }, Name: `Ride Forces Analyzer ${device === "plus" ? "+" : device === "neo" ? "Neo" : "Mobile Preview"}`,
+      Pages: { Current: pageId("start"), Default: pageId("default"), Pages: device === "neo" ? [pageId("start"), pageId("quick")] : [pageId("start")] }, Version: "3.0" });
+    // The native importer reserves Default for a separate empty page template.
+    await add(`Profiles/${pageId("default").toUpperCase()}/manifest.json`,
+      { Controllers: [{ Type: "Keypad", Actions: {} }], Icon: "", Name: "" });
+    for (const [name, page] of Object.entries(device === "mobile" ? mobilePages : pages)) {
+      if (device === "neo" && name === "selection") continue;
+      if (device === "plus" && (["quick", "position", "smoothing", "speed"].includes(name) || name.startsWith("marker-"))) continue;
+      const actions = {};
+      const images = new Map();
+      const put = (definition, index) => {
+        const coordinate = `${index % columns},${Math.floor(index / columns)}`;
+        const id = `${device}/${name}/${coordinate}`;
+        if (definition.page) {
+          actions[coordinate] = key(id, "Create Folder", "com.elgato.streamdeck.profile.openchild",
+            { ProfileUUID: pageId(definition.page) }, definition.page === "view" && device !== "mobile" ? "Curves" : definition.title);
+          const symbol = definition.page.startsWith("marker-") ? definition.page.slice(7)
+            : definition.page === "view" ? device === "mobile" ? "view" : "combined" : definition.page;
+          const image = `Images/${definition.page}.svg`;
+          actions[coordinate].States[0].Image = image;
+          images.set(image, keyImage(symbol, undefined));
+        } else {
+          actions[coordinate] = key(id, "Analyzer control", `${uuid}.control`, definition);
+          actions[coordinate].States = [0, 1].map(() => ({ FontSize: 10, TitleAlignment: "bottom", ShowTitle: true }));
+        }
+      };
+      const marker = name.startsWith("marker-") ? name.slice(7) : undefined;
+      const keys = marker ? [-10, -1, 1, 10].map(steps => control("marker.preview", { marker, steps }))
+        : device === "plus" && name === "library" ? [page.keys[3]]
+        : device === "plus" && name === "playback" ? [page.keys[0]]
+        : device === "plus" && name === "markers" ? []
+        : device === "plus" && name === "view" ? page.keys.filter(key => key.operation !== "view.reset")
+        : device === "neo" && name === "explorer" ? page.keys.filter(key => key.page !== "selection") : page.keys;
+      const positions = device === "mobile" ? {
+        start: [1, 2], library: [1, 2, 3, 4], playback: [1, 2, 3, 4, 5], view: [1, 2, 3, 4, 5],
+      }[name] : device === "plus" ? {
+        start: [1, 2], explorer: [1, 2, 5, 6], library: [4], playback: [4], selection: [4],
+      }[name] : marker ? [1, 5, 6, 2] : {
+        start: [1, 2], explorer: [1, 2, 5], playback: [1, 5, 2, 6], position: [1, 5, 6, 2],
+        smoothing: [5, 2, 6], speed: [5, 2, 6], markers: [1, 2, 5, 6], view: [1, 2, 3, 6],
+      }[name];
+      keys.forEach((definition, index) => put(definition, positions?.[index] ?? (name === "start" ? index : index + 1)));
+      if (name === "start") {
+        actions["0,0"] = key(`${device}/${name}/launch`, "Open", "com.elgato.streamdeck.system.open", { path: "" }, "Start app");
+        const image = "Images/application.png";
+        actions["0,0"].States[0].Image = image;
+        await writer.add(`${root}/Profiles/${pageId(name).toUpperCase()}/${image}`,
+          new Uint8ArrayReader(await readFile(path.join(plugin, "imgs/plugin@2x.png"))));
+        const websitePosition = device === "mobile" ? "0,1" : "3,0";
+        actions[websitePosition] = key(`${device}/${name}/website`, "Website", "com.elgato.streamdeck.system.website",
+          { path: metadata.URL, openInBrowser: true }, "Website");
+        const websiteImage = "Images/website.svg";
+        actions[websitePosition].States[0].Image = websiteImage;
+        images.set(websiteImage, keyImage("website", undefined));
+      }
+      const extra = device === "mobile" ? [] : marker ? [control("marker.discard", { marker }), control("marker.apply", { marker })] : page.extra ?? [];
+      if (!(device === "neo" && name === "position")) extra.forEach((definition, index) => put(definition,
+        device === "neo" && marker ? [4, 3][index]
+          : name === "view" && (device === "neo" || index === 0) ? index + 4 : index + 5));
+      if (device === "plus" && ["playback", "markers", "selection"].includes(name)) {
+        actions["1,1"] = key(`${device}/${name}/mode`, "Fine / Coarse", `${uuid}.step-mode`, {}, "Fine");
+        actions["1,1"].States.push({ ...actions["1,1"].States[0] });
+      }
+      if (name !== "start") {
+        // Stream Deck forces native folder Back to key 1 during import.
+        actions["0,0"] = key(`${device}/${name}/back`, "Parent Folder",
+          "com.elgato.streamdeck.profile.backtoparent", {}, "Back");
+        if (device !== "mobile") actions[homePosition] = key(`${device}/${name}/home`, "Home", `${uuid}.home`, {}, "Home");
+        for (const [position, symbol] of [["0,0", "back"], ...(device === "mobile" ? [] : [[homePosition, "home"]])]) {
+          const image = `Images/${symbol}.svg`;
+          actions[position].States[0].Image = image;
+          images.set(image, keyImage(symbol, undefined));
+        }
+      }
+      if (device === "neo" && name === "quick") actions["0,0"].UUID = `${uuid}.home`;
+      const controllers = [{ Type: "Keypad", Actions: actions }];
+      if (device === "neo") {
+        controllers.push({ Type: "Neo", Actions: { "1,0": key(`${device}/${name}/info`, "Analyzer InfoBar",
+          `${uuid}.infobar`, { section: marker ? "markers" : name === "quick" ? "playback" : name, ...(marker ? { marker } : {}) }) } });
+      } else if (device === "plus") {
+        const dials = name === "selection" ? ["start", "end"].map(boundary => ({ control: "selection", boundary })) : name === "library" ? [{ control: "library" }] : name === "playback"
+          ? ["position", "view", "speed"].map(control => control ? { control } : null) : name === "view" ? [{ control: "smoothing" }] : name === "markers"
+            ? ["start", "gravity", "incline", "end"].map(marker => ({ control: "marker", marker })) : [];
+        if (dials.length) controllers.push({ Type: "Encoder", Actions: Object.fromEntries(dials.flatMap((settings, index) => settings ?
+          [[`${index},0`, key(`${device}/${name}/dial/${index}`, "Analyzer dial", `${uuid}.dial`, settings)]] : [])) });
+      }
+      await add(`Profiles/${pageId(name).toUpperCase()}/manifest.json`,
+        { Controllers: controllers, Icon: "", Name: page.name });
+      for (const [image, svg] of images) {
+        await writer.add(`${root}/Profiles/${pageId(name).toUpperCase()}/${image}`, new TextReader(svg));
+      }
+    }
+    await writeFile(path.join(plugin, `profiles/${device}.streamDeckProfile`), await writer.close());
+  }
+  console.log("Built Plus, Neo and Mobile preview native folder profiles.");
+}

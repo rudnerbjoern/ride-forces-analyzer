@@ -46,6 +46,8 @@ class SettingsDialog(QDialog):
         language: Choice control for language.
         appearance: Choice control for appearance.
         restore_last_file: Checkbox controlling restore last file.
+        stream_deck: Checkbox enabling the local Stream Deck integration.
+        stream_deck_selected: Notification after the integration preference is saved.
         clear_map_cache: Button for clear map cache.
         frame_rate: Choice control for frame rate.
         render_jobs: Choice of concurrent frame renderers from one to the local CPU limit.
@@ -63,6 +65,7 @@ class SettingsDialog(QDialog):
     appearance_selected = Signal(int)
     appearance_previewed = Signal(int)
     library_restored = Signal()
+    stream_deck_selected = Signal(bool)
 
     def __init__(
         self,
@@ -121,6 +124,9 @@ class SettingsDialog(QDialog):
         self.restore_last_file = bind(QCheckBox(), tr("Restore last file"))
         self.restore_last_file.setChecked(preferences.restore_last_file())
         application_form.addRow(self.restore_last_file)
+        self.stream_deck = bind(QCheckBox(), tr("Enable Stream Deck"))
+        self.stream_deck.setChecked(preferences.stream_deck_enabled())
+        application_form.addRow(self.stream_deck)
         self.clear_map_cache = QPushButton()
         self.clear_map_cache.setIcon(
             self.style().standardIcon(QStyle.StandardPixmap.SP_TrashIcon),
@@ -360,6 +366,8 @@ class SettingsDialog(QDialog):
             return
         self.preferences.remember_restore_last_file(self.restore_last_file.isChecked())
         self.preferences.remember_automatic_updates(self.automatic_updates.isChecked())
+        self.preferences.remember_stream_deck_enabled(self.stream_deck.isChecked())
+        self.stream_deck_selected.emit(self.stream_deck.isChecked())
         self.preferences.remember_export_fps(EXPORT_FRAME_RATES[self.frame_rate.currentIndex()])
         self.preferences.remember_render_jobs(self.render_jobs.currentIndex() + 1)
         self.language_selected.emit(self.language.currentIndex())

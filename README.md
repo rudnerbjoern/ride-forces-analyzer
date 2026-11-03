@@ -206,6 +206,28 @@ off by default. Checks contact GitHub without sending recordings, GPS data or
 file paths; downloads and installation remain manual. Offline processing does
 not require update checks.
 
+## Control the Explorer with Stream Deck
+
+Browse recordings, play or pause, zoom the chart, adjust smoothing and preview
+recording markers from **Stream Deck +** or **Neo**. Plus uses push dials and a
+touch strip; Neo provides key editors and contextual InfoBar values. A reduced
+**Mobile** preview offers Library, playback and zoom controls on six keys.
+
+![Stream Deck Plus Playback page with Play/Pause, Fine/Coarse, position, zoom and speed dials and example program values](docs/images/stream-deck-overview.png)
+
+*Software illustration with fixed example values. [See every Plus, Neo and Mobile
+page](docs/user/STREAM_DECK.md). Physical device operation remains unverified.*
+
+The optional plugin is packaged separately from the Analyzer app. Install its
+`.streamDeckPlugin` archive when available in [GitHub Releases](https://github.com/rudnerbjoern/ride-forces-analyzer/releases),
+import the matching profile, then save **Settings → Application → Enable Stream Deck**.
+Keep the intended Explorer in the foreground; device feedback follows confirmed
+program state. The setting defaults to off.
+
+Requires **Stream Deck 7.6+**. Windows software checks pass; native archive
+installation, Neo/Mobile operation and macOS integration remain open.
+[Setup and controls](docs/user/STREAM_DECK.md) · [Build a local plugin](plugins/stream-deck/README.md).
+
 ## Understanding the display
 
 Replay time uses `MM:SS.ff`, where `ff` counts samples within a second rather

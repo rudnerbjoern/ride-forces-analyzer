@@ -17,6 +17,16 @@ build/
 *.sqlite3
 !tests/fixtures/**/*.png
 !docs/images/*.png
+!plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/imgs/plugin.png
+!plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/imgs/plugin@2x.png
+
+# Assembled local Stream Deck runtime and notices.
+/plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/bin/
+/plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/logs/
+/plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/ui/control.js
+/plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/LICENSE
+/plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/THIRD_PARTY_NOTICES.txt
+/plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/profiles/
 
 # Keep the temporary directory, but ignore its contents.
 /.tmp/*

@@ -129,6 +129,7 @@ PreferenceKey = Literal[
     "export_fps",
     "render_jobs",
     "automatic_updates",
+    "stream_deck_enabled",
     "restore_last_file",
     "last_recording_path",
     "last_library_recording_sha256",
@@ -579,6 +580,26 @@ class Preferences:
             Whether optional startup update checks are enabled.
         """
         return self._read("automatic_updates") == "true"
+
+    def stream_deck_enabled(self) -> bool:
+        """Read the optional Stream Deck integration preference.
+
+        Returns:
+            False unless the user explicitly enabled the integration.
+        """
+        return self._read("stream_deck_enabled") == "true"
+
+    def remember_stream_deck_enabled(self, enabled: bool) -> None:
+        """Persist the Stream Deck preference independently of recordings.
+
+        Args:
+            enabled: Whether the local Stream Deck control server should run.
+
+        Raises:
+            ValueError: The supplied value is not a boolean.
+        """
+        enabled = _BOOLEAN.validate_python(enabled, strict=True)
+        self._write("stream_deck_enabled", "true" if enabled else "false")
 
     def remember_automatic_updates(self, enabled: bool) -> None:
         """Persist the selected automatic updates preference.

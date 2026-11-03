@@ -75,6 +75,157 @@ Startup removes completed-process
 reports and preserves active ones. Report failure must not replace the original
 error. Exception messages may contain personal paths; nothing is uploaded.
 
+## Stream Deck transport
+
+`runtime.stream_deck.ControlServer` and the plugin's `AnalyzerTransport` exchange
+application-owned text frames. `RecordingApplication` owns one `StreamDeckController`;
+the separate plugin shares one connection across visible SDK keys.
+
+```mermaid
+sequenceDiagram
+    participant Qt as Qt ControlServer
+    participant File as Per-user discovery file
+    participant Plugin as TypeScript client
+    Qt->>File: Atomically publish version, port and session token
+    Plugin->>File: Read endpoint on each connection attempt
+    Plugin->>Qt: Connect to IPv4 loopback; authenticate first frame
+    Qt-->>Plugin: Ready and latest published state
+    Plugin->>Qt: Command text
+    Qt-->>Plugin: State text
+    Note over Qt,Plugin: Reconnect repeats discovery/authentication; commands are never queued
+```
+
+- Bind only `127.0.0.1` on a dynamic port. Discovery is `stream-deck.json` in the
+  existing application-data directory; only the owner removes its published file.
+  A fresh token is generated at each start; the file requests owner read/write permissions.
+- Handshake version 1 and the token are required within five seconds. Browser
+  origins and binary messages are rejected; incoming and published state frames
+  are bounded to 64 KiB. The application contract below defines payload validation;
+  commands route through the GUI-thread controller.
+- The client retries after one second, including missing/invalid discovery and
+  connection failure. Disconnected sends return false; stop cancels retries and
+  stale connection attempts. Reconnected peers receive the latest state.
+- Native Windows Qt/Node exchange and restart recovery are verified. macOS uses
+  the same APIs and its existing Application Support path; native socket,
+  permissions, process and device behavior remain unverified.
+- **Settings → Application → Enable Stream Deck** is off by default and saved in
+  existing user preferences. Startup reads it; Save applies changes to the shared
+  server. Cancel leaves it unchanged. Disabling disconnects clients and removes
+  discovery; application shutdown also closes the server.
+
+## Stream Deck control contract
+
+[Python wire models](../../src/ride_forces_analyzer/runtime/control_contract.py)
+validate commands, responses and full state events; matching
+[TypeScript types](../../plugins/stream-deck/src/protocol.ts) describe plugin messages.
+Shared examples cover both languages. The application's Qt-thread controller routes
+commands through existing controls/services and publishes state from their signals.
+The plugin validates incoming messages before state-driven rendering or command
+generation. Its configurable SDK key action covers the agreed command types.
+
+### Envelopes and compatibility
+
+- Application protocol `version: 2` is independent of discovery/authentication version 1.
+  Authenticate first; transport `ready` is not an application state event.
+- Require an exact application protocol version. Invalid shapes, unknown fields/actions,
+  coercions and non-finite numbers are rejected. Contract changes require a new version.
+  Unsupported versions produce `unsupported_protocol` in the server's supported envelope;
+  the client enters `incompatible` and disables commands.
+- Commands contain `type: "command"`, unique per-connection `id`, explicit `target`
+  and typed `action`. Duplicate IDs are rejected without repeated execution.
+- A target contains opaque `window_id`, nullable source `recording_id` and integer
+  `generation`. Window IDs last for the process; generation changes when the active
+  target or its loaded recording changes, including reopening the same source.
+  Copy the latest target into commands; reject mismatches as `stale_target`, never
+  redirect queued work to another Explorer. An Explorer without a recording can use Library actions.
+- Responses contain `type: "response"`, the request `id` and addressed `target`.
+  `status: "ok"` confirms the GUI action was invoked; import/open outcomes continue
+  through the existing loading workflow and state feedback. `pending` acknowledges analysis only.
+  Pending requests receive a final `ok` or `error` with the same ID after adoption/failure.
+- Error responses use `status: "error"`, `code` and nullable availability `reason`.
+  Codes: `invalid_command`, `unsupported_protocol`, `stale_target`, `unavailable`,
+  `analysis_failed`. IDs/targets may be null only when the request cannot be identified.
+- State events contain `type: "state"`, a non-secret server `session_id`, monotonic
+  `sequence` and the complete current snapshot. Publish after authentication and
+  relevant application changes; coalesce playback updates. Ignore older sequences
+  within a session; a reconnect starts from a fresh snapshot, not cached toggle values.
+- Client-local connection states are `disconnected`, `connecting`, `connected` and
+  `incompatible`. Connection loss clears actionable target/preview feedback; never
+  replay commands or assume an interrupted apply succeeded. No disconnected frame is sent.
+  Disabling the opt-in setting stops the server rather than sending control commands.
+
+### Actions
+
+| `action.name`                                 | Arguments                                               | Behavior                                                                             |
+| --------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `library.move`                                | `direction: -1 \| 1`                                    | One visible sorted/filtered entry; cyclic boundaries                                 |
+| `library.open`                                | None                                                    | Open selection in the addressed current Explorer                                     |
+| `library.import`                              | None                                                    | Open the existing import dialog                                                      |
+| `playback.toggle`                             | None                                                    | Invoke actual play/pause                                                             |
+| `playback.speed.step`, `playback.speed.reset` | Step: `direction: -1 \| 1`; reset: none                 | Adjacent supported speed; reset to 1×                                                |
+| `position.step`                               | `steps: -10 \| -1 \| 1 \| 10`                           | Source samples; pause playback and clamp bounds                                      |
+| `selection.step`                              | `boundary: start \| end`, `steps: -10 \| -1 \| 1 \| 10` | Adjust the inclusive selection through existing Inspector controls; clamp each bound |
+| `view.zoom`                                   | `direction: -1 \| 1`                                    | Decrease/increase time magnification through existing chart navigation               |
+| `view.reset`, `view.selection`                | None                                                    | Reset viewport or zoom to the existing selection                                     |
+| `smoothing.step`, `smoothing.reset`           | Step: `direction: -1 \| 1`; reset: none                 | Adjacent existing odd window or application default                                  |
+| `curve.set`                                   | `curve`, `enabled: boolean`                             | Set `first`, `second`, `third`, `combined` or `calibrated` control                   |
+| `marker.preview`                              | `marker`, `steps: -10 \| -1 \| 1 \| 10`                 | Pause playback; adjust only that preview within valid bounds                         |
+| `marker.apply`, `marker.discard`              | `marker`                                                | Adopt or discard only that marker's preview                                          |
+
+Markers are `start`, `gravity`, `incline`, `end`. First/second/third curve slots
+follow the current chart axes; state supplies actual raw/directional labels.
+Fine/coarse selection and menu navigation stay local to the plugin. Relative
+steps may remain in flight together so aggregated dial ticks and rapid Library/selection
+steps retain one command per step; the server serializes and revalidates
+them against current GUI state. No disconnected commands are queued or replayed.
+Plus press invokes Open/Play/Reset/Apply; marker touch discards only that preview.
+Neo InfoBar has no input handlers. Other view,
+curve, smoothing and speed actions leave playback running; marker apply/discard
+does not resume it. Initial positions for unset markers remain an open device
+interaction decision; no valid preview means apply is unavailable.
+
+### Feedback and availability
+
+- Global and per-action availability are `{available: true}` or
+  `{available: false, reason: ...}`. Global blocking overrides individual controls;
+  missing controls are unsupported. Reasons cover foreground loss, input focus,
+  modal dialogs, absent windows/recordings/selections, empty Library, busy analysis,
+  unsupported data, missing previews and invalid marker positions.
+- `target: null` explicitly means no active Explorer. Library feedback contains
+  visible count and the selected entry's identity, title and zero-based index;
+  an empty list has count zero and null selection.
+- Playback exposes actual playing/speed, current sample, source time, formatted
+  replay label and last valid sample. Selection exposes confirmed Start/End sample,
+  source time and replay label, independently of recording markers. Selection turns
+  update immediately, clamp at the other bound/source limits and perform no analysis
+  or Library marker writes. View feedback exposes source-time bounds
+  and the actual odd smoothing window. Missing data uses null, not invented values.
+- Curves expose label, confirmed effective `active` value and independent availability.
+  Combined is unavailable in raw mode. Device visuals follow actual application state.
+- Each marker exposes nullable `applied` and `preview` positions, status
+  `applied`/`preview`/`pending`/`failed`, apply `request_id`, nullable failure code and
+  per-marker preview/apply/discard availability. Positions carry sample, source time
+  and the application's replay label; no sampling-rate inference occurs in the plugin.
+- Previews survive menu changes, but target/recording changes discard them. Preview
+  changes never recalculate or persist analysis. Apply stays pending until successful
+  adoption; only then update `applied` and persist through existing services. Failure
+  retains the last adopted value; concurrent applies must not overwrite newer markers.
+- Existing `runtime.instance.OpenRequest` JSON and one-shot acknowledgements remain
+  unchanged on their separate local socket; no control envelope is added there.
+
+The controller rejects stale targets and duplicate request IDs before dispatch.
+Responses go only to their originating client; state is shared with authenticated
+clients. Library navigation reads the existing sorted/filtered tree. Marker apply
+uses the existing analysis queue, blocks conflicting requests while pending and
+confirms only adopted values; the analysis controller retains persistence ownership.
+Unset calibration markers cannot be adjusted until an existing value is available.
+
+The plugin's `ControlClient` accepts increasing state sequences within a server
+session, discards stale contexts and correlates responses with outstanding request
+IDs. Connection loss clears pending actions and cached state. `ControlAction`
+updates only changed key presentations; icons/titles and actual on/off values are
+independent of command acknowledgement. Unsupported protocol messages disable control.
+
 ## Library actions and shared windows
 
 For **Open in new window…**, the panel emits an archive digest through the window.

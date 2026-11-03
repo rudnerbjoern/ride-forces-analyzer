@@ -1,0 +1,98 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "Name": "Ride Forces Analyzer",
+  "Version": "0.2.0.0",
+  "Author": "Björn Rudner",
+  "Description": "Control the active Ride Forces Analyzer Explorer and show confirmed application state.",
+  "URL": "https://rudnerbjoern.github.io/ride-forces-analyzer/",
+  "UUID": "io.github.rudnerbjoern.ride-forces-analyzer",
+  "SDKVersion": 3,
+  "Software": {
+    "MinimumVersion": "7.6"
+  },
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    },
+    {
+      "Platform": "mac",
+      "MinimumVersion": "15"
+    }
+  ],
+  "Nodejs": {
+    "Version": "24"
+  },
+  "CodePath": "bin/plugin.js",
+  "Icon": "imgs/plugin",
+  "Category": "Ride Forces Analyzer",
+  "CategoryIcon": "imgs/category",
+  "Profiles": [
+    {
+      "Name": "profiles/plus",
+      "DeviceType": 7,
+      "Readonly": false,
+      "AutoInstall": false,
+      "DontAutoSwitchWhenInstalled": true
+    },
+    {
+      "Name": "profiles/neo",
+      "DeviceType": 9,
+      "Readonly": false,
+      "AutoInstall": false,
+      "DontAutoSwitchWhenInstalled": true
+    },
+    {
+      "Name": "profiles/mobile",
+      "DeviceType": 3,
+      "Readonly": false,
+      "AutoInstall": false,
+      "DontAutoSwitchWhenInstalled": true
+    }
+  ],
+  "Actions": [
+    {
+      "UUID": "io.github.rudnerbjoern.ride-forces-analyzer.control",
+      "Name": "Analyzer control",
+      "Tooltip": "Choose a Library, Explorer or marker command. Feedback follows the active Analyzer window.",
+      "Icon": "imgs/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "PropertyInspectorPath": "ui/control.html",
+      "States": [
+        {
+          "Image": "imgs/key",
+          "TitleAlignment": "bottom",
+          "FontSize": 10
+        },
+        {
+          "Image": "imgs/key",
+          "TitleAlignment": "bottom",
+          "FontSize": 10
+        }
+      ]
+    },
+    {
+      "UUID": "io.github.rudnerbjoern.ride-forces-analyzer.home",
+      "Name": "Home",
+      "Tooltip": "Return to Start in the bundled Plus or Neo profile.",
+      "Icon": "imgs/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "SupportedInMultiActions": false,
+      "VisibleInActionsList": false,
+      "States": [
+        {
+          "Image": "imgs/home",
+          "Title": "Home",
+          "TitleAlignment": "bottom",
+          "FontSize": 10
+        }
+      ]
+    }
+  ]
+}

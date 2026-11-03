@@ -1,0 +1,31 @@
+{
+  "name": "@ride-forces-analyzer/stream-deck",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Stream Deck controls and confirmed application feedback for Ride Forces Analyzer",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "build:plugin": "node scripts/build-plugin.mjs",
+    "pack:plugin": "npm run build:plugin && npm run pack:built-plugin --",
+    "pack:built-plugin": "node scripts/pack-plugin.mjs",
+    "validate:plugin": "streamdeck validate ../../.tmp/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin --no-update-check",
+    "link:plugin": "node scripts/link-plugin.mjs",
+    "restart:plugin": "streamdeck restart io.github.rudnerbjoern.ride-forces-analyzer",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "npm run build:plugin && node --test tests/*.test.mjs && npm run test:reference",
+    "test:reference": "uv run --locked pytest tests/test_reference.py",
+    "version": "node scripts/version.mjs --sync",
+    "check:version": "node scripts/version.mjs"
+  },
+  "dependencies": {
+    "@elgato/streamdeck": "3.0.4"
+  },
+  "devDependencies": {
+    "@elgato/cli": "1.10.4",
+    "@zip.js/zip.js": "2.24.0",
+    "@types/node": "26.6.6",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2"
+  }
+}

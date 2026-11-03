@@ -38,6 +38,8 @@ jobs:
         with:
           version: '0.13.0'
           python-version: '3.14.6'
+          enable-cache: true
+          cache-suffix: ${{ github.job }}-${{ matrix.target }}
       - run: uv sync --locked --all-extras --group dev --group build
       - name: Install Linux desktop and encoder runtime
         if: runner.os == 'Linux'

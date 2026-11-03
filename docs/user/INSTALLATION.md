@@ -97,6 +97,19 @@ app. It is archived in your local Library and opened from the stored bytes.
 The external file stays unchanged. Follow [Explore a recording](EXPLORER.md) for chart navigation, selection,
 settings and GPS, or the [video export guide](VIDEO_EXPORT.md) to create an overlay.
 
+## Optional Stream Deck plugin
+
+The Analyzer download does not install Stream Deck controls. A separate
+`.streamDeckPlugin` archive and `PLUGIN-SHA256SUMS.txt` are prepared for release
+downloads. When available, verify the checksum, open the archive with Stream Deck
+7.6+ and import the profile for Plus, Neo or the limited six-key Mobile preview.
+Enable **Settings → Application → Enable Stream Deck** in Analyzer and save.
+See the [illustrated setup and controls](STREAM_DECK.md).
+
+Windows software integration is tested; native archive installation, physical
+device operation and macOS integration remain unverified. Linux has no plugin
+support. Plugin updates are installed separately from Analyzer updates.
+
 ## Check for updates
 
 Open **Settings → Updates → Check for updates…** to check for a newer release for your

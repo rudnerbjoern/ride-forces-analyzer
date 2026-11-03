@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ride Forces Analyzer</title>
+  <style>
+    :root { color-scheme: dark; font: 13px system-ui, sans-serif; background: #2d2d2d; color: #e5e5e5; }
+    body { margin: 12px; }
+    label { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 8px; margin: 10px 0; }
+    select { background: #414141; color: inherit; border: 1px solid #666; border-radius: 3px; padding: 5px; width: 100%; }
+    [hidden] { display: none; }
+    p { line-height: 1.45; color: #bbb; }
+  </style>
+</head>
+<body>
+  <label>Action<select id="operation"></select></label>
+  <label id="direction-row" hidden>Direction<select id="direction"><option value="-1">Previous / decrease</option><option value="1">Next / increase</option></select></label>
+  <label id="boundary-row" hidden>Selection<select id="boundary"><option value="start">Start</option><option value="end">End</option></select></label>
+  <label id="steps-row" hidden>Step<select id="steps"><option value="-10">− coarse (10 samples)</option><option value="-1">− fine (1 sample)</option><option value="1">+ fine (1 sample)</option><option value="10">+ coarse (10 samples)</option></select></label>
+  <label id="curve-row" hidden>Curve<select id="curve"><option value="first">First axis</option><option value="second">Second axis</option><option value="third">Third axis</option><option value="combined">Combined</option><option value="calibrated">Calibrated mode</option></select></label>
+  <label id="marker-row" hidden>Marker<select id="marker"><option value="start">Start</option><option value="gravity">Gravity</option><option value="incline">Incline</option><option value="end">End</option></select></label>
+  <p>Enable Stream Deck in Analyzer settings. Commands affect the active Explorer while Analyzer has focus. Keys show confirmed state; unavailable commands are blocked.</p>
+  <p>Marker steps create a preview. Add separate Apply and Discard keys for that marker.</p>
+  <script src="control.js"></script>
+</body>
+</html>

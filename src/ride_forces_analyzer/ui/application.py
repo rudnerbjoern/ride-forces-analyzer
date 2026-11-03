@@ -12,6 +12,8 @@ from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.runtime.instance import OpenRequest
 from ride_forces_analyzer.i18n import get_language
 from ride_forces_analyzer.storage.library import LibraryStore
+from ride_forces_analyzer.storage.preferences import Preferences
+from ride_forces_analyzer.ui.stream_deck import StreamDeckController
 
 
 class RecordingApplication(QApplication):
@@ -24,6 +26,7 @@ class RecordingApplication(QApplication):
         settings: Validated settings controlling this operation.
         delivery_timer: Timer scheduling delivery timer.
         library_changed: Library change broadcast carrying the originating panel.
+        stream_deck: Optional same-process device control and feedback controller.
     """
 
     library_changed = Signal(object)
@@ -42,6 +45,7 @@ class RecordingApplication(QApplication):
         self.ready = False
         super().__init__(arguments)
         self.settings = AppSettings()
+        self.stream_deck = StreamDeckController(self, Preferences())
         self.delivery_timer = QTimer(self)
         self.delivery_timer.setInterval(50)
         self.delivery_timer.timeout.connect(self.deliver_requests)
@@ -85,6 +89,7 @@ class RecordingApplication(QApplication):
             and not self.pending_requests,
         )
         self.ready = True
+        self.stream_deck.set_enabled(self.stream_deck.preferences.stream_deck_enabled())
         self.deliver_requests()
 
     def create_window(
@@ -118,6 +123,7 @@ class RecordingApplication(QApplication):
         window.library.changed.connect(self.library_changed.emit)
         self.library_changed.connect(window.library.refresh_after_change)
         window.closed.connect(lambda: self._closed(window))
+        self.stream_deck.register(window)
         window.show()
         if path is not None:
             window.open_path(path)

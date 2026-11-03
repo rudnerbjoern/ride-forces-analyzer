@@ -27,6 +27,7 @@ const documents = [
   ...await markdownFiles(path.join(root, "docs"), true),
   ...await markdownFiles(path.join(root, ".github"), true),
   ...await markdownFiles(path.join(root, ".agents/skills"), true),
+  path.join(root, "plugins/stream-deck/README.md"),
 ];
 
 assert.ok(documents.length > 0, "No documentation files found");

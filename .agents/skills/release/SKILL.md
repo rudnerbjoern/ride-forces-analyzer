@@ -19,6 +19,12 @@ Honor existing owner authorization; ask only for missing target version or permi
   with `uv lock`. Review the lock diff; do not upgrade unrelated dependencies.
 - Update affected version assertions and user documentation. Do not blindly
   replace dependency versions or synthetic/historical test values.
+- Check the independently versioned Stream Deck plugin as a separate deliverable.
+  Follow its [version workflow](../../../plugins/stream-deck/README.md#independent-plugin-version)
+  once for changed plugin code/data since the preceding release tag; keep that
+  upcoming version across development commits. Do not bump again merely to prepare
+  the release. An app release alone does not require a plugin bump.
+  Preserve package/manifest/lock consistency and do not reuse the app version.
 - GitHub generates the change list from merged PRs using
   [release categories](../../../.github/release.yml). Review user-readable PR titles
   and labels; do not maintain a second manual feature/change list.
@@ -36,6 +42,8 @@ Honor existing owner authorization; ask only for missing target version or permi
   `uv sync --locked --all-extras --group dev --group build`.
   Run all required setup checks,
   including the full application suite, Node contracts/dependencies and documentation.
+  Run `npm run test:stream-deck`; it builds the plugin, uses official offline packing
+  and checks the archived runtime/licenses/profiles against the built bytes.
   Run the focused recording/service coverage gate from
   [code quality](../../../docs/development/CODE_QUALITY.md#recording-model-and-service-coverage).
   Run delivery-tool regressions only for affected inputs, as their skill requires.
@@ -78,6 +86,21 @@ Report the accepted redistribution scope and recorded verification limits accura
 a successful EXE build does not establish clean-machine/signing acceptance. Keep logs and
 outputs in `.tmp/`; no routine tracked validation diary.
 
+Pack the already tested plugin with the existing workflow, without another build:
+
+```powershell
+npm run pack:built-plugin --workspace plugins/stream-deck
+```
+
+The archive is
+`.tmp/stream-deck-package/Ride-Forces-Analyzer.streamDeckPlugin`.
+An existing archive is protected; append `-- --force` only when intentionally replacing
+that local candidate. The release CI retains it and `PLUGIN-SHA256SUMS.txt`, then the
+publication job verifies and attaches both beside the application downloads.
+Keep native archive-install, physical-device and macOS plugin acceptance explicit;
+packing or mock SDK tests do not establish those results. Never replace user profiles
+or unlink their development installation as an automatic release-preparation step.
+
 ## 4. Deliver the reviewed changes
 
 Use [github-delivery](../github-delivery/SKILL.md) for authorized staging, grouped
@@ -107,7 +130,8 @@ revision against tested content; changed inputs require affected checks/builds a
 - Observe `source → quality → windows → release` for that commit. Inspect failures;
   use the documented retry path only when appropriate. Never move a published tag,
   overwrite an existing release or blindly repeat an ambiguous remote mutation.
-- Download the six published native packages and four platform checksum files with
+- Download the six published native packages, the `.streamDeckPlugin`, all four
+  platform checksum files and `PLUGIN-SHA256SUMS.txt` with
   `gh release download` into a fresh directory under `.tmp/`. Verify release/tag
   identity, expected versioned asset names and every checksum. Smoke-test the
   downloaded standalone Windows EXE using the isolation and report checks above.
@@ -115,6 +139,10 @@ revision against tested content; changed inputs require affected checks/builds a
   both macOS app ZIPs; do not repeat their extraction/execution checks on Windows.
   Native Linux/macOS execution requires the corresponding target OS. Locally built
   artifacts are not a substitute for downloaded-asset verification.
+- Verify the downloaded plugin's checksum, independent manifest version, bundled
+  runtime/licenses and Plus/Neo/Mobile profiles. Native installation/update requires
+  actual Stream Deck execution; report it as open when unavailable. Do not claim
+  Marketplace updates or macOS/hardware acceptance from a successful release upload.
 - Stop on missing authorization, unavailable required validation or unresolved
   failures/ambiguous publication; report the concrete blocker and actual remote state.
 - Report version/tag/commit, PR/release links, actual local/build/hosted results,

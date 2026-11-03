@@ -1,0 +1,401 @@
+{
+  "target": {
+    "window_id": "explorer-1",
+    "recording_id": "ride-1",
+    "generation": 3
+  },
+  "actions": [
+    {
+      "name": "library.open"
+    },
+    {
+      "name": "library.import"
+    },
+    {
+      "name": "playback.toggle"
+    },
+    {
+      "name": "playback.speed.reset"
+    },
+    {
+      "name": "view.reset"
+    },
+    {
+      "name": "view.selection"
+    },
+    {
+      "name": "smoothing.reset"
+    },
+    {
+      "name": "library.move",
+      "direction": 1
+    },
+    {
+      "name": "position.step",
+      "steps": -10
+    },
+    {
+      "name": "playback.speed.step",
+      "direction": -1
+    },
+    {
+      "name": "smoothing.step",
+      "direction": -1
+    },
+    {
+      "name": "view.zoom",
+      "direction": -1
+    },
+    {
+      "name": "curve.set",
+      "curve": "combined",
+      "enabled": true
+    },
+    {
+      "name": "marker.preview",
+      "marker": "gravity",
+      "steps": 1
+    },
+    {
+      "name": "marker.apply",
+      "marker": "gravity"
+    },
+    {
+      "name": "marker.discard",
+      "marker": "incline"
+    },
+    {
+      "name": "selection.step",
+      "boundary": "start",
+      "steps": 1
+    },
+    {
+      "name": "selection.step",
+      "boundary": "end",
+      "steps": 1
+    }
+  ],
+  "messages": [
+    {
+      "version": 2,
+      "type": "state",
+      "session_id": "session-1",
+      "sequence": 12,
+      "target": {
+        "window_id": "explorer-1",
+        "recording_id": "ride-1",
+        "generation": 3
+      },
+      "availability": {
+        "available": true
+      },
+      "controls": {
+        "library.open": {
+          "available": true
+        },
+        "library.import": {
+          "available": true
+        },
+        "playback.toggle": {
+          "available": true
+        },
+        "playback.speed.reset": {
+          "available": true
+        },
+        "view.reset": {
+          "available": true
+        },
+        "view.selection": {
+          "available": true
+        },
+        "smoothing.reset": {
+          "available": true
+        },
+        "library.move": {
+          "available": true
+        },
+        "position.step": {
+          "available": true
+        },
+        "playback.speed.step": {
+          "available": true
+        },
+        "smoothing.step": {
+          "available": true
+        },
+        "view.zoom": {
+          "available": true
+        },
+        "curve.set": {
+          "available": true
+        },
+        "marker.preview": {
+          "available": true
+        },
+        "marker.apply": {
+          "available": true
+        },
+        "marker.discard": {
+          "available": true
+        },
+        "selection.step": {
+          "available": true
+        }
+      },
+      "library": {
+        "count": 2,
+        "selected": {
+          "id": "ride-1",
+          "title": "Example ride",
+          "index": 0
+        }
+      },
+      "playback": {
+        "playing": false,
+        "speed": 1,
+        "position": {
+          "sample": 50,
+          "time_seconds": 1.0,
+          "label": "00:01.00"
+        },
+        "last_sample": 500
+      },
+      "view": {
+        "start_seconds": 0.0,
+        "end_seconds": 10.0,
+        "smoothing_window": 11
+      },
+      "curves": [
+        {
+          "curve": "first",
+          "label": "Vertical",
+          "active": true,
+          "availability": {
+            "available": true
+          }
+        },
+        {
+          "curve": "second",
+          "label": "Lateral",
+          "active": true,
+          "availability": {
+            "available": true
+          }
+        },
+        {
+          "curve": "third",
+          "label": "Longitudinal",
+          "active": true,
+          "availability": {
+            "available": true
+          }
+        },
+        {
+          "curve": "combined",
+          "label": "Combined",
+          "active": false,
+          "availability": {
+            "available": true
+          }
+        },
+        {
+          "curve": "calibrated",
+          "label": "Calibrated",
+          "active": true,
+          "availability": {
+            "available": true
+          }
+        }
+      ],
+      "markers": [
+        {
+          "marker": "start",
+          "applied": {
+            "sample": 50,
+            "time_seconds": 1.0,
+            "label": "00:01.00"
+          },
+          "preview": null,
+          "status": "applied",
+          "request_id": null,
+          "error": null,
+          "availability": {
+            "preview": {
+              "available": true
+            },
+            "apply": {
+              "available": false,
+              "reason": "no_preview"
+            },
+            "discard": {
+              "available": false,
+              "reason": "no_preview"
+            }
+          }
+        },
+        {
+          "marker": "gravity",
+          "applied": {
+            "sample": 50,
+            "time_seconds": 1.0,
+            "label": "00:01.00"
+          },
+          "preview": {
+            "sample": 51,
+            "time_seconds": 1.02,
+            "label": "00:01.01"
+          },
+          "status": "preview",
+          "request_id": null,
+          "error": null,
+          "availability": {
+            "preview": {
+              "available": true
+            },
+            "apply": {
+              "available": true
+            },
+            "discard": {
+              "available": true
+            }
+          }
+        },
+        {
+          "marker": "incline",
+          "applied": null,
+          "preview": null,
+          "status": "applied",
+          "request_id": null,
+          "error": null,
+          "availability": {
+            "preview": {
+              "available": true
+            },
+            "apply": {
+              "available": false,
+              "reason": "no_preview"
+            },
+            "discard": {
+              "available": false,
+              "reason": "no_preview"
+            }
+          }
+        },
+        {
+          "marker": "end",
+          "applied": {
+            "sample": 50,
+            "time_seconds": 1.0,
+            "label": "00:01.00"
+          },
+          "preview": null,
+          "status": "applied",
+          "request_id": null,
+          "error": null,
+          "availability": {
+            "preview": {
+              "available": true
+            },
+            "apply": {
+              "available": false,
+              "reason": "no_preview"
+            },
+            "discard": {
+              "available": false,
+              "reason": "no_preview"
+            }
+          }
+        }
+      ],
+      "selection": {
+        "start": {
+          "sample": 40,
+          "time_seconds": 0.8,
+          "label": "00:00.80"
+        },
+        "end": {
+          "sample": 100,
+          "time_seconds": 2.0,
+          "label": "00:02.00"
+        }
+      }
+    },
+    {
+      "version": 2,
+      "type": "state",
+      "session_id": "session-1",
+      "sequence": 13,
+      "target": null,
+      "availability": {
+        "available": false,
+        "reason": "no_active_window"
+      },
+      "controls": {
+        "selection.step": {
+          "available": true
+        }
+      },
+      "library": null,
+      "playback": null,
+      "view": null,
+      "curves": [],
+      "markers": [],
+      "selection": {
+        "start": {
+          "sample": 40,
+          "time_seconds": 0.8,
+          "label": "00:00.80"
+        },
+        "end": {
+          "sample": 100,
+          "time_seconds": 2.0,
+          "label": "00:02.00"
+        }
+      }
+    },
+    {
+      "version": 2,
+      "type": "response",
+      "id": "request-1",
+      "target": {
+        "window_id": "explorer-1",
+        "recording_id": "ride-1",
+        "generation": 3
+      },
+      "status": "ok"
+    },
+    {
+      "version": 2,
+      "type": "response",
+      "id": "request-1",
+      "target": {
+        "window_id": "explorer-1",
+        "recording_id": "ride-1",
+        "generation": 3
+      },
+      "status": "pending"
+    },
+    {
+      "version": 2,
+      "type": "response",
+      "id": "request-1",
+      "target": {
+        "window_id": "explorer-1",
+        "recording_id": "ride-1",
+        "generation": 3
+      },
+      "status": "error",
+      "code": "unavailable",
+      "reason": "background"
+    },
+    {
+      "version": 2,
+      "type": "response",
+      "id": null,
+      "target": null,
+      "status": "error",
+      "code": "invalid_command",
+      "reason": null
+    }
+  ]
+}

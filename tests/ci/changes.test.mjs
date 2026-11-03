@@ -10,12 +10,13 @@ import { changedPaths, classifyChanges, selectChecks, writeOutputs } from "../..
 const root = fileURLToPath(new URL("../../", import.meta.url));
 
 function selected(...names) {
-  return Object.fromEntries(["code", "documentation", "skills", "workflows", "dependencies", "posix"]
+  return Object.fromEntries(["code", "documentation", "skills", "workflows", "dependencies", "posix", "stream-deck", "stream-deck-integration"]
     .map(name => [name, names.includes(name)]));
 }
 
 for (const filename of ["README.md", "AGENTS.md", "docs/nested/PLAN.md",
-  ".agents/skills/github-delivery/SKILL.md", "src/package/README.md", "tests/NOTES.md"]) {
+  ".agents/skills/github-delivery/SKILL.md", "src/package/README.md", "tests/NOTES.md",
+  "plugins/stream-deck/README.md"]) {
   test(`Markdown only selects documentation: ${filename}`, () => {
     assert.deepEqual(classifyChanges([filename]), selected("documentation"));
   });
@@ -26,15 +27,53 @@ for (const filename of ["src/ride_forces_analyzer/importers/service.py", "tests/
   "tests/fixtures/schema-inventory.json", "tests/fixtures/real/recording.forces",
   "src/ride_forces_analyzer/i18n/de.py", "src/ride_forces_analyzer/i18n/fr.py",
   "tests/localization/test_catalog.py", "tests/ui/test_french.py",
-  ".node-version", "ffmpeg.json", "package.json", "package-lock.json", ".vscode/settings.json", "tools/check.ps1"]) {
+  "ffmpeg.json", "tools/check.ps1"]) {
   test(`Application/shared tooling input selects application checks: ${filename}`, () => {
     assert.deepEqual(classifyChanges([filename]), selected("code", "dependencies"));
   });
 }
 
+for (const filename of [".node-version", "package.json", "package-lock.json", ".vscode/settings.json"]) {
+  test(`Shared Node inputs also select plugin checks: ${filename}`, () => {
+    assert.deepEqual(classifyChanges([filename]), selected("code", "dependencies", "stream-deck", "stream-deck-integration"));
+  });
+}
+
+for (const filename of ["src/ride_forces_analyzer/runtime/stream_deck.py",
+  "src/ride_forces_analyzer/runtime/control_contract.py",
+  "src/ride_forces_analyzer/ui/stream_deck.py", "tests/ui/test_stream_deck.py",
+  "tests/support/test_stream_deck.py", "tests/support/stream_deck_client.mjs",
+  "tests/fixtures/stream_deck_protocol.json",
+  "tests/support/test_control_contract.py"]) {
+  test(`Shared Qt/Node transport inputs select both application and plugin checks: ${filename}`, () => {
+    assert.deepEqual(classifyChanges([filename]), selected("code", "dependencies", "stream-deck", "stream-deck-integration"));
+  });
+}
+
+for (const filename of ["plugins/stream-deck/src/plugin.ts", "plugins/stream-deck/src/transport.ts", "plugins/stream-deck/src/index.ts"]) {
+  test(`Plugin implementation changes also select interoperability: ${filename}`, () => {
+    assert.deepEqual(classifyChanges([filename]), selected("stream-deck", "stream-deck-integration"));
+  });
+}
+
+for (const filename of ["tests/integration/stream_deck/test_transport.py", "tests/integration/stream_deck/stream_deck_client.mjs"]) {
+  test(`Interop tests select only their independent job: ${filename}`, () => {
+    assert.deepEqual(classifyChanges([filename]), selected("stream-deck-integration"));
+  });
+}
+
+for (const filename of ["plugins/stream-deck/tests/plugin.test.mjs", "plugins/stream-deck/tests/sdk.test.mjs",
+  "plugins/stream-deck/tests/test_reference.py", "scripts/render_stream_deck_reference.py",
+  "plugins/stream-deck/tsconfig.json", "plugins/stream-deck/package.json",
+  "plugins/stream-deck/plugin.sdPlugin/manifest.json", "plugins/stream-deck/plugin.sdPlugin/icon.svg"]) {
+  test(`Plugin inputs select plugin checks without application/UI suites: ${filename}`, () => {
+    assert.deepEqual(classifyChanges([filename]), selected("stream-deck"));
+  });
+}
+
 for (const filename of ["pyproject.toml", "uv.lock", ".python-version", ".gitignore", ".gitattributes", ".editorconfig"]) {
   test(`Shared Python/Git input selects application and skill checks: ${filename}`, () => {
-    assert.deepEqual(classifyChanges([filename]), selected("code", "dependencies", "skills"));
+    assert.deepEqual(classifyChanges([filename]), selected("code", "dependencies", "skills", "stream-deck-integration"));
   });
 }
 
@@ -46,17 +85,23 @@ for (const filename of [".agents/skills/github-delivery/scripts/git_delivery.py"
 }
 
 for (const filename of [".github/labeler.yml", ".github/dependabot.yml", ".github/release.yml",
-  ".github/workflows/labeler.yml", ".github/workflows/source-release.yml",
-  ".github/scripts/ci-changes.mjs", ".github/scripts/test-gitleaks.ps1",
-  "tests/ci/changes.test.mjs", "tests/dependencies/dependabot.test.mjs"]) {
+  ".github/workflows/labeler.yml", ".github/scripts/test-gitleaks.ps1",
+  "tests/dependencies/dependabot.test.mjs"]) {
   test(`CI metadata/contracts select targeted checks: ${filename}`, () => {
     assert.deepEqual(classifyChanges([filename]), selected("dependencies", "workflows"));
   });
 }
 
-for (const filename of [".github/workflows/posix-packages.yml", ".github/workflows/ci.yml"]) {
+for (const filename of [".github/workflows/posix-packages.yml"]) {
   test(`Native/caller workflow changes select contracts without package builds: ${filename}`, () => {
     assert.deepEqual(classifyChanges([filename]), selected("dependencies", "workflows"));
+  });
+}
+
+for (const filename of [".github/workflows/ci.yml", ".github/workflows/source-release.yml",
+  ".github/scripts/ci-changes.mjs", "tests/ci/changes.test.mjs"]) {
+  test(`Plugin routing inputs select plugin and CI contracts: ${filename}`, () => {
+    assert.deepEqual(classifyChanges([filename]), selected("dependencies", "workflows", "stream-deck", "stream-deck-integration"));
   });
 }
 
@@ -70,7 +115,7 @@ test("Mixed labeling and native workflow changes skip application and skill test
     ".github/labeler.yml", ".github/workflows/ci.yml", ".github/workflows/posix-packages.yml",
     ".github/workflows/source-release.yml", "docs/development/CI.md", "tests/ci/changes.test.mjs",
     "tests/dependencies/labels.test.mjs", "tests/dependencies/dependabot.test.mjs", ".github/scripts/ci-changes.mjs",
-  ]), selected("dependencies", "workflows", "documentation"));
+  ]), selected("dependencies", "workflows", "documentation", "stream-deck", "stream-deck-integration"));
 });
 
 test("The commit policy selects documentation and its consuming skill", () => {
@@ -96,8 +141,13 @@ test("Mixed application and documentation changes select both", () => {
   assert.deepEqual(classifyChanges(["docs/API.md", "src/import.py"]), selected("code", "documentation", "dependencies"));
 });
 
+test("Mixed plugin, application and documentation changes select their union", () => {
+  assert.deepEqual(classifyChanges(["plugins/stream-deck/src/plugin.ts", "src/import.py", "README.md"]),
+    selected("code", "documentation", "dependencies", "stream-deck", "stream-deck-integration"));
+});
+
 test("Manual CI selects every suite without PR revisions; unsupported events fail closed", () => {
-  const all = selected("code", "documentation", "skills", "workflows", "dependencies", "posix");
+  const all = selected("code", "documentation", "skills", "workflows", "dependencies", "posix", "stream-deck", "stream-deck-integration");
   assert.deepEqual(selectChecks("workflow_dispatch", undefined, undefined, "missing-directory"), all);
   assert.deepEqual(selectChecks("push", undefined, undefined, "missing-directory", true), all);
   for (const event of [undefined, "push", "pull_request_target"]) {
@@ -162,9 +212,9 @@ test("Real PR diffs cover renames, deletions, divergent base and cumulative chan
     assert.throws(() => changedPaths("f".repeat(40), finalHead, directory), /Cannot determine/);
     const output = path.join(directory, "output.txt");
     await writeFile(output, "existing=true\n");
-    writeOutputs(selected("code", "skills", "workflows", "dependencies", "posix"), output);
+    writeOutputs(selected("code", "skills", "workflows", "dependencies", "posix", "stream-deck"), output);
     assert.equal(await readFile(output, "utf8"),
-      "existing=true\ncode=true\ndocumentation=false\nskills=true\nworkflows=true\ndependencies=true\nposix=true\n");
+      "existing=true\ncode=true\ndocumentation=false\nskills=true\nworkflows=true\ndependencies=true\nposix=true\nstream-deck=true\nstream-deck-integration=false\n");
     const cli = spawnSync(process.execPath, [path.join(root, ".github/scripts/ci-changes.mjs")], {
       cwd: directory,
       encoding: "utf8",
@@ -175,7 +225,7 @@ test("Real PR diffs cover renames, deletions, divergent base and cumulative chan
     assert.ifError(cli.error);
     assert.equal(cli.status, 0, cli.stdout + cli.stderr);
     assert.match(cli.stdout, /Code checks: true; documentation checks: true; skill checks: false/);
-    assert.ok((await readFile(output, "utf8")).endsWith("code=true\ndocumentation=true\nskills=false\nworkflows=false\ndependencies=true\nposix=false\n"));
+    assert.ok((await readFile(output, "utf8")).endsWith("code=true\ndocumentation=true\nskills=false\nworkflows=false\ndependencies=true\nposix=false\nstream-deck=false\nstream-deck-integration=false\n"));
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -186,7 +236,7 @@ test("PR runs cancel only superseded runs of the same workflow and have bounded 
   assert.match(workflow, /group: \$\{\{ github\.workflow \}\}-\$\{\{ github\.event\.pull_request\.number \|\| github\.run_id \}\}/);
   assert.match(workflow, /cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/);
   const jobs = workflow.split(/\r?\n(?=  [a-z][a-z-]*:\r?\n)/).slice(1);
-  const budgets = { gitleaks: 10, "dependency-check": 5, actionlint: 10, code: 15, ui: 10, skills: 10, documentation: 5, posix: null, check: 5 };
+  const budgets = { gitleaks: 10, "dependency-check": 5, actionlint: 10, code: 15, ui: 10, skills: 10, documentation: 5, "stream-deck": 5, "stream-deck-integration": 5, posix: null, check: 5 };
   assert.equal(jobs.length, Object.keys(budgets).length);
   for (const job of jobs) {
     const name = job.match(/^  ([a-z-]+):/)?.[1];
@@ -239,7 +289,7 @@ test("Python checks retain locked resolution and bounded reports without hiding 
   assert.ok(commands.length > 0);
   assert.ok(commands.every(command => command.startsWith("uv run --locked ")));
   assert.doesNotMatch(workflow, /continue-on-error:/);
-  for (const [job, report] of [["code", "application"], ["ui", "ui"], ["skills", "skills"]]) {
+  for (const [job, report] of [["code", "application"], ["ui", "ui"], ["skills", "skills"], ["stream-deck-integration", "stream-deck-integration"]]) {
     const section = workflow.split(`\n  ${job}:`)[1].split(/\n  [a-z-]+:/)[0];
     assert.match(section, /id: pytest/);
     assert.match(section, new RegExp(`pytest .*?-ra --durations=20 --junitxml=\\.tmp/test-results/${report}\\.xml`));
@@ -251,14 +301,29 @@ test("Python checks retain locked resolution and bounded reports without hiding 
   }
   const code = workflow.split("\n  code:")[1].split(/\n  [a-z-]+:/)[0];
   const ui = workflow.split("\n  ui:")[1].split(/\n  [a-z-]+:/)[0];
-  assert.match(code, /pytest --ignore=tests\/ui /);
+  assert.match(code, /pytest --ignore=tests\/ui --ignore=tests\/integration\/stream_deck /);
   assert.match(ui, /pytest tests\/ui /);
   assert.match(ui, /if: \$\{\{ needs\.dependency-check\.outputs\.code == 'true' \}\}/);
   assert.match(workflow, /UI_REQUIRED: \$\{\{ needs\.dependency-check\.outputs\.code \}\}/);
   assert.match(workflow, /UI_RESULT: \$\{\{ needs\.ui\.result \}\}/);
   assert.match(workflow, /POSIX_REQUIRED: \$\{\{ needs\.dependency-check\.outputs\.posix \}\}/);
   assert.match(workflow, /CONTRACTS_REQUIRED: \$\{\{ needs\.dependency-check\.outputs\.dependencies \}\}/);
-  assert.match(workflow, /needs: \[dependency-check, code, ui, documentation, skills, gitleaks, actionlint, posix\]/);
+  assert.match(workflow, /needs: \[dependency-check, code, ui, documentation, skills, gitleaks, actionlint, posix, stream-deck, stream-deck-integration\]/);
+});
+
+test("Plugin CI builds and tests only when selected and participates in the final gate", async () => {
+  const workflow = await readFile(path.join(root, ".github/workflows/ci.yml"), "utf8");
+  const plugin = workflow.split("\n  stream-deck:")[1].split("\n  posix:")[0];
+  assert.match(plugin, /if: \$\{\{ needs\.dependency-check\.outputs\.stream-deck == 'true' \}\}/);
+  assert.match(plugin, /node-version-file: '\.node-version'/);
+  assert.match(plugin, /run: npm ci --no-audit --no-fund/);
+  assert.match(plugin, /run: npm run test:stream-deck/);
+  assert.match(plugin, /setup-uv/);
+  assert.match(plugin, /uv sync --locked --all-extras --group dev/);
+  assert.match(workflow, /stream-deck: \$\{\{ steps\.changes\.outputs\.stream-deck \}\}/);
+  assert.match(workflow, /STREAM_DECK_REQUIRED: \$\{\{ needs\.dependency-check\.outputs\.stream-deck \}\}/);
+  assert.match(workflow, /STREAM_DECK_RESULT: \$\{\{ needs\.stream-deck\.result \}\}/);
+  assert.match(workflow, /'STREAM_DECK'/);
 });
 
 test("Dependency contracts run in the selector job even when application checks are skipped", async () => {
@@ -271,6 +336,18 @@ test("Dependency contracts run in the selector job even when application checks 
   }
   assert.ok(dependency.indexOf("run: node .github/scripts/ci-changes.mjs") < dependency.indexOf("run: npm run test:dependencies"));
   assert.equal(workflow.match(/run: npm run test:dependencies/g).length, 1);
+});
+
+test("interoperability has its own Python/Node runner and required merge gate result", async () => {
+  const workflow = await readFile(path.join(root, ".github/workflows/ci.yml"), "utf8");
+  const integration = workflow.split("\n  stream-deck-integration:")[1].split("\n  posix:")[0];
+  assert.match(integration, /needs\.dependency-check\.outputs\.stream-deck-integration == 'true'/);
+  assert.match(integration, /setup-uv/);
+  assert.match(integration, /node-version-file: '\.node-version'/);
+  assert.match(integration, /pytest tests\/integration\/stream_deck /);
+  assert.doesNotMatch(integration, /npm ci|test:stream-deck/);
+  assert.match(workflow, /STREAM_DECK_INTEGRATION_REQUIRED: \$\{\{ needs\.dependency-check\.outputs\.stream-deck-integration \}\}/);
+  assert.match(workflow, /STREAM_DECK_INTEGRATION_RESULT: \$\{\{ needs\.stream-deck-integration\.result \}\}/);
 });
 
 test("The actual workflow gate rejects failed, cancelled, missing and inconsistent results", async () => {
@@ -344,6 +421,24 @@ test("The actual workflow gate rejects failed, cancelled, missing and inconsiste
     cases.push(["success", "false", "false", "false", "skipped", "skipped", "skipped", false,
       "success", "false", "skipped", "skipped", "skipped", "false", required]);
   }
+  for (const example of cases) example.push("false", "skipped");
+  for (const [required, result, passed] of [
+    ["true", "success", true], ["true", "failure", false], ["true", "cancelled", false],
+    ["true", "skipped", false], ["true", "", false], ["false", "skipped", true],
+    ["false", "success", false], ["", "skipped", false], ["invalid", "skipped", false],
+  ]) {
+    cases.push(["success", "false", "false", "false", "skipped", "skipped", "skipped", passed,
+      "success", "false", "skipped", "skipped", "skipped", "false", "false", required, result]);
+  }
+  for (const example of cases) example.push("false", "skipped");
+  for (const [required, result, passed] of [
+    ["true", "success", true], ["true", "failure", false], ["true", "cancelled", false],
+    ["true", "skipped", false], ["true", "", false], ["false", "skipped", true],
+    ["false", "success", false], ["", "skipped", false], ["invalid", "skipped", false],
+  ]) {
+    cases.push(["success", "false", "false", "false", "skipped", "skipped", "skipped", passed,
+      "success", "false", "skipped", "skipped", "skipped", "false", "false", "false", "skipped", required, result]);
+  }
   await mkdir(path.join(root, ".tmp"), { recursive: true });
   const directory = await mkdtemp(path.join(root, ".tmp/ci-gate-"));
   try {
@@ -359,6 +454,10 @@ foreach ($case in $cases) {
     $env:UI_REQUIRED = $case[1]
     $env:POSIX_REQUIRED = $case[13]
     $env:CONTRACTS_REQUIRED = $case[14]
+    $env:STREAM_DECK_REQUIRED = $case[15]
+    $env:STREAM_DECK_RESULT = $case[16]
+    $env:STREAM_DECK_INTEGRATION_REQUIRED = $case[17]
+    $env:STREAM_DECK_INTEGRATION_RESULT = $case[18]
     $env:DOCUMENTATION_REQUIRED = $case[2]
     $env:SKILLS_REQUIRED = $case[3]
     $env:CODE_RESULT = $case[4]
@@ -379,7 +478,7 @@ Write-Output "Verified $($cases.Count) workflow gate cases."
       "-File", runner], { cwd: root, encoding: "utf8", timeout: 30000 });
     assert.ifError(result.error);
     assert.equal(result.status, 0, result.stdout + result.stderr);
-    assert.match(result.stdout, /Verified 64 workflow gate cases/);
+    assert.match(result.stdout, new RegExp(`Verified ${cases.length} workflow gate cases`));
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

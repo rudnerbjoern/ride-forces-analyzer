@@ -1,0 +1,38 @@
+{
+  "Actions": [{
+    "UUID": "io.github.rudnerbjoern.ride-forces-analyzer.dial",
+    "Name": "Analyzer dial",
+    "Tooltip": "Library, position, view, smoothing, speed or marker dial from the bundled Plus profile.",
+    "Icon": "imgs/action",
+    "Controllers": ["Encoder"],
+    "VisibleInActionsList": false,
+    "SupportedInMultiActions": false,
+    "Encoder": {
+      "layout": "layouts/plus.json",
+      "TriggerDescription": { "Rotate": "Adjust", "Push": "Run assigned action", "Touch": "Discard marker preview" }
+    },
+    "States": [{ "Image": "imgs/key" }]
+  }, {
+    "UUID": "io.github.rudnerbjoern.ride-forces-analyzer.step-mode",
+    "Name": "Fine / Coarse",
+    "Tooltip": "Switch position and marker dials between one and ten source samples per notch.",
+    "Icon": "imgs/action",
+    "Controllers": ["Keypad"],
+    "VisibleInActionsList": false,
+    "SupportedInMultiActions": false,
+    "DisableAutomaticStates": true,
+    "States": [
+      { "Image": "imgs/key", "Title": "Fine", "TitleAlignment": "bottom", "FontSize": 10 },
+      { "Image": "imgs/key", "Title": "Coarse", "TitleAlignment": "bottom", "FontSize": 10 }
+    ]
+  }, {
+    "UUID": "io.github.rudnerbjoern.ride-forces-analyzer.infobar",
+    "Name": "Analyzer InfoBar",
+    "Tooltip": "Show contextual Analyzer state on the Neo InfoBar.",
+    "Icon": "imgs/action",
+    "Controllers": ["Neo"],
+    "VisibleInActionsList": false,
+    "SupportedInMultiActions": false,
+    "States": [{ "Image": "imgs/key" }]
+  }]
+}

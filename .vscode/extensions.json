@@ -4,6 +4,7 @@
     "DavidAnson.vscode-markdownlint",
     "charliermarsh.ruff",
     "ms-python.vscode-pylance",
+    "connor4312.nodejs-testing",
     "streetsidesoftware.code-spell-checker"
   ]
 }

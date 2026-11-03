@@ -24,7 +24,7 @@
     }
   ],
   "files": [
-    "**/*.{md,py,mjs,json,jsonc,toml,yml,yaml}",
+    "**/*.{md,py,ts,mjs,json,jsonc,toml,yml,yaml}",
     ".github/workflows/*.{yml,yaml}",
     ".github/scripts/*.mjs",
     ".agents/skills/**/*.{md,py,ps1}",
@@ -51,6 +51,8 @@
     "**/uv.lock"
   ],
   "words": [
+    "imgs",
+    "infobar",
     "AHRS",
     "Aileron",
     "Alembic",
@@ -70,12 +72,14 @@
     "CMU",
     "compresslevel",
     "conftest",
+    "Connor",
     "cspell",
     "dateutil",
     "DaVinci",
     "Deutsch",
     "distpath",
     "dtype",
+    "Elgato",
     "ENOENT",
     "errstate",
     "ffplay",
@@ -164,6 +168,7 @@
     "specpath",
     "SQLAlchemy",
     "stationarity",
+    "streamdeck",
     "Taron",
     "testpaths",
     "TikTok",

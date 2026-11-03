@@ -120,6 +120,133 @@ test("Secret scanning is mandatory, checksum-pinned and cannot silently skip the
   assert.equal(workflow.jobs.check.steps[0].env.GITLEAKS_RESULT, "${{ needs.gitleaks.result }}");
 });
 
+test("dependency caches are isolated by job, platform and locked inputs", async () => {
+  for (const filename of ["ci.yml", "source-release.yml", "posix-packages.yml"]) {
+    const workflow = parseDocument(await readFile(new URL(`../../.github/workflows/${filename}`, import.meta.url), "utf8")).toJS();
+    for (const [id, job] of Object.entries(workflow.jobs)) {
+      const steps = job.steps ?? [];
+      for (const step of steps.filter(step => step.uses?.startsWith("astral-sh/setup-uv@"))) {
+        assert.equal(step.with["enable-cache"], true);
+        assert.ok(step.with["cache-suffix"].includes("${{ github.job }}"));
+        if (job.strategy?.matrix) assert.ok(step.with["cache-suffix"].includes("${{ matrix.target }}"));
+      }
+      for (const step of steps.filter(step => step.uses?.startsWith("actions/setup-node@"))) {
+        assert.equal(step.with["package-manager-cache"], false);
+        assert.equal(step.with.cache, undefined, "Do not enable an additional shared npm cache");
+      }
+      const install = steps.findIndex(step => step.run === "npm ci --no-audit --no-fund");
+      if (install < 0) continue;
+      const index = steps.findIndex(step => step.name === "Cache npm packages");
+      assert.ok(index >= 0 && index < install);
+      const cache = steps[index];
+      assert.equal(cache.uses, "actions/cache@v6.1.0");
+      assert.equal(cache.if, steps[install].if);
+      assert.equal(cache.with.path, "${{ env.NPM_CONFIG_CACHE }}");
+      assert.equal(job.env.NPM_CONFIG_CACHE, "${{ github.workspace }}/.tmp/npm-cache/" + id);
+      for (const component of ["${{ runner.os }}", "${{ runner.arch }}", "${{ github.job }}",
+        "${{ hashFiles('.node-version') }}", "${{ hashFiles('package-lock.json') }}"]) {
+        assert.ok(cache.with.key.includes(component), component);
+      }
+      assert.equal(cache.with["restore-keys"], cache.with.key.replace("${{ hashFiles('package-lock.json') }}", ""));
+    }
+  }
+});
+
+test("cached scanner/linter archives are verified before extraction and cache misses still download", async () => {
+  const workflow = parseDocument(await readFile(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8")).toJS();
+  const directory = await mkdtemp(path.resolve(".tmp/tool-cache-contract-"));
+  try {
+    const cases = [];
+    for (const [id, title] of [["gitleaks", "Gitleaks"], ["actionlint", "actionlint"]]) {
+      const job = workflow.jobs[id];
+      const cache = job.steps.find(step => step.name === `Cache ${title} archive`);
+      const body = job.steps.find(step => step.name === `Install checksum-pinned ${title}`).run;
+      const expected = body.match(/\$expected = '([a-f0-9]{64})'/)[1];
+      assert.equal(cache.uses, "actions/cache@v6.1.0");
+      assert.match(cache.with.path, /\.zip$/);
+      assert.ok(cache.with.key.includes("${{ github.job }}") && cache.with.key.endsWith(expected));
+      const script = path.join(directory, `${id}.ps1`);
+      await writeFile(script, body);
+      for (const mode of ["hit", "miss", "corrupt"]) cases.push({ script, mode, expected, archive: cache.with.path });
+    }
+    await writeFile(path.join(directory, "cases.json"), JSON.stringify(cases));
+    const runner = path.join(directory, "run.ps1");
+    await writeFile(runner, `$ErrorActionPreference = 'Stop'
+$marker = Join-Path $PSScriptRoot 'fixture.txt'; Set-Content $marker 'test archive'
+$global:CacheFixture = Join-Path $PSScriptRoot 'fixture.zip'
+Compress-Archive -Path $marker -DestinationPath $global:CacheFixture
+$checksum = (Get-FileHash $global:CacheFixture -Algorithm SHA256).Hash.ToLowerInvariant()
+function global:curl.exe { $global:CacheDownloads++; $i = [array]::IndexOf($args, '--output'); Copy-Item $global:CacheFixture $args[$i + 1]; $global:LASTEXITCODE = 0 }
+$cases = Get-Content (Join-Path $PSScriptRoot 'cases.json') -Raw | ConvertFrom-Json
+$counter = 0
+foreach ($case in $cases) {
+  $counter++; $work = Join-Path $PSScriptRoot $counter; New-Item -ItemType Directory $work | Out-Null; Set-Location $work
+  [Environment]::CurrentDirectory = $work
+  New-Item -ItemType Directory (Split-Path $case.archive) -Force | Out-Null
+  if ($case.mode -ne 'miss') { Copy-Item $global:CacheFixture $case.archive }
+  if ($case.mode -eq 'corrupt') { Add-Content $case.archive 'corrupt' }
+  $global:CacheDownloads = 0
+  $body = (Get-Content $case.script -Raw).Replace($case.expected, $checksum)
+  $failed = $false; $problem = ''; try { & ([ScriptBlock]::Create($body)) } catch { $failed = $true; $problem = $_.Exception.Message }
+  if ($failed -ne ($case.mode -eq 'corrupt')) { throw "Cached archive checksum was not enforced: $($case.mode) $problem" }
+  if ($global:CacheDownloads -ne [int]($case.mode -eq 'miss')) { throw 'Unexpected archive download.' }
+  $extracted = Test-Path (Join-Path (Split-Path $case.archive) 'fixture.txt')
+  if ($extracted -ne ($case.mode -ne 'corrupt')) { throw 'Unverified archive extraction.' }
+}
+Write-Output "Verified $counter tool cache cases."
+`);
+    const result = spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", runner], {
+      cwd: directory, env: windowsPowerShellEnvironment, encoding: "utf8", timeout: 30000,
+    });
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /Verified 6 tool cache cases/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("UI tests stay independent while plugin documentation tests own their Python and Node prerequisites", async () => {
+  const workflow = parseDocument(await readFile(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8")).toJS();
+  assert.ok(!workflow.jobs.ui.steps.some(step => step.uses?.startsWith("actions/setup-node@")
+    || step.run?.includes("npm ") || step.run?.includes("stream-deck")));
+  const steps = workflow.jobs["stream-deck"].steps;
+  const checkout = steps.find(step => step.uses?.startsWith("actions/checkout@"));
+  assert.equal(checkout.with["fetch-depth"], 0);
+  assert.ok(steps.some(step => step.uses?.startsWith("astral-sh/setup-uv@")));
+  const node = steps.findIndex(step => step.uses?.startsWith("actions/setup-node@"));
+  assert.ok(node >= 0);
+  assert.equal(steps[node].with["node-version-file"], ".node-version");
+  const install = steps.findIndex(step => step.run === "npm ci --no-audit --no-fund");
+  const tests = steps.findIndex(step => step.run === "npm run test:stream-deck");
+  assert.ok(install > node && tests > install, "Install locked Node dependencies before plugin tests");
+  const python = steps.findIndex(step => step.run === "uv sync --locked --all-extras --group dev");
+  assert.ok(python >= 0 && tests > python);
+  const manifest = JSON.parse(await readFile(new URL("../../plugins/stream-deck/package.json", import.meta.url), "utf8"));
+  assert.match(manifest.scripts.test, /npm run test:reference/);
+  assert.equal(manifest.scripts["test:reference"], "uv run --locked pytest tests/test_reference.py");
+});
+
+test("release quality retains the tested plugin and checksum without rebuilding or publishing", async () => {
+  const workflow = parseDocument(await readFile(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8")).toJS();
+  const plugin = workflow.jobs["stream-deck"];
+  const pack = plugin.steps.find(step => step.name === "Pack tested plugin for release");
+  assert.equal(pack.if, "${{ inputs.upload-packages == true }}");
+  assert.match(pack.run, /npm run pack:built-plugin --workspace plugins\/stream-deck/);
+  assert.ok(!pack.run.includes("build:plugin"));
+  assert.match(pack.run, /Get-FileHash/);
+  assert.match(pack.run, /PLUGIN-SHA256SUMS\.txt/);
+  const uploads = plugin.steps.filter(step => step.uses?.startsWith("actions/upload-artifact@"));
+  assert.deepEqual(uploads.map(step => step.with.path), [
+    ".tmp/stream-deck-package/Ride-Forces-Analyzer.streamDeckPlugin",
+    ".tmp/stream-deck-package/PLUGIN-SHA256SUMS.txt",
+  ]);
+  for (const step of uploads) {
+    assert.equal(step.if, pack.if);
+    assert.equal(step.with.archive, false);
+    assert.equal(step.with["if-no-files-found"], "error");
+  }
+  assert.ok(!plugin.steps.some(step => step.run?.includes("gh release")));
+});
+
 test("Source releases publish only reviewed tag revisions after quality and package checks", async () => {
   const source = await readFile(new URL("../../.github/workflows/source-release.yml", import.meta.url), "utf8");
   const workflow = parseDocument(source).toJS();
@@ -168,7 +295,8 @@ test("Source releases publish only reviewed tag revisions after quality and pack
   assert.deepEqual(downloads.map(step => step.with.name), ["release-notes.md",
     "${{ needs.windows.outputs.exe }}", "${{ needs.windows.outputs.standard }}", "${{ needs.windows.outputs.complete }}",
     "WINDOWS-SHA256SUMS.txt",
-    "Ride-Forces-Analyzer-${{ needs.source.outputs.version }}-linux-x64.tar.gz", "LINUX-X64-SHA256SUMS.txt",
+    "Ride-Forces-Analyzer-${{ needs.source.outputs.version }}-linux-x64.tar.gz",
+    "Ride-Forces-Analyzer.streamDeckPlugin", "PLUGIN-SHA256SUMS.txt", "LINUX-X64-SHA256SUMS.txt",
     "Ride-Forces-Analyzer-${{ needs.source.outputs.version }}-macos-arm64.zip", "MACOS-ARM64-SHA256SUMS.txt",
     "Ride-Forces-Analyzer-${{ needs.source.outputs.version }}-macos-x64.zip", "MACOS-X64-SHA256SUMS.txt"]);
   assert.ok(!source.includes("corresponding-sources.zip"));
@@ -223,6 +351,7 @@ ConvertTo-Json -Compress -InputObject $global:recorded
       assert.deepEqual(args.filter(arg => arg.startsWith(".tmp/release/")), [
         ".tmp/release/app.exe", ".tmp/release/standard.zip", ".tmp/release/complete.zip",
         ".tmp/release/WINDOWS-SHA256SUMS.txt",
+        ".tmp/release/Ride-Forces-Analyzer.streamDeckPlugin", ".tmp/release/PLUGIN-SHA256SUMS.txt",
         ".tmp/release/Ride-Forces-Analyzer-0.1.0-linux-x64.tar.gz", ".tmp/release/LINUX-X64-SHA256SUMS.txt",
         ".tmp/release/Ride-Forces-Analyzer-0.1.0-macos-arm64.zip", ".tmp/release/MACOS-ARM64-SHA256SUMS.txt",
         ".tmp/release/Ride-Forces-Analyzer-0.1.0-macos-x64.zip", ".tmp/release/MACOS-X64-SHA256SUMS.txt",
@@ -259,6 +388,9 @@ test("Actual release artifact verifier rejects modified downloads on every platf
       await writeFile(path.join(target, name), "synthetic binary");
       await writeFile(path.join(target, `${platform.toUpperCase()}-SHA256SUMS.txt`), `${hash("synthetic binary")}  ${name}\n`);
     }
+    const plugin = "Ride-Forces-Analyzer.streamDeckPlugin";
+    await writeFile(path.join(target, plugin), "synthetic plugin");
+    await writeFile(path.join(target, "PLUGIN-SHA256SUMS.txt"), `${hash("synthetic plugin")}  ${plugin}\n`);
     const script = path.join(directory, "verify.ps1");
     await writeFile(script, `$ErrorActionPreference = 'Stop'\nfunction git {\n $global:LASTEXITCODE = 0\n if ($args[0] -eq 'rev-parse') { $env:RELEASE_SHA }\n}\n${body}\nWrite-Output 'Artifact verification passed'\n`);
     const run = () => spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script], {
@@ -284,6 +416,17 @@ test("Actual release artifact verifier rejects modified downloads on every platf
       assert.match(changedNative.stderr, /Native artifact checksum mismatch/);
       await writeFile(path.join(target, name), "synthetic binary");
     }
+    await writeFile(path.join(target, plugin), "tampered");
+    const changedPlugin = run();
+    assert.ifError(changedPlugin.error);
+    assert.notEqual(changedPlugin.status, 0);
+    assert.match(changedPlugin.stderr, /Plugin artifact checksum mismatch/);
+    await writeFile(path.join(target, plugin), "synthetic plugin");
+    await writeFile(path.join(target, "PLUGIN-SHA256SUMS.txt"), `${hash("synthetic plugin")}  wrong.streamDeckPlugin\n`);
+    const wrongPlugin = run();
+    assert.ifError(wrongPlugin.error);
+    assert.notEqual(wrongPlugin.status, 0);
+    assert.match(wrongPlugin.stderr, /Invalid plugin checksum inventory/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

@@ -16,6 +16,18 @@ from ride_forces_analyzer.storage.preferences import Appearance, Preferences
 from ride_forces_analyzer.storage.preferences import DEFAULT_LIBRARY_VIDEO_LABELS
 
 
+def test_stream_deck_defaults_off_and_survives_preference_reload(tmp_path: Path) -> None:
+    preferences = Preferences(tmp_path / "preferences.sqlite3")
+    assert not preferences.stream_deck_enabled()
+    assert not preferences.path.exists()
+    preferences.remember_stream_deck_enabled(True)
+    assert Preferences(preferences.path).stream_deck_enabled()
+    preferences.remember_stream_deck_enabled(False)
+    assert not Preferences(preferences.path).stream_deck_enabled()
+    with pytest.raises(ValueError):
+        preferences.remember_stream_deck_enabled(cast(bool, 1))
+
+
 def test_last_library_recording_survives_reload_and_rejects_invalid_identity(
     tmp_path: Path,
 ) -> None:

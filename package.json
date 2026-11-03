@@ -1,10 +1,13 @@
 {
   "name": "ride-forces-analyzer-docs",
   "private": true,
-  "description": "Offline documentation and Python type checks for Ride Forces Analyzer",
+  "description": "Development checks and Stream Deck plugin workspace for Ride Forces Analyzer",
   "engines": {
     "node": ">=22.18.0"
   },
+  "workspaces": [
+    "plugins/stream-deck"
+  ],
   "scripts": {
     "lint:docs": "markdownlint-cli2",
     "test:docs:links": "node --test tests/docs/documentation.test.mjs",
@@ -12,7 +15,8 @@
     "typecheck": "pyright",
     "test:types": "node --test tests/types/pydantic.test.mjs tests/types/recording.test.mjs",
     "spellcheck": "cspell lint --config .cspell.json --no-progress",
-    "test:dependencies": "node --test tests/dependencies/security.test.mjs tests/dependencies/dependabot.test.mjs tests/dependencies/labels.test.mjs"
+    "test:dependencies": "node --test tests/dependencies/security.test.mjs tests/dependencies/dependabot.test.mjs tests/dependencies/labels.test.mjs",
+    "test:stream-deck": "npm run test --workspace plugins/stream-deck"
   },
   "devDependencies": {
     "@cspell/dict-de-de": "4.1.3",
@@ -23,6 +27,12 @@
     "pyright": "1.1.414"
   },
   "overrides": {
+    "filelist": {
+      "minimatch": "11.0.1"
+    },
+    "@elgato/utils": {
+      "zod": "4.6.7"
+    },
     "markdownlint": {
       "re2js": "2.8.7"
     },
