@@ -83,7 +83,9 @@ The Windows `py` launcher is unnecessary. Temporary downloads/logs belong in
 
 ## Required project checks
 
-After closing the application, with the configured Node and uv on PATH:
+The following list covers full project acceptance. For routine changes, run only
+affected checks and reuse valid evidence as required by [AGENTS.md](../../AGENTS.md).
+Close the application for GUI checks; use the configured Node and uv on PATH:
 
 ```powershell
 uv lock --check

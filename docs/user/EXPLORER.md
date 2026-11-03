@@ -5,14 +5,12 @@ Every file is imported into the local Library before its archived data is opened
 Existing entries are reused; an updated export of the same recording updates that
 entry while keeping your Library edits, markers, links and export history.
 
-On Windows, **Alt** reveals native access-key underlines for Import, Save,
-Back and Browse. Press **Alt** with the underlined letter to activate the control;
-letters follow the selected UI language. Press **Alt** again to hide the underlines.
-Alt combined with another key activates its command without changing this toggle.
-**Esc** dismisses dialogs or requests cancellation of an active export.
-RFDB `.forces` recordings use the same dialog and need no conversion. Features
-requiring missing recording data, such as GPS or tilt, remain unavailable.
-Both formats appear in the same file dialog; no manual extraction is needed.
+On Windows, press **Alt** to show shortcut letters on controls such as Import,
+Save, Back and Browse. Press **Alt** with the underlined letter to use that control.
+**Esc** closes a dialog or requests cancellation of an active export.
+Recordings downloaded from RFDB also open as `.forces` files without conversion.
+Features such as GPS or tilt are available only when the recording contains the
+necessary data. Compressed `.zforces` files need no manual extraction.
 You can also drag `.forces` or `.zforces` files into the main window. A single
 file opens in the current window after import. Selecting or dropping multiple
 files imports them all and opens only the first successful recording in the current
@@ -27,13 +25,40 @@ The instructions below use the English interface labels.
 
 ## Use your Library
 
-The **Library** toolbar button shows or hides your local recording list. There is
-one **Import…** button in the main toolbar; the Library panel needs no separate
-import button. Filter by park or search ride and park names to find an entry.
-Select a recording to open its archived data without the original file.
-Right-click a recording for **Open in new window…**, **Edit metadata…**,
-**Video links…**, **Export history…** and **Remove…**. Removal asks for confirmation
-and leaves external files unchanged. Settings → Library provides backup and restore.
+The **Library** toolbar button shows or hides your saved recordings. Use
+**Import…** in the main toolbar to add files. Filter by park or search ride and park
+names to find a recording, then select it to open it. The original file is no longer
+needed after import.
+
+Click the status icon beside a recording to choose its progress, from **Imported**
+to **Completed**. You can move backwards or skip steps. These choices are yours:
+editing or exporting never changes the status automatically.
+
+Right-click a recording to choose:
+
+- **Open in new window…** to compare it with another recording.
+- **Edit metadata…** to change the ride, park, row, seat, train, riding position or
+  notes. Save applies your edits; reset restores the imported information. Recording
+  and import dates cannot be edited, and the original file stays unchanged.
+- **Video links…** to keep several labelled video links with the recording. Save
+  applies the selected link; Remove deletes only that link. You can also keep
+  private or scheduled-upload links. Change label choices under **Settings → Library**.
+- **Export history…** to review previous exports or repeat one with its saved
+  settings. Choose a new destination when repeating; the old output is not needed.
+- **Remove…** to delete the saved recording, its edits, links and export history
+  after confirmation. Original files and exported videos are kept.
+
+### Back up or restore your Library
+
+Open **Settings → Library → Backup…** and choose where to save the ZIP file.
+It includes saved recordings, edits, markers, statuses, video links and export
+history with its saved settings. It excludes exported videos/overlays and other
+application settings or export presets. Keep those files separately if needed.
+
+Choose **Restore…** and select a backup to replace your current Library. Read the
+replacement confirmation carefully; save a backup first if you want to keep your
+current Library. A completed restore takes effect immediately; cancelling Settings
+afterward does not undo it. Your external recordings and videos are untouched.
 
 ## Compare recordings in separate windows
 
@@ -47,7 +72,7 @@ settings. Place the windows side by side using your operating system.
 Each window has its own recording, selection, zoom, playback and smoothing.
 Closing one window leaves the others open. Language and appearance apply to all
 windows. Saved ride-marker adjustments remain shared per Library recording; existing windows
-retain their current analysis, while subsequently opened windows load saved markers.
+keep their current display; newly opened windows use the saved markers.
 Closing the last window closes the application.
 
 External file openings normally reuse an existing window. To request another
@@ -69,8 +94,9 @@ Samples outside the ride remain available.
 The separate **From sample / To sample** selection is unchanged.
 
 The application remembers these markers locally for the recording, including
-after a restart. Moving an identical file keeps its markers; changed file contents
-are treated as a different recording. The original file is never modified.
+after a restart. Moving an identical file keeps its markers. Importing an updated
+export of the same recording follows the Library behavior described above.
+The original file is never modified.
 Choose Gravity at a steady moment with normal positive seat loading. Incline
 sets the reference for longitudinal and lateral forces; changing Gravity also
 changes tilt. These references may be outside the ride's start/end interval.
@@ -91,7 +117,7 @@ right-click opens the menu without changing zoom or selecting a sample.
   around the pointer. **Reset view** returns to the recording's start/end markers,
   or the available recording boundaries when markers are absent.
 - Show or hide individual force curves using their controls.
-  **Combined Forces** toggles the violet magnitude of the smoothed device axes.
+  **Combined Forces** shows or hides the violet curve for overall force strength.
   Its checkbox starts off per recording, requires usable calibrated data and is hidden in raw view.
 
 Click the **Play** icon to the right of the sample slider to follow the recording at
@@ -129,10 +155,10 @@ releasing it returns to single-sample steps.
 - Exporting **Current selection** uses these sample fields.
 - **Data export → Export CSV…** saves these samples as a data table; see the
   [CSV guide](CSV_EXPORT.md).
-- **Data export → Export JSON…** saves parallel sample arrays and metadata; see the
+- **Data export → Export JSON…** saves sample data and recording information; see the
   [JSON guide](JSON_EXPORT.md).
-- **Data export → Export Analyzer JSON…** saves grouped measurement arrays with
-  shared time, quality and calculation settings; see the [JSON guide](JSON_EXPORT.md).
+- **Data export → Export Analyzer JSON…** saves data organized for further analysis,
+  including timing and calculation settings; see the [JSON guide](JSON_EXPORT.md).
 
 The selected sample, selection interval and visible chart interval are separate.
 Zooming alone does not change the export selection.
@@ -179,8 +205,7 @@ Enable **Settings → Application → Restore last file** to reopen your last su
 loaded `.forces` or `.zforces` recording at the next launch. This option is off by
 default. The application remembers the Library recording and reopens its archived bytes,
 even if the original file has been moved or deleted. Removed Library entries are skipped.
-A previously saved file path is imported once when upgrading from older preferences. **Save** applies the option; **Cancel** leaves it
-unchanged. Disabling it starts with an empty workspace.
+**Save** applies the option; **Cancel** leaves it unchanged. Disabling it starts with an empty workspace.
 
 ## Open the GPS overview
 
@@ -190,9 +215,9 @@ GPS is independent of force samples and does not move the chart selection.
 It provides approximate location context, not a force or speed measurement.
 
 Previously cached maps appear automatically when you open the overview, including
-after restarting the app, if all tiles for the visible area are still valid.
-Click **Load map background** to load missing or expired OpenStreetMap tiles.
-Only the visible area is requested, without an account or API key. This action
+after restarting the app, if the saved map images for that area are still current.
+Click **Load map background** to download missing or outdated OpenStreetMap images.
+Only the visible area is requested; no account is needed. This action
 contacts OpenStreetMap: it reveals your IP address and the requested geographic
 area, but does not upload the GPS track, timestamps or recording file.
 
@@ -206,7 +231,7 @@ Previously viewed map areas are saved locally to avoid repeated downloads.
 If loading fails or the map does not cover the location, the route remains usable
 without a background. A map is not required for analysis or export.
 
-Use **Settings → Application → Clear map cache** to delete all cached map tiles
+Use **Settings → Application → Clear map cache** to delete all saved map images
 immediately. An already displayed background stays visible; future map requests
 download the needed images again.
 

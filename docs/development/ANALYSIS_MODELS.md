@@ -8,7 +8,7 @@
 - Separate contracts: source-app projection, qualified DEVICE quantities and
   explicitly provisional rider-frame calculations.
 - Decisions: [libraries and API boundaries](../architecture/09_architecture_decisions.md#analysis-models-and-libraries),
-  [proposed physical qualification policy](../architecture/09_architecture_decisions.md#physical-qualification).
+  [deferred physical qualification policy](../architecture/09_architecture_decisions.md#physical-qualification).
 - Planned features and milestone status: [roadmap](../ROADMAP.md).
 
 ## Public model shape
@@ -229,22 +229,13 @@ Module: [`analysis.calibration`](../../src/ride_forces_analyzer/analysis/calibra
 - Calibration admission errors terminate service requests with their original
   diagnostic codes and retain the previous snapshot. No source mutation or second
   calculation pipeline is introduced.
-- `Preferences.recording_calibration` reads the source-hash-bound recipe;
-  `remember_recording_calibration` validates against the complete import before
-  writing or resetting it. Ride bounds are stored independently under the same hash.
-  `recording_configuration` resolves valid local choices for fresh UI imports and
-  new batch jobs. Invalid/unreadable entries retain source defaults without database
-  cleanup; changing bounds never erases saved calibration, and conversely.
-- Reusable presets omit file-specific bounds/references. Jobs capture both from
-  their bound snapshot, with explicit version/window, and never consult current
-  preferences during execution. JSON exports retain the original directions beside
-  the effective basis, recipe, support intervals and calculation provenance.
-  The chart menu edits all four choices through `AnalysisController.request_markers`.
-  On current successful delivery, the UI adapter calls
-  `Preferences.remember_recording_markers` to save/reset bounds and references in
-  one transaction before publishing the snapshot. Invalid, superseded and closed
-  bindings do not save; storage errors report session-only changes.
-  [Reference comparisons](../validation/APP_REFERENCE.md#reference-calibration-evidence)
+- Marker persistence for archived and external inputs follows the
+  [Library marker contract](LIBRARY.md#current-recording-markers). The
+  [Explorer contract](../implementation/RAW_EXPLORER.md) owns editing and delivery.
+  Reusable presets omit file-specific bounds/references; jobs capture their recipe
+  and never consult current choices during execution. JSON exports retain original
+  directions alongside the effective basis, recipe, support and provenance.
+- [Reference comparisons](../validation/APP_REFERENCE.md#reference-calibration-evidence)
   bound fixture agreement; arbitrary mounts, rider poses and source-app algorithm
   equivalence remain unqualified. Results establish neither airtime sensations nor
   suitability for safety assessment.
@@ -362,7 +353,7 @@ monotonic request revisions and service-specific subscription handles.
 | `ExportTimeline` / `ExportValues`              | Retain bound snapshot / expose shared scalar buffers as read-only sequences, with `None` for invalid rows                                     |
 | `prepare_export_analysis`                      | Equal configuration returns the identical snapshot; otherwise partial recalculation                                                           |
 | Presets/jobs                                   | Require full versioned `analysis_configuration`, matching window and all serialized aspect/language/dependency fields; no source bytes/arrays |
-| `make_job` / batches                           | Snapshot input / direct import, source-hash check, saved full-history recipe prepared through service before interval binding                 |
+| `make_job` / batches                           | Captured input or archived source bytes; hash check and saved full-history recipe prepared before interval binding                            |
 
 - Channel consumers must handle tuple/NumPy-view union; tuple equality and `.index`
   are not shared APIs. Navigation, zoom, display mode, language and appearance do
@@ -373,7 +364,8 @@ monotonic request revisions and service-specific subscription handles.
 - Bounds use the selected interval; orientation/context use full source history.
   Fractional context lookup floors the source position; numerical values use linear
   interpolation with existing missing-data rules.
-- Incomplete stored records are rejected; no format migration or destructive cleanup.
+- Stored required fields, optional defaults and compatibility follow the
+  [preset/job contract](../implementation/EXPORT_BATCHES.md#contracts).
 
 ## Raw values and qualified quantities
 
@@ -466,7 +458,7 @@ if isinstance(source, ImportSuccess):
 ## Verification and scope
 
 ```powershell
-uv run --locked pytest tests/analysis/test_models.py
+uv run --locked pytest tests/analysis
 ```
 
 - Model tests: alias/ownership, immutable views, missing versus zero, unit/frame/profile

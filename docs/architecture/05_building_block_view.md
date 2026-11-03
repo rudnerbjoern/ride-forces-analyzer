@@ -75,7 +75,8 @@ the control transport; a local Home action returns
 to the invoking device's bundled Start page. Plus gesture handlers map each notch,
 press and marker touch to existing commands. Selection dials reuse Inspector
 selection controls and publish separate bounds without marker persistence; a device-local fine/coarse mode
-changes only position/marker step size. Neo editors use the shared key action;
+changes position, selection and marker step size, without changing Library stepping.
+Neo editors use the shared key action;
 Neo supplies Start/Quick native pages for its two Touch Points;
 InfoBar is display-only with encoded icons and bounded text. Both displays derive values and status from snapshots.
 
@@ -166,9 +167,8 @@ snapshot to each component and coordinates import/analysis delivery.
 details and context actions; `LibraryMetadataDialog`, `LibraryVideosDialog` and
 `LibraryExportsDialog` own recording-bound forms/review. Workers call Library
 services; widgets own display, input and transport, not validation or persistence.
-`ui.explorer.library_workflow` owns frameless status triggers and the anchored
-selector, using `QFrame`/`QHBoxLayout`, six checkable `QToolButton` controls and an
-exclusive `QButtonGroup`. `LibraryLabelsEditor` owns the Settings draft;
+`ui.explorer.library_workflow` owns manual status triggers and their anchored
+selector. `LibraryLabelsEditor` owns the Settings draft;
 `LibraryTransferControls` owns ZIP pickers, confirmation and worker cancellation.
 [Explorer interactions](../implementation/RAW_EXPLORER.md#library-interactions)
 define layout, controls, selection, scrolling, accessibility and dialog behavior.

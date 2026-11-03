@@ -130,16 +130,9 @@ file writes or UI work. File modification/import time is never recording time.
 ### Admitted recording date contract
 
 The Library projection uses seconds since **2001-01-01 00:00:00 UTC** for
-Ride Forces schema 2.2.0. The authorized Manta source retains the exact token
-`811347461.3309591` and `America/New_York`. The owner confirmed the original-app
-reading as **2026-09-17, 10:18 local time**, Row 3 / Seat 3. Conversion produces
-2026-09-17 10:17:41.330959 at that location: agreement within one minute, without
-claiming second-level display agreement or a verified rounding policy.
-The app developer also identifies recording date/time zone as source data in the
-[privacy policy](https://rideforces.com/privacy/); that policy alone does not establish the epoch.
+Ride Forces schema 2.2.0. The admitted epoch and its limits follow the
+[original-app date evidence](../validation/APP_REFERENCE.md#recording-date-evidence).
 
-`importers.library_metadata.project_library_metadata()` projects the existing
-importer models. It preserves source names, exact date tokens and time-zone text.
 The recording day uses the recording location's source zone, regardless of where
 the file is later opened. Missing/invalid zones use explicit UTC; missing, invalid
 or unrepresentable dates remain unknown. Normalized UTC text uses six fractional

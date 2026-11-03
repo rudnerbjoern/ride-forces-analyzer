@@ -23,13 +23,10 @@ orientation and context remain the snapshot's independent prepared values.
   Parallel arrays are collected once, then encoded incrementally. Memory is
   proportional to the selection. Cancellation is checked before creation,
   between samples, between encoder chunks and before completion.
-- The shared CSV/JSON worker captures snapshot/range before the file picker,
-  pauses playback and asks for replacement confirmation after completing the suffix.
-  Declining/closing the question starts no worker; No is the default answer.
-  The worker delivers progress/completion on the UI thread and cancels
-  on application close. Only success remembers the shared export directory.
+- The [shared UI lifecycle](../architecture/06_runtime_view.md#sample-data-export-runtime)
+  defines snapshot capture, destination/overwrite confirmation, workers and cancellation.
 
-## App-shaped format
+## Shared recording semantics
 
 Replay timestamps use the effective user start marker. Metadata retains original
 source indices alongside `effective_ride_bounds`; Analyzer JSON exposes the same
@@ -42,6 +39,8 @@ Both formats include `calibration`: under app-shaped `metadata` or Analyzer
 (source hash, algorithm, engine, UTC calculation time and provisional capability).
 Without overrides, the effective directions equal the source directions and
 custom-reference support/provenance are absent. Source indices remain original.
+
+## App-shaped format
 
 UTF-8 without BOM, LF, one tab before each root key, one space after its colon,
 compact arrays/objects, one root member per line and no trailing newline after
@@ -131,10 +130,8 @@ samples.orientation
 samples.vertical_context
 ```
 
-Combined retains the norm of smoothed device axes, not projected axes. Both JSON
-formats read the same prepared sample views and retain the scientific boundaries
-above. Analyzer JSON includes no source paths, aligned GPS, detected event lists
-or lossless source archive; custom-calibration provenance retains its source hash.
+Analyzer JSON retains the same sample semantics and scientific boundaries as the
+app-shaped format, including its exclusions and source-hash provenance.
 The default filename is `<stem>.analyzer.json`;
 the destination suffix remains `.json`. The explorer offers it as a separate
 **Data export → Export Analyzer JSON…** action.

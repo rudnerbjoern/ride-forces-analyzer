@@ -62,7 +62,7 @@ image set as refreshed. Do not use incomplete output as a reference.
   recording, replay time, sample, smoothing, force values and visible context.
   Update descriptions in place when needed. Retain the existing links on coaster
   names and the distinction between provisional context and measured forces.
-- Check the linked [layout gallery](../../../docs/EXPORT_LAYOUTS.md) when its
+- Check the linked [layout gallery](../../../docs/user/EXPORT_LAYOUT_GALLERY.md) when its
   images change. Follow the [central image guide](../../../docs/images/README.md)
   for reproduction settings, licensing and attribution.
 - For the Stream Deck examples, review the [user guide](../../../docs/user/STREAM_DECK.md):

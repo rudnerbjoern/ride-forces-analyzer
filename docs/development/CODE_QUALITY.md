@@ -39,23 +39,24 @@ CLI success does not verify editor feedback.
 Python suites: `tests/<subsystem>/test_<behavior>.py`. Behavior names and subsystem
 folders identify scope; no additional marker matrix is required.
 
-| Directory                        | Responsibility                                                                           |
-|----------------------------------|------------------------------------------------------------------------------------------|
-| domain                           | Source ownership and immutable recording models                                          |
-| importers                        | Decoding, motion, optional fields, diagnostics and Path/bytes import                     |
-| analysis                         | Models, device/frame math, source references, context/events, service and extrema        |
-| explorer                         | Qt-independent presentation, selections and GPS geometry                                 |
-| rendering                        | Frames, layouts, previews, encoding, progress, estimates and batches                     |
-| storage                          | Preferences, Library schema/transactions, export definitions and portable backup/restore |
-| localization                     | Translation catalog, overlay text and OS language defaults                               |
-| ui                               | Native Qt startup, explorer, dialogs, appearance and interactions                        |
-| updates                          | Release discovery, transport and update preferences                                      |
-| recordings                       | Original fixture hashes and recursive schema inventory                                   |
-| fixtures                         | Data only: original recordings and recursive schema inventory                            |
-| packaging                        | Release policy, source archives and native Windows/Linux/macOS packages                  |
-| tooling                          | Application settings/version and Ruff contracts                                          |
-| support                          | Fixture paths, pinned identities and inventory helper                                    |
-| types / dependencies / ci / docs | Separate Node type, dependency, CI and documentation checks                              |
+| Directory                          | Responsibility                                                                             |
+| ---------------------------------- | ------------------------------------------------------------------------------------------ |
+| domain                             | Source ownership and immutable recording models                                            |
+| importers                          | Decoding, motion, optional fields, diagnostics and Path/bytes import                       |
+| analysis                           | Models, device/frame math, source references, context/events, service and extrema          |
+| explorer                           | Qt-independent presentation, selections and GPS geometry                                   |
+| rendering                          | Frames, layouts, previews, encoding, progress, estimates and batches                       |
+| storage                            | Preferences, Library schema/transactions, export definitions and portable backup/restore   |
+| localization                       | Translation catalog, overlay text and OS language defaults                                 |
+| ui                                 | Native Qt startup, explorer, dialogs, appearance and interactions                          |
+| updates                            | Release discovery, transport and update preferences                                        |
+| recordings                         | Original fixture hashes and recursive schema inventory                                     |
+| fixtures                           | Data only: original recordings and recursive schema inventory                              |
+| packaging                          | Release policy, source archives and native Windows/Linux/macOS packages                    |
+| tooling                            | Application settings/version and Ruff contracts                                            |
+| support                            | Fixture paths, pinned identities and inventory helper                                      |
+| integration/stream_deck            | Real Qt server / TypeScript client interoperability; separate dual-toolchain job           |
+| types / dependencies / ci / docs   | Separate Node type, dependency, CI and documentation checks                                |
 
 - Run a subsystem/file directly: `uv run --locked pytest tests/importers` or
   `uv run --locked pytest tests/ui/test_export.py`.
@@ -74,6 +75,8 @@ folders identify scope; no additional marker matrix is required.
   use replacements for changed data. Each UI test isolates
   `LOCALAPPDATA`, including preference/export databases and subprocesses; no second
   export database-path override is needed.
+- Plugin/profile/illustration tests live in `plugins/stream-deck/tests`; they run
+  separately from application/UI discovery. [CI routing](CI.md) owns job boundaries.
 - Developer-tool regressions under `.agents/skills/` are outside application
   discovery; [skill instructions](../../.agents/skills/github-delivery/SKILL.md)
   define execution scope. [CI selection](CI.md) owns job selection.
@@ -120,34 +123,13 @@ uv run --locked coverage json
 | VS Code     | **Run Tests with Coverage** requires locked `pytest-cov` and `.venv/Scripts/python.exe`; partial test selection can miss the threshold |
 | Collection  | CLI `--cov` without a value preserves configured source directory; editor may choose another source                                    |
 
-Analysis coverage includes models, device and rider frames, calibration, projection,
-smoothing, orientation, extrema, airtime/events, snapshot preparation and partial
-recalculation, service state, subscriptions and revision/errors.
-Storage coverage includes preferences and recording markers, immutable export
-definitions, transactional preset/batch persistence and the bounded map-tile cache.
-Localization coverage includes both translation catalogs, deferred text rendering,
-language selection, numeric formatting and diagnostic fallbacks. Shared replay-time
-formatting covers sample counters, negative offsets and fractional sample rates.
-Playback coverage checks the clock, speed changes, seeking, pause/resume and
-recording boundaries independently of Qt. Runtime coverage includes bootstrap
-settings, platform paths, CPU topology, support diagnostics, bounded release lookup,
-instance locking and local-socket requests, exception forwarding and report cleanup.
-Platform fallback branches use controlled test doubles on Windows; they do not
-replace native Linux/macOS package qualification. GPS coverage checks route gaps,
-projection, bounded viewport requests, HTTP/cache rules and cancellation using
-simulated tile responses without live network access. Domain coverage includes
-immutable source ownership, exact number tokens, constructor type checks and
-recording-component consistency without decoding or rewriting original recordings.
-Importer coverage includes bounded JSON/compressed decoding, diagnostic budgets,
-motion/optional parsing and full-service outcomes. The two strict subprocess
-file-access audits run without coverage instrumentation, whose own file I/O would
-violate their contract; the remaining tests measure the importer modules. Rendering
-coverage includes all layouts, gaps and fallback fonts, preview/timeline contracts,
-ordered frame generation, encoder discovery and safe output publication/cleanup.
-Explorer coverage checks raw/prepared presentation, context segments, localized
-details and inclusive selections without desktop windows. Data-export coverage
-checks CSV/JSON serialization, shared validation, atomic file replacement and
-sequential batch preparation, failure and cancellation.
+Coverage follows the subsystem responsibilities above, including Library storage,
+recording recipes and Stream Deck support. The two strict importer subprocess
+file-access audits run without instrumentation because coverage's own file I/O
+would violate their contract; the remaining tests measure the importer modules.
+Platform fallback branches use controlled test doubles on Windows and do not
+replace native Linux/macOS package qualification.
+
 Behavior tests establish contracts; coverage percentage does not qualify physical
 interpretation or UI integration. Use uncovered paths to guide review, not as a
 requirement to test every line. Prioritize current behavior, meaningful failures

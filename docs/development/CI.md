@@ -91,7 +91,7 @@ and every remaining selected job to succeed.
 The `code`, `ui` and `stream-deck-integration` jobs run disjoint test directories;
 no test runs twice in these jobs. Application tests explicitly exclude UI and
 `tests/integration/stream_deck`. UI tests remain serial per desktop and are required
-with application code, including manual/release runs. The independent integration
+with application code and manual/release runs, except verified release reuse. The independent integration
 job is selected for changes to either transport/protocol implementation or shared
 inputs, and always for full/manual/release runs. Its selected result is mandatory
 in `check`; failed, cancelled, missing or unexpectedly skipped execution blocks it.
@@ -207,9 +207,9 @@ the reusable quality stage also builds and checks the native Linux/macOS artifac
 | Stage             | Dependencies / result                                                                                                                                                                        |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `source`, 10 min  | Resolve/validate tag commit and release policy; check temporary source archive/recording integrity; build Python packages                                                                    |
-| `quality`         | After source; call full reusable CI for that resolved commit                                                                                                                                 |
+| `quality`         | After source; call full reusable CI for that commit, with verified application/UI reuse when eligible                                                                                        |
 | `windows`, 30 min | After source/quality; locked build group, redistribution-input checks, standalone EXE and standard/complete ZIPs plus checksums; execute all three with isolated preferences/restricted PATH |
-| `release`, 10 min | After successful source/quality/windows; verified publication; only job with `contents: write` and `actions: read`                                                                           |
+| `release`, 10 min | After successful source/quality/windows; verified publication; only job with `contents: write`                                                                                               |
 
 - Failed/skipped/cancelled quality blocks Windows preparation/publication.
   This includes any missing or failed native package target. Publication downloads

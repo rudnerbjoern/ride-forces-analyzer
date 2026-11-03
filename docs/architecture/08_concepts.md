@@ -137,8 +137,9 @@ use Full frame when a plugin cannot provide the requested extent.
 The assistant selects export areas through plugin capabilities, hides placement
 for Content area and Full-screen-only positions, and displays resolved output
 dimensions and extent-specific estimates. Retained placement returns with Full frame.
-Previews use the exact cursor, while video frames follow an independent
-deterministic clock. The 23.976 and 59.94 options retain exact `24000/1001` and
+Previews use their captured source sample independently of the workspace cursor;
+[export runtime](06_runtime_view.md#video-export-runtime) owns sample selection.
+Video frames follow an independent deterministic clock. The 23.976 and 59.94 options retain exact `24000/1001` and
 `60000/1001` timing.
 Transparent ProRes and opaque H.264 are separate outputs, published only after
 successful encoding. Existing videos require explicit replacement confirmation;

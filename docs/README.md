@@ -27,6 +27,8 @@ chapter 9 retains decision status and rationale.
   additional analysis data, or structured Analyzer JSON with shared time/quality.
 - [Choose an export layout](user/EXPORT_LAYOUTS.md): compare placement and video
   sizes, choose Full frame or Content area and read the instruments.
+- [Export layout gallery](user/EXPORT_LAYOUT_GALLERY.md): larger detail images and
+  complete placement examples for all five layouts.
 - [Presets and batches](user/EXPORT_BATCHES.md): reuse settings, queue recordings
   and find results or handle failed jobs.
 - [Stream Deck +/Neo controls and Mobile preview](user/STREAM_DECK.md): set up the profile, read icons and
@@ -38,9 +40,7 @@ chapter 9 retains decision status and rationale.
 - [Video export contract](implementation/VIDEO_EXPORT.md), [saved presets and batches](implementation/EXPORT_BATCHES.md).
 - [CSV sample export contract](implementation/CSV_EXPORT.md).
 - [JSON sample export contract](implementation/JSON_EXPORT.md).
-- [All export layouts](EXPORT_LAYOUTS.md), [layout extension API](development/EXPORT_LAYOUTS.md),
-  [Manta demo with all five overlays](https://youtu.be/0sGiE6F8YlI) and
-  [additional Manta HUD demo](https://youtu.be/JGcNPKoKU1Q).
+- [Layout extension API](development/EXPORT_LAYOUTS.md).
 - [Provisional airtime context](implementation/AIRTIME.md) and
   [separate opt-in airtime events](implementation/AIRTIME_EVENTS.md).
 - [Current screenshots and reference settings](images/README.md).

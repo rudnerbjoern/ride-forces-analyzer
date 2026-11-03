@@ -78,17 +78,12 @@ Ride-bound changes also refresh replay labels, reset viewport and marker-based
 export ranges; calibration-only changes preserve zoom. From/To selection and
 original source indices remain unchanged. Opening the menu pauses playback.
 
-For archived hashes, `library.sqlite3` owns the current bounds and versioned
-Gravity/Incline recipe; both Library reopening and external reimport
-restore it. The existing controls save to that entry without changing its source,
-dates or manual workflow status. New file imports initialize their Library recipe from any existing
-`preferences.sqlite3` choices by original source SHA-256. Reopening restores valid
-local choices through the shared analysis configuration. Missing, invalid or
-unreadable preference entries use source defaults without deleting stored records.
-Invalid Library markers fail opening rather than using stale preference values.
-Write failure retains the last saved transaction, keeps the session adjustment and
+The [Library marker contract](../development/LIBRARY.md#current-recording-markers)
+owns persistence, initial preference admission and source/default recovery. Invalid
+Library markers fail opening rather than falling back to stale preferences.
+Write failure retains the saved transaction, keeps the session adjustment and
 reports that it was not saved. Closed/rebound sources and stale deliveries cannot
-save markers. No source bytes or source JSON fields are rewritten.
+save markers.
 
 Time is inferred recording seconds `index / effective_sample_rate`, with
 `INFERRED_UNIFORM` and source/default-rate provenance. Integer-rate replay labels
@@ -182,7 +177,10 @@ Settings sections scroll when needed; Save/Cancel stay visible outside the scrol
 area, so content changes do not force the dialog beyond the available screen.
 Sections keep their natural height; additional window space stays below them.
 Startup restores valid saved choices, otherwise the registered OS language (English
-fallback) and System appearance. `AppSettings` can explicitly override language.
+fallback) and System appearance. System follows Qt's effective OS light/dark
+scheme, including later OS changes; an unknown scheme uses dark. Explicit theme
+choices override System. `AppSettings` can explicitly override language.
+Dropdowns fit complete translated choices and their arrows after language changes.
 
 ## Library interactions
 
@@ -252,7 +250,7 @@ exports use effective values; the original bytes, dates and source metadata stay
 intact. The posture selector retains unfamiliar source values; only an explicit
 override chooses Seated/Flying. Reset clears all additions and notes, restoring
 source values. Matching external file opens restore the Library additions as well.
-Hiding it releases its layout space without changing the loaded recording, selection
+Hiding the Library releases its layout space without changing the loaded recording, selection
 or chart viewport; park selection and search text are retained.
 Opening a recording selects its matching row and scrolls it into view within the
 active filters. Expanding the collapsed panel reveals the selection again

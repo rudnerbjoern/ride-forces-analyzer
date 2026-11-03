@@ -12,10 +12,6 @@ keys. Saved presets retain `column`, `ribbon`, `corners`, `hud` and `orbit`.
 The explicit profile registry binds these identifiers to renderers and geometry;
 `PROFILES` retains display names and the selector order.
 
-For examples of all five rendered layouts in turn over Onride footage, watch the
-[Manta overlay demo on YouTube](https://youtu.be/0sGiE6F8YlI). The additional
-[Manta HUD demo](https://youtu.be/JGcNPKoKU1Q) shows only HUD.
-
 ## Files and responsibilities
 
 | File under `src/ride_forces_analyzer/rendering/layouts/` | Responsibility                                                  |
@@ -140,80 +136,21 @@ Portrait Ribbon reuses the stacked chart arrangement with its own style
 and portrait constants; editing Corners does not change that profile.
 HUD, G-Orbit and Column have independent drawing code.
 
-`rendering.scales.lateral_scale` supplies the shared lateral range for all layouts:
-at least ±1.25 g, expanded symmetrically in 0.25 g steps from the largest absolute
-valid selected sample. Bounds stay fixed throughout the export. Shared channel
-ticks include the exact bounds and zero, with bounded major tick density.
-HUD uses the same policy for its instrument and keeps independent history ranges.
-`longitudinal_scale(peak)` supplies the same quarter-g expansion for all layouts
-with a ±1 g minimum. `vertical_scale(low, high, flying=...)` supplies HUD's
-and G-Orbit's posture-dependent instrument bounds and tick spacing.
-`ExportChannel.reference` is 1 g for the vertical force channel and zero otherwise,
-including Flying recordings. `selected_bounds` and `history_extent` share selected
-extrema and history fitting without modifying absolute samples. Vertical timeline
-charts are symmetric around 1 g, with 5% headroom and a 0.1 g minimum deviation.
-Chart reference lines highlight 1 g; G-Orbit's vertical neutral angle is 180° at
-1 g, with current arcs and held peaks extending above/below that reference.
+Shared scale APIs are `rendering.scales.lateral_scale`, `longitudinal_scale`,
+`vertical_scale`, `selected_bounds` and `history_extent`. `ExportChannel.reference`
+is 1 g for vertical and zero for the other force channels. Renderers use
+`rendering.peaks.PeakEnvelope.prepare` for deterministic held peaks derived from
+source time, including seeking and fractional positions. The
+[export contract](../implementation/VIDEO_EXPORT.md#analysis-and-time-mapping)
+owns scale/reference rules; its [HUD](../implementation/VIDEO_EXPORT.md#hud) and
+[G-Orbit](../implementation/VIDEO_EXPORT.md#g-orbit) sections own instrument,
+history and peak behavior.
 
-HUD owns immutable landscape/portrait pixel geometry, scale subdivisions and
-type/color/effect constants. Static force scales, labels and shadows are drawn once.
-Dynamic light/shadow layers are cropped to painted pixels plus their effect margin,
-within the original instrument/history tile boundaries. Empty tiles skip filtering.
-The orientation line and labels reuse prepared ink; only its bug is redrawn.
-Premultiplied-alpha blur preserves colored light without dark
-fringes. A static transparent-to-black gradient sits behind the bottom histories.
-Value readouts use the installed Bahnschrift Bold weight; context labels use
-uppercase text. There is no UI dependency or frame-history cache.
-A conditional orientation strip occupies the outermost 48 native pixels at the
-right edge, aligned to the side instruments' height. It reads channel 3 through
-`ExportTimeline.value_at`, maps 0…180° downward and draws only the five 45° marks
-and a white triangular bug. The complete strip is omitted for missing orientation,
-including gaps at fractional positions; existing instruments are not repositioned.
-Instrument scales hold `(low, high, major_step)` bounds. Vertical uses source
-`riding_position`: explicit `Flying` selects −4…+3 g; the general range is
-−1.5…+5 g. Both bounds fit valid selected extrema independently in 0.5 g steps,
-with bounded tick density and exact endpoint ticks. Only whole g values are
-labeled on the vertical instrument: whole, half and quarter g ticks use long,
-medium and short marks respectively. Wider ranges thin the quarter-g grid with
-an integer stride. Unknown/unavailable posture
-uses the general display range, without source reclassification. The affine
-vertical mapping has equal pixels per g on both sides and supports reversal.
-Scale bars reuse `rendering.peaks.PeakEnvelope` with a 1.5-second hold and 1 g/s
-release, independently for each sign/channel. Current markers/readouts remain
-instantaneous. Envelopes are prepared once from the selected interval, reset
-on gaps and preserve deterministic fractional-sample rendering and seeking.
-For HUD and G-Orbit recordings, `PeakEnvelope.prepare(reference=1.0)` holds vertical
-loading and unloading around 1 g while returning absolute g values. The instrument
-highlights 1 g as its neutral reference and retains the 0 g tick and absolute labels.
-This display reference also applies to Flying and other postures.
-The right instrument uses a ±1 g minimum in both aspects. Its range is fitted
-once to the absolute longitudinal peak of valid selected samples, without padded
-chart bounds or history headroom, and rounded outward in fixed 0.25 g steps.
-The lateral instrument uses the same actual-peak selection with a ±1.25 g minimum,
-rounded outward in fixed 0.25 g steps on both sides. Major/minor tick density stays bounded for
-large ranges; endpoint ticks and portrait labels show the resulting exact bounds.
-History ranges are fitted once to valid selected samples per channel, separately
-from instrument ranges. Vertical history maps its selected extrema, including
-1 g, linearly onto `top + 1` through `top + history_row - 1` without headroom or
-rounding. Its reference line follows that mapping; equal bounds map to the center.
-Reference labels show 1 g for vertical and 0 g for lateral/longitudinal, aligned
-with their respective lines, including vertical inversion. Heading
-and portrait endpoint label positions stay fixed; endpoint text shows the actual
-fitted bounds.
-Lateral and longitudinal histories use symmetric
-bounds equal to their own largest absolute selected value, with no headroom,
-rounding or minimum range. Each uses `history_row / 2 - 1` pixels per direction,
-reaching the row boundary at its peak while keeping reference lines fixed.
-A zero or absent peak uses an internal divisor of 1 to avoid division by zero;
-valid zero values remain centered and missing values are not drawn.
-Missing values and data outside the export
-interval do not affect these ranges; seeking and the visible time window do not
-rescale them. Portrait history endpoint labels use these independent bounds.
-Vertical history uses 1 g as its reference and absolute g labels in all postures;
-lateral and longitudinal histories retain zero as their reference.
-The histories' time-zero cursor shares the exact x coordinate of `lateral_x(0)`.
-Their right boundary mirrors `history_left` around this coordinate, keeping equal
-pixels per second before/after zero; curves, baselines and time ticks share the bounds.
+HUD owns immutable aspect-specific geometry and drawing constants. Static scales,
+labels, shadows and orientation ink are prepared once. Dynamic effect layers are
+cropped to their painted tile bounds; empty tiles skip filtering. Premultiplied-alpha
+blur preserves colored light without dark fringes. Drawing remains independent of
+Qt and previous render calls.
 
 ## Output-area geometry
 
@@ -227,9 +164,9 @@ are rejected centrally, without identifying layouts by name.
 `ContentArea.dimensions` is the renderer's exact native `(width, height)`, including
 layout-owned empty pixels. Both must be positive even integers. Content area never
 crops, scales, adds margins/padding or rounds dimensions. Native size is independent
-of Full-frame placement/scaling: Ribbon exports 3072 × 360 landscape or 840 × 1120
-portrait, Corners 840 × 1120 and G-Orbit 800 × 800 in either format. Column exports
-960 × 2160 in landscape only. Invalid metadata is rejected rather than padded.
+of Full-frame placement/scaling. Invalid metadata is rejected rather than padded.
+The [geometry contract](../implementation/VIDEO_EXPORT.md#geometry-directions-and-colors)
+lists supported output sizes.
 
 `resolve_geometry(settings)` returns an immutable `ExportGeometry`:
 
@@ -255,8 +192,7 @@ scaling, placement, canvas padding and codec options. `render_sample` / `render_
 use the same dimensions as the encoded output.
 
 `build_previews` renders the same complete output frame at the supplied source sample
-(the assistant selects the rounded 60% point of the export interval),
-then composites a display-only background and fits the image within 960 × 540
+and composites a display-only background and fits the image within 960 × 540
 (landscape) or 540 × 960 (portrait). These are maximum sizes, not forced aspect
 ratios: native Content-area images retain their shape without cropping/stretching.
 Checker cells remain square. Miniatures and the main view share this RGB image;
@@ -316,7 +252,7 @@ force interpolation or independent orientation buffers.
    both export areas with changing content, longest labels and stroke/shadow/glow
    extremes; native image bounds must not clip them. Use representative video
    integration rather than a full option matrix.
-   Regenerate the fixed-sample [Voltron Nevera reference](../EXPORT_LAYOUTS.md) to review
+   Regenerate the fixed-sample [Voltron Nevera reference](../user/EXPORT_LAYOUT_GALLERY.md) to review
    intended design changes. Structural changes must preserve existing pixels.
 
 Registry tests also substitute a small custom renderer to verify that composition

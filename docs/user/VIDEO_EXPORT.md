@@ -19,8 +19,8 @@ your original recording unchanged, and processing works offline after setup.
 
 ## 1. Choose the part of the ride
 
-Click **Export video…**. The assistant captures your current analysis and smoothing;
-its setup preview uses the sample 60% of the way through the selected export range.
+Click **Export video…**. The assistant uses your current recording, marker settings
+and smoothing. Changes made later in the main window do not alter this open export.
 
 Choose **Range** to decide how much of the ride to export:
 
@@ -51,8 +51,8 @@ Choose these settings:
   exports the smaller layout image for positioning in your video editor.
   HUD always uses Full frame. **Output dimensions** shows the actual video size.
 - **Position:** in Full frame, choose one of the selected layout's placements.
-  The preview updates immediately. Changing layout or format keeps a supported
-  or equivalent position (such as top left → top), otherwise it selects the default.
+  The preview updates as you change settings. When switching layouts or formats,
+  the assistant tries to keep a similar position; check the preview afterward.
   Content area hides this choice and keeps it for your return to Full frame.
   HUD exports at 1920×1080 or 1080×1920; other Full-frame layouts export
   at 3840×2160 or 2160×3840. Review export also shows the actual dimensions.
@@ -68,12 +68,11 @@ only a rough guide. To remember a frame rate for future exports, use
 **Settings → Export** in the main window.
 
 **Parallel render jobs** in the same settings controls how many video frames are
-generated concurrently. Choose from 1 up to this computer's logical processor
-count; the default is 1. More jobs use more CPU and memory and are not always
-faster. This local preference applies to individual exports and batches; presets
-retain their visual settings independently.
+prepared at once. The default is **1**; the list shows the maximum for your
+computer. Higher values use more processor power and memory and are not always
+faster. This setting applies to single exports and batches on this computer.
 
-HUD retains its native resolution without upscaling. For a 4K project, let your
+HUD exports at the smaller resolution listed above. For a 4K project, let your
 video editor scale the complete overlay to fill the timeline frame.
 
 ## 3. Check the preview
@@ -115,10 +114,10 @@ depends on calibration and smoothing; they are not a measurement of what a rider
 2. Click **Review export**. Check the settings and estimated file size on the left
    and the large preview on the right. Use **Back** to change the layout or settings.
 3. Click **Export video…**, choose a destination and file name, then save.
-4. Wait for the export to finish. The progress bar counts frames passed to the
-   encoder; the remaining time estimates pending frames. **Finalizing video…**
-   means the encoder is finishing the file, with no duration estimate. You can
-   cancel the export.
+4. Wait for export to finish. The progress bar and remaining time show progress
+   while the video is being created. **Finalizing video…** means the file is still
+   being finished; wait for the completion message before using it. You can cancel
+   the export.
 
 During export, the large preview follows the rendered video approximately every
 two video seconds and also shows its first and last frame. The selected backdrop
@@ -167,7 +166,7 @@ For several exports, the new-folder and list icons (tooltips: **Add this export 
 and **Saved batches…**) let
 you prepare and run a queue.
 Follow [presets and batches](EXPORT_BATCHES.md) for the complete workflow and
-how saved jobs retain their recording paths and settings.
+how saved jobs keep their recordings and settings.
 
 ## Common questions
 
@@ -186,4 +185,4 @@ how saved jobs retain their recording paths and settings.
   MP4 when you want a smaller standalone video with a black background.
 
 [Installation](INSTALLATION.md) ·
-[Layout gallery](../EXPORT_LAYOUTS.md)
+[Layout gallery](EXPORT_LAYOUT_GALLERY.md)

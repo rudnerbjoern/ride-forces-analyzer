@@ -88,11 +88,8 @@ not source indices. Tests explicitly retain Taron Row=2 then Seat=1 and Iron Gwa
   Pointer/code with original sample indices.
 - Decoder owns syntax/schema/document-shape guards; a manually constructed
   SourceEnvelope does not establish them.
-- Local `limits.max_diagnostics` defaults to 1,000; exact budget accepted.
-  Next diagnostic replaces last slot with a fatal limit record and stops parsing;
-  no successful truncated warnings.
-- [Full service](IMPORT_SERVICE.md#shared-diagnostic-budget-and-ordering) shares the
-  guard with motion; decoder failures remain fail-fast single diagnostics.
+- Diagnostic exhaustion, ordering and shared/standalone budgets follow the
+  [service budget contract](IMPORT_SERVICE.md#shared-diagnostic-budget-and-ordering).
   Invalid caller limits raise `ValueError`.
 
 ## Verification and boundaries
@@ -121,8 +118,6 @@ Full imports expose weather in `Recording.metadata`:
 | windGust          | wind_gust          |
 
 [Voltron weather evidence](../validation/APP_REFERENCE.md#weather-metadata) retains
-screenshots, exact values and observed conversions, without guaranteeing units for
-every recording. Preserve source units/precision/text and exact envelope tokens;
-no conversion, compass labels or network lookup. Absent = `None`; invalid optional
-values warn without blocking otherwise usable import, subject to resource limits.
-Explorer weather display is separate from metadata import.
+screenshots, exact values and observed conversions without guaranteeing units for
+every recording. Import performs no weather conversion or network lookup;
+[Explorer display](../implementation/RAW_EXPLORER.md) is a separate contract.

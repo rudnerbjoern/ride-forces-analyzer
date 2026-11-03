@@ -6,8 +6,8 @@ claims dependencies are latest or vulnerability-free.
 Windows remains the development host. The same Python lock supplies Linux x64
 and macOS x64/arm64 native release workers. Linux desktop shared libraries and an external FFmpeg are target
 OS requirements, not bundled GyanD downloads. The
-[release guide](RELEASE.md#linux-and-macos-packages) owns installation commands,
-platform baselines and native validation.
+[release guide](RELEASE.md#linux-and-macos-packages) owns package baselines and native validation; the
+[user installation guide](../user/INSTALLATION.md) owns installation procedures.
 
 | Scope                       | Source of truth                                                                  |
 | --------------------------- | -------------------------------------------------------------------------------- |
