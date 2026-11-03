@@ -7,7 +7,13 @@ Development checks remain on Windows. The reusable
 [native package workflow](../../.github/workflows/posix-packages.yml) additionally
 builds and executes Linux x64 and macOS arm64/x64 packages on their own runners.
 `posix` runs only for manual full CI and release calls; PRs skip native package
-jobs. The final `check` gate requires every selected target to succeed.
+jobs. An additional Ubuntu 26.04 job executes the unchanged Linux package built
+on Ubuntu 24.04 with the existing GUI/import/render/encode checker. A one-day
+internal artifact carries the package and checksum between jobs; this also runs
+without release uploads and does not change the release build baseline. Dispatching
+`posix-packages.yml` directly runs only the Linux build and Ubuntu compatibility
+check; reusable CI/release calls retain all native targets. The final
+`check` gate requires every selected target and compatibility check to succeed.
 Jobs have readable display names; the final check-run name remains `check` for
 branch protection and the delivery helper. Technical job IDs and selection outputs
 remain stable.
@@ -25,8 +31,8 @@ the SHA-256 before extraction. Test reports, recordings and user data are never
 cached. Jobs without dependency/tool installation need no dependency cache.
 Each target has a 30-minute budget, uses locked dependencies, tests native platform
 contracts and executes the extracted frozen app with a real CPU encode. Linux uses
-Xvfb; macOS verifies app signatures. Manual CI builds and verifies packages without
-uploading them. Only release calls enable `upload-packages`; verified
+Xvfb; macOS verifies app signatures. Manual CI retains only that short-lived compatibility input. Only release calls
+enable `upload-packages`; verified
 packages and their checksum files are then retained for 14 days for publication.
 They contain neither recordings nor user databases.
 These jobs qualify target packages; they do not add a Linux/macOS developer setup.
@@ -168,6 +174,8 @@ it does not guarantee lower total runner minutes.
 ## Workflow validation
 
 - Windows x64 actionlint 1.7.12, SHA-256 verified before extraction.
+  `.github/actionlint.yaml` adds the official hosted Ubuntu 26.04 label absent from
+  that version's built-in list; it does not suppress workflow errors.
 - `.github/workflows/`, `.github/scripts/`, `tests/ci/`, `tests/dependencies/` and
   Dependabot/label/release-rule changes select all-workflow validation;
   manual/full reusable runs always select it.

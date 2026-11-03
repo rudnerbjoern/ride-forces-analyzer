@@ -10,7 +10,7 @@ const codeInputs = new Set([
 ]);
 
 const ciInputs = new Set([
-  ".github/dependabot.yml", ".github/labeler.yml", ".github/release.yml",
+  ".github/dependabot.yml", ".github/labeler.yml", ".github/release.yml", ".github/actionlint.yaml",
 ]);
 
 const skillInputs = new Set([
