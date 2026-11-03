@@ -25,6 +25,7 @@ from ride_forces_analyzer.storage.library import (
     LibraryStoreError,
     WORKFLOW_STATUSES,
     default_database_path,
+    validate_video_url,
 )
 from ride_forces_analyzer.storage.library_search import library_search_values
 
@@ -564,6 +565,9 @@ def test_list_order_counts_effective_names_and_no_source_blob_reads(
                 "INSERT INTO export_history(recording_sha256,export_kind,origin,started_at_utc,status,application_version,request_json) VALUES (?, 'csv','single','2026-11-01T10:00:00.000000Z','failed','1.3.0','{}')",
                 ("b" * 64,),
             )
+    store.save_video_link("b" * 64, "https://example.invalid/video")
+    store.save_video_link("b" * 64, "https://example.invalid/short", "Shorts")
+    store.save_video_link("e" * 64, "https://example.invalid/private")
     original_connection = store.connection
 
     def authorize(
@@ -587,6 +591,7 @@ def test_list_order_counts_effective_names_and_no_source_blob_reads(
     entries = store.entries()
     assert [entry.source_sha256[0] for entry in entries] == ["d", "b", "c", "a", "e", "0", "1", "f"]
     assert [entry.export_count for entry in entries] == [0, 2, 0, 0, 0, 0, 0, 0]
+    assert [entry.video_link_count for entry in entries] == [0, 2, 0, 0, 1, 0, 0, 0]
     assert all(entry.workflow_status == "imported" for entry in entries)
     corrected = entries[4]
     assert (corrected.ride_name, corrected.park_name) == ("Effective ride", "Effective park")
@@ -595,6 +600,40 @@ def test_list_order_counts_effective_names_and_no_source_blob_reads(
     assert store.parks() == ("Effective park", "Park")
     assert store.entries(search="absent") == ()
     assert store.entries() == entries
+
+    for key, status in (
+        ("d", "markers_verified"),
+        ("b", "markers_verified"),
+        ("c", "completed"),
+        ("a", "video_ready"),
+        ("e", "markers_verified"),
+        ("0", "overlays_created"),
+        ("1", "uploaded"),
+    ):
+        store.set_workflow_status(key * 64, status)
+    before = store.entries()
+    assert [
+        entry.source_sha256[0] for entry in store.entries(workflow_status="markers_verified")
+    ] == [
+        "d",
+        "b",
+        "e",
+    ]
+    assert store.entries(
+        park="effective PARK",
+        search="RIDE",
+        workflow_status="markers_verified",
+    ) == (before[4],)
+    assert store.entries(park="effective PARK", workflow_status="completed") == ()
+    for status in WORKFLOW_STATUSES:
+        assert all(
+            entry.workflow_status == status for entry in store.entries(workflow_status=status)
+        )
+        assert store.entries(workflow_status=status)
+    for invalid in ("", "all", "' OR 1=1 --"):
+        with pytest.raises(ValueError, match="Invalid workflow status"):
+            store.entries(workflow_status=invalid)
+    assert store.entries(workflow_status=None) == before
 
 
 def test_search_projection_upgrade_uses_effective_names_and_rolls_back(
@@ -640,3 +679,17 @@ def test_search_projection_upgrade_uses_effective_names_and_rolls_back(
     current = store.path.read_bytes()
     store.initialize()
     assert store.path.read_bytes() == current
+
+
+def test_video_url_validation_preserves_private_addresses_without_writing() -> None:
+    url = "https://example.invalid/private?scheduled=1&variant=short#preview"
+    assert validate_video_url(f"  {url}  ") == url
+    for invalid in (
+        "",
+        "file:///private",
+        "javascript:alert(1)",
+        "https:///missing",
+        "https://bad host/video",
+    ):
+        with pytest.raises(ValueError):
+            validate_video_url(invalid)

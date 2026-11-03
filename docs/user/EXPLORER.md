@@ -26,8 +26,10 @@ The instructions below use the English interface labels.
 ## Use your Library
 
 The **Library** toolbar button shows or hides your saved recordings. Use
-**Import…** in the main toolbar to add files. Filter by park or search ride and park
-names to find a recording, then select it to open it. The original file is no longer
+**Import…** in the main toolbar to add files. Use the park and status dropdowns
+together with ride/park search to find a recording, then select it to open it.
+Only recordings matching all your choices appear. Choose **All statuses** to
+include every status, or use **Clear filters** to reset all three filters. The original file is no longer
 needed after import.
 
 Click the status icon beside a recording to choose its progress, from **Imported**
@@ -41,8 +43,12 @@ Right-click a recording to choose:
   notes. Save applies your edits; reset restores the imported information. Recording
   and import dates cannot be edited, and the original file stays unchanged.
 - **Video links…** to keep several labelled video links with the recording. Save
-  applies the selected link; Remove deletes only that link. You can also keep
-  private or scheduled-upload links. Change label choices under **Settings → Library**.
+  applies the selected link; Remove deletes only that link. A small link icon above
+  the recording's status also opens this dialog. It is grey without links and uses
+  the theme's accent colour when links are saved. Click the link
+  icon beside a saved entry in the **Video links** list to open it in your browser.
+  Unsaved edits are kept. Private or scheduled-upload links are supported. Change label
+  choices under **Settings → Library**.
 - **Export history…** to review previous exports or repeat one with its saved
   settings. Choose a new destination when repeating; the old output is not needed.
 - **Remove…** to delete the saved recording, its edits, links and export history
