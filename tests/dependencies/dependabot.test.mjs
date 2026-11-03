@@ -120,6 +120,90 @@ test("Secret scanning is mandatory, checksum-pinned and cannot silently skip the
   assert.equal(workflow.jobs.check.steps[0].env.GITLEAKS_RESULT, "${{ needs.gitleaks.result }}");
 });
 
+test("dependency caches are isolated by job, platform and locked inputs", async () => {
+  for (const filename of ["ci.yml", "source-release.yml", "posix-packages.yml"]) {
+    const workflow = parseDocument(await readFile(new URL(`../../.github/workflows/${filename}`, import.meta.url), "utf8")).toJS();
+    for (const [id, job] of Object.entries(workflow.jobs)) {
+      const steps = job.steps ?? [];
+      for (const step of steps.filter(step => step.uses?.startsWith("astral-sh/setup-uv@"))) {
+        assert.equal(step.with["enable-cache"], true);
+        assert.ok(step.with["cache-suffix"].includes("${{ github.job }}"));
+        if (job.strategy?.matrix) assert.ok(step.with["cache-suffix"].includes("${{ matrix.target }}"));
+      }
+      for (const step of steps.filter(step => step.uses?.startsWith("actions/setup-node@"))) {
+        assert.equal(step.with["package-manager-cache"], false);
+        assert.equal(step.with.cache, undefined, "Do not enable an additional shared npm cache");
+      }
+      const install = steps.findIndex(step => step.run === "npm ci --no-audit --no-fund");
+      if (install < 0) continue;
+      const index = steps.findIndex(step => step.name === "Cache npm packages");
+      assert.ok(index >= 0 && index < install);
+      const cache = steps[index];
+      assert.equal(cache.uses, "actions/cache@v6.1.0");
+      assert.equal(cache.if, steps[install].if);
+      assert.equal(cache.with.path, "${{ env.NPM_CONFIG_CACHE }}");
+      assert.equal(job.env.NPM_CONFIG_CACHE, "${{ github.workspace }}/.tmp/npm-cache/" + id);
+      for (const component of ["${{ runner.os }}", "${{ runner.arch }}", "${{ github.job }}",
+        "${{ hashFiles('.node-version') }}", "${{ hashFiles('package-lock.json') }}"]) {
+        assert.ok(cache.with.key.includes(component), component);
+      }
+      assert.equal(cache.with["restore-keys"], cache.with.key.replace("${{ hashFiles('package-lock.json') }}", ""));
+    }
+  }
+});
+
+test("cached scanner/linter archives are verified before extraction and cache misses still download", async () => {
+  const workflow = parseDocument(await readFile(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8")).toJS();
+  const directory = await mkdtemp(path.resolve(".tmp/tool-cache-contract-"));
+  try {
+    const cases = [];
+    for (const [id, title] of [["gitleaks", "Gitleaks"], ["actionlint", "actionlint"]]) {
+      const job = workflow.jobs[id];
+      const cache = job.steps.find(step => step.name === `Cache ${title} archive`);
+      const body = job.steps.find(step => step.name === `Install checksum-pinned ${title}`).run;
+      const expected = body.match(/\$expected = '([a-f0-9]{64})'/)[1];
+      assert.equal(cache.uses, "actions/cache@v6.1.0");
+      assert.match(cache.with.path, /\.zip$/);
+      assert.ok(cache.with.key.includes("${{ github.job }}") && cache.with.key.endsWith(expected));
+      const script = path.join(directory, `${id}.ps1`);
+      await writeFile(script, body);
+      for (const mode of ["hit", "miss", "corrupt"]) cases.push({ script, mode, expected, archive: cache.with.path });
+    }
+    await writeFile(path.join(directory, "cases.json"), JSON.stringify(cases));
+    const runner = path.join(directory, "run.ps1");
+    await writeFile(runner, `$ErrorActionPreference = 'Stop'
+$marker = Join-Path $PSScriptRoot 'fixture.txt'; Set-Content $marker 'test archive'
+$global:CacheFixture = Join-Path $PSScriptRoot 'fixture.zip'
+Compress-Archive -Path $marker -DestinationPath $global:CacheFixture
+$checksum = (Get-FileHash $global:CacheFixture -Algorithm SHA256).Hash.ToLowerInvariant()
+function global:curl.exe { $global:CacheDownloads++; $i = [array]::IndexOf($args, '--output'); Copy-Item $global:CacheFixture $args[$i + 1]; $global:LASTEXITCODE = 0 }
+$cases = Get-Content (Join-Path $PSScriptRoot 'cases.json') -Raw | ConvertFrom-Json
+$counter = 0
+foreach ($case in $cases) {
+  $counter++; $work = Join-Path $PSScriptRoot $counter; New-Item -ItemType Directory $work | Out-Null; Set-Location $work
+  [Environment]::CurrentDirectory = $work
+  New-Item -ItemType Directory (Split-Path $case.archive) -Force | Out-Null
+  if ($case.mode -ne 'miss') { Copy-Item $global:CacheFixture $case.archive }
+  if ($case.mode -eq 'corrupt') { Add-Content $case.archive 'corrupt' }
+  $global:CacheDownloads = 0
+  $body = (Get-Content $case.script -Raw).Replace($case.expected, $checksum)
+  $failed = $false; $problem = ''; try { & ([ScriptBlock]::Create($body)) } catch { $failed = $true; $problem = $_.Exception.Message }
+  if ($failed -ne ($case.mode -eq 'corrupt')) { throw "Cached archive checksum was not enforced: $($case.mode) $problem" }
+  if ($global:CacheDownloads -ne [int]($case.mode -eq 'miss')) { throw 'Unexpected archive download.' }
+  $extracted = Test-Path (Join-Path (Split-Path $case.archive) 'fixture.txt')
+  if ($extracted -ne ($case.mode -ne 'corrupt')) { throw 'Unverified archive extraction.' }
+}
+Write-Output "Verified $counter tool cache cases."
+`);
+    const result = spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", runner], {
+      cwd: directory, env: windowsPowerShellEnvironment, encoding: "utf8", timeout: 30000,
+    });
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /Verified 6 tool cache cases/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
 test("UI tests stay independent while plugin documentation tests own their Python and Node prerequisites", async () => {
   const workflow = parseDocument(await readFile(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8")).toJS();
   assert.ok(!workflow.jobs.ui.steps.some(step => step.uses?.startsWith("actions/setup-node@")

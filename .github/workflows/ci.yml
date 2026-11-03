@@ -31,12 +31,19 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
           ref: ${{ inputs.revision || github.sha }}
+      - name: Cache Gitleaks archive
+        uses: actions/cache@v6.1.0
+        with:
+          path: .tmp/gitleaks/gitleaks_8.30.1_windows_x64.zip
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e
       - name: Install checksum-pinned Gitleaks
         run: |
           New-Item -ItemType Directory -Force .tmp/gitleaks | Out-Null
           $archive = '.tmp/gitleaks/gitleaks_8.30.1_windows_x64.zip'
-          curl.exe --fail --silent --show-error --location --retry 3 --retry-all-errors --connect-timeout 30 --max-time 120 --proto '=https' https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_windows_x64.zip --output $archive
-          if ($LASTEXITCODE -ne 0) { throw 'Gitleaks download failed.' }
+          if (-not (Test-Path $archive)) {
+            curl.exe --fail --silent --show-error --location --retry 3 --retry-all-errors --connect-timeout 30 --max-time 120 --proto '=https' https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_windows_x64.zip --output $archive
+            if ($LASTEXITCODE -ne 0) { throw 'Gitleaks download failed.' }
+          }
           $expected = 'd29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e'
           if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Gitleaks checksum mismatch.' }
           Expand-Archive -Path $archive -DestinationPath .tmp/gitleaks -Force
@@ -50,6 +57,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Secret scan failed; review the redacted scan output.' }
 
   dependency-check:
+    name: CI selection and dependency checks
     runs-on: windows-latest
     timeout-minutes: 5
     outputs:
@@ -61,6 +69,8 @@ jobs:
       posix: ${{ steps.changes.outputs.posix }}
       stream-deck: ${{ steps.changes.outputs.stream-deck }}
       stream-deck-integration: ${{ steps.changes.outputs.stream-deck-integration }}
+    env:
+      NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache/dependency-check
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -70,6 +80,7 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: '.node-version'
+          package-manager-cache: false
       - run: node --test tests/ci/changes.test.mjs
       - id: changes
         env:
@@ -77,6 +88,13 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           CI_FULL_CHECKS: ${{ inputs.full-checks || false }}
         run: node .github/scripts/ci-changes.mjs
+      - name: Cache npm packages
+        if: ${{ steps.changes.outputs.dependencies == 'true' }}
+        uses: actions/cache@v6.1.0
+        with:
+          path: ${{ env.NPM_CONFIG_CACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-npm-${{ hashFiles('.node-version') }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-npm-${{ hashFiles('.node-version') }}-
       - if: ${{ steps.changes.outputs.dependencies == 'true' }}
         run: npm ci --no-audit --no-fund
       - if: ${{ steps.changes.outputs.dependencies == 'true' }}
@@ -95,12 +113,19 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.revision || github.sha }}
+      - name: Cache actionlint archive
+        uses: actions/cache@v6.1.0
+        with:
+          path: .tmp/actionlint/actionlint_1.7.12_windows_amd64.zip
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9
       - name: Install checksum-pinned actionlint
         run: |
           New-Item -ItemType Directory -Force .tmp/actionlint | Out-Null
           $archive = '.tmp/actionlint/actionlint_1.7.12_windows_amd64.zip'
-          curl.exe --fail --silent --show-error --location --retry 3 --retry-all-errors --connect-timeout 30 --max-time 120 --proto '=https' https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_amd64.zip --output $archive
-          if ($LASTEXITCODE -ne 0) { throw 'actionlint download failed.' }
+          if (-not (Test-Path $archive)) {
+            curl.exe --fail --silent --show-error --location --retry 3 --retry-all-errors --connect-timeout 30 --max-time 120 --proto '=https' https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_amd64.zip --output $archive
+            if ($LASTEXITCODE -ne 0) { throw 'actionlint download failed.' }
+          }
           $expected = '6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9'
           if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'actionlint checksum mismatch.' }
           Expand-Archive -Path $archive -DestinationPath .tmp/actionlint -Force
@@ -110,12 +135,13 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Workflow validation failed.' }
 
   code:
+    name: Application quality and tests
     needs: dependency-check
     if: ${{ needs.dependency-check.outputs.code == 'true' }}
     runs-on: windows-latest
     timeout-minutes: 15
     env:
-      NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache
+      NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache/code
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -124,11 +150,19 @@ jobs:
         with:
           version: '0.13.0'
           python-version: '3.14.6'
+          enable-cache: true
+          cache-suffix: ${{ github.job }}
       - run: uv sync --locked --all-extras --group dev
       - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: '.node-version'
-          cache: 'npm'
+          package-manager-cache: false
+      - name: Cache npm packages
+        uses: actions/cache@v6.1.0
+        with:
+          path: ${{ env.NPM_CONFIG_CACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-npm-${{ hashFiles('.node-version') }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-npm-${{ hashFiles('.node-version') }}-
       - run: npm ci --no-audit --no-fund
       - run: uv run --locked ruff check .
       - run: uv run --locked ruff format --check src tests
@@ -151,6 +185,7 @@ jobs:
           retention-days: 14
 
   ui:
+    name: User interface and screenshots
     needs: dependency-check
     if: ${{ needs.dependency-check.outputs.code == 'true' }}
     runs-on: windows-latest
@@ -163,6 +198,8 @@ jobs:
         with:
           version: '0.13.0'
           python-version: '3.14.6'
+          enable-cache: true
+          cache-suffix: ${{ github.job }}
       - run: uv sync --locked --all-extras --group dev
       - name: Native UI tests
         id: pytest
@@ -178,12 +215,13 @@ jobs:
           retention-days: 14
 
   skills:
+    name: Delivery tooling checks
     needs: dependency-check
     if: ${{ needs.dependency-check.outputs.skills == 'true' }}
     runs-on: windows-latest
     timeout-minutes: 10
     env:
-      NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache
+      NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache/skills
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -192,6 +230,8 @@ jobs:
         with:
           version: '0.13.0'
           python-version: '3.14.6'
+          enable-cache: true
+          cache-suffix: ${{ github.job }}
       - run: uv sync --locked --all-extras --group dev
       - run: uv run --locked ruff check .agents/skills/github-delivery
       - run: uv run --locked ruff format --check .agents/skills/github-delivery
@@ -212,19 +252,27 @@ jobs:
         uses: actions/setup-node@v7.1.0
         with:
           node-version-file: '.node-version'
-          cache: 'npm'
+          package-manager-cache: false
+      - name: Cache npm packages
+        if: ${{ needs.dependency-check.outputs.code != 'true' && needs.dependency-check.outputs.documentation != 'true' }}
+        uses: actions/cache@v6.1.0
+        with:
+          path: ${{ env.NPM_CONFIG_CACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-npm-${{ hashFiles('.node-version') }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-npm-${{ hashFiles('.node-version') }}-
       - if: ${{ needs.dependency-check.outputs.code != 'true' && needs.dependency-check.outputs.documentation != 'true' }}
         run: npm ci --no-audit --no-fund
       - if: ${{ needs.dependency-check.outputs.code != 'true' && needs.dependency-check.outputs.documentation != 'true' }}
         run: npm run spellcheck
 
   documentation:
+    name: Documentation and links
     needs: dependency-check
     if: ${{ needs.dependency-check.outputs.documentation == 'true' }}
     runs-on: windows-latest
     timeout-minutes: 5
     env:
-      NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache
+      NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache/documentation
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -232,7 +280,13 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: '.node-version'
-          cache: 'npm'
+          package-manager-cache: false
+      - name: Cache npm packages
+        uses: actions/cache@v6.1.0
+        with:
+          path: ${{ env.NPM_CONFIG_CACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-npm-${{ hashFiles('.node-version') }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-npm-${{ hashFiles('.node-version') }}-
       - run: npm ci --no-audit --no-fund
       - run: npm run test:docs
 
@@ -243,7 +297,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 5
     env:
-      NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache
+      NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache/stream-deck
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -253,11 +307,19 @@ jobs:
         with:
           version: '0.13.0'
           python-version: '3.14.6'
+          enable-cache: true
+          cache-suffix: ${{ github.job }}
       - run: uv sync --locked --all-extras --group dev
       - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: '.node-version'
-          cache: 'npm'
+          package-manager-cache: false
+      - name: Cache npm packages
+        uses: actions/cache@v6.1.0
+        with:
+          path: ${{ env.NPM_CONFIG_CACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-npm-${{ hashFiles('.node-version') }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-npm-${{ hashFiles('.node-version') }}-
       - run: npm ci --no-audit --no-fund
       - run: npm run test:stream-deck
       - name: Pack tested plugin for release
@@ -303,10 +365,13 @@ jobs:
         with:
           version: '0.13.0'
           python-version: '3.14.6'
+          enable-cache: true
+          cache-suffix: ${{ github.job }}
       - run: uv sync --locked --all-extras --group dev
       - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: '.node-version'
+          package-manager-cache: false
       - name: Native application/plugin interoperability
         id: pytest
         run: uv run --locked pytest tests/integration/stream_deck -ra --durations=20 --junitxml=.tmp/test-results/stream-deck-integration.xml
@@ -321,6 +386,7 @@ jobs:
           retention-days: 14
 
   posix:
+    name: Linux and macOS packages
     needs: dependency-check
     if: ${{ needs.dependency-check.outputs.posix == 'true' }}
     uses: ./.github/workflows/posix-packages.yml
@@ -329,6 +395,8 @@ jobs:
       upload-packages: ${{ inputs.upload-packages || false }}
 
   check:
+    # Stable required check-run name used by branch protection and delivery tooling.
+    name: check
     needs: [dependency-check, code, ui, documentation, skills, gitleaks, actionlint, posix, stream-deck, stream-deck-integration]
     if: ${{ always() }}
     runs-on: windows-latest

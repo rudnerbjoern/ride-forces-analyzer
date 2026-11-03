@@ -41,6 +41,8 @@ jobs:
         with:
           version: '0.13.0'
           python-version: '3.14.6'
+          enable-cache: true
+          cache-suffix: ${{ github.job }}
       - run: uv sync --locked --all-extras --group dev
       - name: Resolve release commit
         id: revision
@@ -97,6 +99,8 @@ jobs:
         with:
           version: '0.13.0'
           python-version: '3.14.6'
+          enable-cache: true
+          cache-suffix: ${{ github.job }}
       - run: uv sync --locked --all-extras --group dev --group build
       - name: Build release executables and both ZIP variants
         id: build

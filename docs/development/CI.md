@@ -8,6 +8,18 @@ Development checks remain on Windows. The reusable
 builds and executes Linux x64 and macOS arm64/x64 packages on their own runners.
 `posix` runs only for manual full CI and release calls; PRs skip native package
 jobs. The final `check` gate requires every selected target to succeed.
+Jobs have readable display names; the final check-run name remains `check` for
+branch protection and the delivery helper. Technical job IDs and selection outputs
+remain stable.
+
+Dependency caches are isolated per job. Every Python setup explicitly enables uv
+caching with `github.job` as its suffix; native matrix builds also include their
+target. npm downloads use `actions/cache` keys containing OS, architecture, job,
+Node-version input and lockfile hash. Restore prefixes remain within that job and
+Node version; setup-node's additional automatic npm cache is disabled.
+Gitleaks/actionlint cache only their pinned download archives and always verify
+the SHA-256 before extraction. Test reports, recordings and user data are never
+cached. Jobs without dependency/tool installation need no dependency cache.
 Each target has a 30-minute budget, uses locked dependencies, tests native platform
 contracts and executes the extracted frozen app with a real CPU encode. Linux uses
 Xvfb; macOS verifies app signatures. Manual CI builds and verifies packages without
