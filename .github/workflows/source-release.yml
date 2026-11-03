@@ -21,14 +21,17 @@ jobs:
       full-checks: true
       upload-packages: true
       revision: ${{ needs.source.outputs.commit }}
+      reuse-application-checks: ${{ needs.source.outputs.reuse-application-checks == 'true' }}
   source:
     permissions:
       contents: read
       pull-requests: read
+      actions: read
     outputs:
       prerelease: ${{ steps.policy.outputs.prerelease }}
       version: ${{ steps.policy.outputs.version }}
       commit: ${{ steps.revision.outputs.commit }}
+      reuse-application-checks: ${{ steps.policy.outputs.reuse-application-checks }}
     runs-on: windows-latest
     timeout-minutes: 10
     steps:

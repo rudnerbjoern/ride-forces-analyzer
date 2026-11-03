@@ -22,8 +22,11 @@ policy, package construction and publication.
   three numeric components, optionally followed by an `a`, `b` or `rc` number.
 - The tag, resolved release SHA and source checkout must identify the same commit. The commit must
   be contained in `origin/main` and associated with a merged PR targeting this
-  repository's `main`. Full CI, including mandatory Gitleaks history scanning,
-  must pass for that same revision.
+  repository's `main`. Release CI, including mandatory Gitleaks history scanning,
+  must pass. Only application/UI checks may reuse green merged-PR evidence for
+  identical tested content, workflow revision and Windows runner image under the
+  [CI reuse contract](CI.md#routing-and-required-gate); missing evidence triggers
+  fresh checks. Native builds and package self-tests always run for the release.
 - Stable releases use plain numeric versions and are published as the latest release.
 - Paid code signing and macOS notarization are not release gates; the
   [distribution constraints](../architecture/02_architecture_constraints.md#distribution-constraints)

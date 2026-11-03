@@ -61,7 +61,10 @@ required modules; users do not install Python.
 
 PR CI selects Windows checks by changed scope. Native Linux/macOS package builds
 and execution checks run in manual full CI and release calls, which validate the
-tagged revision before publication. Local acceptance and explicit owner delivery
+tagged revision before publication. Release application/UI checks can reuse green
+merged-PR evidence only for identical tested content, workflow and runner image;
+missing evidence runs fresh checks. Package builds/runtime checks remain mandatory.
+Local acceptance and explicit owner delivery
 authorization remain separate from CI.
 [CI routing](../development/CI.md) and [release policy](../development/RELEASE.md)
 own exact gates.

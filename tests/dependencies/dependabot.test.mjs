@@ -257,7 +257,10 @@ test("Source releases publish only reviewed tag revisions after quality and pack
   assert.equal(workflow.concurrency["cancel-in-progress"], false);
   assert.equal(workflow.jobs.source["timeout-minutes"], 10);
   assert.deepEqual(workflow.jobs.quality, { needs: "source", uses: "./.github/workflows/ci.yml",
-    with: { "full-checks": true, "upload-packages": true, revision: "${{ needs.source.outputs.commit }}" } });
+    with: { "full-checks": true, "upload-packages": true, revision: "${{ needs.source.outputs.commit }}",
+      "reuse-application-checks": "${{ needs.source.outputs.reuse-application-checks == 'true' }}" } });
+  assert.equal(workflow.jobs.source.permissions.actions, "read");
+  assert.equal(workflow.jobs.source.outputs["reuse-application-checks"], "${{ steps.policy.outputs.reuse-application-checks }}");
   assert.equal(workflow.jobs.source.needs, undefined);
   assert.equal(workflow.jobs.source.steps[0].with.ref, "${{ inputs.tag || github.sha }}");
   assert.equal(workflow.jobs.source.outputs.commit, "${{ steps.revision.outputs.commit }}");
@@ -438,6 +441,7 @@ test("Dependabot PRs use the existing read-only PR CI, with no automatic merge w
   assert.deepEqual(workflow.on, { pull_request: { branches: ["main"] }, workflow_dispatch: null,
     workflow_call: { inputs: { "full-checks": { type: "boolean", required: true },
       "upload-packages": { type: "boolean", required: false, default: false },
+      "reuse-application-checks": { type: "boolean", required: false, default: false },
       revision: { type: "string", required: false } } } });
   for (const job of Object.values(workflow.jobs)) {
     for (const step of (job.steps ?? []).filter(step => step.uses?.startsWith("actions/checkout@"))) {
@@ -446,6 +450,17 @@ test("Dependabot PRs use the existing read-only PR CI, with no automatic merge w
   }
   assert.deepEqual(workflow.permissions, { contents: "read" });
   assert.ok(!/pull_request_target|--auto|enable_auto_merge|merge_pull_request/.test(workflowSource));
+  for (const name of ["code", "ui"]) {
+    const marker = workflow.jobs[name].steps.find(step => step.name === "Identify tested content");
+    assert.ok(marker, `${name} must identify the actually tested checkout`);
+    const result = spawnSync("powershell.exe", ["-NoProfile", "-Command", marker.run], {
+      env: windowsPowerShellEnvironment, encoding: "utf8", timeout: 30000,
+    });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const tree = spawnSync("git", ["rev-parse", "HEAD^{tree}"], { encoding: "utf8" });
+    assert.equal(tree.status, 0, tree.stderr);
+    assert.equal(result.stdout.trim(), `Tested tree: ${tree.stdout.trim()}`);
+  }
   const manifests = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8"));
   // Keep patched override floors while allowing newer stable proposals.
   for (const [value, minimum] of [

@@ -156,6 +156,14 @@ test("Manual CI selects every suite without PR revisions; unsupported events fai
   assert.throws(() => selectChecks("pull_request"), /full commit SHA/);
 });
 
+test("Verified release reuse skips only application/UI suites; normal full checks remain full", () => {
+  const all = selected("code", "documentation", "skills", "workflows", "dependencies", "posix", "stream-deck", "stream-deck-integration");
+  assert.deepEqual(selectChecks("push", undefined, undefined, "missing-directory", true, true),
+    { ...all, code: false });
+  assert.deepEqual(selectChecks("workflow_dispatch", undefined, undefined, "missing-directory", false, true), all);
+  assert.deepEqual(selectChecks("pull_request", undefined, undefined, "missing-directory", true, true), all);
+});
+
 test("Missing or option-like revisions fail instead of silently skipping tests", () => {
   for (const revision of [undefined, "", "HEAD", "--output=file", "a".repeat(39)]) {
     assert.throws(() => changedPaths(revision, "a".repeat(40)), /full commit SHA/);

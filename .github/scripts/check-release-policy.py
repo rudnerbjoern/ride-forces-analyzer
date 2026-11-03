@@ -85,6 +85,96 @@ def verify_merged_prs(value: object, repository: str) -> None:
     raise ValueError("Release commit requires an associated merged PR targeting main")
 
 
+def reusable_application_checks(root: Path, commit: str, repository: str, prs: object) -> bool:
+    """Reuse green PR application/UI jobs only for identical content and runner images.
+
+    Args:
+        root: Checkout containing the release and merged PR commits.
+        commit: Validated release commit SHA.
+        repository: GitHub owner/repository identity.
+        prs: Associated pull requests returned by the release-policy lookup.
+
+    Returns:
+        Whether both expensive application jobs have reusable hosted evidence.
+        Missing, changed or unavailable evidence requires fresh checks.
+    """
+    image = os.environ.get("ImageVersion")
+    if not image or os.environ.get("GITHUB_WORKFLOW_SHA") != commit or not isinstance(prs, list):
+        return False
+    try:
+        pr = next(pr for pr in prs if isinstance(pr, dict) and pr.get("merged_at"))
+        verify_merged_prs([pr], repository)
+        head = pr["head"]["sha"]
+        if not isinstance(head, str) or not re.fullmatch(r"[a-f0-9]{40}", head):
+            return False
+        trees = subprocess.check_output(
+            ["git", "rev-parse", f"{commit}^{{tree}}", f"{head}^{{tree}}"],
+            cwd=root,
+            text=True,
+            timeout=30,
+        ).splitlines()
+        if len(trees) != 2 or trees[0] != trees[1]:
+            return False
+        prefix = f"repos/{repository}/actions"
+        runs = json.loads(
+            subprocess.check_output(
+                [
+                    "gh",
+                    "api",
+                    f"{prefix}/workflows/ci.yml/runs?event=pull_request&head_sha={head}&per_page=1",
+                ],
+                text=True,
+                encoding="utf-8",
+                timeout=60,
+            ),
+        )["workflow_runs"]
+        if not runs:
+            return False
+        run = runs[0]
+        if (
+            run["head_sha"] != head
+            or run["event"] != "pull_request"
+            or run["path"] != ".github/workflows/ci.yml"
+            or run["head_repository"]["full_name"] != repository
+            or run["status"] != "completed"
+            or run["conclusion"] != "success"
+        ):
+            return False
+        jobs = json.loads(
+            subprocess.check_output(
+                ["gh", "api", f"{prefix}/runs/{run['id']}/jobs?filter=latest&per_page=100"],
+                text=True,
+                encoding="utf-8",
+                timeout=60,
+            ),
+        )["jobs"]
+        for name in ("check", "Application quality and tests", "User interface and screenshots"):
+            matches = [job for job in jobs if job["name"] == name]
+            if (
+                len(matches) != 1
+                or matches[0]["status"] != "completed"
+                or matches[0]["conclusion"] != "success"
+            ):
+                return False
+            if name == "check":
+                continue
+            log = subprocess.check_output(
+                ["gh", "api", f"{prefix}/jobs/{matches[0]['id']}/logs"],
+                text=True,
+                encoding="utf-8",
+                timeout=60,
+            )
+            runner = re.search(r"\bImage: windows-\S+\r?\n[^\n]*\bVersion: ([0-9.]+)", log)
+            tested = re.findall(r"Tested tree: ([a-f0-9]{40})", log)
+            if runner is None or runner[1] != image or tested != [trees[0]]:
+                return False
+        print(f"Reuse application/UI checks from PR #{pr['number']}, CI run {run['id']} ({head})")
+        return True
+    except OSError, ValueError, KeyError, TypeError, StopIteration, subprocess.SubprocessError:
+        print("PR application/UI evidence unavailable; run full application checks")
+        return False
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tag", required=True)
@@ -111,7 +201,11 @@ if __name__ == "__main__":
         encoding="utf-8",
         timeout=60,
     )
-    verify_merged_prs(json.loads(response), args.repository)
+    prs = json.loads(response)
+    verify_merged_prs(prs, args.repository)
+    reuse = reusable_application_checks(root, args.sha, args.repository, prs)
+    if not reuse:
+        print("Run fresh application/UI checks: no complete matching PR evidence")
     directory = root / ".tmp/release"
     directory.mkdir(parents=True, exist_ok=True)
     notes = (root / "docs/development/RELEASE_NOTES.md").read_text(encoding="utf-8")
@@ -127,4 +221,5 @@ if __name__ == "__main__":
     with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
         output.write(f"prerelease={str(preview).lower()}\n")
         output.write(f"version={version}\n")
+        output.write(f"reuse-application-checks={str(reuse).lower()}\n")
     print("Release policy passed: version, tag SHA, main ancestry and merged PR")
