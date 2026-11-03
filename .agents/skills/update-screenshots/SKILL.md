@@ -66,6 +66,8 @@ image set as refreshed. Do not use incomplete output as a reference.
   images change. Follow the [central image guide](../../../docs/images/README.md)
   for reproduction settings, licensing and attribution.
 - For the Stream Deck examples, review the [user guide](../../../docs/user/STREAM_DECK.md):
+  the README Playback close-up (`stream-deck-overview.png`) must match the Plus
+  Playback panel and retain its software-illustration caption;
   native menu/function symbols, every Plus/Neo 2×4 profile page, aligned Plus touch fields/dials,
   the four Mobile 2×3 pages with Back and no Home, both Neo Touch Points,
   InfoBar state, visible state badges, readable/elided fields and the

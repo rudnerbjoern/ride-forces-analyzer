@@ -120,6 +120,28 @@ test("Secret scanning is mandatory, checksum-pinned and cannot silently skip the
   assert.equal(workflow.jobs.check.steps[0].env.GITLEAKS_RESULT, "${{ needs.gitleaks.result }}");
 });
 
+test("release quality retains the tested plugin and checksum without rebuilding or publishing", async () => {
+  const workflow = parseDocument(await readFile(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8")).toJS();
+  const plugin = workflow.jobs["stream-deck"];
+  const pack = plugin.steps.find(step => step.name === "Pack tested plugin for release");
+  assert.equal(pack.if, "${{ inputs.upload-packages == true }}");
+  assert.match(pack.run, /npm run pack:built-plugin --workspace plugins\/stream-deck/);
+  assert.ok(!pack.run.includes("build:plugin"));
+  assert.match(pack.run, /Get-FileHash/);
+  assert.match(pack.run, /PLUGIN-SHA256SUMS\.txt/);
+  const uploads = plugin.steps.filter(step => step.uses?.startsWith("actions/upload-artifact@"));
+  assert.deepEqual(uploads.map(step => step.with.path), [
+    ".tmp/stream-deck-package/Ride-Forces-Analyzer.streamDeckPlugin",
+    ".tmp/stream-deck-package/PLUGIN-SHA256SUMS.txt",
+  ]);
+  for (const step of uploads) {
+    assert.equal(step.if, pack.if);
+    assert.equal(step.with.archive, false);
+    assert.equal(step.with["if-no-files-found"], "error");
+  }
+  assert.ok(!plugin.steps.some(step => step.run?.includes("gh release")));
+});
+
 test("Source releases publish only reviewed tag revisions after quality and package checks", async () => {
   const source = await readFile(new URL("../../.github/workflows/source-release.yml", import.meta.url), "utf8");
   const workflow = parseDocument(source).toJS();
@@ -168,7 +190,8 @@ test("Source releases publish only reviewed tag revisions after quality and pack
   assert.deepEqual(downloads.map(step => step.with.name), ["release-notes.md",
     "${{ needs.windows.outputs.exe }}", "${{ needs.windows.outputs.standard }}", "${{ needs.windows.outputs.complete }}",
     "WINDOWS-SHA256SUMS.txt",
-    "Ride-Forces-Analyzer-${{ needs.source.outputs.version }}-linux-x64.tar.gz", "LINUX-X64-SHA256SUMS.txt",
+    "Ride-Forces-Analyzer-${{ needs.source.outputs.version }}-linux-x64.tar.gz",
+    "Ride-Forces-Analyzer.streamDeckPlugin", "PLUGIN-SHA256SUMS.txt", "LINUX-X64-SHA256SUMS.txt",
     "Ride-Forces-Analyzer-${{ needs.source.outputs.version }}-macos-arm64.zip", "MACOS-ARM64-SHA256SUMS.txt",
     "Ride-Forces-Analyzer-${{ needs.source.outputs.version }}-macos-x64.zip", "MACOS-X64-SHA256SUMS.txt"]);
   assert.ok(!source.includes("corresponding-sources.zip"));
@@ -223,6 +246,7 @@ ConvertTo-Json -Compress -InputObject $global:recorded
       assert.deepEqual(args.filter(arg => arg.startsWith(".tmp/release/")), [
         ".tmp/release/app.exe", ".tmp/release/standard.zip", ".tmp/release/complete.zip",
         ".tmp/release/WINDOWS-SHA256SUMS.txt",
+        ".tmp/release/Ride-Forces-Analyzer.streamDeckPlugin", ".tmp/release/PLUGIN-SHA256SUMS.txt",
         ".tmp/release/Ride-Forces-Analyzer-0.1.0-linux-x64.tar.gz", ".tmp/release/LINUX-X64-SHA256SUMS.txt",
         ".tmp/release/Ride-Forces-Analyzer-0.1.0-macos-arm64.zip", ".tmp/release/MACOS-ARM64-SHA256SUMS.txt",
         ".tmp/release/Ride-Forces-Analyzer-0.1.0-macos-x64.zip", ".tmp/release/MACOS-X64-SHA256SUMS.txt",
@@ -259,6 +283,9 @@ test("Actual release artifact verifier rejects modified downloads on every platf
       await writeFile(path.join(target, name), "synthetic binary");
       await writeFile(path.join(target, `${platform.toUpperCase()}-SHA256SUMS.txt`), `${hash("synthetic binary")}  ${name}\n`);
     }
+    const plugin = "Ride-Forces-Analyzer.streamDeckPlugin";
+    await writeFile(path.join(target, plugin), "synthetic plugin");
+    await writeFile(path.join(target, "PLUGIN-SHA256SUMS.txt"), `${hash("synthetic plugin")}  ${plugin}\n`);
     const script = path.join(directory, "verify.ps1");
     await writeFile(script, `$ErrorActionPreference = 'Stop'\nfunction git {\n $global:LASTEXITCODE = 0\n if ($args[0] -eq 'rev-parse') { $env:RELEASE_SHA }\n}\n${body}\nWrite-Output 'Artifact verification passed'\n`);
     const run = () => spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script], {
@@ -284,6 +311,17 @@ test("Actual release artifact verifier rejects modified downloads on every platf
       assert.match(changedNative.stderr, /Native artifact checksum mismatch/);
       await writeFile(path.join(target, name), "synthetic binary");
     }
+    await writeFile(path.join(target, plugin), "tampered");
+    const changedPlugin = run();
+    assert.ifError(changedPlugin.error);
+    assert.notEqual(changedPlugin.status, 0);
+    assert.match(changedPlugin.stderr, /Plugin artifact checksum mismatch/);
+    await writeFile(path.join(target, plugin), "synthetic plugin");
+    await writeFile(path.join(target, "PLUGIN-SHA256SUMS.txt"), `${hash("synthetic plugin")}  wrong.streamDeckPlugin\n`);
+    const wrongPlugin = run();
+    assert.ifError(wrongPlugin.error);
+    assert.notEqual(wrongPlugin.status, 0);
+    assert.match(wrongPlugin.stderr, /Invalid plugin checksum inventory/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

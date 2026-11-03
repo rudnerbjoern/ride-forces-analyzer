@@ -24,7 +24,7 @@ export function syncVersion(directory = root) {
   writeFileSync(path.join(directory, manifestPath), JSON.stringify(manifest, null, 2) + "\n");
 }
 
-/** Reject plugin/package input changes without a higher independent version. */
+/** Keep a development version stable and require an increase over the last release. */
 export function verifyVersion(directory = root) {
   const git = (...args) => execFileSync("git", args, { cwd: directory, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
   const version = json(path.join(directory, packagePath)).version;
@@ -34,19 +34,25 @@ export function verifyVersion(directory = root) {
   if (git("rev-parse", "--is-shallow-repository") === "true") throw new Error("Plugin version checks require full Git history (fetch-depth: 0)");
   const dirty = git("diff", "--name-only", "HEAD", "--", ...inputs)
     || git("ls-files", "--others", "--exclude-standard", "--", ...inputs);
-  const commit = dirty ? "HEAD" : git("log", "-1", "--format=%H", "--", ...inputs);
-  if (!commit) return native;
-  const parents = git("rev-list", "--parents", "-n", "1", commit).split(" ");
-  if (!dirty && parents.length === 1) return native;
-  const reference = dirty ? "HEAD" : parents[1];
-  const files = git("ls-tree", "--name-only", reference, "--", packagePath);
+  const releaseTag = tag => /^v\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?$/.test(tag);
+  const tagged = git("tag", "--points-at", "HEAD", "--list", "v[0-9]*").split("\n").some(releaseTag);
+  // A clean tagged candidate must still be checked against the preceding release.
+  const reference = tagged && !dirty ? git("rev-list", "--parents", "-n", "1", "HEAD").split(" ")[1] : "HEAD";
+  if (!reference) return native;
+  const releases = git("tag", "--merged", reference, "--list", "v[0-9]*").split("\n").filter(releaseTag);
+  if (!releases.length) return native;
+  const release = git("describe", "--tags", "--abbrev=0", ...releases.flatMap(tag => ["--match", tag]), reference);
+  const files = git("ls-tree", "--name-only", release, "--", packagePath);
   if (!files) return native; // Initial plugin addition has no earlier version.
-  const previous = JSON.parse(git("show", `${reference}:${packagePath}`)).version;
+  const changed = git("diff", "--name-only", release, "--", ...inputs)
+    || git("ls-files", "--others", "--exclude-standard", "--", ...inputs);
+  if (!changed) return native;
+  const previous = JSON.parse(git("show", `${release}:${packagePath}`)).version;
   const currentParts = nativeVersion(version).split(".").map(Number);
   const previousParts = nativeVersion(previous).split(".").map(Number);
   const difference = currentParts.findIndex((part, index) => part !== previousParts[index]);
   if (difference < 0 || currentParts[difference] < previousParts[difference]) {
-    throw new Error(`Plugin code/data changed without a version increase (${previous} -> ${version}); run npm version patch --workspace plugins/stream-deck --no-git-tag-version`);
+    throw new Error(`Plugin code/data changed since release ${release} without a version increase (${previous} -> ${version}); run npm version patch --workspace plugins/stream-deck --no-git-tag-version`);
   }
   return native;
 }

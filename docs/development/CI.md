@@ -78,6 +78,8 @@ it does not guarantee lower total runner minutes.
   application and plugin checks.
 - Plugin tests build the self-contained local artifact, validate it with the official
   offline CLI and exercise SDK/app WebSocket hosts; they need no installed device software.
+  Release calls additionally pack the tested folder without rebuilding and retain
+  the `.streamDeckPlugin` and `PLUGIN-SHA256SUMS.txt` for verified publication.
 - Commit-policy Markdown selects docs/skills. Code-only/skill-only/plugin-only runs supply
   CSpell; standalone dependency-contract runs also supply CSpell. Mixed runs with
   docs use its CSpell check.
@@ -95,9 +97,10 @@ it does not guarantee lower total runner minutes.
 - Keep `check` required in branch protection. Failed/cancelled detection or selected
   jobs, missing/unknown/inconsistent results block merge. Do not use workflow-level
   path skips that leave required statuses absent; see [job conditions](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions).
-- Plugin builds enforce the independent plugin version against Git input changes
-  and verify package/manifest/lock consistency. The plugin job fetches full history
-  so docs-only follow-up commits cannot hide an omitted version increase.
+- Plugin builds verify package/manifest/lock consistency and compare changed inputs
+  with the preceding reachable release tag. Development commits reuse one upcoming
+  version; a changed plugin must exceed its version at that release. Full history
+  and tags prevent docs-only follow-ups or a newly tagged HEAD from hiding a missed increase.
   See [plugin versioning](../../plugins/stream-deck/README.md#independent-plugin-version).
 
 ## Required secret scanning
@@ -163,7 +166,7 @@ the reusable quality stage also builds and checks the native Linux/macOS artifac
 
 - Failed/skipped/cancelled quality blocks Windows preparation/publication.
   This includes any missing or failed native package target. Publication downloads
-  all six application artifacts and all four platform checksum files from the
+  all six application artifacts, the Stream Deck plugin and all five checksum files from the
   same run and verifies each inventory before uploading release assets.
   Missing provider sources are documented/reported; missing/modified catalog-listed
   archives fail verification.

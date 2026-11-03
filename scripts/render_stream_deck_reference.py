@@ -369,6 +369,38 @@ def _render_mobile(output: Path, pages: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _render_overview(output: Path, pages: list[dict[str, Any]]) -> dict[str, Any]:
+    """Create a readable README close-up of the actual Plus Playback page."""
+    index = next(index for index, page in enumerate(pages) if page["name"] == "Playback")
+    source = QImage(str(output / IMAGE))
+    panel = source.copy(28 + (index % 2) * 794, 100 + (index // 2) * 490, 770, 470)
+    canvas = QImage(1040, 730, QImage.Format.Format_ARGB32)
+    canvas.fill(QColor("#0b1422"))
+    painter = QPainter(canvas)
+    painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+    try:
+        _text(
+            painter,
+            QRectF(28, 14, 984, 38),
+            "Stream Deck + · Playback at your fingertips",
+            24,
+            weight=600,
+        )
+        _text(
+            painter,
+            QRectF(28, 56, 984, 26),
+            "Software illustration · fixed example values · physical operation remains unverified",
+            color="#9fb6cf",
+        )
+        painter.drawImage(QRectF(28, 100, 984, 600), panel)
+    finally:
+        painter.end()
+    filename = "stream-deck-overview.png"
+    if not canvas.save(str(output / filename)):
+        raise OSError("Cannot save the Stream Deck overview image")
+    return {"image": filename, "size": [1040, 730], "device": "plus", "page": "Playback"}
+
+
 def render_reference(output: Path) -> None:
     """Write Plus/Neo illustrations and the limited Mobile preview and their fixed example-value manifest.
 
@@ -408,13 +440,14 @@ def render_reference(output: Path) -> None:
     }
     manifest["neo"] = _render_neo(output, data["neo"])
     manifest["mobile"] = _render_mobile(output, data["mobile"])
+    manifest["overview"] = _render_overview(output, data["plus"])
     (output / MANIFEST).write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
         newline="\n",
     )
     print(
-        f"Rendered {IMAGE} and stream-deck-neo-controls.png and stream-deck-mobile-controls.png: fixed software examples, no device or application connection",
+        f"Rendered {IMAGE}, stream-deck-neo-controls.png, stream-deck-mobile-controls.png and stream-deck-overview.png: fixed software examples, no device or application connection",
     )
 
 

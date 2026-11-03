@@ -158,7 +158,8 @@ The [local layout](../../_layouts/default.html) adds section navigation and Wind
 EXE/Complete ZIP buttons. At build time it selects the most recent published
 release containing both Windows assets and adds
 Linux/macOS links when their matching assets are present. Unpublished platform
-packages never produce broken buttons. Without
+packages never produce broken buttons. The optional Stream Deck download appears
+only when that same release contains its `.streamDeckPlugin` archive. Without
 matching metadata it links to the release list. A newly published release appears
 in these buttons after the next Pages build. The
 [stylesheet](../../assets/css/style.scss) retains Midnight's base styling and widens

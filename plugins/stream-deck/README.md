@@ -17,7 +17,9 @@ protocol. `plugins/stream-deck/package.json` is authoritative; the source/built
 Elgato manifests use the same version with a fourth `.0` component. For example,
 package `0.2.0` becomes Elgato `0.2.0.0`.
 
-Before building a changed plugin, increment its version from the repository root:
+Keep one upcoming plugin version throughout development, including multiple
+commits and builds. After a release, increment it once when preparing the next
+changed plugin, from the repository root:
 
 ```powershell
 npm version patch --workspace plugins/stream-deck --no-git-tag-version
@@ -28,13 +30,16 @@ Use `minor` or `major` instead for the corresponding change. The npm lifecycle
 hook synchronizes the manifest; npm maintains the workspace lock metadata. This
 command creates no Git commit or tag. Repeated builds do not change versions.
 
-Every build checks manifest/lock consistency and rejects a version that did not
-increase for plugin code/data changes. This includes source assets, device/profile
-and build definitions, plus shared Node package/lock/version inputs and the license.
-Plugin documentation/tests alone do not require a bump. Local changes compare
-against HEAD; clean builds check the latest relevant commit against its parent,
-so a later docs-only commit cannot hide a missed increase. Full Git history is
-required; the existing plugin CI job checks this through its normal build/tests.
+Every build checks manifest/lock consistency. Version progression compares code/data
+against the preceding reachable app release tag (`vMAJOR.MINOR.PATCH`, including
+the app's alpha/beta/release-candidate suffixes), rather than individual commits.
+Changed source assets, device/profile/build definitions, shared Node inputs or the
+license require a version higher than at that release. Further development commits
+can reuse that upcoming version. Documentation/tests alone and app-only releases
+need no bump. Before the first release containing the plugin, no earlier plugin
+version is imposed. Clean tagged release builds compare against the preceding tag;
+tagging HEAD cannot conceal an omitted increase. Full Git history and release tags
+are required; no GitHub request or additional plugin tag is needed.
 
 ## Local build and installation
 
@@ -83,12 +88,18 @@ From the repository root, build and pack with the official Elgato CLI:
 npm run pack:plugin --workspace plugins/stream-deck
 ```
 
-The command validates offline and writes
-`.tmp/stream-deck-package/io.github.rudnerbjoern.ride-forces-analyzer.streamDeckPlugin`.
+The command builds, validates offline and writes
+`.tmp/stream-deck-package/Ride-Forces-Analyzer.streamDeckPlugin`.
+The official CLI's output is renamed; the internal plugin ID and `.sdPlugin`
+folder name remain unchanged.
 It includes the self-contained runtime, icons/layouts, license notices and all three
 profiles. It neither installs the plugin nor changes existing profiles. An existing
 archive is preserved by default; append `-- --force` only to replace it deliberately.
 The archive version comes from the independent plugin version, not the app version.
+After tests have already built the artifact, `npm run pack:built-plugin --workspace
+plugins/stream-deck` packs that tested folder without rebuilding. Release CI uses
+this path and retains the archive with `PLUGIN-SHA256SUMS.txt`; the publication job
+verifies both before attaching them to the authorized release.
 
 For native installation, double-click the archive with Stream Deck installed and
 confirm its installation prompt. Verify the installed version and actual SDK/app
@@ -100,7 +111,8 @@ until a deliberate switch to archive installation is intended.
 Archive contents and byte integrity are checked automatically on Windows. Native
 archive installation/update and macOS execution remain unverified. The file is a
 prepared GitHub release asset; uploading/publishing it requires separate owner
-authorization. No Marketplace publication or automatic release upload is configured.
+authorization. The existing tag-release workflow handles that upload after its
+quality/checksum gates. No Marketplace publication is configured.
 
 ## macOS: enabled, unverified
 

@@ -36,6 +36,14 @@ def test_reference_cli_is_reproducible_from_fixed_contract_examples() -> None:
         for name, digest in manifest["inputs"].items():
             assert sha256((ROOT / name).read_bytes()).hexdigest() == digest
         plus = manifest["plus"]
+        assert manifest["overview"] == {
+            "image": "stream-deck-overview.png",
+            "size": [1040, 730],
+            "device": "plus",
+            "page": "Playback",
+        }
+        with Image.open(output / manifest["overview"]["image"]) as image:
+            assert list(image.size) == manifest["overview"]["size"]
         assert plus["image"] == "stream-deck-plus-controls.png"
         assert plus["size"] == manifest["size"]
         pages = {page["name"]: page for page in plus["pages"]}

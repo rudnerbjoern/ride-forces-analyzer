@@ -194,6 +194,18 @@ jobs:
           name: Ride-Forces-Analyzer-${{ needs.source.outputs.version }}-linux-x64.tar.gz
           path: .tmp/release
           skip-decompress: true
+      - name: Download verified Stream Deck plugin
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: Ride-Forces-Analyzer.streamDeckPlugin
+          path: .tmp/release
+          skip-decompress: true
+      - name: Download plugin checksum
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: PLUGIN-SHA256SUMS.txt
+          path: .tmp/release
+          skip-decompress: true
       - name: Download Linux checksums
         uses: actions/download-artifact@v8.0.2
         with:
@@ -251,6 +263,14 @@ jobs:
             $actual = (Get-FileHash (Join-Path '.tmp/release' $name) -Algorithm SHA256).Hash.ToLowerInvariant()
             if ($actual -ne $expectedHash) { throw "Native artifact checksum mismatch for $target." }
           }
+          $plugin = 'Ride-Forces-Analyzer.streamDeckPlugin'
+          $line = (Get-Content .tmp/release/PLUGIN-SHA256SUMS.txt -Raw).Trim()
+          if ($line -notmatch '^([a-f0-9]{64})  ([A-Za-z0-9][A-Za-z0-9._-]*)$' -or $Matches[2] -ne $plugin) {
+            throw 'Invalid plugin checksum inventory.'
+          }
+          $expectedHash = $Matches[1]
+          $actual = (Get-FileHash (Join-Path '.tmp/release' $plugin) -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expectedHash) { throw 'Plugin artifact checksum mismatch.' }
           git fetch origin "refs/tags/$env:RELEASE_TAG"
           if ($LASTEXITCODE -ne 0) { throw 'Cannot verify remote release tag.' }
           $tagCommit = git rev-parse 'FETCH_HEAD^{commit}'
@@ -263,6 +283,8 @@ jobs:
             ('.tmp/release/' + $env:WINDOWS_STANDARD),
             ('.tmp/release/' + $env:WINDOWS_COMPLETE),
             '.tmp/release/WINDOWS-SHA256SUMS.txt',
+            '.tmp/release/Ride-Forces-Analyzer.streamDeckPlugin',
+            '.tmp/release/PLUGIN-SHA256SUMS.txt',
             ".tmp/release/Ride-Forces-Analyzer-$env:RELEASE_VERSION-linux-x64.tar.gz",
             '.tmp/release/LINUX-X64-SHA256SUMS.txt',
             ".tmp/release/Ride-Forces-Analyzer-$env:RELEASE_VERSION-macos-arm64.zip",

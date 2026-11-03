@@ -282,14 +282,14 @@
     ]
   },
   "inputs": {
-    "scripts/render_stream_deck_reference.py": "7f08f52fc8706fbd02a5c5e87873a67388957bfab31e0433a6efdc32bd5414da",
+    "scripts/render_stream_deck_reference.py": "a76a1a942537ded221978d6809358371139007dfb7644141a8dbb3b2ad96b669",
     "plugins/stream-deck/tests/fixtures/protocol.json": "514fc9fc5e05cad11ffde5fd0c059f0c77fbf621df4bb64cdb3284fe7f16fb5c",
     "plugins/stream-deck/src/feedback.ts": "0329807b41968a764758dcc503d7bc32d95dfbb8363297e9576649d4bcf5dc32",
     "plugins/stream-deck/src/device-feedback.ts": "3e74610b7cefd0fe5088c3c7af2d48342884da5f352f664e31d4bee1fa1455f6",
     "plugins/stream-deck/devices/layouts/plus.json": "bc41ddb1cfbb3a9602f07673aace2942a5b3a711aeb4fc5b86b8ab5d9ed49261",
     "plugins/stream-deck/devices/layouts/neo.json": "875875d9c4eadd35ee1f1f92beeb0623fc589f317f50eecfd3eba6c05dd76abd",
     "plugins/stream-deck/scripts/build-profiles.mjs": "0f6414e26e47eef523d4bd84717a0632edd919f27e14e044660196c44c902076",
-    "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/manifest.json": "addd80d7f00a5f3e5260c91a948895f0af141bcfc62880b294d0e72c0faf7c7b",
+    "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/manifest.json": "b4f4024b64db91443fa7b73568e892d47794c3973d5667ee1a3e82228e068164",
     "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/imgs/plugin@2x.png": "53476c4916afabf61592ceec13b2c902a197d43b94d15b5f689c5dfa5004fe31"
   },
   "neo": {
@@ -1057,5 +1057,14 @@
         ]
       }
     ]
+  },
+  "overview": {
+    "image": "stream-deck-overview.png",
+    "size": [
+      1040,
+      730
+    ],
+    "device": "plus",
+    "page": "Playback"
   }
 }

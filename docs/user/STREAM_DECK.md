@@ -7,14 +7,23 @@ the target; device commands do not open a second window.
 The Plus and Neo profiles use the same colored icons and short key captions.
 The examples use the English plugin labels. The Analyzer can use its own selected
 interface language. The Windows backend and plugin software are tested; physical Plus operation
-remains unverified. Neo import and hardware operation, and macOS acceptance, remain open.
+remains unverified. Neo/Mobile import and hardware operation, native archive
+installation and macOS acceptance remain open. Requires Stream Deck **7.6+**;
+the plugin runs on the desktop, alongside Analyzer.
 
 ## Set up the controls
 
-1. Install the plugin using the current [local Windows setup](../../plugins/stream-deck/README.md#local-build-and-installation).
-   A downloadable release installer is not available yet.
-2. Open `plus.streamDeckProfile` for **Stream Deck +**, or `neo.streamDeckProfile`
-   for **Neo**, and choose the matching connected device in the import dialog.
+1. Obtain `Ride-Forces-Analyzer.streamDeckPlugin` and
+   `PLUGIN-SHA256SUMS.txt` from the same [GitHub release](https://github.com/rudnerbjoern/ride-forces-analyzer/releases)
+   when those assets are available. Compare its SHA-256 with the checksum file
+   (`Get-FileHash` on Windows, `shasum -a 256` on macOS), then double-click the
+   archive and confirm Stream Deck's installation prompt. No Python, Node
+   development installation or developer mode is needed to use a packaged plugin.
+   Until publication, use the [local Windows build](../../plugins/stream-deck/README.md#installable-archive).
+   If the plugin is already linked for development, retain that setup until you
+   deliberately switch to archive installation; both use the same plugin ID.
+2. Import the matching bundled profile as described below and select the correct
+   connected device in Stream Deck's import dialog.
    Existing profiles remain available.
    Menu graphics are embedded in the profile: reimport the updated profile to
    refresh them; restarting the plugin alone only refreshes dynamic controls.
@@ -25,6 +34,27 @@ remains unverified. Neo import and hardware operation, and macOS acceptance, rem
    empty because it depends on your installation. The port discovery file does
    not contain an executable path.
 5. Bring the intended Analyzer Explorer to the foreground and click the chart.
+
+### Find and import the device profile
+
+Profiles are included in the plugin but are **not imported automatically**. In
+Stream Deck, open **Preferences → Profiles**, select the target device and use
+**Import** to open the corresponding archive:
+
+| Device            | Profile file               | Profile name                        |
+| ----------------- | -------------------------- | ----------------------------------- |
+| Plus              | `plus.streamDeckProfile`   | Ride Forces Analyzer +              |
+| Neo               | `neo.streamDeckProfile`    | Ride Forces Analyzer Neo            |
+| Mobile (six keys) | `mobile.streamDeckProfile` | Ride Forces Analyzer Mobile Preview |
+
+The files are in the installed plugin's `profiles` subfolder:
+
+- Windows: `%APPDATA%\Elgato\StreamDeck\Plugins\io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin\profiles`
+- macOS: `~/Library/Application Support/com.elgato.StreamDeck/Plugins/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/profiles`
+
+For local builds, use `.tmp/stream-deck/...sdPlugin/profiles` in the repository
+instead. Pair Mobile with the desktop Stream Deck app before importing its profile.
+Do not replace unrelated profiles or import a Neo/Mobile profile onto Plus.
 
 Operate the **physical LCD keys, dials and touch strip**. Clicking a key in the
 Stream Deck desktop application's preview selects its configuration; it does not
@@ -37,6 +67,21 @@ JavaScript plugin and profiles are prepared for installation there. Native Mac
 installation, connection, focus handling and device operation are **unverified**.
 Use the Mac Analyzer `.app` and set **Start app** to that `.app` in Stream Deck;
 the Windows EXE/shortcut instructions above apply only to Windows.
+
+### Update or troubleshoot the connection
+
+Plugin and Analyzer versions are independent. Install the plugin archive supplied
+with the intended Analyzer release; the application update checker does not update
+the plugin. GitHub installation does not register Marketplace updates. Install a
+new archive manually and reimport its profile only when you want its changed
+assignments or menu graphics. Keep your customized profiles.
+
+If controls stay offline, check that Analyzer is running, **Enable Stream Deck**
+was saved, and the app/plugin came from a compatible release. There is no manual
+port field. If a lock badge appears, close open dialogs/dropdowns, leave text
+fields and bring the intended Explorer forward. Native menus still work offline.
+Clicking the desktop preview only edits a key; actual device input is required
+to execute it. See [locks and connection changes](#understand-locks-and-connection-changes).
 
 ## Recognize the functions and states
 
@@ -94,11 +139,11 @@ position in the visible list. Import is key **5**, directly above the Library di
 Open **Explorer → Playback**. Dials 1, 2 and 3 (left to right) are assigned;
 dial 4 is unused:
 
-| Dial         | Turn                                             | Press            | Touch-strip information                               |
-| ------------ | ------------------------------------------------ | ---------------- | ----------------------------------------------------- |
-| 1 · Position | Move through source samples; stop at the bounds. | Play/pause.      | Sample, replay time, play state and Fine/Coarse mode. |
-| 2 · View     | Zoom the time axis.                              | Reset view.      | Actual visible interval and its duration in seconds.  |
-| 3 · Speed    | Select the next supported playback speed.        | Return to 1×.    | Actual speed and play/pause state.                    |
+| Dial         | Turn                                             | Press         | Touch-strip information                               |
+| ------------ | ------------------------------------------------ | ------------- | ----------------------------------------------------- |
+| 1 · Position | Move through source samples; stop at the bounds. | Play/pause.   | Sample, replay time, play state and Fine/Coarse mode. |
+| 2 · View     | Zoom the time axis.                              | Reset view.   | Actual visible interval and its duration in seconds.  |
+| 3 · Speed    | Select the next supported playback speed.        | Return to 1×. | Actual speed and play/pause state.                    |
 
 **Fine / Coarse** switches Position, Selection and marker dials between **1** and
 **10 source samples per notch**. It starts in Fine mode, survives menu changes and never

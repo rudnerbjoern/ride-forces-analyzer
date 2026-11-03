@@ -1,13 +1,14 @@
 {
   "name": "@ride-forces-analyzer/stream-deck",
-  "version": "0.2.2",
+  "version": "0.2.0",
   "private": true,
   "description": "Stream Deck controls and confirmed application feedback for Ride Forces Analyzer",
   "type": "module",
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "build:plugin": "node scripts/build-plugin.mjs",
-    "pack:plugin": "npm run build:plugin && streamdeck pack ../../.tmp/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin --output ../../.tmp/stream-deck-package --no-update-check --no-file-list",
+    "pack:plugin": "npm run build:plugin && npm run pack:built-plugin --",
+    "pack:built-plugin": "node scripts/pack-plugin.mjs",
     "validate:plugin": "streamdeck validate ../../.tmp/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin --no-update-check",
     "link:plugin": "node scripts/link-plugin.mjs",
     "restart:plugin": "streamdeck restart io.github.rudnerbjoern.ride-forces-analyzer",

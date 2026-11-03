@@ -29,8 +29,9 @@
   leaves it unchanged. Startup respects it; disable/shutdown stops the server and
   removes its owned discovery file.
 - Plugin versioning is independent of the application and control protocol.
-  Code/packaged-data changes require an increase; builds check version progression
-  and package/manifest/lock consistency. Documentation/tests alone need no increase.
+  Development commits share one upcoming version. Changed code/packaged data require
+  an increase over the preceding release tag; builds also check package/manifest/lock
+  consistency. Documentation/tests alone and app-only releases need no increase.
   See the [version workflow](../../plugins/stream-deck/README.md#independent-plugin-version).
 - Export controls, an explicit target-window selector and other device models are
   outside this implementation. Marketplace publication is outside current delivery.
@@ -307,6 +308,8 @@ or acceptance work. Native acceptance is tracked explicitly in steps 6 and 12.
       license notices, official offline validation/packing and archive-content checks;
       local link/restart workflow. The [pack command](../../plugins/stream-deck/README.md#installable-archive)
       prepares the `.streamDeckPlugin` release asset without installing or publishing it.
+      Release CI retains the tested archive and checksum; the publication job verifies
+      and attaches both. Hosted execution/publication has not been verified for this change.
     - **Open:** Native archive-install/update acceptance and separately authorized
       publication of the GitHub release asset.
       Marketplace publication is not part of this step.

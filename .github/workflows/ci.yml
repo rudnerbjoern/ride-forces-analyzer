@@ -254,6 +254,32 @@ jobs:
           cache: 'npm'
       - run: npm ci --no-audit --no-fund
       - run: npm run test:stream-deck
+      - name: Pack tested plugin for release
+        if: ${{ inputs.upload-packages == true }}
+        run: |
+          npm run pack:built-plugin --workspace plugins/stream-deck
+          if ($LASTEXITCODE -ne 0) { throw 'Plugin packing failed.' }
+          $name = 'Ride-Forces-Analyzer.streamDeckPlugin'
+          $hash = (Get-FileHash ".tmp/stream-deck-package/$name" -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $name" | Set-Content .tmp/stream-deck-package/PLUGIN-SHA256SUMS.txt -Encoding ascii
+      - name: Retain installable plugin
+        if: ${{ inputs.upload-packages == true }}
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          path: .tmp/stream-deck-package/Ride-Forces-Analyzer.streamDeckPlugin
+          archive: false
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+      - name: Retain plugin checksum
+        if: ${{ inputs.upload-packages == true }}
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          path: .tmp/stream-deck-package/PLUGIN-SHA256SUMS.txt
+          archive: false
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
       - if: ${{ needs.dependency-check.outputs.code != 'true' && needs.dependency-check.outputs.documentation != 'true' && needs.dependency-check.outputs.skills != 'true' }}
         run: npm run spellcheck
 

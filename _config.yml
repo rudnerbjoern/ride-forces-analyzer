@@ -1,7 +1,7 @@
 # cspell:words jekyll
 title: Ride Forces Analyzer
 tagline: Explore your coaster rides and create 4K video overlays
-description: Free Windows app for exploring Ride Forces recordings and creating video overlays. Offline processing, airtime context and five export layouts.
+description: Explore Ride Forces recordings and create video overlays on Windows, Linux and macOS. Offline processing, five layouts and optional Stream Deck controls.
 url: https://rudnerbjoern.github.io
 baseurl: /ride-forces-analyzer
 repository: rudnerbjoern/ride-forces-analyzer

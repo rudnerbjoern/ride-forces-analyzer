@@ -36,13 +36,20 @@ async function close(host) {
 }
 
 test("official offline packing preserves the validated runtime, licenses and three profiles", async () => {
-  const cli = path.join(path.dirname(require.resolve("@elgato/cli/package.json")), "bin/streamdeck.mjs");
+  const pack = fileURLToPath(new URL("../scripts/pack-plugin.mjs", import.meta.url));
   const directory = await mkdtemp(fileURLToPath(new URL("../../../.tmp/stream-deck-package-test-", import.meta.url)));
   try {
     const { stdout, stderr } = await promisify(execFile)(process.execPath,
-      [cli, "pack", source, "--output", directory, "--no-update-check", "--no-file-list"]);
+      [pack, "--output", directory]);
     assert.match(stdout + stderr, /Successfully packaged plugin/);
-    const reader = new ZipReader(new Uint8ArrayReader(await readFile(path.join(directory, `${uuid}.streamDeckPlugin`))));
+    const archive = path.join(directory, "Ride-Forces-Analyzer.streamDeckPlugin");
+    assert.deepEqual(await readdir(directory), ["Ride-Forces-Analyzer.streamDeckPlugin"]);
+    const original = await readFile(archive);
+    await assert.rejects(promisify(execFile)(process.execPath, [pack, "--output", directory]),
+      error => error.stderr.includes("Plugin archive already exists"));
+    assert.deepEqual(await readFile(archive), original);
+    await promisify(execFile)(process.execPath, [pack, "--output", directory, "--force"]);
+    const reader = new ZipReader(new Uint8ArrayReader(await readFile(archive)));
     try {
       const entries = (await reader.getEntries()).filter(entry => !entry.directory);
       const files = (await readdir(source, { recursive: true, withFileTypes: true }))

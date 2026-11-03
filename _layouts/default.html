@@ -16,6 +16,7 @@
           <li><a href="#get-started">Get started</a></li>
           <li><a href="#explore-what-happened-on-the-ride">Features</a></li>
           <li><a href="#bring-the-ride-into-your-videos">Video overlays</a></li>
+          <li><a href="#control-the-explorer-with-stream-deck">Stream Deck</a></li>
           <li><a href="#help-and-contribute">Help</a></li>
           <li><a href="{{ site.github.repository_url | escape }}">GitHub</a></li>
         </ul>
@@ -37,6 +38,7 @@
               {% assign linux = nil %}
               {% assign mac_arm64 = nil %}
               {% assign mac_x64 = nil %}
+              {% assign stream_deck = nil %}
               {% for asset in release.assets %}
                 {% if asset.name contains '-windows-x64.exe' %}
                   {% assign executable = asset %}
@@ -48,6 +50,8 @@
                   {% assign mac_arm64 = asset %}
                 {% elsif asset.name contains '-macos-x64.zip' %}
                   {% assign mac_x64 = asset %}
+                {% elsif asset.name == 'Ride-Forces-Analyzer.streamDeckPlugin' %}
+                  {% assign stream_deck = asset %}
                 {% endif %}
               {% endfor %}
               {% if executable and complete %}
@@ -69,6 +73,7 @@
                 {% if linux %}<a class="download-button" href="{{ linux.browser_download_url | escape }}">Linux x64 · tar.gz</a>{% endif %}
                 {% if mac_arm64 %}<a class="download-button" href="{{ mac_arm64.browser_download_url | escape }}">macOS · Apple Silicon</a>{% endif %}
                 {% if mac_x64 %}<a class="download-button" href="{{ mac_x64.browser_download_url | escape }}">macOS · Intel</a>{% endif %}
+                {% if stream_deck %}<a class="download-button" href="{{ stream_deck.browser_download_url | escape }}">Stream Deck plugin · optional</a>{% endif %}
                 <a href="{{ download_release.html_url | escape }}">Release notes and checksums</a>
               </div>
             {% else %}
