@@ -61,8 +61,8 @@ from ride_forces_analyzer.ui.presentation.icons import link_icon, metadata_icon
 from .library_workflow import WORKFLOW_ICONS, WorkflowIcon, WorkflowSelector
 
 
-class ParkFilter(QComboBox):
-    """Open the Library park popup without the transient Qt scroll-animation window."""
+class LibraryFilter(QComboBox):
+    """Open Library filter popups without the transient Qt scroll-animation window."""
 
     def showPopup(self) -> None:
         """Show this popup immediately, restoring the shared animation preference afterward."""
@@ -183,6 +183,7 @@ class LibraryPanel(QSplitter):
         details: Read-only source/date/import details for the selected recording.
         empty_label: Empty-Library explanation.
         park_filter: Effective park selection, including all and unknown parks.
+        workflow_filter: Manual workflow state selection, including all states.
         search: Combined ride/park name search.
         clear_filters: Action restoring all recordings.
         editor: Dialog for the selected recording's additions.
@@ -215,15 +216,20 @@ class LibraryPanel(QSplitter):
         heading = self.panel.findChild(QLabel, "SectionTitle")
         assert heading is not None
         self._heading = heading
-        self.park_filter = ParkFilter()
-        self.park_filter.setSizeAdjustPolicy(
-            QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon,
-        )
-        self.park_filter.setMinimumContentsLength(10)
-        self.park_filter.setMinimumWidth(0)
-        bind(self.park_filter, tr("Park"), "accessibleName")
-        bind(self.park_filter, tr("Park"), "toolTip")
-        layout.addWidget(self.park_filter)
+        self.park_filter = LibraryFilter()
+        self.workflow_filter = LibraryFilter()
+        for control, label in ((self.park_filter, "Park"), (self.workflow_filter, "Status")):
+            control.setSizeAdjustPolicy(
+                QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon,
+            )
+            control.setMinimumContentsLength(10)
+            control.setMinimumWidth(0)
+            bind(control, tr(label), "accessibleName")
+            bind(control, tr(label), "toolTip")
+            layout.addWidget(control)
+        self.workflow_filter.addItem(tr("All statuses"), None)
+        for status, (label, _) in WORKFLOW_ICONS.items():
+            self.workflow_filter.addItem(tr(label), status)
         search_row = QHBoxLayout()
         self.search = QLineEdit()
         self.search.setMinimumWidth(0)
@@ -323,6 +329,7 @@ class LibraryPanel(QSplitter):
         self._error: str | None = None
         self.refresh_labels()
         self.park_filter.currentIndexChanged.connect(self.refresh)
+        self.workflow_filter.currentIndexChanged.connect(self.refresh)
         self.search.textChanged.connect(self.refresh)
 
     @property
@@ -361,9 +368,11 @@ class LibraryPanel(QSplitter):
                 finally:
                     self.park_filter.blockSignals(blocked)
             park = self.park_filter.currentData()
+            workflow = self.workflow_filter.currentData()
             entries = store.entries(
                 park=park if isinstance(park, str) else None,
                 search=self.search.text(),
+                workflow_status=workflow if isinstance(workflow, str) else None,
             )
         except LibraryStoreError as error:
             record_error("Library list", error)
@@ -391,6 +400,7 @@ class LibraryPanel(QSplitter):
                 icon = WorkflowIcon(entry.source_sha256, self.recordings)
                 icon.clicked.connect(self._toggle_workflow)
                 self.recordings.setItemWidget(item, 1, icon)
+                icon.links_icon.clicked.connect(self._open_video_links)
                 if selected is not None and selected.source_sha256 == entry.source_sha256:
                     self.recordings.setCurrentItem(item)
                 elif (
@@ -422,7 +432,14 @@ class LibraryPanel(QSplitter):
         if self.park_filter.count():
             self.park_filter.setItemText(0, tr("All parks"))
             self.park_filter.setItemText(1, tr("Unknown park"))
-        filtered = self.park_filter.currentIndex() > 0 or bool(self.search.text().strip())
+        self.workflow_filter.setItemText(0, tr("All statuses"))
+        for index, (label, _) in enumerate(WORKFLOW_ICONS.values(), 1):
+            self.workflow_filter.setItemText(index, tr(label))
+        filtered = (
+            self.park_filter.currentIndex() > 0
+            or self.workflow_filter.currentIndex() > 0
+            or bool(self.search.text().strip())
+        )
         self.clear_filters.setEnabled(filtered)
         self.empty_label.setText(
             tr("No matching recordings") if filtered else tr("No recordings in Library"),
@@ -445,6 +462,17 @@ class LibraryPanel(QSplitter):
                 icon = self.recordings.itemWidget(item, 1)
                 assert isinstance(icon, WorkflowIcon)
                 icon.refresh_labels(entry.workflow_status)
+                links_icon = icon.links_icon
+                color_role = QPalette.ColorRole.PlaceholderText
+                if entry.video_link_count:
+                    color_role = (
+                        QPalette.ColorRole.HighlightedText
+                        if item.isSelected()
+                        else QPalette.ColorRole.Highlight
+                    )
+                links_icon.button.setIcon(link_icon(self.recordings.palette().color(color_role)))
+                links_icon.button.setToolTip(tr("Video links…"))
+                links_icon.button.setAccessibleName(tr("Video links…"))
                 item.setToolTip(1, tr(label))
                 item.setData(1, Qt.ItemDataRole.AccessibleTextRole, tr(label))
         selected = self.selected_entry
@@ -532,10 +560,13 @@ class LibraryPanel(QSplitter):
     @Slot()
     def _clear_filters(self) -> None:
         blocked_park = self.park_filter.blockSignals(True)
+        blocked_workflow = self.workflow_filter.blockSignals(True)
         blocked_search = self.search.blockSignals(True)
         self.park_filter.setCurrentIndex(0)
+        self.workflow_filter.setCurrentIndex(0)
         self.search.clear()
         self.park_filter.blockSignals(blocked_park)
+        self.workflow_filter.blockSignals(blocked_workflow)
         self.search.blockSignals(blocked_search)
         self.refresh()
 
@@ -609,8 +640,24 @@ class LibraryPanel(QSplitter):
     def _edit_videos(self) -> None:
         entry = self.selected_entry
         if entry is not None:
-            dialog = LibraryVideosDialog(entry.source_sha256, self.panel)
-            dialog.open()
+            self._open_video_links(entry.source_sha256)
+
+    @Slot(str)
+    def _open_video_links(self, source_sha256: str) -> None:
+        """Open this recording's links without selecting or loading its source.
+
+        Args:
+            source_sha256: Recording addressed by the context action or link icon.
+        """
+        dialog = LibraryVideosDialog(source_sha256, self.panel)
+        dialog.changed.connect(self._video_links_changed)
+        dialog.open()
+
+    @Slot()
+    def _video_links_changed(self) -> None:
+        """Refresh saved-link indicators here and in other open Library panels."""
+        self.refresh()
+        self.changed.emit(self)
 
     @Slot(str)
     def _toggle_workflow(self, source_sha256: str) -> None:
@@ -667,7 +714,11 @@ class LibraryPanel(QSplitter):
         self._entries[digest] = replace(self._entries[digest], workflow_status=status)
         self._error = None
         self._close_workflow()
-        self.refresh_labels()
+        if self.workflow_filter.currentData() not in (None, status):
+            self.refresh()
+        else:
+            self.refresh_labels()
+        self.changed.emit(self)
 
     @Slot(object)
     def _save_metadata(self, values: dict[str, object]) -> None:

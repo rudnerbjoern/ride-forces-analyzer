@@ -110,6 +110,9 @@ Short/TikTok or other variants can coexist. `LibraryStore` validates HTTP/HTTPS 
 offline and scopes edits/removal to recording digest plus link ID. Only current
 links are retained; sources, metadata, workflow and other links remain unchanged.
 Private/unlisted/scheduled URLs need no online verification and imply no completion.
+List metadata includes `video_link_count`, obtained with the existing relationship
+index without reading source bytes or fetching links separately per recording.
+The same offline URL validator admits both saved links and explicit browser opening.
 
 Ordered options live as JSON in `Preferences.library_video_labels`, without a label
 table. Defaults are YouTube, Shorts, TikTok, Reel, Facebook and Instagram only when
@@ -259,6 +262,11 @@ or output file never deletes Library history.
 The export integer primary key needs no duplicate index. Display-only fields have
 no separate indexes. The Library uses ordinary queries and the existing Qt
 model/view facilities, without persisted SQL views.
+
+`LibraryStore.entries()` combines optional park, workflow-status and search filters
+with AND, preserving the existing day/instant ordering. A status must be one of
+`WORKFLOW_STATUSES`; `None` includes every state. Filtering reads metadata only
+and never changes the manual status or archived data.
 
 Search matches every whitespace-separated term against combined effective ride/park
 names. Names and terms use Python NFKC normalization and `casefold`; display spelling

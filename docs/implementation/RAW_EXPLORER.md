@@ -206,10 +206,17 @@ steps to its left/right. Choosing any state saves immediately and closes the lay
 Escape or outside click dismisses it unchanged; failed writes retain the old state
 and explain the failure. No recording load, selection, chart or list-layout change
 is required. Status remains manual, including backwards moves and skipping steps.
-The selected recording's **Video links…** context action opens a separate themed link dialog. Add
+A small frameless link icon sits above the workflow icon in the same narrow column.
+It uses the theme's muted colour without saved links and accent colour with links;
+selected entries use the theme's selection text colour to retain contrast.
+It opens that recording's link dialog without selecting/loading it;
+link additions/removals refresh indicators across open Library panels. The existing
+**Video links…** context action remains available for adding the first link. Add
 prepares a new URL/label; selecting an existing row edits that link. Save persists
 only the current form, Remove deletes only that link, and Cancel/Escape closes
-without saving the current draft. Errors preserve input. HTTP/HTTPS links need
+without saving the current draft. Each saved list entry has a link icon that opens
+its HTTP/HTTPS address in the default browser independently of selection and unsaved
+edits. Invalid saved addresses disable the action; launch failures are explained. Errors preserve input. Links need
 no online verification and do not change workflow status. Settings → Library
 manages ordered label options with Save/Cancel, including a deliberately empty
 list. Existing link labels survive renamed/removed options; the link dropdown
@@ -236,11 +243,13 @@ below. Recording time retains its source-local clock; import time
 uses the viewer's local clock. Technical time-zone fields, the raw numeric source
 date and the duplicate UUID are omitted from this summary; source data stays intact.
 The park dropdown offers all effective Library parks, all parks and unknown parks.
+The workflow dropdown offers all six manual states and All statuses by default.
 The search requires every whitespace-separated term in the combined ride/park names,
-using Unicode normalization and case folding. Park and search combine with AND;
+using Unicode normalization and case folding. Park, workflow status and search combine with AND;
 wildcard characters are literal. Empty groups disappear, an empty result is explained,
-the search-clear action removes only its text, and the reset icon clears both
-filters. Filtering reads metadata only and leaves the
+the search-clear action removes only its text, and the reset icon clears all three
+filters. A manual status change immediately removes entries that no longer match,
+including in other open Library panels, without reloading the current chart. Filtering reads metadata only and leaves the
 chart unchanged. **Edit metadata…** opens a separate themed dialog for ride, park,
 Row, Seat, Train, imported/Seated/Flying posture and notes. Source placeholders
 distinguish inherited text from additions. Save/reset persist current additions;
@@ -251,7 +260,7 @@ intact. The posture selector retains unfamiliar source values; only an explicit
 override chooses Seated/Flying. Reset clears all additions and notes, restoring
 source values. Matching external file opens restore the Library additions as well.
 Hiding the Library releases its layout space without changing the loaded recording, selection
-or chart viewport; park selection and search text are retained.
+or chart viewport; park, workflow-status and search choices are retained.
 Opening a recording selects its matching row and scrolls it into view within the
 active filters. Expanding the collapsed panel reveals the selection again
 without another load. List refreshes and language changes preserve selection.

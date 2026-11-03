@@ -50,6 +50,31 @@ WORKFLOW_STATUSES: tuple[str, ...] = (
 )
 
 
+def validate_video_url(url: str) -> str:
+    """Return a trimmed HTTP/HTTPS video address without accessing the network.
+
+    Args:
+        url: Address supplied by the user or restored from Library storage.
+
+    Returns:
+        The validated address, preserving its path, query and fragment.
+
+    Raises:
+        ValueError: The address is not a usable HTTP/HTTPS URL.
+    """
+    if not has_type(url, str):
+        raise ValueError("Invalid video link")
+    url = url.strip()
+    try:
+        parsed = urlsplit(url)
+        valid = parsed.scheme in {"http", "https"} and bool(parsed.hostname)
+    except ValueError:
+        valid = False
+    if not valid or any(character.isspace() for character in url):
+        raise ValueError("Enter a valid HTTP or HTTPS video URL.")
+    return url
+
+
 @dataclass(frozen=True, slots=True)
 class VideoLink:
     """One recording's saved video URL and optional label text.
@@ -108,6 +133,7 @@ class LibraryEntry:
         export_count: Number of associated export attempts.
         workflow_status: Current manually assigned recording workflow state.
         source_uuid: Source recording identity across exports, if valid.
+        video_link_count: Number of saved video links for this recording.
     """
 
     source_sha256: str
@@ -123,6 +149,7 @@ class LibraryEntry:
     export_count: int
     workflow_status: str
     source_uuid: str | None = None
+    video_link_count: int = 0
 
 
 def default_database_path() -> Path:
@@ -335,7 +362,13 @@ class LibraryStore:
             if cursor.rowcount != 1:
                 raise LibraryStoreError("Recording is not in the Library")
 
-    def entries(self, *, park: str | None = None, search: str = "") -> tuple[LibraryEntry, ...]:
+    def entries(
+        self,
+        *,
+        park: str | None = None,
+        search: str = "",
+        workflow_status: str | None = None,
+    ) -> tuple[LibraryEntry, ...]:
         """Read only list metadata in deterministic newest-first day/instant order.
 
         Unknown dates come last. Import time descending and source digest ascending
@@ -344,15 +377,22 @@ class LibraryStore:
         Args:
             park: Park spelling/key, empty string for unknown parks, or None for all.
             search: Whitespace-separated terms required in combined ride/park names.
+            workflow_status: Manual workflow state, or None for all states.
 
         Returns:
-            Effective names, source/date/import details and export counts.
+            Effective names, source/date/import details and export/video-link counts.
 
         Raises:
+            ValueError: The workflow status is unsupported.
             LibraryStoreError: Library metadata could not be read.
         """
+        if workflow_status is not None and workflow_status not in WORKFLOW_STATUSES:
+            raise ValueError("Invalid workflow status")
         clauses: list[str] = []
         parameters: list[str] = []
+        if workflow_status is not None:
+            clauses.append("r.workflow_status=?")
+            parameters.append(workflow_status)
         if park is not None:
             key = normalize_library_text(park)
             clauses.append("r.park_key=?" if key else "r.park_key IS NULL")
@@ -371,7 +411,8 @@ class LibraryStore:
                     "COALESCE(r.park_name_override, r.source_park_name), "
                     "r.recorded_at_utc, r.recorded_day, r.day_timezone, r.imported_at_utc, "
                     "(SELECT count(*) FROM export_history h WHERE h.recording_sha256=r.source_sha256), "
-                    "r.workflow_status, r.source_uuid "
+                    "r.workflow_status, r.source_uuid, "
+                    "(SELECT count(*) FROM video_links v WHERE v.recording_sha256=r.source_sha256) "
                     f"FROM recordings r{where} ORDER BY r.recorded_day DESC, r.recorded_at_utc DESC, "
                     "r.imported_at_utc DESC, r.source_sha256",
                     parameters,
@@ -495,14 +536,7 @@ class LibraryStore:
         validate_sha256(source_sha256, "Expected a source SHA-256")
         if not has_type(url, str) or not has_type(label, str):
             raise ValueError("Invalid video link")
-        url = url.strip()
-        try:
-            parsed = urlsplit(url)
-            valid = parsed.scheme in {"http", "https"} and bool(parsed.hostname)
-        except ValueError:
-            valid = False
-        if not valid or any(character.isspace() for character in url):
-            raise ValueError("Enter a valid HTTP or HTTPS video URL.")
+        url = validate_video_url(url)
         with self.connection() as connection:
             if link_id is None:
                 cursor = connection.execute(

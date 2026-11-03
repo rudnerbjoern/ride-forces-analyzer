@@ -21,6 +21,7 @@ import pytest
 
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from ride_forces_analyzer.ui.explorer.library_workflow import WorkflowIcon
+from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.storage.library import WORKFLOW_STATUSES
 from ride_forces_analyzer.storage.library import LibraryStore
@@ -661,3 +662,102 @@ def test_library_toggle_preserves_workspace_and_recording(
         ).workflow_status
         == "completed"
     )
+
+
+def test_workflow_filter_combines_filters_without_loading_or_changing_status(
+    explorer_window: ExplorerWindow,
+) -> None:
+    window = explorer_window
+    library = window.library
+    store = LibraryStore()
+    sources = (
+        synthetic_source(name="Alpha ride", location="Park A", date=1000),
+        synthetic_source(name="Alpha second", location="Park B", date=1001),
+        synthetic_source(name="Other ride", location="Park A", date=1002),
+        synthetic_source(name="Alpha completed", location="Park A", date=1003),
+    )
+    for source, status in zip(
+        sources,
+        ("markers_verified", "markers_verified", "imported", "completed"),
+        strict=True,
+    ):
+        store.archive(source, "ride.forces", (2, 6), CalibrationOverrides())
+        store.set_workflow_status(source.source_sha256, status)
+    library.refresh()
+    window.open_archived(sources[0].source_sha256)
+    wait_until(window.open_action.isEnabled)
+    assert window.data is not None
+    library.toggle_button.click()
+    window.navigation.position.setValue(4)
+    window.inspector.first.setValue(3)
+    window.inspector.last.setValue(5)
+    retained = window.data
+    before = store.entries()
+    opened = QSignalSpy(library.open_requested)
+    changed = QSignalSpy(library.changed)
+    workflow = library.workflow_filter
+    parks = library.park_filter
+    assert [workflow.itemData(i) for i in range(workflow.count())] == [None, *WORKFLOW_STATUSES]
+
+    def names() -> list[str]:
+        result: list[str] = []
+        for index in range(library.recordings.topLevelItemCount()):
+            group = library.recordings.topLevelItem(index)
+            assert group is not None
+            for child_index in range(group.childCount()):
+                item = group.child(child_index)
+                assert item is not None
+                result.append(item.text(0).splitlines()[0])
+        return result
+
+    assert len(names()) == 4
+    workflow.setCurrentIndex(workflow.findData("markers_verified"))
+    assert names() == ["Alpha second", "Alpha ride"]
+    parks.setCurrentIndex(parks.findData("Park A"))
+    library.search.setText("alpha")
+    assert names() == ["Alpha ride"]
+    for language in (1, 2, 0):
+        window.set_ui_language(language)
+        assert workflow.itemText(0) == tr("All statuses")
+        assert workflow.currentText() == tr("Markers verified")
+        assert workflow.currentData() == "markers_verified"
+        assert parks.currentData() == "Park A" and library.search.text() == "alpha"
+        assert names() == ["Alpha ride"]
+    library.toggle_button.click()
+    library.toggle_button.click()
+    assert workflow.currentData() == "markers_verified" and names() == ["Alpha ride"]
+    workflow.showPopup()
+    wait_until(workflow.view().isVisible)
+    workflow.hidePopup()
+    workflow.setCurrentIndex(workflow.findData("uploaded"))
+    assert names() == [] and library.empty_label.isVisible()
+    assert library.empty_label.text() == "No matching recordings"
+    assert library.clear_filters.isEnabled()
+    workflow.setCurrentIndex(0)
+    assert names() == ["Alpha completed", "Alpha ride"]
+    library.clear_filters.click()
+    assert workflow.currentData() is None and parks.currentData() is None
+    assert not library.search.text() and len(names()) == 4
+    assert not library.clear_filters.isEnabled()
+    assert store.entries() == before and changed.count() == 0
+
+    # A manual status change removes a row that no longer matches, without reloading the chart.
+    parks.setCurrentIndex(parks.findData("Park A"))
+    library.search.setText("alpha")
+    workflow.setCurrentIndex(workflow.findData("markers_verified"))
+    group = library.recordings.topLevelItem(0)
+    assert group is not None
+    item = group.child(0)
+    assert item is not None
+    icon = library.recordings.itemWidget(item, 1)
+    assert isinstance(icon, WorkflowIcon)
+    QTest.mouseClick(icon.button, Qt.MouseButton.LeftButton)
+    selector = library.workflow_selector
+    assert selector is not None
+    QTest.mouseClick(selector.buttons["completed"], Qt.MouseButton.LeftButton)
+    assert names() == [] and library.empty_label.isVisible()
+    assert library.workflow_selector is None and changed.count() == 1
+    assert store.entries(workflow_status="markers_verified")[0].ride_name == "Alpha second"
+    assert window.data is retained and opened.count() == 0
+    assert window.navigation.position.value() == 4
+    assert (window.inspector.first.value(), window.inspector.last.value()) == (3, 5)

@@ -1,4 +1,4 @@
-"""Inline Library workflow icons and a transient horizontal selection bar.
+"""Compact Library action icons and a transient workflow selection bar.
 
 Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
@@ -8,6 +8,7 @@ from PySide6.QtCore import QEvent, QObject, Qt, Signal
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import (
     QApplication,
+    QBoxLayout,
     QButtonGroup,
     QFrame,
     QHBoxLayout,
@@ -37,26 +38,26 @@ QToolButton:checked { border-bottom: 2px solid palette(highlight); }
 """
 
 
-class WorkflowIcon(QWidget):
-    """Keep a clickable status icon centered in its existing recording cell.
+class LibraryIcon(QWidget):
+    """Keep a frameless action icon centered in its list cell.
 
     Attributes:
         button: Native icon-only control that does not select or load the recording.
-        clicked: Signal identifying the recording whose status selector is requested.
-        source_sha256: Recording identity represented by this icon.
+        clicked: Signal carrying the identity addressed by this action.
+        identity: Action identity represented by this icon.
     """
 
     clicked = Signal(str)
 
-    def __init__(self, source_sha256: str, parent: QWidget) -> None:
+    def __init__(self, identity: str, parent: QWidget) -> None:
         """Create the compact trigger without reading a source or changing selection.
 
         Args:
-            source_sha256: Recording identity carried by clicks.
+            identity: Action identity carried by clicks.
             parent: Recording view owning the cell widget.
         """
         super().__init__(parent)
-        self.source_sha256 = source_sha256
+        self.identity = identity
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self.button = QToolButton()
@@ -66,6 +67,32 @@ class WorkflowIcon(QWidget):
         self.button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.button.clicked.connect(self._clicked)
         layout.addWidget(self.button, alignment=Qt.AlignmentFlag.AlignCenter)
+
+    def _clicked(self) -> None:
+        self.clicked.emit(self.identity)
+
+
+class WorkflowIcon(LibraryIcon):
+    """Stack a recording's video-link action above its manual workflow icon.
+
+    Attributes:
+        links_icon: Video-link action sharing the workflow column's width.
+    """
+
+    def __init__(self, identity: str, parent: QWidget) -> None:
+        """Create both actions for one archived recording.
+
+        Args:
+            identity: Recording identity carried by either action.
+            parent: Recording view owning the cell widget.
+        """
+        super().__init__(identity, parent)
+        self.links_icon = LibraryIcon(identity, self)
+        layout = self.layout()
+        assert isinstance(layout, QHBoxLayout)
+        layout.setDirection(QBoxLayout.Direction.TopToBottom)
+        layout.setSpacing(0)
+        layout.insertWidget(0, self.links_icon, alignment=Qt.AlignmentFlag.AlignCenter)
 
     def refresh_labels(self, status: str) -> None:
         """Apply the current theme's native icon and localized status description.
@@ -77,9 +104,6 @@ class WorkflowIcon(QWidget):
         self.button.setIcon(self.style().standardIcon(icon))
         self.button.setToolTip(tr(label))
         self.button.setAccessibleName(tr(label))
-
-    def _clicked(self) -> None:
-        self.clicked.emit(self.source_sha256)
 
 
 class WorkflowSelector(QFrame):
