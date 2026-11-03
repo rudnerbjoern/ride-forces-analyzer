@@ -12,11 +12,14 @@ Jobs have readable display names; the final check-run name remains `check` for
 branch protection and the delivery helper. Technical job IDs and selection outputs
 remain stable.
 
-Dependency caches are isolated per job. Every Python setup explicitly enables uv
-caching with `github.job` as its suffix; native matrix builds also include their
-target. npm downloads use `actions/cache` keys containing OS, architecture, job,
-Node-version input and lockfile hash. Restore prefixes remain within that job and
-Node version; setup-node's additional automatic npm cache is disabled.
+Compatible jobs share dependency caches. uv separates `dev` and `build` dependency
+sets; setup-uv's keys also distinguish platform, architecture, Python version and
+locked inputs. npm jobs use the same download-cache path and keys containing OS,
+architecture, Node-version input and lockfile hash. Restore prefixes stay within
+that platform/architecture/Node version; setup-node's additional automatic npm
+cache is disabled. Jobs restore independent local copies; test environments and
+results remain separate. Concurrent cold jobs may miss the same cache; an existing
+entry is immutable. GitHub's branch/PR access restrictions still apply.
 Gitleaks/actionlint cache only their pinned download archives and always verify
 the SHA-256 before extraction. Test reports, recordings and user data are never
 cached. Jobs without dependency/tool installation need no dependency cache.
