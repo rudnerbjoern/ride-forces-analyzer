@@ -16,7 +16,7 @@ const sdk = createRequire(require.resolve("@elgato/streamdeck"));
 const { WebSocketServer } = sdk("ws");
 const uuid = "io.github.rudnerbjoern.ride-forces-analyzer";
 const pluginVersion = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")).version;
-const examples = JSON.parse(await readFile(new URL("fixtures/protocol.json", import.meta.url), "utf8"));
+const examples = JSON.parse(await readFile(new URL("../../../tests/fixtures/stream_deck_protocol.json", import.meta.url), "utf8"));
 
 async function waitUntil(predicate, diagnostics = () => "") {
   const deadline = Date.now() + 8000;

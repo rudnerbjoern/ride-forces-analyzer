@@ -50,9 +50,14 @@ npm run test:stream-deck
 ```
 
 Tests compile TypeScript, bundle the plugin, run official offline validation and
-exercise the built process against local SDK/app WebSocket hosts. They require no
+exercise the built process against local simulated SDK/app WebSocket hosts. The
+suite then runs its Python/Qt reference-image check through `npm run test:reference`.
+Use the locked repository Python environment and uv alongside Node for that check;
+no Analyzer window or application implementation is loaded by the image generator.
+These tests require no
 Stream Deck software or hardware. VS Code's Node test provider performs the same
-build before running selected tests. [CI selection](../../docs/development/CI.md#routing-and-required-gate)
+build before running selected Node tests. The Python reference check is separate
+from application/UI discovery. [CI selection](../../docs/development/CI.md#routing-and-required-gate)
 runs plugin tests for affected changes and always for releases/full CI.
 
 For a build without tests, use `npm run build:plugin --workspace plugins/stream-deck`.

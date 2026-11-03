@@ -282,8 +282,8 @@
     ]
   },
   "inputs": {
-    "scripts/render_stream_deck_reference.py": "a76a1a942537ded221978d6809358371139007dfb7644141a8dbb3b2ad96b669",
-    "plugins/stream-deck/tests/fixtures/protocol.json": "514fc9fc5e05cad11ffde5fd0c059f0c77fbf621df4bb64cdb3284fe7f16fb5c",
+    "scripts/render_stream_deck_reference.py": "d09119e87e898b9734e056514d10db5d68ed91eb8189e461f9b89c7d864e992f",
+    "tests/fixtures/stream_deck_protocol.json": "514fc9fc5e05cad11ffde5fd0c059f0c77fbf621df4bb64cdb3284fe7f16fb5c",
     "plugins/stream-deck/src/feedback.ts": "0329807b41968a764758dcc503d7bc32d95dfbb8363297e9576649d4bcf5dc32",
     "plugins/stream-deck/src/device-feedback.ts": "3e74610b7cefd0fe5088c3c7af2d48342884da5f352f664e31d4bee1fa1455f6",
     "plugins/stream-deck/devices/layouts/plus.json": "bc41ddb1cfbb3a9602f07673aace2942a5b3a711aeb4fc5b86b8ab5d9ed49261",

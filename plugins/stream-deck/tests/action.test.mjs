@@ -7,7 +7,7 @@ import { ControlAction } from "../dist/action.js";
 import { ControlClient } from "../dist/client.js";
 
 test("SDK key handlers route commands and render confirmed state and unavailable feedback", async () => {
-  const snapshot = JSON.parse(await readFile(new URL("fixtures/protocol.json", import.meta.url), "utf8")).messages[0];
+  const snapshot = JSON.parse(await readFile(new URL("../../../tests/fixtures/stream_deck_protocol.json", import.meta.url), "utf8")).messages[0];
   let receive, connect;
   const sent = [];
   const client = new ControlClient((message, connection) => {

@@ -21,7 +21,7 @@ from ride_forces_analyzer.runtime.control_contract import (
 )
 from ride_forces_analyzer.runtime.instance import OpenRequest
 
-FIXTURE = Path(__file__).parents[2] / "plugins/stream-deck/tests/fixtures/protocol.json"
+FIXTURE = Path(__file__).parents[2] / "tests/fixtures/stream_deck_protocol.json"
 EXAMPLES = json.loads(FIXTURE.read_text(encoding="utf-8"))
 
 

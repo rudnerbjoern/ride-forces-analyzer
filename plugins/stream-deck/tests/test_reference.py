@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / "scripts/render_stream_deck_reference.py"
 
 

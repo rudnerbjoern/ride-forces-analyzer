@@ -10,7 +10,7 @@ import { StepModeAction } from "../dist/mode-action.js";
 import { InfoBarAction } from "../dist/infobar-action.js";
 import { StepMode } from "../dist/device-controls.js";
 
-const examples = JSON.parse(await readFile(new URL("fixtures/protocol.json", import.meta.url), "utf8"));
+const examples = JSON.parse(await readFile(new URL("../../../tests/fixtures/stream_deck_protocol.json", import.meta.url), "utf8"));
 
 function harness() {
   let message, connection;

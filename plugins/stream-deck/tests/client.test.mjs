@@ -7,7 +7,7 @@ import { controlSettings, CONTROL_LABELS, requestedAction } from "../dist/contro
 import { decodeServerMessage } from "../dist/decoder.js";
 import { keyFeedback } from "../dist/feedback.js";
 
-const examples = JSON.parse(await readFile(new URL("fixtures/protocol.json", import.meta.url), "utf8"));
+const examples = JSON.parse(await readFile(new URL("../../../tests/fixtures/stream_deck_protocol.json", import.meta.url), "utf8"));
 const state = () => structuredClone(examples.messages[0]);
 
 function harness() {

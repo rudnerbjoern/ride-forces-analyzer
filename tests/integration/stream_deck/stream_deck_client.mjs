@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-import { AnalyzerTransport, endpointPath } from "../../plugins/stream-deck/src/transport.ts";
+import { AnalyzerTransport, endpointPath } from "../../../plugins/stream-deck/src/transport.ts";
 
 const connections = [];
 const deadline = setTimeout(() => {

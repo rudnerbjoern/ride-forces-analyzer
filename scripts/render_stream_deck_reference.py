@@ -30,7 +30,7 @@ import { readFileSync } from 'node:fs';
 import { keyFeedback, keyImage } from './plugins/stream-deck/dist/feedback.js';
 import { dialFeedback, infoFeedback } from './plugins/stream-deck/dist/device-feedback.js';
 import { ZipReader, Uint8ArrayReader, TextWriter, Uint8ArrayWriter } from '@zip.js/zip.js';
-const fixture = JSON.parse(readFileSync('plugins/stream-deck/tests/fixtures/protocol.json', 'utf8')).messages[0];
+const fixture = JSON.parse(readFileSync('tests/fixtures/stream_deck_protocol.json', 'utf8')).messages[0];
 const client = () => ({ state: structuredClone(fixture), status: 'connected', pending: () => false, error: () => undefined });
 const h = client();
 const profiles = {};
@@ -420,7 +420,7 @@ def render_reference(output: Path) -> None:
     plus = _render_plus(output, data["plus"])
     inputs = [
         "scripts/render_stream_deck_reference.py",
-        "plugins/stream-deck/tests/fixtures/protocol.json",
+        "tests/fixtures/stream_deck_protocol.json",
         "plugins/stream-deck/src/feedback.ts",
         "plugins/stream-deck/src/device-feedback.ts",
         "plugins/stream-deck/devices/layouts/plus.json",

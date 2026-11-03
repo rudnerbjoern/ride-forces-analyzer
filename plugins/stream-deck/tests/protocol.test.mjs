@@ -9,7 +9,7 @@ import { promisify } from "node:util";
 import { PROTOCOL_VERSION } from "../dist/protocol.js";
 
 test("shared wire examples satisfy the plugin's strict command and feedback types", async () => {
-  const examples = JSON.parse(await readFile(new URL("fixtures/protocol.json", import.meta.url), "utf8"));
+  const examples = JSON.parse(await readFile(new URL("../../../tests/fixtures/stream_deck_protocol.json", import.meta.url), "utf8"));
   const directory = await mkdtemp(fileURLToPath(new URL("../../../.tmp/stream-deck-contract-", import.meta.url)));
   const filename = path.join(directory, "examples.mts");
   const protocol = fileURLToPath(new URL("../src/protocol.ts", import.meta.url)).replaceAll("\\", "/");

@@ -111,7 +111,7 @@ If generator code changed, also run its affected focused tests:
 ```powershell
 uv run --locked pytest tests/ui/test_reference_screenshots.py
 uv run --locked pytest tests/rendering/test_reference_script.py
-uv run --locked pytest tests/ui/test_stream_deck_reference.py
+uv run --locked pytest plugins/stream-deck/tests/test_reference.py
 ```
 
 Use only the relevant test file; unchanged generator code does not require a new

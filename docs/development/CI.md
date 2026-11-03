@@ -44,22 +44,32 @@ Node/PowerShell dependency and workflow contracts inside `dependency-check`, eve
 when application checks are skipped. A contract failure fails that job and blocks
 the merge gate. Hosted runs do not reuse test results.
 
-| Job                | Selection / result                                                                                                                                                                                       |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gitleaks`         | Every run; checksum-pinned scanner self-test and complete fetched-history scan                                                                                                                           |
-| `dependency-check` | Every run detects changes and tests the selector; selected `dependencies` additionally installs locked Node dependencies and runs `npm run test:dependencies`                                            |
-| `actionlint`       | Workflow/script/CI-test/dependency-test and Dependabot/label/release-rule changes; manual/full reusable runs; validate all workflows                                                                     |
-| `documentation`    | Any Markdown path, including source/tests/skills and deletions/renames; locked Node install and `npm run test:docs`                                                                                      |
-| `code`             | Non-Markdown application/source/test/script and shared Python/Node/Git/editor inputs, excluding CI metadata and Node/PowerShell contracts; application lint/format/types and pytest excluding `tests/ui` |
-| `ui`               | Same selection as `code`; complete `tests/ui` serially on a separate Windows runner                                                                                                                      |
-| `stream-deck`      | Affected plugin/shared Node/CI inputs; manual/full and release runs always; locked Node install, strict TypeScript build and `npm run test:stream-deck`                                                  |
-| `posix`            | Manual full CI and release calls only; native Linux x64/macOS arm64/x64 build and runtime checks; skipped for all PR changes                                                                             |
-| `skills`           | Non-Markdown skill implementation/tests, consumed commit policy, Python manifest/lock/version and Git/editor settings; separate skill Ruff/mypy/pytest                                                   |
-| `check`            | Always evaluate detection, contract-selection validity and selected job results: selected = success, unselected = skipped                                                                                |
+| Job                       | Selection / result                                                                                                                                                                                                    |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gitleaks`                | Every run; checksum-pinned scanner self-test and complete fetched-history scan                                                                                                                                        |
+| `dependency-check`        | Every run detects changes and tests the selector; selected `dependencies` additionally installs locked Node dependencies and runs `npm run test:dependencies`                                                         |
+| `actionlint`              | Workflow/script/CI-test/dependency-test and Dependabot/label/release-rule changes; manual/full reusable runs; validate all workflows                                                                                  |
+| `documentation`           | Any Markdown path, including source/tests/skills and deletions/renames; locked Node install and `npm run test:docs`                                                                                                   |
+| `code`                    | Non-Markdown application/source/test/script and shared Python/Node/Git/editor inputs, excluding CI metadata and Node/PowerShell contracts; lint/format/types and pytest excluding UI and Stream Deck interoperability |
+| `ui`                      | Same selection as `code`; complete `tests/ui` serially on a separate Windows runner                                                                                                                                   |
+| `stream-deck`             | Affected plugin/shared Node/CI inputs; manual/full and release runs always; locked Node install, strict TypeScript build and `npm run test:stream-deck`                                                               |
+| `stream-deck-integration` | Transport/protocol, plugin implementation, shared toolchain/CI inputs or interoperability tests; independent Python/Qt and Node runner for `tests/integration/stream_deck`                                            |
+| `posix`                   | Manual full CI and release calls only; native Linux x64/macOS arm64/x64 build and runtime checks; skipped for all PR changes                                                                                          |
+| `skills`                  | Non-Markdown skill implementation/tests, consumed commit policy, Python manifest/lock/version and Git/editor settings; separate skill Ruff/mypy/pytest                                                                |
+| `check`                   | Always evaluate detection, contract-selection validity and selected job results: selected = success, unselected = skipped                                                                                             |
 
-The `code`/`ui` jobs partition the complete application suite by directory and run
-concurrently after selection; no timing-based exclusions. Both are required when
-code is selected, including manual/release runs. UI tests remain serial per desktop.
+The `code`, `ui` and `stream-deck-integration` jobs run disjoint test directories;
+no test runs twice in these jobs. Application tests explicitly exclude UI and
+`tests/integration/stream_deck`. UI tests remain serial per desktop and are required
+with application code, including manual/release runs. The independent integration
+job is selected for changes to either transport/protocol implementation or shared
+inputs, and always for full/manual/release runs. Its selected result is mandatory
+in `check`; failed, cancelled, missing or unexpectedly skipped execution blocks it.
+UI tests and application screenshots need no Node/plugin build. Plugin-specific
+profile/illustration tests live under `plugins/stream-deck/tests` and run only in
+the plugin suite; its runner supplies locked Python/Qt and Node dependencies and
+full release history. Shared wire examples live in `tests/fixtures/stream_deck_protocol.json`;
+each domain validates its own implementation against them.
 A second Windows setup can reduce wall-clock waiting when runners are available;
 it does not guarantee lower total runner minutes.
 
@@ -76,6 +86,13 @@ it does not guarantee lower total runner minutes.
   releases reuse full CI and always require the plugin job.
 - Shared Qt/Node transport, control contracts and interoperability fixtures select both
   application and plugin checks.
+  `tests/integration/stream_deck/test_transport.py` is the explicit cross-domain
+  check: it runs the real application Qt server with the real TypeScript client,
+  including authentication and restart/reconnect. It runs only in the independent
+  `stream-deck-integration` job with both toolchains; it needs no plugin build or npm
+  packages because the client uses native Node APIs. The pure server tests remain
+  under `tests/support`. Run it locally with
+  `uv run --locked pytest tests/integration/stream_deck`.
 - Plugin tests build the self-contained local artifact, validate it with the official
   offline CLI and exercise SDK/app WebSocket hosts; they need no installed device software.
   Release calls additionally pack the tested folder without rebuilding and retain

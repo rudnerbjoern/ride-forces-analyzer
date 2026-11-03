@@ -120,6 +120,27 @@ test("Secret scanning is mandatory, checksum-pinned and cannot silently skip the
   assert.equal(workflow.jobs.check.steps[0].env.GITLEAKS_RESULT, "${{ needs.gitleaks.result }}");
 });
 
+test("UI tests stay independent while plugin documentation tests own their Python and Node prerequisites", async () => {
+  const workflow = parseDocument(await readFile(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8")).toJS();
+  assert.ok(!workflow.jobs.ui.steps.some(step => step.uses?.startsWith("actions/setup-node@")
+    || step.run?.includes("npm ") || step.run?.includes("stream-deck")));
+  const steps = workflow.jobs["stream-deck"].steps;
+  const checkout = steps.find(step => step.uses?.startsWith("actions/checkout@"));
+  assert.equal(checkout.with["fetch-depth"], 0);
+  assert.ok(steps.some(step => step.uses?.startsWith("astral-sh/setup-uv@")));
+  const node = steps.findIndex(step => step.uses?.startsWith("actions/setup-node@"));
+  assert.ok(node >= 0);
+  assert.equal(steps[node].with["node-version-file"], ".node-version");
+  const install = steps.findIndex(step => step.run === "npm ci --no-audit --no-fund");
+  const tests = steps.findIndex(step => step.run === "npm run test:stream-deck");
+  assert.ok(install > node && tests > install, "Install locked Node dependencies before plugin tests");
+  const python = steps.findIndex(step => step.run === "uv sync --locked --all-extras --group dev");
+  assert.ok(python >= 0 && tests > python);
+  const manifest = JSON.parse(await readFile(new URL("../../plugins/stream-deck/package.json", import.meta.url), "utf8"));
+  assert.match(manifest.scripts.test, /npm run test:reference/);
+  assert.equal(manifest.scripts["test:reference"], "uv run --locked pytest tests/test_reference.py");
+});
+
 test("release quality retains the tested plugin and checksum without rebuilding or publishing", async () => {
   const workflow = parseDocument(await readFile(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8")).toJS();
   const plugin = workflow.jobs["stream-deck"];

@@ -60,6 +60,7 @@ jobs:
       dependencies: ${{ steps.changes.outputs.dependencies }}
       posix: ${{ steps.changes.outputs.posix }}
       stream-deck: ${{ steps.changes.outputs.stream-deck }}
+      stream-deck-integration: ${{ steps.changes.outputs.stream-deck-integration }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -138,7 +139,7 @@ jobs:
         run: npm run spellcheck
       - name: Application tests
         id: pytest
-        run: uv run --locked pytest --ignore=tests/ui -ra --durations=20 --junitxml=.tmp/test-results/application.xml
+        run: uv run --locked pytest --ignore=tests/ui --ignore=tests/integration/stream_deck -ra --durations=20 --junitxml=.tmp/test-results/application.xml
       - name: Retain application test report
         if: ${{ !cancelled() && (steps.pytest.outcome == 'success' || steps.pytest.outcome == 'failure') }}
         uses: actions/upload-artifact@v7.0.2
@@ -248,6 +249,11 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ inputs.revision || github.sha }}
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          version: '0.13.0'
+          python-version: '3.14.6'
+      - run: uv sync --locked --all-extras --group dev
       - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: '.node-version'
@@ -283,6 +289,37 @@ jobs:
       - if: ${{ needs.dependency-check.outputs.code != 'true' && needs.dependency-check.outputs.documentation != 'true' && needs.dependency-check.outputs.skills != 'true' }}
         run: npm run spellcheck
 
+  stream-deck-integration:
+    name: Stream Deck interoperability
+    needs: dependency-check
+    if: ${{ needs.dependency-check.outputs.stream-deck-integration == 'true' }}
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.revision || github.sha }}
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          version: '0.13.0'
+          python-version: '3.14.6'
+      - run: uv sync --locked --all-extras --group dev
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: '.node-version'
+      - name: Native application/plugin interoperability
+        id: pytest
+        run: uv run --locked pytest tests/integration/stream_deck -ra --durations=20 --junitxml=.tmp/test-results/stream-deck-integration.xml
+      - name: Retain interoperability test report
+        if: ${{ !cancelled() && (steps.pytest.outcome == 'success' || steps.pytest.outcome == 'failure') }}
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: stream-deck-integration-test-results
+          path: .tmp/test-results/stream-deck-integration.xml
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
   posix:
     needs: dependency-check
     if: ${{ needs.dependency-check.outputs.posix == 'true' }}
@@ -292,7 +329,7 @@ jobs:
       upload-packages: ${{ inputs.upload-packages || false }}
 
   check:
-    needs: [dependency-check, code, ui, documentation, skills, gitleaks, actionlint, posix, stream-deck]
+    needs: [dependency-check, code, ui, documentation, skills, gitleaks, actionlint, posix, stream-deck, stream-deck-integration]
     if: ${{ always() }}
     runs-on: windows-latest
     timeout-minutes: 5
@@ -306,6 +343,7 @@ jobs:
           UI_REQUIRED: ${{ needs.dependency-check.outputs.code }}
           POSIX_REQUIRED: ${{ needs.dependency-check.outputs.posix }}
           STREAM_DECK_REQUIRED: ${{ needs.dependency-check.outputs.stream-deck }}
+          STREAM_DECK_INTEGRATION_REQUIRED: ${{ needs.dependency-check.outputs.stream-deck-integration }}
           DOCUMENTATION_REQUIRED: ${{ needs.dependency-check.outputs.documentation }}
           SKILLS_REQUIRED: ${{ needs.dependency-check.outputs.skills }}
           WORKFLOWS_REQUIRED: ${{ needs.dependency-check.outputs.workflows }}
@@ -313,6 +351,7 @@ jobs:
           UI_RESULT: ${{ needs.ui.result }}
           POSIX_RESULT: ${{ needs.posix.result }}
           STREAM_DECK_RESULT: ${{ needs.stream-deck.result }}
+          STREAM_DECK_INTEGRATION_RESULT: ${{ needs.stream-deck-integration.result }}
           DOCUMENTATION_RESULT: ${{ needs.documentation.result }}
           SKILLS_RESULT: ${{ needs.skills.result }}
           WORKFLOWS_RESULT: ${{ needs.actionlint.result }}
@@ -326,7 +365,7 @@ jobs:
           if ($env:CONTRACTS_REQUIRED -ne 'true' -and $env:CONTRACTS_REQUIRED -ne 'false') {
             throw 'Missing or invalid contract-test selection.'
           }
-          foreach ($suite in @('CODE', 'UI', 'DOCUMENTATION', 'SKILLS', 'WORKFLOWS', 'POSIX', 'STREAM_DECK')) {
+          foreach ($suite in @('CODE', 'UI', 'DOCUMENTATION', 'SKILLS', 'WORKFLOWS', 'POSIX', 'STREAM_DECK', 'STREAM_DECK_INTEGRATION')) {
             $required = [Environment]::GetEnvironmentVariable("${suite}_REQUIRED")
             $result = [Environment]::GetEnvironmentVariable("${suite}_RESULT")
             if ($required -ne 'true' -and $required -ne 'false') {

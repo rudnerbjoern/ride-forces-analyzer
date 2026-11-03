@@ -5,7 +5,7 @@ import test from "node:test";
 import { actionIcon, keyFeedback, keyImage } from "../dist/feedback.js";
 import { dialFeedback } from "../dist/device-feedback.js";
 
-const snapshot = JSON.parse(await readFile(new URL("fixtures/protocol.json", import.meta.url), "utf8")).messages[0];
+const snapshot = JSON.parse(await readFile(new URL("../../../tests/fixtures/stream_deck_protocol.json", import.meta.url), "utf8")).messages[0];
 const client = () => ({ state: structuredClone(snapshot), status: "connected", pending: () => false, error: () => undefined });
 
 test("function icons distinguish browsing, import/open, direction, zoom and marker commands", () => {
