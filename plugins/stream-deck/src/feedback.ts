@@ -201,7 +201,7 @@ export function keyFeedback(client: ControlClient, context: string, settings: Co
         "view.selection": "Zoom", "smoothing.step": "Smoothing", "smoothing.reset": "Smoothing",
         "curve.set": "Curves", "marker.preview": "Marker", "marker.apply": "Apply", "marker.discard": "Discard",
     };
-    const label = settings ? labels[name] : "Choose";
+    const label = settings ? name === "library.move" ? settings.direction === -1 ? "Previous" : "Next" : labels[name] : "Choose";
     const snapshot = client.state;
     let title = name === "view.selection" ? "Zoom\nSelection" : label;
     let active = false;
@@ -213,8 +213,9 @@ export function keyFeedback(client: ControlClient, context: string, settings: Co
     }
     if (name.startsWith("library.")) {
         const selected = snapshot.library?.selected;
-        title = name === "library.import" ? "Import…" : name === "library.open" ? `Open\n${selected?.title.slice(0, 24) ?? "No selection"}`
-            : `${selected?.title.slice(0, 20) ?? "Library"}\n${settings?.direction === -1 ? "↑" : "↓"} ${selected ? `${selected.index + 1}/${snapshot.library?.count}` : snapshot.library ? snapshot.library.count === 0 ? "Empty" : "No selection" : "—"}`;
+        const index = selected ? `${selected.index + 1}/${snapshot.library?.count}`
+            : snapshot.library?.count === 0 ? "Empty" : "No choice";
+        title = name === "library.import" ? "Import…" : `${label}\n${index}`;
     } else if (name === "playback.toggle") {
         playing = snapshot.playback?.playing ?? false;
         active = playing;

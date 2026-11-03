@@ -282,14 +282,14 @@
     ]
   },
   "inputs": {
-    "scripts/render_stream_deck_reference.py": "b5d6625b61e12bbba0a2fe89fffb998b69ee1f85e9b89b77c4cbf2c4bb89a89c",
+    "scripts/render_stream_deck_reference.py": "7f08f52fc8706fbd02a5c5e87873a67388957bfab31e0433a6efdc32bd5414da",
     "plugins/stream-deck/tests/fixtures/protocol.json": "514fc9fc5e05cad11ffde5fd0c059f0c77fbf621df4bb64cdb3284fe7f16fb5c",
-    "plugins/stream-deck/src/feedback.ts": "34113cd0598c0cb305e2a7051e018361b796e1b463fbd81089618fe51a3fa977",
+    "plugins/stream-deck/src/feedback.ts": "0329807b41968a764758dcc503d7bc32d95dfbb8363297e9576649d4bcf5dc32",
     "plugins/stream-deck/src/device-feedback.ts": "3e74610b7cefd0fe5088c3c7af2d48342884da5f352f664e31d4bee1fa1455f6",
     "plugins/stream-deck/devices/layouts/plus.json": "bc41ddb1cfbb3a9602f07673aace2942a5b3a711aeb4fc5b86b8ab5d9ed49261",
     "plugins/stream-deck/devices/layouts/neo.json": "875875d9c4eadd35ee1f1f92beeb0623fc589f317f50eecfd3eba6c05dd76abd",
-    "plugins/stream-deck/scripts/build-profiles.mjs": "ad7a63e3fc7a7047754c74ba04875e1159fa1faf5716c5964f8d95bd792d5580",
-    "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/manifest.json": "efc2848c9e2da4874abc0f6e2499a860bb49a067e5c924c003d2bd50f1b99291",
+    "plugins/stream-deck/scripts/build-profiles.mjs": "0f6414e26e47eef523d4bd84717a0632edd919f27e14e044660196c44c902076",
+    "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/manifest.json": "addd80d7f00a5f3e5260c91a948895f0af141bcfc62880b294d0e72c0faf7c7b",
     "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/imgs/plugin@2x.png": "53476c4916afabf61592ceec13b2c902a197d43b94d15b5f689c5dfa5004fe31"
   },
   "neo": {
@@ -392,19 +392,19 @@
         "keys": [
           {
             "position": "1,0",
-            "title": "Example ri…\n↑ 1/2",
+            "title": "Previous\n1/2",
             "state": 0,
             "status": "inactive"
           },
           {
             "position": "2,0",
-            "title": "Example ri…\n↓ 1/2",
+            "title": "Next\n1/2",
             "state": 0,
             "status": "inactive"
           },
           {
             "position": "3,0",
-            "title": "Open\nExample ri…",
+            "title": "Open\n1/2",
             "state": 0,
             "status": "inactive"
           },
@@ -912,6 +912,149 @@
           "value": "#50 · 00:01.00",
           "status": "Applied #50 · 00:01.00"
         }
+      }
+    ]
+  },
+  "mobile": {
+    "image": "stream-deck-mobile-controls.png",
+    "size": [
+      1040,
+      740
+    ],
+    "key_layout": {
+      "rows": 2,
+      "columns": 3
+    },
+    "pages": [
+      {
+        "name": "Start",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Library"
+          },
+          {
+            "position": "2,0",
+            "title": "Playback"
+          },
+          {
+            "position": "0,0",
+            "title": "Start app"
+          },
+          {
+            "position": "0,1",
+            "title": "Website"
+          }
+        ]
+      },
+      {
+        "name": "Library",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Previous\n1/2",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,0",
+            "title": "Next\n1/2",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,1",
+            "title": "Open\n1/2",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "1,1",
+            "title": "Import…",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          }
+        ]
+      },
+      {
+        "name": "Playback",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Play\n1×",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,0",
+            "title": "View"
+          },
+          {
+            "position": "0,1",
+            "title": "Pos. -1\n00:01.00",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "1,1",
+            "title": "Pos. 1\n00:01.00",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,1",
+            "title": "Reset view",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          }
+        ]
+      },
+      {
+        "name": "View",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Zoom −\n10.0 s",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,0",
+            "title": "Zoom +\n10.0 s",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,1",
+            "title": "Reset view",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "1,1",
+            "title": "Zoom\nSelection",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,1",
+            "title": "Play\n1×",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          }
+        ]
       }
     ]
   }

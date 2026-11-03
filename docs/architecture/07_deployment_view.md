@@ -29,7 +29,7 @@ Development and local regression checks run on native Windows.
 `setup.ps1` creates the locked environment; `start.ps1` starts the application
 without dependency synchronization. Node supplies development checks and builds
 the separate [Stream Deck plugin](../../plugins/stream-deck/README.md).
-Builds assemble a Windows `.sdPlugin` folder under `.tmp/stream-deck/`, independently
+Builds assemble a shared Windows/macOS `.sdPlugin` folder under `.tmp/stream-deck/`, independently
 of any existing source-folder installation. Base metadata/assets and device action
 metadata/layouts are combined there; preparing or testing it does not install,
 restart or import a plugin/profile. Explicit local installation copies the artifact
@@ -40,6 +40,9 @@ Compiled JavaScript bundles its runtime dependencies; project/runtime licenses
 are assembled beside it, together with Plus/Neo `.streamDeckProfile` archives.
 Profiles use native folders. Plus uses dials with a dedicated Play/Pause key;
 Neo retains key commands. Import selects the matching device profile. Stream Deck supplies Node.js, independently of development Node.
+The manifest enables macOS 15+ with the same JavaScript entry point and no native
+Windows binary. macOS installation, connection, focus handling and device behavior
+remain unverified; Start app requires the local Analyzer `.app` target.
 Native Windows startup, Analyzer connection and profile import for an attached
 Plus are verified. Plus dials/touch, Neo marker
 editors and InfoBar have automated checks; device rendering and interaction remain open.

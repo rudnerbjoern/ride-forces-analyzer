@@ -37,6 +37,7 @@ not hardware photographs or acceptance results.
 | `appearance-*.png`                                    | Same Voltron scene as the workspace screenshots; one image per theme except System, 800×650 content plus native window frame, inspector hidden, no downscaling.                                                                                          | [Appearance](appearance-reference.json)  |
 | `stream-deck-plus-controls.png`                       | All seven Plus profile pages in 2×4 key layouts with aligned touch fields and four dials; English, 1620×2060, Segoe UI. Fixed example values, no hardware verification.                                                                                  | [Plus](stream-deck-reference.json)       |
 | `stream-deck-neo-controls.png`                        | All fourteen Neo profile pages in 2×4 key layouts, contextual 232×50 InfoBar examples and both native Touch Points; English, 1220×2830, Segoe UI. No hardware verification.                                                                              | [Neo](stream-deck-reference.json)        |
+| `stream-deck-mobile-controls.png`                     | Four reduced Mobile pages with two rows of three keys, Back and no Home; English, 1040×740, Segoe UI. Fixed software examples; Mobile import and phone operation unverified.                                                                             | [Mobile](stream-deck-reference.json)     |
 
 The Voltron Nevera layout sample has vertical +4.37 g, lateral −0.67 g,
 longitudinal −0.42 g and tilt 62.9°. It is the fixed vertical-force maximum with
@@ -63,7 +64,7 @@ Run the required command from the repository root in native Windows PowerShell:
 .\.venv\Scripts\python.exe .\scripts\capture_app_reference.py --themes
 # Five Voltron Nevera layouts, crops and comparison sheet
 .\.venv\Scripts\python.exe .\scripts\render_export_reference.py
-# Stream Deck +/Neo user-guide illustrations (requires the locked Node development tools)
+# Stream Deck +/Neo/Mobile user-guide illustrations (requires the locked Node development tools)
 .\.venv\Scripts\python.exe .\scripts\render_stream_deck_reference.py
 ```
 

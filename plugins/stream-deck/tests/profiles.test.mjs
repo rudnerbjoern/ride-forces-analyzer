@@ -15,8 +15,8 @@ const plugin = pathToFileURL(pluginOutput);
 
 test("bundled device profiles provide reachable native menus, fixed navigation and existing key controls", async () => {
   const manifest = JSON.parse(await readFile(new URL("manifest.json", plugin), "utf8"));
-  assert.deepEqual(manifest.Profiles.map(value => value.DeviceType), [7, 9]);
-  for (const profile of manifest.Profiles) {
+  assert.deepEqual(manifest.Profiles.map(value => value.DeviceType), [7, 9, 3]);
+  for (const profile of manifest.Profiles.filter(value => value.DeviceType !== 3)) {
     assert.equal(profile.DontAutoSwitchWhenInstalled, true);
     const reader = new ZipReader(new Uint8ArrayReader(await readFile(new URL(`${profile.Name}.streamDeckProfile`, plugin))));
     try {
@@ -196,4 +196,54 @@ test("Home selects only the invoking device's bundled Start page without an appl
   }
   assert.deepEqual(calls, [["plus-device", "profiles/plus", 0], ["neo-device", "profiles/neo", 0]]);
   assert.equal(alerts, 1);
+});
+
+
+test("Mobile preview keeps its entire reachable profile within six keys and existing commands", async () => {
+  const reader = new ZipReader(new Uint8ArrayReader(await readFile(new URL("profiles/mobile.streamDeckProfile", plugin))));
+  try {
+    const entries = await reader.getEntries();
+    const root = JSON.parse(await entries.find(entry => /^[^/]+\/manifest.json$/.test(entry.filename)).getData(new TextWriter()));
+    assert.equal(root.Device.Model, "VSD2/WiFi");
+    assert.equal(root.Name, "Ride Forces Analyzer Mobile Preview");
+    assert.deepEqual(root.Pages.Pages, [root.Pages.Current]);
+    const pages = new Map();
+    for (const entry of entries.filter(entry => /\/Profiles\/[^/]+\/manifest.json$/.test(entry.filename))) {
+      const page = JSON.parse(await entry.getData(new TextWriter()));
+      if (page.Name) pages.set(entry.filename.split("/").at(-2).toLowerCase(), page);
+    }
+    assert.deepEqual([...pages.values()].map(page => page.Name), ["Start", "Library", "Playback", "View"]);
+    const visited = new Set(), operations = new Set();
+    function visit(id) {
+      assert.ok(!visited.has(id), "Folders must have one parent and no cycles"); visited.add(id);
+      const page = pages.get(id);
+      assert.deepEqual(page.Controllers.map(controller => controller.Type), ["Keypad"]);
+      const keys = page.Controllers[0].Actions;
+      assert.ok(Object.keys(keys).length <= 6);
+      if (page.Name !== "Start") {
+        assert.equal(keys["0,0"].UUID, "com.elgato.streamdeck.profile.backtoparent");
+        assert.ok(Object.values(keys).every(action => action.UUID !== `${uuid}.home`));
+      }
+      for (const [position, action] of Object.entries(keys)) {
+        assert.match(position, /^[0-2],[01]$/);
+        if (action.UUID.endsWith('.control')) {
+          assert.ok(controlSettings(action.Settings)); operations.add(action.Settings.operation);
+        } else {
+          const image = action.States[0].Image;
+          assert.ok(entries.some(entry => entry.filename.toLowerCase().endsWith(`/profiles/${id}/${image.toLowerCase()}`)));
+        }
+        if (action.UUID === "com.elgato.streamdeck.profile.openchild") visit(action.Settings.ProfileUUID);
+      }
+    }
+    visit(root.Pages.Current);
+    assert.equal(visited.size, 4);
+    assert.deepEqual([...operations].sort(), ["library.import", "library.move", "library.open", "playback.toggle", "position.step", "view.reset", "view.selection", "view.zoom"]);
+    const mobileKeys = name => [...pages.values()].find(page => page.Name === name).Controllers[0].Actions;
+    assert.equal(mobileKeys("Playback")["2,1"].Settings.operation, "view.reset");
+    assert.equal(mobileKeys("View")["2,1"].Settings.operation, "playback.toggle");
+    const start = pages.get(root.Pages.Current).Controllers[0].Actions;
+    assert.equal(start["0,0"].UUID, "com.elgato.streamdeck.system.open");
+    assert.equal(start["0,0"].Settings.path, "");
+    assert.equal(start["0,1"].UUID, "com.elgato.streamdeck.system.website");
+  } finally { await reader.close(); }
 });

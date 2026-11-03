@@ -70,6 +70,24 @@ def test_reference_cli_is_reproducible_from_fixed_contract_examples() -> None:
             next(key for key in pages["Playback"]["keys"] if key["position"] == "1,1")["title"]
             == "Fine\n1 sample"
         )
+        mobile = manifest["mobile"]
+        assert mobile["image"] == "stream-deck-mobile-controls.png"
+        assert mobile["key_layout"] == {"rows": 2, "columns": 3}
+        assert [page["name"] for page in mobile["pages"]] == [
+            "Start",
+            "Library",
+            "Playback",
+            "View",
+        ]
+        assert all(len(page["keys"]) <= 6 for page in mobile["pages"])
+        library = next(page for page in mobile["pages"] if page["name"] == "Library")
+        titles = {key["position"]: key["title"] for key in library["keys"]}
+        assert titles["1,0"] == "Previous\n1/2"
+        assert titles["2,0"] == "Next\n1/2"
+        assert titles["0,1"] == "Open\n1/2"
+        assert all(key["title"] != "Home" for page in mobile["pages"] for key in page["keys"])
+        with Image.open(output / mobile["image"]) as image:
+            assert list(image.size) == mobile["size"] == [1040, 740]
         neo = manifest["neo"]
         assert neo["image"] == "stream-deck-neo-controls.png"
         assert neo["native_pages"] == ["Start", "Quick controls"]

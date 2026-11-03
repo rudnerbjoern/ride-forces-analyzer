@@ -1,4 +1,4 @@
-"""Render the Plus and Neo user-guide examples from production plugin graphics and feedback.
+"""Render device-profile illustrations and the limited Mobile preview from plugin feedback.
 
 Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
@@ -34,7 +34,7 @@ const fixture = JSON.parse(readFileSync('plugins/stream-deck/tests/fixtures/prot
 const client = () => ({ state: structuredClone(fixture), status: 'connected', pending: () => false, error: () => undefined });
 const h = client();
 const profiles = {};
-for (const device of ['plus','neo']) {
+for (const device of ['plus','neo','mobile']) {
 const archive = new ZipReader(new Uint8ArrayReader(readFileSync(`.tmp/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/profiles/${device}.streamDeckProfile`)));
 const entries = await archive.getEntries();
 const root = JSON.parse(await entries.find(entry => /^[^/]+\/manifest.json$/.test(entry.filename)).getData(new TextWriter()));
@@ -58,7 +58,7 @@ for (const entry of entries.filter(entry => /\/Profiles\/[^/]+\/manifest.json$/.
  }
  const result = {name:page.Name, id:entry.filename.split('/').at(-2).toLowerCase(), keys:pageKeys};
  if (device === 'neo') result.infobar = infoFeedback(h, page.Controllers.find(c => c.Type === 'Neo').Actions['1,0'].Settings);
- else result.dials = Object.entries(page.Controllers.find(c => c.Type === 'Encoder')?.Actions ?? {})
+ else if (device === 'plus') result.dials = Object.entries(page.Controllers.find(c => c.Type === 'Encoder')?.Actions ?? {})
   .map(([position, action]) => ({position, ...dialFeedback(h, 'example', action.Settings, false)}));
  pages.push(result);
 }
@@ -314,11 +314,66 @@ def _render_plus(output: Path, pages: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _render_mobile(output: Path, pages: list[dict[str, Any]]) -> dict[str, Any]:
+    """Render the limited Mobile profile as four six-key page previews."""
+    canvas = QImage(1040, 100 + ((len(pages) + 1) // 2) * 320, QImage.Format.Format_ARGB32)
+    canvas.fill(QColor("#0b1422"))
+    painter = QPainter(canvas)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    try:
+        _text(
+            painter,
+            QRectF(28, 15, 984, 38),
+            "Stream Deck Mobile · Six-key preview",
+            24,
+            weight=600,
+        )
+        _text(
+            painter,
+            QRectF(28, 55, 984, 26),
+            "Software illustration · fixed examples · Mobile import and phone operation remain unverified",
+            color="#9fb6cf",
+        )
+        for index, page in enumerate(pages):
+            x, y = 28 + (index % 2) * 504, 100 + (index // 2) * 320
+            painter.setBrush(QColor("#142237"))
+            painter.setPen(QColor("#34506d"))
+            painter.drawRoundedRect(QRectF(x, y, 480, 300), 18, 18)
+            _text(painter, QRectF(x + 22, y + 8, 436, 30), page["name"], 18, weight=600)
+            for key in page["keys"]:
+                column, row = map(int, key["position"].split(","))
+                _profile_key(
+                    painter,
+                    key,
+                    QRectF(x + 60 + column * 130, y + 45 + row * 120, 100, 100),
+                )
+    finally:
+        painter.end()
+    filename = "stream-deck-mobile-controls.png"
+    if not canvas.save(str(output / filename)):
+        raise OSError("Cannot save the Mobile preview image")
+    return {
+        "image": filename,
+        "size": [canvas.width(), canvas.height()],
+        "key_layout": {"rows": 2, "columns": 3},
+        "pages": [
+            {
+                "name": page["name"],
+                "keys": [
+                    {key: value for key, value in item.items() if key != "image"}
+                    for item in page["keys"]
+                ],
+            }
+            for page in pages
+        ],
+    }
+
+
 def render_reference(output: Path) -> None:
-    """Write Plus/Neo illustrations and their fixed example-value manifest.
+    """Write Plus/Neo illustrations and the limited Mobile preview and their fixed example-value manifest.
 
     Args:
-        output: Destination directory for both PNG images and their shared JSON manifest.
+        output: Destination directory for the PNG images and their shared JSON manifest.
 
     Raises:
         OSError: Inputs cannot be read or outputs cannot be written.
@@ -352,13 +407,14 @@ def render_reference(output: Path) -> None:
         "inputs": {name: sha256((ROOT / name).read_bytes()).hexdigest() for name in inputs},
     }
     manifest["neo"] = _render_neo(output, data["neo"])
+    manifest["mobile"] = _render_mobile(output, data["mobile"])
     (output / MANIFEST).write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
         newline="\n",
     )
     print(
-        f"Rendered {IMAGE} and stream-deck-neo-controls.png: fixed software examples, no device or application connection",
+        f"Rendered {IMAGE} and stream-deck-neo-controls.png and stream-deck-mobile-controls.png: fixed software examples, no device or application connection",
     )
 
 

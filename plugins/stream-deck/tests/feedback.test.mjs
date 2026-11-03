@@ -153,3 +153,22 @@ test("key captions stay within two short lines for long names, values and blocki
   h.error = () => "analysis_failed";
   assert.match(keyFeedback(h, "curve", { operation: "curve.set" }).title, /\nFailed$/);
 });
+
+
+test("Library keys retain readable action labels instead of truncating recording names", () => {
+  const h = client();
+  const name = "A very long recording name that cannot fit on a key";
+  h.state.library.selected.title = name;
+  const previous = { operation: "library.move", direction: -1 };
+  const next = { operation: "library.move", direction: 1 };
+  const open = { operation: "library.open" };
+  assert.equal(keyFeedback(h, "previous", previous).title, "Previous\n1/2");
+  assert.equal(keyFeedback(h, "next", next).title, "Next\n1/2");
+  assert.equal(keyFeedback(h, "open", open).title, "Open\n1/2");
+  assert.equal(dialFeedback(h, "library", { control: "library" }, false).value, name);
+  h.state.library.selected.index = 1;
+  assert.equal(keyFeedback(h, "open", open).title, "Open\n2/2");
+  h.status = "disconnected";
+  assert.equal(keyFeedback(h, "previous", previous).title, "Previous\nOffline");
+  assert.equal(keyFeedback(h, "next", next).title, "Next\nOffline");
+});

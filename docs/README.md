@@ -29,7 +29,7 @@ chapter 9 retains decision status and rationale.
   sizes, choose Full frame or Content area and read the instruments.
 - [Presets and batches](user/EXPORT_BATCHES.md): reuse settings, queue recordings
   and find results or handle failed jobs.
-- [Stream Deck +/Neo controls](user/STREAM_DECK.md): set up the profile, read icons and
+- [Stream Deck +/Neo controls and Mobile preview](user/STREAM_DECK.md): set up the profile, read icons and
   live values, navigate recordings and preview/apply markers.
 
 ## Current product and API contracts

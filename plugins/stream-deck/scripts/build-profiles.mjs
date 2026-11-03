@@ -38,6 +38,16 @@ const pages = {
   "marker-end": { name: "End marker", keys: [] },
 };
 
+// Keep the six-key Mobile preview limited to browsing and playback/view navigation.
+const mobilePages = {
+  start: { name: "Start", keys: [folder("Library", "library"), folder("Playback", "playback")] },
+  library: pages.library,
+  playback: { name: "Playback", keys: [control("playback.toggle"), folder("View", "view"),
+    control("position.step", { steps: -1 }), control("position.step", { steps: 1 }), control("view.reset")] },
+  view: { name: "View", keys: [control("view.zoom", { direction: -1 }), control("view.zoom", { direction: 1 }),
+    control("view.reset"), control("view.selection"), control("playback.toggle")] },
+};
+
 /** Stable identities keep rebuilt bundled profiles tied to the same native pages. */
 function identity(value) {
   const bytes = createHash("sha256").update(`${uuid}/${value}`).digest().subarray(0, 16);
@@ -52,35 +62,37 @@ function key(id, name, action, settings, title) {
     States: title ? [{ Title: title, TitleAlignment: "bottom", FontSize: 10, ShowTitle: true }] : [{}], UUID: action };
 }
 
-/** Assemble Plus and Neo archives from shared native folder/key assignments. */
+/** Assemble Plus, Neo and limited Mobile archives from shared native folder/key assignments. */
 export async function buildProfiles(plugin) {
   const { keyImage } = await import("../dist/feedback.js");
   const metadata = JSON.parse(await readFile(path.join(plugin, "manifest.json"), "utf8"));
   await mkdir(path.join(plugin, "profiles"), { recursive: true });
-  for (const [device, model] of [["plus", "20GBD9901"], ["neo", "20GBJ9901"]]) {
+  for (const [device, model] of [["plus", "20GBD9901"], ["neo", "20GBJ9901"], ["mobile", "VSD2/WiFi"]]) {
+    const columns = device === "mobile" ? 3 : 4;
+    const homePosition = `${columns - 1},1`;
     const profileId = identity(device);
     const root = `${profileId.toUpperCase()}.sdProfile`;
     const pageId = name => identity(`${device}/${name}`);
     const writer = new ZipWriter(new Uint8ArrayWriter(), { level: 0, lastModDate: new Date("2026-01-01T00:00:00Z") });
     const add = (filename, data) => writer.add(`${root}/${filename}`, new TextReader(JSON.stringify(data, null, 2) + "\n"));
-    await add("manifest.json", { Device: { Model: model, UUID: "" }, Name: `Ride Forces Analyzer ${device === "plus" ? "+" : "Neo"}`,
+    await add("manifest.json", { Device: { Model: model, UUID: "" }, Name: `Ride Forces Analyzer ${device === "plus" ? "+" : device === "neo" ? "Neo" : "Mobile Preview"}`,
       Pages: { Current: pageId("start"), Default: pageId("default"), Pages: device === "neo" ? [pageId("start"), pageId("quick")] : [pageId("start")] }, Version: "3.0" });
     // The native importer reserves Default for a separate empty page template.
     await add(`Profiles/${pageId("default").toUpperCase()}/manifest.json`,
       { Controllers: [{ Type: "Keypad", Actions: {} }], Icon: "", Name: "" });
-    for (const [name, page] of Object.entries(pages)) {
+    for (const [name, page] of Object.entries(device === "mobile" ? mobilePages : pages)) {
       if (device === "neo" && name === "selection") continue;
       if (device === "plus" && (["quick", "position", "smoothing", "speed"].includes(name) || name.startsWith("marker-"))) continue;
       const actions = {};
       const images = new Map();
       const put = (definition, index) => {
-        const coordinate = `${index % 4},${Math.floor(index / 4)}`;
+        const coordinate = `${index % columns},${Math.floor(index / columns)}`;
         const id = `${device}/${name}/${coordinate}`;
         if (definition.page) {
           actions[coordinate] = key(id, "Create Folder", "com.elgato.streamdeck.profile.openchild",
-            { ProfileUUID: pageId(definition.page) }, definition.page === "view" ? "Curves" : definition.title);
+            { ProfileUUID: pageId(definition.page) }, definition.page === "view" && device !== "mobile" ? "Curves" : definition.title);
           const symbol = definition.page.startsWith("marker-") ? definition.page.slice(7)
-            : definition.page === "view" ? "combined" : definition.page;
+            : definition.page === "view" ? device === "mobile" ? "view" : "combined" : definition.page;
           const image = `Images/${definition.page}.svg`;
           actions[coordinate].States[0].Image = image;
           images.set(image, keyImage(symbol, undefined));
@@ -96,7 +108,9 @@ export async function buildProfiles(plugin) {
         : device === "plus" && name === "markers" ? []
         : device === "plus" && name === "view" ? page.keys.filter(key => key.operation !== "view.reset")
         : device === "neo" && name === "explorer" ? page.keys.filter(key => key.page !== "selection") : page.keys;
-      const positions = device === "plus" ? {
+      const positions = device === "mobile" ? {
+        start: [1, 2], library: [1, 2, 3, 4], playback: [1, 2, 3, 4, 5], view: [1, 2, 3, 4, 5],
+      }[name] : device === "plus" ? {
         start: [1, 2], explorer: [1, 2, 5, 6], library: [4], playback: [4], selection: [4],
       }[name] : marker ? [1, 5, 6, 2] : {
         start: [1, 2], explorer: [1, 2, 5], playback: [1, 5, 2, 6], position: [1, 5, 6, 2],
@@ -109,13 +123,14 @@ export async function buildProfiles(plugin) {
         actions["0,0"].States[0].Image = image;
         await writer.add(`${root}/Profiles/${pageId(name).toUpperCase()}/${image}`,
           new Uint8ArrayReader(await readFile(path.join(plugin, "imgs/plugin@2x.png"))));
-        actions["3,0"] = key(`${device}/${name}/website`, "Website", "com.elgato.streamdeck.system.website",
+        const websitePosition = device === "mobile" ? "0,1" : "3,0";
+        actions[websitePosition] = key(`${device}/${name}/website`, "Website", "com.elgato.streamdeck.system.website",
           { path: metadata.URL, openInBrowser: true }, "Website");
         const websiteImage = "Images/website.svg";
-        actions["3,0"].States[0].Image = websiteImage;
+        actions[websitePosition].States[0].Image = websiteImage;
         images.set(websiteImage, keyImage("website", undefined));
       }
-      const extra = marker ? [control("marker.discard", { marker }), control("marker.apply", { marker })] : page.extra ?? [];
+      const extra = device === "mobile" ? [] : marker ? [control("marker.discard", { marker }), control("marker.apply", { marker })] : page.extra ?? [];
       if (!(device === "neo" && name === "position")) extra.forEach((definition, index) => put(definition,
         device === "neo" && marker ? [4, 3][index]
           : name === "view" && (device === "neo" || index === 0) ? index + 4 : index + 5));
@@ -127,8 +142,8 @@ export async function buildProfiles(plugin) {
         // Stream Deck forces native folder Back to key 1 during import.
         actions["0,0"] = key(`${device}/${name}/back`, "Parent Folder",
           "com.elgato.streamdeck.profile.backtoparent", {}, "Back");
-        actions["3,1"] = key(`${device}/${name}/home`, "Home", `${uuid}.home`, {}, "Home");
-        for (const [position, symbol] of [["0,0", "back"], ["3,1", "home"]]) {
+        if (device !== "mobile") actions[homePosition] = key(`${device}/${name}/home`, "Home", `${uuid}.home`, {}, "Home");
+        for (const [position, symbol] of [["0,0", "back"], ...(device === "mobile" ? [] : [[homePosition, "home"]])]) {
           const image = `Images/${symbol}.svg`;
           actions[position].States[0].Image = image;
           images.set(image, keyImage(symbol, undefined));
@@ -139,7 +154,7 @@ export async function buildProfiles(plugin) {
       if (device === "neo") {
         controllers.push({ Type: "Neo", Actions: { "1,0": key(`${device}/${name}/info`, "Analyzer InfoBar",
           `${uuid}.infobar`, { section: marker ? "markers" : name === "quick" ? "playback" : name, ...(marker ? { marker } : {}) }) } });
-      } else {
+      } else if (device === "plus") {
         const dials = name === "selection" ? ["start", "end"].map(boundary => ({ control: "selection", boundary })) : name === "library" ? [{ control: "library" }] : name === "playback"
           ? ["position", "view", "speed"].map(control => control ? { control } : null) : name === "view" ? [{ control: "smoothing" }] : name === "markers"
             ? ["start", "gravity", "incline", "end"].map(marker => ({ control: "marker", marker })) : [];
@@ -154,5 +169,5 @@ export async function buildProfiles(plugin) {
     }
     await writeFile(path.join(plugin, `profiles/${device}.streamDeckProfile`), await writer.close());
   }
-  console.log("Built Plus and Neo native folder profiles.");
+  console.log("Built Plus, Neo and Mobile preview native folder profiles.");
 }

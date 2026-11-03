@@ -68,7 +68,8 @@ wire models live in `runtime.control_contract`, paired with plugin protocol type
 `ui.stream_deck.StreamDeckController` owns optional server startup, GUI-thread
 action routing and coalesced state feedback. The plugin's shared client correlates
 requests and drives visible keys from confirmed snapshots. Build-time profile
-definitions produce native Plus/Neo folder layouts; Start uses native Elgato
+definitions produce native Plus/Neo folder layouts and a reduced six-key Mobile
+preview (Library/playback/view, Back only); Start uses native Elgato
 Open (user-configured executable/shortcut) and Website actions independently of
 the control transport; a local Home action returns
 to the invoking device's bundled Start page. Plus gesture handlers map each notch,

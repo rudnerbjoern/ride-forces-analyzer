@@ -31,7 +31,7 @@ uv run --locked python scripts/capture_app_reference.py --themes
 # Five Voltron Nevera layouts, their detail crops and comparison sheet; voltron-reference.json
 uv run --locked python scripts/render_export_reference.py
 
-# Stream Deck +/Neo user-guide illustrations; stream-deck-reference.json
+# Stream Deck +/Neo/Mobile user-guide illustrations; stream-deck-reference.json
 uv run --locked python scripts/render_stream_deck_reference.py
 ```
 
@@ -65,9 +65,10 @@ image set as refreshed. Do not use incomplete output as a reference.
 - Check the linked [layout gallery](../../../docs/EXPORT_LAYOUTS.md) when its
   images change. Follow the [central image guide](../../../docs/images/README.md)
   for reproduction settings, licensing and attribution.
-- For both Stream Deck examples, review the [user guide](../../../docs/user/STREAM_DECK.md):
+- For the Stream Deck examples, review the [user guide](../../../docs/user/STREAM_DECK.md):
   native menu/function symbols, every Plus/Neo 2×4 profile page, aligned Plus touch fields/dials,
-  both Neo Touch Points, InfoBar state, visible state badges, readable/elided fields and the
+  the four Mobile 2×3 pages with Back and no Home, both Neo Touch Points,
+  InfoBar state, visible state badges, readable/elided fields and the
   separate preview/applied marker values must match the generated manifest. Keep
   the software-illustration/example-value caption; leave physical acceptance open.
 - Inspect the diff for unintended image/document changes. Preserve unrelated

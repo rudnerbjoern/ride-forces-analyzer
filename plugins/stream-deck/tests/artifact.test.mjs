@@ -14,6 +14,7 @@ const require = createRequire(import.meta.url);
 const sdk = createRequire(require.resolve("@elgato/streamdeck"));
 const { WebSocketServer } = sdk("ws");
 const uuid = "io.github.rudnerbjoern.ride-forces-analyzer";
+const pluginVersion = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")).version;
 const examples = JSON.parse(await readFile(new URL("fixtures/protocol.json", import.meta.url), "utf8"));
 
 async function waitUntil(predicate, diagnostics = () => "") {
@@ -45,6 +46,11 @@ test("the assembled plugin passes official offline validation and includes runti
   const manifest = JSON.parse(await readFile(path.join(source, "manifest.json"), "utf8"));
   assert.equal(manifest.Actions[0].DisableAutomaticStates, true);
   assert.equal(manifest.Software.MinimumVersion, "7.6");
+  assert.deepEqual(manifest.OS, [{Platform:"windows", MinimumVersion:"10"}, {Platform:"mac", MinimumVersion:"15"}]);
+  assert.equal(manifest.CodePath, "bin/plugin.js");
+  assert.equal(manifest.CodePathWin, undefined);
+  assert.equal(manifest.CodePathMac, undefined);
+  assert.equal(manifest.Version, `${pluginVersion}.0`);
 });
 
 test("built plugin registers with the SDK host, controls the app and recovers without replay", async () => {
@@ -78,7 +84,7 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
   });
   let output = "";
   const info = { application: { version: "7.6.0", platform: "windows", language: "en", font: "Arial", platformVersion: "10" },
-    plugin: { uuid, version: "0.1.0.0" }, devices: [{ id: "test-device", name: "Test Neo", type: 9,
+    plugin: { uuid, version: `${pluginVersion}.0` }, devices: [{ id: "test-device", name: "Test Neo", type: 9,
       size: { columns: 4, rows: 2 } }, { id: "test-plus", name: "Test Plus", type: 7,
       size: { columns: 4, rows: 2 } }], devicePixelRatio: 1,
     colors: { buttonMouseOverBackgroundColor: "#000", buttonPressedBackgroundColor: "#000", buttonPressedBorderColor: "#000", buttonPressedTextColor: "#fff", highlightColor: "#fff" } };

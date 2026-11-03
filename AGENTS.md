@@ -55,6 +55,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 
 - MUST keep development and local regression checks on native Windows with uv, PySide6, Pydantic, typed Python, Ruff, Pylance, mypy and pytest. Linux/macOS are native distribution-build and runtime-validation targets, not additional developer setups. Runtime/tool versions and compatibility constraints come from repository configuration and the [Windows setup](docs/development/SETUP.md); NEVER duplicate version pins here.
 - MUST use locked dependencies. Before adding dependencies: check requirements and explain purpose.
+- MUST version the Stream Deck plugin independently of the app. Increment its package version for plugin code or packaged-data changes using the [plugin version workflow](plugins/stream-deck/README.md#independent-plugin-version); keep manifest and lock metadata synchronized. Documentation/tests alone do not require an increment.
 - MUST maintain architecture exclusively in the twelve arc42 chapters under `docs/architecture/`; navigate via their README index and read task-relevant chapters. MUST use Mermaid for suitable diagrams. NEVER introduce a parallel architecture overview; link existing ADRs from chapter 09.
 - NEVER put domain/import/analysis/storage/playback/rendering logic or validation in Qt widgets. MUST follow documented subsystem boundaries.
 - MUST keep render frame generation separate from encoding and preserve independent transparent-overlay and opaque-video outputs.

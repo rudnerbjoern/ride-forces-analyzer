@@ -1,4 +1,4 @@
-# Control Analyzer with Stream Deck + and Neo
+# Control Analyzer with Stream Deck +, Neo and Mobile
 
 Use the plugin to browse your Library, control playback and view settings, and
 prepare or apply recording markers. The currently active Analyzer Explorer is
@@ -29,6 +29,14 @@ remains unverified. Neo import and hardware operation, and macOS acceptance, rem
 Operate the **physical LCD keys, dials and touch strip**. Clicking a key in the
 Stream Deck desktop application's preview selects its configuration; it does not
 execute that key. Keep Analyzer in the foreground when testing application controls.
+
+## macOS availability
+
+The plugin manifest permits **macOS 15+** with **Stream Deck 7.6+**. The same
+JavaScript plugin and profiles are prepared for installation there. Native Mac
+installation, connection, focus handling and device operation are **unverified**.
+Use the Mac Analyzer `.app` and set **Start app** to that `.app` in Stream Deck;
+the Windows EXE/shortcut instructions above apply only to Windows.
 
 ## Recognize the functions and states
 
@@ -62,7 +70,7 @@ the [project website](https://rudnerbjoern.github.io/ride-forces-analyzer/) in y
 browser. Both work without an Analyzer connection. Explorer contains **Playback**,
 **Curves** and **Markers** in a central group. Plus also has **Selection**.
 
-In each submenu, **Back** is key **1** (top-left) and **Home** is key **8**
+In each Plus/Neo submenu, **Back** is key **1** (top-left) and **Home** is key **8**
 (bottom-right). Home returns to Start. Keys are numbered left to right, top row
 first. Start has no Back or Home key. Fine/Coarse stays on key **6** on Playback,
 Selection and Markers. Key captions use two short lines; detailed values remain
@@ -195,6 +203,35 @@ Marker name/state is on the first line, the current preview/adopted position on
 the second, and the last applied value on the third. Long text is elided within
 the display; disconnected state clears program values. No extra analysis or
 commands are triggered by the InfoBar.
+
+## Mobile: limited six-key preview
+
+The prepared **Ride Forces Analyzer Mobile Preview** profile uses **two rows of
+three buttons**. Pair Stream Deck Mobile with the Stream Deck desktop app, choose
+its six-key layout and import `mobile.streamDeckProfile` onto that Mobile device.
+The plugin still requires Stream Deck 7.6 or later and **Enable Stream Deck** in
+Analyzer. [Elgato's setup instructions](https://help.elgato.com/hc/en-us/articles/16786832942221-Elgato-Stream-Deck-Mobile-2-0-Getting-Started)
+cover pairing; it is handled by Stream Deck, not by an extra Analyzer network server.
+
+![Stream Deck Mobile limited preview showing the four actual six-key pages Start, Library, Playback and View, with Back and no Home button](../images/stream-deck-mobile-controls.png)
+
+*Software illustration from the generated Mobile profile and fixed plugin examples.
+Mobile import, pairing and actual phone operation remain unverified.*
+
+- **Start:** Start app, Library, Playback and Website. Configure the Analyzer EXE or
+  Windows shortcut on the **desktop** in Start app's native Open settings.
+- **Library:** Previous/Next, Open and Import. Browsing follows visible sorting and
+  filters; only Open opens the selection in the current Explorer. Keys show short
+  action names and the selected index/count; the full recording name stays in
+  the Analyzer Library (and on the Plus touch strip or Neo InfoBar).
+- **Playback:** Play/Pause, one sample backward/forward, Reset view and the View folder.
+- **View:** Zoom −/+, Reset view, Zoom to selection and Play/Pause.
+
+**Back is key 1; there is no Home key.** Key 6 is used for Reset view on Playback
+and Play/Pause on View. Library keeps one key free for your own assignment.
+This preview omits curve/smoothing/speed editors, markers and manual selection
+bounds. The GUI remains available for those controls. The same foreground/focus,
+dialog, connection and confirmed-state rules apply to Mobile keys.
 
 ## Understand locks and connection changes
 

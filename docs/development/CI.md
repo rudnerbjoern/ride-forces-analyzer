@@ -95,6 +95,10 @@ it does not guarantee lower total runner minutes.
 - Keep `check` required in branch protection. Failed/cancelled detection or selected
   jobs, missing/unknown/inconsistent results block merge. Do not use workflow-level
   path skips that leave required statuses absent; see [job conditions](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions).
+- Plugin builds enforce the independent plugin version against Git input changes
+  and verify package/manifest/lock consistency. The plugin job fetches full history
+  so docs-only follow-up commits cannot hide an omitted version increase.
+  See [plugin versioning](../../plugins/stream-deck/README.md#independent-plugin-version).
 
 ## Required secret scanning
 
