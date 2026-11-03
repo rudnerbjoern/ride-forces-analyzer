@@ -120,19 +120,26 @@ test("Secret scanning is mandatory, checksum-pinned and cannot silently skip the
   assert.equal(workflow.jobs.check.steps[0].env.GITLEAKS_RESULT, "${{ needs.gitleaks.result }}");
 });
 
-test("dependency caches are isolated by job, platform and locked inputs", async () => {
+test("compatible jobs share dependency caches while platform, toolchain and dependency sets stay isolated", async () => {
+  const npmKeys = new Set();
+  const npmPaths = new Set();
+  const pythonGroups = new Set();
   for (const filename of ["ci.yml", "source-release.yml", "posix-packages.yml"]) {
     const workflow = parseDocument(await readFile(new URL(`../../.github/workflows/${filename}`, import.meta.url), "utf8")).toJS();
-    for (const [id, job] of Object.entries(workflow.jobs)) {
+    for (const job of Object.values(workflow.jobs)) {
       const steps = job.steps ?? [];
       for (const step of steps.filter(step => step.uses?.startsWith("astral-sh/setup-uv@"))) {
         assert.equal(step.with["enable-cache"], true);
-        assert.ok(step.with["cache-suffix"].includes("${{ github.job }}"));
-        if (job.strategy?.matrix) assert.ok(step.with["cache-suffix"].includes("${{ matrix.target }}"));
+        const sync = steps.find(step => step.run?.startsWith("uv sync --locked"));
+        const group = sync.run.includes("--group build") ? "build" : "dev";
+        assert.equal(step.with["cache-suffix"], group);
+        pythonGroups.add(group);
+        assert.equal(step.with.version, "0.13.0");
+        assert.equal(step.with["python-version"], "3.14.6");
       }
       for (const step of steps.filter(step => step.uses?.startsWith("actions/setup-node@"))) {
         assert.equal(step.with["package-manager-cache"], false);
-        assert.equal(step.with.cache, undefined, "Do not enable an additional shared npm cache");
+        assert.equal(step.with.cache, undefined, "Keep one explicit npm cache");
       }
       const install = steps.findIndex(step => step.run === "npm ci --no-audit --no-fund");
       if (install < 0) continue;
@@ -142,14 +149,20 @@ test("dependency caches are isolated by job, platform and locked inputs", async 
       assert.equal(cache.uses, "actions/cache@v6.1.0");
       assert.equal(cache.if, steps[install].if);
       assert.equal(cache.with.path, "${{ env.NPM_CONFIG_CACHE }}");
-      assert.equal(job.env.NPM_CONFIG_CACHE, "${{ github.workspace }}/.tmp/npm-cache/" + id);
-      for (const component of ["${{ runner.os }}", "${{ runner.arch }}", "${{ github.job }}",
+      assert.equal(job.env.NPM_CONFIG_CACHE, "${{ github.workspace }}/.tmp/npm-cache");
+      assert.ok(!cache.with.key.includes("${{ github.job }}"));
+      for (const component of ["${{ runner.os }}", "${{ runner.arch }}",
         "${{ hashFiles('.node-version') }}", "${{ hashFiles('package-lock.json') }}"]) {
         assert.ok(cache.with.key.includes(component), component);
       }
       assert.equal(cache.with["restore-keys"], cache.with.key.replace("${{ hashFiles('package-lock.json') }}", ""));
+      npmKeys.add(cache.with.key);
+      npmPaths.add(job.env.NPM_CONFIG_CACHE);
     }
   }
+  assert.equal(npmKeys.size, 1, "Compatible npm jobs must restore the same cache key");
+  assert.equal(npmPaths.size, 1, "Matching keys also need matching paths/cache versions");
+  assert.deepEqual([...pythonGroups].sort(), ["build", "dev"]);
 });
 
 test("cached scanner/linter archives are verified before extraction and cache misses still download", async () => {
