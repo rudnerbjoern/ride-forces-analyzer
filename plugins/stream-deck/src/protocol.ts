@@ -1,8 +1,9 @@
 /** Application protocol; independent of the transport authentication version. */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 export type Direction = -1 | 1;
 export type Steps = -10 | -1 | 1 | 10;
+export type SelectionBoundary = "start" | "end";
 export type MarkerName = "start" | "gravity" | "incline" | "end";
 /** First/second/third follow the current chart axes; labels come from state. */
 export type CurveName = "first" | "second" | "third" | "combined" | "calibrated";
@@ -27,6 +28,7 @@ export type Action =
         | "playback.speed.reset" | "view.reset" | "view.selection" | "smoothing.reset" }
     | { readonly name: "library.move"; readonly direction: Direction }
     | { readonly name: "position.step"; readonly steps: Steps }
+    | { readonly name: "selection.step"; readonly boundary: SelectionBoundary; readonly steps: Steps }
     | { readonly name: "playback.speed.step" | "smoothing.step" | "view.zoom";
         readonly direction: Direction }
     | { readonly name: "curve.set"; readonly curve: CurveName; readonly enabled: boolean }
@@ -57,6 +59,11 @@ export interface PlaybackState {
     readonly speed: 0.5 | 1 | 2;
     readonly position: Position | null;
     readonly last_sample: number | null;
+}
+
+export interface SelectionState {
+    readonly start: Position;
+    readonly end: Position;
 }
 
 export interface ViewState {
@@ -101,6 +108,7 @@ export interface StateEvent {
     readonly library: LibraryState | null;
     readonly playback: PlaybackState | null;
     readonly view: ViewState | null;
+    readonly selection: SelectionState | null;
     readonly curves: readonly CurveState[];
     readonly markers: readonly MarkerState[];
 }

@@ -38,9 +38,10 @@ leave the installed files and running process unchanged. Local development needs
 Stream Deck developer mode; verify the actual connection in native/plugin logs.
 Compiled JavaScript bundles its runtime dependencies; project/runtime licenses
 are assembled beside it, together with Plus/Neo `.streamDeckProfile` archives.
-Profiles use native folders and existing key commands; import selects the matching
-device profile. Stream Deck supplies Node.js, independently of development Node.
-Local Windows startup and profile import are verified. Plus dials/touch, Neo marker
+Profiles use native folders. Plus uses dials with a dedicated Play/Pause key;
+Neo retains key commands. Import selects the matching device profile. Stream Deck supplies Node.js, independently of development Node.
+Native Windows startup, Analyzer connection and profile import for an attached
+Plus are verified. Plus dials/touch, Neo marker
 editors and InfoBar have automated checks; device rendering and interaction remain open.
 Planned delivery is one `.streamDeckPlugin` asset beside the Analyzer GitHub release
 packages, including device-specific Plus and Neo profiles.

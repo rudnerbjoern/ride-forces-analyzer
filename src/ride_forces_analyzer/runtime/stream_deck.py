@@ -12,7 +12,7 @@ from pathlib import Path
 from secrets import compare_digest, token_hex
 
 from pydantic import BaseModel, Field, ValidationError
-from PySide6.QtCore import QFileDevice, QIODevice, QObject, QSaveFile, QTimer, Signal
+from PySide6.QtCore import QByteArray, QFileDevice, QIODevice, QObject, QSaveFile, QTimer, Signal
 from PySide6.QtNetwork import QHostAddress
 from PySide6.QtWebSockets import QWebSocket, QWebSocketProtocol, QWebSocketServer
 
@@ -165,10 +165,15 @@ class ControlServer(QObject):
             client.setMaxAllowedIncomingFrameSize(MAX_MESSAGE_BYTES)
             deadline = QTimer(client)
             deadline.setSingleShot(True)
-            deadline.timeout.connect(client.abort)
+
+            def abort(_message: QByteArray | None = None, *, socket: QWebSocket = client) -> None:
+                """Abort this connection without registering a dynamic Qt slot."""
+                socket.abort()
+
+            deadline.timeout.connect(abort)
             deadline.start(5000)
             client.textMessageReceived.connect(partial(self._receive, client, deadline))
-            client.binaryMessageReceived.connect(client.abort)
+            client.binaryMessageReceived.connect(abort)
             client.disconnected.connect(partial(self._discard, client))
 
     def _receive(self, client: QWebSocket, deadline: QTimer, message: str) -> None:

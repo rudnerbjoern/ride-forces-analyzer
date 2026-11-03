@@ -3,7 +3,7 @@ import { action, SingletonAction, type DidReceiveSettingsEvent, type KeyAction, 
 
 import { ControlClient } from "./client.js";
 import { controlSettings, requestedAction, type ControlSettings } from "./controls.js";
-import { keyFeedback } from "./feedback.js";
+import { imageData, keyFeedback } from "./feedback.js";
 
 /** One configurable application key action, independent of native folder navigation. */
 @action({ UUID: "io.github.rudnerbjoern.ride-forces-analyzer.control" })
@@ -45,7 +45,7 @@ export class ControlAction extends SingletonAction<ControlSettings> {
                 const signature = JSON.stringify(feedback);
                 if (signature === key.signature) continue;
                 await key.action.setState(feedback.state);
-                await key.action.setImage(feedback.image);
+                await key.action.setImage(imageData(feedback.image), { state: feedback.state });
                 await key.action.setTitle(feedback.title);
                 key.signature = signature;
             }

@@ -1,4 +1,4 @@
-import type { Action, CurveName, Direction, MarkerName, StateEvent, Steps } from "./protocol.js";
+import type { Action, CurveName, Direction, MarkerName, SelectionBoundary, StateEvent, Steps } from "./protocol.js";
 
 export type ControlSettings = {
     operation?: Action["name"];
@@ -6,12 +6,14 @@ export type ControlSettings = {
     steps?: Steps;
     curve?: CurveName;
     marker?: MarkerName;
+    boundary?: SelectionBoundary;
 };
 
 export const CONTROL_LABELS: Readonly<Record<Action["name"], string>> = {
     "library.move": "Library: select entry", "library.open": "Library: open selection",
     "library.import": "Library: import…", "playback.toggle": "Play / Pause",
     "playback.speed.step": "Playback speed", "playback.speed.reset": "Reset playback speed",
+    "selection.step": "Selection: adjust boundary",
     "position.step": "Step position", "view.zoom": "Zoom", "view.reset": "Reset view",
     "view.selection": "Zoom to selection", "smoothing.step": "Smoothing",
     "smoothing.reset": "Reset smoothing", "curve.set": "Curve / calibrated mode",
@@ -27,10 +29,12 @@ export function controlSettings(value: Record<string, unknown>): ControlSettings
     const steps = value.steps ?? 1;
     const curve = value.curve ?? "first";
     const marker = value.marker ?? "start";
+    const boundary = value.boundary ?? "start";
     if (direction !== -1 && direction !== 1 || steps !== -10 && steps !== -1 && steps !== 1 && steps !== 10
         || curve !== "first" && curve !== "second" && curve !== "third" && curve !== "combined" && curve !== "calibrated"
+        || boundary !== "start" && boundary !== "end"
         || marker !== "start" && marker !== "gravity" && marker !== "incline" && marker !== "end") return undefined;
-    return { operation: operation as Action["name"], direction, steps, curve, marker };
+    return { operation: operation as Action["name"], direction, steps, curve, marker, boundary };
 }
 
 /** Build commands from confirmed values; unavailable controls never produce a command. */
@@ -40,6 +44,7 @@ export function requestedAction(settings: ControlSettings, state: StateEvent | u
     switch (name) {
         case "library.move": return { name, direction: settings.direction ?? 1 };
         case "position.step": return { name, steps: settings.steps ?? 1 };
+        case "selection.step": return state.selection ? { name, boundary: settings.boundary ?? "start", steps: settings.steps ?? 1 } : undefined;
         case "playback.speed.step": case "smoothing.step": case "view.zoom":
             return { name, direction: settings.direction ?? 1 };
         case "curve.set": {

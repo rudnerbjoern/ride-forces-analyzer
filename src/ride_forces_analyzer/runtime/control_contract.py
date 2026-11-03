@@ -8,12 +8,13 @@ from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, Field, TypeAdapter, field_validator, model_validator
 
-PROTOCOL_VERSION = 1
+PROTOCOL_VERSION = 2
 Version = Annotated[int, Field(ge=PROTOCOL_VERSION, le=PROTOCOL_VERSION)]
 Identifier = Annotated[str, Field(min_length=1, max_length=128)]
 SampleIndex = Annotated[int, Field(ge=0)]
 Direction = Literal[-1, 1]
 Steps = Literal[-10, -1, 1, 10]
+SelectionBoundary = Literal["start", "end"]
 MarkerName = Literal["start", "gravity", "incline", "end"]
 CurveName = Literal["first", "second", "third", "combined", "calibrated"]
 UnavailableReason = Literal[
@@ -114,6 +115,20 @@ class PositionStep(WireModel, frozen=True):
     steps: Steps
 
 
+class SelectionStep(WireModel, frozen=True):
+    """Adjust one inclusive export-selection boundary independently of ride markers.
+
+    Attributes:
+        name: Selection-boundary adjustment discriminator.
+        boundary: Start or end of the current selection.
+        steps: Signed source-sample count; existing selection controls clamp it.
+    """
+
+    name: Literal["selection.step"]
+    boundary: SelectionBoundary
+    steps: Steps
+
+
 class SettingStep(WireModel, frozen=True):
     """Move to an adjacent existing setting or zoom level.
 
@@ -170,6 +185,7 @@ Action = Annotated[
     SimpleAction
     | LibraryMove
     | PositionStep
+    | SelectionStep
     | SettingStep
     | CurveSet
     | MarkerPreview
@@ -184,6 +200,7 @@ ActionName = Literal[
     "playback.speed.reset",
     "playback.speed.step",
     "position.step",
+    "selection.step",
     "view.reset",
     "view.selection",
     "view.zoom",
@@ -303,6 +320,32 @@ class PlaybackState(WireModel, frozen=True):
         return value
 
 
+class SelectionState(WireModel, frozen=True):
+    """Expose the confirmed inclusive selection without changing recording markers.
+
+    Attributes:
+        start: First selected source sample and its displayed time.
+        end: Last selected source sample and its displayed time.
+    """
+
+    start: Position
+    end: Position
+
+    @model_validator(mode="after")
+    def ordered(self) -> Self:
+        """Reject selection feedback whose start follows its end.
+
+        Returns:
+            The validated selection.
+
+        Raises:
+            ValueError: The inclusive bounds are reversed.
+        """
+        if self.start.sample > self.end.sample:
+            raise ValueError("Selection start must not exceed its end")
+        return self
+
+
 class ViewState(WireModel, frozen=True):
     """Expose chart interval and existing smoothing values.
 
@@ -391,6 +434,7 @@ class StateEvent(WireModel, frozen=True):
         library: Visible Library selection feedback, or None without a target.
         playback: Actual playback feedback, or None without a recording.
         view: Chart/smoothing feedback, or None without a recording.
+        selection: Inclusive selection feedback, or None without a recording.
         curves: Curve/mode controls; empty without a recording.
         markers: Marker states; empty without a recording.
     """
@@ -405,6 +449,7 @@ class StateEvent(WireModel, frozen=True):
     library: LibraryState | None
     playback: PlaybackState | None
     view: ViewState | None
+    selection: SelectionState | None
     curves: tuple[CurveState, ...]
     markers: tuple[MarkerState, ...]
 

@@ -20,6 +20,9 @@ Checkerboards illustrate transparency and are not part of exported videos.
 HUD placement views are enlarged to illustrate a 4K editing timeline; its video
 export retains the native 1920×1080 or 1080×1920 resolution.
 Source hashes and exact settings are retained in the linked generated manifests.
+The Stream Deck illustrations use production plugin graphics/feedback and fixed
+control-contract examples, without reading live application or device data. They are
+not hardware photographs or acceptance results.
 
 | Images                                                | Content and fixed settings                                                                                                                                                                                                                               | Manifest                                 |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
@@ -32,6 +35,8 @@ Source hashes and exact settings are retained in the linked generated manifests.
 | `taron-force-cards.png`                               | Taron sample 3399, replay `00:22.15`, 11-sample smoothing; vertical +0.05 g, lateral +0.35 g, longitudinal +1.08 g.                                                                                                                                      | [README details](readme-reference.json)  |
 | `manta-smoothing-comparison.png`                      | Manta samples 4650–4900 (93–98 s); vertical force with smoothing windows 1, 11 and 31 on identical time/force scales, without a cursor.                                                                                                                  | [README details](readme-reference.json)  |
 | `appearance-*.png`                                    | Same Voltron scene as the workspace screenshots; one image per theme except System, 800×650 content plus native window frame, inspector hidden, no downscaling.                                                                                          | [Appearance](appearance-reference.json)  |
+| `stream-deck-plus-controls.png`                       | All seven Plus profile pages in 2×4 key layouts with aligned touch fields and four dials; English, 1620×2060, Segoe UI. Fixed example values, no hardware verification.                                                                                  | [Plus](stream-deck-reference.json)       |
+| `stream-deck-neo-controls.png`                        | All fourteen Neo profile pages in 2×4 key layouts, contextual 232×50 InfoBar examples and both native Touch Points; English, 1220×2830, Segoe UI. No hardware verification.                                                                              | [Neo](stream-deck-reference.json)        |
 
 The Voltron Nevera layout sample has vertical +4.37 g, lateral −0.67 g,
 longitudinal −0.42 g and tilt 62.9°. It is the fixed vertical-force maximum with
@@ -58,11 +63,14 @@ Run the required command from the repository root in native Windows PowerShell:
 .\.venv\Scripts\python.exe .\scripts\capture_app_reference.py --themes
 # Five Voltron Nevera layouts, crops and comparison sheet
 .\.venv\Scripts\python.exe .\scripts\render_export_reference.py
+# Stream Deck +/Neo user-guide illustrations (requires the locked Node development tools)
+.\.venv\Scripts\python.exe .\scripts\render_stream_deck_reference.py
 ```
 
 Add `--output .tmp/image-review` to review results before replacing tracked images.
-The generators pin recordings and settings, reject source-hash mismatches and leave
-original recordings unchanged. UI capture uses isolated temporary preferences and
+The recording-based generators pin recordings and settings, reject source-hash
+mismatches and leave original recordings unchanged. The Stream Deck manifest
+records fixture and renderer input hashes. UI capture uses isolated temporary preferences and
 an export database under `.tmp/`; GUI captures run sequentially, apart from GUI tests.
 Windows, Qt and installed font versions can affect pixels.
 

@@ -1,9 +1,10 @@
+import { PROTOCOL_VERSION } from "./protocol.js";
 import type { ServerMessage } from "./protocol.js";
 
 const actions = new Set([
     "library.open", "library.import", "library.move", "playback.toggle", "playback.speed.reset",
     "playback.speed.step", "position.step", "view.reset", "view.selection", "view.zoom",
-    "smoothing.reset", "smoothing.step", "curve.set", "marker.preview", "marker.apply", "marker.discard",
+    "smoothing.reset", "smoothing.step", "selection.step", "curve.set", "marker.preview", "marker.apply", "marker.discard",
 ]);
 const reasons = new Set(["no_active_window", "background", "input_focus", "dialog_open", "no_recording",
     "no_selection", "empty_library", "unsupported", "busy", "no_preview", "invalid_marker"]);
@@ -51,6 +52,12 @@ function playback(value: unknown): boolean {
         && typeof value.playing === "boolean" && [0.5, 1, 2].some(speed => speed === value.speed)
         && position(value.position) && (value.last_sample === null || integer(value.last_sample));
 }
+function selection(value: unknown): boolean {
+    if (value === null) return true;
+    if (!fields(value, ["start", "end"]) || !record(value.start) || !record(value.end)) return false;
+    return position(value.start) && position(value.end) && typeof value.start.sample === "number"
+        && typeof value.end.sample === "number" && value.start.sample <= value.end.sample;
+}
 function view(value: unknown): boolean {
     return value === null || fields(value, ["start_seconds", "end_seconds", "smoothing_window"])
         && (value.start_seconds === null || finite(value.start_seconds))
@@ -76,14 +83,14 @@ function marker(value: unknown): boolean {
     }
 }
 function serverMessage(value: unknown): value is ServerMessage {
-    if (!record(value) || value.version !== 1) return false;
+    if (!record(value) || value.version !== PROTOCOL_VERSION) return false;
     if (value.type === "state") {
         return fields(value, ["version", "type", "session_id", "sequence", "target", "availability",
-            "controls", "library", "playback", "view", "curves", "markers"])
+            "controls", "library", "playback", "view", "selection", "curves", "markers"])
             && id(value.session_id) && integer(value.sequence) && (value.target === null || target(value.target))
             && availability(value.availability) && record(value.controls)
             && Object.entries(value.controls).every(([name, state]) => actions.has(name) && availability(state))
-            && library(value.library) && playback(value.playback) && view(value.view)
+            && library(value.library) && playback(value.playback) && view(value.view) && selection(value.selection)
             && Array.isArray(value.curves) && value.curves.every(curve)
             && Array.isArray(value.markers) && value.markers.every(marker);
     }
@@ -97,7 +104,7 @@ function serverMessage(value: unknown): value is ServerMessage {
         && (value.reason === null || member(value.reason, reasons));
 }
 
-/** Decode the exact v1 wire contract before any value can drive a key or command. */
+/** Decode the exact v2 wire contract before any value can drive a key or command. */
 export function decodeServerMessage(payload: string): ServerMessage | undefined {
     if (Buffer.byteLength(payload, "utf8") > 64 * 1024) return undefined;
     try {

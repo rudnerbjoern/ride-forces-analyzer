@@ -125,9 +125,9 @@ generation. Its configurable SDK key action covers the agreed command types.
 
 ### Envelopes and compatibility
 
-- Application protocol `version: 1` is independent of discovery/authentication version 1.
+- Application protocol `version: 2` is independent of discovery/authentication version 1.
   Authenticate first; transport `ready` is not an application state event.
-- Require an exact application version. Invalid shapes, unknown fields/actions,
+- Require an exact application protocol version. Invalid shapes, unknown fields/actions,
   coercions and non-finite numbers are rejected. Contract changes require a new version.
   Unsupported versions produce `unsupported_protocol` in the server's supported envelope;
   the client enters `incompatible` and disables commands.
@@ -156,26 +156,27 @@ generation. Its configurable SDK key action covers the agreed command types.
 
 ### Actions
 
-| `action.name`                                 | Arguments                               | Behavior                                                               |
-| --------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------- |
-| `library.move`                                | `direction: -1 \| 1`                    | One visible sorted/filtered entry; cyclic boundaries                   |
-| `library.open`                                | None                                    | Open selection in the addressed current Explorer                       |
-| `library.import`                              | None                                    | Open the existing import dialog                                        |
-| `playback.toggle`                             | None                                    | Invoke actual play/pause                                               |
-| `playback.speed.step`, `playback.speed.reset` | Step: `direction: -1 \| 1`; reset: none | Adjacent supported speed; reset to 1×                                  |
-| `position.step`                               | `steps: -10 \| -1 \| 1 \| 10`           | Source samples; pause playback and clamp bounds                        |
-| `view.zoom`                                   | `direction: -1 \| 1`                    | Decrease/increase time magnification through existing chart navigation |
-| `view.reset`, `view.selection`                | None                                    | Reset viewport or zoom to the existing selection                       |
-| `smoothing.step`, `smoothing.reset`           | Step: `direction: -1 \| 1`; reset: none | Adjacent existing odd window or application default                    |
-| `curve.set`                                   | `curve`, `enabled: boolean`             | Set `first`, `second`, `third`, `combined` or `calibrated` control     |
-| `marker.preview`                              | `marker`, `steps: -10 \| -1 \| 1 \| 10` | Pause playback; adjust only that preview within valid bounds           |
-| `marker.apply`, `marker.discard`              | `marker`                                | Adopt or discard only that marker's preview                            |
+| `action.name`                                 | Arguments                                               | Behavior                                                                             |
+| --------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `library.move`                                | `direction: -1 \| 1`                                    | One visible sorted/filtered entry; cyclic boundaries                                 |
+| `library.open`                                | None                                                    | Open selection in the addressed current Explorer                                     |
+| `library.import`                              | None                                                    | Open the existing import dialog                                                      |
+| `playback.toggle`                             | None                                                    | Invoke actual play/pause                                                             |
+| `playback.speed.step`, `playback.speed.reset` | Step: `direction: -1 \| 1`; reset: none                 | Adjacent supported speed; reset to 1×                                                |
+| `position.step`                               | `steps: -10 \| -1 \| 1 \| 10`                           | Source samples; pause playback and clamp bounds                                      |
+| `selection.step`                              | `boundary: start \| end`, `steps: -10 \| -1 \| 1 \| 10` | Adjust the inclusive selection through existing Inspector controls; clamp each bound |
+| `view.zoom`                                   | `direction: -1 \| 1`                                    | Decrease/increase time magnification through existing chart navigation               |
+| `view.reset`, `view.selection`                | None                                                    | Reset viewport or zoom to the existing selection                                     |
+| `smoothing.step`, `smoothing.reset`           | Step: `direction: -1 \| 1`; reset: none                 | Adjacent existing odd window or application default                                  |
+| `curve.set`                                   | `curve`, `enabled: boolean`                             | Set `first`, `second`, `third`, `combined` or `calibrated` control                   |
+| `marker.preview`                              | `marker`, `steps: -10 \| -1 \| 1 \| 10`                 | Pause playback; adjust only that preview within valid bounds                         |
+| `marker.apply`, `marker.discard`              | `marker`                                                | Adopt or discard only that marker's preview                                          |
 
 Markers are `start`, `gravity`, `incline`, `end`. First/second/third curve slots
 follow the current chart axes; state supplies actual raw/directional labels.
 Fine/coarse selection and menu navigation stay local to the plugin. Relative
-steps may remain in flight together so aggregated dial ticks and rapid Library
-key presses retain one command per step; the server serializes and revalidates
+steps may remain in flight together so aggregated dial ticks and rapid Library/selection
+steps retain one command per step; the server serializes and revalidates
 them against current GUI state. No disconnected commands are queued or replayed.
 Plus press invokes Open/Play/Reset/Apply; marker touch discards only that preview.
 Neo InfoBar has no input handlers. Other view,
@@ -194,7 +195,10 @@ interaction decision; no valid preview means apply is unavailable.
   visible count and the selected entry's identity, title and zero-based index;
   an empty list has count zero and null selection.
 - Playback exposes actual playing/speed, current sample, source time, formatted
-  replay label and last valid sample. View feedback exposes source-time bounds
+  replay label and last valid sample. Selection exposes confirmed Start/End sample,
+  source time and replay label, independently of recording markers. Selection turns
+  update immediately, clamp at the other bound/source limits and perform no analysis
+  or Library marker writes. View feedback exposes source-time bounds
   and the actual odd smoothing window. Missing data uses null, not invented values.
 - Curves expose label, confirmed effective `active` value and independent availability.
   Combined is unavailable in raw mode. Device visuals follow actual application state.

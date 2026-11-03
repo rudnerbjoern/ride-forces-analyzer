@@ -348,7 +348,7 @@ class StreamDeckController(QObject):
             name: global_state for name in get_args(wire.ActionName)
         }
         state = wire.StateEvent(
-            version=1,
+            version=wire.PROTOCOL_VERSION,
             type="state",
             session_id=self._session,
             sequence=self._sequence,
@@ -358,6 +358,7 @@ class StreamDeckController(QObject):
             library=None,
             playback=None,
             view=None,
+            selection=None,
             curves=(),
             markers=(),
         )
@@ -387,6 +388,8 @@ class StreamDeckController(QObject):
                 if not name.startswith("library."):
                     controls[name] = wire.Unavailable(available=False, reason="no_recording")
             return state.model_copy(update={"library": library})
+        if not window.inspector.first.isEnabled() or not window.inspector.last.isEnabled():
+            controls["selection.step"] = wire.Unavailable(available=False, reason="busy")
         for name in ("smoothing.step", "smoothing.reset"):
             if not window.inspector.smoothing_slider.isEnabled():
                 controls[name] = wire.Unavailable(available=False, reason="unsupported")
@@ -404,6 +407,10 @@ class StreamDeckController(QObject):
             end_seconds=window.plot.axis_x.max(),
             smoothing_window=data.smoothing_window,
         )
+        selection_start = self._position(window, window.inspector.first.value())
+        selection_end = self._position(window, window.inspector.last.value())
+        assert selection_start is not None and selection_end is not None
+        selection = wire.SelectionState(start=selection_start, end=selection_end)
         checkboxes = (*window.visibility, window.combined_toggle, window.reference_toggle)
         curves = tuple(
             wire.CurveState(
@@ -440,6 +447,7 @@ class StreamDeckController(QObject):
                 "library": library,
                 "playback": playback,
                 "view": view,
+                "selection": selection,
                 "curves": curves,
                 "markers": markers,
             },
@@ -474,7 +482,10 @@ class StreamDeckController(QObject):
                 value: object = json.loads(payload)
                 if isinstance(value, dict):
                     envelope = cast(dict[str, object], value)
-                    if type(envelope.get("version")) is int and envelope.get("version") != 1:
+                    if (
+                        type(envelope.get("version")) is int
+                        and envelope.get("version") != wire.PROTOCOL_VERSION
+                    ):
                         code = "unsupported_protocol"
                     raw_id = envelope.get("id")
                     if isinstance(raw_id, str) and 0 < len(raw_id) <= 128:
@@ -488,7 +499,7 @@ class StreamDeckController(QObject):
             self.transport.reply(
                 sender,
                 wire.Failure(
-                    version=1,
+                    version=wire.PROTOCOL_VERSION,
                     type="response",
                     id=request_id,
                     target=target,
@@ -544,7 +555,7 @@ class StreamDeckController(QObject):
         self.transport.reply(
             sender,
             wire.Result(
-                version=1,
+                version=wire.PROTOCOL_VERSION,
                 type="response",
                 id=command.id,
                 target=command.target,
@@ -579,6 +590,11 @@ class StreamDeckController(QObject):
         elif isinstance(action, wire.PositionStep):
             navigation.pause()
             navigation.step_sample(action.steps)
+        elif isinstance(action, wire.SelectionStep):
+            control = (
+                window.inspector.first if action.boundary == "start" else window.inspector.last
+            )
+            control.setValue(control.value() + action.steps)
         elif isinstance(action, wire.CurveSet):
             (*window.visibility, window.combined_toggle, window.reference_toggle)[
                 _CURVES.index(action.curve)
@@ -660,7 +676,7 @@ class StreamDeckController(QObject):
         self.transport.reply(
             client,
             wire.Failure(
-                version=1,
+                version=wire.PROTOCOL_VERSION,
                 type="response",
                 id=command.id,
                 target=command.target,
@@ -682,7 +698,7 @@ class StreamDeckController(QObject):
                 self.transport.reply(
                     pending.client,
                     wire.Result(
-                        version=1,
+                        version=wire.PROTOCOL_VERSION,
                         type="response",
                         id=pending.command.id,
                         target=pending.command.target,

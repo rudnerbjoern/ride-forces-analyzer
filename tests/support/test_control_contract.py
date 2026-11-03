@@ -10,6 +10,7 @@ from pydantic import ValidationError
 
 from ride_forces_analyzer.runtime.control_contract import (
     ActionName,
+    PROTOCOL_VERSION,
     Command,
     Failure,
     MarkerState,
@@ -27,7 +28,7 @@ EXAMPLES = json.loads(FIXTURE.read_text(encoding="utf-8"))
 @pytest.mark.parametrize("action", EXAMPLES["actions"], ids=lambda value: value["name"])
 def test_all_agreed_actions_round_trip(action: dict[str, object]) -> None:
     payload: dict[str, object] = {
-        "version": 1,
+        "version": PROTOCOL_VERSION,
         "type": "command",
         "id": "request-1",
         "target": EXAMPLES["target"],
@@ -47,7 +48,7 @@ def test_shared_examples_cover_every_action_and_server_envelope() -> None:
         assert json.loads(parsed.model_dump_json()) == original
 
 
-@pytest.mark.parametrize("version", [True, "1", 0, 2])
+@pytest.mark.parametrize("version", [True, "2", 0, 1, 3])
 def test_incompatible_and_coerced_versions_are_rejected(version: object) -> None:
     with pytest.raises(ValidationError):
         parse_command(
@@ -79,6 +80,8 @@ def test_incompatible_and_coerced_versions_are_rejected(version: object) -> None
         {"name": "curve.set", "curve": "combined", "enabled": "yes"},
         {"name": "marker.preview", "marker": "missing", "steps": 1},
         {"name": "marker.apply"},
+        {"name": "selection.step", "boundary": "gravity", "steps": 1},
+        {"name": "selection.step", "boundary": "end", "steps": True},
     ],
 )
 def test_unknown_or_invalid_action_arguments_are_rejected(action: dict[str, object]) -> None:
@@ -86,7 +89,7 @@ def test_unknown_or_invalid_action_arguments_are_rejected(action: dict[str, obje
         parse_command(
             json.dumps(
                 {
-                    "version": 1,
+                    "version": PROTOCOL_VERSION,
                     "type": "command",
                     "id": "request-1",
                     "target": EXAMPLES["target"],
@@ -100,6 +103,13 @@ def test_unknown_or_invalid_action_arguments_are_rejected(action: dict[str, obje
     ("field", "value"),
     [
         ("sequence", -1),
+        (
+            "selection",
+            {
+                "start": {"sample": 20, "time_seconds": 1.0, "label": "a"},
+                "end": {"sample": 10, "time_seconds": 0.5, "label": "b"},
+            },
+        ),
         ("availability", {"available": False}),
         ("availability", {"available": 1}),
         ("playback", {"playing": False, "speed": True, "position": None, "last_sample": None}),
@@ -153,7 +163,7 @@ def test_inconsistent_marker_application_status_is_rejected(
 
 def test_explicit_target_and_original_file_open_contract_remain_independent() -> None:
     payload: dict[str, object] = {
-        "version": 1,
+        "version": PROTOCOL_VERSION,
         "type": "command",
         "id": "request-1",
         "action": {"name": "library.import"},

@@ -1,18 +1,20 @@
 ---
 name: update-screenshots
-description: Refresh Ride Forces Analyzer reference screenshots and verify their README and GitHub Pages presentation, captions and fixed reference settings using the existing native Windows generators.
+description: Refresh Ride Forces Analyzer reference screenshots and Stream Deck examples and verify their README and GitHub Pages presentation, captions and fixed reference settings using the existing native Windows generators.
 ---
 
 # Update screenshots
 
-Use the existing generators, not recreated charts or interface mockups. Run from
+Use the existing generators, not recreated charts or interface mockups. The Stream
+Deck examples are labelled software illustrations rendered from production plugin
+graphics, feedback and layout; they must never imply hardware verification. Run from
 the repository root in a native Windows desktop session with the locked environment.
 Read the [image reference guide](../../../docs/images/README.md) and
 [README](../../../README.md) for the requested images and their current captions.
 
 ## Choose and refresh the images
 
-When asked to refresh all screenshots, run all four commands sequentially.
+When asked to refresh all reference images, run all five commands sequentially.
 For a narrower request, run only the corresponding generator. Keep GUI capture
 separate from other GUI tests or capture processes.
 
@@ -28,11 +30,17 @@ uv run --locked python scripts/capture_app_reference.py --themes
 
 # Five Voltron Nevera layouts, their detail crops and comparison sheet; voltron-reference.json
 uv run --locked python scripts/render_export_reference.py
+
+# Stream Deck +/Neo user-guide illustrations; stream-deck-reference.json
+uv run --locked python scripts/render_stream_deck_reference.py
 ```
 
 The default destination is `docs/images`. To review first without replacing
 tracked images, append `--output .tmp/screenshot-review` to the applicable command.
 All commands can share that directory because their output names differ.
+The Stream Deck generator needs the locked Node development dependencies. It
+builds the existing plugin/profile artifacts and renders fixed control-contract examples; it never installs,
+links or restarts the plugin, imports profiles, or connects to a device/Analyzer.
 
 Preserve the fixed recordings, source hashes, sample indices, intervals, language
 and settings defined by the generators and their manifests. Never search for a
@@ -46,8 +54,9 @@ image set as refreshed. Do not use incomplete output as a reference.
 - Open each changed image. Check readable labels, clipping, context strip/legend,
   transparency presentation and intended crop. The smoothing panels must retain
   identical time and force scales for windows 1, 11 and 31.
-- Check local image links in the README: every intended refreshed image must be
-  embedded at the relevant feature description, and its path must exist. Verify
+- Check local image links in the README and affected user guides: every intended
+  refreshed image must be embedded in its owning feature description, and its path
+  must exist. Verify
   filenames and letter case; do not embed temporary review paths.
 - Compare captions and alt text with the generated manifests and actual images:
   recording, replay time, sample, smoothing, force values and visible context.
@@ -56,6 +65,11 @@ image set as refreshed. Do not use incomplete output as a reference.
 - Check the linked [layout gallery](../../../docs/EXPORT_LAYOUTS.md) when its
   images change. Follow the [central image guide](../../../docs/images/README.md)
   for reproduction settings, licensing and attribution.
+- For both Stream Deck examples, review the [user guide](../../../docs/user/STREAM_DECK.md):
+  native menu/function symbols, every Plus/Neo 2×4 profile page, aligned Plus touch fields/dials,
+  both Neo Touch Points, InfoBar state, visible state badges, readable/elided fields and the
+  separate preview/applied marker values must match the generated manifest. Keep
+  the software-illustration/example-value caption; leave physical acceptance open.
 - Inspect the diff for unintended image/document changes. Preserve unrelated
   owner changes; do not stage, commit or publish as part of this skill.
 
@@ -94,6 +108,7 @@ If generator code changed, also run its affected focused tests:
 ```powershell
 uv run --locked pytest tests/ui/test_reference_screenshots.py
 uv run --locked pytest tests/rendering/test_reference_script.py
+uv run --locked pytest tests/ui/test_stream_deck_reference.py
 ```
 
 Use only the relevant test file; unchanged generator code does not require a new

@@ -59,7 +59,7 @@ class Device:
         context = target or self.application.stream_deck.snapshot().target
         assert context is not None
         command = wire.Command(
-            version=1,
+            version=wire.PROTOCOL_VERSION,
             type="command",
             id=str(self.counter),
             target=context,
@@ -160,6 +160,51 @@ def exercise(application: RecordingApplication) -> None:
     assert len(application.windows) == 1
     assert controller.snapshot().library is not None
 
+    # Selection edits reuse the GUI range, clamp both boundaries and leave markers/analysis alone.
+    selection_markers = controller.snapshot().markers
+    selection_bounds = store.source(source.source_sha256).bounds
+    selected_analysis = window.data.analysis
+    window.inspector.first.setValue(40)
+    window.inspector.last.setValue(100)
+    wait_until(lambda: controller.snapshot().selection is not None)
+    response = device.request(wire.SelectionStep(name="selection.step", boundary="start", steps=10))
+    assert response.status == "ok" and window.inspector.first.value() == 50
+    assert window.inspector.last.value() == 100
+    device.request(wire.SelectionStep(name="selection.step", boundary="end", steps=-1))
+    assert window.inspector.last.value() == 99
+    selection = controller.snapshot().selection
+    assert selection is not None and selection.start.sample == 50 and selection.end.sample == 99
+    assert window.data.analysis is selected_analysis
+    assert controller.snapshot().markers == selection_markers
+    assert store.source(source.source_sha256).bounds == selection_bounds
+    window.inspector.first.setValue(99)
+    device.request(wire.SelectionStep(name="selection.step", boundary="start", steps=10))
+    assert window.inspector.first.value() == 99
+    device.request(wire.SelectionStep(name="selection.step", boundary="end", steps=-10))
+    assert window.inspector.last.value() == 99
+    window.inspector.first.setValue(0)
+    device.request(wire.SelectionStep(name="selection.step", boundary="start", steps=-10))
+    assert window.inspector.first.value() == 0
+    window.inspector.last.setValue(window.data.count - 1)
+    device.request(wire.SelectionStep(name="selection.step", boundary="end", steps=10))
+    assert window.inspector.last.value() == window.data.count - 1
+    device.request(wire.SimpleAction(name="view.selection"))
+    assert window.plot.axis_x.min() == pytest.approx(window.data.time_at(0))
+    assert window.plot.axis_x.max() == pytest.approx(window.data.time_at(window.data.count - 1))
+    # GUI-originated changes reach both peers through the same state events.
+    checkpoint = len(device.messages)
+    window.inspector.first.setValue(20)
+    window.inspector.last.setValue(180)
+    wait_until(
+        lambda: any(
+            isinstance(value, wire.StateEvent)
+            and value.selection is not None
+            and value.selection.start.sample == 20
+            and value.selection.end.sample == 180
+            for value in device.messages[checkpoint:]
+        ),
+    )
+
     # Reuse actual controls; GUI changes also reach the connected devices.
     response = device.request(wire.CurveSet(name="curve.set", curve="first", enabled=False))
     assert response.status == "ok" and not window.visibility[0].isChecked()
@@ -197,6 +242,29 @@ def exercise(application: RecordingApplication) -> None:
     wait_until(lambda: window.data is not None and window.data.smoothing_window == 13)
     device.request(wire.SimpleAction(name="smoothing.reset"))
     wait_until(lambda: window.data is not None and window.data.smoothing_window == 11)
+    # Repeated outward turns remain at the existing slider limits, without new analysis.
+    smoothing = window.inspector.smoothing_slider
+    boundaries: tuple[tuple[int, wire.Direction], ...] = (
+        (smoothing.minimum(), -1),
+        (smoothing.maximum(), 1),
+    )
+    for boundary, direction in boundaries:
+        smoothing.setValue(boundary)
+        expected_window = boundary * 2 + 1
+        wait_until(
+            lambda: window.data is not None and window.data.smoothing_window == expected_window,
+        )
+        wait_until(lambda: controller.snapshot().controls["smoothing.step"].available)
+        assert window.data is not None
+        adopted = window.data.analysis
+        for _ in range(2):
+            result = device.request(wire.SettingStep(name="smoothing.step", direction=direction))
+            assert result.status == "ok"
+            assert smoothing.value() == boundary
+            assert window.data.smoothing_window == expected_window
+            assert window.data.analysis is adopted
+    device.request(wire.SimpleAction(name="smoothing.reset"))
+    wait_until(lambda: window.data is not None and window.data.smoothing_window == 11)
     before = window.plot.axis_x.max() - window.plot.axis_x.min()
     device.request(wire.SettingStep(name="view.zoom", direction=1))
     assert window.plot.axis_x.max() - window.plot.axis_x.min() < before
@@ -211,18 +279,18 @@ def exercise(application: RecordingApplication) -> None:
     target = controller.snapshot().target
     assert target is not None
     incompatible = wire.Command(
-        version=1,
+        version=wire.PROTOCOL_VERSION,
         type="command",
         id="future",
         target=target,
         action=wire.SimpleAction(name="view.reset"),
     ).model_dump()
-    incompatible["version"] = 2
+    incompatible["version"] = 99
     device.socket.sendTextMessage(json.dumps(incompatible))
     future_error = device.final("future")
     assert isinstance(future_error, wire.Failure) and future_error.code == "unsupported_protocol"
     duplicate = wire.Command(
-        version=1,
+        version=wire.PROTOCOL_VERSION,
         type="command",
         id=str(device.counter),
         target=target,

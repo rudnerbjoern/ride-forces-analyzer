@@ -7,7 +7,7 @@ import { pluginOutput } from "../scripts/artifact-path.mjs";
 
 test("the built inspector restores settings and saves typed choices for the correct action", async () => {
   const elements = new Map();
-  for (const id of ["operation", "direction", "steps", "curve", "marker"]) {
+  for (const id of ["operation", "direction", "steps", "curve", "marker", "boundary"]) {
     elements.set(id, { value: "", options: [], listeners: {},
       add(option) { this.options.push(option); this.value ||= option.value; },
       addEventListener(event, callback) { this.listeners[event] = callback; } });
@@ -25,7 +25,7 @@ test("the built inspector restores settings and saves typed choices for the corr
   vm.runInNewContext(code, { window, WebSocket: Socket,
     Option: class { constructor(text, value) { this.text = text; this.value = value; } },
     document: { getElementById: id => elements.get(id),
-      querySelectorAll: () => ["operation", "direction", "steps", "curve", "marker"].map(id => elements.get(id)) } });
+      querySelectorAll: () => ["operation", "direction", "steps", "curve", "marker", "boundary"].map(id => elements.get(id)) } });
   window.connectElgatoStreamDeckSocket("1234", "inspector-id", "registerPropertyInspector", "{}",
     JSON.stringify({ context: "key-context", payload: { settings: { operation: "curve.set", curve: "combined" } } }));
   const socket = sockets[0];

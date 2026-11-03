@@ -5,6 +5,7 @@ import type { ControlClient } from "./client.js";
 import { requestedAction } from "./controls.js";
 import { dialBinding, dialSettings, StepMode, type DialSettings } from "./device-controls.js";
 import { dialFeedback } from "./device-feedback.js";
+import { imageData } from "./feedback.js";
 
 /** Shared Plus gesture handling; validation, bounds and analysis remain application-owned. */
 @action({ UUID: "io.github.rudnerbjoern.ride-forces-analyzer.dial" })
@@ -50,6 +51,7 @@ export class DialControlAction extends SingletonAction<DialSettings> {
     }
 
     override async onDialDown(event: DialDownEvent<DialSettings>): Promise<void> {
+        if (event.payload.settings.control === "selection") return;
         if (!this.invoke(event.action, event.payload.settings, "press", 1)) await event.action.showAlert();
     }
 
@@ -73,7 +75,9 @@ export class DialControlAction extends SingletonAction<DialSettings> {
                 const feedback = dialFeedback(this.client, context, dial.settings, this.mode.coarse(dial.action.device.id));
                 const signature = JSON.stringify(feedback);
                 if (signature === dial.signature) continue;
-                await dial.action.setFeedback(feedback);
+                const icon = imageData(feedback.icon);
+                await dial.action.setImage(icon);
+                await dial.action.setFeedback({ ...feedback, icon });
                 dial.signature = signature;
             }
         });

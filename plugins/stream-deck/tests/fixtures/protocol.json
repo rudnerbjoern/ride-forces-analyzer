@@ -63,11 +63,21 @@
     {
       "name": "marker.discard",
       "marker": "incline"
+    },
+    {
+      "name": "selection.step",
+      "boundary": "start",
+      "steps": 1
+    },
+    {
+      "name": "selection.step",
+      "boundary": "end",
+      "steps": 1
     }
   ],
   "messages": [
     {
-      "version": 1,
+      "version": 2,
       "type": "state",
       "session_id": "session-1",
       "sequence": 12,
@@ -126,6 +136,9 @@
           "available": true
         },
         "marker.discard": {
+          "available": true
+        },
+        "selection.step": {
           "available": true
         }
       },
@@ -293,10 +306,22 @@
             }
           }
         }
-      ]
+      ],
+      "selection": {
+        "start": {
+          "sample": 40,
+          "time_seconds": 0.8,
+          "label": "00:00.80"
+        },
+        "end": {
+          "sample": 100,
+          "time_seconds": 2.0,
+          "label": "00:02.00"
+        }
+      }
     },
     {
-      "version": 1,
+      "version": 2,
       "type": "state",
       "session_id": "session-1",
       "sequence": 13,
@@ -305,15 +330,31 @@
         "available": false,
         "reason": "no_active_window"
       },
-      "controls": {},
+      "controls": {
+        "selection.step": {
+          "available": true
+        }
+      },
       "library": null,
       "playback": null,
       "view": null,
       "curves": [],
-      "markers": []
+      "markers": [],
+      "selection": {
+        "start": {
+          "sample": 40,
+          "time_seconds": 0.8,
+          "label": "00:00.80"
+        },
+        "end": {
+          "sample": 100,
+          "time_seconds": 2.0,
+          "label": "00:02.00"
+        }
+      }
     },
     {
-      "version": 1,
+      "version": 2,
       "type": "response",
       "id": "request-1",
       "target": {
@@ -324,7 +365,7 @@
       "status": "ok"
     },
     {
-      "version": 1,
+      "version": 2,
       "type": "response",
       "id": "request-1",
       "target": {
@@ -335,7 +376,7 @@
       "status": "pending"
     },
     {
-      "version": 1,
+      "version": 2,
       "type": "response",
       "id": "request-1",
       "target": {
@@ -348,7 +389,7 @@
       "reason": "background"
     },
     {
-      "version": 1,
+      "version": 2,
       "type": "response",
       "id": null,
       "target": null,

@@ -25,12 +25,12 @@ test("shared wire examples satisfy the plugin's strict command and feedback type
   for (const action of [{ name: "unknown" }, { name: "marker.apply" },
     { name: "library.move", direction: true }, { name: "position.step", steps: 2 },
     { name: "curve.set", curve: "combined", enabled: "yes" }]) {
-    const command = { version: 1, type: "command", id: "invalid", target: examples.target, action };
+    const command = { version: 2, type: "command", id: "invalid", target: examples.target, action };
     lines.push("// @ts-expect-error Reject incompatible command shapes.",
       `export const invalid${lines.length} = ${JSON.stringify(command)} satisfies Command;`);
   }
   lines.push("// @ts-expect-error Reject unknown application protocol versions.",
-    `export const incompatible = ${JSON.stringify({ ...examples.messages[0], version: 2 })} satisfies ServerMessage;`);
+    `export const incompatible = ${JSON.stringify({ ...examples.messages[0], version: 99 })} satisfies ServerMessage;`);
   try {
     await writeFile(filename, lines.join("\n"));
     const configuration = path.join(directory, "tsconfig.json");

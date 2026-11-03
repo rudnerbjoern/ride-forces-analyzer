@@ -16,6 +16,7 @@ from pytestqt.qtbot import QtBot
 from ride_forces_analyzer.runtime.stream_deck import ControlServer, MAX_MESSAGE_BYTES
 
 
+@pytest.mark.qt_log_level_fail("WARNING")
 def test_qt_authentication_state_exchange_and_discovery_ownership(
     qapp: QApplication,
     qtbot: QtBot,
@@ -49,6 +50,14 @@ def test_qt_authentication_state_exchange_and_discovery_ownership(
                 client.open(QUrl(f"ws://127.0.0.1:{descriptor['port']}"))
             with qtbot.waitSignal(client.disconnected):
                 client.sendTextMessage(hello)
+        assert commands == []
+
+        idle = QWebSocket()
+        clients.append(idle)
+        with qtbot.waitSignal(idle.connected):
+            idle.open(QUrl(f"ws://127.0.0.1:{descriptor['port']}"))
+        with qtbot.waitSignal(idle.disconnected, timeout=6000):
+            pass  # No authentication: the server must enforce its deadline.
         assert commands == []
 
         binary = QWebSocket()

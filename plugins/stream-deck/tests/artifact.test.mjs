@@ -104,7 +104,7 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
     assert.deepEqual(commands[0].action, { name: "curve.set", curve: "combined", enabled: true });
     assert.deepEqual(commands[0].target, snapshot.target);
     assert.equal(active(), 0);
-    appSocket.send(JSON.stringify({ version: 1, type: "response", id: commands[0].id, target: commands[0].target, status: "ok" }));
+    appSocket.send(JSON.stringify({ version: 2, type: "response", id: commands[0].id, target: commands[0].target, status: "ok" }));
     snapshot.sequence++;
     snapshot.curves[3].active = true;
     appSocket.send(JSON.stringify(snapshot));
@@ -144,9 +144,9 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
     sendDial("dialRotate", { ticks: 3, pressed: false });
     await waitUntil(() => commands.length === 5 && dialFeedback()?.status.includes("Pending"), diagnostic);
     assert.deepEqual(commands.slice(-3).map(value => value.action), Array(3).fill({ name: "library.move", direction: 1 }));
-    for (const command of commands.slice(-3)) appSocket.send(JSON.stringify({ version: 1, type: "response",
+    for (const command of commands.slice(-3)) appSocket.send(JSON.stringify({ version: 2, type: "response",
       id: command.id, target: command.target, status: "ok" }));
-    await waitUntil(() => dialFeedback()?.status === "", diagnostic);
+    await waitUntil(() => dialFeedback()?.status === "Ready", diagnostic);
     sendDial("dialDown");
     await waitUntil(() => commands.length === 6, diagnostic);
     assert.deepEqual(commands[5].action, { name: "library.open" });
@@ -154,8 +154,10 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
       payload: { controller: "Neo", coordinates: { column: 1, row: 0 }, settings: { section: "markers", marker: "gravity" } } };
     hostSocket.send(JSON.stringify({ ...infoEvent, event: "willAppear" }));
     const barFeedback = () => hostMessages.filter(value => value.event === "setFeedback" && value.context === "test-info").at(-1)?.payload;
-    await waitUntil(() => barFeedback()?.title === "Gravity", diagnostic);
-    assert.match(barFeedback().status, /Preview.*Applied #50/);
+    await waitUntil(() => barFeedback()?.title.startsWith("Gravity"), diagnostic);
+    assert.match(barFeedback().status, /Applied #50/);
+    assert.match(barFeedback().title, /Preview/);
+    assert.match(barFeedback().icon, /^data:image\/svg\+xml;base64,/);
     assert.ok(hostMessages.some(value => value.event === "setFeedbackLayout" && value.context === "test-info"
       && value.payload.layout === "layouts/neo.json"));
     const modeEvent = { ...homeEvent, action: `${uuid}.step-mode`, context: "test-mode", device: "test-plus" };

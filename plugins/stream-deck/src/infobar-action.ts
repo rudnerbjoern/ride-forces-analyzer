@@ -3,6 +3,7 @@ import { action, SingletonAction, type DidReceiveSettingsEvent, type NeoInfobarA
 
 import type { ControlClient } from "./client.js";
 import type { InfoSettings } from "./device-controls.js";
+import { imageData } from "./feedback.js";
 import { infoFeedback } from "./device-feedback.js";
 
 /** Contextual Neo display; intentionally has no input handlers or command path. */
@@ -32,7 +33,7 @@ export class InfoBarAction extends SingletonAction<InfoSettings> {
                 const feedback = infoFeedback(this.client, bar.settings);
                 const signature = JSON.stringify(feedback);
                 if (signature === bar.signature) continue;
-                await bar.action.setFeedback(feedback);
+                await bar.action.setFeedback({ ...feedback, icon: imageData(feedback.icon) });
                 bar.signature = signature;
             }
         });

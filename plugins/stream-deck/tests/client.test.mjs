@@ -24,7 +24,7 @@ function harness() {
 test("runtime decoding matches shared Python messages and rejects incompatible feedback", () => {
   for (const message of examples.messages) assert.deepEqual(decodeServerMessage(JSON.stringify(message)), message);
   for (const change of [
-    { version: 2 }, { version: true }, { unexpected: true }, { sequence: -1 },
+    { version: 99 }, { version: true }, { unexpected: true }, { sequence: -1 },
     { availability: { available: 1 } }, { controls: { unknown: { available: true } } },
     { playback: { ...state().playback, speed: 3 } },
     { view: { ...state().view, smoothing_window: 2 } },
@@ -35,7 +35,7 @@ test("runtime decoding matches shared Python messages and rejects incompatible f
 });
 
 test("all agreed operations are configurable and unavailable argument choices stay blocked", () => {
-  assert.deepEqual(Object.keys(CONTROL_LABELS).sort(), examples.actions.map(action => action.name).sort());
+  assert.deepEqual(Object.keys(CONTROL_LABELS).sort(), [...new Set(examples.actions.map(action => action.name))].sort());
   for (const action of examples.actions) {
     const { name, enabled: _enabled, ...arguments_ } = action;
     const settings = controlSettings({ operation: name, ...arguments_ });
@@ -65,7 +65,7 @@ test("toggle images and key states follow confirmation, never key presses or ack
   assert.equal(client.send("key", request), false);
   assert.equal(keyFeedback(client, "key", settings).state, 0);
   assert.match(keyFeedback(client, "key", settings).title, /Pending/);
-  receive({ version: 1, type: "response", id: sent[0].id, target: sent[0].target, status: "ok" });
+  receive({ version: 2, type: "response", id: sent[0].id, target: sent[0].target, status: "ok" });
   assert.equal(keyFeedback(client, "key", settings).state, 0);
   const confirmed = state();
   confirmed.sequence++;
@@ -91,7 +91,7 @@ test("restart, unavailable targets and incompatible messages clear actionable st
   assert.equal(sent.length, 1);
   receive(examples.messages[1]);
   assert.equal(client.send("key", { name: "playback.toggle" }), false);
-  receive({ ...state(), version: 2 });
+  receive({ ...state(), version: 99 });
   assert.equal(client.status, "incompatible");
   assert.equal(client.state, undefined);
   assert.equal(client.send("key", { name: "playback.toggle" }), false);
@@ -104,11 +104,11 @@ test("pending and failed marker adoption remain distinct from the last applied v
   connect(true); receive(state());
   const settings = controlSettings({ operation: "marker.apply", marker: "gravity" });
   client.send("key", requestedAction(settings, client.state));
-  receive({ version: 1, type: "response", id: sent[0].id, target: sent[0].target, status: "pending" });
+  receive({ version: 2, type: "response", id: sent[0].id, target: sent[0].target, status: "pending" });
   assert.equal(client.pending("key"), true);
   assert.equal(client.state.markers[1].applied.sample, 50);
   assert.match(keyFeedback(client, "key", settings).title, /Pending/);
-  receive({ version: 1, type: "response", id: sent[0].id, target: sent[0].target,
+  receive({ version: 2, type: "response", id: sent[0].id, target: sent[0].target,
     status: "error", code: "analysis_failed", reason: null });
   assert.equal(client.pending("key"), false);
   assert.equal(client.state.markers[1].applied.sample, 50);

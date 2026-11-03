@@ -68,11 +68,15 @@ wire models live in `runtime.control_contract`, paired with plugin protocol type
 `ui.stream_deck.StreamDeckController` owns optional server startup, GUI-thread
 action routing and coalesced state feedback. The plugin's shared client correlates
 requests and drives visible keys from confirmed snapshots. Build-time profile
-definitions produce native Plus/Neo folder layouts; a local Home action returns
+definitions produce native Plus/Neo folder layouts; Start uses native Elgato
+Open (user-configured executable/shortcut) and Website actions independently of
+the control transport; a local Home action returns
 to the invoking device's bundled Start page. Plus gesture handlers map each notch,
-press and marker touch to existing commands; a device-local fine/coarse mode
+press and marker touch to existing commands. Selection dials reuse Inspector
+selection controls and publish separate bounds without marker persistence; a device-local fine/coarse mode
 changes only position/marker step size. Neo editors use the shared key action;
-InfoBar is display-only. Both displays derive values and status from snapshots.
+Neo supplies Start/Quick native pages for its two Touch Points;
+InfoBar is display-only with encoded icons and bounded text. Both displays derive values and status from snapshots.
 
 ## Importer composition and interfaces
 

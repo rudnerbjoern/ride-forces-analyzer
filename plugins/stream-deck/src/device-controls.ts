@@ -1,9 +1,9 @@
 import type { ControlSettings } from "./controls.js";
-import type { MarkerName } from "./protocol.js";
+import type { MarkerName, SelectionBoundary } from "./protocol.js";
 
-export type DialControl = "library" | "position" | "view" | "smoothing" | "speed" | "marker";
-export type DialSettings = { control?: DialControl; marker?: MarkerName };
-export type InfoSettings = { section?: string; marker?: MarkerName };
+export type DialControl = "library" | "position" | "view" | "smoothing" | "speed" | "marker" | "selection";
+export type DialSettings = { control?: DialControl; marker?: MarkerName; boundary?: SelectionBoundary };
+export type InfoSettings = { section?: string; marker?: MarkerName; boundary?: SelectionBoundary };
 
 /** Device-local fine/coarse mode survives menus, defaults to fine and never changes app state. */
 export class StepMode {
@@ -19,8 +19,9 @@ export class StepMode {
 
 /** Validate profile settings before mapping a device gesture to an application command. */
 export function dialSettings(value: DialSettings): DialSettings | undefined {
-    if (!["library", "position", "view", "smoothing", "speed", "marker"].includes(value.control ?? "")) return undefined;
+    if (!["library", "position", "view", "smoothing", "speed", "marker", "selection"].includes(value.control ?? "")) return undefined;
     if (value.control === "marker" && !["start", "gravity", "incline", "end"].includes(value.marker ?? "")) return undefined;
+    if (value.control === "selection" && !["start", "end"].includes(value.boundary ?? "")) return undefined;
     return value;
 }
 
@@ -29,6 +30,9 @@ export function dialBinding(settings: DialSettings, gesture: "rotate" | "press" 
     direction: -1 | 1, coarse: boolean): ControlSettings | undefined {
     const control = settings.control;
     const steps = coarse ? direction === -1 ? -10 : 10 : direction;
+    if (control === "selection") {
+        return gesture === "rotate" && settings.boundary ? { operation: "selection.step", boundary: settings.boundary, steps } : undefined;
+    }
     if (control === "marker") {
         const marker = settings.marker;
         if (!marker) return undefined;

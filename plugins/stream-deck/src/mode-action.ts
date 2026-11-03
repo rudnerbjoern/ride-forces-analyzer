@@ -2,7 +2,7 @@ import { action, SingletonAction, type KeyAction, type KeyDownEvent, type WillAp
     type WillDisappearEvent } from "@elgato/streamdeck";
 
 import { StepMode } from "./device-controls.js";
-import { keyImage } from "./feedback.js";
+import { imageData, keyImage } from "./feedback.js";
 
 /** Fine/Coarse is local to each Plus; marker presses remain Apply. */
 @action({ UUID: "io.github.rudnerbjoern.ride-forces-analyzer.step-mode" })
@@ -28,7 +28,7 @@ export class StepModeAction extends SingletonAction {
             for (const key of this.keys.values()) {
                 const coarse = this.mode.coarse(key.device.id);
                 await key.setState(coarse ? 1 : 0);
-                await key.setImage(keyImage("position", coarse ? "active" : "inactive"));
+                await key.setImage(imageData(keyImage(coarse ? "coarse" : "fine", coarse ? "active" : "inactive")), { state: coarse ? 1 : 0 });
                 await key.setTitle(coarse ? "Coarse\n10 samples" : "Fine\n1 sample");
             }
         });

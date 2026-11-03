@@ -15,8 +15,8 @@ function display(settings: Record<string, unknown>): void {
     const operation = select("operation").value;
     const visible = {
         direction: ["library.move", "playback.speed.step", "smoothing.step", "view.zoom"].includes(operation),
-        steps: operation === "position.step" || operation === "marker.preview",
-        curve: operation === "curve.set", marker: operation.startsWith("marker."),
+        steps: operation === "selection.step" || operation === "position.step" || operation === "marker.preview",
+        boundary: operation === "selection.step", curve: operation === "curve.set", marker: operation.startsWith("marker."),
     };
     for (const [name, show] of Object.entries(visible)) document.getElementById(`${name}-row`)!.hidden = !show;
 }
@@ -24,7 +24,7 @@ function display(settings: Record<string, unknown>): void {
 for (const element of document.querySelectorAll("select")) {
     element.addEventListener("change", () => {
         const settings = { operation: select("operation").value, direction: Number(select("direction").value),
-            steps: Number(select("steps").value), curve: select("curve").value, marker: select("marker").value };
+            steps: Number(select("steps").value), curve: select("curve").value, marker: select("marker").value, boundary: select("boundary").value };
         display(settings);
         if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ event: "setSettings", context, payload: settings }));
     });

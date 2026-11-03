@@ -197,8 +197,10 @@ to the available window space; smaller windows let you switch between the chart
 and inspector.
 
 The optional **Enable Stream Deck** setting is off by default. A locally installed
-plugin provides configurable keys; device profiles and dials remain planned.
-See [plugin setup](plugins/stream-deck/README.md).
+plugin provides configurable keys and prepared device profiles/dials; physical
+Plus/Neo operation remains unverified.
+See the [Stream Deck +/Neo user guide](docs/user/STREAM_DECK.md) and
+[plugin setup](plugins/stream-deck/README.md).
 
 ![The same Voltron Nevera sample in the light workspace, with the airtime context strip, Ejector Airtime value card and selection inspector](docs/images/workspace-light.png)
 

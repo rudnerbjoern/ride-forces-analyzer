@@ -1,0 +1,918 @@
+{
+  "image": "stream-deck-plus-controls.png",
+  "kind": "software illustration; not hardware acceptance",
+  "language": "en",
+  "size": [
+    1620,
+    2060
+  ],
+  "font": "Segoe UI",
+  "plus": {
+    "image": "stream-deck-plus-controls.png",
+    "size": [
+      1620,
+      2060
+    ],
+    "touch_field_scale": 0.85,
+    "pages": [
+      {
+        "name": "Start",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Library"
+          },
+          {
+            "position": "2,0",
+            "title": "Explorer"
+          },
+          {
+            "position": "0,0",
+            "title": "Start app"
+          },
+          {
+            "position": "3,0",
+            "title": "Website"
+          }
+        ],
+        "dials": []
+      },
+      {
+        "name": "Library",
+        "keys": [
+          {
+            "position": "0,1",
+            "title": "Import…",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "dials": [
+          {
+            "position": "0,0",
+            "title": "Library",
+            "value": "Example ride",
+            "status": "Ready",
+            "detail": "1/2 · Press: open"
+          }
+        ]
+      },
+      {
+        "name": "Explorer",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Playback"
+          },
+          {
+            "position": "2,0",
+            "title": "Curves"
+          },
+          {
+            "position": "1,1",
+            "title": "Markers"
+          },
+          {
+            "position": "2,1",
+            "title": "Selection"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "dials": []
+      },
+      {
+        "name": "Playback",
+        "keys": [
+          {
+            "position": "0,1",
+            "title": "Play\n1×",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "1,1",
+            "title": "Fine\n1 sample"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "dials": [
+          {
+            "position": "0,0",
+            "title": "Position",
+            "value": "#50 · 00:01.00",
+            "status": "Paused · Fine · 1 sample",
+            "detail": "1× · Press: play"
+          },
+          {
+            "position": "1,0",
+            "title": "View",
+            "value": "0.00–10.00 s",
+            "status": "Span 10.00 s",
+            "detail": "Press: reset view"
+          },
+          {
+            "position": "2,0",
+            "title": "Speed",
+            "value": "1×",
+            "status": "Paused",
+            "detail": "Press: 1×"
+          }
+        ]
+      },
+      {
+        "name": "Selection",
+        "keys": [
+          {
+            "position": "0,1",
+            "title": "Zoom\nSelection",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "1,1",
+            "title": "Fine\n1 sample"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "dials": [
+          {
+            "position": "0,0",
+            "title": "Selection start",
+            "value": "#40 · 00:00.80",
+            "status": "Ready · Fine · 1 sample",
+            "detail": "End #100 · 00:02.00"
+          },
+          {
+            "position": "1,0",
+            "title": "Selection end",
+            "value": "#100 · 00:02.00",
+            "status": "Ready · Fine · 1 sample",
+            "detail": "Start #40 · 00:00.80"
+          }
+        ]
+      },
+      {
+        "name": "View / Curves",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Vertical\nOn",
+            "state": 1,
+            "status": "active"
+          },
+          {
+            "position": "2,0",
+            "title": "Lateral\nOn",
+            "state": 1,
+            "status": "active"
+          },
+          {
+            "position": "3,0",
+            "title": "Long.\nOn",
+            "state": 1,
+            "status": "active"
+          },
+          {
+            "position": "0,1",
+            "title": "Data mode\nCalibrated",
+            "state": 1,
+            "status": "active"
+          },
+          {
+            "position": "2,1",
+            "title": "Combined\nOff",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "dials": [
+          {
+            "position": "0,0",
+            "title": "Smoothing",
+            "value": "11 samples",
+            "status": "Ready",
+            "detail": "Press: reset smoothing"
+          }
+        ]
+      },
+      {
+        "name": "Markers",
+        "keys": [
+          {
+            "position": "1,1",
+            "title": "Fine\n1 sample"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "dials": [
+          {
+            "position": "0,0",
+            "title": "Start",
+            "value": "#50 · 00:01.00",
+            "status": "Applied · Fine · 1 sample",
+            "detail": "Applied #50 · 00:01.00"
+          },
+          {
+            "position": "1,0",
+            "title": "Gravity",
+            "value": "#51 · 00:01.01",
+            "status": "Preview · Fine · 1 sample",
+            "detail": "Applied #50 · 00:01.00"
+          },
+          {
+            "position": "2,0",
+            "title": "Incline",
+            "value": "Unset",
+            "status": "Applied · Fine · 1 sample",
+            "detail": "Applied Unset"
+          },
+          {
+            "position": "3,0",
+            "title": "End",
+            "value": "#50 · 00:01.00",
+            "status": "Applied · Fine · 1 sample",
+            "detail": "Applied #50 · 00:01.00"
+          }
+        ]
+      }
+    ]
+  },
+  "inputs": {
+    "scripts/render_stream_deck_reference.py": "b5d6625b61e12bbba0a2fe89fffb998b69ee1f85e9b89b77c4cbf2c4bb89a89c",
+    "plugins/stream-deck/tests/fixtures/protocol.json": "514fc9fc5e05cad11ffde5fd0c059f0c77fbf621df4bb64cdb3284fe7f16fb5c",
+    "plugins/stream-deck/src/feedback.ts": "34113cd0598c0cb305e2a7051e018361b796e1b463fbd81089618fe51a3fa977",
+    "plugins/stream-deck/src/device-feedback.ts": "3e74610b7cefd0fe5088c3c7af2d48342884da5f352f664e31d4bee1fa1455f6",
+    "plugins/stream-deck/devices/layouts/plus.json": "bc41ddb1cfbb3a9602f07673aace2942a5b3a711aeb4fc5b86b8ab5d9ed49261",
+    "plugins/stream-deck/devices/layouts/neo.json": "875875d9c4eadd35ee1f1f92beeb0623fc589f317f50eecfd3eba6c05dd76abd",
+    "plugins/stream-deck/scripts/build-profiles.mjs": "ad7a63e3fc7a7047754c74ba04875e1159fa1faf5716c5964f8d95bd792d5580",
+    "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/manifest.json": "efc2848c9e2da4874abc0f6e2499a860bb49a067e5c924c003d2bd50f1b99291",
+    "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/imgs/plugin@2x.png": "53476c4916afabf61592ceec13b2c902a197d43b94d15b5f689c5dfa5004fe31"
+  },
+  "neo": {
+    "image": "stream-deck-neo-controls.png",
+    "size": [
+      1220,
+      2830
+    ],
+    "native_pages": [
+      "Start",
+      "Quick controls"
+    ],
+    "touch_points": {
+      "left": "Previous native page",
+      "right": "Next native page"
+    },
+    "pages": [
+      {
+        "name": "Start",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Library"
+          },
+          {
+            "position": "2,0",
+            "title": "Explorer"
+          },
+          {
+            "position": "0,0",
+            "title": "Start app"
+          },
+          {
+            "position": "3,0",
+            "title": "Website"
+          }
+        ],
+        "infobar": {
+          "title": "Ride Forces Analyzer",
+          "value": "Library / Explorer",
+          "status": "Ready"
+        }
+      },
+      {
+        "name": "Quick controls",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Play\n1×",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,0",
+            "title": "Zoom −\n10.0 s",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "3,0",
+            "title": "Zoom +\n10.0 s",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,1",
+            "title": "Reset view",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "1,1",
+            "title": "Zoom\nSelection",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,1",
+            "title": "Speed reset\n1×",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "infobar": {
+          "title": "Playback",
+          "value": "#50 · 00:01.00",
+          "status": "Paused · 1×"
+        }
+      },
+      {
+        "name": "Library",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Example ri…\n↑ 1/2",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,0",
+            "title": "Example ri…\n↓ 1/2",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "3,0",
+            "title": "Open\nExample ri…",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,1",
+            "title": "Import…",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "infobar": {
+          "title": "Library",
+          "value": "Example ride",
+          "status": "1/2 · Ready"
+        }
+      },
+      {
+        "name": "Explorer",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Playback"
+          },
+          {
+            "position": "2,0",
+            "title": "Curves"
+          },
+          {
+            "position": "1,1",
+            "title": "Markers"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "infobar": {
+          "title": "Explorer",
+          "value": "Playback / Curves / Markers",
+          "status": "Ready"
+        }
+      },
+      {
+        "name": "Playback",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Play\n1×",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "1,1",
+            "title": "Position"
+          },
+          {
+            "position": "2,0",
+            "title": "Smoothing"
+          },
+          {
+            "position": "2,1",
+            "title": "Speed"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "infobar": {
+          "title": "Playback",
+          "value": "#50 · 00:01.00",
+          "status": "Paused · 1×"
+        }
+      },
+      {
+        "name": "Position",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Pos. -10\n00:01.00",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "1,1",
+            "title": "Pos. -1\n00:01.00",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,1",
+            "title": "Pos. 1\n00:01.00",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,0",
+            "title": "Pos. 10\n00:01.00",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "infobar": {
+          "title": "Position",
+          "value": "#50 · 00:01.00",
+          "status": "Paused · 1×"
+        }
+      },
+      {
+        "name": "Smoothing",
+        "keys": [
+          {
+            "position": "1,1",
+            "title": "Smooth −\n11 samples",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,0",
+            "title": "Reset\n11 samples",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,1",
+            "title": "Smooth +\n11 samples",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "infobar": {
+          "title": "Smoothing",
+          "value": "11 samples",
+          "status": "Ready"
+        }
+      },
+      {
+        "name": "Playback speed",
+        "keys": [
+          {
+            "position": "1,1",
+            "title": "Speed −\n1×",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,0",
+            "title": "Speed reset\n1×",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,1",
+            "title": "Speed +\n1×",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "infobar": {
+          "title": "Speed",
+          "value": "1×",
+          "status": "Paused"
+        }
+      },
+      {
+        "name": "View / Curves",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Vertical\nOn",
+            "state": 1,
+            "status": "active"
+          },
+          {
+            "position": "2,0",
+            "title": "Lateral\nOn",
+            "state": 1,
+            "status": "active"
+          },
+          {
+            "position": "3,0",
+            "title": "Long.\nOn",
+            "state": 1,
+            "status": "active"
+          },
+          {
+            "position": "2,1",
+            "title": "Reset view",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,1",
+            "title": "Data mode\nCalibrated",
+            "state": 1,
+            "status": "active"
+          },
+          {
+            "position": "1,1",
+            "title": "Combined\nOff",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "infobar": {
+          "title": "Calibrated curves",
+          "value": "Vertical · Lateral · Longitudinal",
+          "status": "Span 10.00 s"
+        }
+      },
+      {
+        "name": "Markers",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Start"
+          },
+          {
+            "position": "2,0",
+            "title": "Gravity"
+          },
+          {
+            "position": "1,1",
+            "title": "Incline"
+          },
+          {
+            "position": "2,1",
+            "title": "End"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "infobar": {
+          "title": "Markers",
+          "value": "Start · Gravity · Incline · End",
+          "status": "1 preview · Inactive"
+        }
+      },
+      {
+        "name": "Start marker",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Start -10\n00:01.00",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "1,1",
+            "title": "Start -1\n00:01.00",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,1",
+            "title": "Start +1\n00:01.00",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,0",
+            "title": "Start +10\n00:01.00",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,1",
+            "title": "Start\nNo preview",
+            "state": 0,
+            "status": "unavailable"
+          },
+          {
+            "position": "3,0",
+            "title": "Start\nNo preview",
+            "state": 0,
+            "status": "unavailable"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "infobar": {
+          "title": "Start · Applied",
+          "value": "#50 · 00:01.00",
+          "status": "Applied #50 · 00:01.00"
+        }
+      },
+      {
+        "name": "Gravity marker",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Gravity -10\n00:01.01",
+            "state": 0,
+            "status": "preview"
+          },
+          {
+            "position": "1,1",
+            "title": "Gravity -1\n00:01.01",
+            "state": 0,
+            "status": "preview"
+          },
+          {
+            "position": "2,1",
+            "title": "Gravity +1\n00:01.01",
+            "state": 0,
+            "status": "preview"
+          },
+          {
+            "position": "2,0",
+            "title": "Gravity +10\n00:01.01",
+            "state": 0,
+            "status": "preview"
+          },
+          {
+            "position": "0,1",
+            "title": "Gravity\nDiscard",
+            "state": 0,
+            "status": "preview"
+          },
+          {
+            "position": "3,0",
+            "title": "Gravity\nApply",
+            "state": 0,
+            "status": "preview"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "infobar": {
+          "title": "Gravity · Preview",
+          "value": "#51 · 00:01.01",
+          "status": "Applied #50 · 00:01.00"
+        }
+      },
+      {
+        "name": "Incline marker",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "Incline -10\nUnset",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "1,1",
+            "title": "Incline -1\nUnset",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,1",
+            "title": "Incline +1\nUnset",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,0",
+            "title": "Incline +10\nUnset",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,1",
+            "title": "Incline\nNo preview",
+            "state": 0,
+            "status": "unavailable"
+          },
+          {
+            "position": "3,0",
+            "title": "Incline\nNo preview",
+            "state": 0,
+            "status": "unavailable"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "infobar": {
+          "title": "Incline · Applied",
+          "value": "Unset",
+          "status": "Applied Unset"
+        }
+      },
+      {
+        "name": "End marker",
+        "keys": [
+          {
+            "position": "1,0",
+            "title": "End -10\n00:01.00",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "1,1",
+            "title": "End -1\n00:01.00",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,1",
+            "title": "End +1\n00:01.00",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "2,0",
+            "title": "End +10\n00:01.00",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "0,1",
+            "title": "End\nNo preview",
+            "state": 0,
+            "status": "unavailable"
+          },
+          {
+            "position": "3,0",
+            "title": "End\nNo preview",
+            "state": 0,
+            "status": "unavailable"
+          },
+          {
+            "position": "0,0",
+            "title": "Back"
+          },
+          {
+            "position": "3,1",
+            "title": "Home"
+          }
+        ],
+        "infobar": {
+          "title": "End · Applied",
+          "value": "#50 · 00:01.00",
+          "status": "Applied #50 · 00:01.00"
+        }
+      }
+    ]
+  }
+}
