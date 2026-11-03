@@ -488,3 +488,37 @@ test("Dependabot PRs use the existing read-only PR CI, with no automatic merge w
       "Override falls below the vendor's patched version");
   }
 });
+
+
+test("Ubuntu 26 verifies the published Linux recipe without replacing its older build baseline", async () => {
+  const workflow = parseDocument(await readFile(new URL("../../.github/workflows/posix-packages.yml", import.meta.url), "utf8")).toJS();
+  const build = workflow.jobs.package;
+  assert.match(build.strategy.matrix.include, /github.event_name == 'workflow_dispatch' && !inputs.revision/);
+  const [manual, reusable] = [...build.strategy.matrix.include.matchAll(/'(\[.*?\])'/g)]
+    .map(match => JSON.parse(match[1]));
+  assert.deepEqual(manual, [{ runner: "ubuntu-24.04", target: "linux-x64" }]);
+  assert.deepEqual(reusable.map(entry => entry.target), ["linux-x64", "macos-arm64", "macos-x64"]);
+  assert.deepEqual(reusable.filter(entry => entry.target === "linux-x64"), manual);
+  const check = workflow.jobs["ubuntu-26-compatibility"];
+  assert.equal(check.needs, "package");
+  assert.equal(check["runs-on"], "ubuntu-26.04");
+  assert.equal(check["timeout-minutes"], 15);
+  assert.equal(check.steps[0].with.ref, "${{ inputs.revision || github.sha }}");
+  assert.ok(Object.hasOwn(workflow.on, "workflow_dispatch"));
+  const lintConfig = parseDocument(await readFile(new URL("../../.github/actionlint.yaml", import.meta.url), "utf8")).toJS();
+  assert.deepEqual(lintConfig, { "self-hosted-runner": { labels: ["ubuntu-26.04"] } });
+  const share = build.steps.find(step => step.with?.name === "ubuntu-26-compatibility-input");
+  assert.equal(share.if, "runner.os == 'Linux'");
+  assert.equal(share.with["retention-days"], 1);
+  assert.equal(share.with["if-no-files-found"], "error");
+  assert.match(share.with.path, /steps.build.outputs.package/);
+  assert.match(share.with.path, /steps.build.outputs.checksums/);
+  const download = check.steps.find(step => step.uses?.startsWith("actions/download-artifact@"));
+  assert.equal(download.with.name, share.with.name);
+  assert.equal(download.with.path, ".tmp/posix-build/assets");
+  const commands = check.steps.map(step => step.run ?? "").join("\n");
+  assert.match(commands, /xvfb-run -a uv run --locked python -m scripts.check_posix_packages \.tmp\/posix-build\/assets/);
+  assert.match(commands, /--expected-target linux-x64/);
+  assert.doesNotMatch(commands, /scripts.build_posix/);
+  assert.ok(!check["continue-on-error"] && check.steps.every(step => !step["continue-on-error"]));
+});
