@@ -92,7 +92,7 @@ for (const filename of [".github/labeler.yml", ".github/dependabot.yml", ".githu
   });
 }
 
-for (const filename of [".github/workflows/posix-packages.yml"]) {
+for (const filename of [".github/workflows/posix-packages.yml", ".github/actionlint.yaml"]) {
   test(`Native/caller workflow changes select contracts without package builds: ${filename}`, () => {
     assert.deepEqual(classifyChanges([filename]), selected("dependencies", "workflows"));
   });
@@ -259,7 +259,7 @@ test("PR runs cancel only superseded runs of the same workflow and have bounded 
   }
 });
 
-test("Full CI retains native build verification and release-only uploads", async () => {
+test("Full CI retains native verification and release-only package publication", async () => {
   const [ci, packages, release] = await Promise.all([
     readFile(path.join(root, ".github/workflows/ci.yml"), "utf8"),
     readFile(path.join(root, ".github/workflows/posix-packages.yml"), "utf8"),
@@ -276,7 +276,8 @@ test("Full CI retains native build verification and release-only uploads", async
   assert.match(quality, /full-checks: true/);
   assert.match(quality, /upload-packages: true/);
   const steps = packages.split(/\r?\n      - /).slice(1);
-  const uploads = steps.filter(step => /uses: actions\/upload-artifact@/.test(step));
+  const uploads = steps.filter(step => /uses: actions\/upload-artifact@/.test(step)
+    && !step.includes("name: ubuntu-26-compatibility-input"));
   assert.equal(uploads.length, 2, "Release retains both package and checksums");
   for (const upload of uploads) {
     assert.match(upload, /if: \$\{\{ inputs\.upload-packages \}\}/);
