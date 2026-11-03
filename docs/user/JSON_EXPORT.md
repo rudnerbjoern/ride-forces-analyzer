@@ -39,7 +39,7 @@ The `metadata` object records the selected interval, sample rate, smoothing,
 analysis settings, source markers and available ride/weather metadata.
 Recording dates retain their original numeric text without assuming an epoch.
 
-The export uses the current analysis snapshot, including full-recording smoothing,
+The export uses the current analysis, including full-recording smoothing,
 regardless of hidden chart curves or the raw/calibrated display toggle. Values
 retain our calculation precision; they are not rounded to the app's two decimals.
 Matching names and structure do not imply identical numerical results.
@@ -48,8 +48,8 @@ Matching names and structure do not imply identical numerical results.
 
 The document groups recording information, analysis settings, time, sample arrays
 and quality information. Recording information includes available train, row and
-seat attributes, source markers and weather metadata. Source numeric attribute
-tokens are retained explicitly, without guessing their meaning or units.
+seat attributes, source markers and weather metadata. Numeric attributes with
+unknown meanings or units retain their original values.
 
 Raw axes, projected/smoothed forces, Combined, orientation and airtime context
 remain parallel arrays: the same position refers to the same source sample.
@@ -68,5 +68,4 @@ GPS samples are not assigned to force samples. Available recording-level locatio
 metadata stays recording-level. Derived forces and airtime interpretations remain
 provisional; raw device axes have unknown units.
 
-[Explore a recording](EXPLORER.md) · [Forces and airtime](FORCES_AND_AIRTIME.md) ·
-[JSON format](../implementation/JSON_EXPORT.md)
+[Explore a recording](EXPLORER.md) · [Forces and airtime](FORCES_AND_AIRTIME.md)

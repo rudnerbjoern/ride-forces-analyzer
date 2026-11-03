@@ -80,23 +80,13 @@ writes videos into `E:\RF batch\001-MP4-Content`.
 Existing videos are not overwritten; a job with a conflicting filename fails.
 The run's `run-report.json` records completed, failed, cancelled and skipped jobs.
 If a report already exists, the new report is named `run-report-<id>.json`.
-The completion message shows its path. There is no persistent execution-history screen.
+The completion message shows its path. For Library recordings, right-click the
+entry and choose **Export history…** to review previous attempts.
 
-The report also keeps the complete saved settings for every job, including its
-preset/profile, frame rate, export area, orientation, language, time window,
-axis options, GPU preference, smoothing, selected interval and analysis recipe.
-Every prepared export owns an effective settings/analysis snapshot, whether it
-was started individually or through a batch. It is embedded in the video's
-metadata; the batch report collects the same data as `export_snapshot`, including
-output dimensions and planned frame count. No additional JSON file is created
-beside each video. Run details include the application version, parallel render
-setting and supplied FFmpeg path. The report distinguishes the requested GPU
-option from actual GPU encoding and
-records completed file sizes in bytes. Missing execution details remain `null`,
-while the saved settings are retained even for failed, cancelled or skipped jobs.
-Each started job also records `duration_seconds`, including preparation, rendering
-and encoding/finalization. Failed and cancelled attempts keep their elapsed time;
-skipped jobs have no duration. Waiting for preceding jobs is not included.
+The report includes each job's saved settings, result, elapsed time and completed
+file size. It also shows whether GPU encoding was actually used. Failed and
+cancelled jobs retain their settings and elapsed time; skipped jobs have no
+duration. Queue waiting time is not included.
 
 **Cancel remaining exports** stops the active export and skips pending jobs.
 Incomplete output is removed, while already completed videos remain saved.
@@ -104,10 +94,10 @@ There is no automatic resume; review the results before starting another run.
 
 ## Keep source recordings available
 
-Saved jobs refer to the original file at its saved location. They do not contain
-a copy of the recording. Moving, renaming or changing a source file can make its
-job fail. Add a new job using the correct file; the application does not search
-for relocated recordings automatically.
+Jobs for Library recordings use the archived recording, so the original file can
+be moved or deleted. Jobs saved with an external file path still need that file
+at its saved location. If such a file has moved or changed, add a new job using
+the correct file; the application does not search for relocated recordings.
 
 One failed job does not prevent the remaining jobs from running. Check the
 reported error, correct the file or FFmpeg setup, and retry the affected exports.
@@ -121,5 +111,4 @@ Definitions and run reports can contain recording names and paths; review them
 before sharing. Processing and encoding work offline after setup, and original
 recordings remain unchanged.
 
-[Video export](VIDEO_EXPORT.md) · [Installation and FFmpeg](INSTALLATION.md) ·
-[Technical batch reference](../implementation/EXPORT_BATCHES.md)
+[Video export](VIDEO_EXPORT.md) · [Installation and FFmpeg](INSTALLATION.md)

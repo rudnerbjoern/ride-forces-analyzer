@@ -27,7 +27,13 @@ def test_qt_authentication_state_exchange_and_discovery_ownership(
     server.start()
     clients: list[QWebSocket] = []
     commands: list[str] = []
+    senders: list[QWebSocket] = []
+
+    def remember_sender(sender: QWebSocket, _message: str) -> None:
+        senders.append(sender)
+
     server.received.connect(commands.append)
+    server.command_received.connect(remember_sender)
     try:
         descriptor = json.loads(filename.read_text())
         assert descriptor["version"] == 1
@@ -79,6 +85,13 @@ def test_qt_authentication_state_exchange_and_discovery_ownership(
         assert messages[1] == '{"state":"initial"}'
         client.sendTextMessage('{"command":"probe"}')
         qtbot.waitUntil(lambda: commands == ['{"command":"probe"}'])
+        assert len(senders) == 1
+        server.reply(client, '{"response":"must not reach an unauthenticated peer"}')
+        with pytest.raises(ValueError, match="response exceeds"):
+            server.reply(senders[0], "é" * (MAX_MESSAGE_BYTES // 2 + 1))
+        server.reply(senders[0], '{"response":"confirmed"}')
+        qtbot.waitUntil(lambda: messages[-1] == '{"response":"confirmed"}')
+        assert commands == ['{"command":"probe"}']
         server.publish_state('{"state":"updated"}')
         qtbot.waitUntil(lambda: messages[-1] == '{"state":"updated"}')
         with pytest.raises(ValueError, match="message limit"):

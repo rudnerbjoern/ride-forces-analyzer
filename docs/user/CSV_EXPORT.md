@@ -46,4 +46,4 @@ The first six columns use the Ride Forces app's names and order, including
 `Timestamp`. Our additional data follows these columns; numeric recording/replay
 seconds are also retained. Force values preserve our calculation precision.
 
-[Explore a recording](EXPLORER.md) · [CSV format](../implementation/CSV_EXPORT.md)
+[Explore a recording](EXPLORER.md) · [Forces and airtime](FORCES_AND_AIRTIME.md)

@@ -139,8 +139,7 @@ Selecting HUD sets **Visible time window** to **30 seconds**, centered on the
 cursor. You can change it afterward; loaded presets retain their saved window.
 The time axis has a tick every second and labels every five seconds, including
 **0 s** at the cursor.
-Missing measurements leave gaps. Exact scale and drawing rules are documented in
-the [developer layout reference](../development/EXPORT_LAYOUTS.md).
+Missing measurements leave gaps.
 
 The time plots do not all run in the same direction: the four-panel column reads
 left to right, while compact lateral histories show the past below and the future
@@ -165,5 +164,4 @@ The preview background is only a viewing aid; it does not add your footage or
 change the exported background. Alignment with footage is done manually in your
 video editor.
 
-[Video export guide](VIDEO_EXPORT.md) · [Full-size examples](../EXPORT_LAYOUTS.md) ·
-[Developer layout reference](../development/EXPORT_LAYOUTS.md)
+[Video export guide](VIDEO_EXPORT.md) · [Full-size examples](../EXPORT_LAYOUTS.md)

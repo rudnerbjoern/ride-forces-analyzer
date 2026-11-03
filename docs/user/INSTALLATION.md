@@ -3,7 +3,7 @@
 Download your platform's package and checksum file from
 [GitHub Releases](https://github.com/rudnerbjoern/ride-forces-analyzer/releases).
 The application includes Python; no Python installation or setup script is needed.
-In commands below, replace `VERSION` with the downloaded version, such as `1.3.0`.
+In commands below, replace `VERSION` with the downloaded version, such as `2.0.0`.
 
 ## Windows 10/11 x64
 
@@ -100,14 +100,14 @@ settings and GPS, or the [video export guide](VIDEO_EXPORT.md) to create an over
 ## Optional Stream Deck plugin
 
 The Analyzer download does not install Stream Deck controls. A separate
-`.streamDeckPlugin` archive and `PLUGIN-SHA256SUMS.txt` are prepared for release
-downloads. When available, verify the checksum, open the archive with Stream Deck
+`.streamDeckPlugin` archive and `PLUGIN-SHA256SUMS.txt` can be downloaded from
+GitHub Releases when available. Verify the checksum, open the archive with Stream Deck
 7.6+ and import the profile for Plus, Neo or the limited six-key Mobile preview.
 Enable **Settings → Application → Enable Stream Deck** in Analyzer and save.
 See the [illustrated setup and controls](STREAM_DECK.md).
 
-Windows software integration is tested; native archive installation, physical
-device operation and macOS integration remain unverified. Linux has no plugin
+Plugin installation/update, physical device operation and macOS operation
+remain unverified. Linux has no plugin
 support. Plugin updates are installed separately from Analyzer updates.
 
 ## Check for updates

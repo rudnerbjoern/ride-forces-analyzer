@@ -68,5 +68,4 @@ not improve or validate the force measurement.
 The colored strip describes individual moments. It is not a count or duration
 summary of airtime episodes.
 
-[Explore a recording](EXPLORER.md) · [Export layouts](EXPORT_LAYOUTS.md) ·
-[Technical thresholds and evidence](../implementation/AIRTIME.md)
+[Explore a recording](EXPLORER.md) · [Export layouts](EXPORT_LAYOUTS.md)
