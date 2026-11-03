@@ -377,7 +377,13 @@ def exercise(application: RecordingApplication) -> None:
     window.library.search.setText("First ride")
     selection = controller.snapshot().library
     assert selection is not None and selection.count == 1
+    loaded = window.data
     device.request(wire.LibraryMove(name="library.move", direction=1))
+    device.request(wire.LibraryMove(name="library.move", direction=-1))
+    selection = controller.snapshot().library
+    assert selection is not None and selection.selected is not None
+    assert selection.selected.id == source.source_sha256 and selection.selected.index == 0
+    assert window.data is loaded and len(application.windows) == 1
     window.library.search.setText("no matching recording")
     blocked = device.request(wire.LibraryMove(name="library.move", direction=1))
     assert isinstance(blocked, wire.Failure) and blocked.reason == "empty_library"

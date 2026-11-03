@@ -2,8 +2,10 @@
 
 <!-- cspell:words Elgato streamdeck -->
 
-Status: Windows application routing and configurable plugin keys implemented.
-Plus/Neo native menu profiles implemented; dials/touch, InfoBar and physical device acceptance remain planned.
+Status: Windows application routing, keys and Plus/Neo profiles implemented.
+Library/navigation/marker dials, Neo marker editors and contextual InfoBar are
+prepared with automated checks. Local Windows installation/startup and profile
+import are verified; physical device acceptance remains open.
 
 ## Confirmed scope
 
@@ -28,7 +30,8 @@ Plus/Neo native menu profiles implemented; dials/touch, InfoBar and physical dev
 - Distribution: one `.streamDeckPlugin` asset on Analyzer GitHub releases, with
   device-specific Plus and Neo profiles.
 - Implemented scope covers loopback transport, typed control contract, application
-  actions, configurable SDK keys, native menu profiles, local installation and tests.
+  actions, keys, native menu profiles, Plus dial/touch controls, Neo marker editors
+  and InfoBar feedback. New device controls are prepared without installation.
 
 ## Goal and constraints
 
@@ -41,13 +44,11 @@ Optional Library and Explorer control from Stream Deck, with application-state f
 
 ## Existing basis
 
-Playback, sample stepping, zoom, curve visibility and smoothing already have
-application controls.
-The [local instance transport](../architecture/06_runtime_view.md#qt-bootstrap)
-currently accepts file-open requests, not general control or status subscriptions.
-It acknowledges each request and closes the connection; continuous feedback needs
-a new contract. Keyboard stepping is suppressed during playback or while an input
-field has focus; device controls follow the [stepping and playback rules](#stepping-and-playback).
+Device commands use existing GUI/service actions through the
+[typed loopback control contract](../architecture/06_runtime_view.md#stream-deck-control-contract).
+The application owns visible Library order, bounds, playback and marker adoption;
+the plugin displays confirmed snapshots. Device controls follow the
+[stepping and playback rules](#stepping-and-playback).
 
 ## Model support
 
@@ -66,8 +67,9 @@ Keep the normal page navigation separate from plugin status displays.
 
 ## Device controls
 
-Key assignments below match the bundled native profiles. Dial/touch, marker
-editors and InfoBar assignments remain planned.
+Assignments below match the prepared native profiles. Local Windows startup and
+archive import are verified. Without connected Plus/Neo hardware, the importer
+adapts to the fallback device; device-specific rendering and interaction remain open.
 
 ### Menu structure
 
@@ -95,8 +97,8 @@ rather than a custom menu engine. Profiles can include the agreed key, dial and
 display assignments. Plugin-driven navigation can switch bundled profiles and
 pages; it cannot switch to arbitrary user-created profiles. Home switches the invoking
 device to its bundled Start page. Profiles provide existing key controls for Library,
-playback, position, zoom, smoothing, speed and curves; marker folders reserve the
-agreed order for later editors. Plus dial assignments remain planned.
+playback, position, zoom, smoothing, speed and curves. Marker folders provide
+key editors; the Plus Markers page also provides the four ordered marker dials.
 Changing menus must not silently confirm marker previews or change the target window.
 
 ### Library navigation
@@ -142,7 +144,7 @@ Marker dial presses still apply the corresponding preview. Neo uses the separate
 
 ### Plus mockups
 
-Native profile key placement and planned dial/touch assignments, following
+Prepared profile key placement and dial/touch assignments, following
 the supported Back/Home positions. Each page
 has two key rows, followed by four touch fields and four dials where assigned.
 Blank positions are unassigned; menu-only pages leave touch fields/dials unassigned.
@@ -164,7 +166,7 @@ Touch: [ Selected entry ] [ ] [ ] [ ]
 Dials: [ Browse / Open  ] [ ] [ ] [ ]
 ```
 
-The planned first Library dial rotates through entries cyclically and opens on press.
+The first Library dial rotates through entries cyclically and opens on press.
 
 Explorer:
 
@@ -173,16 +175,16 @@ Explorer:
 [      ] [          ] [               ] [ Home    ]
 ```
 
-Playback, using the candidate assignments in [Navigation page](#navigation-page):
+Playback, with the assignments in [Navigation page](#navigation-page):
 
 ```text
 [ Back  ] [ Play / Pause ] [ Position ] [ Smoothing ]
-[ Speed ] [              ] [          ] [ Home      ]
+[ Speed ] [ Fine / Coarse ] [          ] [ Home      ]
 Touch: [ Time/sample + mode ] [ View interval ] [ Window size ] [ Speed/state ]
 Dials: [ Position           ] [ View          ] [ Smoothing   ] [ Speed       ]
 ```
 
-View / Curves, candidate controls:
+View / Curves:
 
 ```text
 [ Back       ] [ Curve 1    ] [ Curve 2  ] [ Curve 3 ]
@@ -190,11 +192,12 @@ View / Curves, candidate controls:
 ```
 
 Position opens a key page with - coarse / - fine / + fine / + coarse and Zoom -/+;
-Smoothing and Speed open decrement/reset/increment key pages. The planned
-Fine/Coarse dial-mode key belongs to the Plus navigation step.
+Smoothing and Speed open decrement/reset/increment key pages. Fine/Coarse is
+shared by position/marker dials on the same Plus, survives menu changes and
+starts in fine mode after plugin startup. Library browsing always steps one entry.
 
 Curve labels follow the application's current view; visibility and availability
-follow actual application state. Dial assignments for this page remain open.
+follow actual application state. This page has no dial assignments.
 
 ### Neo controls
 
@@ -218,7 +221,7 @@ Marker selection, top and bottom key rows:
 [ End  ] [       ] [         ] [ Home    ]
 ```
 
-Selecting a marker opens its reserved folder. Planned editor bindings:
+Selecting a marker opens its key editor:
 
 ```text
 [ Back     ] [ - coarse ] [ - fine ] [ + fine ]
@@ -245,11 +248,11 @@ The dial order and preview/press interaction are owner-specified.
 | 3                   | Incline | Any admitted source sample, independent of ride bounds |
 | 4                   | End     | Effective Start through the last source sample         |
 
-Proposed physical layout; marker order and dial/touch interaction are confirmed:
+Prepared physical layout; marker order and dial/touch interaction are confirmed:
 
 ```text
-[ Back ] [ ] [ ] [      ]
-[      ] [ Fine / Coarse ] [ ] [ Home ]
+[ Back ] [ Start         ] [ Gravity ] [ Incline ]
+[ End  ] [ Fine / Coarse ] [         ] [ Home    ]
 Touch: [ Start + mode ] [ Gravity + mode ] [ Incline + mode ] [ End + mode ]
 Dials: [ Start        ] [ Gravity        ] [ Incline        ] [ End        ]
 ```
@@ -271,7 +274,8 @@ unconfirmed. Tapping its touch field discards only that preview and restores the
 latest applied value, without changing other previews or stored markers.
 On both devices, preserve previews across menu changes; discard them when the
 recording or target Explorer changes. Never apply a preview to another recording/window.
-Initial positions for unset markers remain open.
+Unset calibration markers are unavailable until set through the GUI; initial
+placement through a device remains open.
 
 Use the existing marker service and Library persistence: only an adopted successful
 analysis saves the four choices atomically. Concurrent confirmations must not
@@ -402,8 +406,9 @@ The sizes below describe SDK assets/layouts, not native LCD resolutions.
 
 ## Proposed implementation steps
 
-Key bindings and native menu profiles have local tests and a conditional CI job;
-dials, marker editors, InfoBar and physical device checks remain planned.
+Keys, profiles, dials/touch and InfoBar have local Windows tests and a conditional
+CI job. Local installation/startup and profile import are verified. Steps 7–11
+remain prepared until physical Plus/Neo acceptance in step 12.
 
 1. **Name:** Agree scope
 
@@ -465,7 +470,7 @@ dials, marker editors, InfoBar and physical device checks remain planned.
 
 7. **Name:** Add Library controls
 
-   - **Status:** Planned.
+   - **Status:** Prepared.
    - **Content:** Add Plus dial navigation, Neo Previous/Next/Open keys and Import on both devices.
    - **Acceptance criteria:** Selection follows visible sorting/filtering, one entry
      per notch/key press, and wraps both ways, including empty/single-entry handling.
@@ -475,7 +480,7 @@ dials, marker editors, InfoBar and physical device checks remain planned.
 
 8. **Name:** Add Plus navigation controls
 
-   - **Status:** Planned.
+   - **Status:** Prepared.
    - **Content:** Add position, view, smoothing and speed dials with touch-field feedback.
    - **Acceptance criteria:** Controls reuse existing application settings and actions;
      position stepping defaults to fine and switches through the Fine/Coarse key.
@@ -484,7 +489,7 @@ dials, marker editors, InfoBar and physical device checks remain planned.
 
 9. **Name:** Add Plus marker controls
 
-   - **Status:** Planned.
+   - **Status:** Prepared.
    - **Content:** Add the Start/Gravity/Incline/End dial page and Fine/Coarse key.
    - **Acceptance criteria:** Rotation previews only the intended marker within valid
      sample bounds; press applies it; touch tap discards only its preview and restores
@@ -493,7 +498,7 @@ dials, marker editors, InfoBar and physical device checks remain planned.
 
 10. **Name:** Add Neo marker controls
 
-    - **Status:** Planned.
+    - **Status:** Prepared.
     - **Content:** Add marker selection and the key-based editor from the Neo mockups.
     - **Acceptance criteria:** Start/Gravity/Incline/End selection opens the corresponding
       editor. Separate - coarse / - fine / + fine / + coarse keys adjust its preview;
@@ -502,7 +507,7 @@ dials, marker editors, InfoBar and physical device checks remain planned.
 
 11. **Name:** Add Neo InfoBar feedback
 
-    - **Status:** Planned.
+    - **Status:** Prepared.
     - **Content:** Add the agreed contextual icons, status and values to InfoBar layouts.
     - **Acceptance criteria:** Displays follow actual Library, playback, curve and marker
       state, including unavailable data and pending previews. Operation requires no input

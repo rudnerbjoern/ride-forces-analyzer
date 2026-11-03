@@ -101,7 +101,7 @@ sequenceDiagram
 - Handshake version 1 and the token are required within five seconds. Browser
   origins and binary messages are rejected; incoming and published state frames
   are bounded to 64 KiB. The application contract below defines payload validation;
-  transport-to-action dispatch remains planned.
+  commands route through the GUI-thread controller.
 - The client retries after one second, including missing/invalid discovery and
   connection failure. Disconnected sends return false; stop cancels retries and
   stale connection attempts. Reconnected peers receive the latest state.
@@ -173,7 +173,12 @@ generation. Its configurable SDK key action covers the agreed command types.
 
 Markers are `start`, `gravity`, `incline`, `end`. First/second/third curve slots
 follow the current chart axes; state supplies actual raw/directional labels.
-Fine/coarse selection and menu navigation stay local to the plugin. Other view,
+Fine/coarse selection and menu navigation stay local to the plugin. Relative
+steps may remain in flight together so aggregated dial ticks and rapid Library
+key presses retain one command per step; the server serializes and revalidates
+them against current GUI state. No disconnected commands are queued or replayed.
+Plus press invokes Open/Play/Reset/Apply; marker touch discards only that preview.
+Neo InfoBar has no input handlers. Other view,
 curve, smoothing and speed actions leave playback running; marker apply/discard
 does not resume it. Initial positions for unset markers remain an open device
 interaction decision; no valid preview means apply is unavailable.

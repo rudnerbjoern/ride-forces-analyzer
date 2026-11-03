@@ -3,7 +3,8 @@
 Windows key controls using Elgato's TypeScript SDK. The configurable **Analyzer
 control** action covers the [agreed commands](../../docs/architecture/06_runtime_view.md#actions).
 Plus and Neo profiles provide native Library/Explorer menus and key controls.
-Plus dials/touch, marker editors and Neo InfoBar remain planned.
+Plus dials/touch, marker editors and Neo InfoBar are prepared with automated tests.
+Local Windows startup and archive import are verified; Plus/Neo device acceptance remains open.
 
 ## Local build and installation
 
@@ -11,8 +12,6 @@ Use the repository's [Windows setup](../../docs/development/SETUP.md). From the 
 
 ```powershell
 npm run test:stream-deck
-npm run link:plugin --workspace plugins/stream-deck
-npm run restart:plugin --workspace plugins/stream-deck
 ```
 
 Tests compile TypeScript, bundle the plugin, run official offline validation and
@@ -24,11 +23,21 @@ runs plugin tests for affected changes and always for releases/full CI.
 For a build without tests, use `npm run build:plugin --workspace plugins/stream-deck`.
 `validate:plugin` runs the official CLI with `--no-update-check`.
 
-Local installation requires Stream Deck 7.6+. The CLI links
-`io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin` into Stream Deck's plugin
-directory. The stable reverse-DNS ID derives from the project's GitHub Pages address.
-The folder contains manifest, icons and inspector sources; ignored build output
-adds self-contained JavaScript, the project license and bundled-runtime notices.
+Builds write `.tmp/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/`
+from the source assets and `devices/` definitions. Tests neither install/link/restart
+the plugin nor import profiles. This also preserves an existing source-folder installation.
+
+Enable developer mode first with `npm exec --workspace plugins/stream-deck -- streamdeck dev`.
+Optional local installation requires Stream Deck 7.6+.
+`npm run link:plugin --workspace plugins/stream-deck` copies the prepared artifact
+to `.tmp/stream-deck-installed/` and links that independent copy using the official CLI.
+Use `npm run restart:plugin --workspace plugins/stream-deck` to load it.
+An older source/build-folder link must first be removed with
+`npm exec --workspace plugins/stream-deck -- streamdeck unlink io.github.rudnerbjoern.ride-forces-analyzer`.
+Confirm startup in the native/plugin logs; CLI success alone does not confirm a running plugin.
+The stable reverse-DNS ID derives from the project's GitHub Pages address.
+The assembled folder contains metadata, layouts, icons, inspector,
+self-contained JavaScript, the project license and bundled-runtime notices.
 It does not need repository `node_modules` at runtime. A release `.streamDeckPlugin`
 asset remains planned. Builds also create `profiles/plus.streamDeckProfile` and
 `profiles/neo.streamDeckProfile` inside that folder; double-click the matching
@@ -45,9 +54,22 @@ the preferred key 5 placement is unsupported. Start has no Back/Home keys.
 Library includes Previous/Next/Open/Import keys. Playback provides Play/Pause and
 Position, Smoothing and Speed folders with existing key actions; Position includes
 fine/coarse steps and zoom. View / Curves contains the five curve/mode controls and
-Reset view. Marker folders reserve Start/Gravity/Incline/End in order; editor
-bindings belong to their later integration steps. No dial or InfoBar is required
+Reset view. Marker folders contain - coarse / - fine / + fine / + coarse,
+Discard and Apply keys. No dial or InfoBar is required
 to navigate the menus or use the assigned controls.
+
+Plus Library dial: one visible entry per notch, cyclic in both directions; press
+opens the selection in the current Explorer. Playback dials are Position
+(press: Play/Pause), View (Reset), Smoothing (Reset) and Speed (1×).
+Markers are Start/Gravity/Incline/End: rotate previews, press applies and touch
+discards only that marker's preview. Fine/Coarse on Playback and Markers switches
+between one/ten source samples per notch on that Plus; startup defaults to fine.
+
+Touch fields and the display-only Neo InfoBar show confirmed values, availability,
+preview/pending/failed status and applied marker values. Previews survive menus;
+the application clears them on recording/target changes. Unset calibration markers
+remain unavailable until placed in the GUI. Input fields/dialogs/background use
+block app commands; local menus and fine/coarse selection remain available.
 
 ## Configure keys
 

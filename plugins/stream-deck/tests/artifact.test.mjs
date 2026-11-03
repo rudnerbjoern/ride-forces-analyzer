@@ -8,12 +8,12 @@ import test from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { pluginOutput as source } from "../scripts/artifact-path.mjs";
 
 const require = createRequire(import.meta.url);
 const sdk = createRequire(require.resolve("@elgato/streamdeck"));
 const { WebSocketServer } = sdk("ws");
 const uuid = "io.github.rudnerbjoern.ride-forces-analyzer";
-const source = fileURLToPath(new URL(`../${uuid}.sdPlugin/`, import.meta.url));
 const examples = JSON.parse(await readFile(new URL("fixtures/protocol.json", import.meta.url), "utf8"));
 
 async function waitUntil(predicate, diagnostics = () => "") {
@@ -79,6 +79,7 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
   let output = "";
   const info = { application: { version: "7.6.0", platform: "windows", language: "en", font: "Arial", platformVersion: "10" },
     plugin: { uuid, version: "0.1.0.0" }, devices: [{ id: "test-device", name: "Test Neo", type: 9,
+      size: { columns: 4, rows: 2 } }, { id: "test-plus", name: "Test Plus", type: 7,
       size: { columns: 4, rows: 2 } }], devicePixelRatio: 1,
     colors: { buttonMouseOverBackgroundColor: "#000", buttonPressedBackgroundColor: "#000", buttonPressedBorderColor: "#000", buttonPressedTextColor: "#fff", highlightColor: "#fff" } };
   const child = spawn(process.execPath, ["bin/plugin.js", "-port", String(host.address().port),
@@ -131,6 +132,40 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
     assert.equal(navigation.device, "test-device");
     assert.deepEqual(navigation.payload, { profile: "profiles/neo", page: 0 });
     assert.equal(commands.length, 2, "Home must not apply previews or send application commands");
+    const dialEvent = { action: `${uuid}.dial`, context: "test-dial", device: "test-plus",
+      payload: { controller: "Encoder", coordinates: { column: 0, row: 0 }, settings: { control: "library" } } };
+    const sendDial = (type, extra = {}) => hostSocket.send(JSON.stringify({ ...dialEvent, event: type,
+      payload: { ...dialEvent.payload, ...extra } }));
+    const dialFeedback = () => hostMessages.filter(value => value.event === "setFeedback" && value.context === "test-dial").at(-1)?.payload;
+    sendDial("willAppear");
+    await waitUntil(() => dialFeedback()?.value === "Example ride", diagnostic);
+    assert.ok(hostMessages.some(value => value.event === "setFeedbackLayout" && value.context === "test-dial"
+      && value.payload.layout === "layouts/plus.json"));
+    sendDial("dialRotate", { ticks: 3, pressed: false });
+    await waitUntil(() => commands.length === 5 && dialFeedback()?.status.includes("Pending"), diagnostic);
+    assert.deepEqual(commands.slice(-3).map(value => value.action), Array(3).fill({ name: "library.move", direction: 1 }));
+    for (const command of commands.slice(-3)) appSocket.send(JSON.stringify({ version: 1, type: "response",
+      id: command.id, target: command.target, status: "ok" }));
+    await waitUntil(() => dialFeedback()?.status === "", diagnostic);
+    sendDial("dialDown");
+    await waitUntil(() => commands.length === 6, diagnostic);
+    assert.deepEqual(commands[5].action, { name: "library.open" });
+    const infoEvent = { action: `${uuid}.infobar`, context: "test-info", device: "test-device",
+      payload: { controller: "Neo", coordinates: { column: 1, row: 0 }, settings: { section: "markers", marker: "gravity" } } };
+    hostSocket.send(JSON.stringify({ ...infoEvent, event: "willAppear" }));
+    const barFeedback = () => hostMessages.filter(value => value.event === "setFeedback" && value.context === "test-info").at(-1)?.payload;
+    await waitUntil(() => barFeedback()?.title === "Gravity", diagnostic);
+    assert.match(barFeedback().status, /Preview.*Applied #50/);
+    assert.ok(hostMessages.some(value => value.event === "setFeedbackLayout" && value.context === "test-info"
+      && value.payload.layout === "layouts/neo.json"));
+    const modeEvent = { ...homeEvent, action: `${uuid}.step-mode`, context: "test-mode", device: "test-plus" };
+    hostSocket.send(JSON.stringify({ ...modeEvent, event: "willAppear" }));
+    hostSocket.send(JSON.stringify({ ...modeEvent, event: "keyDown" }));
+    await waitUntil(() => hostMessages.some(value => value.event === "setTitle" && value.context === "test-mode"
+      && value.payload.title.includes("Coarse")), diagnostic);
+    assert.equal(commands.length, 6, "InfoBar and Fine/Coarse never send app commands");
+    await close(backend);
+    await waitUntil(() => barFeedback()?.status === "Offline" && dialFeedback()?.value === "—", diagnostic);
     send("willDisappear");
   } finally {
     if (child.exitCode === null && child.signalCode === null) {

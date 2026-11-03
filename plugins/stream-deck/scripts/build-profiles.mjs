@@ -1,13 +1,11 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { TextReader, Uint8ArrayWriter, ZipWriter } from "@zip.js/zip.js";
 
 // cspell:words backtoparent openchild
 
 const uuid = "io.github.rudnerbjoern.ride-forces-analyzer";
-const plugin = fileURLToPath(new URL(`../${uuid}.sdPlugin/`, import.meta.url));
 
 // Native folders own navigation; application controls reuse the configurable SDK action.
 const folder = (title, page) => ({ title, page });
@@ -31,7 +29,6 @@ const pages = {
     extra: [control("curve.set", { curve: "calibrated" }), control("curve.set", { curve: "combined" })] },
   markers: { name: "Markers", keys: [folder("Start", "marker-start"), folder("Gravity", "marker-gravity"),
     folder("Incline", "marker-incline"), folder("End", "marker-end")] },
-  // Device-specific marker editor bindings belong to their own implementation steps.
   "marker-start": { name: "Start marker", keys: [] },
   "marker-gravity": { name: "Gravity marker", keys: [] },
   "marker-incline": { name: "Incline marker", keys: [] },
@@ -53,7 +50,7 @@ function key(id, name, action, settings, title) {
 }
 
 /** Assemble Plus and Neo archives from shared native folder/key assignments. */
-export async function buildProfiles() {
+export async function buildProfiles(plugin) {
   await mkdir(path.join(plugin, "profiles"), { recursive: true });
   for (const [device, model] of [["plus", "20GBD9901"], ["neo", "20GBJ9901"]]) {
     const profileId = identity(device);
@@ -62,7 +59,10 @@ export async function buildProfiles() {
     const writer = new ZipWriter(new Uint8ArrayWriter(), { level: 0, lastModDate: new Date("2026-01-01T00:00:00Z") });
     const add = (filename, data) => writer.add(`${root}/${filename}`, new TextReader(JSON.stringify(data, null, 2) + "\n"));
     await add("manifest.json", { Device: { Model: model, UUID: "" }, Name: `Ride Forces Analyzer ${device === "plus" ? "+" : "Neo"}`,
-      Pages: { Current: pageId("start"), Default: pageId("start"), Pages: [pageId("start")] }, Version: "3.0" });
+      Pages: { Current: pageId("start"), Default: pageId("default"), Pages: [pageId("start")] }, Version: "3.0" });
+    // The native importer reserves Default for a separate empty page template.
+    await add(`Profiles/${pageId("default").toUpperCase()}/manifest.json`,
+      { Controllers: [{ Type: "Keypad", Actions: {} }], Icon: "", Name: "" });
     for (const [name, page] of Object.entries(pages)) {
       const actions = {};
       const put = (definition, index) => {
@@ -77,18 +77,35 @@ export async function buildProfiles() {
           actions[coordinate].States.push({});
         }
       };
-      const keys = device === "plus" && name === "library"
-        ? [page.keys[3], ...page.keys.slice(0, 3)] : page.keys;
+      const marker = name.startsWith("marker-") ? name.slice(7) : undefined;
+      const keys = marker ? [-10, -1, 1, 10].map(steps => control("marker.preview", { marker, steps }))
+        : device === "plus" && name === "library" ? [page.keys[3], ...page.keys.slice(0, 3)] : page.keys;
       keys.forEach((definition, index) => put(definition, name === "start" ? index : index + 1));
-      (page.extra ?? []).forEach((definition, index) => put(definition, index + 5));
+      const extra = marker ? [control("marker.discard", { marker }), control("marker.apply", { marker })] : page.extra ?? [];
+      extra.forEach((definition, index) => put(definition, index + 5));
+      if (device === "plus" && ["playback", "markers"].includes(name)) {
+        actions["1,1"] = key(`${device}/${name}/mode`, "Fine / Coarse", `${uuid}.step-mode`, {}, "Fine");
+        actions["1,1"].States.push({});
+      }
       if (name !== "start") {
         // Stream Deck forces native folder Back to key 1 during import.
         actions["0,0"] = key(`${device}/${name}/back`, "Parent Folder",
           "com.elgato.streamdeck.profile.backtoparent", {}, "Back");
         actions["3,1"] = key(`${device}/${name}/home`, "Home", `${uuid}.home`, {}, "Home");
       }
+      const controllers = [{ Type: "Keypad", Actions: actions }];
+      if (device === "neo") {
+        controllers.push({ Type: "Neo", Actions: { "1,0": key(`${device}/${name}/info`, "Analyzer InfoBar",
+          `${uuid}.infobar`, { section: marker ? "markers" : name, ...(marker ? { marker } : {}) }) } });
+      } else {
+        const dials = name === "library" ? [{ control: "library" }] : name === "playback"
+          ? ["position", "view", "smoothing", "speed"].map(control => ({ control })) : name === "markers"
+            ? ["start", "gravity", "incline", "end"].map(marker => ({ control: "marker", marker })) : [];
+        if (dials.length) controllers.push({ Type: "Encoder", Actions: Object.fromEntries(dials.map((settings, index) =>
+          [`${index},0`, key(`${device}/${name}/dial/${index}`, "Analyzer dial", `${uuid}.dial`, settings)])) });
+      }
       await add(`Profiles/${pageId(name).toUpperCase()}/manifest.json`,
-        { Controllers: [{ Type: "Keypad", Actions: actions }], Icon: "", Name: page.name });
+        { Controllers: controllers, Icon: "", Name: page.name });
       if (keys.some(definition => definition.page)) {
         await writer.add(`${root}/Profiles/${pageId(name).toUpperCase()}/Images/folder.svg`,
           new TextReader(await readFile(path.join(plugin, "imgs/folder.svg"), "utf8")));

@@ -6,6 +6,7 @@ export interface KeyFeedback {
     title: string;
     image: string;
     state: 0 | 1;
+    status: IconStatus;
 }
 
 const paths = {
@@ -48,7 +49,7 @@ export function keyFeedback(client: ControlClient, context: string, settings: Co
     let status: IconStatus = "inactive";
     if (client.status !== "connected" || !snapshot) {
         const detail = client.status === "incompatible" ? "Incompatible" : client.status === "connecting" ? "Connecting…" : "Offline";
-        return { title: `${label}\n${detail}`, image: keyImage(area, "disconnected"), state: 0 };
+        return { title: `${label}\n${detail}`, image: keyImage(area, "disconnected"), state: 0, status: "disconnected" };
     }
     if (name.startsWith("library.")) {
         const selected = snapshot.library?.selected;
@@ -88,5 +89,5 @@ export function keyFeedback(client: ControlClient, context: string, settings: Co
     if (client.error(context)) status = "failed";
     if (status === "pending") title += "\nPending";
     if (status === "failed") title += "\nFailed";
-    return { title, image: keyImage(area, status, playing), state: active ? 1 : 0 };
+    return { title, image: keyImage(area, status, playing), state: active ? 1 : 0, status };
 }

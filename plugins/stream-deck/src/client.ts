@@ -4,6 +4,9 @@ import { decodeServerMessage } from "./decoder.js";
 import type { Action, Command, ConnectionState, StateEvent, Target } from "./protocol.js";
 import { AnalyzerTransport, endpointPath } from "./transport.js";
 
+const relativeActions = new Set<Action["name"]>(["library.move", "position.step", "view.zoom",
+    "smoothing.step", "playback.speed.step", "marker.preview"]);
+
 export interface Transport {
     start(): void;
     stop(): void;
@@ -54,7 +57,8 @@ export class ControlClient {
     send(context: string, action: Action): boolean {
         const state = this.current;
         if (this.connection !== "connected" || !state?.target || !state.availability.available
-            || !state.controls[action.name]?.available || this.pending(context)) return false;
+            || !state.controls[action.name]?.available
+            || this.pending(context) && !relativeActions.has(action.name)) return false;
         const command: Command = { version: 1, type: "command", id: randomUUID(), target: state.target, action };
         this.requests.set(command.id, { context, target: command.target });
         this.failures.delete(context);

@@ -29,12 +29,19 @@ Development and local regression checks run on native Windows.
 `setup.ps1` creates the locked environment; `start.ps1` starts the application
 without dependency synchronization. Node supplies development checks and builds
 the separate [Stream Deck plugin](../../plugins/stream-deck/README.md).
-Its Windows `.sdPlugin` folder can be installed locally with Elgato's CLI.
+Builds assemble a Windows `.sdPlugin` folder under `.tmp/stream-deck/`, independently
+of any existing source-folder installation. Base metadata/assets and device action
+metadata/layouts are combined there; preparing or testing it does not install,
+restart or import a plugin/profile. Explicit local installation copies the artifact
+to `.tmp/stream-deck-installed/` and links that copy with Elgato's CLI. Rebuilds
+leave the installed files and running process unchanged. Local development needs
+Stream Deck developer mode; verify the actual connection in native/plugin logs.
 Compiled JavaScript bundles its runtime dependencies; project/runtime licenses
 are assembled beside it, together with Plus/Neo `.streamDeckProfile` archives.
 Profiles use native folders and existing key commands; import selects the matching
 device profile. Stream Deck supplies Node.js, independently of development Node.
-Native device verification remains open.
+Local Windows startup and profile import are verified. Plus dials/touch, Neo marker
+editors and InfoBar have automated checks; device rendering and interaction remain open.
 Planned delivery is one `.streamDeckPlugin` asset beside the Analyzer GitHub release
 packages, including device-specific Plus and Neo profiles.
 [Windows setup](../development/SETUP.md) owns versions and commands.

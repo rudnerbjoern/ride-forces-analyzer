@@ -7,8 +7,8 @@
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "build:plugin": "node scripts/build-plugin.mjs",
-    "validate:plugin": "streamdeck validate io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin --no-update-check",
-    "link:plugin": "streamdeck link io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin",
+    "validate:plugin": "streamdeck validate ../../.tmp/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin --no-update-check",
+    "link:plugin": "node scripts/link-plugin.mjs",
     "restart:plugin": "streamdeck restart io.github.rudnerbjoern.ride-forces-analyzer",
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "test": "npm run build:plugin && node --test tests/*.test.mjs"

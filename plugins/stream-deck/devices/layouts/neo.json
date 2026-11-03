@@ -1,0 +1,11 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/layout.json",
+  "id": "analyzer-neo",
+  "controller": "Neo",
+  "items": [
+    { "key": "icon", "type": "pixmap", "rect": [2, 9, 30, 30] },
+    { "key": "title", "type": "text", "rect": [36, 0, 196, 16], "font": { "size": 11 }, "alignment": "left", "color": "#ffffff" },
+    { "key": "value", "type": "text", "rect": [36, 16, 196, 18], "font": { "size": 12 }, "alignment": "left", "color": "#ffffff" },
+    { "key": "status", "type": "text", "rect": [36, 34, 196, 16], "font": { "size": 10 }, "alignment": "left", "color": "#b8dbff" }
+  ]
+}

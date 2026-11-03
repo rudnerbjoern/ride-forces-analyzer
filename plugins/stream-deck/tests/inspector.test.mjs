@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
+import path from "node:path";
+import { pluginOutput } from "../scripts/artifact-path.mjs";
 
 test("the built inspector restores settings and saves typed choices for the correct action", async () => {
   const elements = new Map();
@@ -19,7 +21,7 @@ test("the built inspector restores settings and saves typed choices for the corr
     send(message) { this.messages.push(JSON.parse(message)); }
   }
   const window = {};
-  const code = await readFile(new URL("../io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/ui/control.js", import.meta.url), "utf8");
+  const code = await readFile(path.join(pluginOutput, "ui/control.js"), "utf8");
   vm.runInNewContext(code, { window, WebSocket: Socket,
     Option: class { constructor(text, value) { this.text = text; this.value = value; } },
     document: { getElementById: id => elements.get(id),

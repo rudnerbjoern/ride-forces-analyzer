@@ -1,18 +1,29 @@
-import { copyFile, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { copyFile, cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import { spawnSync } from "node:child_process";
 import { buildProfiles } from "./build-profiles.mjs";
+import { pluginOutput as plugin } from "./artifact-path.mjs";
 
 const workspace = fileURLToPath(new URL("../", import.meta.url));
-const plugin = path.join(workspace, "io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin");
-await buildProfiles();
+const source = path.join(workspace, "io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin");
 const compiled = spawnSync(process.execPath, [path.join(workspace, "../../node_modules/typescript/bin/tsc"),
   "--project", path.join(workspace, "tsconfig.json")], { stdio: "inherit", cwd: workspace });
 if (compiled.error) throw compiled.error;
 if (compiled.status !== 0) process.exit(compiled.status ?? 1);
+await rm(plugin, { recursive: true, force: true });
 await mkdir(path.join(plugin, "bin"), { recursive: true });
+await mkdir(path.join(plugin, "ui"), { recursive: true });
+await cp(path.join(source, "imgs"), path.join(plugin, "imgs"), { recursive: true });
+await copyFile(path.join(source, "ui/control.html"), path.join(plugin, "ui/control.html"));
+await copyFile(path.join(source, "package.json"), path.join(plugin, "package.json"));
+const manifest = JSON.parse(await readFile(path.join(source, "manifest.json"), "utf8"));
+const devices = JSON.parse(await readFile(path.join(workspace, "devices/manifest.json"), "utf8"));
+manifest.Actions.push(...devices.Actions);
+await writeFile(path.join(plugin, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+await cp(path.join(workspace, "devices/layouts"), path.join(plugin, "layouts"), { recursive: true });
+await buildProfiles(plugin);
 const result = await build({
   absWorkingDir: workspace, entryPoints: ["src/index.ts"], outfile: path.join(plugin, "bin/plugin.js"),
   bundle: true, platform: "node", target: "node24", format: "esm", metafile: true,

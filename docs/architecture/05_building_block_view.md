@@ -69,8 +69,10 @@ wire models live in `runtime.control_contract`, paired with plugin protocol type
 action routing and coalesced state feedback. The plugin's shared client correlates
 requests and drives visible keys from confirmed snapshots. Build-time profile
 definitions produce native Plus/Neo folder layouts; a local Home action returns
-to the invoking device's bundled Start page. Dial/InfoBar and marker editor
-bindings remain planned.
+to the invoking device's bundled Start page. Plus gesture handlers map each notch,
+press and marker touch to existing commands; a device-local fine/coarse mode
+changes only position/marker step size. Neo editors use the shared key action;
+InfoBar is display-only. Both displays derive values and status from snapshots.
 
 ## Importer composition and interfaces
 
