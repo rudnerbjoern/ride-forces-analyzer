@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
 import { once } from "node:events";
-import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import test from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { ZipReader, Uint8ArrayReader, Uint8ArrayWriter } from "@zip.js/zip.js";
 import { pluginOutput as source } from "../scripts/artifact-path.mjs";
 
 const require = createRequire(import.meta.url);
@@ -34,11 +35,29 @@ async function close(host) {
   await new Promise(resolve => host.close(resolve));
 }
 
-test("the assembled plugin passes official offline validation and includes runtime licenses", async () => {
+test("official offline packing preserves the validated runtime, licenses and three profiles", async () => {
   const cli = path.join(path.dirname(require.resolve("@elgato/cli/package.json")), "bin/streamdeck.mjs");
-  const { stdout, stderr } = await promisify(execFile)(process.execPath,
-    [cli, "validate", source, "--no-update-check"]);
-  assert.match(stdout + stderr, /Validation successful/);
+  const directory = await mkdtemp(fileURLToPath(new URL("../../../.tmp/stream-deck-package-test-", import.meta.url)));
+  try {
+    const { stdout, stderr } = await promisify(execFile)(process.execPath,
+      [cli, "pack", source, "--output", directory, "--no-update-check", "--no-file-list"]);
+    assert.match(stdout + stderr, /Successfully packaged plugin/);
+    const reader = new ZipReader(new Uint8ArrayReader(await readFile(path.join(directory, `${uuid}.streamDeckPlugin`))));
+    try {
+      const entries = (await reader.getEntries()).filter(entry => !entry.directory);
+      const files = (await readdir(source, { recursive: true, withFileTypes: true }))
+        .filter(entry => entry.isFile()).map(entry => path.relative(source, path.join(entry.parentPath, entry.name)).replaceAll("\\", "/"));
+      assert.deepEqual(entries.map(entry => entry.filename).sort(), files.map(name => `${uuid}.sdPlugin/${name}`).sort());
+      for (const entry of entries) {
+        assert.deepEqual(Buffer.from(await entry.getData(new Uint8ArrayWriter())),
+          await readFile(path.join(source, entry.filename.slice(`${uuid}.sdPlugin/`.length))), entry.filename);
+      }
+      for (const name of ["bin/plugin.js", "LICENSE", "THIRD_PARTY_NOTICES.txt",
+        "profiles/plus.streamDeckProfile", "profiles/neo.streamDeckProfile", "profiles/mobile.streamDeckProfile"]) {
+        assert.ok(files.includes(name), `Missing distributable content: ${name}`);
+      }
+    } finally { await reader.close(); }
+  } finally { await rm(directory, { recursive: true, force: true }); }
   const notices = await readFile(path.join(source, "THIRD_PARTY_NOTICES.txt"), "utf8");
   assert.match(notices, /@elgato\/streamdeck 3\.0\.4/);
   assert.match(notices, /Permission is hereby granted/);

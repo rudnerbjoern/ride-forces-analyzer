@@ -68,13 +68,39 @@ Confirm startup in the native/plugin logs; CLI success alone does not confirm a 
 The stable reverse-DNS ID derives from the project's GitHub Pages address.
 The assembled folder contains metadata, layouts, icons, inspector,
 self-contained JavaScript, the project license and bundled-runtime notices.
-It does not need repository `node_modules` at runtime. A release `.streamDeckPlugin`
-asset remains planned. Builds also create `profiles/plus.streamDeckProfile` and
+It does not need repository `node_modules` at runtime. Builds also create `profiles/plus.streamDeckProfile` and
 `profiles/neo.streamDeckProfile` and `profiles/mobile.streamDeckProfile` inside that folder; double-click the matching
 archive to import it into Stream Deck. Existing user profiles are preserved.
 Native menu images are embedded per page from the same colored artwork as the
 function keys. Reimport an updated profile to refresh its menu images; a plugin
 restart alone cannot replace images already stored in an imported profile.
+
+## Installable archive
+
+From the repository root, build and pack with the official Elgato CLI:
+
+```powershell
+npm run pack:plugin --workspace plugins/stream-deck
+```
+
+The command validates offline and writes
+`.tmp/stream-deck-package/io.github.rudnerbjoern.ride-forces-analyzer.streamDeckPlugin`.
+It includes the self-contained runtime, icons/layouts, license notices and all three
+profiles. It neither installs the plugin nor changes existing profiles. An existing
+archive is preserved by default; append `-- --force` only to replace it deliberately.
+The archive version comes from the independent plugin version, not the app version.
+
+For native installation, double-click the archive with Stream Deck installed and
+confirm its installation prompt. Verify the installed version and actual SDK/app
+connection in the native logs, then import the matching bundled profile separately;
+profiles are not auto-installed. Keep existing user profiles. On a development
+machine, the linked plugin already occupies the same plugin ID: retain that setup
+until a deliberate switch to archive installation is intended.
+
+Archive contents and byte integrity are checked automatically on Windows. Native
+archive installation/update and macOS execution remain unverified. The file is a
+prepared GitHub release asset; uploading/publishing it requires separate owner
+authorization. No Marketplace publication or automatic release upload is configured.
 
 ## macOS: enabled, unverified
 

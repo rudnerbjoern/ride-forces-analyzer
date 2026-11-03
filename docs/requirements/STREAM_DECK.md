@@ -10,8 +10,9 @@
   validation, native plugin startup/Analyzer connection and Plus profile import.
 - Open: physical Plus operation, native Neo/Mobile import and operation, and all
   native macOS integration checks.
-- Distribution: self-contained development folder and three profile archives.
-  Packed `.streamDeckPlugin` delivery and release publication remain incomplete.
+- Distribution: self-contained development folder, three profile archives and an
+  officially packed `.streamDeckPlugin`. Native archive installation and release
+  publication remain open.
 
 ## Scope and constraints
 
@@ -293,15 +294,21 @@ or acceptance work. Native acceptance is tracked explicitly in steps 6 and 12.
     - **Status:** Partial.
     - **Verified:** Automated Windows checks, native plugin startup/connection and Plus
       profile import; requirements, user guide and generated profile illustrations exist.
+      Windows developer mode is enabled; native SDK logs and the installed plugin's
+      established connection to the current Analyzer endpoint confirm its running state.
     - **Open:** Physical Plus keys/dials/touch, Neo import/keys/Touch Points/InfoBar,
       Mobile import/pairing/phone operation, and native macOS integration.
+      Available access is Windows remote control without physical device input.
+      See the [native acceptance checklist](#native-acceptance-checklist).
 
 13. **Package and release plugin**
     - **Status:** Partial.
     - **Implemented:** Self-contained `.sdPlugin` folder, three bundled profile archives,
-      license notices and official folder validation; local link/restart workflow.
-    - **Open:** Official CLI packing into an installable `.streamDeckPlugin`, native
-      archive-install acceptance and a separately authorized GitHub release asset.
+      license notices, official offline validation/packing and archive-content checks;
+      local link/restart workflow. The [pack command](../../plugins/stream-deck/README.md#installable-archive)
+      prepares the `.streamDeckPlugin` release asset without installing or publishing it.
+    - **Open:** Native archive-install/update acceptance and separately authorized
+      publication of the GitHub release asset.
       Marketplace publication is not part of this step.
 
 ## Acceptance gates
@@ -317,6 +324,23 @@ or acceptance work. Native acceptance is tracked explicitly in steps 6 and 12.
 - Public delivery requires a validated installable archive and explicit release
   authorization. Existing user profiles/settings must survive installation/updates;
   changed profile layouts require separate import.
+
+### Native acceptance checklist
+
+Each row requires actual observation or user confirmation on the named device.
+The Windows automated checks cover the corresponding software contracts; they
+do not close these rows. Preserve existing profiles and original recordings.
+
+| Device / area                    | Required observation                                                                                                                                                                                    | Status |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Plus menus / keys                | Navigate Start, Library, Explorer and submenus; Back is key 1, Home key 8; Play/Pause and key alternatives work.                                                                                        | Open   |
+| Plus Library                     | Dial follows visible order/filtering, wraps both ways and handles empty/single-entry lists; rotation only selects, press opens in the current Explorer; Import opens the existing dialog.               | Open   |
+| Plus navigation / selection      | Position, zoom, speed and smoothing presses work; Fine/Coarse starts at 1 and switches to 10 samples; Library stays at one entry; smoothing and selection bounds clamp.                                 | Open   |
+| Plus markers                     | Start/Gravity/Incline/End rotate to preview, press to apply and touch to discard independently; bounds and adoption feedback are correct; menus preserve previews, recording/target changes clear them. | Open   |
+| Plus feedback / locks / recovery | GUI changes reach the device; text focus, dialogs and background operation block app commands; disconnect/reconnect and Explorer changes clear stale state without replay or false confirmation.        | Open   |
+| Neo                              | Import on an actual Neo; verify folder keys/editors, both native Touch Points and contextual InfoBar values, marker states, overflow and disconnected display.                                          | Open   |
+| Mobile                           | Pair the phone, select six keys and import on Mobile; verify all four pages, Back without Home, commands, confirmed feedback and reconnection.                                                          | Open   |
+| macOS                            | Install/start natively; verify discovery/authentication, app connection, focus/dialog/background locks, recovery and operation of each device claimed as verified.                                      | Open   |
 
 ## References
 
