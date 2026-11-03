@@ -147,7 +147,7 @@ It uses the supplied [Manta reference recording](docs/development/RECORDINGS.md#
 | **Four-panel column**  | Stacked force and orientation plots.                    |
 
 [Choose a layout](docs/user/EXPORT_LAYOUTS.md) or
-[compare larger previews](docs/EXPORT_LAYOUTS.md).
+[compare larger previews](docs/user/EXPORT_LAYOUT_GALLERY.md).
 
 Export layouts use yellow for lateral data, green for acceleration and red for
 braking. Flow Ribbon, Corner Instruments and HUD also show the

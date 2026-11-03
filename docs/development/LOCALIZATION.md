@@ -4,24 +4,16 @@ For changing application language and appearance, see the
 [user explorer guide](../user/EXPLORER.md#adjust-smoothing-and-display).
 
 The application supports English, German and French offline.
-Settings → Application provides language and appearance choices. Save applies
-them immediately; Cancel preserves the active settings. Language and light/dark appearance
-are saved in local `preferences.sqlite3` and restored on startup. Without valid
-preferences, the preferred OS display language selects its registered language
-(including regional variants such as fr-CA); unsupported primary languages fall
-back to English. Appearance defaults to System, following Qt's effective OS light/dark
-scheme at startup and when it changes (including OS-scheduled changes). An unknown
-system scheme falls back to dark. Explicit Dark/Light choices override the OS scheme;
-selecting System restores automatic following. An explicit `AppSettings(language=Language.GERMAN)`
-overrides the saved language for startup; subsequent choices in Settings are saved.
-All registered languages support the appearance themes and compact explorer layout.
-Preference validation and storage fallback rules belong to the
-[runtime contracts](CODE_QUALITY.md#runtime-and-static-contracts).
-Dropdown widths follow their complete item texts, including after language
-changes; translated choices retain room for the dropdown arrow. Saved preset
-prompts participate in the same live translation bindings.
-The export assistant scrolls its content when space is limited, keeping navigation
-and export actions visible, including at 200% Windows scaling.
+Language choices are saved in local `preferences.sqlite3`. Without a valid saved
+choice, the preferred OS display language selects its registered language, including
+regional variants such as fr-CA; unsupported primary languages fall back to English.
+An explicit `AppSettings(language=Language.GERMAN)` overrides the saved language for
+startup; subsequent Settings choices are saved. Save applies language changes;
+Cancel retains the active choice. Preference validation and storage fallbacks belong
+to the [runtime contracts](CODE_QUALITY.md#runtime-and-static-contracts).
+Appearance and adaptive widget behavior belong to the
+[Explorer contract](../implementation/RAW_EXPLORER.md) and
+[export assistant contract](../implementation/VIDEO_EXPORT.md#assistant-and-previews).
 
 ## Text ownership
 
@@ -62,8 +54,9 @@ bindings remain in `ui.presentation.translation`.
   rules; external encoder/runtime details may remain in their original language.
 - Export settings store a separate `language` field. New assistants initially use
   the UI language, while loaded presets restore their saved choice. Rendering,
-  previews and batch snapshots use that explicit language. Incomplete stored
-  settings are rejected. UI switching never changes an existing saved job.
+  previews and batch snapshots use that explicit language. Stored required fields and optional defaults follow the
+  [preset/job contract](../implementation/EXPORT_BATCHES.md#contracts). UI switching
+  never changes an existing saved job.
 
 ## Maintaining translations
 

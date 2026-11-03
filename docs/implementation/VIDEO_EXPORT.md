@@ -150,6 +150,16 @@ encoded. Returning to setup restores the selected static preview.
   cyan vertical, yellow lateral, green/red longitudinal; text/curves have outlines.
   MP4 composites over black. See [design constants](../development/EXPORT_LAYOUTS.md#design-constants).
 
+Native Content-area sizes are layout-owned, independent of Full-frame placement:
+
+| Layout             | Landscape   | Portrait    |
+| ------------------ | ----------- | ----------- |
+| Flow Ribbon        | 3072×360    | 840×1120    |
+| Corner Instruments | 840×1120    | 840×1120    |
+| G-Orbit            | 800×800     | 800×800     |
+| Four-panel column  | 960×2160    | Unsupported |
+| HUD                | Unsupported | Unsupported |
+
 | Channel/axis              | Contract                                                                                                                                                                         |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Vertical                  | Default positive-down (seat pressure), negative-up (lifting); manually reversible in every layout, persisted explicitly                                                          |

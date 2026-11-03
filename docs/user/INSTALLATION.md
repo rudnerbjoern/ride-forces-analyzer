@@ -2,7 +2,7 @@
 
 Download your platform's package and checksum file from
 [GitHub Releases](https://github.com/rudnerbjoern/ride-forces-analyzer/releases).
-The application includes Python; no Python installation or setup script is needed.
+The download is ready to run; you do not need to install Python.
 In commands below, replace `VERSION` with the downloaded version, such as `2.0.0`.
 
 ## Windows 10/11 x64
@@ -18,9 +18,11 @@ In commands below, replace `VERSION` with the downloaded version, such as `2.0.0
    policy; do not disable SmartScreen globally. See
    [Microsoft's SmartScreen guidance](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/publish-first-app#step-6-handle-smartscreen-for-new-apps).
 
-## Ubuntu 24.04 x64
+## Ubuntu x64
 
-A desktop session and glibc 2.39 or newer are required. Install the desktop libraries:
+The app is tested on **Ubuntu 24.04 LTS and 26.04 LTS**. Use a desktop installation.
+
+Open Terminal and install these required system libraries:
 
 ```sh
 sudo apt update
@@ -69,8 +71,8 @@ update the symbolic link to its new location.
 2. In the download directory, run `shasum -a 256 -c MACOS-ARM64-SHA256SUMS.txt`
    (use `MACOS-X64-SHA256SUMS.txt` for Intel). Continue after the checksum passes.
 3. Extract the ZIP, move `Ride-Forces-Analyzer.app` to **Applications** and open it.
-4. Apps are ad-hoc signed, without Apple Developer ID signing or notarization.
-   If macOS blocks the trusted app, open **System Settings → Privacy & Security →
+4. macOS may block the app because it has not been verified by Apple. For a
+   download you have checked and trust, open **System Settings → Privacy & Security →
    Open Anyway**, authenticate if requested and confirm opening it. This option
    appears after attempting to open the app. See
    [Apple's opening instructions](https://support.apple.com/en-ie/102445).
@@ -86,14 +88,15 @@ need a compatible external FFmpeg installation:
 - Windows: use the Complete ZIP or select an existing `ffmpeg.exe`.
 
 In **Export video…**, use **Browse** to select the FFmpeg executable if automatic
-discovery does not find it. Finder launches may not include Homebrew in PATH.
+detection does not find it. On macOS, you may need to select Homebrew's FFmpeg
+this way even after installing it.
 CPU H.264 and ProRes 4444 export do not require an NVIDIA GPU. Installed recording
 processing and video export work offline.
 
 ## Open your first recording
 
 Click **Import…** and choose a `.forces` or `.zforces` file exported from the Ride Forces
-app. It is archived in your local Library and opened from the stored bytes.
+app. It is saved in your local Library and opened from there.
 The external file stays unchanged. Follow [Explore a recording](EXPLORER.md) for chart navigation, selection,
 settings and GPS, or the [video export guide](VIDEO_EXPORT.md) to create an overlay.
 
@@ -121,15 +124,16 @@ that your version is current. You can retry later or visit GitHub Releases.
 Updates are not installed automatically. Close the application, download and
 verify the new package, and extract it into a separate folder or replace the
 macOS app in Applications. Keep the package contents together as described above.
-Preferences and export definitions are stored separately from the application;
-older unsupported presets/jobs may still need recreating.
+Your Library, settings and saved export presets/batches are kept separately from
+the program files. If an older preset or job cannot be opened, you may need to
+create it again.
 
 ## Privacy and offline use
 
 Opening, analyzing and exporting recordings happen locally. Update checks
 contact GitHub without sending recordings, GPS data or file paths. They require
 internet access; recording processing does not. Opening external links uses
-your browser. Downloads and dependency installation also require internet access.
+your browser. Downloading the app or installing FFmpeg also requires internet access.
 **Load map background** in the GPS overview contacts OpenStreetMap only when clicked.
 The requested area and your IP address are visible to that provider; the recording
 and GPS track remain local. The GPS overview works without a map or internet access.
@@ -140,8 +144,8 @@ automatically made anonymous.
 
 ## Open a recording directly
 
-Command-line and operating-system file-open requests import the file into the
-Library first, then open its archived data. Existing entries are reused.
+Opening a recording from a file manager or terminal adds it to the Library first.
+If it is already there, the existing entry is reused.
 
 Pass a `.forces` or `.zforces` path when starting the application. Quote paths
 containing spaces. This takes priority over **Restore last file**.
@@ -187,8 +191,8 @@ The application writes a local text file, `error-report-<process-id>.txt`, in:
 - Linux: `$XDG_DATA_HOME/ride-forces-analyzer/support`, or
   `~/.local/share/ride-forces-analyzer/support` when unset
 
-The file contains system details and errors from the current run, including Qt
-warnings, critical and fatal messages with their severity. Reports from
+The file contains system details and errors from the current run, including warnings
+and errors reported by the app. Reports from
 completed runs are removed on the next launch.
 Copy the file before restarting if you need to retain it for support.
 
@@ -208,8 +212,8 @@ before attaching it to a support request. Nothing is uploaded automatically.
   beside the executable. On macOS, follow the first-launch instructions above.
 - If it still fails, report the application version, operating system and error
   message in a [GitHub issue](https://github.com/rudnerbjoern/ride-forces-analyzer/issues).
-  In **About**, choose **Copy diagnostic information** to collect version,
-  system and video-export details for the report.
+  If the app opens far enough to reach **About**, choose **Copy diagnostic
+  information** to collect version, system and video-export details.
   Review the copied text before pasting it into your report.
   Do not attach private recordings or personal paths unnecessarily. Report
   security issues through the [private reporting channels](../../SECURITY.md).

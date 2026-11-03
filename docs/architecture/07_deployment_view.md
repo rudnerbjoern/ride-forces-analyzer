@@ -12,9 +12,12 @@ flowchart TB
     CI --> Win["Windows x64 EXE / ZIPs"]
     CI --> Linux["Linux x64 tar.gz"]
     CI --> Mac["macOS arm64 / x64 app ZIPs"]
+    CI --> Plugin["Separate Stream Deck plugin archive"]
     Win --> Local["Offline recording processing"]
     Linux --> Local
     Mac --> Local
+    Plugin --> Host["Stream Deck SDK host"]
+    Host <-->|Local control| Local
     Local --> FFmpeg["Bundled or external FFmpeg"]
 ```
 
@@ -29,27 +32,16 @@ Development and local regression checks run on native Windows.
 `setup.ps1` creates the locked environment; `start.ps1` starts the application
 without dependency synchronization. Node supplies development checks and builds
 the separate [Stream Deck plugin](../../plugins/stream-deck/README.md).
-Builds assemble a shared Windows/macOS `.sdPlugin` folder under `.tmp/stream-deck/`, independently
-of any existing source-folder installation. Base metadata/assets and device action
-metadata/layouts are combined there; preparing or testing it does not install,
-restart or import a plugin/profile. Explicit local installation copies the artifact
-to `.tmp/stream-deck-installed/` and links that copy with Elgato's CLI. Rebuilds
-leave the installed files and running process unchanged. Local development needs
-Stream Deck developer mode; verify the actual connection in native/plugin logs.
-Compiled JavaScript bundles its runtime dependencies; project/runtime licenses
-are assembled beside it, together with Plus/Neo/Mobile `.streamDeckProfile` archives.
-Profiles use native folders. Plus uses dials with a dedicated Play/Pause key;
-Neo retains key commands. Import selects the matching device profile. Stream Deck supplies Node.js, independently of development Node.
-The manifest enables macOS 15+ with the same JavaScript entry point and no native
-Windows binary. macOS installation, connection, focus handling and device behavior
-remain unverified; Start app requires the local Analyzer `.app` target.
-Native Windows startup, Analyzer connection and profile import for an attached
-Plus are verified. Plus dials/touch, Neo marker
-editors and InfoBar have automated checks; device rendering and interaction remain open.
-The official CLI packs that folder into one `.streamDeckPlugin`, including all three
-profiles, under `.tmp/stream-deck-package/`. Automated Windows checks verify archive
-contents against the built folder. Native archive installation/update remains open;
-publication beside the Analyzer release packages requires separate authorization.
+The plugin is independently versioned and distributed as a separate
+`.streamDeckPlugin` archive containing bundled JavaScript dependencies, licenses
+and Plus/Neo/Mobile profiles. Stream Deck hosts its Node.js runtime; it does not
+use the Analyzer's Python runtime or require a development Node installation.
+The same JavaScript entry point is enabled for Windows and macOS 15+, without a
+Windows binary dependency. Builds/tests operate on separate artifacts and never
+replace an installed plugin or user profiles. Installation and profile import
+are explicit operations. The [plugin guide](../../plugins/stream-deck/README.md)
+owns build/install commands, paths and independent versioning;
+[requirements](../requirements/STREAM_DECK.md) own native acceptance status.
 [Windows setup](../development/SETUP.md) owns versions and commands.
 
 NumPy serves analysis buffers, Pint explicit unit conversion and SciPy passive
@@ -70,7 +62,7 @@ authorization remain separate from CI.
 own exact gates.
 
 Windows distribution uses portable EXE, Standard ZIP and Complete ZIP packages.
-Installer/uninstaller support is optional future work. Package self-tests isolate
+No installer or uninstaller is provided. Package self-tests isolate
 preferences and exercise GUI startup, import, rendering and encoding. The shared
 Qt hook omits the unused PDF image plugin. The redistribution catalog records the
 accepted delivery scope and verification limits.

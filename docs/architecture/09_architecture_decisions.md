@@ -45,6 +45,18 @@ schedule, Library merging or generic custom-field framework is implemented.
 [Persistence concepts](08_concepts.md#rendering-and-persistence) and
 [storage contracts](../development/LIBRARY.md) own details.
 
+## Optional Stream Deck control
+
+Accepted and implemented: a separately versioned official-SDK plugin sends
+authenticated loopback commands to existing GUI controls/services. This keeps
+Analyzer processing independent of device software and avoids a second analysis
+or persistence path. No keyboard simulation or disconnected command replay is used.
+Feedback follows confirmed application state; target identity and foreground/input
+guards prevent commands from silently reaching another Explorer.
+[Runtime contracts](06_runtime_view.md#stream-deck-transport) own messages and
+delivery; [requirements](../requirements/STREAM_DECK.md) own device scope and
+native acceptance.
+
 ## Physical qualification
 
 Deferred: successful parsing, valid numerical transforms and plausible magnitudes
@@ -79,7 +91,8 @@ reject reflected/skewed bases without normalization or repair before calling Sci
 with `assume_valid=True`. Synthetic tests use `1e-14`, not an empirical accuracy
 claim. Explicit source/unit/calibration/profile opt-in can produce PROVISIONAL
 rider vectors only; no current original has qualified physical rider calibration.
-Directly ordered source rows fail this strict admission for all five recordings.
+Directly ordered source rows fail this strict admission for the five pinned
+schema 2.2.0 recordings in the [source comparisons](../validation/APP_REFERENCE.md).
 The [frame API](../development/ANALYSIS_MODELS.md) owns missingness/overflow rules.
 
 ## Source-app projection

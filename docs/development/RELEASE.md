@@ -8,7 +8,7 @@ standard/complete ZIPs, a Linux x64 tarball, macOS arm64/x64 app ZIPs and a sepa
 Stream Deck plugin archive. The accepted
 redistribution scope and its verification limits are documented below.
 Windows releases use portable EXE/ZIP packages. An installer and uninstaller are
-optional future extensions outside M8 completion; no installer is included.
+not included; milestone scope belongs in the [roadmap](../ROADMAP.md).
 Local acceptance and owner review still precede tag creation; CI is secondary
 validation. [Windows setup](SETUP.md) owns the required local checks.
 
@@ -182,7 +182,15 @@ an explicit user-selected encoder still wins. Preferences remain in LOCALAPPDATA
 
 ```powershell
 uv sync --locked --all-extras --group dev --group build
-uv run --locked --group build python -m scripts.build_windows
+uv run --locked --group build python -m scripts.build_windows --release
+```
+
+The [release skill](../../.agents/skills/release/SKILL.md#3-build-candidates-and-execute-the-local-exe)
+owns local candidate validation: reuse valid application/UI evidence, build once
+and run the standalone EXE self-test. Full three-package execution belongs to CI;
+do not repeat it as an additional local release gate. Its qualification command is:
+
+```powershell
 uv run --locked --group build python -m scripts.check_windows_packages .tmp/windows-build/assets --recording (Get-ChildItem tests/fixtures/real/Manta-*.forces | Select-Object -First 1).FullName
 ```
 
@@ -224,11 +232,11 @@ Releases include these native targets. Development and the full local
 regression suite stay on Windows. Native package
 builds require their own OS; Windows mocks do not establish macOS acceptance.
 
-| Target              | Download                                        | Minimum target / installation                                                                                            |
+| Target              | Download                                        | Minimum target                                                                                                           |
 | ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Linux x64           | `Ride-Forces-Analyzer-VERSION-linux-x64.tar.gz` | Ubuntu 24.04 / glibc 2.39; extract and execute `./Ride-Forces-Analyzer` inside its directory; keep `_internal` beside it |
-| macOS Apple Silicon | `Ride-Forces-Analyzer-VERSION-macos-arm64.zip`  | macOS 15+; extract and move `Ride-Forces-Analyzer.app` to Applications                                                   |
-| macOS Intel         | `Ride-Forces-Analyzer-VERSION-macos-x64.zip`    | macOS 15+; extract and move `Ride-Forces-Analyzer.app` to Applications                                                   |
+| Linux x64           | `Ride-Forces-Analyzer-VERSION-linux-x64.tar.gz` | Ubuntu 24.04 / glibc 2.39                                                                                                |
+| macOS Apple Silicon | `Ride-Forces-Analyzer-VERSION-macos-arm64.zip`  | macOS 15+                                                                                                                |
+| macOS Intel         | `Ride-Forces-Analyzer-VERSION-macos-x64.zip`    | macOS 15+                                                                                                                |
 
 Native packages embed Python, Qt and collected notices, but do not bundle FFmpeg.
 The [installation instructions](../user/INSTALLATION.md) own desktop dependencies,
@@ -257,9 +265,9 @@ verified artifacts from the same run without unpacking them, validates every
 platform's complete checksum inventory and publishes only after the required
 native CI gate and Windows package checks succeed.
 
-Preferences/export databases use `~/.local/share/ride-forces-analyzer` on Linux
-(or absolute XDG_DATA_HOME) and `~/Library/Application Support/Ride Forces Analyzer`
-on macOS. No recording or user data is installed in the app bundle. Rendering
+[Deployment](../architecture/07_deployment_view.md#local-export-configuration)
+owns user-data paths. No recording or user data is installed in the app bundle.
+Rendering
 uses Pillow's scalable font fallback when Segoe UI is absent; glyph metrics need
 not be pixel-identical to Windows. The accepted redistribution scope remains documented
 in the shipped catalog; no static Windows FFmpeg binary is added to these packages.

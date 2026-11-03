@@ -56,13 +56,13 @@ effective metadata/attributes to lists, reopened recordings and exports. Posture
 overrides carry `user` provenance and change display ranges, not force calculations.
 Only current additions are stored, without an edit history.
 
-| Saved representation        | Metadata contract                                                         |
-|-----------------------------|---------------------------------------------------------------------------|
-| `ExportSnapshot` version 2  | Captures effective ride/park/row/seat/train, posture/provenance and notes |
-| `ExportSnapshot` version 1  | Uses original-source metadata                                             |
-| Batch job with additions    | Uses its captured additions independently of current Library edits        |
-| Batch job without additions | Uses original-source metadata                                             |
-| JSON data export            | Uses effective metadata while retaining source dates/unknown attributes   |
+| Saved representation          | Metadata contract                                                           |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| `ExportSnapshot` version 2    | Captures effective ride/park/row/seat/train, posture/provenance and notes   |
+| `ExportSnapshot` version 1    | Uses original-source metadata                                               |
+| Batch job with additions      | Uses its captured additions independently of current Library edits          |
+| Batch job without additions   | Uses original-source metadata                                               |
+| JSON data export              | Uses effective metadata while retaining source dates/unknown attributes     |
 
 ## Current recording markers
 
@@ -129,11 +129,11 @@ linked by source SHA-256. Retries remain distinct; skipped jobs create no row.
 metadata and video settings before preparation. Effective video recipes use the
 shared `ExportSnapshot`; data recipes use the validated request representation.
 
-| Attempt      | Start / duration contract                                                |
-|--------------|--------------------------------------------------------------------------|
-| Single video | Start initiates preparation; destination-picker cancellation is recorded |
-| Data         | Worker starts after destination/overwrite confirmation                   |
-| Batch job    | Starts before source loading; skipped jobs never enter the lifecycle     |
+| Attempt        | Start / duration contract                                                  |
+| -------------- | -------------------------------------------------------------------------- |
+| Single video   | Start initiates preparation; destination-picker cancellation is recorded   |
+| Data           | Worker starts after destination/overwrite confirmation                     |
+| Batch job      | Starts before source loading; skipped jobs never enter the lifecycle       |
 
 `ExportAttempt` wraps preparation/execution and records actual completion, failure
 or cancellation. Monotonic duration includes preparation/execution, excluding
@@ -260,13 +260,10 @@ The export integer primary key needs no duplicate index. Display-only fields hav
 no separate indexes. The Library uses ordinary queries and the existing Qt
 model/view facilities, without persisted SQL views.
 
-Search means case-insensitive text matching across both effective names in one
-field. Split whitespace-separated terms and require every term to occur in the
-combined ride/park text. Normalize names and query terms consistently with Python
-Unicode normalization and `casefold`; preserve the displayed spelling. Parameterize
-queries and treat `%`, `_` and escape characters as literal user input.
-The metadata queries use parameterized `instr` predicates for literal substring
-matching and Python NFKC normalization with `casefold` for both names and terms.
+Search matches every whitespace-separated term against combined effective ride/park
+names. Names and terms use Python NFKC normalization and `casefold`; display spelling
+is preserved. Parameterized `instr` predicates provide literal substring matching,
+including `%`, `_` and escape characters.
 SQLite's default `LIKE` does not provide general Unicode case folding; see its
 [documented behavior](https://www.sqlite.org/lang_expr.html#the_like_glob_regexp_match_and_extract_operators).
 A contains search scans this small metadata set; these B-tree
@@ -314,15 +311,15 @@ and publishes only complete ZIPs. Unsaved Settings drafts are excluded. Restore
 validates format versions, members, lengths/hashes, decoding, indices and
 relationships in a staged current-schema Library before replacement.
 
-| Missing optional content    | Restore policy                                     |
-|-----------------------------|----------------------------------------------------|
-| Source projections          | Recover from archived originals                    |
-| Bounds/calibration/workflow | Source indices, default recipe, `imported`         |
-| Import timestamp            | Unknown, represented by empty text                 |
-| Export recipe               | Empty; cannot repeat                               |
-| Link URL/label              | Empty values for editing                           |
-| Label options               | Defaults when absent; explicitly empty stays empty |
-| Other optional fields       | SQL NULL or declared domain/schema defaults        |
+| Missing optional content      | Restore policy                                       |
+| ----------------------------- | ---------------------------------------------------- |
+| Source projections            | Recover from archived originals                      |
+| Bounds/calibration/workflow   | Source indices, default recipe, `imported`           |
+| Import timestamp              | Unknown, represented by empty text                   |
+| Export recipe                 | Empty; cannot repeat                                 |
+| Link URL/label                | Empty values for editing                             |
+| Label options                 | Defaults when absent; explicitly empty stays empty   |
+| Other optional fields         | SQL NULL or declared domain/schema defaults          |
 
 Unknown fields are ignored. Essential source bytes, unambiguous identity, integrity
 and valid relationships remain required; invalid supplied values are rejected.
@@ -346,16 +343,16 @@ outside the supported format.
 
 The maintained acceptance contracts are exercised by focused native Windows suites:
 
-| Contract                                                                                               | Regression ownership                                                                               |
-|--------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
-| Source names/dates, time-zone independence and original tokens                                         | `tests/importers/test_library_metadata.py`, recording integrity tests                              |
-| Fresh/current/older schema, unknown revisions, constraints and rollback                                | `tests/storage/test_library.py`                                                                    |
-| UUID identity/update, independent failures, missing originals and archived-byte integrity              | `tests/explorer/test_library.py`                                                                   |
-| Metadata, markers and manual workflow persistence without source changes                               | Explorer/storage Library tests, `tests/ui/test_library_panel.py`, `tests/ui/test_ride_markers.py`  |
-| Panel geometry, filtering, scrolling, context actions, confirmed removal and independent windows       | Library panel/context-menu tests, `tests/ui/test_recording_windows.py`                             |
-| Label defaults/custom/empty lists and isolated link edits                                              | `tests/ui/test_library_videos.py`, preference/storage Library tests                                |
-| Actual export outcomes, frozen metadata/recipes, unsupported repeats and overwrite protection          | `tests/exports/test_library_history.py`, `tests/ui/test_library_exports.py`, rendering/batch tests |
-| Complete portable restore, tolerant optional fields, unsafe archives, cancellation and atomic rollback | `tests/storage/test_library_backup.py`, `tests/ui/test_library_transfer.py`                        |
+| Contract                                                                                                 | Regression ownership                                                                                 |
+| -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Source names/dates, time-zone independence and original tokens                                           | `tests/importers/test_library_metadata.py`, recording integrity tests                                |
+| Fresh/current/older schema, unknown revisions, constraints and rollback                                  | `tests/storage/test_library.py`                                                                      |
+| UUID identity/update, independent failures, missing originals and archived-byte integrity                | `tests/explorer/test_library.py`                                                                     |
+| Metadata, markers and manual workflow persistence without source changes                                 | Explorer/storage Library tests, `tests/ui/test_library_panel.py`, `tests/ui/test_ride_markers.py`    |
+| Panel geometry, filtering, scrolling, context actions, confirmed removal and independent windows         | Library panel/context-menu tests, `tests/ui/test_recording_windows.py`                               |
+| Label defaults/custom/empty lists and isolated link edits                                                | `tests/ui/test_library_videos.py`, preference/storage Library tests                                  |
+| Actual export outcomes, frozen metadata/recipes, unsupported repeats and overwrite protection            | `tests/exports/test_library_history.py`, `tests/ui/test_library_exports.py`, rendering/batch tests   |
+| Complete portable restore, tolerant optional fields, unsafe archives, cancellation and atomic rollback   | `tests/storage/test_library_backup.py`, `tests/ui/test_library_transfer.py`                          |
 
 Group related GUI checks in shared native-window sessions. Use the existing
 [Windows checks](SETUP.md#required-project-checks) and

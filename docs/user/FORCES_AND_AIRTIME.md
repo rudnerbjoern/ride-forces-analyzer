@@ -3,6 +3,8 @@
 The calibrated display follows the recording's directional information. Its
 values and labels depend on calibration and smoothing; they do not measure a
 rider's sensations or establish safety limits.
+For **Flying** recordings, the rider lies in a different position: a negative
+vertical value should not be read as the same seat loading as on a seated ride.
 
 ## Read the three force channels
 
@@ -57,9 +59,10 @@ instead of continuing the previous interpretation.
 ## How smoothing changes the result
 
 Smoothing averages nearby measurements. Increasing it makes curves calmer but
-can reduce short peaks and change both the context and the displayed extrema.
+can reduce short peaks and change both the airtime labels and the displayed
+minimum and maximum values.
 Use **1 sample** to inspect unfiltered directional values, or compare with the
-default **11 samples**. When comparing rides, note the smoothing setting.
+default **11 samples**. When comparing rides, use the same smoothing setting.
 
 Sensor movement, mounting, calibration and the recording itself limit the
 interpretation. Values can differ from the original Ride Forces app. GPS does

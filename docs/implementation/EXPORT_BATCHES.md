@@ -5,11 +5,8 @@ For saving presets, preparing a queue and finding its results, see the
 
 ## Scope
 
-User databases retain their Windows LOCALAPPDATA location. Linux uses absolute
-XDG_DATA_HOME or `~/.local/share/ride-forces-analyzer`; macOS uses
-`~/Library/Application Support/Ride Forces Analyzer`. Presets and preferences stay
-outside the frozen application. Package formats and external FFmpeg requirements
-are defined in the [release guide](../development/RELEASE.md#linux-and-macos-packages).
+Presets and preferences stay outside the frozen application, using the
+[deployment paths](../architecture/07_deployment_view.md#local-export-configuration).
 
 Local SQLite presets and reusable batches; multiple presets per recording and
 multiple recordings per batch. Selected/all batches form one sequential queue coordinated by `exports.batches`.
@@ -23,12 +20,12 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
 
 ## Contracts
 
-| Saved object    | Required contents                                                                                                                                                                      |
-|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Preset          | Layout, position, export area, landscape/portrait aspect, overlay language, output mode, fps, time context, axis inversion, GPU preference, odd 1–51 sample smoothing and range policy |
-| Analysis recipe | Explicit versioned projection, smoothing, independent orientation, context/events, input dependencies and source-app policy; smoothing matches preset window                           |
-| Job             | Archived source SHA-256 (or an absolute source path), title, concrete inclusive source range and complete preset snapshot                                                              |
-| Storage         | Recipes/definitions only; archived source bytes belong to the Library; external originals remain read-only                                                                             |
+| Saved object      | Required contents                                                                                                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Preset            | Layout, position, export area, landscape/portrait aspect, overlay language, output mode, fps, time context, axis inversion, GPU preference, odd 1–51 sample smoothing and range policy   |
+| Analysis recipe   | Explicit versioned projection, smoothing, independent orientation, context/events, input dependencies and source-app policy; smoothing matches preset window                             |
+| Job               | Archived source SHA-256 (or an absolute source path), title, concrete inclusive source range and complete preset snapshot                                                                |
+| Storage           | Recipes/definitions only; archived source bytes belong to the Library; external originals remain read-only                                                                               |
 
 - Writes are transactional; preset/batch names are unique. Damaged/unsupported
   databases are reported, never silently replaced.
@@ -96,13 +93,10 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   path/SHA-256, preset name/version, every `ExportSettings` field, smoothing,
   range policy, inclusive sample bounds and the complete saved analysis recipe.
   This snapshot is present for completed, failed, cancelled and skipped jobs.
-  Prepared jobs additionally reference `export_snapshot`, created and owned by
-  their `ExportTimeline` from the effective analysis and export settings. The batch
-  collects this same snapshot; it does not construct a separate analysis snapshot.
-  Its `sample_rate`, `output_dimensions` and `planned_frame_count` describe the
-  bound export. Single exports expose the same snapshot in video metadata,
-  without an additional JSON sidecar. Unprepared/skipped jobs have no effective
-  export snapshot; their requested job definition remains available.
+  Prepared jobs additionally retain the timeline-owned
+  [shared `export_snapshot`](VIDEO_EXPORT.md#analysis-and-time-mapping), including
+  effective geometry, sample rate and planned frame count. Unprepared/skipped jobs
+  have no effective snapshot; their requested definition remains available.
   `gpu_encoding` records the actual backend selection
   reported by the encoder, independently of the requested GPU preference.
   Completed videos record `file_size_bytes`; unavailable execution facts are
@@ -126,6 +120,7 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
 - Cancellation stops the active encode and skips remaining jobs; remove incomplete
   output, preserve completed videos. Parent close/Escape cannot abandon an active export.
 - Definitions survive restart, without embedded sensor data or automatic relocated-file
-  discovery. Moving/changing a source requires a new job. Automatic resume remains
+  discovery. Moving/changing an external source requires a new path-bound job;
+  archived jobs remain independent of that path. Automatic resume remains
   outside this queue's scope. Library
   history supports a separate repeat from archived bytes and frozen settings.

@@ -1,5 +1,9 @@
 # Choose an export layout
 
+All five layouts show the same ride data in different arrangements. Choose the
+one that leaves the important parts of your footage visible and makes the forces
+easy to read.
+
 Lateral scales in all five layouts start at **±1.25 g** and expand equally on
 both sides in **0.25 g steps** when your selected interval contains stronger forces.
 The scale stays fixed throughout the video. HUD's history curves use their own
@@ -12,10 +16,6 @@ Vertical history curves use 1 g as their reference; HUD fits the reference line
 within its selected minimum and maximum. HUD and G-Orbit hold both stronger
 loading and unloading relative to 1 g. Readouts remain absolute: 1 g reads 1 g,
 and 0 g still reads 0 g. This display reference does not change the recorded values.
-
-All five layouts show the same ride data in different arrangements. Choose the
-one that leaves the important parts of your footage visible and makes the forces
-easy to read.
 
 G-force numbers use one decimal place to reduce distracting digit changes.
 Curves and pointers retain their full precision.
@@ -35,7 +35,7 @@ Curves and pointers retain their full precision.
 Flow Ribbon is selected when you first open the export assistant.
 The comparison above shows Full-frame output at each layout's default position;
 assistant thumbnails follow your export area and position choices.
-[Open the larger detail views](../EXPORT_LAYOUTS.md) to inspect each layout.
+[Open the larger detail views](EXPORT_LAYOUT_GALLERY.md) to inspect each layout.
 
 ## Export area and video size
 
@@ -64,7 +64,8 @@ dimensions do not guarantee a proportionally smaller video.
 
 ## Try a layout with your recording
 
-1. In the main chart, select a moment with forces you want to show.
+1. Open a recording. To export only part of it, set **From sample** and **To sample**
+   in the inspector first.
 2. Click **Export video…** and choose a layout thumbnail or **Layout profile**.
 3. Choose landscape or portrait under **Layout format**. Four-panel column supports
    landscape only and fills the complete 4K frame height. Other layouts adapt to
@@ -117,23 +118,21 @@ right, lateral force below. Fine scale marks, bright pointers, large numbers,
 colored glow and black shadows keep the instruments readable over footage.
 The vertical scale starts at **−1.5…+5 g** for Seated recordings and **−4…+3 g**
 for Flying recordings. Acceleration/braking starts at **±1 g** and lateral force
-at **±1.25 g**. The lateral scale expands equally on both sides in **0.25 g steps**
-to fit stronger forces in your chosen interval. Scales stay fixed throughout the video.
+at **±1.25 g**. These scales expand to fit stronger forces in your selected interval
+and stay fixed throughout the video.
 
 Bright bars briefly hold recent peaks; pointers and numbers show current values.
 The vertical instrument highlights **1 g** as the normal
 resting reference. Its bright bars retain both stronger loading and unloading,
-including positive values below 1 g. The vertical history fits its minimum and
-maximum to the available height without a margin, including 1 g in that range.
-Its 1 g reference line shifts to match the range; text positions stay fixed. All
-numbers remain absolute, so free fall still reads 0 g. This also applies to Flying.
+including positive values below 1 g. The vertical history adjusts its scale to the selected interval, including 1 g.
+Its reference line moves with that scale. The numbers keep their meaning: 0 g
+still reads 0 g. This also applies to Flying recordings.
 The outer right edge shows tilt from **0° to 180°** when orientation data is
 available. Three force histories at the bottom share a time cursor aligned with
 zero on the lateral instrument. Each curve has its own scale, so equal heights
 do not necessarily mean equal forces.
-Lateral and longitudinal histories use the full available height symmetrically
-around zero, fitted independently to their strongest selected force without a
-margin. Even small nonzero variations therefore use the available height.
+Each side-force and acceleration/braking history fills its available height,
+so even small changes can look large. Compare their numbers as well as their curves.
 
 Selecting HUD sets **Visible time window** to **30 seconds**, centered on the
 cursor. You can change it afterward; loaded presets retain their saved window.
@@ -164,4 +163,4 @@ The preview background is only a viewing aid; it does not add your footage or
 change the exported background. Alignment with footage is done manually in your
 video editor.
 
-[Video export guide](VIDEO_EXPORT.md) · [Full-size examples](../EXPORT_LAYOUTS.md)
+[Video export guide](VIDEO_EXPORT.md) · [Full-size examples](EXPORT_LAYOUT_GALLERY.md)

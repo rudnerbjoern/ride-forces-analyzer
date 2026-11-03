@@ -62,15 +62,13 @@ least one saved preset, and while no preparation or export is running.
    marked job rows do not restrict the run. Tooltips explain the difference.
 3. Choose an output folder and follow the two progress bars.
 
-**Overall batch** weights jobs by their planned output frame counts across the
-selected batches, including each job's interval and export frame rate. A failed
-job settles its planned share; a source that cannot be read has no known frame budget.
-**Current export** shows the frames prepared for the current video and resets
-when the next job starts. The remaining time estimates those pending frames.
-Afterward, **Finalizing video…** means the encoder is still finishing the file;
-its remaining time is unknown.
+**Overall batch** shows progress through the queue; longer videos account for
+more of the bar. A finished bar does not mean every video succeeded: check the
+results for failed or skipped jobs. **Current export** shows progress for the
+current video and starts again for the next one. **Finalizing video…** means the
+file is still being finished; its remaining time is not yet known.
 
-Frame generation uses **Settings → Export → Parallel render jobs** on this computer,
+**Settings → Export → Parallel render jobs** controls how many frames are prepared at once,
 as described in the [video export guide](VIDEO_EXPORT.md). Videos still run one
 after another.
 
@@ -101,8 +99,8 @@ the correct file; the application does not search for relocated recordings.
 
 One failed job does not prevent the remaining jobs from running. Check the
 reported error, correct the file or FFmpeg setup, and retry the affected exports.
-Older or incomplete saved presets/jobs may be unsupported and need recreating.
-The application reports unsupported storage rather than silently resetting it.
+If an older saved preset or job cannot be opened, the app explains the problem
+and keeps the saved data. You may need to create that preset or job again.
 
 ## Privacy
 

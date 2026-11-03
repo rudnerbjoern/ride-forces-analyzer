@@ -15,10 +15,12 @@
 | DecodeSuccess                 | Valid supported source envelope; not a complete import or analysis result                      |
 | Diagnostic                    | Severity, stable code, JSON Pointer, message and optional original sample index                |
 | ExportTimeline                | Bound analysis snapshot, source interval and deterministic video clock                         |
+| ExportSnapshot                | Immutable effective metadata, analysis recipe and settings captured for an export              |
 | GPS slot                      | Original GPS sequence position, retained even without a usable typed fix                       |
 | ImportSuccess / ImportFailure | Complete-import result; failure exposes no Recording                                           |
 | JSON Pointer                  | RFC 6901 field location in the retained source                                                 |
 | Layout                        | Export graphic design; owns its instruments, arrangement, geometry and supported placements    |
+| Library                       | Local archive of original recording bytes, recording choices, links and export history         |
 | MotionSequence                | Acceleration and optional gravity vectors; pairing establishes structure, not physical meaning |
 | Opaque video                  | H.264 MP4 output with a filled background                                                      |
 | Owner default                 | Rate 50 or Seated posture applied only to absent fields, without rewriting source data         |

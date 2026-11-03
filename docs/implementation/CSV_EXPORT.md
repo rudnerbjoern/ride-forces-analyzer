@@ -26,13 +26,8 @@ snapshot's existing configuration, regardless of workspace display mode or later
   destinations without overwrite permission raise `FileExistsError`; filesystem
   errors propagate as `OSError`.
   `CsvExportCancelled` identifies cooperative cancellation.
-- The explorer captures its snapshot and From/To interval before the save dialog,
-  pauses playback and asks for replacement confirmation after completing the suffix.
-  Declining/closing the question starts no worker; No is the default answer.
-  A confirmed export starts a Qt worker. Progress/cancellation and completion/errors
-  return on the UI thread. Closing the main window requests cancellation.
-- Successful completion remembers the existing shared export directory. Failure
-  or cancellation preserves it.
+- The [shared UI lifecycle](../architecture/06_runtime_view.md#sample-data-export-runtime)
+  defines snapshot capture, destination/overwrite confirmation, workers and cancellation.
 
 ## Columns
 
@@ -66,6 +61,6 @@ and replay seconds remain available separately. Force values retain our full
 precision and documented calculation policy; matching headers do not imply
 identical rounding or source-app numerical results.
 Combined shares the smoothing stage's availability and provisional g interpretation.
-It uses the same full-history window and shortened recording edges, without
-averaging magnitudes or taking the norm of projected force components.
+Its numerical definition and full-history edge behavior follow the
+[analysis stages](../development/ANALYSIS_MODELS.md#numerical-stages).
 No GPS, ride/weather metadata or event-list export is included in this sample table.

@@ -41,13 +41,26 @@ Live display behavior belongs to the [explorer contract](../implementation/RAW_E
 | ------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | Lateral      | Positive right, negative left                                                                                           |
 | Longitudinal | Positive acceleration, negative braking                                                                                 |
-| Combined     | Manta CSV: norm of smoothed device axes; prepared sample/CSV value, no production Combined chart                        |
+| Combined     | Manta CSV: norm of smoothed device axes; prepared sample/data exports and optional Explorer curve                       |
 | Orientation  | Angle of normalized current source gravity to stored vertical, clipped cosine before acos; implemented for video export |
 | Time         | Start-relative `MM:SS.ff`, ff is sample counter at integer rate; internal recording seconds remain index/rate           |
 
 - At 50 Hz, 11 samples: nominal N/rate 0.22 s, endpoint span 0.20 s, ±0.10 s support.
 - Manta unfiltered vertical extrema: approximately -4.43665/+3.13443, distinct from
   the smoothed display.
+
+## Recording-date evidence
+
+The authorized Manta source retains the exact date token `811347461.3309591`
+and `America/New_York`. The owner confirmed the original-app reading as
+**2026-09-17, 10:18 local time**, Row 3 / Seat 3. Interpreting the token as seconds
+since **2001-01-01 00:00:00 UTC** produces 2026-09-17 10:17:41.330959 at that
+location: agreement within one minute, without claiming second-level display
+agreement or a verified rounding policy.
+The app developer also identifies recording date/time zone as source data in the
+[privacy policy](https://rideforces.com/privacy/); that policy alone does not
+establish the epoch. The admitted schema scope, unknown-date handling and zone
+fallback belong to the [projection contract](../development/IMPORT_SERVICE.md#admitted-recording-date-contract).
 
 ## Reference-calibration evidence
 
@@ -87,6 +100,36 @@ Live display behavior belongs to the [explorer contract](../implementation/RAW_E
 - Compared vertical extrema use 11-sample smoothing.
 - Regression ceiling: 0.0002; no physical accuracy/private-algorithm identity claim.
 - Source identities/digests: [catalog](../development/RECORDINGS.md).
+
+## Force extrema with 11-sample smoothing
+
+Calculated from the six pinned originals using `source_app_configuration()` and
+`calculate_extrema()`: stored calibration directions, centered 11-sample mean,
+shortened and renormalized windows at recording edges. All recordings use 50 Hz;
+the smoothing support is five samples (0.10 s) on either side. No local calibration
+or marker overrides are applied. Values are in g, rounded to three decimal places.
+Each pair is **minimum / maximum**; the maximum magnitude is the larger absolute value.
+
+The reference interval is bounded by the original start/end markers, inclusively.
+Samples outside this interval can contain handling or body movements unrelated to
+the ride and are excluded from the extrema search. Smoothing retains the full
+recording history rather than restarting at the markers.
+
+| Recording      | Included samples (inclusive) | Vertical min / max | Longitudinal min / max | Lateral min / max |
+| -------------- | ---------------------------- | ------------------ | ---------------------- | ----------------- |
+| Iron Gwazi     | 1720–8179                    | -1.334 / +3.784    | -1.274 / +1.090        | -1.217 / +1.105   |
+| Kraken         | 913–9138                     | -0.220 / +4.077    | -1.093 / +0.448        | -0.712 / +0.422   |
+| Manta          | 2750–9637                    | -3.557 / +2.638    | -0.681 / +0.715        | -0.937 / +1.129   |
+| Taron          | 2284–6639                    | -0.626 / +4.346    | -0.918 / +1.082        | -0.688 / +1.278   |
+| Typhoon        | 4109–7957                    | -1.030 / +4.982    | -1.053 / +1.054        | -0.929 / +1.543   |
+| Voltron Nevera | 1571–10374                   | -1.598 / +4.365    | -1.208 / +1.073        | -1.262 / +0.921   |
+
+Longitudinal means acceleration/braking; lateral means right/left. Signs retain
+the stored source-axis convention. Manta is **Flying**; the other references are
+**Seated**. In particular, Manta's negative vertical peak must not be interpreted
+as the same rider loading as a negative Seated value. These are prepared values
+under the owner-adopted source-app policy, not independent physical qualification;
+the comparisons below retain the source-specific limits.
 
 ## Manta replay reference
 
@@ -207,10 +250,9 @@ rounded bins may not sum exactly to totals.
   159.12–165.52 is not a qualified elevation profile. Negative speed/course: 18/46 entries.
 - Other connected-point lengths / endpoint separations (m): Manta 769.59/24.54,
   Kraken 1,790.73/6.27, Taron 883.66/19.42. Crossings/jumps/clusters identify no ride elements.
-- Iron Gwazi: no GPS; no borrowed route. Current offline overview: neutral-blue
-  connections, breaks at unavailable fixes and missing/zero/negative/>2 s intervals,
-  no default background map or speed colors. The optional requested map adds no
-  scientific qualification. Product behavior: [GPS contract](../implementation/RAW_EXPLORER.md).
+- Iron Gwazi: no GPS; no borrowed route. Map display adds no scientific
+  qualification. Current display and cache behavior belong to the
+  [GPS contract](../implementation/RAW_EXPLORER.md#gps-overview).
 
 ### Source-speed color hypothesis
 

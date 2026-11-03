@@ -1,8 +1,8 @@
 # Control Analyzer with Stream Deck +, Neo and Mobile
 
 Use the plugin to browse your Library, control playback and view settings, and
-prepare or apply recording markers. The currently active Analyzer Explorer is
-the target; device commands do not open a second window.
+prepare or apply recording markers. Controls act on the Analyzer
+window you are currently using; they do not open another window.
 
 The Plus and Neo profiles use the same colored icons and short key captions.
 The examples use the English plugin labels. The Analyzer can use its own selected
@@ -21,12 +21,12 @@ the plugin runs on the desktop, alongside Analyzer.
 2. Import the matching bundled profile as described below and select the correct
    connected device in Stream Deck's import dialog.
    Existing profiles remain available.
-   Menu graphics are embedded in the profile: reimport the updated profile to
-   refresh them; restarting the plugin alone only refreshes dynamic controls.
+   To receive updated menu pictures and button assignments, import the updated
+   profile as well. Keep your customized profile if you want to preserve its layout.
 3. In Analyzer, enable **Settings → Application → Enable Stream Deck** and save.
 4. Select **Ride Forces Analyzer +** or **Ride Forces Analyzer Neo** in Stream Deck. On Start, select **Start app**
    in the software preview and choose your Analyzer EXE or a Windows shortcut in
-   the native **Open** action's file field. The bundled profile leaves this path
+   **Open** action's file field. The bundled profile leaves this path
    empty because it depends on your installation.
 5. Bring the intended Analyzer Explorer to the foreground and click the chart.
 
@@ -61,7 +61,7 @@ and operation are **unverified**.
 Use the Mac Analyzer `.app` and set **Start app** to that `.app` in Stream Deck;
 the Windows EXE/shortcut instructions above apply only to Windows.
 
-### Update or troubleshoot the connection
+## Update or troubleshoot the connection
 
 Plugin and Analyzer versions are independent. Install the plugin archive supplied
 with the intended Analyzer release; the application update checker does not update
@@ -72,7 +72,7 @@ assignments or menu graphics. Keep your customized profiles.
 If controls stay offline, check that Analyzer is running, **Enable Stream Deck**
 was saved, and the app/plugin came from a compatible release. There is no manual
 port field. If a lock badge appears, close open dialogs/dropdowns, leave text
-fields and bring the intended Explorer forward. Native menus still work offline.
+fields and bring the intended Explorer forward. The plugin's menus still work without a connection.
 Clicking the desktop preview only edits a key; actual device input is required
 to execute it. See [locks and connection changes](#understand-locks-and-connection-changes).
 
@@ -92,10 +92,10 @@ current state; a dimmed icon can still show the last confirmed value.
 | Neutral dot              | Ready, or a toggle currently off. Check the displayed value.      |
 | Green check              | Active toggle or a confirmed applied marker.                      |
 | Purple pencil            | Marker preview; the proposed value has not been applied.          |
-| Blue clock               | Request or marker adoption is pending. Wait for confirmation.     |
-| Red cross                | Request or analysis failed; the last applied value remains valid. |
+| Blue clock               | A change is being processed. Wait for confirmation.               |
+| Red cross                | A change failed; the previous applied value is kept.              |
 | Amber lock               | Control unavailable; the text gives the reason.                   |
-| Gray disconnected symbol | No usable connection. Cached values are cleared.                  |
+| Gray disconnected symbol | No connection. Values disappear until it reconnects.              |
 
 The display follows confirmed program state, including changes you make with
 the mouse in Analyzer. Wait for the displayed state to change after pressing a key.
@@ -103,19 +103,22 @@ the mouse in Analyzer. Wait for the displayed state to change after pressing a k
 ## Move through the menus
 
 **Start** offers **Start app**, **Library**, **Explorer** and **Website** from left
-to right. **Start app** uses the configured native Open action; **Website** opens
+to right. **Start app** opens the application you selected during setup; **Website** opens
 the [project website](https://rudnerbjoern.github.io/ride-forces-analyzer/) in your
 browser. Both work without an Analyzer connection. Explorer contains **Playback**,
 **Curves** and **Markers** in a central group. Plus also has **Selection**.
 
 In each Plus/Neo submenu, **Back** is key **1** (top-left) and **Home** is key **8**
 (bottom-right). Home returns to Start. Keys are numbered left to right, top row
-first. Start has no Back or Home key. Fine/Coarse stays on key **6** on Playback,
-Selection and Markers. Key captions use two short lines; detailed values remain
+first. Start has no Back or Home key. On **Plus**, Fine/Coarse stays on key **6**
+on Playback, Selection and Markers. Key captions use two short lines; detailed values remain
 on the touch strip. Menu navigation remains available while
 Analyzer is disconnected or application commands are blocked.
 
 ## Browse and open Library recordings
+
+These dial instructions are for **Plus**. See the separate [Neo](#neo-keys-infobar-and-touch-points)
+and [Mobile](#mobile-limited-six-key-preview) sections for their buttons.
 
 Open **Library**. Turn the **first dial** to select one visible recording per
 notch. It follows the Library's current sorting and filters and wraps in either
@@ -134,12 +137,12 @@ dial 4 is unused:
 
 | Dial         | Turn                                             | Press         | Touch-strip information                               |
 | ------------ | ------------------------------------------------ | ------------- | ----------------------------------------------------- |
-| 1 · Position | Move through source samples; stop at the bounds. | Play/pause.   | Sample, replay time, play state and Fine/Coarse mode. |
+| 1 · Position | Move through samples; stop at the ends.          | Play/pause.   | Sample, replay time, play state and Fine/Coarse mode. |
 | 2 · View     | Zoom the time axis.                              | Reset view.   | Actual visible interval and its duration in seconds.  |
 | 3 · Speed    | Select the next supported playback speed.        | Return to 1×. | Actual speed and play/pause state.                    |
 
 **Fine / Coarse** switches Position, Selection and marker dials between **1** and
-**10 source samples per notch**. It starts in Fine mode, survives menu changes and never
+**10 samples per notch**. It starts in Fine mode, survives menu changes and never
 changes Library stepping.
 
 Position changes pause playback. Zoom, curves, smoothing and speed changes leave
@@ -177,20 +180,20 @@ Turns apply directly to the current Select range, just like the Inspector's
 or the last source sample. Further outward turns stay at the boundary, without
 wrapping. Dial presses and touch taps are unassigned on this page.
 
-Press **Zoom / Selection** on key **5** to fit the chart to that range. GUI selection changes
+Press **Zoom / Selection** on key **5** to fit the chart to that range. Selection changes made in Analyzer
 also appear on the touch strip. These controls do not move the replay cursor or
-change recording markers, calibration, stored Library bounds or analysis.
+change the recording's markers or calibration.
 
 ## Preview, apply or discard markers
 
 Open **Explorer → Markers**. Dial order is **Start, Gravity, Incline, End**.
 
 1. **Turn** a dial to change only that marker's preview. This pauses playback;
-   analysis and stored markers remain unchanged.
+   the chart calculations and saved markers stay unchanged.
 2. Check the sample/time and the **Preview** status. The separate **Applied** line
-   retains the last adopted value.
-3. **Press** that dial to apply its preview. **Pending** lasts until analysis is
-   adopted. **Applied** confirms success; **Failed** retains the previous value.
+   shows the value currently in use.
+3. **Press** that dial to apply its preview. **Pending** means the chart is still
+   updating. **Applied** confirms success; **Failed** retains the previous value.
 4. **Tap the corresponding touch field** to discard only its preview.
 
 Start cannot pass End, and End cannot pass Start. Gravity and Incline may lie
@@ -199,8 +202,8 @@ is unset, place it in Analyzer first.
 
 Previews survive menu changes. Opening another recording or changing the target
 Explorer clears them. Applying or discarding one marker does not confirm the
-others and does not resume playback. For archived recordings, successfully adopted
-choices use the existing Library persistence.
+others and does not resume playback. Applied markers are saved automatically
+for that Library recording.
 
 The Plus Markers page has Back, Home and Fine/Coarse keys alongside its four
 dials. It has no additional marker-key editors.
@@ -233,7 +236,7 @@ keys above Data mode, Combined and Reset view.
 
 The InfoBar follows confirmed program state: selected Library entry and index,
 position/time and playback speed, curve visibility, smoothing or marker state.
-Marker name/state is on the first line, the current preview/adopted position on
+Marker name/state is on the first line, the preview or applied position on
 the second, and the last applied value on the third. Long text is elided within
 the display; disconnected state clears program values.
 
@@ -252,7 +255,7 @@ cover pairing with the desktop Stream Deck app.
 Mobile import, pairing and actual phone operation remain unverified.*
 
 - **Start:** Start app, Library, Playback and Website. Configure the Analyzer EXE or
-  Windows shortcut on the **desktop** in Start app's native Open settings.
+  Windows shortcut (or the Mac `.app`) on the **desktop** in Start app's Open settings.
 - **Library:** Previous/Next, Open and Import. Browsing follows visible sorting and
   filters; only Open opens the selection in the current Explorer. Keys show short
   action names and the selected index/count; the full recording name stays in
@@ -263,13 +266,13 @@ Mobile import, pairing and actual phone operation remain unverified.*
 **Back is key 1; there is no Home key.** Key 6 is used for Reset view on Playback
 and Play/Pause on View. Library keeps one key free for your own assignment.
 This preview omits curve/smoothing/speed editors, markers and manual selection
-bounds. The GUI remains available for those controls. The same foreground/focus,
-dialog, connection and confirmed-state rules apply to Mobile keys.
+bounds. Use the Analyzer window for those controls. Mobile buttons follow the same
+connection and locking rules as the other devices.
 
 ## Understand locks and connection changes
 
 Controls are blocked while another application is in front, an Analyzer text/number
-field or dropdown has focus, a dialog is open, or analysis is busy. Other reasons
+field or dropdown is selected, a dialog is open, or the chart is recalculating. Other reasons
 include a missing recording, empty Library or absent marker preview. Read the
 status text, finish the interaction and click the intended Explorer's chart.
 
@@ -279,6 +282,6 @@ a preview from another window or recording still applies.
 If Analyzer closes, Stream Deck is disabled in Settings, or the connection is
 lost, application controls become unavailable. After reconnecting, wait for fresh
 values. Commands are not queued or replayed; do not assume an interrupted marker
-apply succeeded. Check the adopted marker in Analyzer before retrying.
+apply succeeded. Check the marker in Analyzer before retrying.
 
 [Explore recordings](EXPLORER.md) · [Installation and updates](INSTALLATION.md)

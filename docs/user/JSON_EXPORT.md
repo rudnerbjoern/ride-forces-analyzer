@@ -17,55 +17,46 @@ the destination folder, shared with CSV and video export.
 
 ## Choose a format
 
-- **Export JSON…** follows the Ride Forces app's array names and order, with our
-  additional sample data and metadata.
-- **Export Analyzer JSON…** uses our versioned, structured format for analysis
-  scripts. It groups related arrays and stores shared time/quality information
-  once, reducing repetition. The suggested filename ends in `.analyzer.json`.
+- **Export JSON…** uses the Ride Forces app's familiar field names, with additional
+  sample data and recording information.
+- **Export Analyzer JSON…** organizes the same measurements for further analysis,
+  with less repeated information. Its suggested filename ends in `.analyzer.json`.
 
-Both options export the same prepared measurements and context. Use the app-shaped
-option when its field names are needed; use Analyzer JSON for a more compact data
-structure with explicit calculation settings and scientific limitations.
+Choose the first option if your analysis tool expects the Ride Forces field names.
+Choose Analyzer JSON for a more compact file. Neither option can be imported back
+as a recording.
 
-## App-shaped JSON contents
+## What is included
 
-The first five arrays follow the Ride Forces app's JSON export: vertical, lateral,
-longitudinal and combined forces, followed by tilt angle. Each position in an
-array refers to the same sample in the other arrays.
+Both formats include:
 
-Additional arrays contain timestamps, original sample indices, recording/replay
-seconds, raw x/y/z values, projected forces, airtime context and quality information.
-The `metadata` object records the selected interval, sample rate, smoothing,
-analysis settings, source markers and available ride/weather metadata.
-Recording dates retain their original numeric text without assuming an epoch.
+- Vertical, lateral, longitudinal and Combined forces, plus tilt where available.
+- Original x/y/z measurements and calculated forces before and after smoothing.
+- Airtime labels, original sample numbers and timing information.
+- Your selected interval, sample rate, smoothing and marker settings.
+- Available ride, park, row, seat, train and weather information, with your saved
+  Library edits.
+- Status information explaining missing values and calculation limits.
 
-The export uses the current analysis, including full-recording smoothing,
-regardless of hidden chart curves or the raw/calibrated display toggle. Values
-retain our calculation precision; they are not rounded to the app's two decimals.
-Matching names and structure do not imply identical numerical results.
+The export includes available channels even if their chart curves are hidden.
+Switching the chart to raw view does not remove calculated forces from the export.
+Your chosen smoothing applies; samples outside the selection can contribute near
+its edges. Values can have more decimal places than those shown in either app,
+so matching field names do not promise identical numbers.
 
-## Analyzer JSON contents
+## Using the file
 
-The document groups recording information, analysis settings, time, sample arrays
-and quality information. Recording information includes available train, row and
-seat attributes, source markers and weather metadata. Numeric attributes with
-unknown meanings or units retain their original values.
+Each measurement is stored as a list of values. Matching positions in the lists
+refer to the same sample. Analyzer JSON groups related lists and stores common
+timing information once, rather than repeating it for every sample.
 
-Raw axes, projected/smoothed forces, Combined, orientation and airtime context
-remain parallel arrays: the same position refers to the same source sample.
-The file stores the first sample, number of samples, sample rate and replay origin
-once. Scripts can derive recording/replay seconds from these values.
+Missing values are written as `null`; measured zeroes remain numbers. Field names
+and airtime labels use English, regardless of the app's language. The file uses
+UTF-8 text.
 
-Shared quality status and general diagnostics occur once. Diagnostics for individual
-samples use their original sample indices. A schema version identifies the format.
-Analyzer JSON is a data export; importing it as a recording is not supported.
+Dates are kept as their original source values, rather than converted to the
+readable dates shown in the Library. GPS route points are not matched to force
+samples or included as a route. Calculated forces and airtime labels have the same
+limits as the charts; see [forces and airtime](FORCES_AND_AIRTIME.md).
 
-Missing values are `null`; zero remains a number. Field names and context identifiers
-are English, independently of the application language. The file is UTF-8 with
-compact arrays, like the app export.
-
-GPS samples are not assigned to force samples. Available recording-level location
-metadata stays recording-level. Derived forces and airtime interpretations remain
-provisional; raw device axes have unknown units.
-
-[Explore a recording](EXPLORER.md) · [Forces and airtime](FORCES_AND_AIRTIME.md)
+[Explore a recording](EXPLORER.md) · [CSV export](CSV_EXPORT.md)

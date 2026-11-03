@@ -12,10 +12,9 @@ For an explanation of the displayed forces, colors and labels, see the
   translates labels/colors without reclassification. Excluded stages carry a coded
   reason and no labels; invalid rows within an available series use `UNAVAILABLE`.
 - **Raw display:** no context claims; prepared-stage availability is unaffected.
-- **Consumers:** Flow Ribbon, Corner Instruments and HUD vertical hints, both
-  aspects/languages. Column and G-Orbit retain their existing labels. The explorer
-  uses prepared categories in its vertical card and 10-pixel strip inside the plot's
-  bottom edge; the strip clips to the visible range and follows zoom/resize.
+- **Consumers:** Flow Ribbon, Corner Instruments and HUD vertical hints across
+  supported aspects and registered languages; Explorer vertical card and context
+  strip. [Explorer presentation](RAW_EXPLORER.md) owns strip geometry and interaction.
 - **Boundaries:** measurements, filters, axis signs, recordings, graph values and
   numeric readouts are unchanged. Display confirmation/hysteresis do not define
   the separate opt-in [airtime events](AIRTIME_EVENTS.md).

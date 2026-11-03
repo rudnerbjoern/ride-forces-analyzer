@@ -6,8 +6,9 @@
 
 The module and frozen entry points initialize local error reporting before UI
 imports. Settings are validated before creating recording windows.
-`RecordingApplication` selects Qt dialogs before constructing `QApplication`, so
-file-open, save and folder selection share the application palette and stylesheet.
+`RecordingApplication` owns the Qt event loop and recording windows. File pickers
+use the operating system's native dialogs; application-owned dialogs use the
+shared theme and localization services.
 `InstanceBroker` acquires local process ownership or forwards the optional file
 path and `--new-window` request to the existing owner.
 
@@ -24,6 +25,7 @@ sequenceDiagram
     participant Entry as Entry point
     participant Broker as InstanceBroker
     participant App as RecordingApplication
+    participant Library as Library services
     participant Window as ExplorerWindow
     User->>Entry: Launch with optional recording path
     Entry->>Entry: Initialize support report and settings
@@ -32,11 +34,19 @@ sequenceDiagram
         Broker-->>Entry: Acknowledge request
         Entry-->>User: Exit launcher
     else New owner
-        Entry->>App: Create application and initial window
-        App->>Window: Open requested or restored recording
-        App->>App: Run event loop
-        User->>Window: Close last window
-        App->>Broker: Release ownership after workers finish
+        Entry->>App: Create application and start(request)
+        App->>Library: Initialize schema and interrupt unfinished attempts
+        alt Library ready
+            Library-->>App: Initialization complete
+            App->>Window: Create initial window
+            App->>Window: Open requested or restored recording
+            App->>App: Run event loop
+            User->>Window: Close last window
+            App->>Broker: Release ownership after workers finish
+        else Initialization fails
+            Library-->>App: Error
+            App-->>Entry: Propagate startup failure without creating a window
+        end
     end
 ```
 
@@ -88,11 +98,11 @@ sequenceDiagram
     participant Plugin as TypeScript client
     Qt->>File: Atomically publish version, port and session token
     Plugin->>File: Read endpoint on each connection attempt
-    Plugin->>Qt: Connect to IPv4 loopback; authenticate first frame
+    Plugin->>Qt: Connect to IPv4 loopback and authenticate first frame
     Qt-->>Plugin: Ready and latest published state
     Plugin->>Qt: Command text
     Qt-->>Plugin: State text
-    Note over Qt,Plugin: Reconnect repeats discovery/authentication; commands are never queued
+    Note over Qt,Plugin: Reconnect repeats discovery/authentication, commands are never queued
 ```
 
 - Bind only `127.0.0.1` on a dynamic port. Discovery is `stream-deck.json` in the
@@ -181,8 +191,7 @@ them against current GUI state. No disconnected commands are queued or replayed.
 Plus press invokes Open/Play/Reset/Apply; marker touch discards only that preview.
 Neo InfoBar has no input handlers. Other view,
 curve, smoothing and speed actions leave playback running; marker apply/discard
-does not resume it. Initial positions for unset markers remain an open device
-interaction decision; no valid preview means apply is unavailable.
+does not resume it. No valid preview means apply is unavailable.
 
 ### Feedback and availability
 
@@ -267,7 +276,7 @@ own dialog, selection, scrolling, accessibility and layout behavior.
 ## Optional update discovery
 
 A worker performs an opt-in startup check at most once per day or an explicit
-check from Settings → Application. The Qt-independent service uses bounded HTTPS reads; the UI
+check from Settings → Updates. The Qt-independent service uses bounded HTTPS reads; the UI
 discards late results after closure. Manual failures show a retry message,
 automatic failures remain silent. Download and installation stay manual.
 [Release discovery](../development/RELEASE.md#in-application-update-discovery)

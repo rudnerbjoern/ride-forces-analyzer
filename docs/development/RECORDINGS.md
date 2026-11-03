@@ -64,33 +64,9 @@ updating the tests and this catalog together.
 
 ## Force extrema with 11-sample smoothing
 
-Calculated from the six pinned originals using `source_app_configuration()` and
-`calculate_extrema()`: stored calibration directions, centered 11-sample mean,
-shortened and renormalized windows at recording edges. All recordings use 50 Hz;
-the smoothing support is five samples (0.10 s) on either side. No local calibration
-or marker overrides are applied. Values are in g, rounded to three decimal places.
-Each pair is **minimum / maximum**; the maximum magnitude is the larger absolute value.
-
-The reference interval is bounded by the original start/end markers, inclusively.
-Samples outside this interval can contain handling or body movements unrelated to
-the ride and are excluded from the extrema search. Smoothing retains the full
-recording history rather than restarting at the markers.
-
-| Recording      | Included samples (inclusive) | Vertical min / max | Longitudinal min / max | Lateral min / max |
-| -------------- | ---------------------------- | ------------------ | ---------------------- | ----------------- |
-| Iron Gwazi     | 1720–8179                    | -1.334 / +3.784    | -1.274 / +1.090        | -1.217 / +1.105   |
-| Kraken         | 913–9138                     | -0.220 / +4.077    | -1.093 / +0.448        | -0.712 / +0.422   |
-| Manta          | 2750–9637                    | -3.557 / +2.638    | -0.681 / +0.715        | -0.937 / +1.129   |
-| Taron          | 2284–6639                    | -0.626 / +4.346    | -0.918 / +1.082        | -0.688 / +1.278   |
-| Typhoon        | 4109–7957                    | -1.030 / +4.982    | -1.053 / +1.054        | -0.929 / +1.543   |
-| Voltron Nevera | 1571–10374                   | -1.598 / +4.365    | -1.208 / +1.073        | -1.262 / +0.921   |
-
-Longitudinal means acceleration/braking; lateral means right/left. Signs retain
-the stored source-axis convention. Manta is **Flying**; the other references are
-**Seated**. In particular, Manta's negative vertical peak must not be interpreted
-as the same rider loading as a negative Seated value. These are prepared values
-under the owner-adopted source-app policy, not independent physical qualification;
-see the [source comparisons](../validation/APP_REFERENCE.md).
+The [scientific reference](../validation/APP_REFERENCE.md#force-extrema-with-11-sample-smoothing)
+owns the derived extrema, calculation recipe and interpretation limits for these
+six originals. This catalog owns their byte identities and authorization.
 
 ## Source-app CSV reference
 
