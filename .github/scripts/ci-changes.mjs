@@ -126,9 +126,9 @@ export function writeOutputs(selection, output) {
     `code=${selection.code}\ndocumentation=${selection.documentation}\nskills=${selection.skills}\nworkflows=${selection.workflows}\ndependencies=${selection.dependencies}\nposix=${selection.posix}\nstream-deck=${selection["stream-deck"]}\nstream-deck-integration=${selection["stream-deck-integration"]}\n`, "utf8");
 }
 
-export function selectChecks(eventName, base, head, cwd = process.cwd(), fullChecks = false) {
+export function selectChecks(eventName, base, head, cwd = process.cwd(), fullChecks = false, reuseApplication = false) {
   if (eventName === "workflow_dispatch" || fullChecks) {
-    return { code: true, documentation: true, skills: true, workflows: true,
+    return { code: !(fullChecks && reuseApplication && eventName !== "pull_request"), documentation: true, skills: true, workflows: true,
       dependencies: true, posix: true, "stream-deck": true, "stream-deck-integration": true };
   }
   if (eventName === "pull_request") {
@@ -139,7 +139,8 @@ export function selectChecks(eventName, base, head, cwd = process.cwd(), fullChe
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const selection = selectChecks(process.env.GITHUB_EVENT_NAME, process.env.PR_BASE_SHA,
-    process.env.PR_HEAD_SHA, process.cwd(), process.env.CI_FULL_CHECKS === "true");
+    process.env.PR_HEAD_SHA, process.cwd(), process.env.CI_FULL_CHECKS === "true",
+    process.env.CI_REUSE_APPLICATION_CHECKS === "true");
   writeOutputs(selection, process.env.GITHUB_OUTPUT);
   console.log(`Code checks: ${selection.code}; documentation checks: ${selection.documentation}; skill checks: ${selection.skills}; workflow checks: ${selection.workflows}; dependency checks: ${selection.dependencies}; POSIX checks: ${selection.posix}; Stream Deck checks: ${selection["stream-deck"]}; Stream Deck integration: ${selection["stream-deck-integration"]}`);
 }

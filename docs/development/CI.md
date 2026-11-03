@@ -31,7 +31,7 @@ These jobs qualify target packages; they do not add a Linux/macOS developer setu
 | Control                  | Contract                                                                                                                                                                       |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Validation workflow      | [ci.yml](../../.github/workflows/ci.yml): read-only, Windows development checks and native Linux/macOS packages; PRs targeting `main`, manual dispatch, reusable release calls |
-| Full runs                | Manual dispatch selects all suites/workflow validation without PR SHAs; release calls enable full checks for the resolved commit                                               |
+| Full runs                | Manual dispatch selects all suites; release calls validate the resolved commit, with verified application/UI evidence reuse as described below                                 |
 | Mandatory scan           | Independent Gitleaks job on every validation run                                                                                                                               |
 | Checkout                 | Event `github.sha` or supplied release `revision`; release jobs use the same validated tag commit                                                                              |
 | Concurrency              | New PR pushes cancel older runs for that workflow/PR; manual runs have independent groups                                                                                      |
@@ -54,7 +54,22 @@ to include both rename paths and deletions. Missing revisions/Git failures/inval
 outputs fail closed. The independent `dependencies` selection runs the locked
 Node/PowerShell dependency and workflow contracts inside `dependency-check`, even
 when application checks are skipped. A contract failure fails that job and blocks
-the merge gate. Hosted runs do not reuse test results.
+the merge gate.
+
+Release calls can reuse the application and UI jobs from the latest CI run for
+the associated merged PR. The release-policy helper requires a green run and final
+gate, successful application/UI jobs, identical PR/release Git trees and each job's
+logged tested tree. Both Windows runner image versions must match the release
+runner, and the release workflow revision must equal the tag commit. Git-tree
+identity includes source, tests, workflows, tool-version pins and dependency locks.
+The release log identifies the reused PR, run and commit. Missing logs, API failures,
+changed content/images/workflows or skipped/failed jobs select fresh application/UI
+checks. PRs and ordinary manual full CI never reuse results.
+
+Only these two expensive jobs are skipped after verified reuse. Secret scanning,
+dependency/workflow/docs/skill/plugin/interoperability checks, native package builds
+and runtime checks still execute. The final gate requires reused jobs to be skipped
+and every remaining selected job to succeed.
 
 | Job                       | Selection / result                                                                                                                                                                                                    |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
