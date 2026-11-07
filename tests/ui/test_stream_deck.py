@@ -7,6 +7,8 @@ import json
 import subprocess
 import sys
 from threading import Event
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import pytest
 from PySide6.QtCore import QEvent, QPointF, QThreadPool, Qt, QUrl
@@ -238,6 +240,11 @@ def exercise(application: RecordingApplication) -> None:
     assert window.navigation.playback.speed == 1
     device.request(wire.PositionStep(name="position.step", steps=-10))
     assert not window.navigation.playback.playing
+    window.navigation.slider.setValue(50)
+    device.request(wire.PositionStep(name="position.step", steps=20))
+    assert window.navigation.slider.value() == 70
+    device.request(wire.PositionStep(name="position.step", steps=-20))
+    assert window.navigation.slider.value() == 50
     device.request(wire.SettingStep(name="smoothing.step", direction=1))
     wait_until(lambda: window.data is not None and window.data.smoothing_window == 13)
     device.request(wire.SimpleAction(name="smoothing.reset"))
@@ -481,12 +488,73 @@ def exercise(application: RecordingApplication) -> None:
     window.library.search.setText("no matching recording")
     blocked = device.request(wire.LibraryMove(name="library.move", direction=1))
     assert isinstance(blocked, wire.Failure) and blocked.reason == "empty_library"
-    window.library.search.clear()
+    for operation in ("library.open", "library.open_new_window"):
+        blocked = device.request(wire.SimpleAction(name=operation))
+        assert isinstance(blocked, wire.Failure) and blocked.reason == "no_selection"
+    window.library.park_filter.setCurrentIndex(window.library.park_filter.findData("Park A"))
+    window.library.workflow_filter.setCurrentIndex(
+        window.library.workflow_filter.findData("completed"),
+    )
+    reset = device.request(wire.SimpleAction(name="library.reset_filters"))
+    assert isinstance(reset, wire.Result) and reset.status == "ok"
+    assert not window.library.search.text()
+    assert window.library.park_filter.currentData() is None
+    assert window.library.workflow_filter.currentData() is None
+    library = controller.snapshot().library
+    assert library is not None and library.count == 2 and window.data is loaded
+    assert device.request(wire.SimpleAction(name="library.reset_filters")).status == "ok"
     with pytest.MonkeyPatch.context() as patch:
         imports: list[bool] = []
         patch.setattr(window, "choose_file", lambda: imports.append(True))
         device.request(wire.SimpleAction(name="library.import"))
         assert imports == [True]
+
+    # A recording gets one window, including repeated requests while it is loading.
+    activate(application, window)
+    device.request(wire.LibraryMove(name="library.move", direction=1))
+    selected = window.library.selected_entry
+    assert selected is not None and window.data is not None
+    if selected.source_sha256 == window.data.source.source_sha256:
+        device.request(wire.LibraryMove(name="library.move", direction=1))
+        selected = window.library.selected_entry
+    assert selected is not None and selected.source_sha256 != window.data.source.source_sha256
+    original_data = window.data
+    existing_windows = set(application.windows)
+    result = device.request(wire.SimpleAction(name="library.open_new_window"))
+    assert isinstance(result, wire.Result) and result.status == "ok"
+    window.library.new_window_action.trigger()
+    assert len(application.windows) == len(existing_windows) + 1
+    created = next(value for value in application.windows if value not in existing_windows)
+    wait_until(lambda: created.data is not None and created.open_action.isEnabled())
+    assert created.data is not None and created.data.source.source_sha256 == selected.source_sha256
+    created_data = created.data
+    created.navigation.slider.setValue(3)
+    for _ in range(5):
+        activate(application, window)
+        created.showMinimized()
+        result = device.request(wire.SimpleAction(name="library.open_new_window"))
+        assert isinstance(result, wire.Result) and result.status == "ok"
+        wait_until(lambda: application.activeWindow() is created)
+        assert not created.isMinimized()
+        assert len(application.windows) == len(existing_windows) + 1
+        assert created.data is created_data and created.navigation.slider.value() == 3
+        assert window.data is original_data
+    activate(application, window)
+    window.open_archived(selected.source_sha256)
+    wait_until(lambda: application.activeWindow() is created)
+    assert window.data is original_data
+    with TemporaryDirectory(dir=".tmp") as directory:
+        path = Path(directory) / "same-recording.forces"
+        path.write_bytes(created_data.source.recording.source.original_bytes)
+        activate(application, window)
+        window.open_path(path)
+        wait_until(window.open_action.isEnabled)
+        assert window.data is original_data and created.data is created_data
+        assert application.activeWindow() is created
+        application.receive_request(OpenRequest(path=str(path), new_window=True))
+        wait_until(lambda: len(application.windows) == len(existing_windows) + 1)
+        assert application.activeWindow() is created and created.data is created_data
+    created.close()
 
     # Active Explorer changes invalidate old targets/previews without a fallback.
     activate(application, window)

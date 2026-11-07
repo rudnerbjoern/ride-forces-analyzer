@@ -48,7 +48,7 @@ def test_shared_examples_cover_every_action_and_server_envelope() -> None:
         assert json.loads(parsed.model_dump_json()) == original
 
 
-@pytest.mark.parametrize("version", [True, "2", 0, 1, 3])
+@pytest.mark.parametrize("version", [True, "3", 0, 1, 2, 4])
 def test_incompatible_and_coerced_versions_are_rejected(version: object) -> None:
     with pytest.raises(ValidationError):
         parse_command(

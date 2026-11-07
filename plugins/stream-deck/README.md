@@ -144,36 +144,41 @@ selects the Analyzer EXE or a Windows shortcut in Stream Deck. Discovery has no
 executable path. Website opens the project URL from this plugin's manifest. These
 actions require no Analyzer connection or additional plugin command.
 Plus labels the view folder Curves and also provides Selection with Start/End dials,
-Fine/Coarse and Zoom to selection. Its Explorer folders form a central 2×2 group.
-Native folders handle navigation; Home returns to Start on the invoking device,
-including when Analyzer is disconnected. Import, Play and selection Zoom use key 5
-above the related dials; Data mode sits above Smoothing. Fine/Coarse stays on key 6.
-Dynamic captions have at most two short lines; full values remain on the touch strip. Back stays on key 1 and Home on key 8
-in every submenu. Stream Deck fixes native folder Back at key 1 during import;
+Step size and Zoom to selection. Its Explorer folders form a central 2×2 group.
+Native folders handle navigation; Neo Home returns to Start on the invoking device,
+including when Analyzer is disconnected. Play and selection Zoom use key 5
+above the related dials; Data mode sits above Smoothing. Step size stays on key 6.
+Dynamic captions have at most two short lines; full values remain on the touch strip. Back stays on key 1
+in every submenu. Plus has no Home key; Neo retains Home on key 8. Stream Deck fixes native folder Back at key 1 during import;
 the preferred key 5 placement is unsupported. Start has no Back/Home keys.
 
-Plus keys provide menus, Import, Play/Pause, Zoom to selection, Fine/Coarse and the five curve/mode controls.
-Play/Pause is available both as a key and on the Position dial press. Other keys
-do not duplicate Library browsing/opening, navigation, view reset
+Plus keys provide menus, Import, Play/Pause, Zoom to selection, Step size and the five curve/mode controls.
+Play/Pause and Library Open are available both as keys and on their dial press. Other keys
+do not duplicate Library browsing, navigation, view reset
 or marker functions assigned to dials. There are no additional Plus Position,
 Smoothing, Speed or marker-editor folders. Neo retains Previous/Next/Open/Import,
 playback/navigation keys and marker-key editors.
 
-Plus Library dial: one visible entry per notch, cyclic in both directions; press
+Plus Start and Library share Open, New window, Import and Reset filters on keys 5–8
+and the Library selection on dial/touch field 1. Reset filters invokes the existing
+GUI park/status/search reset without opening a recording. Start retains its Library folder on key 2.
+The Library dial selects one visible entry per notch, cyclic in both directions; press
 opens the selection in the current Explorer. Playback dials are Position
 (press: Play/Pause), View (Reset) and Speed (1×) in adjacent slots 1–3; slot 4 is unused.
 View / Curves has the Smoothing dial in its first slot beside the force-line and
 Raw/Calibrated keys. Smoothing stops at 1/51 samples without wrapping; press resets
 to 11. Raw mode retains unfiltered source values and disables smoothing.
 Markers are Start/Gravity/Incline/End: rotate previews, press applies and touch
-discards only that marker's preview. Fine/Coarse on Playback and Markers switches
-between one/ten source samples per notch on that Plus, including Selection; startup defaults to fine.
+discards only that marker's preview. Step size on Playback, Selection and Markers cycles
+through 1/10/20/1 source samples per notch on that Plus; startup defaults to 1.
+The key and touch fields show Fine (1), Medium (10) or Coarse (20), shared across
+these pages. The matching icons use one, two or three bars.
 
 Plus Selection dials adjust the current inclusive selection directly through the
 Inspector controls. Bounds clamp at zero, each other and the last source sample;
 there is no wraparound, marker adoption or Library marker write. Their touch fields
 show actual start/end values. Press/touch are unassigned on these two dials.
-Application protocol version 2 carries these bounds and commands; update/restart
+Application protocol version 3 carries these bounds and commands; update/restart
 Analyzer and the plugin together. Discovery/authentication stays at version 1.
 
 Plus touch fields show selected entry/count, sample/time, actual view interval/span,
@@ -211,10 +216,19 @@ Playback uses key 6 for Reset view, View for Play/Pause. No dial, InfoBar, marke
 curve/smoothing/speed or manual selection-boundary editors are included.
 
 Pair Mobile in Stream Deck, select its six-key layout and import onto that device.
+The Library landscape rows are Back/Previous/Next and Import/Open/New window.
+Recommend the Mobile layout-orientation setting None or Fixed for a stable 3×2
+grid. Orientation is configured by the user, not enforced by the profile.
+Native Back stays on key 1 at the top left.
+All three Library profiles offer New window, using the existing archived-recording
+window action. Plus puts it on key 6 beside Open; Neo on key 7 beside Open;
+Mobile on key 6 beside Open. Already open/loading recordings activate their existing
+Explorer instead of opening another. Normal Open/dial press uses the current
+Explorer for recordings not already open elsewhere.
 Start app retains a user-configured desktop EXE/shortcut path; Website is preset.
 The Analyzer transport stays on desktop loopback. No mobile-facing endpoint or
-new application commands are introduced. Import, pairing and phone operation are
-unverified. [Instructions and small preview](../../docs/user/STREAM_DECK.md#mobile-limited-six-key-preview)
+new application commands are introduced. Full Mobile hardware acceptance remains
+open. [Instructions and small preview](../../docs/user/STREAM_DECK.md#mobile-limited-six-key-preview)
 are rendered by the same screenshot script as Plus/Neo.
 
 ## Configure keys

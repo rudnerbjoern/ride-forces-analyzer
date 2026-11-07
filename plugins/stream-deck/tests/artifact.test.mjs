@@ -136,7 +136,7 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
     assert.deepEqual(commands[0].action, { name: "curve.set", curve: "combined", enabled: true });
     assert.deepEqual(commands[0].target, snapshot.target);
     assert.equal(active(), 0);
-    appSocket.send(JSON.stringify({ version: 2, type: "response", id: commands[0].id, target: commands[0].target, status: "ok" }));
+    appSocket.send(JSON.stringify({ version: 3, type: "response", id: commands[0].id, target: commands[0].target, status: "ok" }));
     snapshot.sequence++;
     snapshot.curves[3].active = true;
     appSocket.send(JSON.stringify(snapshot));
@@ -176,7 +176,7 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
     sendDial("dialRotate", { ticks: 3, pressed: false });
     await waitUntil(() => commands.length === 5 && dialFeedback()?.status.includes("Pending"), diagnostic);
     assert.deepEqual(commands.slice(-3).map(value => value.action), Array(3).fill({ name: "library.move", direction: 1 }));
-    for (const command of commands.slice(-3)) appSocket.send(JSON.stringify({ version: 2, type: "response",
+    for (const command of commands.slice(-3)) appSocket.send(JSON.stringify({ version: 3, type: "response",
       id: command.id, target: command.target, status: "ok" }));
     await waitUntil(() => dialFeedback()?.status === "Ready", diagnostic);
     sendDial("dialDown");
@@ -196,7 +196,7 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
     hostSocket.send(JSON.stringify({ ...modeEvent, event: "willAppear" }));
     hostSocket.send(JSON.stringify({ ...modeEvent, event: "keyDown" }));
     await waitUntil(() => hostMessages.some(value => value.event === "setTitle" && value.context === "test-mode"
-      && value.payload.title.includes("Coarse")), diagnostic);
+      && value.payload.title.includes("Medium")), diagnostic);
     assert.equal(commands.length, 6, "InfoBar and Fine/Coarse never send app commands");
     await close(backend);
     await waitUntil(() => barFeedback()?.status === "Offline" && dialFeedback()?.value === "—", diagnostic);

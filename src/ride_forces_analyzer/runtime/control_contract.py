@@ -8,12 +8,12 @@ from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, Field, TypeAdapter, field_validator, model_validator
 
-PROTOCOL_VERSION = 2
+PROTOCOL_VERSION = 3
 Version = Annotated[int, Field(ge=PROTOCOL_VERSION, le=PROTOCOL_VERSION)]
 Identifier = Annotated[str, Field(min_length=1, max_length=128)]
 SampleIndex = Annotated[int, Field(ge=0)]
 Direction = Literal[-1, 1]
-Steps = Literal[-10, -1, 1, 10]
+Steps = Literal[-20, -10, -1, 1, 10, 20]
 SelectionBoundary = Literal["start", "end"]
 MarkerName = Literal["start", "gravity", "incline", "end"]
 CurveName = Literal["first", "second", "third", "combined", "calibrated"]
@@ -82,7 +82,9 @@ class SimpleAction(WireModel, frozen=True):
 
     name: Literal[
         "library.open",
+        "library.open_new_window",
         "library.import",
+        "library.reset_filters",
         "playback.toggle",
         "playback.speed.reset",
         "view.reset",
@@ -194,7 +196,9 @@ Action = Annotated[
 ]
 ActionName = Literal[
     "library.open",
+    "library.open_new_window",
     "library.import",
+    "library.reset_filters",
     "library.move",
     "playback.toggle",
     "playback.speed.reset",

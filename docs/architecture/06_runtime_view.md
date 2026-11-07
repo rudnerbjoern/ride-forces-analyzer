@@ -138,7 +138,7 @@ generation. Its configurable SDK key action covers the agreed command types.
 
 ### Envelopes and compatibility
 
-- Application protocol `version: 2` is independent of discovery/authentication version 1.
+- Application protocol `version: 3` is independent of discovery/authentication version 1.
   Authenticate first; transport `ready` is not an application state event.
 - Require an exact application protocol version. Invalid shapes, unknown fields/actions,
   coercions and non-finite numbers are rejected. Contract changes require a new version.
@@ -169,21 +169,23 @@ generation. Its configurable SDK key action covers the agreed command types.
 
 ### Actions
 
-| `action.name`                                 | Arguments                                               | Behavior                                                                             |
-| --------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `library.move`                                | `direction: -1 \| 1`                                    | One visible sorted/filtered entry; cyclic boundaries                                 |
-| `library.open`                                | None                                                    | Open selection in the addressed current Explorer                                     |
-| `library.import`                              | None                                                    | Open the existing import dialog                                                      |
-| `playback.toggle`                             | None                                                    | Invoke actual play/pause                                                             |
-| `playback.speed.step`, `playback.speed.reset` | Step: `direction: -1 \| 1`; reset: none                 | Adjacent supported speed; reset to 1×                                                |
-| `position.step`                               | `steps: -10 \| -1 \| 1 \| 10`                           | Source samples; pause playback and clamp bounds                                      |
-| `selection.step`                              | `boundary: start \| end`, `steps: -10 \| -1 \| 1 \| 10` | Adjust the inclusive selection through existing Inspector controls; clamp each bound |
-| `view.zoom`                                   | `direction: -1 \| 1`                                    | Decrease/increase time magnification through existing chart navigation               |
-| `view.reset`, `view.selection`                | None                                                    | Reset viewport or zoom to the existing selection                                     |
-| `smoothing.step`, `smoothing.reset`           | Step: `direction: -1 \| 1`; reset: none                 | Adjacent existing odd window or application default                                  |
-| `curve.set`                                   | `curve`, `enabled: boolean`                             | Set `first`, `second`, `third`, `combined` or `calibrated` control                   |
-| `marker.preview`                              | `marker`, `steps: -10 \| -1 \| 1 \| 10`                 | Pause playback; adjust only that preview within valid bounds                         |
-| `marker.apply`, `marker.discard`              | `marker`                                                | Adopt or discard only that marker's preview                                          |
+| `action.name`                                 | Arguments                                                            | Behavior                                                                             |
+|-----------------------------------------------|----------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| `library.move`                                | `direction: -1 \| 1`                                                 | One visible sorted/filtered entry; cyclic boundaries                                 |
+| `library.open`                                | None                                                                 | Open selection in the addressed current Explorer                                     |
+| `library.open_new_window`                     | None                                                                 | Open selection in an additional Explorer; retain the addressed window                |
+| `library.import`                              | None                                                                 | Open the existing import dialog                                                      |
+| `library.reset_filters`                       | None                                                                 | Clear park/status/search through the existing Library reset                          |
+| `playback.toggle`                             | None                                                                 | Invoke actual play/pause                                                             |
+| `playback.speed.step`, `playback.speed.reset` | Step: `direction: -1 \| 1`; reset: none                              | Adjacent supported speed; reset to 1×                                                |
+| `position.step`                               | `steps: -20 \| -10 \| -1 \| 1 \| 10 \| 20`                           | Source samples; pause playback and clamp bounds                                      |
+| `selection.step`                              | `boundary: start \| end`, `steps: -20 \| -10 \| -1 \| 1 \| 10 \| 20` | Adjust the inclusive selection through existing Inspector controls; clamp each bound |
+| `view.zoom`                                   | `direction: -1 \| 1`                                                 | Decrease/increase time magnification through existing chart navigation               |
+| `view.reset`, `view.selection`                | None                                                                 | Reset viewport or zoom to the existing selection                                     |
+| `smoothing.step`, `smoothing.reset`           | Step: `direction: -1 \| 1`; reset: none                              | Adjacent existing odd window or application default                                  |
+| `curve.set`                                   | `curve`, `enabled: boolean`                                          | Set `first`, `second`, `third`, `combined` or `calibrated` control                   |
+| `marker.preview`                              | `marker`, `steps: -20 \| -10 \| -1 \| 1 \| 10 \| 20`                 | Pause playback; adjust only that preview within valid bounds                         |
+| `marker.apply`, `marker.discard`              | `marker`                                                             | Adopt or discard only that marker's preview                                          |
 
 Markers are `start`, `gravity`, `incline`, `end`. First/second/third curve slots
 follow the current chart axes; state supplies actual raw/directional labels.

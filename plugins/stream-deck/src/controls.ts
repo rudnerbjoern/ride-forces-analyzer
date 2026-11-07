@@ -10,6 +10,8 @@ export type ControlSettings = {
 };
 
 export const CONTROL_LABELS: Readonly<Record<Action["name"], string>> = {
+    "library.open_new_window": "Library: open selection in new window",
+    "library.reset_filters": "Library: reset filters",
     "library.move": "Library: select entry", "library.open": "Library: open selection",
     "library.import": "Library: import…", "playback.toggle": "Play / Pause",
     "playback.speed.step": "Playback speed", "playback.speed.reset": "Reset playback speed",
@@ -30,7 +32,7 @@ export function controlSettings(value: Record<string, unknown>): ControlSettings
     const curve = value.curve ?? "first";
     const marker = value.marker ?? "start";
     const boundary = value.boundary ?? "start";
-    if (direction !== -1 && direction !== 1 || steps !== -10 && steps !== -1 && steps !== 1 && steps !== 10
+    if (direction !== -1 && direction !== 1 || steps !== -20 && steps !== -10 && steps !== -1 && steps !== 1 && steps !== 10 && steps !== 20
         || curve !== "first" && curve !== "second" && curve !== "third" && curve !== "combined" && curve !== "calibrated"
         || boundary !== "start" && boundary !== "end"
         || marker !== "start" && marker !== "gravity" && marker !== "incline" && marker !== "end") return undefined;

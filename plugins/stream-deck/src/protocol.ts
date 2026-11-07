@@ -1,8 +1,8 @@
 /** Application protocol; independent of the transport authentication version. */
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 export type Direction = -1 | 1;
-export type Steps = -10 | -1 | 1 | 10;
+export type Steps = -20 | -10 | -1 | 1 | 10 | 20;
 export type SelectionBoundary = "start" | "end";
 export type MarkerName = "start" | "gravity" | "incline" | "end";
 /** First/second/third follow the current chart axes; labels come from state. */
@@ -24,7 +24,7 @@ export interface Target {
 }
 
 export type Action =
-    | { readonly name: "library.open" | "library.import" | "playback.toggle"
+    | { readonly name: "library.open" | "library.open_new_window" | "library.import" | "library.reset_filters" | "playback.toggle"
         | "playback.speed.reset" | "view.reset" | "view.selection" | "smoothing.reset" }
     | { readonly name: "library.move"; readonly direction: Direction }
     | { readonly name: "position.step"; readonly steps: Steps }

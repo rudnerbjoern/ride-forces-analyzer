@@ -50,13 +50,13 @@ show the generated assignments. Images are software examples, not hardware evide
 ## Integration and command contract
 
 - Separate connections: plugin ↔ Stream Deck SDK; plugin ↔ Analyzer loopback WebSocket.
-- Discovery/authentication version 1; application protocol version 2. Strict typed
+- Discovery/authentication version 1; application protocol version 3. Strict typed
   messages identify the target window, recording and generation. Incompatible or
   stale-target commands are rejected rather than redirected.
 - Use the active Explorer; never select an arbitrary window or activate Analyzer
   implicitly. Block application commands during background operation, text/number
   editing, open dropdowns/dialogs, missing data or conflicting analysis.
-- Native folders, Home, app/website actions and local Fine/Coarse remain independent
+- Native folders, Home, app/website actions and local Step size remain independent
   of Analyzer command availability.
 - Feedback follows confirmed GUI/service state. A press or transport acknowledgement
   must not imply that a toggle changed or marker analysis was adopted.
@@ -80,9 +80,9 @@ Detailed ownership and wire contracts remain in
 - Neo native main pages: Start and Quick controls. Its Touch Points select the
   previous/next native page; the InfoBar action receives no input events.
 - Mobile Start: Start app, Library, Playback and Website. Playback opens View.
-- Back is key 1 in every folder. Plus/Neo Home is key 8 and returns the invoking
+- Back is key 1 in every folder. Neo Home is key 8 and returns the invoking
   device to Start. Neo Quick controls uses Start-return actions for Back/Home.
-  Mobile deliberately has no Home key.
+  Plus and Mobile deliberately have no Home key.
 - Number keys left to right, top row first. Menu changes never apply a marker
   preview or switch the target Explorer.
 - Start app uses Elgato Open with the packaged app icon and a user-configured
@@ -96,16 +96,21 @@ Detailed ownership and wire contracts remain in
 - Follow visible sorting/filtering and skip hidden entries. Wrap in both
   directions; a single entry stays selected, an empty list cannot be opened.
 - Rotation/browsing changes selection only. Open uses the current Explorer and
-  never creates another window.
-- Library stepping always uses one entry, independent of Fine/Coarse.
+  never creates another window. The separate New window key opens the selection
+  in an additional Explorer through the existing Library action; the current
+  Explorer stays unchanged. An already open/loading recording activates its existing
+  window instead, without reloading or changing its view. It requires a selection
+  and obeys the same locks.
+- Library stepping always uses one entry, independent of Step size.
 - Keys show short action names and selected index/count. Plus touch/Neo InfoBar
   show the selected name; full names remain available in the Analyzer Library.
 
 ### Stepping and playback
 
-- Plus Fine/Coarse is per device, defaults to fine after plugin startup and survives
-  menu changes. Key 6 switches Position, Selection and marker dials between 1/10
-  source samples per notch. Library is unaffected.
+- Plus Step size is per device, defaults to fine after plugin startup and survives
+  menu changes. Key 6 cycles Position, Selection and marker dials through 1/10/20/1
+  source samples per notch. Labels/icons are Fine (one bar), Medium (two), Coarse
+  (three); key and touch fields show the current size. Library is unaffected.
 - Neo Position/marker editors expose fixed −10/+10 and −1/+1 keys. Mobile exposes
   only −1/+1 position steps.
 - Position, Selection and marker adjustments clamp to valid bounds; only Library
@@ -119,22 +124,25 @@ Detailed ownership and wire contracts remain in
 
 ### Plus profile
 
-Back/Home occupy keys 1/8 in submenus. Blank positions are unassigned. No duplicate
-keys/editors for dial functions, except the dedicated Play/Pause key.
+Back occupies key 1 in submenus; no Home key is assigned. Blank positions are unassigned. No duplicate
+keys/editors for dial functions, except the dedicated Play/Pause and Library Open keys.
 
 | Page      | Other assigned keys                          | Dials, left to right                  |
 | --------- | -------------------------------------------- | ------------------------------------- |
-| Start     | 1 App; 2 Library; 3 Explorer; 4 Website      | None                                  |
-| Library   | 5 Import                                     | 1 Browse/Open                         |
+| Start     | 1–4 menus; 5–8 Library actions               | 1 Browse/Open                         |
+| Library   | 5 Open; 6 New; 7 Import; 8 Reset filters     | 1 Browse/Open                         |
 | Explorer  | 2 Playback; 3 Curves; 6 Markers; 7 Selection | None                                  |
-| Playback  | 5 Play/Pause; 6 Fine/Coarse                  | 1 Position; 2 View; 3 Speed; 4 unused |
+| Playback  | 5 Play/Pause; 6 Step size                    | 1 Position; 2 View; 3 Speed; 4 unused |
 | Curves    | 2/3/4 directions; 5 Data mode; 7 Combined    | 1 Smoothing                           |
-| Selection | 5 Zoom to selection; 6 Fine/Coarse           | 1 Selection Start; 2 Selection End    |
-| Markers   | 6 Fine/Coarse                                | 1 Start; 2 Gravity; 3 Incline; 4 End  |
+| Selection | 5 Zoom to selection; 6 Step size             | 1 Selection Start; 2 Selection End    |
+| Markers   | 6 Step size                                  | 1 Start; 2 Gravity; 3 Incline; 4 End  |
 
 Position press toggles playback; View press resets the view; Speed press resets
 to 1×; Smoothing press resets to 11. Selection press/touch are unassigned.
 Marker press/touch follow the [marker contract](#plus-marker-page).
+Start and Library share the bottom-row order Open, New window, Import, Reset filters.
+Reset filters invokes the existing park/status/search reset, also for empty results,
+without opening a recording or changing manual workflow status.
 
 ### Selection bounds
 
@@ -195,16 +203,20 @@ clears program values; native paging remains separate from feedback.
 
 ### Limited Mobile preview
 
-Four six-key pages, three columns and two rows; no Home, dials or InfoBar.
+Four six-key pages designed for landscape, three columns and two rows; no Home, dials or InfoBar.
 Back is key 1 in folders. Pairing is handled by Stream Deck; the Analyzer keeps
-its existing desktop loopback interface. Mobile import/phone operation are unverified.
+its existing desktop loopback interface. Full Mobile hardware acceptance remains open.
 
-| Page     | Key 1     | Key 2    | Key 3    | Key 4      | Key 5          | Key 6      |
-| -------- | --------- | -------- | -------- | ---------- | -------------- | ---------- |
-| Start    | Start app | Library  | Playback | Website    | Unassigned     | Unassigned |
-| Library  | Back      | Previous | Next     | Open       | Import         | Unassigned |
-| Playback | Back      | Play     | View     | −1 sample  | +1 sample      | Reset view |
-| View     | Back      | Zoom −   | Zoom +   | Reset view | Zoom selection | Play       |
+| Page     | Key 1     | Key 2    | Key 3      | Key 4      | Key 5          | Key 6      |
+| -------- | --------- | -------- | ---------- | ---------- | -------------- | ---------- |
+| Start    | Start app | Library  | Playback   | Website    | Unassigned     | Unassigned |
+| Library  | Back      | Previous | Next       | Import     | Open           | New window |
+| Playback | Back      | Play     | View       | −1 sample  | +1 sample      | Reset view |
+| View     | Back      | Zoom −   | Zoom +     | Reset view | Zoom selection | Play       |
+
+Recommend landscape with Mobile layout orientation set to None or Fixed so the
+3×2 grid keeps native Back at the top left. This is a user setting, not a profile
+orientation lock. No separate portrait profile is provided.
 
 No curve/smoothing/speed editors, markers or manual selection-boundary editing.
 
@@ -338,9 +350,9 @@ do not close these rows. Preserve existing profiles and original recordings.
 
 | Device / area                    | Required observation                                                                                                                                                                                    | Status |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| Plus menus / keys                | Navigate Start, Library, Explorer and submenus; Back is key 1, Home key 8; Play/Pause and key alternatives work.                                                                                        | Open   |
+| Plus menus / keys                | Navigate Start, Library, Explorer and submenus; Back is key 1, no Home key; Play/Pause and key alternatives work.                                                                                       | Open   |
 | Plus Library                     | Dial follows visible order/filtering, wraps both ways and handles empty/single-entry lists; rotation only selects, press opens in the current Explorer; Import opens the existing dialog.               | Open   |
-| Plus navigation / selection      | Position, zoom, speed and smoothing presses work; Fine/Coarse starts at 1 and switches to 10 samples; Library stays at one entry; smoothing and selection bounds clamp.                                 | Open   |
+| Plus navigation / selection      | Position, zoom, speed and smoothing presses work; Step size cycles 1/10/20 samples; Library stays at one entry; smoothing and selection bounds clamp.                                                   | Open   |
 | Plus markers                     | Start/Gravity/Incline/End rotate to preview, press to apply and touch to discard independently; bounds and adoption feedback are correct; menus preserve previews, recording/target changes clear them. | Open   |
 | Plus feedback / locks / recovery | GUI changes reach the device; text focus, dialogs and background operation block app commands; disconnect/reconnect and Explorer changes clear stale state without replay or false confirmation.        | Open   |
 | Neo                              | Import on an actual Neo; verify folder keys/editors, both native Touch Points and contextual InfoBar values, marker states, overflow and disconnected display.                                          | Open   |

@@ -2,7 +2,7 @@ import { PROTOCOL_VERSION } from "./protocol.js";
 import type { ServerMessage } from "./protocol.js";
 
 const actions = new Set([
-    "library.open", "library.import", "library.move", "playback.toggle", "playback.speed.reset",
+    "library.open", "library.open_new_window", "library.import", "library.reset_filters", "library.move", "playback.toggle", "playback.speed.reset",
     "playback.speed.step", "position.step", "view.reset", "view.selection", "view.zoom",
     "smoothing.reset", "smoothing.step", "selection.step", "curve.set", "marker.preview", "marker.apply", "marker.discard",
 ]);
