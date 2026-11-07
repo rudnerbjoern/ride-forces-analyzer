@@ -587,6 +587,7 @@ class StreamDeckController(QObject):
             with QSignalBlocker(window.library):
                 window.library.recordings.setCurrentItem(selected)
             window.library.recordings.scrollToItem(selected)
+            window.library.notify_view_changed()
         elif isinstance(action, wire.PositionStep):
             navigation.pause()
             navigation.step_sample(action.steps)

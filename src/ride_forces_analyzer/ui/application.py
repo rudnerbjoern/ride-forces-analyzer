@@ -26,10 +26,12 @@ class RecordingApplication(QApplication):
         settings: Validated settings controlling this operation.
         delivery_timer: Timer scheduling delivery timer.
         library_changed: Library change broadcast carrying the originating panel.
+        library_view_changed: Shared Library browsing state broadcast.
         stream_deck: Optional same-process device control and feedback controller.
     """
 
     library_changed = Signal(object)
+    library_view_changed = Signal(object)
 
     def __init__(self, arguments: list[str]) -> None:
         """Initialize the recording application and its state.
@@ -123,6 +125,10 @@ class RecordingApplication(QApplication):
         window.archive_window_requested.connect(self._new_archive_window_requested)
         window.library.changed.connect(self.library_changed.emit)
         self.library_changed.connect(window.library.refresh_after_change)
+        if len(self.windows) > 1:
+            window.library.sync_view(self.windows[0].library)
+        window.library.view_changed.connect(self.library_view_changed.emit)
+        self.library_view_changed.connect(window.library.sync_view)
         window.closed.connect(lambda: self._closed(window))
         self.stream_deck.register(window)
         window.show()

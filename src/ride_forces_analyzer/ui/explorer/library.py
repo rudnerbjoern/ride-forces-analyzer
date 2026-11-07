@@ -197,11 +197,13 @@ class LibraryPanel(QSplitter):
         open_requested: Signal carrying the selected archived source digest.
         new_window_requested: Signal requesting a separate window for the selected archive.
         changed: Committed removal notification carrying this panel as its origin.
+        view_changed: Shared filters, selection or scrolling changed in this panel.
     """
 
     open_requested = Signal(str)
     new_window_requested = Signal(str)
     changed = Signal(object)
+    view_changed = Signal(object)
 
     def __init__(self, parent: QWidget) -> None:
         """Build the Library import surface and its adjustable horizontal container.
@@ -321,6 +323,7 @@ class LibraryPanel(QSplitter):
         )
         self.toggle_button.setCheckable(True)
         self.toggle_button.toggled.connect(self._toggle)
+        self._syncing_view = False
         self._entries: dict[str, LibraryEntry] = {}
         self._items: dict[str, QTreeWidgetItem] = {}
         self.workflow_selector: WorkflowSelector | None = None
@@ -331,6 +334,7 @@ class LibraryPanel(QSplitter):
         self.park_filter.currentIndexChanged.connect(self.refresh)
         self.workflow_filter.currentIndexChanged.connect(self.refresh)
         self.search.textChanged.connect(self.refresh)
+        self.recordings.verticalScrollBar().valueChanged.connect(self.notify_view_changed)
 
     @property
     def selected_entry(self) -> LibraryEntry | None:
@@ -378,6 +382,7 @@ class LibraryPanel(QSplitter):
             record_error("Library list", error)
             self.show_error(tr("Could not read Library: {0}", str(error)))
             return
+        blocked_scroll = self.recordings.verticalScrollBar().blockSignals(True)
         self._entries = {entry.source_sha256: entry for entry in entries}
         blocked = self.recordings.blockSignals(True)
         try:
@@ -414,6 +419,69 @@ class LibraryPanel(QSplitter):
             self.recordings.blockSignals(blocked)
         self.empty_label.setVisible(not entries)
         self.refresh_labels()
+        self.recordings.verticalScrollBar().blockSignals(blocked_scroll)
+        self.notify_view_changed()
+
+    @Slot()
+    def notify_view_changed(self) -> None:
+        """Publish browsing state unless applying another panel's state."""
+        if not self._syncing_view:
+            self.view_changed.emit(self)
+
+    @Slot(object)
+    def sync_view(self, origin: object) -> None:
+        """Copy another panel's browsing state without opening its selection.
+
+        Args:
+            origin: Library panel supplying filters, selection and scroll position.
+        """
+        if not isinstance(origin, LibraryPanel) or origin is self:
+            return
+        self._syncing_view = True
+        try:
+            if self.park_filter.findData(origin.park_filter.currentData()) < 0:
+                self.refresh()
+            filters_changed = (
+                self.park_filter.currentData() != origin.park_filter.currentData()
+                or self.workflow_filter.currentData() != origin.workflow_filter.currentData()
+                or self.search.text() != origin.search.text()
+            )
+            if filters_changed:
+                for target, source in (
+                    (self.park_filter, origin.park_filter),
+                    (self.workflow_filter, origin.workflow_filter),
+                ):
+                    blocked = target.blockSignals(True)
+                    target.setCurrentIndex(max(0, target.findData(source.currentData())))
+                    target.blockSignals(blocked)
+                blocked = self.search.blockSignals(True)
+                self.search.setText(origin.search.text())
+                self.search.blockSignals(blocked)
+                self.refresh()
+            elif tuple(self._items) != tuple(origin._items):
+                self.refresh()
+            selected = origin.selected_entry
+            item = self._items.get(selected.source_sha256) if selected is not None else None
+            if self.recordings.currentItem() is not item:
+                self._close_workflow()
+                blocked = self.recordings.blockSignals(True)
+                try:
+                    if item is None:
+                        self.recordings.clearSelection()
+                        self.recordings.setCurrentIndex(QModelIndex())
+                    else:
+                        self.recordings.setCurrentItem(item)
+                finally:
+                    self.recordings.blockSignals(blocked)
+                self._details_data = None
+                self._error = None
+                self.refresh_labels()
+                self._scroll_to_selection()
+            self.recordings.verticalScrollBar().setValue(
+                origin.recordings.verticalScrollBar().value(),
+            )
+        finally:
+            self._syncing_view = False
 
     @Slot(object)
     def refresh_after_change(self, origin: object) -> None:
@@ -528,6 +596,7 @@ class LibraryPanel(QSplitter):
         self._error = None
         self.refresh_labels()
         self._scroll_to_selection()
+        self.notify_view_changed()
 
     def _scroll_to_selection(self) -> None:
         """Reveal the selected row after the details area and panel geometry settle."""
@@ -553,6 +622,7 @@ class LibraryPanel(QSplitter):
         self._details_data = None
         self._error = None
         self.refresh_labels()
+        self.notify_view_changed()
         entry = self.selected_entry
         if entry is not None:
             self.open_requested.emit(entry.source_sha256)
