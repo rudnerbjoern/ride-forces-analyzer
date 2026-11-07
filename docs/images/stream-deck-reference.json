@@ -620,7 +620,7 @@
     ]
   },
   "inputs": {
-    "scripts/render_stream_deck_reference.py": "0725db9f990660fb8d0e53e5fcb147104c1b048d1fe87c817a3158dd0ca52394",
+    "scripts/render_stream_deck_reference.py": "36e0b7b50473452f6ed665b1c1d36be0c6b31ce732f08c8b825546ae1fdeefee",
     "tests/fixtures/stream_deck_protocol.json": "5d7e9058d884233b27172159a4ae28dd17dbc331120b23f427a9b37f3a9c0d94",
     "plugins/stream-deck/src/feedback.ts": "ec103febc60583a76c50403a073aa14753ebeeeb5ce8ae2552d5c29e706e291e",
     "plugins/stream-deck/src/device-feedback.ts": "f1a0d88c1aeac2fa3e89b345e0299ae1b7346d48a9cb3de384ff9fe2b0fa867c",

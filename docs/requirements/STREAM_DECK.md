@@ -8,8 +8,8 @@
   profiles and limited Mobile preview, keys, Plus dials/touch and Neo InfoBar.
 - Verified on Windows: automated application/plugin checks, official plugin
   validation, native plugin startup/Analyzer connection, Plus profile import and
-  physical menu/subgroup navigation and swipe feedback.
-- Open: complete physical Plus acceptance, native Neo/Mobile import and operation, and all
+  owner-confirmed integrated Plus operation, including menus, bounds, locks and recovery.
+- Open: native Neo/Mobile import and operation, and all
   native macOS integration checks.
 - Distribution: self-contained development folder, three profile archives and an
   officially packed `.streamDeckPlugin` with a separate release checksum. Native
@@ -41,7 +41,7 @@
 
 | Device             | Prepared controls                          | Native acceptance                                 |
 | ------------------ | ------------------------------------------ | ------------------------------------------------- |
-| Stream Deck +      | 2×4 keys, four push dials, touch strip     | Windows import verified; physical operation open  |
+| Stream Deck +      | 2×4 keys, four push dials, touch strip     | Windows import and physical operation verified    |
 | Stream Deck Neo    | 2×4 keys, InfoBar, two native Touch Points | Import and physical operation open                |
 | Stream Deck Mobile | Reduced 2×3 key preview                    | Import, pairing and phone operation open          |
 
@@ -173,13 +173,13 @@ without opening a recording or changing manual workflow status.
 - Applied Start/End changes use existing viewport/replay-label behavior. Follow the
   [Explorer marker contract](../implementation/RAW_EXPLORER.md#time-zoom-and-selection).
 
-### Plus navigation — accepted concept
+### Plus navigation and feedback
 
-**Status: design and interaction concept accepted; implementation follows the stages below.**
-Physical usability remains unverified. The design replaces only Plus navigation.
-Current assignments above, Neo/Mobile profiles and installed user profiles remain
-unchanged until implementation. These images are design illustrations,
-not screenshots of an implemented profile or evidence of hardware usability.
+The six-page Plus layout is implemented and its integrated Windows operation is
+owner-confirmed; see the [acceptance evidence](../validation/STREAM_DECK_PLUS.md).
+The following assignments describe the bundled profile. Neo/Mobile keep their
+existing controls. Generated illustrations show fixed software examples, not
+hardware observations.
 
 #### Workflow and fixed menu row
 
@@ -201,7 +201,7 @@ Marker warnings remain visible on key 4 while visiting another group. Selecting 
 menu changes only device controls; it never changes the recording, playback,
 analysis, selection or saved markers.
 
-![Accepted Plus layout: six work views with a fixed Library, Playback, Curves and Markers menu row](../images/stream-deck-plus-concept/stream-deck-plus-concept-overview.png)
+![Implemented Plus layout: six work views with fixed Library, Playback, Curves and Markers menus](../images/stream-deck-plus-controls.png)
 
 #### Context row: keys 5–8
 
@@ -235,7 +235,7 @@ The four-marker group retains its established Start/Gravity/Incline/End order.
 
 | View                 | Dial 1                            | Dial 2                          | Dial 3                       | Dial 4                      |
 |----------------------|-----------------------------------|---------------------------------|------------------------------|-----------------------------|
-| Library              | Browse; press Open                | Unassigned                      | Park choice; press Filter    | Status choice; press Filter |
+| Library              | Browse; press Open                | Display-only decoration         | Park choice; press Filter    | Status choice; press Filter |
 | Playback / Navigate  | Position; press Play/Pause        | Speed; press 1×                 | Zoom; press Reset view       | Press only: Zoom selection  |
 | Playback / Selection | Selection Start; press unassigned | Selection End; press unassigned | Zoom; press Reset view       | Press only: Zoom selection  |
 | Curves               | Smoothing; press Reset to 11      | Press only: Combined On/Off     | Zoom; press Reset view       | Position; press Play/Pause  |
@@ -244,9 +244,9 @@ The four-marker group retains its established Start/Gravity/Incline/End order.
 
 **Press-only overflow:** an unused rotation can carry one existing action, shown
 persistently in its touch field with function, current state and **PRESS ONLY**.
-A double-ring illustration identifies it in the concept. Turning or touching that
+A double-ring illustration identifies it. Turning or touching that
 field does nothing. Combined is Off/On; Position shows the actual play state;
-Zoom selection shows the current Select interval. Library leaves dial 2 empty;
+Zoom selection shows the current Select interval. Library dial 2 displays only decoration;
 dials 3/4 select its existing Park/Status filters.
 Dial 2 has no input function or alert. A display-only encoder assignment may render
 its background tile so the panorama continues across this otherwise empty field.
@@ -278,18 +278,7 @@ no new touch action. Step size
 is shared across Position, Selection and Markers: Fine/Medium/Coarse means
 1/10/20 samples. Library remains one entry; smoothing, zoom and speed retain their
 existing increments. Views in the images deliberately demonstrate different
-example step sizes; the real device would share a single current size.
-
-#### Individual view illustrations
-
-| View                   | Purpose                                                                 | Illustration                                                                               |
-| ---------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Library                | Choose/import recordings; Park/Status filters beside the browse dial    | [Library](../images/stream-deck-plus-concept/stream-deck-plus-concept-library.png)         |
-| Playback / Navigate    | Inspect time, speed and zoom without leaving playback                   | [Navigate](../images/stream-deck-plus-concept/stream-deck-plus-concept-playback.png)       |
-| Playback / Selection   | Adjust interval bounds next to zoom; press dial 4 to frame it           | [Selection](../images/stream-deck-plus-concept/stream-deck-plus-concept-selection.png)     |
-| Curves                 | Three force toggles and data mode together; Combined beside Smoothing   | [Curves](../images/stream-deck-plus-concept/stream-deck-plus-concept-curves.png)           |
-| Markers / Markers      | See/edit all four previews together; commit or discard independently    | [Markers](../images/stream-deck-plus-concept/stream-deck-plus-concept-markers.png)         |
-| Markers / View         | Inspect another position or zoom while retaining marker previews        | [Marker view](../images/stream-deck-plus-concept/stream-deck-plus-concept-marker-view.png) |
+example step sizes; the device shares a single current size.
 
 #### State feedback and locks
 
@@ -312,12 +301,12 @@ values and place the hint at y=88. Curves and Markers guides align with
 the dial centers at x=100, 300, 500 and 700. Editable SVG artwork is stored with the
 [image references](../images/README.md).
 
-[Background examples](../images/stream-deck-plus-concept/stream-deck-plus-concept-backgrounds.png) show the
-motifs without controls; the view illustrations show their subdued content overlay.
+The [native-size touch-strip examples](../images/stream-deck-plus-touch-strips.png)
+show production backgrounds beneath controls and fixed special states.
 
 Touch fields use a separate, full-width status band with a large standalone symbol
 and explicit state text. Do not shrink an upper-right status badge together with
-the function icon: touch-field function artwork has no embedded badge. The concept
+the function icon: touch-field function artwork has no embedded badge. The layout
 uses a 26-pixel status symbol beside 14-pixel text, a tinted band and matching text
 color; color alone never carries meaning. Keep proposed/current values and action
 hints outside that band. Show the shared step size on its dedicated key rather
@@ -340,10 +329,8 @@ Playback, five-line Library/filter fields, special states and long-text elision.
 | Input focus, dialog, background, busy or missing data | Amber lock/reason; app actions disabled                      | Existing application availability rules                  |
 | Disconnected                                          | Gray disconnected symbol, Offline and cleared program values | No actionable snapshot; no replay on reconnect           |
 
-[Mixed marker feedback](../images/stream-deck-plus-concept/stream-deck-plus-concept-feedback.png),
-[input-focus lock](../images/stream-deck-plus-concept/stream-deck-plus-concept-locked.png) and
-[offline Library](../images/stream-deck-plus-concept/stream-deck-plus-concept-offline.png) illustrate these
-cases. Menus, subgroup selection and the local step cycle remain usable while
+The native-size examples include mixed marker feedback, input-focus locks and
+offline Library states. Menus, subgroup selection and the local step cycle remain usable while
 app actions are locked. No command is queued for later execution. A click or
 sent command never fabricates an applied value or a manual workflow status.
 
@@ -354,7 +341,7 @@ when already open. Reset filters clears park/status/search without loading data.
 Source bytes, stored dates, metadata, manual workflow and exports are unaffected
 by device navigation.
 
-#### Feasibility and remaining validation
+#### Bundled profile and acceptance boundaries
 
 Use **six native main pages**, not nested folders: Library, Playback/Navigate,
 Playback/Selection, Curves, Markers/Markers and Markers/View. Each page repeats
@@ -381,8 +368,9 @@ bindings and filter dials are implemented.
 Physical Plus filter choice/application, individual touch resets, endpoints,
 page/GUI proposal resets and Reset filters are owner-confirmed. Menu switching,
 subgroup recall and cyan selection after native swipes are verified. Push-only
-discoverability and the complete workflow still require physical Plus acceptance.
-The screen designs establish visual consistency, not proven operating speed.
+discoverability and the integrated workflow are owner-confirmed on Windows Plus.
+Neo/Mobile, macOS and native archive installation remain outside the accepted
+Windows Plus scope.
 
 #### Plus redesign implementation stages
 
@@ -486,8 +474,9 @@ this development unless a release changes the version baseline.
      physical readability is owner-confirmed on Plus.
 
 6. **PLUS-06 — Integrated Windows and Plus acceptance**
-   - **Status:** Partial. Windows software checks and native connection are verified;
-     integrated physical checks remain open. See the separate
+   - **Status:** Accepted. Windows software checks and native connection are verified;
+     the owner confirmed integrated physical Plus operation, including remaining
+     boundary, lock and recovery checks. See the separate
      [software and hardware results](../validation/STREAM_DECK_PLUS.md).
    - **Implementation:** Exercise the complete existing workflow after the final
      bindings, filter contract and visuals are connected. Add regressions for actual
@@ -503,7 +492,10 @@ this development unless a release changes the version baseline.
      untested observations remain open and do not make this stage complete.
 
 7. **PLUS-07 — Current documentation and profile handover**
-   - **Status:** Planned.
+   - **Status:** Accepted. Current contracts, profile handover and native generated
+     illustrations match the six-page Plus profile; independent user-content
+     review and final Windows documentation checks pass. Neo/Mobile behavior and
+     the remaining native acceptance boundaries are unchanged.
    - **Implementation:** Update current Plus assignments and verification status in
      this requirement, relevant runtime contracts, the plugin README and end-user
      guide. Consolidate superseded concept/current descriptions when implemented.
@@ -519,7 +511,8 @@ this development unless a release changes the version baseline.
 
 ### Neo profile
 
-Back/Home occupy keys 1/8 in submenus. Start matches Plus; Quick controls is a
+Back/Home occupy keys 1/8 in submenus. Start offers Start app, Library, Explorer
+and Website; Quick controls is a
 second native main page. No dials or custom Touch Point command handlers.
 
 | Page                  | Other assigned keys                                                 |
@@ -623,7 +616,8 @@ or acceptance work. Native acceptance is tracked explicitly in steps 6 and 12.
 7. **Add Library controls**
    - **Status:** Implemented; automated Windows application/SDK checks pass.
    - **Acceptance:** Visible order/filtering, one-entry cyclic stepping, empty/single-entry
-     cases, explicit current-window Open, Import and confirmed feedback. Device checks remain open.
+     cases, explicit current-window Open, Import and confirmed feedback. Windows Plus
+     operation is owner-confirmed; Neo/Mobile device checks remain open.
 
 8. **Add navigation controls**
    - **Status:** Implemented; automated Windows application/SDK checks pass.
@@ -633,7 +627,7 @@ or acceptance work. Native acceptance is tracked explicitly in steps 6 and 12.
 9. **Add Plus marker controls**
    - **Status:** Implemented; automated Windows application/SDK checks pass.
    - **Acceptance:** Start/Gravity/Incline/End order, per-marker preview/apply/discard,
-     bounds, lifecycle and adopted-value feedback. Physical dial/touch checks remain open.
+     bounds, lifecycle and adopted-value feedback. Physical Plus dial/touch checks are owner-confirmed.
 
 10. **Add Neo marker controls**
     - **Status:** Implemented; automated Windows key-handler/profile checks pass.
@@ -651,9 +645,9 @@ or acceptance work. Native acceptance is tracked explicitly in steps 6 and 12.
       profile import; requirements, user guide and generated profile illustrations exist.
       Windows developer mode is enabled; native SDK logs and the installed plugin's
       established connection to the current Analyzer endpoint confirm its running state.
-    - **Open:** Physical Plus keys/dials/touch, Neo import/keys/Touch Points/InfoBar,
+      Integrated physical Plus acceptance is owner-confirmed; see PLUS-06.
+    - **Open:** Neo import/keys/Touch Points/InfoBar,
       Mobile import/pairing/phone operation, and native macOS integration.
-      Available access is Windows remote control without physical device input.
       See the [native acceptance checklist](#native-acceptance-checklist).
 
 13. **Package and release plugin**
@@ -687,16 +681,16 @@ Each row requires actual observation or user confirmation on the named device.
 The Windows automated checks cover the corresponding software contracts; they
 do not close these rows. Preserve existing profiles and original recordings.
 
-| Device / area                    | Required observation                                                                                                                                                                                    | Status |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| Plus menus / keys                | Navigate all six main pages; fixed Library/Playback/Curves/Markers keys and subgroup recall; no Plus Back/Home/App/Website.                                                                             | Open   |
-| Plus Library                     | Dial follows visible order/filtering, wraps both ways and handles empty/single-entry lists; rotation only selects, press opens in the current Explorer; Import opens the existing dialog.               | Open   |
-| Plus navigation / selection      | Position, zoom, speed and smoothing presses work; Step size cycles 1/10/20 samples; Library stays at one entry; smoothing and selection bounds clamp.                                                   | Open   |
-| Plus markers                     | Start/Gravity/Incline/End rotate to preview, press to apply and touch to discard independently; bounds and adoption feedback are correct; menus preserve previews, recording/target changes clear them. | Open   |
-| Plus feedback / locks / recovery | GUI changes reach the device; text focus, dialogs and background operation block app commands; disconnect/reconnect and Explorer changes clear stale state without replay or false confirmation.        | Open   |
-| Neo                              | Import on an actual Neo; verify folder keys/editors, both native Touch Points and contextual InfoBar values, marker states, overflow and disconnected display.                                          | Open   |
-| Mobile                           | Pair the phone, select six keys and import on Mobile; verify all four pages, Back without Home, commands, confirmed feedback and reconnection.                                                          | Open   |
-| macOS                            | Install/start natively; verify discovery/authentication, app connection, focus/dialog/background locks, recovery and operation of each device claimed as verified.                                      | Open   |
+| Device / area                    | Required observation                                                                                                                                                                                    | Status   |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| Plus menus / keys                | Navigate all six main pages; fixed Library/Playback/Curves/Markers keys and subgroup recall; no Plus Back/Home/App/Website.                                                                             | Verified |
+| Plus Library                     | Dial follows visible order/filtering, wraps both ways and handles empty/single-entry lists; rotation only selects, press opens in the current Explorer; Import opens the existing dialog.               | Verified |
+| Plus navigation / selection      | Position, zoom, speed and smoothing presses work; Step size cycles 1/10/20 samples; Library stays at one entry; smoothing and selection bounds clamp.                                                   | Verified |
+| Plus markers                     | Start/Gravity/Incline/End rotate to preview, press to apply and touch to discard independently; bounds and adoption feedback are correct; menus preserve previews, recording/target changes clear them. | Verified |
+| Plus feedback / locks / recovery | GUI changes reach the device; text focus, dialogs and background operation block app commands; disconnect/reconnect and Explorer changes clear stale state without replay or false confirmation.        | Verified |
+| Neo                              | Import on an actual Neo; verify folder keys/editors, both native Touch Points and contextual InfoBar values, marker states, overflow and disconnected display.                                          | Open     |
+| Mobile                           | Pair the phone, select six keys and import on Mobile; verify all four pages, Back without Home, commands, confirmed feedback and reconnection.                                                          | Open     |
+| macOS                            | Install/start natively; verify discovery/authentication, app connection, focus/dialog/background locks, recovery and operation of each device claimed as verified.                                      | Open     |
 
 ## References
 

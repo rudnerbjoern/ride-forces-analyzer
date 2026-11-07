@@ -307,7 +307,7 @@ def _render_neo(output: Path, pages: list[dict[str, Any]]) -> dict[str, Any]:
         _text(
             painter,
             QRectF(28, 55, 1160, 26),
-            "Software illustration · fixed examples · native page navigation · hardware acceptance remains open",
+            "Software illustration · fixed examples · native page navigation · not a hardware photograph",
             color="#9fb6cf",
         )
         for index, page in enumerate(pages):
@@ -459,7 +459,7 @@ def _render_mobile(output: Path, pages: list[dict[str, Any]]) -> dict[str, Any]:
         _text(
             painter,
             QRectF(28, 55, 984, 26),
-            "Software illustration · fixed examples · full Mobile hardware acceptance remains open",
+            "Software illustration · fixed examples · six-key landscape layout · not a hardware photograph",
             color="#9fb6cf",
         )
         for index, page in enumerate(pages):
@@ -517,7 +517,7 @@ def _render_overview(output: Path, pages: list[dict[str, Any]]) -> dict[str, Any
         _text(
             painter,
             QRectF(28, 56, 984, 26),
-            "Software illustration · fixed example values · physical operation remains unverified",
+            "Software illustration · fixed example values · not a hardware photograph",
             color="#9fb6cf",
         )
         painter.drawImage(QRectF(28, 100, 984, 600), panel)

@@ -6,7 +6,7 @@ Plus provides six native pages with a fixed menu; Neo retains Library/Explorer f
 Plus dials/touch, marker editors and Neo InfoBar are prepared with automated tests.
 Native Windows startup, Analyzer connection and import for an attached Plus are
 verified. Plus menu/subgroup navigation and swipe feedback are verified on the device;
-complete physical Plus acceptance and Neo operation remain open.
+integrated physical Plus operation is owner-confirmed. Neo operation remains open.
 
 For everyday operation, see the [Stream Deck + user guide](../../docs/user/STREAM_DECK.md)
 with illustrated functions and state explanations.
@@ -159,9 +159,12 @@ Navigation requests target the manifest profile `profiles/plus`, not an arbitrar
 imported user copy. The six-page layout replaces the former Plus layout under the
 same profile identity and archive filename; no parallel Plus profile is bundled.
 The bundled profile is offered during plugin installation and activated after
-installation. Existing Plus installations receive the replacement layout under
-the same identity; unrelated profiles are preserved. Copies are not navigation destinations. Native Windows import, SDK page switching, subgroup recall and physical swipe
-feedback are verified on Plus. A sent SDK request alone is not proof of success. Request/appearance events are recorded in plugin logs.
+installation. The update replaces the existing bundled Plus layout under
+the same identity; preserve customized and unrelated profiles. If an older layout
+remains installed, import the updated `plus.streamDeckProfile` rather than adding
+a second bundled Plus variant. Copies are not navigation destinations. Native
+Windows import, SDK page switching, subgroup recall and physical swipe feedback
+are verified on Plus. A sent SDK request alone is not proof of success. Request/appearance events are recorded in plugin logs.
 
 Neo retains Start → Library / Explorer, its folders, native Start app/Website,
 Back on key 1 and Home on key 8. Its Open action uses the packaged app icon and an

@@ -215,8 +215,9 @@ touch strip; Neo provides key editors and contextual InfoBar values. A reduced
 
 ![Stream Deck Plus Playback page with fixed menus, Navigate/Selection, Step size, position, zoom and speed dials](docs/images/stream-deck-overview.png)
 
-*Software illustration with fixed example values. [See every Plus, Neo and Mobile
-page](docs/user/STREAM_DECK.md). Complete physical device acceptance remains open.*
+*Inspect playback position, speed and zoom, then switch to Selection to frame an
+interval. Software illustration with fixed example values.
+[See every Plus, Neo and Mobile page](docs/user/STREAM_DECK.md).*
 
 The optional plugin is packaged separately from the Analyzer app. Install its
 `.streamDeckPlugin` archive when available in [GitHub Releases](https://github.com/rudnerbjoern/ride-forces-analyzer/releases),
@@ -225,9 +226,8 @@ Stream Deck installs and activates the profile; a separate manual import is norm
 Keep the intended Explorer in the foreground; device feedback follows confirmed
 program state. The setting defaults to off.
 
-Requires **Stream Deck 7.6+**. Windows software checks pass; native archive
-installation, Neo/Mobile operation and macOS integration remain open.
-[Setup and controls](docs/user/STREAM_DECK.md) · [Build a local plugin](plugins/stream-deck/README.md).
+Requires **Stream Deck 7.6+**. See the [setup guide](docs/user/STREAM_DECK.md)
+for device selection, profile updates and platform limitations.
 
 ## Understanding the display
 

@@ -2,12 +2,12 @@
 
 Use the plugin to browse your Library, control playback and view settings, and
 prepare or apply recording markers. Controls act on the Analyzer
-window you are currently using; they do not open another window.
+window you are currently using. Use **New window** when you want to open a
+Library recording in an additional Explorer.
 
 The Plus and Neo profiles use the same colored icons and short key captions.
 The examples use the English plugin labels. The Analyzer can use its own selected
-interface language. Complete physical Plus acceptance, Neo/Mobile import and operation,
-plugin installation/update and macOS operation remain unverified.
+interface language.
 Requires Stream Deck **7.6+**;
 the plugin runs on the desktop, alongside Analyzer.
 
@@ -56,8 +56,9 @@ execute that key. Keep Analyzer in the foreground when using application control
 
 ## macOS availability
 
-The plugin requires **macOS 15+** with **Stream Deck 7.6+**. Mac installation
-and operation are **unverified**.
+The plugin requires **macOS 15+** with **Stream Deck 7.6+**. Before relying on
+device controls on a Mac, try the connection and your required controls; use
+Analyzer's mouse and keyboard controls if device control is unavailable.
 Launch the Mac Analyzer `.app`. On Neo/Mobile, set **Start app** to that `.app`
 in Stream Deck; the Windows EXE/shortcut instructions apply only to Windows.
 
@@ -66,8 +67,13 @@ in Stream Deck; the Windows EXE/shortcut instructions apply only to Windows.
 Plugin and Analyzer versions are independent. Install the plugin archive supplied
 with the intended Analyzer release; the application update checker does not update
 the plugin. GitHub installation does not register Marketplace updates. Install a
-new archive manually and reimport its profile only when you want its changed
-assignments or menu graphics. Keep your customized profiles.
+new archive manually and confirm its matching profile. The updated
+**Ride Forces Analyzer +** replaces the existing bundled Plus layout with six
+pages; it is not a second Plus variant. Keep your customized and unrelated
+profiles. To use the new menu assignments and graphics, select the updated bundled
+Plus profile. If the old layout remains, import `plus.streamDeckProfile` from the
+installed plugin as described [above](#find-and-import-the-device-profile);
+restarting the plugin alone does not replace old key images or assignments.
 
 If controls stay offline, check that Analyzer is running, **Enable Stream Deck**
 was saved, and the app/plugin came from a compatible release. There is no manual
@@ -264,8 +270,7 @@ configure the app path once, as described above. The Plus profile is separate.
 
 ![Stream Deck Neo software illustration of all fourteen prepared pages, two rows of four keys, contextual InfoBar values and the two native Touch Points](../images/stream-deck-neo-controls.png)
 
-*Software illustration of the Neo profile. Values are examples;
-device operation remains unverified. [Open full size](../images/stream-deck-neo-controls.png).*
+*Software illustration of the Neo profile with example values. [Open full size](../images/stream-deck-neo-controls.png).*
 
 The **left/right Touch Points** are native previous/next-page controls. The
 profile provides two main pages: **Start** and **Quick controls**. Quick controls
@@ -305,7 +310,7 @@ cover pairing with the desktop Stream Deck app.
 ![Stream Deck Mobile limited preview showing the four actual six-key pages Start, Library, Playback and View, with Back and no Home button](../images/stream-deck-mobile-controls.png)
 
 *Software illustration of the Mobile profile with example values.
-Full Mobile hardware acceptance remains open.*
+Use Analyzer for controls omitted from this six-key preview.*
 
 - **Start:** Start app, Library, Playback and Website. Configure the Analyzer EXE or
   Windows shortcut (or the Mac `.app`) on the **desktop** in Start app's Open settings.
