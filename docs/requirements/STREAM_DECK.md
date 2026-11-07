@@ -160,6 +160,9 @@ Marker press/touch follow the [marker contract](#plus-marker-page).
   Never apply a preview to a different recording/window.
 - Only successful analysis adoption atomically persists current Library marker
   choices. Concurrent confirmations must not overwrite newer adopted state.
+- Show each marker preview in the Explorer chart as a dotted, theme-coloured line
+  with an explicit preview label, alongside the unchanged applied marker.
+  Discard/apply and recording/target changes remove the corresponding preview.
 - Show preview/pending/failed values separately from the last applied value.
   Unsuccessful or interrupted adoption must not appear applied.
 - Unset calibration references require initial placement through the GUI. There

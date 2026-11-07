@@ -190,8 +190,10 @@ Open **Explorer → Markers**. Dial order is **Start, Gravity, Incline, End**.
 
 1. **Turn** a dial to change only that marker's preview. This pauses playback;
    the chart calculations and saved markers stay unchanged.
-2. Check the sample/time and the **Preview** status. The separate **Applied** line
-   shows the value currently in use.
+2. The Explorer chart shows a dotted line labelled **Preview** at the proposed
+   position, alongside the unchanged applied marker. Check its position and the
+   sample/time on the touch strip. The separate **Applied** line shows the value
+   currently in use.
 3. **Press** that dial to apply its preview. **Pending** means the chart is still
    updating. **Applied** confirms success; **Failed** retains the previous value.
 4. **Tap the corresponding touch field** to discard only its preview.

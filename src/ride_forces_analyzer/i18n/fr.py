@@ -255,6 +255,7 @@ FRENCH: dict[str, str] = {
     "End marker": "Repère de fin",
     "Gravity marker": "Repère de gravité",
     "Incline marker": "Repère d’inclinaison",
+    "Preview: {0}": "Aperçu : {0}",
     "Reset all ride markers": "Réinitialiser tous les repères",
     "Reset end to original": "Rétablir la fin d’origine",
     "Reset gravity to original": "Rétablir la gravité d’origine",

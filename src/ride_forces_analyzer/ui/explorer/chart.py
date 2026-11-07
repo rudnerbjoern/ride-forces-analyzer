@@ -45,6 +45,9 @@ class ExplorerChart(QObject):
         airtime_legend: Label explaining the displayed vertical-context colors.
         source_marker_lines: Lines for effective ride and calibration markers.
         source_marker_labels: Labels bound to the corresponding source markers.
+        marker_previews: Unconfirmed marker indices supplied by the control surface.
+        marker_preview_lines: Dotted overlays distinct from adopted marker lines.
+        marker_preview_labels: Explicit preview labels using the marker theme colors.
         sample_cursor: Line at the current integer or fractional sample position.
         _cursor_position: Source-sample position supplied by the window.
         _selection: Inclusive source selection supplied by the window.
@@ -126,6 +129,9 @@ class ExplorerChart(QObject):
         self.axis_x.rangeChanged.connect(self._redraw_vertical_context)
         self.source_marker_lines: dict[str, QLineSeries] = {}
         self.source_marker_labels: dict[str, QGraphicsSimpleTextItem] = {}
+        self.marker_previews: dict[str, int] = {}
+        self.marker_preview_lines: dict[str, QGraphicsLineItem] = {}
+        self.marker_preview_labels: dict[str, QGraphicsSimpleTextItem] = {}
         for name, color in (
             ("startIndex", "#bb9aff"),
             ("endIndex", "#ff8ca8"),
@@ -145,6 +151,14 @@ class ExplorerChart(QObject):
             label.hide()
             self.source_marker_lines[name] = line
             self.source_marker_labels[name] = label
+            preview_line = QGraphicsLineItem(self.chart)
+            preview_line.setPen(QPen(QColor(color), 2, Qt.PenStyle.DotLine))
+            preview_line.hide()
+            preview_label = QGraphicsSimpleTextItem(self.chart)
+            preview_label.setBrush(QColor(color))
+            preview_label.hide()
+            self.marker_preview_lines[name] = preview_line
+            self.marker_preview_labels[name] = preview_label
         self.chart.plotAreaChanged.connect(self.redraw_source_markers)
         self.sample_cursor = QLineSeries()
         self.sample_cursor.setPen(QPen(QColor("#64748b"), 1, Qt.PenStyle.DashLine))
@@ -189,6 +203,8 @@ class ExplorerChart(QObject):
         ):
             line.setPen(QPen(QColor(color), 1.5, Qt.PenStyle.DashDotLine))
             self.source_marker_labels[name].setBrush(QColor(color))
+            self.marker_preview_lines[name].setPen(QPen(QColor(color), 2, Qt.PenStyle.DotLine))
+            self.marker_preview_labels[name].setBrush(QColor(color))
 
     def _style_axes(self) -> None:
         for axis in (self.axis_x, self.axis_y):
@@ -207,6 +223,8 @@ class ExplorerChart(QObject):
         Returns:
             None.
         """
+        if self.data is None or self.data.source is not data.source:
+            self.set_marker_previews({})
         self.data = data
         active = data.calibrated_enabled
         colors = (
@@ -522,12 +540,24 @@ class ExplorerChart(QObject):
         self.axis_x.blockSignals(False)
 
     @Slot()
+    def set_marker_previews(self, previews: dict[str, int]) -> None:
+        """Display unconfirmed positions without changing data, analysis or view bounds.
+
+        Args:
+            previews: Source marker names and sample indices from the control surface.
+        """
+        if previews != self.marker_previews:
+            self.marker_previews = dict(previews)
+            self.redraw_source_markers()
+
     def redraw_source_markers(self) -> None:
         """Refresh retained marker lines and labels within the visible interval.
 
         Returns:
             None without changing the snapshot or marker choices.
         """
+        for overlay in (*self.marker_preview_lines.values(), *self.marker_preview_labels.values()):
+            overlay.hide()
         if self.data is None:
             return
         for line in self.source_marker_lines.values():
@@ -535,6 +565,12 @@ class ExplorerChart(QObject):
         for label in self.source_marker_labels.values():
             label.hide()
         plot = self.chart.plotArea()
+        marker_names = {
+            "startIndex": "Start marker",
+            "endIndex": "End marker",
+            "gravityIndex": "Gravity marker",
+            "inclineIndex": "Incline marker",
+        }
         for row, (name, index) in enumerate(self.data.markers):
             time = self.data.time_at(index)
             line = self.source_marker_lines[name]
@@ -542,12 +578,6 @@ class ExplorerChart(QObject):
                 [QPointF(time, self.data.value_range[0]), QPointF(time, self.data.value_range[1])],
             )
             label = self.source_marker_labels[name]
-            marker_names = {
-                "startIndex": "Start marker",
-                "endIndex": "End marker",
-                "gravityIndex": "Gravity marker",
-                "inclineIndex": "Incline marker",
-            }
             display_name = tr(marker_names[name])
             bind(label, f"{display_name} · {self.data.replay_text(index)}", "text")
             bind(
@@ -560,6 +590,30 @@ class ExplorerChart(QObject):
                 x = max(plot.left(), min(x + 3, plot.right() - label.boundingRect().width()))
                 label.setPos(x, plot.top() + row * (label.boundingRect().height() + 2))
                 label.show()
+        for row, (name, index) in enumerate(self.marker_previews.items(), len(self.data.markers)):
+            time = self.data.time_at(index)
+            if not self.axis_x.min() <= time <= self.axis_x.max() or plot.width() <= 0:
+                continue
+            preview_line = self.marker_preview_lines[name]
+            x = self.chart.mapToPosition(QPointF(time, self.axis_y.max())).x()
+            preview_line.setLine(x, plot.top(), x, plot.bottom())
+            preview_line.show()
+            preview_label = self.marker_preview_labels[name]
+            preview_label.setText(
+                tr("Preview: {0}", tr(marker_names[name])) + f" · {self.data.replay_text(index)}",
+            )
+            preview_label.setToolTip(
+                tr("{0}: sample {1}; recording {2:.3f} s", preview_label.text(), index, time),
+            )
+            label_x = max(
+                plot.left(),
+                min(x + 3, plot.right() - preview_label.boundingRect().width()),
+            )
+            preview_label.setPos(
+                label_x,
+                plot.top() + row * (preview_label.boundingRect().height() + 2),
+            )
+            preview_label.show()
 
     @Slot()
     def _redraw_selection(self) -> None:

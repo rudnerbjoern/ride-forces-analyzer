@@ -9,7 +9,7 @@ import sys
 from threading import Event
 
 import pytest
-from PySide6.QtCore import QEvent, QThreadPool, Qt, QUrl
+from PySide6.QtCore import QEvent, QPointF, QThreadPool, Qt, QUrl
 from PySide6.QtWidgets import QApplication, QDialog, QWidget
 from PySide6.QtWebSockets import QWebSocket
 
@@ -333,9 +333,32 @@ def exercise(application: RecordingApplication) -> None:
     analysis = window.analysis_controller
     assert analysis is not None
     saved = store.markers(source)
+    plot = window.plot
+    plot.axis_x.setRange(0, window.data.time_at(window.navigation.slider.maximum()))
+    viewport = plot.axis_x.min(), plot.axis_x.max()
+    adopted = {name: line.points() for name, line in plot.source_marker_lines.items()}
     for name in ("gravity", "incline"):
         device.request(wire.MarkerPreview(name="marker.preview", marker=name, steps=1))
-        device.request(wire.MarkerDecision(name="marker.discard", marker=name))
+        key = f"{name}Index"
+        preview = plot.marker_preview_lines[key]
+        assert preview.isVisible() and preview.pen().style() == Qt.PenStyle.DotLine
+        assert plot.marker_preview_labels[key].text().startswith("Preview:")
+        expected_x = plot.chart.mapToPosition(
+            QPointF(window.data.time_at(plot.marker_previews[key]), plot.axis_y.max()),
+        ).x()
+        assert preview.line().x1() == pytest.approx(expected_x)
+        assert plot.source_marker_lines[key].points() == adopted[key]
+        assert (plot.axis_x.min(), plot.axis_x.max()) == viewport
+        assert store.markers(source) == saved
+    window.grab().save(".tmp/stream-deck-marker-preview.png")
+    window.set_appearance(1)
+    for key, preview in plot.marker_preview_lines.items():
+        assert preview.pen().color() == plot.source_marker_lines[key].pen().color()
+    device.request(wire.MarkerDecision(name="marker.discard", marker="gravity"))
+    assert not plot.marker_preview_lines["gravityIndex"].isVisible()
+    assert plot.marker_preview_lines["inclineIndex"].isVisible()
+    device.request(wire.MarkerDecision(name="marker.discard", marker="incline"))
+    assert not plot.marker_previews
     device.request(wire.MarkerPreview(name="marker.preview", marker="start", steps=1))
     device.request(wire.MarkerPreview(name="marker.preview", marker="end", steps=-1))
     assert window.data.ride_bounds == (20, 180)
@@ -361,10 +384,13 @@ def exercise(application: RecordingApplication) -> None:
             wait_until(entered.is_set)
             assert store.markers(source) == saved
             blocked = device.request(wire.MarkerDecision(name="marker.apply", marker="end"))
-            assert isinstance(blocked, wire.Failure) and blocked.reason == "busy"
+            assert isinstance(blocked, wire.Failure) and blocked.reason == "busy", blocked
         finally:
             release.set()
         assert device.final(response.id).status == "ok"
+    wait_until(lambda: "startIndex" not in plot.marker_previews)
+    assert not plot.marker_preview_lines["startIndex"].isVisible()
+    assert plot.marker_previews["endIndex"] == 179
     assert window.data.ride_bounds == (21, 180)
     stored = store.markers(source)
     assert stored is not None and stored[0] == (21, 180)
@@ -464,12 +490,16 @@ def exercise(application: RecordingApplication) -> None:
 
     # Active Explorer changes invalidate old targets/previews without a fallback.
     activate(application, window)
+    device.request(wire.MarkerPreview(name="marker.preview", marker="start", steps=1))
+    assert plot.marker_previews
     old_target = controller.snapshot().target
     assert old_target is not None
     other = application.create_window()
     activate(application, other)
     state = controller.snapshot()
     assert state.target is not None and state.target.window_id != old_target.window_id
+    assert not plot.marker_previews
+    assert not any(line.isVisible() for line in plot.marker_preview_lines.values())
     blocked = device.request(wire.SimpleAction(name="library.import"), target=old_target)
     assert isinstance(blocked, wire.Failure) and blocked.code == "stale_target"
     other.close()

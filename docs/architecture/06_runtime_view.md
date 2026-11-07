@@ -219,7 +219,9 @@ does not resume it. No valid preview means apply is unavailable.
   per-marker preview/apply/discard availability. Positions carry sample, source time
   and the application's replay label; no sampling-rate inference occurs in the plugin.
 - Previews survive menu changes, but target/recording changes discard them. Preview
-  changes never recalculate or persist analysis. Apply stays pending until successful
+  changes update only dotted, labelled Explorer chart overlays, without recalculating
+  or persisting analysis. Adopted marker lines stay unchanged; discard/apply and
+  target changes clear the corresponding overlays. Apply stays pending until successful
   adoption; only then update `applied` and persist through existing services. Failure
   retains the last adopted value; concurrent applies must not overwrite newer markers.
 - Existing `runtime.instance.OpenRequest` JSON and one-shot acknowledgements remain

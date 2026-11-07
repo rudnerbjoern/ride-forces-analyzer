@@ -159,6 +159,8 @@ class StreamDeckController(QObject):
         self._timer.stop()
         self._pending = None
         self._previews.clear()
+        for window in self._windows:
+            window.plot.set_marker_previews({})
         self._errors.clear()
         self._apply_ids.clear()
         try:
@@ -217,6 +219,8 @@ class StreamDeckController(QObject):
             self._context = context
             self._generation += 1
             self._previews.clear()
+            for registered in self._windows:
+                registered.plot.set_marker_previews({})
             self._errors.clear()
             self._apply_ids.clear()
         if window is None:
@@ -459,6 +463,10 @@ class StreamDeckController(QObject):
         if not self.transport.server.isListening():
             return
         state = self.snapshot()
+        if self._context is not None:
+            self._context[0].plot.set_marker_previews(
+                {f"{marker}Index": sample for marker, sample in self._previews.items()},
+            )
         signature = state.model_dump_json(exclude={"sequence"})
         if signature != self._last_state:
             self._last_state = signature
