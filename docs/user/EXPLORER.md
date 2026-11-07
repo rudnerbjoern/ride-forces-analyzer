@@ -54,6 +54,10 @@ Right-click a recording to choose:
 - **Remove…** to delete the saved recording, its edits, links and export history
   after confirmation. Original files and exported videos are kept.
 
+Each recording opens in only one Explorer. Opening it again, including with
+**Open in new window…**, brings its existing window to the front and restores it
+if minimized. Its current position and view are kept.
+
 ### Back up or restore your Library
 
 Open **Settings → Library → Backup…** and choose where to save the ZIP file.

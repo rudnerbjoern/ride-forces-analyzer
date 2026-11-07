@@ -115,6 +115,7 @@ class RecordingApplication(QApplication):
         )
         window = ExplorerWindow(settings, restore_last_file=restore_last_file)
         self.windows.append(window)
+        window.activate_existing_recording = self._activate_recording
         if appearance is not None and window.appearance_preference is not appearance:
             window.appearance_preference = appearance
             window.apply_appearance()
@@ -141,9 +142,30 @@ class RecordingApplication(QApplication):
         Args:
             source_sha256: Exact-byte identity of the Library recording to reopen.
         """
+        if self._activate_recording(source_sha256):
+            return
         window = self.create_window()
         window.open_archived(source_sha256)
         self._activate(window)
+
+    def _activate_recording(
+        self,
+        source_sha256: str,
+        exclude: ExplorerWindow | None = None,
+    ) -> bool:
+        """Activate a loaded or loading archive instead of creating a duplicate."""
+        existing = next(
+            (
+                window
+                for window in self.windows
+                if window is not exclude and window.recording_sha256 == source_sha256
+            ),
+            None,
+        )
+        if existing is None:
+            return False
+        self._activate(existing)
+        return True
 
     def _closed(self, window: ExplorerWindow) -> None:
         if window in self.windows:
@@ -183,17 +205,13 @@ class RecordingApplication(QApplication):
         while self.pending_requests:
             request = self.pending_requests[0]
             path = Path(request.path).resolve() if request.path is not None else None
-            if not request.new_window and path is not None:
+            if path is not None:
                 existing = next(
                     (window for window in self.windows if window.recording_path == path),
                     None,
                 )
                 if existing is not None:
-                    if not existing.open_action.isEnabled():
-                        self.delivery_timer.start()
-                        return
                     self.pending_requests.popleft()
-                    existing.open_path(path)
                     self._activate(existing)
                     continue
             active = self.activeWindow()

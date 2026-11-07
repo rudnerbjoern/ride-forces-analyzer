@@ -70,7 +70,7 @@ assert (second.plot.axis_x.min(), second.plot.axis_x.max()) == second_range
 app.receive_request(OpenRequest(path=sys.argv[1]))
 assert len(app.windows) == 2
 wait_until(first.open_action.isEnabled)
-assert first.data.analysis is not original
+assert first.data.analysis is original
 assert first.data.source.source_sha256 == original.source.source_sha256
 first.set_ui_language(1)
 assert all(window.ui_language == "de" for window in app.windows)
@@ -87,12 +87,11 @@ assert blank.theme is first.theme is second.theme
 first._preview_appearance(1)
 assert blank.close()
 assert len(app.windows) == 2
-# Force a separate view of the same recording for comparison.
+# An explicit new-window request for an open file activates its existing window.
 app.receive_request(OpenRequest(path=sys.argv[1], new_window=True))
-third = app.windows[-1]
-wait_until(lambda: third.data is not None and third.open_action.isEnabled())
-assert third is not first and third.data.analysis is not first.data.analysis
-assert third.close()
+assert len(app.windows) == 2
+assert app.activeWindow() is first
+assert first.data.analysis is original
 # Library windows load archived bytes with saved edits, without any external path.
 source = synthetic_source(name="Archived ride", location="Library park")
 store = LibraryStore()
@@ -184,14 +183,12 @@ with TemporaryDirectory(dir=".tmp") as directory:
     assert {"Batch one", "Batch two"} <= {entry.ride_name for entry in store.entries()}
     assert "bad.forces" in first.library.details.toPlainText()
     assert "bad.forces" in first.statusBar().currentMessage()
-    # The explicit new-window option still opens just one result.
+    # The explicit new-window option also reuses a recording that is already open.
     retained = first.data
     first.import_paths(ordered, new_window=True)
-    wait_until(lambda: first.open_action.isEnabled() and len(app.windows) == 3)
-    imported = app.windows[-1]
-    wait_until(lambda: imported.data is not None and imported.open_action.isEnabled())
-    assert imported.data.title == "Batch one" and first.data is retained
-    assert imported.close()
+    wait_until(first.open_action.isEnabled)
+    assert len(app.windows) == 2 and app.activeWindow() is first
+    assert first.data is retained
     first.import_paths((paths[2], paths[2]))
     wait_until(first.open_action.isEnabled)
     assert len(app.windows) == 2 and first.data is retained
@@ -247,3 +244,108 @@ print("Library startup failure preserved database and prevented window creation"
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "Library startup failure preserved database" in result.stdout
+
+
+def test_repeated_recording_opens_activate_one_window_without_reloading() -> None:
+    program = """
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from PySide6.QtCore import QEvent, QThreadPool
+from PySide6.QtWidgets import QApplication
+from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
+from ride_forces_analyzer.runtime.config import AppSettings
+from ride_forces_analyzer.runtime.instance import OpenRequest
+from ride_forces_analyzer.storage.library import LibraryStore
+from ride_forces_analyzer.ui.application import RecordingApplication
+from tests.analysis.test_recording_preparation import synthetic_source
+from tests.ui.helpers import wait_until
+
+app = RecordingApplication([])
+app.settings = AppSettings()
+try:
+    app.start(OpenRequest(new_window=True))
+    first = app.windows[0]
+    store = LibraryStore()
+    sources = [synthetic_source(name=name) for name in ("First ride", "Second ride")]
+    for source in sources:
+        store.archive(source, "ride.forces", (2, 6), CalibrationOverrides())
+    first.open_archived(sources[0].source_sha256)
+    wait_until(lambda: first.data is not None and first.open_action.isEnabled())
+    initial = first.data
+    first.navigation.slider.setValue(3)
+    initial_view = first.plot.axis_x.min(), first.plot.axis_x.max()
+    app._new_archive_window_requested(sources[0].source_sha256)
+    assert len(app.windows) == 1 and app.activeWindow() is first
+    assert first.data is initial and first.navigation.slider.value() == 3
+
+    app._new_archive_window_requested(sources[1].source_sha256)
+    second = app.windows[-1]
+    assert second is not first
+    for _ in range(5):
+        app._new_archive_window_requested(sources[1].source_sha256)
+        assert len(app.windows) == 2
+    wait_until(lambda: second.data is not None and second.open_action.isEnabled())
+    retained = second.data
+    second.navigation.slider.setValue(4)
+    for _ in range(5):
+        second.showMinimized()
+        app._new_archive_window_requested(sources[1].source_sha256)
+        wait_until(lambda: app.activeWindow() is second and not second.isMinimized())
+        assert len(app.windows) == 2 and second.data is retained
+        assert second.navigation.slider.value() == 4
+        assert first.data is initial and first.navigation.slider.value() == 3
+        assert (first.plot.axis_x.min(), first.plot.axis_x.max()) == initial_view
+    first.open_archived(sources[1].source_sha256)
+    wait_until(lambda: app.activeWindow() is second)
+    assert first.data is initial and second.data is retained
+    first.open_archived(sources[0].source_sha256)
+    wait_until(lambda: app.activeWindow() is first)
+    assert first.data is initial and first.navigation.slider.value() == 3
+
+    with TemporaryDirectory(dir=".tmp") as directory:
+        path = Path(directory) / "same-recording.forces"
+        path.write_bytes(sources[1].recording.source.original_bytes)
+        first.open_path(path)
+        wait_until(first.open_action.isEnabled)
+        assert first.data is initial and second.data is retained
+        assert app.activeWindow() is second
+        app.receive_request(OpenRequest(path=str(path), new_window=True))
+        wait_until(lambda: len(app.windows) == 2)
+        assert app.activeWindow() is second and second.data is retained
+
+        # Path requests also coalesce during loading and do not reload afterwards.
+        third_source = synthetic_source(name="Third ride")
+        external = Path(directory) / "third.forces"
+        external.write_bytes(third_source.recording.source.original_bytes)
+        app.receive_request(OpenRequest(path=str(external), new_window=True))
+        third = app.windows[-1]
+        app.receive_request(OpenRequest(path=str(external), new_window=True))
+        assert len(app.windows) == 3
+        wait_until(lambda: third.data is not None and third.open_action.isEnabled())
+        third_data = third.data
+        third.navigation.slider.setValue(3)
+        for new_window in (False, True):
+            app.receive_request(OpenRequest(path=str(external), new_window=new_window))
+            assert len(app.windows) == 3 and third.data is third_data
+            assert third.navigation.slider.value() == 3
+            assert app.activeWindow() is third
+    print("Recording window reuse passed", flush=True)
+finally:
+    app.stream_deck.close()
+    for window in app.windows[:]:
+        window.close()
+    QThreadPool.globalInstance().waitForDone()
+    QApplication.processEvents()
+    QApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", program],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=60,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Recording window reuse passed" in result.stdout

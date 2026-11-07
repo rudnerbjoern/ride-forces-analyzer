@@ -10,7 +10,10 @@ imports. Settings are validated before creating recording windows.
 use the operating system's native dialogs; application-owned dialogs use the
 shared theme and localization services.
 `InstanceBroker` acquires local process ownership or forwards the optional file
-path and `--new-window` request to the existing owner.
+path and `--new-window` request to the existing owner. Each recording has at most
+one Explorer: repeated opens activate and restore its existing window without
+reloading it. Archive digests identify loaded/loading recordings; external files
+are also matched by path and, after import, by archived source identity.
 
 After instance ownership is acquired, `RecordingApplication.start()` initializes
 the Library, applies pending revisions and marks leftover running export attempts
