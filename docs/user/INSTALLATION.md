@@ -166,7 +166,8 @@ the EXE also passes its path. On Linux, the installed desktop launcher accepts
 a file from **Open with**. On macOS, the application supports Finder **Open With**
 and dropping a recording onto its Dock icon. No default file association is forced.
 Further launches forward their file to the running application. An already open
-file activates its window; another file opens in the active recording window.
+file activates its window without reloading it, including with `--new-window`;
+another file opens in the active recording window.
 Requests wait while that window is importing. Launching without a path activates
 an existing window. Nothing is sent over the internet.
 

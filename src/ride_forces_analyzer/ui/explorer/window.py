@@ -16,6 +16,7 @@ from ride_forces_analyzer.ui.presentation.translation import (
     system_ui_language,
 )
 
+from collections.abc import Callable
 from pathlib import Path
 from dataclasses import replace
 from typing import TYPE_CHECKING
@@ -107,6 +108,8 @@ class ExplorerWindow(QMainWindow):
         archive_window_requested: Signal requesting another window for a Library digest.
         closed: Qt signal for closed notifications.
         recording_changed: Notification after a recording is successfully replaced.
+        activate_existing_recording: Application callback receiving a source digest
+            and an optional excluded window; returns whether a window was activated.
         stream_deck_selected: Notification after the saved integration choice changes.
         _application_title: Configured application title used in window captions.
         preferences: Local application preference access for this window or controller.
@@ -218,6 +221,7 @@ class ExplorerWindow(QMainWindow):
             self.analysis_controller.pending_changed.connect(self._analysis_pending)
         self._accept_results = True
         self._load_generation = 0
+        self.activate_existing_recording: Callable[[str, ExplorerWindow | None], bool] | None = None
         self._worker: LoadWorker | None = None
         self._import_worker: ArchiveImportWorker | None = None
         self._import_in_new_window = False
@@ -809,6 +813,17 @@ class ExplorerWindow(QMainWindow):
             return self._worker.path.resolve() if self._worker.path is not None else None
         return self._recording_path
 
+    @property
+    def recording_sha256(self) -> str | None:
+        """Identify the archived source being loaded or currently displayed.
+
+        Returns:
+            Pending archive digest, current digest, or None for an unresolved file.
+        """
+        if self._worker is not None:
+            return self._worker.source_sha256
+        return self.data.source.source_sha256 if self.data is not None else None
+
     @Slot()
     def _restore_last_file(self) -> None:
         if (
@@ -973,6 +988,11 @@ class ExplorerWindow(QMainWindow):
         """
         if self._worker is not None or self._import_worker is not None:
             return
+        if self.activate_existing_recording is not None and self.activate_existing_recording(
+            source_sha256,
+            None,
+        ):
+            return
         self._pending_import_failures = ""
         self.navigation.pause()
         self._load_generation += 1
@@ -1028,6 +1048,14 @@ class ExplorerWindow(QMainWindow):
             return
         if not isinstance(outcome, ExplorerData):
             self._failed(tr("Unable to display recording."))
+            return
+        if self.activate_existing_recording is not None and self.activate_existing_recording(
+            outcome.source.source_sha256,
+            self,
+        ):
+            self._finish_loading()
+            if self.data is None:
+                self.close()
             return
         outcome = outcome.with_calibration(outcome.calibration_available)
         self._marker_save_failed = False
