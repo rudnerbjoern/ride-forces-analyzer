@@ -40,6 +40,25 @@ not hardware photographs or acceptance results.
 | `stream-deck-mobile-controls.png`                     | Four reduced Mobile pages with two rows of three keys, Back and no Home; English, 1040×740, Segoe UI. Fixed software examples in landscape; full Mobile hardware acceptance open.                                                                        | [Mobile](stream-deck-reference.json)     |
 | `stream-deck-overview.png`                            | Plus Playback close-up for the README, cropped from the generated actual profile illustration; English, 1040×730, Segoe UI. Fixed example values, no hardware verification.                                                                              | [Overview](stream-deck-reference.json)   |
 
+The `stream-deck-plus-concept-*.png` images belong exclusively to the
+[proposed Plus navigation](../requirements/STREAM_DECK.md#proposed-plus-navigation--concept).
+They show six planned views, three feedback/lock examples, a six-view overview and
+a 1040×680 background comparison with four decorative 800×100 menu motifs.
+Individual images are 1040×760; the overview is 2080×2280, English, Segoe UI.
+These hand-authored layouts reuse production icons, fixed protocol examples and
+reference drawing helpers. Every image is labelled **CONCEPT · NOT IMPLEMENTED**;
+they are not generated from an installable profile and do not replace current
+controls screenshots or establish hardware acceptance. Cyan identifies local
+navigation; app feedback retains its separate status colors.
+The Library example shows a proposed Park filter separately from its active value
+and each filter's tap-to-All action. Park/Status bindings are planned, while dial 2
+remains unassigned.
+Touch-field function icons have no embedded status badges; separate status bands
+use 26-pixel symbols and 14-pixel text. These are design sizes, not hardware evidence.
+The static blue-gray backgrounds suggest coaster rails, playback time, forces and
+marker references; they carry no recording data. A continuous dark translucent layer
+preserves text contrast. Subgroups share their parent menu's background.
+
 The Voltron Nevera layout sample has vertical +4.37 g, lateral −0.67 g,
 longitudinal −0.42 g and tilt 62.9°. It is the fixed vertical-force maximum with
 simultaneous lateral and braking forces; regeneration never selects a new peak.

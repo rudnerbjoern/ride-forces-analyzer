@@ -178,6 +178,316 @@ without opening a recording or changing manual workflow status.
 - Applied Start/End changes use existing viewport/replay-label behavior. Follow the
   [Explorer marker contract](../implementation/RAW_EXPLORER.md#time-zoom-and-selection).
 
+### Proposed Plus navigation — concept
+
+**Status: proposed; not implemented or physically verified.** This replaces only
+Plus navigation if accepted. Current assignments above, Neo/Mobile profiles and
+installed user profiles remain unchanged. These images are design illustrations,
+not screenshots of an implemented profile or evidence of hardware usability.
+
+#### Workflow and fixed menu row
+
+Use **Library → Playback → Curves → Markers**, then **Playback → Selection**
+when choosing an export interval. Four top-row keys stay in the same positions
+in every view. Explorer is the controlled application window, so an extra Explorer
+landing page is unnecessary. Start app, Website, Back and Home are omitted.
+
+| Key | Group    | App status in the second caption line                                      |
+|-----|----------|----------------------------------------------------------------------------|
+| 1   | Library  | Selected visible index/count; no implicit recording open                   |
+| 2   | Playback | Playing or Paused                                                          |
+| 3   | Curves   | Actual Raw or Calibrated mode                                              |
+| 4   | Markers  | Failed, then Pending, then outstanding preview count; otherwise No preview |
+
+A cyan outline/underline identifies the visible group and active dial subgroup.
+It is a **local navigation selection**, not an application-success indicator.
+Marker warnings remain visible on key 4 while visiting another group. Selecting a
+menu changes only device controls; it never changes the recording, playback,
+analysis, selection or saved markers.
+
+![Proposed Plus layout: six work views with a fixed Library, Playback, Curves and Markers menu row](../images/stream-deck-plus-concept-overview.png)
+
+#### Context row: keys 5–8
+
+| Group / view         | 5               | 6                       | 7                        | 8              |
+|----------------------|-----------------|-------------------------|--------------------------|----------------|
+| Library              | Open            | New window              | Import                   | Reset filters  |
+| Playback / Navigate  | Play/Pause      | Navigate — selected     | Selection — switch dials | Step size      |
+| Playback / Selection | Play/Pause      | Navigate — switch dials | Selection — selected     | Step size      |
+| Curves               | Vertical On/Off | Lateral On/Off          | Longitudinal On/Off      | Raw/Calibrated |
+| Markers / Markers    | Play/Pause      | Markers — selected      | View — switch dials      | Step size      |
+| Markers / View       | Play/Pause      | Markers — switch dials  | View — selected          | Step size      |
+
+Keys 6/7 select mutually exclusive dial groups on Playback and Markers; they are
+not action buttons. Key 5 remains Play/Pause and key 8 remains the shared step-size
+cycle on both groups. This gives inspection and marker work the same lower-row
+pattern. Curves reserves the row for its four most frequent display toggles.
+Direction captions follow the current Explorer's curve labels, including raw-axis
+labels in Raw mode; the illustrations show calibrated direction names.
+
+Enter Library initially. The initial Playback subgroup is Navigate, and the
+initial Markers subgroup is Markers. Remember the last subgroup for each group
+on this Plus for the current plugin session; pressing an already selected group
+or subgroup does nothing. No hidden long press, double press or extra menu level.
+
+#### Dials and aligned touch fields
+
+Number dials left to right. Every field describes the control directly below it.
+For ordinary dials, show the current value, meaningful availability and press
+function. **Zoom stays on dial 3** across Navigate, Selection, Curves and Markers/View.
+The four-marker group retains its established Start/Gravity/Incline/End order.
+
+| View                 | Dial 1                            | Dial 2                          | Dial 3                       | Dial 4                      |
+|----------------------|-----------------------------------|---------------------------------|------------------------------|-----------------------------|
+| Library              | Browse; press Open                | Unassigned                      | Park choice; press Filter    | Status choice; press Filter |
+| Playback / Navigate  | Position; press Play/Pause        | Speed; press 1×                 | Zoom; press Reset view       | Press only: Zoom selection  |
+| Playback / Selection | Selection Start; press unassigned | Selection End; press unassigned | Zoom; press Reset view       | Press only: Zoom selection  |
+| Curves               | Smoothing; press Reset to 11      | Press only: Combined On/Off     | Zoom; press Reset view       | Press only: Play/Pause      |
+| Markers / Markers    | Start preview; press Apply        | Gravity preview; press Apply    | Incline preview; press Apply | End preview; press Apply    |
+| Markers / View       | Position; press Play/Pause        | Speed; press 1×                 | Zoom; press Reset view       | Press only: Zoom selection  |
+
+**Press-only overflow:** an unused rotation can carry one existing action, shown
+persistently in its touch field with function, current state and **PRESS ONLY**.
+A double-ring illustration identifies it in the concept. Turning or touching that
+field does nothing. Combined is Off/On; Play/Pause shows the actual play state;
+Zoom selection shows the current Select interval. Library leaves dial 2 empty;
+dials 3/4 select its existing Park/Status filters.
+Dial 2 has no input function or alert. A display-only encoder assignment may render
+its background tile so the panorama continues across this otherwise empty field.
+
+**Library filters:** turning chooses a proposed value; pressing **Filter** applies
+only that filter. Show the proposed value and the separate active value in its
+touch field. Use the same options and order as the application dropdowns, including
+All parks, Unknown park and All statuses. Stop at either end of the option list;
+recording browsing on dial 1 remains cyclic and always moves one visible entry.
+Each filter notch selects one option, independently of Fine/Medium/Coarse.
+Park and Status combine with each other and the existing search. Applying a filter
+updates the shared Library view without opening a recording or changing its manual
+workflow status. Filter controls remain available when no recordings match.
+Tapping the Park touch field immediately applies **All parks**; tapping Status
+immediately applies **All statuses**, without an additional dial press. Each tap
+also clears that filter's proposal and preserves the other filter and search.
+Show this reset action in the corresponding touch field.
+
+Show a value as active only after application confirmation. GUI changes synchronize
+the corresponding field and discard its stale proposal; leaving Library discards
+unapplied filter proposals. Reset filters clears park/status/search and both
+proposals. Recording/target changes and connection loss also discard proposals;
+never carry a proposed filter into another Explorer. Existing focus, dialog,
+background and connection locks also apply.
+
+Marker rotation creates only that marker's preview. Press applies it; touch
+discards only that preview. Apart from Park/Status resets, other touch fields have
+no new touch action. Step size
+is shared across Position, Selection and Markers: Fine/Medium/Coarse means
+1/10/20 samples. Library remains one entry; smoothing, zoom and speed retain their
+existing increments. Views in the images deliberately demonstrate different
+example step sizes; the real device would share a single current size.
+
+#### Individual view illustrations
+
+| View                 | Purpose                                                               | Illustration                                                      |
+|----------------------|-----------------------------------------------------------------------|-------------------------------------------------------------------|
+| Library              | Choose/import recordings; Park/Status filters beside the browse dial  | [Library](../images/stream-deck-plus-concept-library.png)         |
+| Playback / Navigate  | Inspect time, speed and zoom without leaving playback                 | [Navigate](../images/stream-deck-plus-concept-playback.png)       |
+| Playback / Selection | Adjust interval bounds next to zoom; press dial 4 to frame it         | [Selection](../images/stream-deck-plus-concept-selection.png)     |
+| Curves               | Three force toggles and data mode together; Combined beside Smoothing | [Curves](../images/stream-deck-plus-concept-curves.png)           |
+| Markers / Markers    | See/edit all four previews together; commit or discard independently  | [Markers](../images/stream-deck-plus-concept-markers.png)         |
+| Markers / View       | Inspect another position or zoom while retaining marker previews      | [Marker view](../images/stream-deck-plus-concept-marker-view.png) |
+
+#### State feedback and locks
+
+Use a quiet, static touch-strip panorama for the selected menu: coaster rails for
+Library, a track with a time scale for Playback, force-like curves for Curves and
+reference guides for Markers. Subgroups keep their parent menu's background.
+Use low-contrast blue-gray artwork, with a continuous dark translucent layer behind content;
+text and status bands remain prominent. Decorative motifs carry no live data,
+availability or success meaning, and do not use reserved status colors. The four
+dial regions share one coordinated 800×100 design.
+
+[Background examples](../images/stream-deck-plus-concept-backgrounds.png) show the
+motifs without controls; the view illustrations show their subdued content overlay.
+
+Touch fields use a separate, full-width status band with a large standalone symbol
+and explicit state text. Do not shrink an upper-right status badge together with
+the function icon: touch-field function artwork has no embedded badge. The concept
+uses a 26-pixel status symbol beside 14-pixel text, a tinted band and matching text
+color; color alone never carries meaning. Keep proposed/current values and action
+hints outside that band. Show the shared step size on its dedicated key rather
+than repeating it in every status line. Illustration coordinates are not native
+layout coordinates: each dial has only 200×100 pixels within the 800×100 strip.
+Fit and verify all text, status and touch hints at that actual size, including the
+five Library lines. Physical legibility remains open.
+
+| Information                                           | Visible feedback                                             | What it confirms                                         |
+|-------------------------------------------------------|--------------------------------------------------------------|----------------------------------------------------------|
+| Selected group / dial subgroup                        | Cyan frame and underline                                     | The device page that actually appeared                   |
+| Curve or Combined On/Off                              | Green check / gray dot and explicit text                     | Confirmed application toggle state                       |
+| Fine / Medium / Coarse                                | One/two/three-bar icon and 1/10/20 samples                   | Device-local step size, independent of connection        |
+| Marker preview                                        | Violet Preview, preview value and separate Applied value     | Proposed value only; no saved change                     |
+| Marker apply in progress                              | Blue Pending/clock; Applied value retained                   | Analysis has started, not completed                      |
+| Marker apply failed                                   | Red Failed; previous Applied value retained                  | No successful replacement; group key 4 keeps the warning |
+| Marker applied                                        | Green Applied and adopted value                              | Application analysis adoption succeeded                  |
+| Library filter choice                                 | Violet Preview; separate Active value; press Filter          | Proposed option only until application confirmation      |
+| Input focus, dialog, background, busy or missing data | Amber lock/reason; app actions disabled                      | Existing application availability rules                  |
+| Disconnected                                          | Gray disconnected symbol, Offline and cleared program values | No actionable snapshot; no replay on reconnect           |
+
+[Mixed marker feedback](../images/stream-deck-plus-concept-feedback.png),
+[input-focus lock](../images/stream-deck-plus-concept-locked.png) and
+[offline Library](../images/stream-deck-plus-concept-offline.png) illustrate these
+cases. Menus, subgroup selection and the local step cycle remain usable while
+app actions are locked. No command is queued for later execution. A click or
+sent command never fabricates an applied value or a manual workflow status.
+
+Recording/target changes clear marker previews. Switching groups or between
+Markers and View retains them. Changing the step size also retains them. Open
+uses the addressed Explorer; New window activates the existing recording window
+when already open. Reset filters clears park/status/search without loading data.
+Source bytes, stored dates, metadata, manual workflow and exports are unaffected
+by device navigation.
+
+#### Feasibility and remaining validation
+
+Use **six native main pages**, not nested folders: Library, Playback/Navigate,
+Playback/Selection, Curves, Markers/Markers and Markers/View. Each page repeats
+the same top menu. This avoids Stream Deck's forced folder Back on key 1.
+The installed SDK exposes page-index selection through
+`switchToProfile(deviceId, profile, page)` for bundled profiles; the existing Home
+action already uses this API. Page indices start at zero; the promise confirms
+only that the request was sent. The SDK cannot address arbitrary user-defined
+profiles. Verify native import and switching when older copies of the bundled
+profile exist before relying on profile-name resolution. The proposed actions need
+implementation. Highlight only the page confirmed by its appearance event, not
+merely a switch request. Preserve all user profiles.
+
+Most controls remap existing commands. Park/Status dials additionally require
+filter-option/current-value feedback and commands using the existing Library
+filter setters; do not duplicate filtering logic or hard-code the option lists.
+Device navigation and push-only bindings also need implementation. Native import,
+page switching/last-subgroup recall, menu highlighting, filter choice/application,
+push-only discoverability and all locks still require physical Plus acceptance.
+The screen designs establish visual consistency, not proven operating speed.
+
+#### Plus redesign implementation stages
+
+All stages are **Planned**. Implement them in order on this feature branch, reusing
+the existing plugin, profile builder, application actions and screenshot generator.
+Complete and validate the application contract and its matching TypeScript consumer
+first; existing controls use that contract before the new pages and dial bindings
+are introduced.
+The assignments above define scope; these stages do not introduce more controls.
+Neo/Mobile keep their current layouts and behavior. Shared protocol consumers must
+still accept the updated contract. Keep plugin version **0.2.1 / 0.2.1.0** throughout
+this development unless a release changes the version baseline.
+
+1. **PLUS-01 — Library filter contract and application routing**
+   - **Status:** Planned.
+   - **Implementation:** Extend `LibraryState` with Park/Status options, display
+     labels and confirmed current values in dropdown order. Preserve null for All
+     and the empty park string for Unknown park; identify choices by value, not
+     index or translated label. Add one typed filter-set command selecting Park or
+     Status, validate against current choices and invoke the existing filter setter.
+     Publish both dropdown changes and option-list changes, including changes that
+     leave the visible count unchanged. Update Python/TypeScript models, decoder,
+     action availability and shared examples together; advance application protocol
+     3 to 4 once, with discovery/authentication unchanged at 1.
+   - **Acceptance:** Contract and grouped application/UI tests reject invalid values,
+     coercions, incompatible versions and stale targets. Applying one filter retains
+     the other and search, synchronizes existing shared Library views, opens nothing
+     and leaves manual workflow state unchanged. Empty results still allow filters
+     and Reset filters. GUI edits publish correct options/current values. Existing
+     plugin controls remain usable with the updated contract and current layouts.
+
+2. **PLUS-02 — Native pages and fixed navigation**
+   - **Status:** Planned.
+   - **Implementation:** Extend `build-profiles.mjs` and the existing SDK action
+     registration with a Plus-only navigation action. Define native page indices
+     0 Library, 1 Playback/Navigate, 2 Playback/Selection, 3 Curves,
+     4 Markers/Markers and 5 Markers/View. Repeat keys 1–4 on every page; keys 6/7
+     switch the two Playback/Markers subgroups. Start on Library, remember subgroups
+     per device for the plugin session and confirm selection through appearance
+     events, including native swipes. Retain Neo's existing Home action.
+   - **Acceptance:** Generated profile tests verify all six reachable main pages,
+     fixed menu positions and no Plus Back/Home/App/Website assignments. SDK-host
+     tests cover device isolation, repeated selection and failed page requests.
+     A native Plus import/switch check must resolve the bundled-profile/copy
+     limitation without replacing user profiles. Unobserved native behavior stays open.
+
+3. **PLUS-03 — Context keys and existing dial functions**
+   - **Status:** Planned.
+   - **Implementation:** Map each context row and dial group exactly as specified
+     above using `device-controls.ts`, `dial-action.ts` and existing command/feedback
+     helpers. Add press-only bindings for Zoom selection, Combined and Play/Pause;
+     ignore their rotation/touch. Keep Library dial 2 input-free. Use the existing
+     shared 1/10/20 step size and publish the actual curve/mode/playback state.
+     Menu captions show the current Library selection/count and playback/data mode;
+     the Markers key keeps the Failed/Pending/preview priority across all pages.
+   - **Acceptance:** Focused plugin tests cover every key/gesture mapping, command
+     availability for press-only controls and no commands/alerts from unused gestures.
+     Library stays at one entry; Position/Selection/Markers use the chosen step;
+     smoothing and bounds clamp. Marker order, apply/discard, unset-reference rules
+     and previews across menu changes retain their existing semantics.
+
+4. **PLUS-04 — Filter dial choices, confirmation and touch reset**
+   - **Status:** Planned.
+   - **Implementation:** Bind Park to dial 3 and Status to dial 4. Keep bounded,
+     device-local proposals from the received options; rotation sends no filter
+     command. Press applies that choice; touch immediately requests All for that
+     field. Render proposed and confirmed values separately. Apply the documented
+     proposal reset rules on GUI/options, page, target and connection changes;
+     Reset filters discards both proposals and reuses the existing reset command.
+   - **Acceptance:** Plugin tests cover individual/multiple notches, both endpoints,
+     All/Unknown park, all workflow choices and long labels. A press/touch affects
+     only its filter; failures do not fabricate confirmation. Test empty/single-entry
+     results, GUI updates, removed options, locks, disconnect/reconnect and independent
+     device proposals. No proposal or command is replayed into another target.
+
+5. **PLUS-05 — Native touch-strip layout, status and backgrounds**
+   - **Status:** Planned.
+   - **Implementation:** Adapt `devices/layouts/plus.json` and Plus feedback to real
+     200×100 fields. Separate function artwork from large status symbols/text bands;
+     keep values, adopted values and action hints readable. Put the approved menu
+     motifs into plugin assets as four coordinated background tiles per menu,
+     including the display-only Library tile. Subgroups share their menu's artwork.
+     Use existing graphics helpers; move rendering out of temporary concept scripts
+     into the existing production/reference flow.
+   - **Acceptance:** Layout/feedback tests and native-size illustrations cover every
+     view, Preview/Pending/Failed/Applied, missing references, locks, no Explorer,
+     no recording and offline states. Values and status meanings come from confirmed
+     state; no embedded tiny status badges or decoration masquerading as live data.
+     Verify five-line Library fit, long-value elision and continuous backgrounds;
+     physical readability remains open until observed on Plus.
+
+6. **PLUS-06 — Integrated Windows and Plus acceptance**
+   - **Status:** Planned.
+   - **Implementation:** Exercise the complete existing workflow after the final
+     bindings, filter contract and visuals are connected. Add regressions for actual
+     failures and run affected Windows lint/type, app, plugin and reference checks;
+     reuse valid unchanged evidence. Keep application/UI tests in their domain and
+     SDK/profile/reference tests in the plugin workspace; use the existing transport
+     interoperability test only where affected. Reuse grouped application fixtures.
+   - **Acceptance:** Native logs confirm actual plugin start/connection. Physical
+     Plus observation covers menus/swipes, all active keys/dials/touches, filters,
+     overflow discoverability, bounds, locks, recording/window changes and recovery.
+     GUI changes reach the device; proposals retain/discard correctly; no unconfirmed
+     success or replay appears. Record software and hardware results separately;
+     untested observations remain open and do not make this stage complete.
+
+7. **PLUS-07 — Current documentation and profile handover**
+   - **Status:** Planned.
+   - **Implementation:** Update current Plus assignments and verification status in
+     this requirement, relevant runtime contracts, the plugin README and end-user
+     guide. Consolidate superseded concept/current descriptions when implemented.
+     Generate the actual six-page Plus illustrations and README close-up with the
+     existing screenshot workflow; update the image guide and relevant captions.
+     Keep user guidance operational and development details in developer documents.
+     Describe importing the updated Plus profile while retaining existing profiles.
+   - **Acceptance:** Final documentation/link checks pass; image metadata and labels
+     match the built profile, and Neo/Mobile behavior stays unchanged. Requirements
+     distinguish implemented software from open hardware acceptance. Review all stage
+     criteria before marking completion. This plan authorizes neither Git delivery
+     nor a release; those remain separately requested operations.
+
 ### Neo profile
 
 Back/Home occupy keys 1/8 in submenus. Start matches Plus; Quick controls is a
