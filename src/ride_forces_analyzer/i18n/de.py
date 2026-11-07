@@ -256,6 +256,7 @@ GERMAN: dict[str, str] = {
     "End marker": "Endmarkierung",
     "Gravity marker": "Schwerkraftmarkierung",
     "Incline marker": "Neigungsmarkierung",
+    "Preview: {0}": "Vorschau: {0}",
     "Reset all ride markers": "Alle Fahrtmarkierungen zurücksetzen",
     "Reset end to original": "Ende auf Original zurücksetzen",
     "Reset gravity to original": "Schwerkraft auf Original zurücksetzen",
