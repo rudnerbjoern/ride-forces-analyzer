@@ -236,6 +236,8 @@ Open **Markers → Markers**. Dial order is **Start, Gravity, Incline, End**.
    position, alongside the unchanged applied marker. Check its position and the
    sample/time on the touch strip. The separate **Applied** line shows the value
    currently in use.
+   If the preview is outside the visible chart, the chart moves to place it near
+   the center without changing zoom. Near the recording ends, it stops at the boundary.
 3. **Press** that dial to apply its preview. **Pending** means the chart is still
    updating. **Applied** confirms success; **Failed** retains the previous value.
 4. **Tap the corresponding touch field** to discard only its preview.

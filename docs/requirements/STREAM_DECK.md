@@ -163,6 +163,8 @@ without opening a recording or changing manual workflow status.
   choices. Concurrent confirmations must not overwrite newer adopted state.
 - Show each marker preview in the Explorer chart as a dotted, theme-coloured line
   with an explicit preview label, alongside the unchanged applied marker.
+  Center an off-screen preview, preserving zoom and clamping to recording boundaries.
+  An already visible preview leaves the interval unchanged.
   Discard/apply and recording/target changes remove the corresponding preview.
 - Show preview/pending/failed values separately from the last applied value.
   Unsuccessful or interrupted adoption must not appear applied.
@@ -322,8 +324,8 @@ hints outside that band. Show the shared step size on its dedicated key rather
 than repeating it in every status line. Illustration coordinates are not native
 layout coordinates: each dial has only 200×100 pixels within the 800×100 strip.
 Fit and verify all text, status and touch hints at that actual size, including the
-five Library lines. The owner confirmed four-line Playback and five-line Library/filter
-legibility on Plus; physical readability of the remaining views/states remains open.
+five Library lines. The owner confirmed readability on Plus, including four-line
+Playback, five-line Library/filter fields, special states and long-text elision.
 
 | Information                                           | Visible feedback                                             | What it confirms                                         |
 |-------------------------------------------------------|--------------------------------------------------------------|----------------------------------------------------------|
@@ -466,9 +468,9 @@ this development unless a release changes the version baseline.
      device proposals. No proposal or command is replayed into another target.
 
 5. **PLUS-05 — Native touch-strip layout, status and backgrounds**
-   - **Status:** Implemented; native-size illustrations and automated Windows checks.
-     The owner confirmed four-line Playback and five-line Library/filter readability
-     on Plus. Physical readability of the remaining views/states remains open.
+   - **Status:** Accepted. Automated Windows checks and native-size illustrations
+     pass; the owner confirmed physical readability of views, special states and
+     long-text elision on Plus. Integrated functional acceptance remains PLUS-06.
    - **Implementation:** Adapt `devices/layouts/plus.json` and Plus feedback to real
      200×100 fields. Separate function artwork from large status symbols/text bands;
      keep values, adopted values and action hints readable. Put the approved menu
@@ -481,10 +483,12 @@ this development unless a release changes the version baseline.
      no recording and offline states. Values and status meanings come from confirmed
      state; no embedded tiny status badges or decoration masquerading as live data.
      Verify five-line Library fit, long-value elision and continuous backgrounds;
-     physical readability of remaining views/states requires observation on Plus.
+     physical readability is owner-confirmed on Plus.
 
 6. **PLUS-06 — Integrated Windows and Plus acceptance**
-   - **Status:** Planned.
+   - **Status:** Partial. Windows software checks and native connection are verified;
+     integrated physical checks remain open. See the separate
+     [software and hardware results](../validation/STREAM_DECK_PLUS.md).
    - **Implementation:** Exercise the complete existing workflow after the final
      bindings, filter contract and visuals are connected. Add regressions for actual
      failures and run affected Windows lint/type, app, plugin and reference checks;

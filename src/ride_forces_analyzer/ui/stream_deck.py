@@ -671,6 +671,7 @@ class StreamDeckController(QObject):
             high = last if action.marker == "start" else navigation.slider.maximum()
             self._previews[action.marker] = max(low, min(high, original + action.steps))
             self._errors.pop(action.marker, None)
+            window.plot.reveal_sample(self._previews[action.marker])
         elif isinstance(action, wire.MarkerDecision):
             if action.name == "marker.discard":
                 self._previews.pop(action.marker, None)

@@ -492,6 +492,29 @@ def exercise(application: RecordingApplication) -> None:
     assert plot.marker_preview_lines["inclineIndex"].isVisible()
     device.request(wire.MarkerDecision(name="marker.discard", marker="incline"))
     assert not plot.marker_previews
+    # Hidden previews move into view without changing zoom, markers or source data.
+    for name in ("start", "gravity", "incline", "end"):
+        plot.axis_x.setRange(2, 2.4)
+        device.request(wire.MarkerPreview(name="marker.preview", marker=name, steps=1))
+        time = window.data.time_at(plot.marker_previews[f"{name}Index"])
+        low, high = plot.axis_x.min(), plot.axis_x.max()
+        assert high - low == pytest.approx(0.4)
+        assert 0 <= low <= time <= high <= window.data.duration
+        if name == "gravity":
+            assert low == 0
+        else:
+            assert (low + high) / 2 == pytest.approx(time)
+        assert plot.marker_preview_lines[f"{name}Index"].isVisible()
+        device.request(wire.MarkerPreview(name="marker.preview", marker=name, steps=1))
+        assert (plot.axis_x.min(), plot.axis_x.max()) == (low, high)
+        device.request(wire.MarkerDecision(name="marker.discard", marker=name))
+        assert (plot.axis_x.min(), plot.axis_x.max()) == (low, high)
+        assert store.markers(source) == saved
+    plot.axis_x.setRange(2, 2.4)
+    device.request(wire.MarkerPreview(name="marker.preview", marker="end", steps=20))
+    assert plot.axis_x.max() == pytest.approx(window.data.duration)
+    assert plot.axis_x.max() - plot.axis_x.min() == pytest.approx(0.4)
+    device.request(wire.MarkerDecision(name="marker.discard", marker="end"))
     device.request(wire.MarkerPreview(name="marker.preview", marker="start", steps=1))
     device.request(wire.MarkerPreview(name="marker.preview", marker="end", steps=-1))
     assert window.data.ride_bounds == (20, 180)
