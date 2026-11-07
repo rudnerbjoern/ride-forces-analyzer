@@ -42,7 +42,7 @@ test("Plus has six native main pages with a fixed menu, subgroup switches and no
     assert.deepEqual(pages.get(root.Pages.Default).Controllers, [{ Type: "Keypad", Actions: {} }]);
     const identities = new Set();
     const expectedDials = [
-      [{ control: "library" }, { control: "filter", filter: "park" }, { control: "filter", filter: "status" }],
+      [{ control: "library" }, { control: "display" }, { control: "filter", filter: "park" }, { control: "filter", filter: "status" }],
       ["position", "speed", "view", "zoom_selection"].map(control => ({ control })),
       [...["start", "end"].map(boundary => ({ control: "selection", boundary })), { control: "view" }, { control: "zoom_selection" }],
       ["smoothing", "combined", "view", "position"].map(control => ({ control })),
@@ -53,10 +53,15 @@ test("Plus has six native main pages with a fixed menu, subgroup switches and no
       const page = pages.get(id);
       const keys = page.Controllers.find(controller => controller.Type === "Keypad").Actions;
       const dials = page.Controllers.find(controller => controller.Type === "Encoder").Actions;
-      assert.deepEqual(Object.values(dials).map(action => action.Settings), expectedDials[index]);
+      assert.deepEqual(Object.values(dials).map(action => {
+        const { menu, column, ...settings } = action.Settings;
+        assert.equal(menu, PLUS_PAGES[index].group);
+        assert.equal(column, Object.values(dials).indexOf(action));
+        return settings;
+      }), expectedDials[index]);
       for (const dial of Object.values(dials)) assert.ok(dialSettings(dial.Settings));
       if (index === 0) {
-        assert.deepEqual(Object.keys(dials), ["0,0", "2,0", "3,0"], "Library dial 2 stays unassigned");
+        assert.deepEqual(Object.keys(dials), ["0,0", "1,0", "2,0", "3,0"], "Library dial 2 only displays its panorama tile");
         assert.deepEqual([0, 1, 2, 3].map(column => keys[`${column},1`].Settings.operation),
           ["library.open", "library.open_new_window", "library.import", "library.filter.reset"]);
       } else if (index === 3) {

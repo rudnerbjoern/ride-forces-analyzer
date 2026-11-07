@@ -3,13 +3,13 @@ import { dialBinding, isPressOnly, type DialSettings, type StepSize, type InfoSe
 import { keyFeedback, keyImage, unavailableLabel, type IconStatus } from "./feedback.js";
 import type { Position } from "./protocol.js";
 
-export type SurfaceFeedback = { icon: string; title: string; value: string; status: string; detail: string };
+export type SurfaceFeedback = { icon: string; title: string; value: string; status: string; detail: string; visual: IconStatus };
 const label = (value: string): string => value.charAt(0).toUpperCase() + value.slice(1);
 const position = (value: Position | null | undefined): string => value ? `#${value.sample} · ${value.label}` : "Unset";
 
 /** Touch-strip feedback uses only confirmed state and clearly separates previews from applied values. */
 export function dialFeedback(client: ControlClient, context: string, settings: DialSettings | undefined,
-    stepSize: StepSize | undefined, proposal?: string | null): SurfaceFeedback {
+    stepSize: StepSize | undefined, proposal?: string | null, showBadge = true): SurfaceFeedback {
     const control = settings?.control ?? "position";
     const pressOnly = isPressOnly(control);
     const title = control === "filter" ? `${settings?.filter === "park" ? "Park" : "Status"} · Touch: All`
@@ -20,7 +20,7 @@ export function dialFeedback(client: ControlClient, context: string, settings: D
         : control === "zoom_selection" ? "selection" : control === "playback" && client.state?.playback?.playing ? "pause"
         : control === "selection" ? `selection_${settings?.boundary ?? "start"}`
         : control === "marker" ? settings?.marker ?? "marker" : control;
-    const result: SurfaceFeedback = { icon: keyImage(symbol, "disconnected", true), title, value: "—", status: "Offline", detail: "" };
+    const result: SurfaceFeedback = { icon: keyImage(symbol, "disconnected", true, showBadge), title, value: "—", status: "Offline", detail: "", visual: "disconnected" };
     if (pressOnly) result.detail = `Press: ${control === "combined" ? "toggle combined" : control === "playback" ? "play/pause" : "zoom selection"}`;
     const state = client.state;
     if (client.status !== "connected" || !state) {
@@ -41,7 +41,8 @@ export function dialFeedback(client: ControlClient, context: string, settings: D
         result.value = choice?.label ?? "—";
         result.detail = `Active: ${active?.label ?? "—"}`;
         result.status = `${blocked || (status === "active" ? "Ready" : label(status))} · Press: Filter`;
-        result.icon = keyImage(symbol, status, true);
+        result.visual = status;
+        result.icon = keyImage(symbol, status, true, showBadge);
         return result;
     }
     const binding = settings && dialBinding(settings, pressOnly ? "press" : "rotate", 1, stepSize ?? 1);
@@ -122,12 +123,13 @@ export function dialFeedback(client: ControlClient, context: string, settings: D
     if (feedback.status === "pending" || feedback.status === "failed") phase = label(feedback.status);
     if (blocked && phase === "Ready") phase = "";
     result.status = [phase, blocked, pressOnly ? "PRESS ONLY" : "", mode].filter((value, index, values) => value && values.indexOf(value) === index).join(" · ");
-    result.icon = keyImage(symbol, blocked ? "unavailable" : visual, true);
+    result.visual = blocked ? "unavailable" : visual;
+    result.icon = keyImage(symbol, result.visual, true, showBadge);
     return result;
 }
 
 /** Neo feedback is contextual and display-only, including marker application and unavailable states. */
-export function infoFeedback(client: ControlClient, settings: InfoSettings): Omit<SurfaceFeedback, "detail"> {
+export function infoFeedback(client: ControlClient, settings: InfoSettings): Pick<SurfaceFeedback, "icon" | "title" | "value" | "status"> {
     const section = settings.section ?? "start";
     const control = section === "library" ? "library" : section === "view" ? "view"
         : section === "smoothing" ? "smoothing" : section === "speed" ? "speed" : settings.marker ? "marker" : "position";

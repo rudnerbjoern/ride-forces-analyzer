@@ -40,6 +40,13 @@ not hardware photographs or acceptance results.
 | `stream-deck-mobile-controls.png`                     | Four reduced Mobile pages with two rows of three keys, Back and no Home; English, 1040×740, Segoe UI. Fixed software examples in landscape; full Mobile hardware acceptance open.                                                                        | [Mobile](stream-deck-reference.json)     |
 | `stream-deck-overview.png`                            | Plus Playback/Navigate close-up for the README, cropped from the generated actual profile illustration; English, 1040×730, Segoe UI. Fixed example values, no hardware verification.                                                                     | [Overview](stream-deck-reference.json)   |
 
+`stream-deck-plus-touch-strips.png` shows the six Plus views and fixed status/lock,
+missing-data, long-label and offline examples with each field at exactly 200×100
+pixels, Segoe UI, English. It uses the same production layout/feedback and
+[manifest](stream-deck-reference.json) as the profile overview. Its approved
+Library watermark baselines and status-band axis are preserved; this is software
+evidence, not physical readability acceptance.
+
 The `stream-deck-plus-concept/` folder contains the images and editable SVG
 backgrounds for the [accepted Plus concept](../requirements/STREAM_DECK.md#plus-navigation--accepted-concept).
 They show six planned views, three feedback/lock examples, a six-view overview and

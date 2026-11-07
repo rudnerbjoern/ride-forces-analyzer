@@ -204,11 +204,11 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
     assert.ok(hostMessages.some(value => value.event === "setFeedbackLayout" && value.context === "test-dial"
       && value.payload.layout === "layouts/plus.json"));
     sendDial("dialRotate", { ticks: 3, pressed: false });
-    await waitUntil(() => commands.length === 5 && dialFeedback()?.status.includes("Pending"), diagnostic);
+    await waitUntil(() => commands.length === 5 && dialFeedback()?.status.value.includes("Pending"), diagnostic);
     assert.deepEqual(commands.slice(-3).map(value => value.action), Array(3).fill({ name: "library.move", direction: 1 }));
     for (const command of commands.slice(-3)) appSocket.send(JSON.stringify({ version: 4, type: "response",
       id: command.id, target: command.target, status: "ok" }));
-    await waitUntil(() => dialFeedback()?.status === "Ready", diagnostic);
+    await waitUntil(() => dialFeedback()?.status.value === "Ready", diagnostic);
     sendDial("dialDown");
     await waitUntil(() => commands.length === 6, diagnostic);
     assert.deepEqual(commands[5].action, { name: "library.open" });

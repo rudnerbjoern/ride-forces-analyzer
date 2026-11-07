@@ -26,6 +26,20 @@ manifest.Version = version;
 manifest.Actions.push(...devices.Actions);
 await writeFile(path.join(plugin, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
 await cp(path.join(workspace, "devices/layouts"), path.join(plugin, "layouts"), { recursive: true });
+const compact = JSON.parse(await readFile(path.join(plugin, "layouts/plus.json"), "utf8"));
+compact.id = "analyzer-plus-compact";
+compact.items = compact.items.filter(item => item.key !== "detail");
+compact.items.find(item => item.key === "hint").rect = [4, 77, 192, 20];
+await writeFile(path.join(plugin, "layouts/plus-compact.json"), JSON.stringify(compact, null, 2) + "\n");
+await mkdir(path.join(plugin, "layouts/backgrounds"), { recursive: true });
+for (const menu of ["library", "playback", "curves", "markers"]) {
+  const panorama = (await readFile(path.join(workspace, "devices/backgrounds", `${menu}.svg`), "utf8")).trim();
+  for (let column = 0; column < 4; column++) {
+    const tile = panorama.replace(/<svg[^>]*>/, `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="${column * 200} 0 200 100">`)
+      .replace("</svg>", '<rect width="800" height="100" fill="#080f1b" fill-opacity=".47"/></svg>');
+    await writeFile(path.join(plugin, "layouts/backgrounds", `${menu}-${column}.svg`), tile + "\n");
+  }
+}
 await buildProfiles(plugin);
 const result = await build({
   absWorkingDir: workspace, entryPoints: ["src/index.ts"], outfile: path.join(plugin, "bin/plugin.js"),

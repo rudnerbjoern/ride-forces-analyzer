@@ -147,6 +147,10 @@ Filter dial proposals are device-local plugin state. Rotation sends nothing;
 press/touch use `library.filter.set` with exact option values. GUI/option changes
 invalidate the affected proposal; page, target/session and connection changes
 discard proposals. Active values always come from application snapshots.
+Plus presentation uses the same confirmed feedback with separate native text,
+status symbol/band and static menu background tiles. The production SVG assets
+and feedback also drive reference illustrations; decoration carries no live state.
+Library dial 2 is a display-only assignment whose gestures are ignored.
 
 ### Envelopes and compatibility
 

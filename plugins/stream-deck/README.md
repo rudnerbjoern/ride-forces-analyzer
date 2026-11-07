@@ -170,8 +170,17 @@ Mobile retains its reduced Start/Library/Playback/View folders. Both are unchang
 Menu navigation works without an Analyzer connection. Dynamic captions remain
 short; detailed application values stay on the touch strip.
 
+Plus uses native 200×100 fields with up to five elided text lines, a separate 26 px status
+symbol and a 14 px status band. Function artwork has no embedded badge. The build
+crops `devices/backgrounds/*.svg` into sixteen continuous tiles under
+`layouts/backgrounds/`; subgroup pages share their menu's artwork. Dial settings
+carry menu/column for placement; Library dial 2 renders only its tile and ignores
+every gesture. Neo/Mobile presentation is unchanged. The existing reference generator
+also writes `stream-deck-plus-touch-strips.png` at native field size for all views
+and fixed state/lock examples; it does not verify physical readability.
+
 The Library dial selects one visible entry per notch, cyclic in both directions; press
-opens the selection in the current Explorer. Library dial 2 is unassigned;
+opens the selection in the current Explorer. Library dial 2 is display-only;
 dials 3/4 choose Park/Status options in application dropdown order without wrapping.
 Rotation changes a device-local proposal only; press sends `library.filter.set`,
 touch requests All for that field. Feedback separates the proposal from Active;

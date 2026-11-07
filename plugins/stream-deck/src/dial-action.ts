@@ -4,13 +4,13 @@ import { action, SingletonAction, type DialAction, type DialDownEvent, type Dial
 import { sameTarget, type ControlClient } from "./client.js";
 import { requestedAction } from "./controls.js";
 import { dialBinding, dialSettings, isPressOnly, StepMode, type DialSettings, type LibraryFilter } from "./device-controls.js";
-import { dialFeedback } from "./device-feedback.js";
+import { plusFeedback } from "./plus-feedback.js";
 import { imageData } from "./feedback.js";
 
 /** Shared Plus gesture handling; validation, bounds and analysis remain application-owned. */
 @action({ UUID: "io.github.rudnerbjoern.ride-forces-analyzer.dial" })
 export class DialControlAction extends SingletonAction<DialSettings> {
-    private readonly dials = new Map<string, { action: DialAction<DialSettings>; settings: DialSettings | undefined; signature?: string }>();
+    private readonly dials = new Map<string, { action: DialAction<DialSettings>; settings: DialSettings | undefined; signature?: string; layout?: string }>();
     private rendering = Promise.resolve();
     private readonly proposals = new Map<string, Map<LibraryFilter, string | null>>();
     private previous: ControlClient["state"];
@@ -26,9 +26,8 @@ export class DialControlAction extends SingletonAction<DialSettings> {
     override async onWillAppear(event: WillAppearEvent<DialSettings>): Promise<void> {
         if (!event.action.isDial()) return;
         const settings = dialSettings(event.payload.settings);
-        await event.action.setFeedbackLayout("layouts/plus.json");
-        await event.action.setTriggerDescription({ rotate: isPressOnly(settings?.control) ? "" : settings?.control === "library" ? "Select one entry per notch" : "Adjust",
-            push: settings?.control === "filter" ? "Filter" : settings?.control === "selection" ? "" : settings?.control === "marker" ? "Apply this preview" : settings?.control === "library" ? "Open selection" : "Run assigned action",
+        await event.action.setTriggerDescription({ rotate: isPressOnly(settings?.control) || settings?.control === "display" ? "" : settings?.control === "library" ? "Select one entry per notch" : "Adjust",
+            push: settings?.control === "display" ? "" : settings?.control === "filter" ? "Filter" : settings?.control === "selection" ? "" : settings?.control === "marker" ? "Apply this preview" : settings?.control === "library" ? "Open selection" : "Run assigned action",
             touch: settings?.control === "filter" ? "Reset this filter to All" : settings?.control === "marker" ? "Discard this preview" : "" });
         this.dials.set(event.action.id, { action: event.action, settings });
         await this.refresh();
@@ -48,7 +47,7 @@ export class DialControlAction extends SingletonAction<DialSettings> {
     }
 
     override async onDialRotate(event: DialRotateEvent<DialSettings>): Promise<void> {
-        if (isPressOnly(dialSettings(event.payload.settings)?.control)) return;
+        if (isPressOnly(dialSettings(event.payload.settings)?.control) || event.payload.settings.control === "display") return;
         const ticks = event.payload.ticks;
         if (!Number.isSafeInteger(ticks) || ticks === 0) return;
         const settings = dialSettings(event.payload.settings);
@@ -65,6 +64,7 @@ export class DialControlAction extends SingletonAction<DialSettings> {
     }
 
     override async onDialDown(event: DialDownEvent<DialSettings>): Promise<void> {
+        if (event.payload.settings.control === "display") return;
         const settings = dialSettings(event.payload.settings);
         if (settings?.control === "filter") {
             if (!this.filterGesture(event.action, settings.filter!, "press")) await event.action.showAlert();
@@ -75,6 +75,7 @@ export class DialControlAction extends SingletonAction<DialSettings> {
     }
 
     override async onTouchTap(event: TouchTapEvent<DialSettings>): Promise<void> {
+        if (event.payload.settings.control === "display") return;
         const settings = dialSettings(event.payload.settings);
         if (settings?.control === "filter") {
             if (!this.filterGesture(event.action, settings.filter!, "touch")) await event.action.showAlert();
@@ -147,12 +148,17 @@ export class DialControlAction extends SingletonAction<DialSettings> {
         this.rendering = this.rendering.catch(() => {}).then(async () => {
             for (const [context, dial] of this.dials) {
                 const proposal = dial.settings?.filter ? this.proposals.get(dial.action.device.id)?.get(dial.settings.filter) : undefined;
-                const feedback = dialFeedback(this.client, context, dial.settings, this.mode.samples(dial.action.device.id), proposal);
+                const feedback = plusFeedback(this.client, context, dial.settings, this.mode.samples(dial.action.device.id), proposal);
                 const signature = JSON.stringify(feedback);
                 if (signature === dial.signature) continue;
                 const icon = imageData(feedback.icon);
+                if (dial.layout !== feedback.layout) {
+                    await dial.action.setFeedbackLayout(feedback.layout);
+                    dial.layout = feedback.layout;
+                }
                 await dial.action.setImage(icon);
-                await dial.action.setFeedback({ ...feedback, icon });
+                const { layout: _layout, detail, ...fields } = feedback;
+                await dial.action.setFeedback({ ...fields, ...(detail ? { detail } : {}), icon, band: imageData(feedback.band), statusIcon: imageData(feedback.statusIcon) });
                 dial.signature = signature;
             }
         });

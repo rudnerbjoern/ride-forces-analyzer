@@ -130,8 +130,8 @@ Detailed ownership and wire contracts remain in
 ### Plus profile
 
 The six native pages use the [fixed menu and context rows](#context-row-keys-58)
-and dial groups specified below. Library Park/Status dials are implemented;
-the redesigned touch-strip graphics remain planned. Library dial 2 is unassigned.
+and dial groups specified below. Library Park/Status dials and native touch-strip
+graphics are implemented. Library dial 2 is display-only and has no input function.
 No Back/Home/App/Website keys are assigned on Plus.
 Marker press/touch follow the [marker contract](#plus-marker-page).
 Reset filters invokes the existing park/status/search reset, also for empty results,
@@ -304,7 +304,9 @@ inside edge. The subtle three-line `Ride / Force / Analyzer` lettering remains
 inside dial 2's 200×100 tile, left of the loop. Use 14 px Segoe UI, regular weight,
 with 14 px baseline spacing. The `Analyzer` baseline aligns with the adjacent
 status bands' top edge (y=48.1818 in the 800×100 reference); descenders extend below
-that axis. Preserve this baseline when changing font size. Curves and Markers guides align with
+that axis. Preserve this baseline when changing font size. Four-line fields place
+their final action hint at y=77; five-line fields reserve y=75 for adopted/additional
+values and place the hint at y=88. Curves and Markers guides align with
 the dial centers at x=100, 300, 500 and 700. Editable SVG artwork is stored with the
 [image references](../images/README.md).
 
@@ -320,7 +322,8 @@ hints outside that band. Show the shared step size on its dedicated key rather
 than repeating it in every status line. Illustration coordinates are not native
 layout coordinates: each dial has only 200×100 pixels within the 800×100 strip.
 Fit and verify all text, status and touch hints at that actual size, including the
-five Library lines. Physical legibility remains open.
+five Library lines. The owner confirmed four-line Playback and five-line Library/filter
+legibility on Plus; physical readability of the remaining views/states remains open.
 
 | Information                                           | Visible feedback                                             | What it confirms                                         |
 |-------------------------------------------------------|--------------------------------------------------------------|----------------------------------------------------------|
@@ -463,7 +466,9 @@ this development unless a release changes the version baseline.
      device proposals. No proposal or command is replayed into another target.
 
 5. **PLUS-05 — Native touch-strip layout, status and backgrounds**
-   - **Status:** Planned.
+   - **Status:** Implemented; native-size illustrations and automated Windows checks.
+     The owner confirmed four-line Playback and five-line Library/filter readability
+     on Plus. Physical readability of the remaining views/states remains open.
    - **Implementation:** Adapt `devices/layouts/plus.json` and Plus feedback to real
      200×100 fields. Separate function artwork from large status symbols/text bands;
      keep values, adopted values and action hints readable. Put the approved menu
@@ -476,7 +481,7 @@ this development unless a release changes the version baseline.
      no recording and offline states. Values and status meanings come from confirmed
      state; no embedded tiny status badges or decoration masquerading as live data.
      Verify five-line Library fit, long-value elision and continuous backgrounds;
-     physical readability remains open until observed on Plus.
+     physical readability of remaining views/states requires observation on Plus.
 
 6. **PLUS-06 — Integrated Windows and Plus acceptance**
    - **Status:** Planned.

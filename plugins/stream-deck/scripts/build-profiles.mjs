@@ -115,14 +115,14 @@ export async function buildProfiles(plugin) {
           actions["3,1"] = key(`${device}/${page.id}/mode`, "Step size", `${uuid}.step-mode`, {});
           actions["3,1"].States = [0, 1, 2].map(() => ({ FontSize: 10, TitleAlignment: "bottom", ShowTitle: true }));
         }
-        const dials = page.id === "library" ? [{ control: "library" }, undefined, { control: "filter", filter: "park" }, { control: "filter", filter: "status" }]
+        const dials = page.id === "library" ? [{ control: "library" }, { control: "display" }, { control: "filter", filter: "park" }, { control: "filter", filter: "status" }]
           : page.id === "selection" ? [...["start", "end"].map(boundary => ({ control: "selection", boundary })), { control: "view" }, { control: "zoom_selection" }]
           : page.id === "curves" ? ["smoothing", "combined", "view", "position"].map(control => ({ control }))
           : page.id === "markers" ? ["start", "gravity", "incline", "end"].map(marker => ({ control: "marker", marker }))
           : ["position", "speed", "view", "zoom_selection"].map(control => ({ control }));
         await add(`Profiles/${pageId(page.id).toUpperCase()}/manifest.json`, {
           Controllers: [{ Type: "Keypad", Actions: actions }, { Type: "Encoder", Actions: Object.fromEntries(dials.map((settings, column) =>
-            settings ? [`${column},0`, key(`${device}/${page.id}/dial/${column}`, "Analyzer dial", `${uuid}.dial`, settings)] : undefined).filter(entry => entry !== undefined)) }],
+            [`${column},0`, key(`${device}/${page.id}/dial/${column}`, "Analyzer dial", `${uuid}.dial`, { ...settings, menu: page.group, column })])) }],
           Icon: "", Name: page.name,
         });
       }

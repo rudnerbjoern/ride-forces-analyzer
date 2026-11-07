@@ -58,19 +58,22 @@ def test_reference_cli_is_reproducible_from_fixed_contract_examples() -> None:
         ]
         assert [dial["title"] for dial in pages["Library"]["dials"]] == [
             "Library",
-            "Park · Touch: All",
-            "Status · Touch: All",
+            "",
+            "Park",
+            "Status",
         ]
         assert [dial["position"] for dial in pages["Library"]["dials"]] == [
             "0,0",
+            "1,0",
             "2,0",
             "3,0",
         ]
-        park, status = pages["Library"]["dials"][1:]
+        park, status = pages["Library"]["dials"][2:]
         assert park["value"] == "All parks" and park["detail"] == "Active: All parks"
         assert status["value"] == "All statuses"
         assert status["detail"] == "Active: All statuses"
-        assert park["status"] == status["status"] == "Ready · Press: Filter"
+        assert park["status"]["value"] == status["status"]["value"] == "Ready"
+        assert park["hint"] == status["hint"] == "Press: Filter · Touch: All"
         assert [dial["title"] for dial in pages["Playback / Selection"]["dials"]] == [
             "Selection start",
             "Selection end",
@@ -100,7 +103,14 @@ def test_reference_cli_is_reproducible_from_fixed_contract_examples() -> None:
         ):
             title = next(key for key in pages[page]["keys"] if key["position"] == "3,1")["title"]
             assert title == f"{label}\n{size} {'sample' if size == 1 else 'samples'}"
-            assert f"{label} · {size} sample" in pages[page]["dials"][0]["status"]
+            assert "sample" not in pages[page]["dials"][0]["status"]["value"]
+        native = manifest["native_strips"]
+        assert native["field_size"] == [200, 100]
+        assert set(pages) <= set(native["cases"])
+        assert "Markers · Applied / Preview / Pending / Failed" in native["cases"]
+        assert "Library · offline" in native["cases"]
+        with Image.open(output / native["image"]) as image:
+            assert list(image.size) == native["size"]
         mobile = manifest["mobile"]
         assert mobile["image"] == "stream-deck-mobile-controls.png"
         assert mobile["key_layout"] == {"rows": 2, "columns": 3}

@@ -159,7 +159,7 @@ export function actionIcon(settings: ControlSettings | undefined, state?: StateE
 }
 
 /** Render shaded, filled function artwork with an independent state badge. */
-export function keyImage(area: string, status: IconStatus | undefined, compact = false): string {
+export function keyImage(area: string, status: IconStatus | undefined, compact = false, showBadge = true): string {
     const color = { active: "#52dc96", inactive: "#9db4d1", preview: "#d4acff", unavailable: "#f6bd4f",
         pending: "#62b5ff", failed: "#ff7777", disconnected: "#8290a6" }[status ?? "inactive"];
     const shape = artwork[area as keyof typeof artwork] ?? artwork.marker;
@@ -181,7 +181,7 @@ export function keyImage(area: string, status: IconStatus | undefined, compact =
         + '<rect x=".5" y=".5" width="143" height="143" rx="16" fill="url(#background)" stroke="#527699" stroke-opacity=".35"/>'
         + `<ellipse cx="70" cy="90" rx="43" ry="5" fill="#030912" opacity=".4"/>`
         + `<g transform="translate(15 8) scale(.78)" opacity="${opacity}">${shape}</g>`
-        + (status === undefined ? "" : `<circle cx="112" cy="22" r="19" fill="#070e1c" opacity=".6"/><circle cx="112" cy="20" r="17" fill="${color}" stroke="#ecf6ff" stroke-opacity=".65"/>`
+        + (status === undefined || !showBadge ? "" : `<circle cx="112" cy="22" r="19" fill="#070e1c" opacity=".6"/><circle cx="112" cy="20" r="17" fill="${color}" stroke="#ecf6ff" stroke-opacity=".65"/>`
             + `<g stroke="#142237" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">${badge}</g>`)
         + '</svg>';
 }

@@ -85,8 +85,14 @@ and four dials. Navigate shows Fine, Selection Medium and Markers Coarse.
 These are example states; your actual step size is shared across pages.
 [Open the full-size image](../images/stream-deck-plus-controls.png).*
 
-The colored illustration identifies the function. A separate badge indicates its
-current state; a dimmed icon can still show the last confirmed value.
+The colored illustration identifies the function. On Plus, a separate status band
+with a large symbol and text shows the current state. Keys and Neo retain badges.
+A dimmed icon can still show the last confirmed value. Read the value, status,
+adopted value and action hint on separate lines. The quiet background is decoration;
+it does not indicate success or availability. Library dial 2 displays only the
+coaster motif and has no input function.
+
+[View native-size Plus touch-strip examples, including locks and offline states](../images/stream-deck-plus-touch-strips.png).
 
 | Badge / state            | Meaning                                                           |
 | ------------------------ | ----------------------------------------------------------------- |
@@ -143,7 +149,7 @@ position in the visible list. Import is key **7**.
 while keeping the current recording open. If that recording is already open,
 its existing window is brought to the front instead.
 
-Dial **2** is unused. Turn dial **3** to choose a **Park**, or dial **4** to choose
+Dial **2** has no input function. Turn dial **3** to choose a **Park**, or dial **4** to choose
 a workflow **Status**. Both follow the dropdown order in Analyzer and stop at
 either end. Turning only prepares a choice: **Preview** shows the proposed value,
 while **Active** shows the filter currently in use. Press that dial to apply its

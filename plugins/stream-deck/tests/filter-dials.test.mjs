@@ -74,7 +74,7 @@ test("filter dials choose bounded exact dropdown values locally, including All, 
       await h.rotate(dial, 1);
       assert.equal(h.sent.length, before, "Rotation must never send a filter command");
       assert.equal(field(dial).value, options[index].label);
-      assert.match(field(dial).status, /Preview/);
+      assert.match(field(dial).status.value, /Preview/);
       assert.match(field(dial).detail, new RegExp(`^Active: ${options[index - 1].label}$`));
       await h.press(dial);
       assert.deepEqual(h.sent.at(-1).action, { name: "library.filter.set", filter, value: options[index].value });
@@ -82,7 +82,7 @@ test("filter dials choose bounded exact dropdown values locally, including All, 
       assert.match(field(dial).detail, new RegExp(`^Active: ${options[index - 1].label}$`), "ACK is not confirmation");
       await h.publish(state => { state.library[`${filter}_filter`].value = options[index].value; });
       assert.equal(field(dial).detail, `Active: ${options[index].label}`);
-      assert.match(field(dial).status, /Ready/);
+      assert.match(field(dial).status.value, /Ready/);
     }
     await h.rotate(dial, 100);
     assert.equal(field(dial).value, options.at(-1).label);
@@ -112,9 +112,9 @@ test("filter feedback keeps long Unicode labels in text and never fabricates suc
   assert.doesNotMatch(field(h.park).icon, /東京|&quot;|Park </);
   await h.press(h.park);
   assert.deepEqual(h.sent.at(-1).action, { name: "library.filter.set", filter: "park", value: name });
-  assert.match(field(h.park).status, /Pending/);
+  assert.match(field(h.park).status.value, /Pending/);
   await h.reply("error");
-  assert.match(field(h.park).status, /Failed/);
+  assert.match(field(h.park).status.value, /Failed/);
   assert.equal(field(h.park).detail, "Active: All parks");
   assert.equal(field(h.park).value, name);
   h.failSend();
@@ -130,9 +130,9 @@ test("GUI and option changes discard only stale proposals, even with empty or si
   await h.rotate(h.park, 2); await h.rotate(h.status, 2);
   await h.publish(state => { state.library.park_filter.value = ""; });
   assert.equal(field(h.park).value, "Unknown park");
-  assert.match(field(h.park).status, /Ready/);
+  assert.match(field(h.park).status.value, /Ready/);
   assert.equal(field(h.status).value, choice(h, "status", 2).label);
-  assert.match(field(h.status).status, /Preview/);
+  assert.match(field(h.status).status.value, /Preview/);
   await h.publish(state => { state.library.status_filter.options[2].label = "Updated label"; });
   assert.equal(field(h.status).value, "All statuses");
   await h.rotate(h.park, 2);

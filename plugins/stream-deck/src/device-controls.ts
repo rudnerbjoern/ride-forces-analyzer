@@ -2,9 +2,10 @@ import type { ControlSettings } from "./controls.js";
 import type { MarkerName, SelectionBoundary, Steps } from "./protocol.js";
 
 export type DialControl = "library" | "position" | "view" | "smoothing" | "speed" | "marker" | "selection"
-    | "zoom_selection" | "combined" | "playback" | "filter";
+    | "zoom_selection" | "combined" | "playback" | "filter" | "display";
+export type PlusMenu = "library" | "playback" | "curves" | "markers";
 export type LibraryFilter = "park" | "status";
-export type DialSettings = { control?: DialControl; marker?: MarkerName; boundary?: SelectionBoundary; filter?: LibraryFilter };
+export type DialSettings = { control?: DialControl; marker?: MarkerName; boundary?: SelectionBoundary; filter?: LibraryFilter; menu?: PlusMenu; column?: 0 | 1 | 2 | 3 };
 export type InfoSettings = { section?: string; marker?: MarkerName; boundary?: SelectionBoundary };
 
 export type StepSize = 1 | 10 | 20;
@@ -24,7 +25,9 @@ export class StepMode {
 
 /** Validate profile settings before mapping a device gesture to an application command. */
 export function dialSettings(value: DialSettings): DialSettings | undefined {
-    if (!["library", "position", "view", "smoothing", "speed", "marker", "selection", "zoom_selection", "combined", "playback", "filter"].includes(value.control ?? "")) return undefined;
+    if (!["library", "position", "view", "smoothing", "speed", "marker", "selection", "zoom_selection", "combined", "playback", "filter", "display"].includes(value.control ?? "")) return undefined;
+    if (value.menu !== undefined && !["library", "playback", "curves", "markers"].includes(value.menu)) return undefined;
+    if (value.column !== undefined && ![0, 1, 2, 3].includes(value.column)) return undefined;
     if (value.control === "filter" && value.filter !== "park" && value.filter !== "status") return undefined;
     if (value.control === "marker" && !["start", "gravity", "incline", "end"].includes(value.marker ?? "")) return undefined;
     if (value.control === "selection" && !["start", "end"].includes(value.boundary ?? "")) return undefined;
