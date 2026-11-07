@@ -178,11 +178,12 @@ without opening a recording or changing manual workflow status.
 - Applied Start/End changes use existing viewport/replay-label behavior. Follow the
   [Explorer marker contract](../implementation/RAW_EXPLORER.md#time-zoom-and-selection).
 
-### Proposed Plus navigation — concept
+### Plus navigation — accepted concept
 
-**Status: proposed; not implemented or physically verified.** This replaces only
-Plus navigation if accepted. Current assignments above, Neo/Mobile profiles and
-installed user profiles remain unchanged. These images are design illustrations,
+**Status: design and interaction concept accepted; implementation follows the stages below.**
+Physical usability remains unverified. The design replaces only Plus navigation.
+Current assignments above, Neo/Mobile profiles and installed user profiles remain
+unchanged until implementation. These images are design illustrations,
 not screenshots of an implemented profile or evidence of hardware usability.
 
 #### Workflow and fixed menu row
@@ -205,7 +206,7 @@ Marker warnings remain visible on key 4 while visiting another group. Selecting 
 menu changes only device controls; it never changes the recording, playback,
 analysis, selection or saved markers.
 
-![Proposed Plus layout: six work views with a fixed Library, Playback, Curves and Markers menu row](../images/stream-deck-plus-concept-overview.png)
+![Accepted Plus layout: six work views with a fixed Library, Playback, Curves and Markers menu row](../images/stream-deck-plus-concept/stream-deck-plus-concept-overview.png)
 
 #### Context row: keys 5–8
 
@@ -286,26 +287,35 @@ example step sizes; the real device would share a single current size.
 
 #### Individual view illustrations
 
-| View                 | Purpose                                                               | Illustration                                                      |
-|----------------------|-----------------------------------------------------------------------|-------------------------------------------------------------------|
-| Library              | Choose/import recordings; Park/Status filters beside the browse dial  | [Library](../images/stream-deck-plus-concept-library.png)         |
-| Playback / Navigate  | Inspect time, speed and zoom without leaving playback                 | [Navigate](../images/stream-deck-plus-concept-playback.png)       |
-| Playback / Selection | Adjust interval bounds next to zoom; press dial 4 to frame it         | [Selection](../images/stream-deck-plus-concept-selection.png)     |
-| Curves               | Three force toggles and data mode together; Combined beside Smoothing | [Curves](../images/stream-deck-plus-concept-curves.png)           |
-| Markers / Markers    | See/edit all four previews together; commit or discard independently  | [Markers](../images/stream-deck-plus-concept-markers.png)         |
-| Markers / View       | Inspect another position or zoom while retaining marker previews      | [Marker view](../images/stream-deck-plus-concept-marker-view.png) |
+| View                   | Purpose                                                                 | Illustration                                                                               |
+| ---------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Library                | Choose/import recordings; Park/Status filters beside the browse dial    | [Library](../images/stream-deck-plus-concept/stream-deck-plus-concept-library.png)         |
+| Playback / Navigate    | Inspect time, speed and zoom without leaving playback                   | [Navigate](../images/stream-deck-plus-concept/stream-deck-plus-concept-playback.png)       |
+| Playback / Selection   | Adjust interval bounds next to zoom; press dial 4 to frame it           | [Selection](../images/stream-deck-plus-concept/stream-deck-plus-concept-selection.png)     |
+| Curves                 | Three force toggles and data mode together; Combined beside Smoothing   | [Curves](../images/stream-deck-plus-concept/stream-deck-plus-concept-curves.png)           |
+| Markers / Markers      | See/edit all four previews together; commit or discard independently    | [Markers](../images/stream-deck-plus-concept/stream-deck-plus-concept-markers.png)         |
+| Markers / View         | Inspect another position or zoom while retaining marker previews        | [Marker view](../images/stream-deck-plus-concept/stream-deck-plus-concept-marker-view.png) |
 
 #### State feedback and locks
 
 Use a quiet, static touch-strip panorama for the selected menu: coaster rails for
 Library, a track with a time scale for Playback, force-like curves for Curves and
 reference guides for Markers. Subgroups keep their parent menu's background.
-Use low-contrast blue-gray artwork, with a continuous dark translucent layer behind content;
+Use the approved low-contrast menu tints: blue for Library, petrol for Playback,
+violet for Curves and slate blue for Markers, with a continuous dark translucent layer behind content;
 text and status bands remain prominent. Decorative motifs carry no live data,
 availability or success meaning, and do not use reserved status colors. The four
 dial regions share one coordinated 800×100 design.
+Library has a loop centered over dial 2 with a three-car train descending its left
+inside edge. The subtle three-line `Ride / Force / Analyzer` lettering remains
+inside dial 2's 200×100 tile, left of the loop. Use 14 px Segoe UI, regular weight,
+with 14 px baseline spacing. The `Analyzer` baseline aligns with the adjacent
+status bands' top edge (y=48.1818 in the 800×100 reference); descenders extend below
+that axis. Preserve this baseline when changing font size. Curves and Markers guides align with
+the dial centers at x=100, 300, 500 and 700. Editable SVG artwork is stored with the
+[image references](../images/README.md).
 
-[Background examples](../images/stream-deck-plus-concept-backgrounds.png) show the
+[Background examples](../images/stream-deck-plus-concept/stream-deck-plus-concept-backgrounds.png) show the
 motifs without controls; the view illustrations show their subdued content overlay.
 
 Touch fields use a separate, full-width status band with a large standalone symbol
@@ -332,9 +342,9 @@ five Library lines. Physical legibility remains open.
 | Input focus, dialog, background, busy or missing data | Amber lock/reason; app actions disabled                      | Existing application availability rules                  |
 | Disconnected                                          | Gray disconnected symbol, Offline and cleared program values | No actionable snapshot; no replay on reconnect           |
 
-[Mixed marker feedback](../images/stream-deck-plus-concept-feedback.png),
-[input-focus lock](../images/stream-deck-plus-concept-locked.png) and
-[offline Library](../images/stream-deck-plus-concept-offline.png) illustrate these
+[Mixed marker feedback](../images/stream-deck-plus-concept/stream-deck-plus-concept-feedback.png),
+[input-focus lock](../images/stream-deck-plus-concept/stream-deck-plus-concept-locked.png) and
+[offline Library](../images/stream-deck-plus-concept/stream-deck-plus-concept-offline.png) illustrate these
 cases. Menus, subgroup selection and the local step cycle remain usable while
 app actions are locked. No command is queued for later execution. A click or
 sent command never fabricates an applied value or a manual workflow status.

@@ -40,8 +40,8 @@ not hardware photographs or acceptance results.
 | `stream-deck-mobile-controls.png`                     | Four reduced Mobile pages with two rows of three keys, Back and no Home; English, 1040×740, Segoe UI. Fixed software examples in landscape; full Mobile hardware acceptance open.                                                                        | [Mobile](stream-deck-reference.json)     |
 | `stream-deck-overview.png`                            | Plus Playback close-up for the README, cropped from the generated actual profile illustration; English, 1040×730, Segoe UI. Fixed example values, no hardware verification.                                                                              | [Overview](stream-deck-reference.json)   |
 
-The `stream-deck-plus-concept-*.png` images belong exclusively to the
-[proposed Plus navigation](../requirements/STREAM_DECK.md#proposed-plus-navigation--concept).
+The `stream-deck-plus-concept/` folder contains the images and editable SVG
+backgrounds for the [accepted Plus concept](../requirements/STREAM_DECK.md#plus-navigation--accepted-concept).
 They show six planned views, three feedback/lock examples, a six-view overview and
 a 1040×680 background comparison with four decorative 800×100 menu motifs.
 Individual images are 1040×760; the overview is 2080×2280, English, Segoe UI.
@@ -55,9 +55,16 @@ and each filter's tap-to-All action. Park/Status bindings are planned, while dia
 remains unassigned.
 Touch-field function icons have no embedded status badges; separate status bands
 use 26-pixel symbols and 14-pixel text. These are design sizes, not hardware evidence.
-The static blue-gray backgrounds suggest coaster rails, playback time, forces and
+The approved static backgrounds use blue for Library, petrol for Playback, violet
+for Curves and slate blue for Markers. They suggest coaster rails, playback time, forces and
 marker references; they carry no recording data. A continuous dark translucent layer
 preserves text contrast. Subgroups share their parent menu's background.
+The [approved background reference](stream-deck-plus-concept/stream-deck-plus-concept-background-colors.png)
+includes the Library loop with a descending three-car train and lettering inside
+dial 2. Curves/Markers guides align with dial centers. The four editable 800×100
+SVG templates are `stream-deck-plus-concept-background-{library,playback,curves,markers}.svg`;
+each panorama splits into four 200×100 tiles. Plugin integration remains planned
+under PLUS-05.
 
 The Voltron Nevera layout sample has vertical +4.37 g, lateral −0.67 g,
 longitudinal −0.42 g and tilt 62.9°. It is the fixed vertical-force maximum with

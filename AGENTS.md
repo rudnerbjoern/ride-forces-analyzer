@@ -25,6 +25,7 @@ Apply to GPT and Codex agents. MUST = mandatory; NEVER = prohibited.
 - MUST read [README](README.md), [roadmap](docs/ROADMAP.md), [architecture](docs/architecture/README.md), applicable requirements and implementation plan before edits. Use [docs index](docs/README.md) for references.
 - MUST keep changes scoped and consistent. NEVER refactor unrelated code. MUST align code, tests, configuration and docs.
 - MUST apply requested UI conventions consistently to directly paired controls within the same task, such as matching Back/Forward icons, without requiring separate instructions for each counterpart. This does not authorize unrelated UI changes or new features.
+- MUST treat optical axes and visual harmony as binding UI requirements. Keep peer buttons in the same row equal in height and consistent in sizing, spacing and alignment. Align text by its baseline rather than glyph descenders; preserve explicitly agreed reference axes when changing typography. MUST visually inspect affected controls together before presenting UI changes.
 
 ## Documentation: current state, never development history
 
