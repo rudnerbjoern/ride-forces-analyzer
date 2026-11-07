@@ -261,6 +261,9 @@ override chooses Seated/Flying. Reset clears all additions and notes, restoring
 source values. Matching external file opens restore the Library additions as well.
 Hiding the Library releases its layout space without changing the loaded recording, selection
 or chart viewport; park, workflow-status and search choices are retained.
+A recording has at most one Explorer window. Repeated opens, including explicit
+new-window actions and byte-identical external inputs, activate its existing window
+without replacing its data/view state. Pending archive loads share the same rule.
 Opening a recording selects its matching row and scrolls it into view within the
 active filters. Expanding the collapsed panel reveals the selection again
 without another load. List refreshes and language changes preserve selection.
