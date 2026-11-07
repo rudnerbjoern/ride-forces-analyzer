@@ -145,14 +145,14 @@ its existing window is brought to the front instead.
 
 ## Control playback and the view
 
-Open **Playback → Navigate**. Dials 1, 2 and 3 (left to right) are assigned;
-dial 4 is unused:
+Open **Playback → Navigate**. Dials run from left to right:
 
-| Dial         | Turn                                             | Press         | Touch-strip information                               |
-| ------------ | ------------------------------------------------ | ------------- | ----------------------------------------------------- |
-| 1 · Position | Move through samples; stop at the ends.          | Play/pause.   | Sample, replay time, play state and Step size mode.   |
-| 2 · View     | Zoom the time axis.                              | Reset view.   | Actual visible interval and its duration in seconds.  |
-| 3 · Speed    | Select the next supported playback speed.        | Return to 1×. | Actual speed and play/pause state.                    |
+| Dial               | Turn                                      | Press          | Touch-strip information                            |
+| ------------------ | ----------------------------------------- | -------------- | -------------------------------------------------- |
+| 1 · Position       | Move through samples; stop at the ends.   | Play/pause.    | Sample, replay time, play state and step size.     |
+| 2 · Speed          | Select the next supported playback speed. | Return to 1×.  | Actual speed and play/pause state.                 |
+| 3 · Zoom           | Zoom the time axis.                       | Reset view.    | Actual visible interval and duration in seconds.   |
+| 4 · Zoom selection | Unassigned.                               | Fit selection. | Confirmed selection bounds; PRESS ONLY.            |
 
 **Step size** cycles Position, Selection and marker dials through
 **1 → 10 → 20 → 1 samples per notch**. The key and touch strip show the current
@@ -165,15 +165,17 @@ playback running. Use Play to resume after a manual position or marker adjustmen
 
 Position, Smoothing and Speed have no additional key folders on Plus. The
 **Play/Pause** key **5**, directly above Position, and the Position dial press both toggle playback.
-**Reset view** is the View dial press.
+**Reset view** is the Zoom dial press. **Markers → View** uses the same four dials.
+Controls labelled **PRESS ONLY** ignore turning and touch taps.
 
 ## Curves, Raw/Calibrated and smoothing
 
 Open **Curves**. The three force-line keys turn the corresponding
 lines on/off. **Data mode** shows and switches between **Raw** and **Calibrated**;
 The three direction keys are **5–7**; Data mode is key **8**.
-The combined curve can be switched in Analyzer. Labels
-and on/off states follow Analyzer.
+Press **dial 2** to switch the combined curve on/off. Dial **3** controls Zoom
+(press: Reset view); press **dial 4** for Play/Pause. Dials 2 and 4 ignore turning
+and touch taps. Labels and on/off states follow Analyzer.
 
 The **first dial** selects the smoothing window: **1, 3, …, 51 samples**. Further
 turns below 1 stay at 1; turns above 51 stay at 51. There is no wraparound in either
@@ -193,9 +195,11 @@ through **1, 10 and 20 samples per notch**, shared with Position and Markers.
 Turns apply directly to the current Select range, just like the Inspector's
 **From sample / To sample** fields. Start stops at zero or End; End stops at Start
 or the last source sample. Further outward turns stay at the boundary, without
-wrapping. Dial presses and touch taps are unassigned on this page.
+wrapping. Presses and touch taps on dials 1 and 2 are unassigned.
 
-Press **Zoom / Selection** on key **5** to fit the chart to that range. Selection changes made in Analyzer
+Dial **3** controls Zoom (press: Reset view). Press **dial 4** to fit the chart
+to the selection; turning and touch taps on dial 4 do nothing. Key **5** is
+Play/Pause. Selection changes made in Analyzer
 also appear on the touch strip. These controls do not move the replay cursor or
 change the recording's markers or calibration.
 
@@ -222,8 +226,10 @@ Explorer clears them. Applying or discarding one marker does not confirm the
 others and does not resume playback. Applied markers are saved automatically
 for that Library recording.
 
-The Plus Markers page has Back and Step size keys alongside its four
-dials. It has no additional marker-key editors.
+The Plus Markers page has Play/Pause, Markers, View and Step size on keys 5–8.
+The top-row Markers key shows **Failed** before **Pending**, then the number of
+previews, on every page. The other menu keys show Library position/count,
+Playing/Paused and Raw/Calibrated. These values change when Analyzer confirms them.
 
 ## Neo keys, InfoBar and Touch Points
 

@@ -129,23 +129,11 @@ Detailed ownership and wire contracts remain in
 
 ### Plus profile
 
-Back occupies key 1 in submenus; no Home key is assigned. Blank positions are unassigned. No duplicate
-keys/editors for dial functions, except the dedicated Play/Pause and Library Open keys.
-
-| Page      | Other assigned keys                          | Dials, left to right                  |
-| --------- | -------------------------------------------- | ------------------------------------- |
-| Start     | 1–4 menus; 5–8 Library actions               | 1 Browse/Open                         |
-| Library   | 5 Open; 6 New; 7 Import; 8 Reset filters     | 1 Browse/Open                         |
-| Explorer  | 2 Playback; 3 Curves; 6 Markers; 7 Selection | None                                  |
-| Playback  | 5 Play/Pause; 6 Step size                    | 1 Position; 2 View; 3 Speed; 4 unused |
-| Curves    | 2/3/4 directions; 5 Data mode; 7 Combined    | 1 Smoothing                           |
-| Selection | 5 Zoom to selection; 6 Step size             | 1 Selection Start; 2 Selection End    |
-| Markers   | 6 Step size                                  | 1 Start; 2 Gravity; 3 Incline; 4 End  |
-
-Position press toggles playback; View press resets the view; Speed press resets
-to 1×; Smoothing press resets to 11. Selection press/touch are unassigned.
+The six native pages use the [fixed menu and context rows](#context-row-keys-58)
+and dial groups specified below. Library Park/Status dials and the redesigned
+touch-strip graphics remain planned; Library dial 2 is unassigned.
+No Back/Home/App/Website keys are assigned on Plus.
 Marker press/touch follow the [marker contract](#plus-marker-page).
-Start and Library share the bottom-row order Open, New window, Import, Reset filters.
 Reset filters invokes the existing park/status/search reset, also for empty results,
 without opening a recording or changing manual workflow status.
 
@@ -383,8 +371,8 @@ confirmed by its appearance event, not merely a switch request.
 
 Most controls remap existing commands. Library filter feedback and the filter-set
 command are implemented through the existing dropdowns; filtering logic and option
-lists remain application-owned. Native page navigation is implemented; filter dials
-and the remaining context/push-only bindings still need implementation.
+lists remain application-owned. Native page navigation and context/push-only
+bindings are implemented; filter dials still need implementation.
 Filter choice/application, push-only discoverability and the complete workflow
 still require physical Plus acceptance. Menu switching, subgroup recall and
 cyan selection after native swipes are verified.
@@ -440,7 +428,8 @@ this development unless a release changes the version baseline.
      limitation without replacing user profiles. Unobserved native behavior stays open.
 
 3. **PLUS-03 — Context keys and existing dial functions**
-   - **Status:** Planned.
+   - **Status:** Implemented; focused automated Windows checks verified.
+     Physical acceptance of the updated bindings and captions remains open.
    - **Implementation:** Map each context row and dial group exactly as specified
      above using `device-controls.ts`, `dial-action.ts` and existing command/feedback
      helpers. Add press-only bindings for Zoom selection, Combined and Play/Pause;

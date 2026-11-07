@@ -3,7 +3,7 @@ import { action, SingletonAction, type DialAction, type DialDownEvent, type Dial
 
 import type { ControlClient } from "./client.js";
 import { requestedAction } from "./controls.js";
-import { dialBinding, dialSettings, StepMode, type DialSettings } from "./device-controls.js";
+import { dialBinding, dialSettings, isPressOnly, StepMode, type DialSettings } from "./device-controls.js";
 import { dialFeedback } from "./device-feedback.js";
 import { imageData } from "./feedback.js";
 
@@ -24,8 +24,8 @@ export class DialControlAction extends SingletonAction<DialSettings> {
         if (!event.action.isDial()) return;
         const settings = dialSettings(event.payload.settings);
         await event.action.setFeedbackLayout("layouts/plus.json");
-        await event.action.setTriggerDescription({ rotate: settings?.control === "library" ? "Select one entry per notch" : "Adjust",
-            push: settings?.control === "marker" ? "Apply this preview" : settings?.control === "library" ? "Open selection" : "Run assigned action",
+        await event.action.setTriggerDescription({ rotate: isPressOnly(settings?.control) ? "" : settings?.control === "library" ? "Select one entry per notch" : "Adjust",
+            push: settings?.control === "selection" ? "" : settings?.control === "marker" ? "Apply this preview" : settings?.control === "library" ? "Open selection" : "Run assigned action",
             touch: settings?.control === "marker" ? "Discard this preview" : "" });
         this.dials.set(event.action.id, { action: event.action, settings });
         await this.refresh();
@@ -40,6 +40,7 @@ export class DialControlAction extends SingletonAction<DialSettings> {
     }
 
     override async onDialRotate(event: DialRotateEvent<DialSettings>): Promise<void> {
+        if (isPressOnly(dialSettings(event.payload.settings)?.control)) return;
         const ticks = event.payload.ticks;
         if (!Number.isSafeInteger(ticks) || ticks === 0) return;
         for (let index = 0; index < Math.abs(ticks); index++) {

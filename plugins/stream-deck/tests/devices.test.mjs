@@ -8,7 +8,7 @@ import { ControlAction } from "../dist/action.js";
 import { DialControlAction } from "../dist/dial-action.js";
 import { StepModeAction } from "../dist/mode-action.js";
 import { InfoBarAction } from "../dist/infobar-action.js";
-import { StepMode } from "../dist/device-controls.js";
+import { dialBinding, dialSettings, StepMode } from "../dist/device-controls.js";
 
 const examples = JSON.parse(await readFile(new URL("../../../tests/fixtures/stream_deck_protocol.json", import.meta.url), "utf8"));
 
@@ -43,6 +43,81 @@ function surface(id, settings, kind = "dial", device = "plus") {
     async setState(value) { output.states.push(value); }, async showAlert() { output.alerts++; } };
   return { action, payload: { settings }, output };
 }
+
+test("every dial gesture maps to its existing command and shared sample size", () => {
+  for (const size of [1, 10, 20]) for (const direction of [-1, 1]) {
+    const steps = size * direction;
+    const cases = [
+      [{ control: "library" }, { operation: "library.move", direction }, { operation: "library.open" }, undefined],
+      [{ control: "position" }, { operation: "position.step", steps }, { operation: "playback.toggle" }, undefined],
+      [{ control: "speed" }, { operation: "playback.speed.step", direction }, { operation: "playback.speed.reset" }, undefined],
+      [{ control: "view" }, { operation: "view.zoom", direction }, { operation: "view.reset" }, undefined],
+      [{ control: "smoothing" }, { operation: "smoothing.step", direction }, { operation: "smoothing.reset" }, undefined],
+      [{ control: "zoom_selection" }, undefined, { operation: "view.selection" }, undefined],
+      [{ control: "combined" }, undefined, { operation: "curve.set", curve: "combined" }, undefined],
+      [{ control: "playback" }, undefined, { operation: "playback.toggle" }, undefined],
+      ...["start", "end"].map(boundary => [{ control: "selection", boundary }, { operation: "selection.step", boundary, steps }, undefined, undefined]),
+      ...["start", "gravity", "incline", "end"].map(marker => [{ control: "marker", marker },
+        { operation: "marker.preview", marker, steps }, { operation: "marker.apply", marker }, { operation: "marker.discard", marker }]),
+    ];
+    for (const [settings, ...expected] of cases) {
+      assert.deepEqual(dialSettings(settings), settings);
+      for (const [index, gesture] of ["rotate", "press", "touch"].entries()) {
+        assert.deepEqual(dialBinding(settings, gesture, direction, size), expected[index]);
+      }
+    }
+  }
+  assert.equal(dialSettings({ control: "unknown" }), undefined);
+});
+
+test("press-only dials use press availability, confirmed values and silent unused gestures", async () => {
+  for (const [control, command, initial] of [
+    ["zoom_selection", { name: "view.selection" }, "#40–100"],
+    ["combined", { name: "curve.set", curve: "combined", enabled: true }, "Off"],
+    ["playback", { name: "playback.toggle" }, "Paused"],
+  ]) {
+    const h = harness();
+    // Zoom rotation availability is irrelevant to these push functions.
+    h.publish({ controls: { ...h.client.state.controls, "view.zoom": { available: false, reason: "input_focus" } } });
+    const dial = surface(control, { control });
+    await h.dials.onWillAppear(dial);
+    assert.equal(dial.output.feedback.at(-1).value, initial);
+    assert.equal(dial.output.feedback.at(-1).status, "PRESS ONLY");
+    for (const ticks of [-3, 3]) await h.dials.onDialRotate({ ...dial, payload: { ...dial.payload, ticks } });
+    await h.dials.onTouchTap(dial);
+    assert.equal(h.sent.length, 0);
+    assert.equal(dial.output.alerts, 0);
+    await h.dials.onDialDown(dial);
+    assert.deepEqual(h.sent.at(-1).action, command);
+    await settle();
+    assert.equal(dial.output.feedback.at(-1).value, initial, "Sending must not change a confirmed value");
+    h.acknowledge();
+    const confirmed = structuredClone(h.client.state);
+    if (control === "zoom_selection") confirmed.selection.end.sample = 120;
+    if (control === "combined") confirmed.curves.find(curve => curve.curve === "combined").active = true;
+    if (control === "playback") confirmed.playback.playing = true;
+    h.publish(confirmed);
+    await settle();
+    assert.equal(dial.output.feedback.at(-1).value, control === "zoom_selection" ? "#40–120" : control === "combined" ? "On" : "Playing");
+    const blocked = structuredClone(h.client.state);
+    if (control === "combined") blocked.curves.find(curve => curve.curve === "combined").availability = { available: false, reason: "input_focus" };
+    else blocked.controls[command.name] = { available: false, reason: "input_focus" };
+    h.publish(blocked);
+    await settle();
+    assert.match(dial.output.feedback.at(-1).status, /Editing.*PRESS ONLY/);
+    await h.dials.onDialDown(dial);
+    assert.equal(h.sent.length, 1);
+    assert.equal(dial.output.alerts, 1);
+    h.disconnect();
+    await settle();
+    assert.equal(dial.output.feedback.at(-1).value, "—");
+    assert.equal(dial.output.feedback.at(-1).status, "Offline · PRESS ONLY");
+    await h.dials.onDialRotate({ ...dial, payload: { ...dial.payload, ticks: 4 } });
+    await h.dials.onTouchTap(dial);
+    assert.equal(h.sent.length, 1);
+    assert.equal(dial.output.alerts, 1, "Unused gestures remain silent while disconnected");
+  }
+});
 
 test("Library dials retain every notch, never open while browsing and share confirmed key feedback", async () => {
   const h = harness();

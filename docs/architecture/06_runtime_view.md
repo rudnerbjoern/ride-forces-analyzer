@@ -140,7 +140,9 @@ Playback/Markers subgroups per device for the plugin session and confirms cyan
 selection through appearance events, including swipes. SDK send completion never
 confirms a page; failures alert without changing confirmed selection. User profile
 copies are preserved and are not switch destinations. Native Windows six-page import, SDK switching, subgroup recall and physical swipe
-feedback are verified on Plus.
+feedback are verified on Plus. Menu captions use confirmed application state;
+marker feedback prioritizes Failed, Pending and preview count on every page.
+Press-only dials reuse existing commands and ignore rotation/touch without alerts.
 
 ### Envelopes and compatibility
 

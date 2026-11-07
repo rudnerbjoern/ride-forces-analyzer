@@ -148,11 +148,11 @@ Navigate/Selection or Markers/View in their corresponding groups; key 8 carries
 Step size. Playback and Marker groups recall the last subgroup confirmed on that
 device during the plugin session. Cyan marks the group/page confirmed by
 `willAppear`, including native swipes; sending a request never confirms selection.
-Plus has no Back, Home, Start app or Website assignments. Existing application
-controls/dial assignments remain available where mapped; the remaining context
-keys and new dial modes follow PLUS-03/04. Current Library keys 5–8 are Open,
+Plus has no Back, Home, Start app or Website assignments. Library keys 5–8 are Open,
 New window, Import and Reset filters; Curves keys 5–8 are the three force slots and
-Raw/Calibrated. Combined remains available in Analyzer.
+Raw/Calibrated. Playback and Markers have Play/Pause on key 5. Main menu captions
+show confirmed Library selection/count, playback state, data mode and marker state
+(Failed before Pending before preview count), independent of the visible page.
 
 Navigation requests target the manifest profile `profiles/plus`, not an arbitrary
 imported user copy. The six-page layout replaces the former Plus layout under the
@@ -170,10 +170,13 @@ Menu navigation works without an Analyzer connection. Dynamic captions remain
 short; detailed application values stay on the touch strip.
 
 The Library dial selects one visible entry per notch, cyclic in both directions; press
-opens the selection in the current Explorer. Playback dials are Position
-(press: Play/Pause), View (Reset) and Speed (1×) in adjacent slots 1–3; slot 4 is unused.
-Curves has the Smoothing dial in its first slot beside the force-line and
-Raw/Calibrated keys. Smoothing stops at 1/51 samples without wrapping; press resets
+opens the selection in the current Explorer. Library dial 2 is unassigned;
+Park/Status dials belong to PLUS-04. Playback/Navigate and Markers/View dials are
+Position (press: Play/Pause), Speed (1×), Zoom (Reset) and press-only Zoom selection.
+Playback/Selection replaces the first two with Selection Start/End.
+Curves has Smoothing, press-only Combined, Zoom (Reset) and press-only Play/Pause.
+Press-only controls ignore rotation and touch, even while unavailable.
+Smoothing stops at 1/51 samples without wrapping; press resets
 to 11. Raw mode retains unfiltered source values and disables smoothing.
 Markers are Start/Gravity/Incline/End: rotate previews, press applies and touch
 discards only that marker's preview. Step size on Playback/Markers pages cycles

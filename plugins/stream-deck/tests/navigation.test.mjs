@@ -1,20 +1,93 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { setImmediate as settle } from "node:timers/promises";
 import streamDeck from "@elgato/streamdeck";
+import { ControlClient } from "../dist/client.js";
 
 import { PlusNavigationAction, navigationFeedback, navigationSettings } from "../dist/navigation.js";
 
 function key(device, page, target, type = 7) {
-  const output = { states: [], images: [], alerts: 0 };
+  const output = { states: [], images: [], titles: [], alerts: 0 };
   return { output, action: { id: `${device}/${page}/${target}`, device: { id: device, type }, isKey: () => true,
     async setState(value) { output.states.push(value); }, async setImage(value) { output.images.push(value); },
-    async setTitle() {}, async showAlert() { output.alerts++; } }, payload: { settings: { page, target } } };
+    async setTitle(value) { output.titles.push(value); }, async showAlert() { output.alerts++; } }, payload: { settings: { page, target } } };
 }
+
+test("menu captions follow confirmed app values and keep marker priority on every page", async t => {
+  t.mock.method(streamDeck.logger, "info", () => {});
+  const examples = JSON.parse(await readFile(new URL("../../../tests/fixtures/stream_deck_protocol.json", import.meta.url), "utf8"));
+  let receive, connect;
+  const sent = [];
+  const client = new ControlClient((message, connection) => {
+    receive = value => message(JSON.stringify(value)); connect = connection;
+    return { start() {}, stop() {}, send(value) { sent.push(JSON.parse(value)); return true; } };
+  });
+  connect(true);
+  let state = structuredClone(examples.messages[0]);
+  receive(state);
+  const action = new PlusNavigationAction(client, async () => {});
+  const keys = ["library", "playback", "curves", "markers"].map(target => key("plus", 0, target));
+  for (const value of keys) await action.onWillAppear(value);
+  assert.deepEqual(keys.map(value => value.output.titles.at(-1)), ["Library\n1/2", "Playback\nPaused", "Curves\nCalibrated", "Markers\n1 preview"]);
+  assert.equal(client.send("play", { name: "playback.toggle" }), true);
+  receive({ version: 4, type: "response", id: sent[0].id, target: sent[0].target, status: "ok" });
+  await settle();
+  assert.equal(keys[1].output.titles.at(-1), "Playback\nPaused", "An acknowledgement is not a changed playback state");
+  state = structuredClone(state);
+  state.sequence++;
+  state.library.selected.index = 1;
+  state.playback.playing = true;
+  state.curves.find(curve => curve.curve === "calibrated").active = false;
+  receive(state);
+  await settle();
+  assert.deepEqual(keys.slice(0, 3).map(value => value.output.titles.at(-1)), ["Library\n2/2", "Playback\nPlaying", "Curves\nRaw"]);
+  state.sequence++;
+  state.availability = { available: false, reason: "input_focus" };
+  state.markers[0].status = "failed";
+  state.markers[0].error = "analysis_failed";
+  state.markers[0].preview = structuredClone(state.markers[1].preview);
+  state.markers[0].request_id = "failed-marker";
+  state.markers[1].status = "pending";
+  state.markers[1].request_id = "pending-marker";
+  receive(state);
+  await settle();
+  for (let page = 0; page < 6; page++) {
+    const feedback = navigationFeedback({ page, target: "markers" }, page, client);
+    assert.equal(feedback.title, "Markers\nFailed");
+    assert.match(feedback.image, /markers: failed/);
+  }
+  assert.equal(keys[3].output.titles.at(-1), "Markers\nFailed");
+  state.sequence++;
+  state.markers[0].status = "applied";
+  state.markers[0].preview = null;
+  state.markers[0].error = null;
+  receive(state);
+  await settle();
+  assert.equal(keys[3].output.titles.at(-1), "Markers\nPending");
+  state.sequence++;
+  state.markers[1].status = "preview";
+  state.markers[1].request_id = null;
+  receive(state);
+  await settle();
+  assert.equal(keys[3].output.titles.at(-1), "Markers\n1 preview");
+  state.sequence++;
+  state.markers[1].preview = null;
+  state.markers[1].status = "applied";
+  receive(state);
+  await settle();
+  assert.equal(keys[3].output.titles.at(-1), "Markers\nNo preview");
+  connect(false);
+  await settle();
+  for (const [index, title] of ["Library", "Playback", "Curves", "Markers"].entries()) {
+    assert.equal(keys[index].output.titles.at(-1), `${title}\nOffline`);
+  }
+});
 
 test("Plus navigation uses only confirmed appearances, including swipes, and remembers groups per device", async t => {
   t.mock.method(streamDeck.logger, "info", () => {});
   const calls = [];
-  const action = new PlusNavigationAction(async (...args) => { calls.push(args); });
+  const action = new PlusNavigationAction(new ControlClient(), async (...args) => { calls.push(args); });
   const initial = key("a", 0, "playback");
   await action.onWillAppear(initial);
   await action.onKeyDown(initial);
@@ -64,7 +137,7 @@ test("Plus navigation rejects invalid settings/devices and does not confirm fail
   }
   let finish;
   const calls = [];
-  const action = new PlusNavigationAction((...args) => {
+  const action = new PlusNavigationAction(new ControlClient(), (...args) => {
     calls.push(args);
     return new Promise((resolve, reject) => { finish = { resolve, reject }; });
   });

@@ -8,6 +8,7 @@ import { pluginOutput } from "../scripts/artifact-path.mjs";
 import { HomeAction } from "../dist/home.js";
 import { controlSettings } from "../dist/controls.js";
 import { PLUS_PAGES, navigationSettings } from "../dist/navigation.js";
+import { dialSettings } from "../dist/device-controls.js";
 
 // cspell:words backtoparent openchild
 
@@ -40,9 +41,31 @@ test("Plus has six native main pages with a fixed menu, subgroup switches and no
       ["Library", "Playback / Navigate", "Playback / Selection", "Curves", "Markers / Markers", "Markers / View"]);
     assert.deepEqual(pages.get(root.Pages.Default).Controllers, [{ Type: "Keypad", Actions: {} }]);
     const identities = new Set();
+    const expectedDials = [
+      [{ control: "library" }],
+      ["position", "speed", "view", "zoom_selection"].map(control => ({ control })),
+      [...["start", "end"].map(boundary => ({ control: "selection", boundary })), { control: "view" }, { control: "zoom_selection" }],
+      ["smoothing", "combined", "view", "playback"].map(control => ({ control })),
+      ["start", "gravity", "incline", "end"].map(marker => ({ control: "marker", marker })),
+      ["position", "speed", "view", "zoom_selection"].map(control => ({ control })),
+    ];
     for (const [index, id] of root.Pages.Pages.entries()) {
       const page = pages.get(id);
       const keys = page.Controllers.find(controller => controller.Type === "Keypad").Actions;
+      const dials = page.Controllers.find(controller => controller.Type === "Encoder").Actions;
+      assert.deepEqual(Object.values(dials).map(action => action.Settings), expectedDials[index]);
+      for (const dial of Object.values(dials)) assert.ok(dialSettings(dial.Settings));
+      if (index === 0) {
+        assert.deepEqual(Object.keys(dials), ["0,0"], "Library dial 2 is unassigned; filters belong to PLUS-04");
+        assert.deepEqual([0, 1, 2, 3].map(column => keys[`${column},1`].Settings.operation),
+          ["library.open", "library.open_new_window", "library.import", "library.filter.reset"]);
+      } else if (index === 3) {
+        assert.deepEqual([0, 1, 2, 3].map(column => keys[`${column},1`].Settings),
+          ["first", "second", "third", "calibrated"].map(curve => ({ operation: "curve.set", curve })));
+      } else {
+        assert.deepEqual(keys["0,1"].Settings, { operation: "playback.toggle" });
+        assert.equal(keys["3,1"].UUID, `${uuid}.step-mode`);
+      }
       for (const [column, target] of ["library", "playback", "curves", "markers"].entries()) {
         const action = keys[`${column},0`];
         assert.equal(action.UUID, `${uuid}.plus-navigation`);

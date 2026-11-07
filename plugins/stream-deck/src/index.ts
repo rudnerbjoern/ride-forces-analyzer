@@ -14,7 +14,7 @@ const client = new ControlClient();
 const mode = new StepMode();
 streamDeck.actions.registerAction(new ControlAction(client));
 streamDeck.actions.registerAction(new HomeAction());
-streamDeck.actions.registerAction(new PlusNavigationAction());
+streamDeck.actions.registerAction(new PlusNavigationAction(client));
 streamDeck.actions.registerAction(new DialControlAction(client, mode));
 streamDeck.actions.registerAction(new StepModeAction(mode));
 streamDeck.actions.registerAction(new InfoBarAction(client));

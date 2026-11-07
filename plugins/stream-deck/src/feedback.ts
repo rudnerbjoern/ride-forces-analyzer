@@ -192,7 +192,7 @@ export function imageData(svg: string): string {
 }
 
 /** Bound native key captions to two short lines; detailed values belong on the touch strip. */
-function keyTitle(value: string): string {
+export function keyTitle(value: string): string {
     const short: Record<string, string> = { "No recording": "No data", "No selection": "No choice", "Empty Library": "Empty list", Incompatible: "Version err" };
     return value.split("\n").slice(0, 2).map(line => short[line] ?? line)
         .map(line => line.length > 11 ? `${line.slice(0, 10)}…` : line).join("\n");

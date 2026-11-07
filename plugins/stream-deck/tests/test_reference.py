@@ -60,10 +60,12 @@ def test_reference_cli_is_reproducible_from_fixed_contract_examples() -> None:
         assert [dial["title"] for dial in pages["Playback / Selection"]["dials"]] == [
             "Selection start",
             "Selection end",
+            "Zoom",
+            "Zoom selection",
         ]
         for page in pages.values():
             keys = {key["position"]: key for key in page["keys"]}
-            assert [keys[f"{column},0"]["title"] for column in range(4)] == [
+            assert [keys[f"{column},0"]["title"].split("\n")[0] for column in range(4)] == [
                 "Library",
                 "Playback",
                 "Curves",

@@ -48,7 +48,7 @@ for (const entry of entries.filter(entry => /\/Profiles\/[^/]+\/manifest.json$/.
  const pageKeys = [];
  for (const [position, action] of Object.entries(page.Controllers.find(c => c.Type === 'Keypad').Actions)) {
   let feedback;
-  if (action.UUID.endsWith('.plus-navigation')) feedback = navigationFeedback(action.Settings, action.Settings.page);
+  if (action.UUID.endsWith('.plus-navigation')) feedback = navigationFeedback(action.Settings, action.Settings.page, h);
   else if (action.UUID.endsWith('.control')) feedback = keyFeedback(h, 'example', action.Settings);
   else if (action.UUID.endsWith('.step-mode')) feedback = {
    title: `${stepName}\n${stepSize} ${stepSize === 1 ? 'sample' : 'samples'}`,

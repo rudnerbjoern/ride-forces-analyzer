@@ -104,10 +104,9 @@ export async function buildProfiles(plugin) {
           putNavigation(first, 5);
           putNavigation(first + 1, 6);
         }
-        // Retain existing controls; the remaining context/dial remapping belongs to PLUS-03.
         const controls = page.group === "library" ? ["library.open", "library.open_new_window", "library.import", "library.filter.reset"]
           : page.group === "curves" ? ["first", "second", "third", "calibrated"].map(curve => control("curve.set", { curve }))
-          : page.id === "selection" ? ["view.selection"] : page.id === "playback" ? ["playback.toggle"] : [];
+          : ["playback.toggle"];
         controls.forEach((definition, offset) => {
           const coordinate = `${offset},1`;
           actions[coordinate] = key(`${device}/${page.id}/${coordinate}`, "Analyzer control", `${uuid}.control`,
@@ -119,10 +118,10 @@ export async function buildProfiles(plugin) {
           actions["3,1"].States = ["Fine", "Medium", "Coarse"].map(Title => ({ Title, FontSize: 10, TitleAlignment: "bottom", ShowTitle: true }));
         }
         const dials = page.id === "library" ? [{ control: "library" }]
-          : page.id === "selection" ? ["start", "end"].map(boundary => ({ control: "selection", boundary }))
-          : page.id === "curves" ? [{ control: "smoothing" }]
+          : page.id === "selection" ? [...["start", "end"].map(boundary => ({ control: "selection", boundary })), { control: "view" }, { control: "zoom_selection" }]
+          : page.id === "curves" ? ["smoothing", "combined", "view", "playback"].map(control => ({ control }))
           : page.id === "markers" ? ["start", "gravity", "incline", "end"].map(marker => ({ control: "marker", marker }))
-          : ["position", "view", "speed"].map(control => ({ control }));
+          : ["position", "speed", "view", "zoom_selection"].map(control => ({ control }));
         await add(`Profiles/${pageId(page.id).toUpperCase()}/manifest.json`, {
           Controllers: [{ Type: "Keypad", Actions: actions }, { Type: "Encoder", Actions: Object.fromEntries(dials.map((settings, column) =>
             [`${column},0`, key(`${device}/${page.id}/dial/${column}`, "Analyzer dial", `${uuid}.dial`, settings)])) }],
