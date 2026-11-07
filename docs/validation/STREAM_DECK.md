@@ -1,11 +1,25 @@
-# Plus integrated acceptance
+# Stream Deck validation
 
-Verification date: 2026-11-07. Scope: PLUS-06 at `2f50e48`, including marker centering
+Verification date: 2026-11-07. Windows runtime scope: `2f50e48`, including marker centering
 in the chart, application controller and grouped UI test; Windows 11,
 Python 3.14.6, Qt/PySide6 6.12.0 and Node.js 26.11.1; plugin 0.2.1.
 Overall status: **Accepted** for Windows Plus. Hardware results are owner-confirmed;
 software evidence alone does not establish hardware acceptance.
-Requirements and control meanings belong to the [Stream Deck requirements](../requirements/STREAM_DECK.md).
+Control meanings belong to the [current behavior contract](../implementation/STREAM_DECK.md).
+
+## Acceptance criteria
+
+- Windows software checks cover GUI parity, target changes, state feedback,
+  locks, fixed stepping/clamping, persistence, analysis adoption and recovery.
+- Native logs must confirm SDK startup and Analyzer connection; CLI success alone
+  is insufficient. Software preview/configuration clicks are not physical-input evidence.
+- Hardware acceptance requires actual observation or user confirmation for each
+  device/input type; illustrations and SDK mocks cannot establish it.
+- Native macOS installation, connection, focus handling and device operation require
+  execution on macOS before verified support can be claimed.
+- Public delivery requires a validated installable archive and explicit release
+  authorization. Existing user profiles/settings must survive installation/updates;
+  changed profile layouts require separate import.
 
 ## Software
 
@@ -46,5 +60,19 @@ lock and recovery cases. No repeated hardware run is required for unchanged inpu
 | Legibility         | Views, four-/five-line arrangements, special states, long-text elision and press-only controls are readable                                       |
 | Locks/recovery     | GUI changes reach the device; focus/dialog/background locks and target changes work; reconnect does not replay commands or fabricate confirmation |
 
-No physical Windows Plus observations remain open for PLUS-06. Neo, Mobile,
-macOS and native archive installation are outside this acceptance.
+No physical Windows Plus observations remain open for this runtime scope.
+
+## Open native checks
+
+| Area                | Required observation                                                                                                        | Status |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Neo                 | Native import, folder/editor keys, both Touch Points, InfoBar values/states, press-only discovery and disconnection         | Open   |
+| Mobile              | Native import, phone pairing, four six-key pages, Back without Home, confirmed commands/feedback and reconnection           | Open   |
+| macOS               | Native plugin start, discovery/authentication, focus/dialog/background locks, recovery and operation of each claimed device | Open   |
+| Installable archive | Native archive installation/update with existing profiles and settings preserved                                            | Open   |
+
+The self-contained plugin folder, three bundled profile archives, license notices,
+official offline validation/packing and archive-content checks are verified. The
+[plugin guide](../../plugins/stream-deck/README.md#installable-archive) owns packing;
+[release policy](../development/RELEASE.md) owns retaining/publishing the tested
+archive and checksum. Marketplace publication is outside current scope.

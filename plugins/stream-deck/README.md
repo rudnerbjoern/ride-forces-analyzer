@@ -113,8 +113,10 @@ verifies both before attaching them to the authorized release.
 
 For native installation, double-click the archive with Stream Deck installed and
 confirm its installation prompt. Verify the installed version and actual SDK/app
-connection in the native logs, then import the matching bundled profile separately;
-profiles are not auto-installed. Keep existing user profiles. On a development
+connection in the native logs. Confirm the matching bundled profile when offered;
+the manifest requests automatic installation and activation. Manual import is a
+fallback if the offer was declined or an older layout remains. Preserve customized
+and unrelated user profiles. On a development
 machine, the linked plugin already occupies the same plugin ID: retain that setup
 until a deliberate switch to archive installation is intended.
 
@@ -140,134 +142,43 @@ select that `.app` in the native Start app action; Plus starts directly on Libra
 No custom launcher or platform-specific plugin bundle is added. Profile import
 and native app/website actions on macOS remain unverified.
 
-## Device menus
+## Profile and feedback implementation
 
-Plus starts on Library and has six native main pages in order: Library,
-Playback / Navigate, Playback / Selection, Curves, Markers / Markers and Markers / View.
-Keys 1–4 always select Library, Playback, Curves and Markers. Keys 6/7 select
-Navigate/Selection or Markers/View in their corresponding groups; key 8 carries
-Step size. Playback and Marker groups recall the last subgroup confirmed on that
-device during the plugin session. Cyan marks the group/page confirmed by
-`willAppear`, including native swipes; sending a request never confirms selection.
-Plus has no Back, Home, Start app or Website assignments. Library keys 5–8 are Open,
-New window, Import and Reset filters; Curves keys 5–8 are the three force slots and
-Raw/Calibrated. Playback and Markers have Play/Pause on key 5. Main menu captions
-show confirmed Library selection/count, playback state, data mode and marker state
-(Failed before Pending before preview count), independent of the visible page.
+The [current control contract](../../docs/implementation/STREAM_DECK.md) owns
+device menus, keys/dials/touch, bounds, filter proposals and display behavior.
+[Runtime architecture](../../docs/architecture/06_runtime_view.md#native-page-routing)
+owns page routing, confirmed state and device isolation; the
+[deployment view](../../docs/architecture/07_deployment_view.md#mapping-and-environment)
+owns bundled-profile identity and installation defaults.
 
-Navigation requests target the manifest profile `profiles/plus`, not an arbitrary
-imported user copy. The six-page layout replaces the former Plus layout under the
-same profile identity and archive filename; no parallel Plus profile is bundled.
-The bundled profile is offered during plugin installation and activated after
-installation. The update replaces the existing bundled Plus layout under
-the same identity; preserve customized and unrelated profiles. If an older layout
-remains installed, import the updated `plus.streamDeckProfile` rather than adding
-a second bundled Plus variant. Copies are not navigation destinations. Native
-Windows import, SDK page switching, subgroup recall and physical swipe feedback
-are verified on Plus. A sent SDK request alone is not proof of success. Request/appearance events are recorded in plugin logs.
-
-Neo retains Start → Library / Explorer, its folders, native Start app/Website,
-Back on key 1 and Home on key 8. Its Open action uses the packaged app icon and an
-installation-specific EXE/shortcut or Mac `.app`; Website uses the project URL.
-Mobile retains its reduced Start/Library/Playback/View folders. Both are unchanged.
-Menu navigation works without an Analyzer connection. Dynamic captions remain
-short; detailed application values stay on the touch strip.
-
-Plus uses native 200×100 fields with up to five elided text lines, a separate 26 px status
-symbol and a 14 px status band. Function artwork has no embedded badge. The build
-crops `devices/backgrounds/*.svg` into sixteen continuous tiles under
-`layouts/backgrounds/`; subgroup pages share their menu's artwork. Dial settings
-carry menu/column for placement; Library dial 2 renders only its tile and ignores
-every gesture. Neo/Mobile presentation is unchanged. The existing reference generator
-also writes `stream-deck-plus-touch-strips.png` at native field size for all views
-and fixed state/lock examples; it does not verify physical readability.
-
-The Library dial selects one visible entry per notch, cyclic in both directions; press
-opens the selection in the current Explorer. Library dial 2 is display-only;
-dials 3/4 choose Park/Status options in application dropdown order without wrapping.
-Rotation changes a device-local proposal only; press sends `library.filter.set`,
-touch requests All for that field. Feedback separates the proposal from Active;
-only received state confirms a change. Reset filters discards both local proposals
-before sending the existing reset command. GUI/option changes discard that field's
-proposal; leaving Library, target/recording/session changes and connection loss
-discard affected proposals. Locks block filter gestures; no proposal/command is replayed.
-Playback/Navigate and Markers/View dials are
-Position (press: Play/Pause), Speed (1×), Zoom (Reset) and press-only Zoom selection.
-Playback/Selection replaces the first two with Selection Start/End.
-Curves has Smoothing, press-only Combined, Zoom (Reset) and Position (press: Play/Pause).
-Press-only controls ignore rotation and touch, even while unavailable.
-Smoothing stops at 1/51 samples without wrapping; press resets
-to 11. Raw mode retains unfiltered source values and disables smoothing.
-Markers are Start/Gravity/Incline/End: rotate previews, press applies and touch
-discards only that marker's preview. Step size on Playback/Markers pages cycles
-through 1/10/20/1 source samples per notch on that Plus; startup defaults to 1.
-The key and touch fields show Fine (1), Medium (10) or Coarse (20), shared across
-these pages. The matching icons use one, two or three bars.
-
-Plus Selection dials adjust the current inclusive selection directly through the
-Inspector controls. Bounds clamp at zero, each other and the last source sample;
-there is no wraparound, marker adoption or Library marker write. Their touch fields
-show actual start/end values. Press/touch are unassigned on these two dials.
-Application protocol version 4 carries these bounds and Library filter choices/commands; update/restart
-Analyzer and the plugin together. Discovery/authentication stays at version 1.
-`library.filter.set` selects Park or Status by its exact dropdown value; snapshots
-include ordered values/labels and the confirmed selection. Null is All, an empty
-park is Unknown park. User text stays unchanged Unicode within the existing 64 KiB
-message limit. Filter dials use exact values, including null for All and the empty
-park string for Unknown; the key-settings editor does not expose filter-set commands.
-`library.filter.reset` clears Park, Status and search. Existing profile settings
-using `library.reset_filters` map to this command; the wire protocol uses only the
-canonical name.
-
-Plus touch fields show selected entry/count, sample/time, actual view interval/span,
-odd smoothing window and playback speed/state. Marker fields keep the proposed
-value separate from the last applied value, including pending/failed adoption.
-Long field text is elided. The display-only Neo InfoBar also shows confirmed values, availability,
-preview/pending/failed status and applied marker values. Previews survive menus;
-the application clears them on recording/target changes. Unset calibration markers
-remain unavailable until placed in the GUI. Input fields/dialogs/background use
-block app commands; local menus and fine/coarse selection remain available.
-
-## Neo preparation
-
-Neo retains key alternatives and uses the same icons/two-line captions as Plus.
-Native Touch Points select between Start and Quick controls; the latter provides
-Play/Pause, Zoom −/+, Reset view, Zoom to selection and Reset speed. Back/Home
-return to Start there. Folders keep the normal parent Back and Home assignments.
-Position/marker minus and plus occupy the two center columns, coarse above fine;
-marker Apply is key 4, Discard key 5. Smoothing/Speed use keys 6/7 and Reset on 3.
-The InfoBar displays current Library/playback/view state; marker name/state,
-preview/adopted position and last applied value use separate lines. Overflow is
-elided, SVG icons are encoded, and the InfoBar has no input handlers.
-
-[Neo controls and example image](../../docs/user/STREAM_DECK.md#neo-keys-infobar-and-touch-points)
-are generated by the same script as Plus, directly from the built profile and
-production feedback. Neo is not connected: native import and hardware acceptance
-remain open. Do not import its profile onto the connected Plus for acceptance.
-
-## Limited Mobile preview
-
-`profiles/mobile.streamDeckProfile` targets SDK device type 3 with a six-key
-2×3 layout. It provides Start, Library, Playback and View using only existing key
-actions and the shared icons/captions. Back is key 1; no Home action is assigned.
-Playback uses key 6 for Reset view, View for Play/Pause. No dial, InfoBar, marker,
-curve/smoothing/speed or manual selection-boundary editors are included.
-
-Pair Mobile in Stream Deck, select its six-key layout and import onto that device.
-The Library landscape rows are Back/Previous/Next and Import/Open/New window.
-Recommend the Mobile layout-orientation setting None or Fixed for a stable 3×2
-grid. Orientation is configured by the user, not enforced by the profile.
-Native Back stays on key 1 at the top left.
-All three Library profiles offer New window, using the existing archived-recording
-window action. Plus puts it on key 6 beside Open; Neo on key 7 beside Open;
-Mobile on key 6 beside Open. Already open/loading recordings activate their existing
-Explorer instead of opening another. Normal Open/dial press uses the current
-Explorer for recordings not already open elsewhere.
-Start app retains a user-configured desktop EXE/shortcut path; Website is preset.
-The Analyzer transport stays on desktop loopback. No mobile-facing endpoint or
-new application commands are introduced. Full Mobile hardware acceptance remains
-open. [Instructions and small preview](../../docs/user/STREAM_DECK.md#mobile-limited-six-key-preview)
-are rendered by the same screenshot script as Plus/Neo.
+- `scripts/build-profiles.mjs` creates the Plus/Neo/Mobile archives. Plus uses
+  six native main pages; Neo folders/Touch Points and Mobile folders use native navigation.
+- Navigation/Step size titles and images stay plugin-owned; native custom
+  `States[].Image`/`Title` override live feedback. Reimport the updated bundled
+  layout if old overrides remain; a plugin restart alone cannot clear them.
+- Profile updates replace the bundled `profiles/plus` layout under its existing
+  archive identity, preserving customized and unrelated profiles. Native custom
+  copies are not SDK page-switch destinations. Request/appearance events are logged.
+- `devices/layouts/plus.json` defines five-line fields. The build derives
+  `layouts/plus-compact.json` for four-line fields; no second source layout is maintained.
+- The build crops canonical `devices/backgrounds/*.svg` into sixteen 200×100
+  `layouts/backgrounds/` tiles. Dial settings carry menu/column; display-only
+  Library dial 2 renders its tile and ignores every gesture. Subgroups share artwork.
+- `scripts/render_stream_deck_reference.py` renders actual profiles/layouts and
+  production feedback, including native-size state/lock examples. It does not
+  establish hardware qualification; settings and optical axes belong to the
+  [presentation contract](../../docs/implementation/STREAM_DECK.md#state-feedback-and-locks).
+- Application protocol 4 carries selection bounds and Library filters;
+  discovery/authentication stays at 1. Update/restart both components together.
+  Existing key settings using `library.reset_filters` map to `library.filter.reset`;
+  only the canonical name is sent on the wire. The key-settings editor does not
+  expose filter-set commands.
+- Neo uses the shared icons/two-line captions. Its InfoBar has no input handlers;
+  native Touch Points change pages independently of application feedback.
+- `profiles/mobile.streamDeckProfile` targets SDK device type 3 with six keys,
+  no dials/InfoBar and no Home action. Pairing remains in Stream Deck; the Analyzer
+  endpoint stays desktop loopback. Layout orientation is a user setting, not a
+  profile lock; no separate portrait profile or phone-facing service exists.
 
 ## Configure keys
 
@@ -279,7 +190,8 @@ are rendered by the same screenshot script as Plus/Neo.
 Create separate marker Preview, Apply and Discard keys. Preview steps are ±1/±10
 source samples. Library browsing selects one visible entry cyclically; Open opens
 the selection in the current Explorer. Generic key bindings are available on Plus
-and Neo; physical device acceptance remains open.
+and Neo; native qualification limits are recorded in
+[validation](../../docs/validation/STREAM_DECK.md).
 
 ## Feedback and connection
 
@@ -300,4 +212,4 @@ and Neo; physical device acceptance remains open.
 The manifest enables Windows and macOS 15+ using the same JavaScript bundle.
 macOS installation, application/plugin/device behavior and hardware acceptance
 remain unverified. Physical device acceptance
-belongs to the [remaining integration steps](../../docs/requirements/STREAM_DECK.md#implementation-steps).
+is recorded in [validation](../../docs/validation/STREAM_DECK.md#open-native-checks).

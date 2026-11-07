@@ -71,7 +71,9 @@ chapter 9 retains decision status and rationale.
 
 ## Development and publication
 
-- [Stream Deck integration](requirements/STREAM_DECK.md): implemented controls and open native acceptance;
+- [Stream Deck controls](implementation/STREAM_DECK.md): current device behavior;
+  [integration scope](architecture/03_context_and_scope.md#stream-deck-scope),
+  [validation](validation/STREAM_DECK.md): Windows evidence and open native checks;
   [plugin builds, installation and independent versioning](../plugins/stream-deck/README.md).
 - [Windows setup and checks](development/SETUP.md), [contributions](../CONTRIBUTING.md),
   [agent rules](../AGENTS.md), [private security reports](../SECURITY.md).

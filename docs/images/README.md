@@ -47,15 +47,13 @@ pixels, Segoe UI, English. It uses the same production layout/feedback and
 Library watermark baselines and status-band axis are preserved; this is software
 evidence, not physical readability acceptance.
 
-The `stream-deck-plus-concept/` folder retains labelled design references and the
-editable SVG background sources. They are not current profile screenshots; use
-the generated Plus controls, native strips and README close-up above for current
-assignments. The production backgrounds are maintained under
+The generated Plus controls, native strips and README close-up above show current
+assignments. Canonical background artwork is maintained under
 [`plugins/stream-deck/devices/backgrounds/`](../../plugins/stream-deck/devices/backgrounds).
 Their blue Library, petrol Playback, violet Curves and slate-blue Markers motifs
 carry no recording data. Subgroups share the parent background. The Library
 watermark baselines, status-band axis and dial-center guides remain fixed by the
-[current Plus contract](../requirements/STREAM_DECK.md#state-feedback-and-locks).
+[current Plus contract](../implementation/STREAM_DECK.md#state-feedback-and-locks).
 
 The Voltron Nevera layout sample has vertical +4.37 g, lateral −0.67 g,
 longitudinal −0.42 g and tilt 62.9°. It is the fixed vertical-force maximum with

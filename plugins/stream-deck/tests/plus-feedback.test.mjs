@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { plusFeedback } from "../dist/plus-feedback.js";
@@ -29,9 +30,14 @@ test("Plus panoramas retain approved artwork, contiguous crops and the watermark
   });
   for (let index = 1; index < lines.length; index++) assert.ok(lines[index][1] >= lines[index - 1][1] + lines[index - 1][3]);
   for (const menu of ["library", "playback", "curves", "markers"]) {
-    const approved = await readFile(new URL(`../../../docs/images/stream-deck-plus-concept/stream-deck-plus-concept-background-${menu}.svg`, import.meta.url), "utf8");
     const source = await readFile(new URL(`../devices/backgrounds/${menu}.svg`, import.meta.url), "utf8");
-    assert.equal(source, approved);
+    const artworkHashes = {
+      library: "71b3c4e30a2a101cd3b6de822cba73d866c2c002864ac2c625173cb8ac782d37",
+      playback: "ab290e5a20ae0fb68ac5eacae3388bca980d0d5a9d8c3cb6f424ecd47a014b42",
+      curves: "3b7621166bc279d1c8799e3d12c01edc32fea51f3bb007817a499daa8a1e19b7",
+      markers: "10a40deae7e8575485539537a5d230f089b9c150c019fb3aad0b488dadb9d97b",
+    };
+    assert.equal(createHash("sha256").update(source.replaceAll("\r\n", "\n")).digest("hex"), artworkHashes[menu]);
     for (let column = 0; column < 4; column++) {
       const tile = await readFile(`${pluginOutput}/layouts/backgrounds/${menu}-${column}.svg`, "utf8");
       assert.match(tile, new RegExp(`viewBox="${column * 200} 0 200 100"`));

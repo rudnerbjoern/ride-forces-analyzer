@@ -124,7 +124,8 @@ sequenceDiagram
 - **Settings → Application → Enable Stream Deck** is off by default and saved in
   existing user preferences. Startup reads it; Save applies changes to the shared
   server. Cancel leaves it unchanged. Disabling disconnects clients and removes
-  discovery; application shutdown also closes the server.
+  discovery; application shutdown also closes the server and removes its owned
+  discovery file.
 
 ## Stream Deck control contract
 
@@ -152,6 +153,21 @@ Plus presentation uses the same confirmed feedback with separate native text,
 status symbol/band and static menu background tiles. The production SVG assets
 and feedback also drive reference illustrations; decoration carries no live state.
 Library dial 2 is a display-only assignment whose gestures are ignored.
+
+### Native page routing
+
+- Plus page indices are 0 Library, 1 Playback/Navigate, 2 Playback/Selection,
+  3 Curves, 4 Markers/Markers and 5 Markers/View. Native main pages preserve all
+  four top-row menu keys; nested folders would reserve key 1 for Back.
+- `switchToProfile(deviceId, "profiles/plus", page)` addresses the bundled profile,
+  not arbitrary imported copies. Its completion confirms sending only; appearance
+  events, including swipes, confirm the visible page. Failed requests do not change
+  confirmed selection; repeated selection is a no-op.
+- Subgroup recall, sample step size and filter proposals are device-local plugin
+  session state. Devices do not share unconfirmed proposals or navigation state.
+- Python models, TypeScript types/decoder, action availability and shared examples
+  evolve together. Park labels/values remain exact Unicode data within 64 KiB,
+  including long names, whitespace, punctuation and emojis; they are not opaque IDs.
 
 ### Envelopes and compatibility
 
@@ -214,7 +230,7 @@ produce `invalid_command` without changing a filter. Park values and labels are
 plain Unicode strings, without the opaque-ID length restriction, trimming or
 normalization; JSON serialization preserves quotes, control characters and emojis.
 The existing 64 KiB UTF-8 transport-message limit still applies to the whole payload.
-Fine/coarse selection and menu navigation stay local to the plugin. Relative
+Step-size selection and menu navigation stay local to the plugin. Relative
 steps may remain in flight together so aggregated dial ticks and rapid Library/selection
 steps retain one command per step; the server serializes and revalidates
 them against current GUI state. No disconnected commands are queued or replayed.
@@ -254,7 +270,9 @@ does not resume it. No valid preview means apply is unavailable.
   and the application's replay label; no sampling-rate inference occurs in the plugin.
 - Previews survive menu changes, but target/recording changes discard them. Preview
   changes update only dotted, labelled Explorer chart overlays, without recalculating
-  or persisting analysis. Adopted marker lines stay unchanged; discard/apply and
+  or persisting analysis. An off-screen preview centers the viewport where recording
+  boundaries permit, without changing zoom; already visible previews do not pan it.
+  Adopted marker lines stay unchanged; discard/apply and
   target changes clear the corresponding overlays. Apply stays pending until successful
   adoption; only then update `applied` and persist through existing services. Failure
   retains the last adopted value; concurrent applies must not overwrite newer markers.
