@@ -139,7 +139,7 @@ export function actionIcon(settings: ControlSettings | undefined, state?: StateE
         case "library.open": return "open";
         case "library.open_new_window": return "new_window";
         case "library.import": return "import";
-        case "library.reset_filters": return "reset";
+        case "library.filter.reset": return "reset";
         case "playback.toggle": return state?.playback?.playing ? "pause" : "playback";
         case "playback.speed.step": return "speed";
         case "playback.speed.reset": case "smoothing.reset": case "view.reset": return "reset";
@@ -204,7 +204,7 @@ export function keyFeedback(client: ControlClient, context: string, settings: Co
     const icon = actionIcon(settings, client.state);
     const labels = {
         "library.move": "Library", "library.open": "Open", "library.open_new_window": "New window", "library.import": "Import",
-        "library.reset_filters": "Reset filters",
+        "library.filter.reset": "Reset filters",
         "playback.toggle": "Play/Pause", "playback.speed.step": "Speed", "playback.speed.reset": "Speed reset",
         "position.step": "Position", "selection.step": "Selection", "view.zoom": "Zoom", "view.reset": "Reset view",
         "view.selection": "Zoom", "smoothing.step": "Smoothing", "smoothing.reset": "Smoothing",
@@ -226,7 +226,7 @@ export function keyFeedback(client: ControlClient, context: string, settings: Co
             : snapshot.library?.count === 0 ? "Empty" : "No choice";
         title = name === "library.import" ? "Import…"
             : name === "library.open_new_window" ? "New\nwindow"
-            : name === "library.reset_filters" ? "Reset\nfilters" : `${label}\n${index}`;
+            : name === "library.filter.reset" ? "Reset\nfilters" : `${label}\n${index}`;
     } else if (name === "playback.toggle") {
         playing = snapshot.playback?.playing ?? false;
         active = playing;

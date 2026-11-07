@@ -309,12 +309,12 @@
   },
   "inputs": {
     "scripts/render_stream_deck_reference.py": "e60194e5766ac5d7792438c1400c073e1d942ac1c0474b192f766add2f6c94cc",
-    "tests/fixtures/stream_deck_protocol.json": "537f14fcbc00cb16d423650b088f443c0791622591dad7a52373ab4841a023c0",
-    "plugins/stream-deck/src/feedback.ts": "ffefcfe1faeb6e3cc6e8863e73a5a6e1e19c1bcfb87f4bd8048a33355dc2de45",
+    "tests/fixtures/stream_deck_protocol.json": "5d7e9058d884233b27172159a4ae28dd17dbc331120b23f427a9b37f3a9c0d94",
+    "plugins/stream-deck/src/feedback.ts": "ccc1139ee66bc02d7486455195b74a55b8ba720a23cc2a1a2251e91235814eb5",
     "plugins/stream-deck/src/device-feedback.ts": "7ff2c73f5ca1c52b34b2d9378164931942f439aae585f997c55ba1c9cbe97531",
     "plugins/stream-deck/devices/layouts/plus.json": "bc41ddb1cfbb3a9602f07673aace2942a5b3a711aeb4fc5b86b8ab5d9ed49261",
     "plugins/stream-deck/devices/layouts/neo.json": "875875d9c4eadd35ee1f1f92beeb0623fc589f317f50eecfd3eba6c05dd76abd",
-    "plugins/stream-deck/scripts/build-profiles.mjs": "1ffcf73c65d28accc3106c7f58f50683f9c0e46477c9cc7723f151654e3f4a47",
+    "plugins/stream-deck/scripts/build-profiles.mjs": "4238414ff6408ed25cd95c64cf5083538028ec62d9a4e7d3a9775118445da626",
     "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/manifest.json": "addd80d7f00a5f3e5260c91a948895f0af141bcfc62880b294d0e72c0faf7c7b",
     "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/imgs/plugin@2x.png": "53476c4916afabf61592ceec13b2c902a197d43b94d15b5f689c5dfa5004fe31"
   },

@@ -1,5 +1,5 @@
 /** Application protocol; independent of the transport authentication version. */
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 
 export type Direction = -1 | 1;
 export type Steps = -20 | -10 | -1 | 1 | 10 | 20;
@@ -24,9 +24,10 @@ export interface Target {
 }
 
 export type Action =
-    | { readonly name: "library.open" | "library.open_new_window" | "library.import" | "library.reset_filters" | "playback.toggle"
+    | { readonly name: "library.open" | "library.open_new_window" | "library.import" | "library.filter.reset" | "playback.toggle"
         | "playback.speed.reset" | "view.reset" | "view.selection" | "smoothing.reset" }
     | { readonly name: "library.move"; readonly direction: Direction }
+    | { readonly name: "library.filter.set"; readonly filter: "park" | "status"; readonly value: string | null }
     | { readonly name: "position.step"; readonly steps: Steps }
     | { readonly name: "selection.step"; readonly boundary: SelectionBoundary; readonly steps: Steps }
     | { readonly name: "playback.speed.step" | "smoothing.step" | "view.zoom";
@@ -49,9 +50,22 @@ export interface Position {
     readonly label: string;
 }
 
+export interface LibraryFilterOption {
+    /** Verbatim user text is not an opaque identifier; null means All, empty park means Unknown. */
+    readonly value: string | null;
+    readonly label: string;
+}
+
+export interface LibraryFilterState {
+    readonly value: string | null;
+    readonly options: readonly LibraryFilterOption[];
+}
+
 export interface LibraryState {
     readonly count: number;
     readonly selected: { readonly id: string; readonly title: string; readonly index: number } | null;
+    readonly park_filter: LibraryFilterState;
+    readonly status_filter: LibraryFilterState;
 }
 
 export interface PlaybackState {

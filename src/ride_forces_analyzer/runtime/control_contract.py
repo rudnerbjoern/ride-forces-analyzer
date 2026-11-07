@@ -8,7 +8,7 @@ from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, Field, TypeAdapter, field_validator, model_validator
 
-PROTOCOL_VERSION = 3
+PROTOCOL_VERSION = 4
 Version = Annotated[int, Field(ge=PROTOCOL_VERSION, le=PROTOCOL_VERSION)]
 Identifier = Annotated[str, Field(min_length=1, max_length=128)]
 SampleIndex = Annotated[int, Field(ge=0)]
@@ -84,7 +84,7 @@ class SimpleAction(WireModel, frozen=True):
         "library.open",
         "library.open_new_window",
         "library.import",
-        "library.reset_filters",
+        "library.filter.reset",
         "playback.toggle",
         "playback.speed.reset",
         "view.reset",
@@ -103,6 +103,20 @@ class LibraryMove(WireModel, frozen=True):
 
     name: Literal["library.move"]
     direction: Direction
+
+
+class LibraryFilterSet(WireModel, frozen=True):
+    """Select one current Library dropdown value without changing other filters.
+
+    Attributes:
+        name: Library filter command discriminator.
+        filter: Park or manual workflow status filter to change.
+        value: Verbatim option value; None means All, an empty park means Unknown.
+    """
+
+    name: Literal["library.filter.set"]
+    filter: Literal["park", "status"]
+    value: str | None
 
 
 class PositionStep(WireModel, frozen=True):
@@ -186,6 +200,7 @@ class MarkerDecision(WireModel, frozen=True):
 Action = Annotated[
     SimpleAction
     | LibraryMove
+    | LibraryFilterSet
     | PositionStep
     | SelectionStep
     | SettingStep
@@ -198,8 +213,9 @@ ActionName = Literal[
     "library.open",
     "library.open_new_window",
     "library.import",
-    "library.reset_filters",
+    "library.filter.reset",
     "library.move",
+    "library.filter.set",
     "playback.toggle",
     "playback.speed.reset",
     "playback.speed.step",
@@ -288,16 +304,54 @@ class LibraryEntry(WireModel, frozen=True):
     index: SampleIndex
 
 
+class LibraryFilterOption(WireModel, frozen=True):
+    """Describe a Library dropdown choice without treating user text as an ID.
+
+    Attributes:
+        value: Verbatim dropdown data; None means All, an empty park means Unknown.
+        label: Plain display text, including arbitrary user-supplied Unicode.
+    """
+
+    value: str | None
+    label: str
+
+
+class LibraryFilterState(WireModel, frozen=True):
+    """Expose an ordered dropdown and its confirmed current selection.
+
+    Attributes:
+        value: Current option value, independent of its translated display label.
+        options: Unique choices in dropdown order; empty before choices are loaded.
+    """
+
+    value: str | None
+    options: tuple[LibraryFilterOption, ...]
+
+    @model_validator(mode="after")
+    def _current_choice(self) -> Self:
+        """Reject ambiguous choices and a current value absent from the options."""
+        values = [option.value for option in self.options]
+        if len(set(values)) != len(values) or (
+            self.value not in values and (values or self.value is not None)
+        ):
+            raise ValueError("Library filter choices must be unique and include the current value")
+        return self
+
+
 class LibraryState(WireModel, frozen=True):
     """Expose current filtered Library navigation values.
 
     Attributes:
         count: Number of entries in the visible sorted/filtered list.
         selected: Current selection, or None without a selection.
+        park_filter: Ordered park choices and the confirmed park filter.
+        status_filter: Ordered workflow choices and the confirmed status filter.
     """
 
     count: Annotated[int, Field(ge=0)]
     selected: LibraryEntry | None
+    park_filter: LibraryFilterState
+    status_filter: LibraryFilterState
 
 
 class PlaybackState(WireModel, frozen=True):

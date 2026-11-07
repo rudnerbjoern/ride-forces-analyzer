@@ -178,8 +178,16 @@ Plus Selection dials adjust the current inclusive selection directly through the
 Inspector controls. Bounds clamp at zero, each other and the last source sample;
 there is no wraparound, marker adoption or Library marker write. Their touch fields
 show actual start/end values. Press/touch are unassigned on these two dials.
-Application protocol version 3 carries these bounds and commands; update/restart
+Application protocol version 4 carries these bounds and Library filter choices/commands; update/restart
 Analyzer and the plugin together. Discovery/authentication stays at version 1.
+`library.filter.set` selects Park or Status by its exact dropdown value; snapshots
+include ordered values/labels and the confirmed selection. Null is All, an empty
+park is Unknown park. User text stays unchanged Unicode within the existing 64 KiB
+message limit. The current profile assignments and key-settings editor are unchanged;
+filter-dial bindings belong to the planned Plus navigation steps.
+`library.filter.reset` clears Park, Status and search. Existing profile settings
+using `library.reset_filters` map to this command; the wire protocol uses only the
+canonical name.
 
 Plus touch fields show selected entry/count, sample/time, actual view interval/span,
 odd smoothing window and playback speed/state. Marker fields keep the proposed

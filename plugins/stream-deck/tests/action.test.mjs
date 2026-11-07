@@ -36,7 +36,7 @@ test("SDK key handlers route commands and render confirmed state and unavailable
   assert.equal(outputs.states.at(-1), 1);
   assert.match(outputs.images.at(-1), /^data:image\/svg\+xml;base64,/);
   assert.match(Buffer.from(outputs.images.at(-1).split(",")[1], "base64").toString("utf8"), /<title>combined: pending<\/title>/);
-  receive({ version: 3, type: "response", id: sent[0].id, target: sent[0].target, status: "ok" });
+  receive({ version: 4, type: "response", id: sent[0].id, target: sent[0].target, status: "ok" });
   await action.onDidReceiveSettings(event);
   assert.match(Buffer.from(outputs.images.at(-1).split(",")[1], "base64").toString("utf8"), /<title>combined: active<\/title>/);
   connect(false);

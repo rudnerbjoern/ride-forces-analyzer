@@ -11,7 +11,7 @@ const uuid = "io.github.rudnerbjoern.ride-forces-analyzer";
 const folder = (title, page) => ({ title, page });
 const control = (operation, settings = {}) => ({ operation, ...settings });
 const plusLibraryKeys = [control("library.open"), control("library.open_new_window"),
-  control("library.import"), control("library.reset_filters")];
+  control("library.import"), control("library.filter.reset")];
 const pages = {
   start: { name: "Start", keys: [folder("Library", "library"), folder("Explorer", "explorer")] },
   library: { name: "Library", keys: [control("library.move", { direction: -1 }),

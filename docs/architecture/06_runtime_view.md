@@ -138,7 +138,7 @@ generation. Its configurable SDK key action covers the agreed command types.
 
 ### Envelopes and compatibility
 
-- Application protocol `version: 3` is independent of discovery/authentication version 1.
+- Application protocol `version: 4` is independent of discovery/authentication version 1.
   Authenticate first; transport `ready` is not an application state event.
 - Require an exact application protocol version. Invalid shapes, unknown fields/actions,
   coercions and non-finite numbers are rejected. Contract changes require a new version.
@@ -175,7 +175,8 @@ generation. Its configurable SDK key action covers the agreed command types.
 | `library.open`                                | None                                                                 | Open selection in the addressed current Explorer                                     |
 | `library.open_new_window`                     | None                                                                 | Open selection in an additional Explorer; retain the addressed window                |
 | `library.import`                              | None                                                                 | Open the existing import dialog                                                      |
-| `library.reset_filters`                       | None                                                                 | Clear park/status/search through the existing Library reset                          |
+| `library.filter.reset`                        | None                                                                 | Clear park/status/search through the existing Library reset                          |
+| `library.filter.set`                          | `filter: park \| status`, `value: string \| null`                    | Set one current dropdown choice; retain the other filter and search                  |
 | `playback.toggle`                             | None                                                                 | Invoke actual play/pause                                                             |
 | `playback.speed.step`, `playback.speed.reset` | Step: `direction: -1 \| 1`; reset: none                              | Adjacent supported speed; reset to 1×                                                |
 | `position.step`                               | `steps: -20 \| -10 \| -1 \| 1 \| 10 \| 20`                           | Source samples; pause playback and clamp bounds                                      |
@@ -189,6 +190,13 @@ generation. Its configurable SDK key action covers the agreed command types.
 
 Markers are `start`, `gravity`, `incline`, `end`. First/second/third curve slots
 follow the current chart axes; state supplies actual raw/directional labels.
+
+Filter values are the dropdown's exact data, not indices or display labels. Null
+means All; an empty park string means Unknown park. Unknown or removed choices
+produce `invalid_command` without changing a filter. Park values and labels are
+plain Unicode strings, without the opaque-ID length restriction, trimming or
+normalization; JSON serialization preserves quotes, control characters and emojis.
+The existing 64 KiB UTF-8 transport-message limit still applies to the whole payload.
 Fine/coarse selection and menu navigation stay local to the plugin. Relative
 steps may remain in flight together so aggregated dial ticks and rapid Library/selection
 steps retain one command per step; the server serializes and revalidates
@@ -208,6 +216,13 @@ does not resume it. No valid preview means apply is unavailable.
 - `target: null` explicitly means no active Explorer. Library feedback contains
   visible count and the selected entry's identity, title and zero-based index;
   an empty list has count zero and null selection.
+- Library `park_filter` and `status_filter` each expose confirmed `value` and
+  ordered `options` containing `value`/`label` pairs. Before choices are loaded,
+  an empty options list with null value is explicit. Enabled control initializes
+  existing Library choices once; both dropdown and option-model changes publish
+  even if entry count/selection stay unchanged. Filter commands use existing
+  shared Library setters and availability/target guards; they open no recording
+  and never change a recording's manual workflow status.
 - Playback exposes actual playing/speed, current sample, source time, formatted
   replay label and last valid sample. Selection exposes confirmed Start/End sample,
   source time and replay label, independently of recording markers. Selection turns

@@ -120,13 +120,21 @@ class StreamDeckController(QObject):
         window.library.recordings.model().modelReset.connect(self.schedule)
         window.library.recordings.model().rowsInserted.connect(self.schedule)
         window.library.search.textChanged.connect(self.schedule)
-        window.library.park_filter.currentIndexChanged.connect(self.schedule)
+        for control in (window.library.park_filter, window.library.workflow_filter):
+            control.currentIndexChanged.connect(self.schedule)
+            model = control.model()
+            model.dataChanged.connect(self.schedule)
+            model.rowsInserted.connect(self.schedule)
+            model.rowsRemoved.connect(self.schedule)
+            model.modelReset.connect(self.schedule)
         window.library.changed.connect(self.schedule)
         analysis = window.analysis_controller
         if analysis is not None:
             analysis.pending_changed.connect(self.schedule)
             analysis.snapshot_ready.connect(partial(self._analysis_ready, window))
             analysis.failed.connect(partial(self._analysis_failed, window))
+        if self.transport.server.isListening() and window.library.park_filter.count() == 0:
+            window.library.refresh()
         self.schedule()
 
     @Slot(bool)
@@ -145,6 +153,9 @@ class StreamDeckController(QObject):
         self._last_state = ""
         self._sequence = 0
         try:
+            for registered in self._windows:
+                if registered.library.park_filter.count() == 0:
+                    registered.library.refresh()
             self.transport.start()
             self.publish()
         except (OSError, RuntimeError) as error:
@@ -372,8 +383,23 @@ class StreamDeckController(QObject):
         items = self._library_items(window)
         current = window.library.recordings.currentItem()
         entry = window.library.selected_entry
+        filters = tuple(
+            wire.LibraryFilterState(
+                value=control.currentData(),
+                options=tuple(
+                    wire.LibraryFilterOption(
+                        value=control.itemData(index),
+                        label=control.itemText(index),
+                    )
+                    for index in range(control.count())
+                ),
+            )
+            for control in (window.library.park_filter, window.library.workflow_filter)
+        )
         library = wire.LibraryState(
             count=len(items),
+            park_filter=filters[0],
+            status_filter=filters[1],
             selected=wire.LibraryEntry(
                 id=entry.source_sha256,
                 title=entry.ride_name or entry.filename,
@@ -542,6 +568,15 @@ class StreamDeckController(QObject):
             self._failure(sender, command, "stale_target")
             return
         action = command.action
+        if isinstance(action, wire.LibraryFilterSet):
+            filter_control = (
+                window.library.park_filter
+                if action.filter == "park"
+                else window.library.workflow_filter
+            )
+            if filter_control.findData(action.value) < 0:
+                self._failure(sender, command, "invalid_command")
+                return
         if isinstance(action, (wire.MarkerPreview, wire.MarkerDecision)):
             marker = next(value for value in state.markers if value.marker == action.marker)
             choice: Literal["preview", "apply", "discard"] = (
@@ -597,6 +632,13 @@ class StreamDeckController(QObject):
                 window.library.recordings.setCurrentItem(selected)
             window.library.recordings.scrollToItem(selected)
             window.library.notify_view_changed()
+        elif isinstance(action, wire.LibraryFilterSet):
+            filter_control = (
+                window.library.park_filter
+                if action.filter == "park"
+                else window.library.workflow_filter
+            )
+            filter_control.setCurrentIndex(filter_control.findData(action.value))
         elif isinstance(action, wire.PositionStep):
             navigation.pause()
             navigation.step_sample(action.steps)
@@ -665,7 +707,7 @@ class StreamDeckController(QObject):
                 window.library.new_window_action.trigger()
             elif action.name == "library.import":
                 window.choose_file()
-            elif action.name == "library.reset_filters":
+            elif action.name == "library.filter.reset":
                 window.library.clear_filters.click()
             elif action.name == "playback.toggle":
                 navigation.toggle_playback()

@@ -15,7 +15,7 @@
       "name": "library.import"
     },
     {
-      "name": "library.reset_filters"
+      "name": "library.filter.reset"
     },
     {
       "name": "playback.toggle"
@@ -107,11 +107,36 @@
       "name": "marker.preview",
       "marker": "start",
       "steps": 20
+    },
+    {
+      "name": "library.filter.set",
+      "filter": "park",
+      "value": null
+    },
+    {
+      "name": "library.filter.set",
+      "filter": "park",
+      "value": ""
+    },
+    {
+      "name": "library.filter.set",
+      "filter": "park",
+      "value": "Park <&\"'> 🎢 é / 東京"
+    },
+    {
+      "name": "library.filter.set",
+      "filter": "status",
+      "value": "markers_verified"
+    },
+    {
+      "name": "library.filter.set",
+      "filter": "status",
+      "value": null
     }
   ],
   "messages": [
     {
-      "version": 3,
+      "version": 4,
       "type": "state",
       "session_id": "session-1",
       "sequence": 12,
@@ -178,7 +203,10 @@
         "library.open_new_window": {
           "available": true
         },
-        "library.reset_filters": {
+        "library.filter.reset": {
+          "available": true
+        },
+        "library.filter.set": {
           "available": true
         }
       },
@@ -188,6 +216,64 @@
           "id": "ride-1",
           "title": "Example ride",
           "index": 0
+        },
+        "park_filter": {
+          "value": null,
+          "options": [
+            {
+              "value": null,
+              "label": "All parks"
+            },
+            {
+              "value": "",
+              "label": "Unknown park"
+            },
+            {
+              "value": "Park A",
+              "label": "Park A"
+            },
+            {
+              "value": "Park B",
+              "label": "Park B"
+            },
+            {
+              "value": "Park <&\"'> 🎢 é / 東京",
+              "label": "Park <&\"'> 🎢 é / 東京"
+            }
+          ]
+        },
+        "status_filter": {
+          "value": null,
+          "options": [
+            {
+              "value": null,
+              "label": "All statuses"
+            },
+            {
+              "value": "imported",
+              "label": "Imported"
+            },
+            {
+              "value": "markers_verified",
+              "label": "Markers verified"
+            },
+            {
+              "value": "overlays_created",
+              "label": "Overlays created"
+            },
+            {
+              "value": "video_ready",
+              "label": "Video ready"
+            },
+            {
+              "value": "uploaded",
+              "label": "Uploaded"
+            },
+            {
+              "value": "completed",
+              "label": "Completed"
+            }
+          ]
         }
       },
       "playback": {
@@ -361,7 +447,7 @@
       }
     },
     {
-      "version": 3,
+      "version": 4,
       "type": "state",
       "session_id": "session-1",
       "sequence": 13,
@@ -394,7 +480,7 @@
       }
     },
     {
-      "version": 3,
+      "version": 4,
       "type": "response",
       "id": "request-1",
       "target": {
@@ -405,7 +491,7 @@
       "status": "ok"
     },
     {
-      "version": 3,
+      "version": 4,
       "type": "response",
       "id": "request-1",
       "target": {
@@ -416,7 +502,7 @@
       "status": "pending"
     },
     {
-      "version": 3,
+      "version": 4,
       "type": "response",
       "id": "request-1",
       "target": {
@@ -429,7 +515,7 @@
       "reason": "background"
     },
     {
-      "version": 3,
+      "version": 4,
       "type": "response",
       "id": null,
       "target": null,

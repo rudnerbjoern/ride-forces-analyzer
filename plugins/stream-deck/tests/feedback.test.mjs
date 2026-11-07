@@ -183,7 +183,7 @@ test("new-window opening has a compact caption and its own availability", () => 
 
 test("Library filter reset uses a short caption and the existing reset icon", () => {
   const source = client();
-  const settings = { operation: "library.reset_filters" };
+  const settings = { operation: "library.filter.reset" };
   assert.equal(keyFeedback(source, "reset-filters", settings).title, "Reset\nfilters");
   assert.equal(actionIcon(settings, source.state), "reset");
   source.state.availability = { available: false, reason: "dialog_open" };

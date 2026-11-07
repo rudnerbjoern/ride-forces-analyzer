@@ -45,7 +45,7 @@ test("bundled device profiles provide reachable native menus, fixed navigation a
       assert.equal(pages.get(start[startPositions[1]].Settings.ProfileUUID).Name, "Explorer");
       if (profile.DeviceType === 7) {
         assert.deepEqual(["0,1", "1,1", "2,1", "3,1"].map(position => start[position].Settings.operation),
-          ["library.open", "library.open_new_window", "library.import", "library.reset_filters"]);
+          ["library.open", "library.open_new_window", "library.import", "library.filter.reset"]);
       } else assert.equal(start["0,1"], undefined);
       const folderImages = [];
       for (const position of startPositions) {
@@ -127,7 +127,7 @@ test("bundled device profiles provide reachable native menus, fixed navigation a
       root.Pages.Pages.forEach(visit);
       assert.equal(visited.size, pages.size, "Every bundled menu must be reachable with keys");
       if (profile.DeviceType === 7) {
-        assert.deepEqual([...operations].sort(), ["curve.set", "library.import", "library.open", "library.open_new_window", "library.reset_filters", "playback.toggle", "view.selection"]);
+        assert.deepEqual([...operations].sort(), ["curve.set", "library.filter.reset", "library.import", "library.open", "library.open_new_window", "playback.toggle", "view.selection"]);
         assert.equal(keys(names.get("Playback"))["0,1"].Settings.operation, "playback.toggle");
         assert.ok(!names.has("Position") && !names.has("Smoothing") && !names.has("Playback speed"));
         assert.ok(![...names.keys()].some(name => name.endsWith(" marker")));
@@ -137,7 +137,7 @@ test("bundled device profiles provide reachable native menus, fixed navigation a
       }
       const library = keys(names.get("Library"));
       if (profile.DeviceType === 7) assert.deepEqual(["0,1", "1,1", "2,1", "3,1"].map(position => library[position].Settings.operation),
-        ["library.open", "library.open_new_window", "library.import", "library.reset_filters"]);
+        ["library.open", "library.open_new_window", "library.import", "library.filter.reset"]);
       else assert.equal(library["0,1"].Settings.operation, "library.import");
       assert.equal(library[profile.DeviceType === 7 ? "1,1" : "2,1"].Settings.operation, "library.open_new_window");
       if (profile.DeviceType === 9) assert.equal(library["1,1"].Settings.operation, "library.open");

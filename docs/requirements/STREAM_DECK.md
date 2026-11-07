@@ -50,7 +50,7 @@ show the generated assignments. Images are software examples, not hardware evide
 ## Integration and command contract
 
 - Separate connections: plugin ↔ Stream Deck SDK; plugin ↔ Analyzer loopback WebSocket.
-- Discovery/authentication version 1; application protocol version 3. Strict typed
+- Discovery/authentication version 1; application protocol version 4. Strict typed
   messages identify the target window, recording and generation. Incompatible or
   stale-target commands are rejected rather than redirected.
 - Use the active Explorer; never select an arbitrary window or activate Analyzer
@@ -360,17 +360,17 @@ profile exist before relying on profile-name resolution. The proposed actions ne
 implementation. Highlight only the page confirmed by its appearance event, not
 merely a switch request. Preserve all user profiles.
 
-Most controls remap existing commands. Park/Status dials additionally require
-filter-option/current-value feedback and commands using the existing Library
-filter setters; do not duplicate filtering logic or hard-code the option lists.
-Device navigation and push-only bindings also need implementation. Native import,
+Most controls remap existing commands. Library filter feedback and the filter-set
+command are implemented through the existing dropdowns; filtering logic and option
+lists remain application-owned. Device navigation, filter dials and push-only
+bindings still need implementation. Native import,
 page switching/last-subgroup recall, menu highlighting, filter choice/application,
 push-only discoverability and all locks still require physical Plus acceptance.
 The screen designs establish visual consistency, not proven operating speed.
 
 #### Plus redesign implementation stages
 
-All stages are **Planned**. Implement them in order on this feature branch, reusing
+Implement remaining stages in order on this feature branch, reusing
 the existing plugin, profile builder, application actions and screenshot generator.
 Complete and validate the application contract and its matching TypeScript consumer
 first; existing controls use that contract before the new pages and dial bindings
@@ -381,7 +381,7 @@ still accept the updated contract. Keep plugin version **0.2.1 / 0.2.1.0** throu
 this development unless a release changes the version baseline.
 
 1. **PLUS-01 — Library filter contract and application routing**
-   - **Status:** Planned.
+   - **Status:** Implemented; native Windows contract, application and plugin checks pass.
    - **Implementation:** Extend `LibraryState` with Park/Status options, display
      labels and confirmed current values in dropdown order. Preserve null for All
      and the empty park string for Unknown park; identify choices by value, not
@@ -389,8 +389,11 @@ this development unless a release changes the version baseline.
      Status, validate against current choices and invoke the existing filter setter.
      Publish both dropdown changes and option-list changes, including changes that
      leave the visible count unchanged. Update Python/TypeScript models, decoder,
-     action availability and shared examples together; advance application protocol
-     3 to 4 once, with discovery/authentication unchanged at 1.
+     action availability and shared examples together. Application protocol is 4,
+     with discovery/authentication unchanged at 1.
+     Park values/labels remain plain Unicode strings without the technical ID length
+     restriction; preserve long names, whitespace, punctuation and emojis exactly
+     within the existing transport-message limit.
    - **Acceptance:** Contract and grouped application/UI tests reject invalid values,
      coercions, incompatible versions and stale targets. Applying one filter retains
      the other and search, synchronizes existing shared Library views, opens nothing

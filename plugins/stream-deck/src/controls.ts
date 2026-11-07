@@ -1,7 +1,9 @@
 import type { Action, CurveName, Direction, MarkerName, SelectionBoundary, StateEvent, Steps } from "./protocol.js";
 
+type ControlOperation = Exclude<Action["name"], "library.filter.set">;
+
 export type ControlSettings = {
-    operation?: Action["name"];
+    operation?: ControlOperation;
     direction?: Direction;
     steps?: Steps;
     curve?: CurveName;
@@ -9,9 +11,9 @@ export type ControlSettings = {
     boundary?: SelectionBoundary;
 };
 
-export const CONTROL_LABELS: Readonly<Record<Action["name"], string>> = {
+export const CONTROL_LABELS: Readonly<Record<ControlOperation, string>> = {
     "library.open_new_window": "Library: open selection in new window",
-    "library.reset_filters": "Library: reset filters",
+    "library.filter.reset": "Library: reset filters",
     "library.move": "Library: select entry", "library.open": "Library: open selection",
     "library.import": "Library: import…", "playback.toggle": "Play / Pause",
     "playback.speed.step": "Playback speed", "playback.speed.reset": "Reset playback speed",
@@ -25,7 +27,8 @@ export const CONTROL_LABELS: Readonly<Record<Action["name"], string>> = {
 
 /** Admit persisted settings before they are allowed to select an application action. */
 export function controlSettings(value: Record<string, unknown>): ControlSettings | undefined {
-    const operation = value.operation ?? "playback.toggle";
+    const operation = value.operation === "library.reset_filters"
+        ? "library.filter.reset" : value.operation ?? "playback.toggle";
     if (typeof operation !== "string" || !Object.hasOwn(CONTROL_LABELS, operation)) return undefined;
     const direction = value.direction ?? 1;
     const steps = value.steps ?? 1;
@@ -36,7 +39,7 @@ export function controlSettings(value: Record<string, unknown>): ControlSettings
         || curve !== "first" && curve !== "second" && curve !== "third" && curve !== "combined" && curve !== "calibrated"
         || boundary !== "start" && boundary !== "end"
         || marker !== "start" && marker !== "gravity" && marker !== "incline" && marker !== "end") return undefined;
-    return { operation: operation as Action["name"], direction, steps, curve, marker, boundary };
+    return { operation: operation as ControlOperation, direction, steps, curve, marker, boundary };
 }
 
 /** Build commands from confirmed values; unavailable controls never produce a command. */

@@ -22,10 +22,14 @@ test("shared wire examples satisfy the plugin's strict command and feedback type
     lines.push(`export const message${index} = ${JSON.stringify(message)} satisfies ServerMessage;`);
   }
   lines.push('export const disconnected = "disconnected" satisfies ConnectionState;');
-  for (const action of [{ name: "unknown" }, { name: "marker.apply" },
+  for (const action of [{ name: "unknown" }, { name: "library.reset_filters" }, { name: "marker.apply" },
     { name: "library.move", direction: true }, { name: "position.step", steps: 2 },
-    { name: "curve.set", curve: "combined", enabled: "yes" }]) {
-    const command = { version: 3, type: "command", id: "invalid", target: examples.target, action };
+    { name: "curve.set", curve: "combined", enabled: "yes" },
+    { name: "library.filter.set", filter: "ride", value: null },
+    { name: "library.filter.set", filter: "park", value: true },
+    { name: "library.filter.set", filter: "park", value: 12 },
+    { name: "library.filter.set", filter: "status" }]) {
+    const command = { version: PROTOCOL_VERSION, type: "command", id: "invalid", target: examples.target, action };
     lines.push("// @ts-expect-error Reject incompatible command shapes.",
       `export const invalid${lines.length} = ${JSON.stringify(command)} satisfies Command;`);
   }

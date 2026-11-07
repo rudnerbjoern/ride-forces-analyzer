@@ -28,7 +28,7 @@ function harness() {
   const receive = value => message(JSON.stringify(value));
   const publish = update => { state = { ...state, ...update, sequence: state.sequence + 1 }; receive(state); };
   const acknowledge = () => {
-    for (const command of sent) receive({ version: 3, type: "response", id: command.id, target: command.target, status: "ok" });
+    for (const command of sent) receive({ version: 4, type: "response", id: command.id, target: command.target, status: "ok" });
   };
   connection(true); receive(state);
   return { client, mode, dials, modes, bars, keys, sent, receive, publish, acknowledge, disconnect: () => connection(false) };
@@ -56,7 +56,7 @@ test("Library dials retain every notch, never open while browsing and share conf
   await h.dials.onDialRotate({ ...dial, payload: { ...dial.payload, ticks: 3 } });
   assert.deepEqual(h.sent.map(value => value.action), Array(3).fill({ name: "library.move", direction: 1 }));
   h.acknowledge();
-  h.publish({ library: { count: 2, selected: { id: "other", title: "Other ride", index: 1 } } });
+  h.publish({ library: { ...h.client.state.library, count: 2, selected: { id: "other", title: "Other ride", index: 1 } } });
   await settle();
   assert.equal(dial.output.feedback.at(-1).value, "Other ride");
   assert.match(dial.output.feedback.at(-1).detail, /2\/2/);
@@ -78,7 +78,7 @@ test("Library dials retain every notch, never open while browsing and share conf
   await h.keys.onKeyDown(open);
   await h.keys.onKeyDown(import_);
   assert.deepEqual(h.sent.slice(-2).map(value => value.action.name), ["library.open", "library.import"]);
-  h.publish({ library: { count: 0, selected: null }, controls: { ...h.client.state.controls,
+  h.publish({ library: { ...h.client.state.library, count: 0, selected: null }, controls: { ...h.client.state.controls,
     "library.move": { available: false, reason: "empty_library" }, "library.open": { available: false, reason: "no_selection" } } });
   const count = h.sent.length;
   await h.dials.onDialRotate({ ...dial, payload: { ...dial.payload, ticks: 1 } });
@@ -168,7 +168,7 @@ test("Plus marker rotation previews only its marker, press applies and touch dis
   await h.dials.onDialDown(dial);
   const apply = h.sent.at(-1);
   assert.deepEqual(apply.action, { name: "marker.apply", marker: "gravity" });
-  h.receive({ version: 3, type: "response", id: apply.id, target: apply.target, status: "pending" });
+  h.receive({ version: 4, type: "response", id: apply.id, target: apply.target, status: "pending" });
   const markers = structuredClone(h.client.state.markers);
   markers[1] = { ...markers[1], status: "pending", request_id: apply.id };
   h.publish({ markers });
@@ -176,7 +176,7 @@ test("Plus marker rotation previews only its marker, press applies and touch dis
   assert.match(dial.output.feedback.at(-1).status, /Pending/);
   assert.doesNotMatch(dial.output.feedback.at(-1).status, /Pending · Pending/);
   assert.match(dial.output.feedback.at(-1).detail, /Applied #50/);
-  h.receive({ version: 3, type: "response", id: apply.id, target: apply.target, status: "error", code: "analysis_failed", reason: null });
+  h.receive({ version: 4, type: "response", id: apply.id, target: apply.target, status: "error", code: "analysis_failed", reason: null });
   markers[1] = { ...markers[1], status: "failed", error: "analysis_failed" };
   h.publish({ markers });
   await settle();
