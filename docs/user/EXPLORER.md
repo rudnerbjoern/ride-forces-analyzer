@@ -30,7 +30,9 @@ The **Library** toolbar button shows or hides your saved recordings. Use
 together with ride/park search to find a recording, then select it to open it.
 Only recordings matching all your choices appear. Choose **All statuses** to
 include every status, or use **Clear filters** to reset all three filters. The original file is no longer
-needed after import.
+needed after import. Filters, search, the highlighted recording and list scrolling
+stay in sync across your open windows. New windows start with the same Library
+view. These shared choices do not change the recordings open in other windows.
 
 Click the status icon beside a recording to choose its progress, from **Imported**
 to **Completed**. You can move backwards or skip steps. These choices are yours:
@@ -76,10 +78,11 @@ Use the arrow beside **Import…** and choose **Import in new window…**,
 or press **Ctrl+Shift+O** (**⌘Shift+O** on macOS), then select another recording. When selecting multiple files this way, all are
 imported and only the first successful result opens in one new window.
 For an already imported ride, right-click its Library entry and choose
-**Open in new window…**. You can open the same ride more than once to compare smoothing
-settings. Place the windows side by side using your operating system.
+**Open in new window…**. An already open recording brings its existing window
+to the front. Place different recordings side by side using your operating system.
 
-Each window has its own recording, selection, zoom, playback and smoothing.
+Each window has its own recording, chart selection, zoom, playback and smoothing.
+The Library filters, search, highlighted recording and list position are shared.
 Closing one window leaves the others open. Language and appearance apply to all
 windows. Saved ride-marker adjustments remain shared per Library recording; existing windows
 keep their current display; newly opened windows use the saved markers.

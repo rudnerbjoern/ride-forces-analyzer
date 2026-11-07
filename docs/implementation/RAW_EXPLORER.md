@@ -250,7 +250,10 @@ wildcard characters are literal. Empty groups disappear, an empty result is expl
 the search-clear action removes only its text, and the reset icon clears all three
 filters. A manual status change immediately removes entries that no longer match,
 including in other open Library panels, without reloading the current chart. Filtering reads metadata only and leaves the
-chart unchanged. **Edit metadata…** opens a separate themed dialog for ride, park,
+chart unchanged. Park/status filters, search, Library selection and scroll position
+are shared across open Explorers and inherited by new windows. Receiving these
+changes never opens a recording; panel visibility and chart state remain local.
+**Edit metadata…** opens a separate themed dialog for ride, park,
 Row, Seat, Train, imported/Seated/Flying posture and notes. Source placeholders
 distinguish inherited text from additions. Save/reset persist current additions;
 Cancel discards unsaved input. Errors keep the input visible. Original details and

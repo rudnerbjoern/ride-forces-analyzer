@@ -243,6 +243,9 @@ independent of command acknowledgement. Unsupported protocol messages disable co
 For **Open in new window…**, the panel emits an archive digest through the window.
 `RecordingApplication` registers an independent Explorer in the same process and
 schedules `open_archived()`. Each window owns its analysis, playback and chart state.
+The application's Library view notification shares park/status filters, search,
+selection and scrolling between panels. New panels copy the current view; applying
+another panel's view suppresses notifications and recording-open signals.
 
 Confirmed removal follows the storage transaction before publishing one change:
 
