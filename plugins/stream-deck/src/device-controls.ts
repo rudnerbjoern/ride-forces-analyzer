@@ -2,8 +2,9 @@ import type { ControlSettings } from "./controls.js";
 import type { MarkerName, SelectionBoundary, Steps } from "./protocol.js";
 
 export type DialControl = "library" | "position" | "view" | "smoothing" | "speed" | "marker" | "selection"
-    | "zoom_selection" | "combined" | "playback";
-export type DialSettings = { control?: DialControl; marker?: MarkerName; boundary?: SelectionBoundary };
+    | "zoom_selection" | "combined" | "playback" | "filter";
+export type LibraryFilter = "park" | "status";
+export type DialSettings = { control?: DialControl; marker?: MarkerName; boundary?: SelectionBoundary; filter?: LibraryFilter };
 export type InfoSettings = { section?: string; marker?: MarkerName; boundary?: SelectionBoundary };
 
 export type StepSize = 1 | 10 | 20;
@@ -23,7 +24,8 @@ export class StepMode {
 
 /** Validate profile settings before mapping a device gesture to an application command. */
 export function dialSettings(value: DialSettings): DialSettings | undefined {
-    if (!["library", "position", "view", "smoothing", "speed", "marker", "selection", "zoom_selection", "combined", "playback"].includes(value.control ?? "")) return undefined;
+    if (!["library", "position", "view", "smoothing", "speed", "marker", "selection", "zoom_selection", "combined", "playback", "filter"].includes(value.control ?? "")) return undefined;
+    if (value.control === "filter" && value.filter !== "park" && value.filter !== "status") return undefined;
     if (value.control === "marker" && !["start", "gravity", "incline", "end"].includes(value.marker ?? "")) return undefined;
     if (value.control === "selection" && !["start", "end"].includes(value.boundary ?? "")) return undefined;
     return value;

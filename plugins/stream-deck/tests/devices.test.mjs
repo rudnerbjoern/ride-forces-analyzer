@@ -173,6 +173,7 @@ test("Plus navigation uses fine/coarse samples per tick and existing reset/play 
   await h.modes.onWillAppear(mode);
   assert.match(mode.output.titles.at(-1), /Fine/);
   assert.match(mode.output.images.at(-1), /^data:image\/svg\+xml;base64,/);
+  assert.doesNotMatch(Buffer.from(mode.output.images.at(-1).split(",")[1], "base64").toString("utf8"), /<circle cx="112"/);
   await h.dials.onDialRotate({ ...position, payload: { ...position.payload, ticks: 2 } });
   assert.deepEqual(h.sent.map(value => value.action.steps), [1, 1]);
   await h.modes.onKeyDown(mode);
@@ -180,7 +181,8 @@ test("Plus navigation uses fine/coarse samples per tick and existing reset/play 
   assert.deepEqual(h.sent.slice(-2).map(value => value.action.steps), [-10, -10]);
   assert.equal(h.mode.samples("another-plus"), 1);
   assert.equal(mode.output.titles.at(-1), "Medium\n10 samples");
-  assert.match(Buffer.from(mode.output.images.at(-1).split(",")[1], "base64").toString("utf8"), /<title>medium: active<\/title>/);
+  assert.match(Buffer.from(mode.output.images.at(-1).split(",")[1], "base64").toString("utf8"), /<title>medium: menu<\/title>/);
+  assert.doesNotMatch(Buffer.from(mode.output.images.at(-1).split(",")[1], "base64").toString("utf8"), /<circle cx="112"/);
   await settle();
   assert.match(position.output.feedback.at(-1).status, /Pending/);
   assert.match(position.output.feedback.at(-1).status, /Medium/);
@@ -188,7 +190,8 @@ test("Plus navigation uses fine/coarse samples per tick and existing reset/play 
   await h.modes.onKeyDown(mode);
   assert.match(mode.output.titles.at(-1), /20 samples/);
   assert.equal(mode.output.titles.at(-1), "Coarse\n20 samples");
-  assert.match(Buffer.from(mode.output.images.at(-1).split(",")[1], "base64").toString("utf8"), /<title>coarse: active<\/title>/);
+  assert.match(Buffer.from(mode.output.images.at(-1).split(",")[1], "base64").toString("utf8"), /<title>coarse: menu<\/title>/);
+  assert.doesNotMatch(Buffer.from(mode.output.images.at(-1).split(",")[1], "base64").toString("utf8"), /<circle cx="112"/);
   assert.equal(mode.output.states.at(-1), 2);
   await h.dials.onDialRotate({ ...position, payload: { ...position.payload, ticks: 1 } });
   assert.equal(h.sent.at(-1).action.steps, 20);

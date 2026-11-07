@@ -85,9 +85,10 @@ All three profiles use the SDK defaults: `Readonly: false`, `AutoInstall: true`,
 `DontAutoSwitchWhenInstalled: false`. Stream Deck offers the matching profile during
 plugin installation and switches to it after installation. Manual archive import
 is a fallback, not the normal setup path. Unrelated user profiles are preserved.
-Native menu images are embedded per page from the same colored artwork as the
-function keys. Reimport an updated profile to refresh its menu images; a plugin
-restart alone cannot replace images already stored in an imported profile.
+Neo/Mobile menu images are embedded per page. Plus menu and Step size images and
+captions come from live plugin feedback; its profile must not set custom Image/Title overrides.
+Replace an older Plus profile to remove those overrides; restarting the plugin
+alone cannot clear them from an installed profile.
 
 ## Installable archive
 
@@ -171,10 +172,17 @@ short; detailed application values stay on the touch strip.
 
 The Library dial selects one visible entry per notch, cyclic in both directions; press
 opens the selection in the current Explorer. Library dial 2 is unassigned;
-Park/Status dials belong to PLUS-04. Playback/Navigate and Markers/View dials are
+dials 3/4 choose Park/Status options in application dropdown order without wrapping.
+Rotation changes a device-local proposal only; press sends `library.filter.set`,
+touch requests All for that field. Feedback separates the proposal from Active;
+only received state confirms a change. Reset filters discards both local proposals
+before sending the existing reset command. GUI/option changes discard that field's
+proposal; leaving Library, target/recording/session changes and connection loss
+discard affected proposals. Locks block filter gestures; no proposal/command is replayed.
+Playback/Navigate and Markers/View dials are
 Position (press: Play/Pause), Speed (1×), Zoom (Reset) and press-only Zoom selection.
 Playback/Selection replaces the first two with Selection Start/End.
-Curves has Smoothing, press-only Combined, Zoom (Reset) and press-only Play/Pause.
+Curves has Smoothing, press-only Combined, Zoom (Reset) and Position (press: Play/Pause).
 Press-only controls ignore rotation and touch, even while unavailable.
 Smoothing stops at 1/51 samples without wrapping; press resets
 to 11. Raw mode retains unfiltered source values and disables smoothing.
@@ -193,8 +201,8 @@ Analyzer and the plugin together. Discovery/authentication stays at version 1.
 `library.filter.set` selects Park or Status by its exact dropdown value; snapshots
 include ordered values/labels and the confirmed selection. Null is All, an empty
 park is Unknown park. User text stays unchanged Unicode within the existing 64 KiB
-message limit. The current profile assignments and key-settings editor are unchanged;
-filter-dial bindings belong to the planned Plus navigation steps.
+message limit. Filter dials use exact values, including null for All and the empty
+park string for Unknown; the key-settings editor does not expose filter-set commands.
 `library.filter.reset` clears Park, Status and search. Existing profile settings
 using `library.reset_filters` map to this command; the wire protocol uses only the
 canonical name.

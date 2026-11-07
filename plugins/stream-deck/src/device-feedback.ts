@@ -9,13 +9,15 @@ const position = (value: Position | null | undefined): string => value ? `#${val
 
 /** Touch-strip feedback uses only confirmed state and clearly separates previews from applied values. */
 export function dialFeedback(client: ControlClient, context: string, settings: DialSettings | undefined,
-    stepSize: StepSize | undefined): SurfaceFeedback {
+    stepSize: StepSize | undefined, proposal?: string | null): SurfaceFeedback {
     const control = settings?.control ?? "position";
     const pressOnly = isPressOnly(control);
-    const title = control === "zoom_selection" ? "Zoom selection" : control === "playback" ? "Play/Pause"
+    const title = control === "filter" ? `${settings?.filter === "park" ? "Park" : "Status"} · Touch: All`
+        : control === "zoom_selection" ? "Zoom selection" : control === "playback" ? "Play/Pause"
         : control === "view" ? "Zoom" : control === "selection" ? `Selection ${settings?.boundary ?? "start"}`
         : label(control === "marker" ? settings?.marker ?? "Marker" : control);
-    const symbol = control === "zoom_selection" ? "selection" : control === "playback" && client.state?.playback?.playing ? "pause"
+    const symbol = control === "filter" ? settings?.filter === "park" ? "library" : "markers"
+        : control === "zoom_selection" ? "selection" : control === "playback" && client.state?.playback?.playing ? "pause"
         : control === "selection" ? `selection_${settings?.boundary ?? "start"}`
         : control === "marker" ? settings?.marker ?? "marker" : control;
     const result: SurfaceFeedback = { icon: keyImage(symbol, "disconnected", true), title, value: "—", status: "Offline", detail: "" };
@@ -24,6 +26,22 @@ export function dialFeedback(client: ControlClient, context: string, settings: D
     if (client.status !== "connected" || !state) {
         result.status = client.status === "incompatible" ? "Incompatible" : client.status === "connecting" ? "Connecting…" : "Offline";
         if (pressOnly) result.status += " · PRESS ONLY";
+        return result;
+    }
+    if (control === "filter") {
+        const filter = settings?.filter && state.library?.[`${settings.filter}_filter`];
+        const active = filter?.options.find(option => option.value === filter.value);
+        const choice = proposal === undefined ? active : filter?.options.find(option => option.value === proposal);
+        const availability = state.controls["library.filter.set"];
+        const blocked = !state.availability.available ? unavailableLabel(state.availability.reason)
+            : availability?.available === false ? unavailableLabel(availability.reason)
+            : !state.target || !choice || !availability ? "Unavailable" : "";
+        const status: IconStatus = blocked ? "unavailable" : client.error(context) ? "failed"
+            : client.pending(context) ? "pending" : proposal !== undefined ? "preview" : "active";
+        result.value = choice?.label ?? "—";
+        result.detail = `Active: ${active?.label ?? "—"}`;
+        result.status = `${blocked || (status === "active" ? "Ready" : label(status))} · Press: Filter`;
+        result.icon = keyImage(symbol, status, true);
         return result;
     }
     const binding = settings && dialBinding(settings, pressOnly ? "press" : "rotate", 1, stepSize ?? 1);

@@ -130,8 +130,8 @@ Detailed ownership and wire contracts remain in
 ### Plus profile
 
 The six native pages use the [fixed menu and context rows](#context-row-keys-58)
-and dial groups specified below. Library Park/Status dials and the redesigned
-touch-strip graphics remain planned; Library dial 2 is unassigned.
+and dial groups specified below. Library Park/Status dials are implemented;
+the redesigned touch-strip graphics remain planned. Library dial 2 is unassigned.
 No Back/Home/App/Website keys are assigned on Plus.
 Marker press/touch follow the [marker contract](#plus-marker-page).
 Reset filters invokes the existing park/status/search reset, also for empty results,
@@ -236,14 +236,14 @@ The four-marker group retains its established Start/Gravity/Incline/End order.
 | Library              | Browse; press Open                | Unassigned                      | Park choice; press Filter    | Status choice; press Filter |
 | Playback / Navigate  | Position; press Play/Pause        | Speed; press 1×                 | Zoom; press Reset view       | Press only: Zoom selection  |
 | Playback / Selection | Selection Start; press unassigned | Selection End; press unassigned | Zoom; press Reset view       | Press only: Zoom selection  |
-| Curves               | Smoothing; press Reset to 11      | Press only: Combined On/Off     | Zoom; press Reset view       | Press only: Play/Pause      |
+| Curves               | Smoothing; press Reset to 11      | Press only: Combined On/Off     | Zoom; press Reset view       | Position; press Play/Pause  |
 | Markers / Markers    | Start preview; press Apply        | Gravity preview; press Apply    | Incline preview; press Apply | End preview; press Apply    |
 | Markers / View       | Position; press Play/Pause        | Speed; press 1×                 | Zoom; press Reset view       | Press only: Zoom selection  |
 
 **Press-only overflow:** an unused rotation can carry one existing action, shown
 persistently in its touch field with function, current state and **PRESS ONLY**.
 A double-ring illustration identifies it in the concept. Turning or touching that
-field does nothing. Combined is Off/On; Play/Pause shows the actual play state;
+field does nothing. Combined is Off/On; Position shows the actual play state;
 Zoom selection shows the current Select interval. Library leaves dial 2 empty;
 dials 3/4 select its existing Park/Status filters.
 Dial 2 has no input function or alert. A display-only encoder assignment may render
@@ -372,10 +372,11 @@ confirmed by its appearance event, not merely a switch request.
 Most controls remap existing commands. Library filter feedback and the filter-set
 command are implemented through the existing dropdowns; filtering logic and option
 lists remain application-owned. Native page navigation and context/push-only
-bindings are implemented; filter dials still need implementation.
-Filter choice/application, push-only discoverability and the complete workflow
-still require physical Plus acceptance. Menu switching, subgroup recall and
-cyan selection after native swipes are verified.
+bindings and filter dials are implemented.
+Physical Plus filter choice/application, individual touch resets, endpoints,
+page/GUI proposal resets and Reset filters are owner-confirmed. Menu switching,
+subgroup recall and cyan selection after native swipes are verified. Push-only
+discoverability and the complete workflow still require physical Plus acceptance.
 The screen designs establish visual consistency, not proven operating speed.
 
 #### Plus redesign implementation stages
@@ -391,7 +392,7 @@ still accept the updated contract. Keep plugin version **0.2.1 / 0.2.1.0** throu
 this development unless a release changes the version baseline.
 
 1. **PLUS-01 — Library filter contract and application routing**
-   - **Status:** Implemented; native Windows contract, application and plugin checks pass.
+   - **Status:** Accepted; native Windows contract, application and plugin checks pass.
    - **Implementation:** Extend `LibraryState` with Park/Status options, display
      labels and confirmed current values in dropdown order. Preserve null for All
      and the empty park string for Unknown park; identify choices by value, not
@@ -412,7 +413,7 @@ this development unless a release changes the version baseline.
      plugin controls remain usable with the updated contract and current layouts.
 
 2. **PLUS-02 — Native pages and fixed navigation**
-   - **Status:** Implemented; Windows automated checks, native six-page Plus import,
+   - **Status:** Accepted; Windows automated checks, native six-page Plus import,
      SDK page switching, subgroup recall and physical swipe feedback verified.
    - **Implementation:** Extend `build-profiles.mjs` and the existing SDK action
      registration with a Plus-only navigation action. Define native page indices
@@ -428,11 +429,12 @@ this development unless a release changes the version baseline.
      limitation without replacing user profiles. Unobserved native behavior stays open.
 
 3. **PLUS-03 — Context keys and existing dial functions**
-   - **Status:** Implemented; focused automated Windows checks verified.
-     Physical acceptance of the updated bindings and captions remains open.
+   - **Status:** Accepted; focused automated Windows checks pass. Live menu captions,
+     the Fine/Medium/Coarse text/icon cycle and Curves dial 4 Position/Play-Pause
+     are physically owner-confirmed. Integrated acceptance remains PLUS-06.
    - **Implementation:** Map each context row and dial group exactly as specified
      above using `device-controls.ts`, `dial-action.ts` and existing command/feedback
-     helpers. Add press-only bindings for Zoom selection, Combined and Play/Pause;
+     helpers. Add press-only bindings for Zoom selection and Combined;
      ignore their rotation/touch. Keep Library dial 2 input-free. Use the existing
      shared 1/10/20 step size and publish the actual curve/mode/playback state.
      Menu captions show the current Library selection/count and playback/data mode;
@@ -444,7 +446,10 @@ this development unless a release changes the version baseline.
      and previews across menu changes retain their existing semantics.
 
 4. **PLUS-04 — Filter dial choices, confirmation and touch reset**
-   - **Status:** Planned.
+   - **Status:** Accepted. Automated Windows plugin checks pass; physical Plus
+     choice/application, independent touch resets, endpoints, page/GUI proposal
+     resets and Reset filters are owner-confirmed. Other failure/lifecycle/device
+     scenarios are verified automatically; integrated acceptance remains PLUS-06.
    - **Implementation:** Bind Park to dial 3 and Status to dial 4. Keep bounded,
      device-local proposals from the received options; rotation sends no filter
      command. Press applies that choice; touch immediately requests All for that

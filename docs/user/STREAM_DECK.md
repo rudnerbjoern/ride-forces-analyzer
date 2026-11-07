@@ -143,6 +143,22 @@ position in the visible list. Import is key **7**.
 while keeping the current recording open. If that recording is already open,
 its existing window is brought to the front instead.
 
+Dial **2** is unused. Turn dial **3** to choose a **Park**, or dial **4** to choose
+a workflow **Status**. Both follow the dropdown order in Analyzer and stop at
+either end. Turning only prepares a choice: **Preview** shows the proposed value,
+while **Active** shows the filter currently in use. Press that dial to apply its
+choice. **Pending** waits for confirmation; **Failed** does not change the active
+filter. Tap its touch field to request **All parks** or **All statuses** immediately.
+Each dial changes only its own filter and keeps the other filter and search.
+Filters remain usable when no recordings match.
+
+Each Plus keeps its own prepared choices. Changing a filter or its options in
+Analyzer discards its prepared choice. Leaving Library, changing the recording
+or Explorer, or losing the connection discards unapplied choices; reconnecting
+does not apply them. **Reset filters** discards both choices and requests a reset
+of Park, Status and search. Input focus, dialogs and background operation lock
+filter commands just like other Analyzer controls.
+
 ## Control playback and the view
 
 Open **Playback → Navigate**. Dials run from left to right:
@@ -157,7 +173,7 @@ Open **Playback → Navigate**. Dials run from left to right:
 **Step size** cycles Position, Selection and marker dials through
 **1 → 10 → 20 → 1 samples per notch**. The key and touch strip show the current
 step size: **Fine** (1), **Medium** (10), **Coarse** (20). The icons use one, two
-and three coloured bars. It starts at 1 sample, survives menu changes and never
+and three coloured bars, without a status badge. It starts at 1 sample, survives menu changes and never
 changes Library stepping.
 
 Position changes pause playback. Zoom, curves, smoothing and speed changes leave
@@ -174,8 +190,9 @@ Open **Curves**. The three force-line keys turn the corresponding
 lines on/off. **Data mode** shows and switches between **Raw** and **Calibrated**;
 The three direction keys are **5–7**; Data mode is key **8**.
 Press **dial 2** to switch the combined curve on/off. Dial **3** controls Zoom
-(press: Reset view); press **dial 4** for Play/Pause. Dials 2 and 4 ignore turning
-and touch taps. Labels and on/off states follow Analyzer.
+(press: Reset view). Turn **dial 4** to move the replay position using the step size
+chosen in Playback/Markers; press it for Play/Pause. Dial 2 ignores turning;
+touch taps on dials 2 and 4 do nothing. Labels and on/off states follow Analyzer.
 
 The **first dial** selects the smoothing window: **1, 3, …, 51 samples**. Further
 turns below 1 stay at 1; turns above 51 stay at 51. There is no wraparound in either

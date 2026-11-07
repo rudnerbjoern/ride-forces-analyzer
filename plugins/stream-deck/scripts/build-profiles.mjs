@@ -86,17 +86,15 @@ export async function buildProfiles(plugin) {
     if (device === "plus") {
       for (const [index, page] of PLUS_PAGES.entries()) {
         const actions = {};
-        const images = new Map();
         const putNavigation = (target, position) => {
           const settings = { page: index, target };
           const feedback = navigationFeedback(settings, index);
           const coordinate = `${position % 4},${Math.floor(position / 4)}`;
-          const image = `Images/navigation-${position}.svg`;
           actions[coordinate] = key(`${device}/${page.id}/${coordinate}`, "Plus navigation", `${uuid}.plus-navigation`, settings);
           actions[coordinate].State = feedback.selected ? 1 : 0;
-          actions[coordinate].States = [0, 1].map(() => ({ Image: image, Title: feedback.title, FontSize: 10,
+          // Native custom images/titles override SDK feedback, so leave both plugin-owned.
+          actions[coordinate].States = [0, 1].map(() => ({ FontSize: 10,
             TitleAlignment: "bottom", ShowTitle: true }));
-          images.set(image, feedback.image);
         };
         ["library", "playback", "curves", "markers"].forEach((target, position) => putNavigation(target, position));
         if (page.group === "playback" || page.group === "markers") {
@@ -114,20 +112,19 @@ export async function buildProfiles(plugin) {
           actions[coordinate].States = [0, 1].map(() => ({ FontSize: 10, TitleAlignment: "bottom", ShowTitle: true }));
         });
         if (page.group === "playback" || page.group === "markers") {
-          actions["3,1"] = key(`${device}/${page.id}/mode`, "Step size", `${uuid}.step-mode`, {}, "Fine");
-          actions["3,1"].States = ["Fine", "Medium", "Coarse"].map(Title => ({ Title, FontSize: 10, TitleAlignment: "bottom", ShowTitle: true }));
+          actions["3,1"] = key(`${device}/${page.id}/mode`, "Step size", `${uuid}.step-mode`, {});
+          actions["3,1"].States = [0, 1, 2].map(() => ({ FontSize: 10, TitleAlignment: "bottom", ShowTitle: true }));
         }
-        const dials = page.id === "library" ? [{ control: "library" }]
+        const dials = page.id === "library" ? [{ control: "library" }, undefined, { control: "filter", filter: "park" }, { control: "filter", filter: "status" }]
           : page.id === "selection" ? [...["start", "end"].map(boundary => ({ control: "selection", boundary })), { control: "view" }, { control: "zoom_selection" }]
-          : page.id === "curves" ? ["smoothing", "combined", "view", "playback"].map(control => ({ control }))
+          : page.id === "curves" ? ["smoothing", "combined", "view", "position"].map(control => ({ control }))
           : page.id === "markers" ? ["start", "gravity", "incline", "end"].map(marker => ({ control: "marker", marker }))
           : ["position", "speed", "view", "zoom_selection"].map(control => ({ control }));
         await add(`Profiles/${pageId(page.id).toUpperCase()}/manifest.json`, {
           Controllers: [{ Type: "Keypad", Actions: actions }, { Type: "Encoder", Actions: Object.fromEntries(dials.map((settings, column) =>
-            [`${column},0`, key(`${device}/${page.id}/dial/${column}`, "Analyzer dial", `${uuid}.dial`, settings)])) }],
+            settings ? [`${column},0`, key(`${device}/${page.id}/dial/${column}`, "Analyzer dial", `${uuid}.dial`, settings)] : undefined).filter(entry => entry !== undefined)) }],
           Icon: "", Name: page.name,
         });
-        for (const [image, svg] of images) await writer.add(`${root}/Profiles/${pageId(page.id).toUpperCase()}/${image}`, new TextReader(svg));
       }
       await writeFile(path.join(plugin, "profiles/plus.streamDeckProfile"), await writer.close());
       continue;

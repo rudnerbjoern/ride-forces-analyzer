@@ -143,6 +143,10 @@ copies are preserved and are not switch destinations. Native Windows six-page im
 feedback are verified on Plus. Menu captions use confirmed application state;
 marker feedback prioritizes Failed, Pending and preview count on every page.
 Press-only dials reuse existing commands and ignore rotation/touch without alerts.
+Filter dial proposals are device-local plugin state. Rotation sends nothing;
+press/touch use `library.filter.set` with exact option values. GUI/option changes
+invalidate the affected proposal; page, target/session and connection changes
+discard proposals. Active values always come from application snapshots.
 
 ### Envelopes and compatibility
 

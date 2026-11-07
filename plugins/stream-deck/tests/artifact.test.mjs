@@ -172,6 +172,10 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
     }));
     const switches = () => hostMessages.filter(value => value.event === "switchToProfile" && value.payload.profile === "profiles/plus");
     navigate("willAppear", "test-plus", 0, "playback");
+    await waitUntil(() => hostMessages.some(value => value.event === "setTitle"
+      && value.context === "test-plus-nav-0-playback" && value.payload.title === "Playback\nPaused"), diagnostic);
+    assert.ok(hostMessages.some(value => value.event === "setImage" && value.context === "test-plus-nav-0-playback"
+      && !Buffer.from(value.payload.image.split(",")[1], "base64").toString().includes("disconnected")));
     navigate("keyDown", "test-plus", 0, "playback");
     await waitUntil(() => switches().length === 1, diagnostic);
     assert.deepEqual(switches()[0].payload, { profile: "profiles/plus", page: 1 });

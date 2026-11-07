@@ -56,7 +56,21 @@ def test_reference_cli_is_reproducible_from_fixed_contract_examples() -> None:
             "Markers / Markers",
             "Markers / View",
         ]
-        assert [dial["title"] for dial in pages["Library"]["dials"]] == ["Library"]
+        assert [dial["title"] for dial in pages["Library"]["dials"]] == [
+            "Library",
+            "Park · Touch: All",
+            "Status · Touch: All",
+        ]
+        assert [dial["position"] for dial in pages["Library"]["dials"]] == [
+            "0,0",
+            "2,0",
+            "3,0",
+        ]
+        park, status = pages["Library"]["dials"][1:]
+        assert park["value"] == "All parks" and park["detail"] == "Active: All parks"
+        assert status["value"] == "All statuses"
+        assert status["detail"] == "Active: All statuses"
+        assert park["status"] == status["status"] == "Ready · Press: Filter"
         assert [dial["title"] for dial in pages["Playback / Selection"]["dials"]] == [
             "Selection start",
             "Selection end",

@@ -70,6 +70,20 @@
             "value": "Example ride",
             "status": "Ready",
             "detail": "1/2 · Press: open"
+          },
+          {
+            "position": "2,0",
+            "title": "Park · Touch: All",
+            "value": "All parks",
+            "status": "Ready · Press: Filter",
+            "detail": "Active: All parks"
+          },
+          {
+            "position": "3,0",
+            "title": "Status · Touch: All",
+            "value": "All statuses",
+            "status": "Ready · Press: Filter",
+            "detail": "Active: All statuses"
           }
         ]
       },
@@ -295,10 +309,10 @@
           },
           {
             "position": "3,0",
-            "title": "Play/Pause",
-            "value": "Paused",
-            "status": "PRESS ONLY",
-            "detail": "Press: play/pause"
+            "title": "Position",
+            "value": "#50 · 00:01.00",
+            "status": "Paused · Fine · 1 sample",
+            "detail": "1× · Press: play"
           }
         ]
       },
@@ -455,14 +469,14 @@
     ]
   },
   "inputs": {
-    "scripts/render_stream_deck_reference.py": "2114dbf652fdcfed8eb1030f879b3850a97752f95926c11034d9eeb12ae27bc9",
+    "scripts/render_stream_deck_reference.py": "fd1de14e64da0b6e3072f72ecda1d3b5dc48aa2203c51b3ad2286abf69e570e8",
     "tests/fixtures/stream_deck_protocol.json": "5d7e9058d884233b27172159a4ae28dd17dbc331120b23f427a9b37f3a9c0d94",
     "plugins/stream-deck/src/feedback.ts": "0b6ef1abdbfb0154893956f47c7e8cff8b971cbdbfafc1774eb4a9c21601c344",
-    "plugins/stream-deck/src/device-feedback.ts": "5103ec8ec1e09a106d9a5b9a6cb86784ad467a31fb722721ea6827c2a816b3c2",
+    "plugins/stream-deck/src/device-feedback.ts": "465928ec3abf8038ab88ee666f06fa429dccfd3cedb19f87bd26afe47fca174c",
     "plugins/stream-deck/src/navigation.ts": "d81b9c88296f3a2690277820f90ba016025073a43da2887e158efe2da233f96c",
     "plugins/stream-deck/devices/layouts/plus.json": "bc41ddb1cfbb3a9602f07673aace2942a5b3a711aeb4fc5b86b8ab5d9ed49261",
     "plugins/stream-deck/devices/layouts/neo.json": "875875d9c4eadd35ee1f1f92beeb0623fc589f317f50eecfd3eba6c05dd76abd",
-    "plugins/stream-deck/scripts/build-profiles.mjs": "34d5612f35464f4d519ce410e5f2621d961a0f55829eac0357d360238dd516d5",
+    "plugins/stream-deck/scripts/build-profiles.mjs": "6d88271766006a81421c9213dc452d7c64c27811cd0c3b564b6e8185c9b5a051",
     "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/manifest.json": "6e399f89e2a07e0edd2cf54b66ad4c630e8a1cb2a1725c225af78b43b3d717d0",
     "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/imgs/plugin@2x.png": "53476c4916afabf61592ceec13b2c902a197d43b94d15b5f689c5dfa5004fe31"
   },

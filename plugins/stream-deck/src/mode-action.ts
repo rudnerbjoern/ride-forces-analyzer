@@ -31,7 +31,7 @@ export class StepModeAction extends SingletonAction {
                 await key.setState(state);
                 const label = samples === 1 ? "Fine" : samples === 10 ? "Medium" : "Coarse";
                 const icon = samples === 1 ? "fine" : samples === 10 ? "medium" : "coarse";
-                await key.setImage(imageData(keyImage(icon, samples === 1 ? "inactive" : "active")), { state });
+                await key.setImage(imageData(keyImage(icon, undefined)), { state });
                 await key.setTitle(`${label}\n${samples} ${samples === 1 ? "sample" : "samples"}`);
             }
         });

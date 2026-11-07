@@ -42,10 +42,10 @@ test("Plus has six native main pages with a fixed menu, subgroup switches and no
     assert.deepEqual(pages.get(root.Pages.Default).Controllers, [{ Type: "Keypad", Actions: {} }]);
     const identities = new Set();
     const expectedDials = [
-      [{ control: "library" }],
+      [{ control: "library" }, { control: "filter", filter: "park" }, { control: "filter", filter: "status" }],
       ["position", "speed", "view", "zoom_selection"].map(control => ({ control })),
       [...["start", "end"].map(boundary => ({ control: "selection", boundary })), { control: "view" }, { control: "zoom_selection" }],
-      ["smoothing", "combined", "view", "playback"].map(control => ({ control })),
+      ["smoothing", "combined", "view", "position"].map(control => ({ control })),
       ["start", "gravity", "incline", "end"].map(marker => ({ control: "marker", marker })),
       ["position", "speed", "view", "zoom_selection"].map(control => ({ control })),
     ];
@@ -56,7 +56,7 @@ test("Plus has six native main pages with a fixed menu, subgroup switches and no
       assert.deepEqual(Object.values(dials).map(action => action.Settings), expectedDials[index]);
       for (const dial of Object.values(dials)) assert.ok(dialSettings(dial.Settings));
       if (index === 0) {
-        assert.deepEqual(Object.keys(dials), ["0,0"], "Library dial 2 is unassigned; filters belong to PLUS-04");
+        assert.deepEqual(Object.keys(dials), ["0,0", "2,0", "3,0"], "Library dial 2 stays unassigned");
         assert.deepEqual([0, 1, 2, 3].map(column => keys[`${column},1`].Settings.operation),
           ["library.open", "library.open_new_window", "library.import", "library.filter.reset"]);
       } else if (index === 3) {
@@ -65,6 +65,9 @@ test("Plus has six native main pages with a fixed menu, subgroup switches and no
       } else {
         assert.deepEqual(keys["0,1"].Settings, { operation: "playback.toggle" });
         assert.equal(keys["3,1"].UUID, `${uuid}.step-mode`);
+        assert.equal(keys["3,1"].States.length, 3);
+        assert.ok(keys["3,1"].States.every(state => state.Title === undefined && state.Image === undefined),
+          "Step size captions and icons must remain plugin-owned for the shared 1/10/20 cycle");
       }
       for (const [column, target] of ["library", "playback", "curves", "markers"].entries()) {
         const action = keys[`${column},0`];
@@ -72,7 +75,8 @@ test("Plus has six native main pages with a fixed menu, subgroup switches and no
         assert.deepEqual(action.Settings, { page: index, target });
         assert.equal(action.States.length, 2);
         assert.ok(action.States.every(state => state.FontSize === 10));
-        assert.ok(entries.some(entry => entry.filename.toLowerCase().endsWith(`/profiles/${id}/${action.States[0].Image.toLowerCase()}`)));
+        assert.ok(action.States.every(state => state.Image === undefined && state.Title === undefined),
+          "Custom profile images/titles would prevent live SDK feedback from replacing Offline");
       }
       const first = PLUS_PAGES[index].group === "playback" ? 1 : PLUS_PAGES[index].group === "markers" ? 4 : undefined;
       if (first !== undefined) for (const [column, target] of [[1, first], [2, first + 1]]) {
@@ -81,7 +85,10 @@ test("Plus has six native main pages with a fixed menu, subgroup switches and no
       for (const action of page.Controllers.flatMap(controller => Object.values(controller.Actions))) {
         assert.ok(!identities.has(action.ActionID)); identities.add(action.ActionID);
         assert.ok([`${uuid}.plus-navigation`, `${uuid}.control`, `${uuid}.dial`, `${uuid}.step-mode`].includes(action.UUID));
-        if (action.UUID === `${uuid}.plus-navigation`) assert.ok(navigationSettings(action.Settings));
+        if (action.UUID === `${uuid}.plus-navigation`) {
+          assert.ok(navigationSettings(action.Settings));
+          assert.ok(action.States.every(state => state.Image === undefined && state.Title === undefined));
+        }
         if (action.UUID === `${uuid}.control`) assert.ok(controlSettings(action.Settings));
       }
     }

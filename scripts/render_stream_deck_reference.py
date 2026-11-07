@@ -52,7 +52,7 @@ for (const entry of entries.filter(entry => /\/Profiles\/[^/]+\/manifest.json$/.
   else if (action.UUID.endsWith('.control')) feedback = keyFeedback(h, 'example', action.Settings);
   else if (action.UUID.endsWith('.step-mode')) feedback = {
    title: `${stepName}\n${stepSize} ${stepSize === 1 ? 'sample' : 'samples'}`,
-   image: keyImage(stepName.toLowerCase(), stepSize === 1 ? 'inactive' : 'active')
+   image: keyImage(stepName.toLowerCase(), undefined)
   };
   else {
    const image = action.States[0].Image;
