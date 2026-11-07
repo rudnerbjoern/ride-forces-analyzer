@@ -4,75 +4,41 @@
   "language": "en",
   "size": [
     1620,
-    2060
+    1570
   ],
   "font": "Segoe UI",
   "plus": {
     "image": "stream-deck-plus-controls.png",
     "size": [
       1620,
-      2060
+      1570
     ],
     "touch_field_scale": 0.85,
     "pages": [
       {
-        "name": "Start",
-        "keys": [
-          {
-            "position": "1,0",
-            "title": "Library"
-          },
-          {
-            "position": "2,0",
-            "title": "Explorer"
-          },
-          {
-            "position": "0,1",
-            "title": "Open\n1/2",
-            "state": 0,
-            "status": "inactive"
-          },
-          {
-            "position": "1,1",
-            "title": "New\nwindow",
-            "state": 0,
-            "status": "inactive"
-          },
-          {
-            "position": "2,1",
-            "title": "Import…",
-            "state": 0,
-            "status": "inactive"
-          },
-          {
-            "position": "3,1",
-            "title": "Reset\nfilters",
-            "state": 0,
-            "status": "inactive"
-          },
-          {
-            "position": "0,0",
-            "title": "Start app"
-          },
-          {
-            "position": "3,0",
-            "title": "Website"
-          }
-        ],
-        "dials": [
-          {
-            "position": "0,0",
-            "title": "Library",
-            "value": "Example ride",
-            "status": "Ready",
-            "detail": "1/2 · Press: open"
-          }
-        ]
-      },
-      {
         "name": "Library",
         "keys": [
           {
+            "position": "0,0",
+            "title": "Library\n1/2",
+            "selected": true
+          },
+          {
+            "position": "1,0",
+            "title": "Playback\nPaused",
+            "selected": false
+          },
+          {
+            "position": "2,0",
+            "title": "Curves\nCalibrated",
+            "selected": false
+          },
+          {
+            "position": "3,0",
+            "title": "Markers\n1 preview",
+            "selected": false
+          },
+          {
             "position": "0,1",
             "title": "Open\n1/2",
             "state": 0,
@@ -95,10 +61,6 @@
             "title": "Reset\nfilters",
             "state": 0,
             "status": "inactive"
-          },
-          {
-            "position": "0,0",
-            "title": "Back"
           }
         ],
         "dials": [
@@ -106,40 +68,89 @@
             "position": "0,0",
             "title": "Library",
             "value": "Example ride",
-            "status": "Ready",
-            "detail": "1/2 · Press: open"
+            "detail": "1/2",
+            "layout": "layouts/plus.json",
+            "background": "layouts/backgrounds/library-0.svg",
+            "hint": "Press: Open",
+            "status": {
+              "value": "Ready",
+              "color": "#a6c5e1"
+            }
+          },
+          {
+            "position": "1,0",
+            "layout": "layouts/plus-compact.json",
+            "background": "layouts/backgrounds/library-1.svg",
+            "title": "",
+            "value": "",
+            "status": {
+              "value": "",
+              "color": "#a6c5e1"
+            },
+            "detail": "",
+            "hint": ""
+          },
+          {
+            "position": "2,0",
+            "title": "Park",
+            "value": "All parks",
+            "detail": "Active: All parks",
+            "layout": "layouts/plus.json",
+            "background": "layouts/backgrounds/library-2.svg",
+            "hint": "Press: Filter · Touch: All",
+            "status": {
+              "value": "Ready",
+              "color": "#52dc96"
+            }
+          },
+          {
+            "position": "3,0",
+            "title": "Status",
+            "value": "All statuses",
+            "detail": "Active: All statuses",
+            "layout": "layouts/plus.json",
+            "background": "layouts/backgrounds/library-3.svg",
+            "hint": "Press: Filter · Touch: All",
+            "status": {
+              "value": "Ready",
+              "color": "#52dc96"
+            }
           }
         ]
       },
       {
-        "name": "Explorer",
+        "name": "Playback / Navigate",
         "keys": [
           {
+            "position": "0,0",
+            "title": "Library\n1/2",
+            "selected": false
+          },
+          {
             "position": "1,0",
-            "title": "Playback"
+            "title": "Playback\nPaused",
+            "selected": true
           },
           {
             "position": "2,0",
-            "title": "Curves"
+            "title": "Curves\nCalibrated",
+            "selected": false
+          },
+          {
+            "position": "3,0",
+            "title": "Markers\n1 preview",
+            "selected": false
           },
           {
             "position": "1,1",
-            "title": "Markers"
+            "title": "Navigate",
+            "selected": true
           },
           {
             "position": "2,1",
-            "title": "Selection"
+            "title": "Selection",
+            "selected": false
           },
-          {
-            "position": "0,0",
-            "title": "Back"
-          }
-        ],
-        "dials": []
-      },
-      {
-        "name": "Playback",
-        "keys": [
           {
             "position": "0,1",
             "title": "Play\n1×",
@@ -147,12 +158,8 @@
             "status": "inactive"
           },
           {
-            "position": "1,1",
+            "position": "3,1",
             "title": "Fine\n1 sample"
-          },
-          {
-            "position": "0,0",
-            "title": "Back"
           }
         ],
         "dials": [
@@ -160,41 +167,98 @@
             "position": "0,0",
             "title": "Position",
             "value": "#50 · 00:01.00",
-            "status": "Paused · Fine · 1 sample",
-            "detail": "1× · Press: play"
+            "detail": "",
+            "layout": "layouts/plus-compact.json",
+            "background": "layouts/backgrounds/playback-0.svg",
+            "hint": "1× · Press: play",
+            "status": {
+              "value": "Paused",
+              "color": "#a6c5e1"
+            }
           },
           {
             "position": "1,0",
-            "title": "View",
-            "value": "0.00–10.00 s",
-            "status": "Span 10.00 s",
-            "detail": "Press: reset view"
+            "title": "Speed",
+            "value": "1×",
+            "detail": "",
+            "layout": "layouts/plus-compact.json",
+            "background": "layouts/backgrounds/playback-1.svg",
+            "hint": "Press: 1×",
+            "status": {
+              "value": "Paused",
+              "color": "#a6c5e1"
+            }
           },
           {
             "position": "2,0",
-            "title": "Speed",
-            "value": "1×",
-            "status": "Paused",
-            "detail": "Press: 1×"
+            "title": "Zoom",
+            "value": "0.00–10.00 s",
+            "detail": "",
+            "layout": "layouts/plus-compact.json",
+            "background": "layouts/backgrounds/playback-2.svg",
+            "hint": "Press: reset view",
+            "status": {
+              "value": "Span 10.00 s",
+              "color": "#a6c5e1"
+            }
+          },
+          {
+            "position": "3,0",
+            "title": "Zoom selection",
+            "value": "#40–100",
+            "detail": "",
+            "layout": "layouts/plus-compact.json",
+            "background": "layouts/backgrounds/playback-3.svg",
+            "hint": "Press: zoom selection",
+            "status": {
+              "value": "PRESS ONLY",
+              "color": "#a6c5e1"
+            }
           }
         ]
       },
       {
-        "name": "Selection",
+        "name": "Playback / Selection",
         "keys": [
           {
+            "position": "0,0",
+            "title": "Library\n1/2",
+            "selected": false
+          },
+          {
+            "position": "1,0",
+            "title": "Playback\nPaused",
+            "selected": true
+          },
+          {
+            "position": "2,0",
+            "title": "Curves\nCalibrated",
+            "selected": false
+          },
+          {
+            "position": "3,0",
+            "title": "Markers\n1 preview",
+            "selected": false
+          },
+          {
+            "position": "1,1",
+            "title": "Navigate",
+            "selected": false
+          },
+          {
+            "position": "2,1",
+            "title": "Selection",
+            "selected": true
+          },
+          {
             "position": "0,1",
-            "title": "Zoom\nSelection",
+            "title": "Play\n1×",
             "state": 0,
             "status": "inactive"
           },
           {
-            "position": "1,1",
+            "position": "3,1",
             "title": "Medium\n10 samples"
-          },
-          {
-            "position": "0,0",
-            "title": "Back"
           }
         ],
         "dials": [
@@ -202,54 +266,102 @@
             "position": "0,0",
             "title": "Selection start",
             "value": "#40 · 00:00.80",
-            "status": "Ready · Medium · 10 samples",
-            "detail": "End #100 · 00:02.00"
+            "detail": "End #100 · 00:02.00",
+            "layout": "layouts/plus.json",
+            "background": "layouts/backgrounds/playback-0.svg",
+            "hint": "Turn: select bound",
+            "status": {
+              "value": "Ready",
+              "color": "#a6c5e1"
+            }
           },
           {
             "position": "1,0",
             "title": "Selection end",
             "value": "#100 · 00:02.00",
-            "status": "Ready · Medium · 10 samples",
-            "detail": "Start #40 · 00:00.80"
+            "detail": "Start #40 · 00:00.80",
+            "layout": "layouts/plus.json",
+            "background": "layouts/backgrounds/playback-1.svg",
+            "hint": "Turn: select bound",
+            "status": {
+              "value": "Ready",
+              "color": "#a6c5e1"
+            }
+          },
+          {
+            "position": "2,0",
+            "title": "Zoom",
+            "value": "0.00–10.00 s",
+            "detail": "",
+            "layout": "layouts/plus-compact.json",
+            "background": "layouts/backgrounds/playback-2.svg",
+            "hint": "Press: reset view",
+            "status": {
+              "value": "Span 10.00 s",
+              "color": "#a6c5e1"
+            }
+          },
+          {
+            "position": "3,0",
+            "title": "Zoom selection",
+            "value": "#40–100",
+            "detail": "",
+            "layout": "layouts/plus-compact.json",
+            "background": "layouts/backgrounds/playback-3.svg",
+            "hint": "Press: zoom selection",
+            "status": {
+              "value": "PRESS ONLY",
+              "color": "#a6c5e1"
+            }
           }
         ]
       },
       {
-        "name": "View / Curves",
+        "name": "Curves",
         "keys": [
           {
+            "position": "0,0",
+            "title": "Library\n1/2",
+            "selected": false
+          },
+          {
             "position": "1,0",
+            "title": "Playback\nPaused",
+            "selected": false
+          },
+          {
+            "position": "2,0",
+            "title": "Curves\nCalibrated",
+            "selected": true
+          },
+          {
+            "position": "3,0",
+            "title": "Markers\n1 preview",
+            "selected": false
+          },
+          {
+            "position": "0,1",
             "title": "Vertical\nOn",
             "state": 1,
             "status": "active"
           },
           {
-            "position": "2,0",
+            "position": "1,1",
             "title": "Lateral\nOn",
             "state": 1,
             "status": "active"
           },
           {
-            "position": "3,0",
+            "position": "2,1",
             "title": "Long.\nOn",
             "state": 1,
             "status": "active"
           },
           {
-            "position": "0,1",
+            "position": "3,1",
             "title": "Data mode\nCalibrated",
             "state": 1,
             "status": "active"
-          },
-          {
-            "position": "2,1",
-            "title": "Combined\nOff",
-            "state": 0,
-            "status": "inactive"
-          },
-          {
-            "position": "0,0",
-            "title": "Back"
           }
         ],
         "dials": [
@@ -257,21 +369,98 @@
             "position": "0,0",
             "title": "Smoothing",
             "value": "11 samples",
-            "status": "Ready",
-            "detail": "Press: reset smoothing"
+            "detail": "",
+            "layout": "layouts/plus-compact.json",
+            "background": "layouts/backgrounds/curves-0.svg",
+            "hint": "Press: reset smoothing",
+            "status": {
+              "value": "Ready",
+              "color": "#a6c5e1"
+            }
+          },
+          {
+            "position": "1,0",
+            "title": "Combined",
+            "value": "Off",
+            "detail": "",
+            "layout": "layouts/plus-compact.json",
+            "background": "layouts/backgrounds/curves-1.svg",
+            "hint": "Press: toggle combined",
+            "status": {
+              "value": "PRESS ONLY",
+              "color": "#a6c5e1"
+            }
+          },
+          {
+            "position": "2,0",
+            "title": "Zoom",
+            "value": "0.00–10.00 s",
+            "detail": "",
+            "layout": "layouts/plus-compact.json",
+            "background": "layouts/backgrounds/curves-2.svg",
+            "hint": "Press: reset view",
+            "status": {
+              "value": "Span 10.00 s",
+              "color": "#a6c5e1"
+            }
+          },
+          {
+            "position": "3,0",
+            "title": "Position",
+            "value": "#50 · 00:01.00",
+            "detail": "",
+            "layout": "layouts/plus-compact.json",
+            "background": "layouts/backgrounds/curves-3.svg",
+            "hint": "1× · Press: play",
+            "status": {
+              "value": "Paused",
+              "color": "#a6c5e1"
+            }
           }
         ]
       },
       {
-        "name": "Markers",
+        "name": "Markers / Markers",
         "keys": [
           {
-            "position": "1,1",
-            "title": "Coarse\n20 samples"
+            "position": "0,0",
+            "title": "Library\n1/2",
+            "selected": false
           },
           {
-            "position": "0,0",
-            "title": "Back"
+            "position": "1,0",
+            "title": "Playback\nPaused",
+            "selected": false
+          },
+          {
+            "position": "2,0",
+            "title": "Curves\nCalibrated",
+            "selected": false
+          },
+          {
+            "position": "3,0",
+            "title": "Markers\n1 preview",
+            "selected": true
+          },
+          {
+            "position": "1,1",
+            "title": "Markers",
+            "selected": true
+          },
+          {
+            "position": "2,1",
+            "title": "View",
+            "selected": false
+          },
+          {
+            "position": "0,1",
+            "title": "Play\n1×",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "3,1",
+            "title": "Coarse\n20 samples"
           }
         ],
         "dials": [
@@ -279,44 +468,174 @@
             "position": "0,0",
             "title": "Start",
             "value": "#50 · 00:01.00",
-            "status": "Applied · Coarse · 20 samples",
-            "detail": "Applied #50 · 00:01.00"
+            "detail": "Applied #50 · 00:01.00",
+            "layout": "layouts/plus.json",
+            "background": "layouts/backgrounds/markers-0.svg",
+            "hint": "Press: Apply · Touch: Discard",
+            "status": {
+              "value": "Applied",
+              "color": "#52dc96"
+            }
           },
           {
             "position": "1,0",
             "title": "Gravity",
             "value": "#51 · 00:01.01",
-            "status": "Preview · Coarse · 20 samples",
-            "detail": "Applied #50 · 00:01.00"
+            "detail": "Applied #50 · 00:01.00",
+            "layout": "layouts/plus.json",
+            "background": "layouts/backgrounds/markers-1.svg",
+            "hint": "Press: Apply · Touch: Discard",
+            "status": {
+              "value": "Preview",
+              "color": "#d4acff"
+            }
           },
           {
             "position": "2,0",
             "title": "Incline",
             "value": "Unset",
-            "status": "Applied · Coarse · 20 samples",
-            "detail": "Applied Unset"
+            "detail": "Set in Analyzer",
+            "layout": "layouts/plus.json",
+            "background": "layouts/backgrounds/markers-2.svg",
+            "hint": "",
+            "status": {
+              "value": "Reference unset",
+              "color": "#f6bd4f"
+            }
           },
           {
             "position": "3,0",
             "title": "End",
             "value": "#50 · 00:01.00",
-            "status": "Applied · Coarse · 20 samples",
-            "detail": "Applied #50 · 00:01.00"
+            "detail": "Applied #50 · 00:01.00",
+            "layout": "layouts/plus.json",
+            "background": "layouts/backgrounds/markers-3.svg",
+            "hint": "Press: Apply · Touch: Discard",
+            "status": {
+              "value": "Applied",
+              "color": "#52dc96"
+            }
+          }
+        ]
+      },
+      {
+        "name": "Markers / View",
+        "keys": [
+          {
+            "position": "0,0",
+            "title": "Library\n1/2",
+            "selected": false
+          },
+          {
+            "position": "1,0",
+            "title": "Playback\nPaused",
+            "selected": false
+          },
+          {
+            "position": "2,0",
+            "title": "Curves\nCalibrated",
+            "selected": false
+          },
+          {
+            "position": "3,0",
+            "title": "Markers\n1 preview",
+            "selected": true
+          },
+          {
+            "position": "1,1",
+            "title": "Markers",
+            "selected": false
+          },
+          {
+            "position": "2,1",
+            "title": "View",
+            "selected": true
+          },
+          {
+            "position": "0,1",
+            "title": "Play\n1×",
+            "state": 0,
+            "status": "inactive"
+          },
+          {
+            "position": "3,1",
+            "title": "Fine\n1 sample"
+          }
+        ],
+        "dials": [
+          {
+            "position": "0,0",
+            "title": "Position",
+            "value": "#50 · 00:01.00",
+            "detail": "",
+            "layout": "layouts/plus-compact.json",
+            "background": "layouts/backgrounds/markers-0.svg",
+            "hint": "1× · Press: play",
+            "status": {
+              "value": "Paused",
+              "color": "#a6c5e1"
+            }
+          },
+          {
+            "position": "1,0",
+            "title": "Speed",
+            "value": "1×",
+            "detail": "",
+            "layout": "layouts/plus-compact.json",
+            "background": "layouts/backgrounds/markers-1.svg",
+            "hint": "Press: 1×",
+            "status": {
+              "value": "Paused",
+              "color": "#a6c5e1"
+            }
+          },
+          {
+            "position": "2,0",
+            "title": "Zoom",
+            "value": "0.00–10.00 s",
+            "detail": "",
+            "layout": "layouts/plus-compact.json",
+            "background": "layouts/backgrounds/markers-2.svg",
+            "hint": "Press: reset view",
+            "status": {
+              "value": "Span 10.00 s",
+              "color": "#a6c5e1"
+            }
+          },
+          {
+            "position": "3,0",
+            "title": "Zoom selection",
+            "value": "#40–100",
+            "detail": "",
+            "layout": "layouts/plus-compact.json",
+            "background": "layouts/backgrounds/markers-3.svg",
+            "hint": "Press: zoom selection",
+            "status": {
+              "value": "PRESS ONLY",
+              "color": "#a6c5e1"
+            }
           }
         ]
       }
     ]
   },
   "inputs": {
-    "scripts/render_stream_deck_reference.py": "e60194e5766ac5d7792438c1400c073e1d942ac1c0474b192f766add2f6c94cc",
-    "tests/fixtures/stream_deck_protocol.json": "537f14fcbc00cb16d423650b088f443c0791622591dad7a52373ab4841a023c0",
-    "plugins/stream-deck/src/feedback.ts": "ffefcfe1faeb6e3cc6e8863e73a5a6e1e19c1bcfb87f4bd8048a33355dc2de45",
-    "plugins/stream-deck/src/device-feedback.ts": "7ff2c73f5ca1c52b34b2d9378164931942f439aae585f997c55ba1c9cbe97531",
-    "plugins/stream-deck/devices/layouts/plus.json": "bc41ddb1cfbb3a9602f07673aace2942a5b3a711aeb4fc5b86b8ab5d9ed49261",
+    "scripts/render_stream_deck_reference.py": "36e0b7b50473452f6ed665b1c1d36be0c6b31ce732f08c8b825546ae1fdeefee",
+    "tests/fixtures/stream_deck_protocol.json": "5d7e9058d884233b27172159a4ae28dd17dbc331120b23f427a9b37f3a9c0d94",
+    "plugins/stream-deck/src/feedback.ts": "ec103febc60583a76c50403a073aa14753ebeeeb5ce8ae2552d5c29e706e291e",
+    "plugins/stream-deck/src/device-feedback.ts": "f1a0d88c1aeac2fa3e89b345e0299ae1b7346d48a9cb3de384ff9fe2b0fa867c",
+    "plugins/stream-deck/src/plus-feedback.ts": "d1eadb9114eea04823f51adc12279d3edd30329c82adcef65e7cda46ce7f0407",
+    "plugins/stream-deck/src/navigation.ts": "d81b9c88296f3a2690277820f90ba016025073a43da2887e158efe2da233f96c",
+    "plugins/stream-deck/devices/layouts/plus.json": "dff1672cdb1e79fad09d1377766d704fada0f71783906c141e8a805765a54461",
     "plugins/stream-deck/devices/layouts/neo.json": "875875d9c4eadd35ee1f1f92beeb0623fc589f317f50eecfd3eba6c05dd76abd",
-    "plugins/stream-deck/scripts/build-profiles.mjs": "1ffcf73c65d28accc3106c7f58f50683f9c0e46477c9cc7723f151654e3f4a47",
-    "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/manifest.json": "addd80d7f00a5f3e5260c91a948895f0af141bcfc62880b294d0e72c0faf7c7b",
-    "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/imgs/plugin@2x.png": "53476c4916afabf61592ceec13b2c902a197d43b94d15b5f689c5dfa5004fe31"
+    "plugins/stream-deck/scripts/build-profiles.mjs": "c6f91ad9df35da2a9e43590d5a0c2e1cb0c08499cf9657c1cdb6f5c9e430f7dd",
+    "plugins/stream-deck/scripts/build-plugin.mjs": "654b11d06f698ad5418949b119818fca9b59152d70e99665dad118ffad5441e3",
+    "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/manifest.json": "6e399f89e2a07e0edd2cf54b66ad4c630e8a1cb2a1725c225af78b43b3d717d0",
+    "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/imgs/plugin@2x.png": "53476c4916afabf61592ceec13b2c902a197d43b94d15b5f689c5dfa5004fe31",
+    "plugins/stream-deck/devices/backgrounds/library.svg": "71b3c4e30a2a101cd3b6de822cba73d866c2c002864ac2c625173cb8ac782d37",
+    "plugins/stream-deck/devices/backgrounds/playback.svg": "cdd5cb19fbf5dcc721bafd846c43ce795d13d2387313011414ea9d7abf09c759",
+    "plugins/stream-deck/devices/backgrounds/curves.svg": "26e3841dd72fe9a88a9dc948334d89fcc6de2f0f321834445cc1e26a34af6453",
+    "plugins/stream-deck/devices/backgrounds/markers.svg": "8e9d3b3ce5795922125c69d14e2194fc4409bcb229a64b44cefcce82789ebcb3"
   },
   "neo": {
     "image": "stream-deck-neo-controls.png",
@@ -1103,6 +1422,34 @@
       730
     ],
     "device": "plus",
-    "page": "Playback"
+    "page": "Playback / Navigate"
+  },
+  "native_strips": {
+    "image": "stream-deck-plus-touch-strips.png",
+    "size": [
+      840,
+      2160
+    ],
+    "field_size": [
+      200,
+      100
+    ],
+    "cases": [
+      "Library",
+      "Playback / Navigate",
+      "Playback / Selection",
+      "Curves",
+      "Markers / Markers",
+      "Markers / View",
+      "Library · proposed filters / long text",
+      "Markers · Applied / Preview / Pending / Failed",
+      "Library · Editing",
+      "Library · Dialog open",
+      "Library · Background",
+      "Library · Busy",
+      "Playback · no recording",
+      "Library · no Explorer",
+      "Library · offline"
+    ]
   }
 }

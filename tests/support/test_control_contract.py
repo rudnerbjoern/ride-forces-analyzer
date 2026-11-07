@@ -48,7 +48,45 @@ def test_shared_examples_cover_every_action_and_server_envelope() -> None:
         assert json.loads(parsed.model_dump_json()) == original
 
 
-@pytest.mark.parametrize("version", [True, "3", 0, 1, 2, 4])
+def test_filter_values_preserve_long_unicode_text_without_identifier_limits() -> None:
+    value = "  Park <&\"'> \\ /\t\n東京 e\u0301 👩‍🚀 " + "Ž🎢" * 800 + "  "
+    action = {"name": "library.filter.set", "filter": "park", "value": value}
+    command = {
+        "version": PROTOCOL_VERSION,
+        "type": "command",
+        "id": "filter",
+        "target": EXAMPLES["target"],
+        "action": action,
+    }
+    state = deepcopy(EXAMPLES["messages"][0])
+    state["library"]["park_filter"]["options"].append({"value": value, "label": value})
+    state["library"]["park_filter"]["value"] = value
+    for ascii_only in (False, True):
+        parsed = parse_command(json.dumps(command, ensure_ascii=ascii_only))
+        assert json.loads(parsed.model_dump_json())["action"] == action
+        feedback = parse_server_message(json.dumps(state, ensure_ascii=ascii_only))
+        assert json.loads(feedback.model_dump_json()) == state
+
+
+@pytest.mark.parametrize(
+    "choice",
+    [
+        {"value": "absent", "options": []},
+        {"value": "absent", "options": [{"value": None, "label": "All"}]},
+        {"value": None, "options": [{"value": None, "label": "All"}] * 2},
+        {"value": True, "options": [{"value": True, "label": "Invalid"}]},
+        {"value": None, "options": [{"value": None, "label": 1}]},
+        {"value": None, "options": [{"value": None, "label": "All", "index": 0}]},
+    ],
+)
+def test_invalid_filter_feedback_is_rejected(choice: dict[str, object]) -> None:
+    state = deepcopy(EXAMPLES["messages"][0])
+    state["library"]["park_filter"] = choice
+    with pytest.raises(ValidationError):
+        parse_server_message(json.dumps(state))
+
+
+@pytest.mark.parametrize("version", [True, "4", 0, 1, 2, 3, 5])
 def test_incompatible_and_coerced_versions_are_rejected(version: object) -> None:
     with pytest.raises(ValidationError):
         parse_command(
@@ -72,6 +110,7 @@ def test_incompatible_and_coerced_versions_are_rejected(version: object) -> None
     "action",
     [
         {"name": "unknown"},
+        {"name": "library.reset_filters"},
         {"name": "library.open", "new_window": True},
         {"name": "library.move", "direction": 10},
         {"name": "library.move", "direction": True},
@@ -82,6 +121,11 @@ def test_incompatible_and_coerced_versions_are_rejected(version: object) -> None
         {"name": "marker.apply"},
         {"name": "selection.step", "boundary": "gravity", "steps": 1},
         {"name": "selection.step", "boundary": "end", "steps": True},
+        {"name": "library.filter.set", "filter": "ride", "value": None},
+        {"name": "library.filter.set", "filter": "park", "value": 12},
+        {"name": "library.filter.set", "filter": "park", "value": True},
+        {"name": "library.filter.set", "filter": "park", "value": []},
+        {"name": "library.filter.set", "filter": "park"},
     ],
 )
 def test_unknown_or_invalid_action_arguments_are_rejected(action: dict[str, object]) -> None:

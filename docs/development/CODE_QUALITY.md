@@ -6,6 +6,14 @@ Architecture owns [platform constraints](../architecture/02_architecture_constra
 and [quality goals/acceptance boundaries](../architecture/10_quality_requirements.md).
 Installed checks work offline.
 
+## Documentation changes
+
+The [documentation-maintenance workflow](../../.agents/skills/documentation-maintenance/SKILL.md)
+requires audience/destination selection before writing and independent semantic
+review of changed user-facing content. The [docs index](../README.md) remains
+authoritative for topic ownership. Formatting, spelling and link checks verify
+mechanics; they do not determine whether a passage belongs in a user guide.
+
 ## Python inline documentation
 
 Application and tool code use English Google-style documentation strings. Test code is exempt.

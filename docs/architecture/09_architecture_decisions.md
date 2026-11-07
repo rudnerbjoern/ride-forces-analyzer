@@ -54,8 +54,8 @@ or persistence path. No keyboard simulation or disconnected command replay is us
 Feedback follows confirmed application state; target identity and foreground/input
 guards prevent commands from silently reaching another Explorer.
 [Runtime contracts](06_runtime_view.md#stream-deck-transport) own messages and
-delivery; [requirements](../requirements/STREAM_DECK.md) own device scope and
-native acceptance.
+delivery; the [control contract](../implementation/STREAM_DECK.md) owns device scope
+and [validation](../validation/STREAM_DECK.md) owns native qualification.
 
 ## Physical qualification
 

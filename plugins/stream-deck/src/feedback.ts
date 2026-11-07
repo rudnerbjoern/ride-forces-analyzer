@@ -139,7 +139,7 @@ export function actionIcon(settings: ControlSettings | undefined, state?: StateE
         case "library.open": return "open";
         case "library.open_new_window": return "new_window";
         case "library.import": return "import";
-        case "library.reset_filters": return "reset";
+        case "library.filter.reset": return "reset";
         case "playback.toggle": return state?.playback?.playing ? "pause" : "playback";
         case "playback.speed.step": return "speed";
         case "playback.speed.reset": case "smoothing.reset": case "view.reset": return "reset";
@@ -159,7 +159,7 @@ export function actionIcon(settings: ControlSettings | undefined, state?: StateE
 }
 
 /** Render shaded, filled function artwork with an independent state badge. */
-export function keyImage(area: string, status: IconStatus | undefined, compact = false): string {
+export function keyImage(area: string, status: IconStatus | undefined, compact = false, showBadge = true): string {
     const color = { active: "#52dc96", inactive: "#9db4d1", preview: "#d4acff", unavailable: "#f6bd4f",
         pending: "#62b5ff", failed: "#ff7777", disconnected: "#8290a6" }[status ?? "inactive"];
     const shape = artwork[area as keyof typeof artwork] ?? artwork.marker;
@@ -181,7 +181,7 @@ export function keyImage(area: string, status: IconStatus | undefined, compact =
         + '<rect x=".5" y=".5" width="143" height="143" rx="16" fill="url(#background)" stroke="#527699" stroke-opacity=".35"/>'
         + `<ellipse cx="70" cy="90" rx="43" ry="5" fill="#030912" opacity=".4"/>`
         + `<g transform="translate(15 8) scale(.78)" opacity="${opacity}">${shape}</g>`
-        + (status === undefined ? "" : `<circle cx="112" cy="22" r="19" fill="#070e1c" opacity=".6"/><circle cx="112" cy="20" r="17" fill="${color}" stroke="#ecf6ff" stroke-opacity=".65"/>`
+        + (status === undefined || !showBadge ? "" : `<circle cx="112" cy="22" r="19" fill="#070e1c" opacity=".6"/><circle cx="112" cy="20" r="17" fill="${color}" stroke="#ecf6ff" stroke-opacity=".65"/>`
             + `<g stroke="#142237" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">${badge}</g>`)
         + '</svg>';
 }
@@ -192,7 +192,7 @@ export function imageData(svg: string): string {
 }
 
 /** Bound native key captions to two short lines; detailed values belong on the touch strip. */
-function keyTitle(value: string): string {
+export function keyTitle(value: string): string {
     const short: Record<string, string> = { "No recording": "No data", "No selection": "No choice", "Empty Library": "Empty list", Incompatible: "Version err" };
     return value.split("\n").slice(0, 2).map(line => short[line] ?? line)
         .map(line => line.length > 11 ? `${line.slice(0, 10)}…` : line).join("\n");
@@ -204,7 +204,7 @@ export function keyFeedback(client: ControlClient, context: string, settings: Co
     const icon = actionIcon(settings, client.state);
     const labels = {
         "library.move": "Library", "library.open": "Open", "library.open_new_window": "New window", "library.import": "Import",
-        "library.reset_filters": "Reset filters",
+        "library.filter.reset": "Reset filters",
         "playback.toggle": "Play/Pause", "playback.speed.step": "Speed", "playback.speed.reset": "Speed reset",
         "position.step": "Position", "selection.step": "Selection", "view.zoom": "Zoom", "view.reset": "Reset view",
         "view.selection": "Zoom", "smoothing.step": "Smoothing", "smoothing.reset": "Smoothing",
@@ -226,7 +226,7 @@ export function keyFeedback(client: ControlClient, context: string, settings: Co
             : snapshot.library?.count === 0 ? "Empty" : "No choice";
         title = name === "library.import" ? "Import…"
             : name === "library.open_new_window" ? "New\nwindow"
-            : name === "library.reset_filters" ? "Reset\nfilters" : `${label}\n${index}`;
+            : name === "library.filter.reset" ? "Reset\nfilters" : `${label}\n${index}`;
     } else if (name === "playback.toggle") {
         playing = snapshot.playback?.playing ?? false;
         active = playing;

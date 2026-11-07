@@ -111,6 +111,116 @@ def activate(application: RecordingApplication, window: ExplorerWindow) -> None:
     )
 
 
+def exercise_filters(
+    application: RecordingApplication,
+    window: ExplorerWindow,
+    device: Device,
+    observer: Device,
+    long_park: str,
+) -> None:
+    controller = application.stream_deck
+    original = window.data
+    entries = LibraryStore().entries()
+    windows = len(application.windows)
+
+    def current() -> wire.LibraryState:
+        state = controller.snapshot().library
+        assert state is not None
+        return state
+
+    for control, actual in (
+        (window.library.park_filter, current().park_filter),
+        (window.library.workflow_filter, current().status_filter),
+    ):
+        assert [(option.value, option.label) for option in actual.options] == [
+            (control.itemData(index), control.itemText(index)) for index in range(control.count())
+        ]
+    assert any(option.value == long_park for option in current().park_filter.options)
+    window.library.search.setText("Second")
+    response = device.request(
+        wire.LibraryFilterSet(name="library.filter.set", filter="park", value=long_park),
+    )
+    assert response.status == "ok" and current().count == 1
+    assert window.library.search.text() == "Second"
+    checkpoint = len(observer.messages)
+    window.library.workflow_filter.setCurrentIndex(
+        window.library.workflow_filter.findData("imported"),
+    )
+    wait_until(
+        lambda: any(
+            isinstance(value, wire.StateEvent)
+            and value.library is not None
+            and value.library.count == 1
+            and value.library.status_filter.value == "imported"
+            for value in observer.messages[checkpoint:]
+        ),
+    )
+    for option in current().status_filter.options:
+        response = device.request(
+            wire.LibraryFilterSet(name="library.filter.set", filter="status", value=option.value),
+        )
+        assert response.status == "ok" and current().status_filter.value == option.value
+        assert current().park_filter.value == long_park
+        assert window.library.search.text() == "Second"
+    assert current().count == 0
+    response = device.request(
+        wire.LibraryFilterSet(name="library.filter.set", filter="park", value=""),
+    )
+    assert response.status == "ok" and current().park_filter.value == ""
+    assert current().count == 0 and current().status_filter.value == "completed"
+    for action in (
+        wire.LibraryFilterSet(name="library.filter.set", filter="park", value="not a choice"),
+        wire.LibraryFilterSet(name="library.filter.set", filter="park", value="park a"),
+        wire.LibraryFilterSet(name="library.filter.set", filter="status", value="Imported"),
+    ):
+        response = device.request(action)
+        assert isinstance(response, wire.Failure) and response.code == "invalid_command"
+    device.request(wire.SimpleAction(name="library.filter.reset"))
+    assert current().count == 2
+    assert current().park_filter.value is None and current().status_filter.value is None
+
+    # Model-only label and option changes must publish without changing list count.
+    control = window.library.park_filter
+    index = control.findData(long_park)
+    checkpoint = len(observer.messages)
+    label = "Display label <&> 🎢"
+    control.setItemText(index, label)
+    wait_until(
+        lambda: any(
+            isinstance(value, wire.StateEvent)
+            and value.library is not None
+            and value.library.count == 2
+            and any(
+                option.value == long_park and option.label == label
+                for option in value.library.park_filter.options
+            )
+            for value in observer.messages[checkpoint:]
+        ),
+    )
+    checkpoint = len(observer.messages)
+    control.removeItem(index)
+    wait_until(
+        lambda: any(
+            isinstance(value, wire.StateEvent)
+            and value.library is not None
+            and value.library.count == 2
+            and all(option.value != long_park for option in value.library.park_filter.options)
+            for value in observer.messages[checkpoint:]
+        ),
+    )
+    response = device.request(
+        wire.LibraryFilterSet(name="library.filter.set", filter="park", value=long_park),
+    )
+    assert isinstance(response, wire.Failure) and response.code == "invalid_command"
+    window.library.refresh()
+    assert any(
+        option.value == long_park and option.label == long_park
+        for option in current().park_filter.options
+    )
+    assert current().count == 2 and window.data is original
+    assert len(application.windows) == windows and LibraryStore().entries() == entries
+
+
 def exercise(application: RecordingApplication) -> None:
     application.settings = AppSettings(language=Language.ENGLISH)
     application.start(OpenRequest(new_window=True))
@@ -139,6 +249,9 @@ def exercise(application: RecordingApplication) -> None:
     assert controller.transport.endpoint_path.exists()
     device = Device(application)
     other_device = Device(application)
+    initial_library = controller.snapshot().library
+    assert initial_library is not None
+    assert [option.value for option in initial_library.park_filter.options] == [None, ""]
     source = synthetic_source(
         name="First ride",
         location="Park A",
@@ -149,7 +262,8 @@ def exercise(application: RecordingApplication) -> None:
         accelerationSequence=[{"x": 0, "y": 0, "z": 1}] * 70 + [{"x": 0, "y": 1, "z": 1}] * 131,
         gravitySequence=[{"x": 0, "y": 0, "z": 1}] * 201,
     )
-    second_source = synthetic_source(name="Second ride", location="Park B")
+    long_park = "Park <&\"'> 東京 e\u0301 👩‍🚀 /\t\n" + "Ž🎢" * 800
+    second_source = synthetic_source(name="Second ride", location=long_park)
     store = LibraryStore()
     store.archive(source, "first.forces", (20, 180), CalibrationOverrides())
     store.archive(second_source, "second.forces", (2, 6), CalibrationOverrides())
@@ -318,6 +432,10 @@ def exercise(application: RecordingApplication) -> None:
     wait_until(lambda: isinstance(controller.snapshot().availability, wire.Unavailable))
     blocked = device.request(wire.PositionStep(name="position.step", steps=1))
     assert isinstance(blocked, wire.Failure) and blocked.reason == "input_focus"
+    blocked = device.request(
+        wire.LibraryFilterSet(name="library.filter.set", filter="park", value="Park A"),
+    )
+    assert isinstance(blocked, wire.Failure) and blocked.reason == "input_focus"
     activate(application, window)
     with pytest.MonkeyPatch.context() as patch:
         patch.setattr(
@@ -327,11 +445,19 @@ def exercise(application: RecordingApplication) -> None:
         )
         blocked = device.request(wire.SimpleAction(name="playback.toggle"))
         assert isinstance(blocked, wire.Failure) and blocked.reason == "background"
+        blocked = device.request(
+            wire.LibraryFilterSet(name="library.filter.set", filter="park", value="Park A"),
+        )
+        assert isinstance(blocked, wire.Failure) and blocked.reason == "background"
     modal = QDialog(window)
     modal.setWindowModality(Qt.WindowModality.WindowModal)
     modal.show()
     wait_until(lambda: application.activeModalWidget() is modal)
     blocked = device.request(wire.SimpleAction(name="playback.toggle"))
+    assert isinstance(blocked, wire.Failure) and blocked.reason == "dialog_open"
+    blocked = device.request(
+        wire.LibraryFilterSet(name="library.filter.set", filter="park", value="Park A"),
+    )
     assert isinstance(blocked, wire.Failure) and blocked.reason == "dialog_open"
     modal.close()
     activate(application, window)
@@ -366,6 +492,29 @@ def exercise(application: RecordingApplication) -> None:
     assert plot.marker_preview_lines["inclineIndex"].isVisible()
     device.request(wire.MarkerDecision(name="marker.discard", marker="incline"))
     assert not plot.marker_previews
+    # Hidden previews move into view without changing zoom, markers or source data.
+    for name in ("start", "gravity", "incline", "end"):
+        plot.axis_x.setRange(2, 2.4)
+        device.request(wire.MarkerPreview(name="marker.preview", marker=name, steps=1))
+        time = window.data.time_at(plot.marker_previews[f"{name}Index"])
+        low, high = plot.axis_x.min(), plot.axis_x.max()
+        assert high - low == pytest.approx(0.4)
+        assert 0 <= low <= time <= high <= window.data.duration
+        if name == "gravity":
+            assert low == 0
+        else:
+            assert (low + high) / 2 == pytest.approx(time)
+        assert plot.marker_preview_lines[f"{name}Index"].isVisible()
+        device.request(wire.MarkerPreview(name="marker.preview", marker=name, steps=1))
+        assert (plot.axis_x.min(), plot.axis_x.max()) == (low, high)
+        device.request(wire.MarkerDecision(name="marker.discard", marker=name))
+        assert (plot.axis_x.min(), plot.axis_x.max()) == (low, high)
+        assert store.markers(source) == saved
+    plot.axis_x.setRange(2, 2.4)
+    device.request(wire.MarkerPreview(name="marker.preview", marker="end", steps=20))
+    assert plot.axis_x.max() == pytest.approx(window.data.duration)
+    assert plot.axis_x.max() - plot.axis_x.min() == pytest.approx(0.4)
+    device.request(wire.MarkerDecision(name="marker.discard", marker="end"))
     device.request(wire.MarkerPreview(name="marker.preview", marker="start", steps=1))
     device.request(wire.MarkerPreview(name="marker.preview", marker="end", steps=-1))
     assert window.data.ride_bounds == (20, 180)
@@ -440,6 +589,9 @@ def exercise(application: RecordingApplication) -> None:
         is None
     )
 
+    exercise_filters(application, window, device, other_device, long_park)
+    device.request(wire.LibraryMove(name="library.move", direction=1))
+
     # Visible Library order, filtering, cyclic movement and current-window opening.
     selection = controller.snapshot().library
     assert selection is not None and selection.count == 2 and selection.selected is not None
@@ -495,14 +647,14 @@ def exercise(application: RecordingApplication) -> None:
     window.library.workflow_filter.setCurrentIndex(
         window.library.workflow_filter.findData("completed"),
     )
-    reset = device.request(wire.SimpleAction(name="library.reset_filters"))
+    reset = device.request(wire.SimpleAction(name="library.filter.reset"))
     assert isinstance(reset, wire.Result) and reset.status == "ok"
     assert not window.library.search.text()
     assert window.library.park_filter.currentData() is None
     assert window.library.workflow_filter.currentData() is None
     library = controller.snapshot().library
     assert library is not None and library.count == 2 and window.data is loaded
-    assert device.request(wire.SimpleAction(name="library.reset_filters")).status == "ok"
+    assert device.request(wire.SimpleAction(name="library.filter.reset")).status == "ok"
     with pytest.MonkeyPatch.context() as patch:
         imports: list[bool] = []
         patch.setattr(window, "choose_file", lambda: imports.append(True))
@@ -529,6 +681,37 @@ def exercise(application: RecordingApplication) -> None:
     assert created.data is not None and created.data.source.source_sha256 == selected.source_sha256
     created_data = created.data
     created.navigation.slider.setValue(3)
+    activate(application, window)
+    response = device.request(
+        wire.LibraryFilterSet(name="library.filter.set", filter="park", value=long_park),
+    )
+    assert response.status == "ok"
+    assert (
+        window.library.park_filter.currentData()
+        == created.library.park_filter.currentData()
+        == long_park
+    )
+    response = device.request(
+        wire.LibraryFilterSet(name="library.filter.set", filter="status", value="imported"),
+    )
+    assert response.status == "ok"
+    assert (
+        window.library.workflow_filter.currentData()
+        == created.library.workflow_filter.currentData()
+        == "imported"
+    )
+    assert window.data is original_data and created.data is created_data
+    device.request(wire.SimpleAction(name="library.filter.reset"))
+    assert (
+        window.library.park_filter.currentData()
+        is created.library.park_filter.currentData()
+        is None
+    )
+    assert (
+        window.library.workflow_filter.currentData()
+        is created.library.workflow_filter.currentData()
+        is None
+    )
     for _ in range(5):
         activate(application, window)
         created.showMinimized()
@@ -569,6 +752,11 @@ def exercise(application: RecordingApplication) -> None:
     assert not plot.marker_previews
     assert not any(line.isVisible() for line in plot.marker_preview_lines.values())
     blocked = device.request(wire.SimpleAction(name="library.import"), target=old_target)
+    assert isinstance(blocked, wire.Failure) and blocked.code == "stale_target"
+    blocked = device.request(
+        wire.LibraryFilterSet(name="library.filter.set", filter="park", value=None),
+        target=old_target,
+    )
     assert isinstance(blocked, wire.Failure) and blocked.code == "stale_target"
     other.close()
     activate(application, window)

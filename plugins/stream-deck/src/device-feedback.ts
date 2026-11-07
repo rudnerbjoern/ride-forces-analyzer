@@ -1,34 +1,60 @@
 import type { ControlClient } from "./client.js";
-import { dialBinding, type DialSettings, type StepSize, type InfoSettings } from "./device-controls.js";
+import { dialBinding, isPressOnly, type DialSettings, type StepSize, type InfoSettings } from "./device-controls.js";
 import { keyFeedback, keyImage, unavailableLabel, type IconStatus } from "./feedback.js";
 import type { Position } from "./protocol.js";
 
-export type SurfaceFeedback = { icon: string; title: string; value: string; status: string; detail: string };
+export type SurfaceFeedback = { icon: string; title: string; value: string; status: string; detail: string; visual: IconStatus };
 const label = (value: string): string => value.charAt(0).toUpperCase() + value.slice(1);
 const position = (value: Position | null | undefined): string => value ? `#${value.sample} · ${value.label}` : "Unset";
 
 /** Touch-strip feedback uses only confirmed state and clearly separates previews from applied values. */
 export function dialFeedback(client: ControlClient, context: string, settings: DialSettings | undefined,
-    stepSize: StepSize | undefined): SurfaceFeedback {
+    stepSize: StepSize | undefined, proposal?: string | null, showBadge = true): SurfaceFeedback {
     const control = settings?.control ?? "position";
-    const title = control === "selection" ? `Selection ${settings?.boundary ?? "start"}`
+    const pressOnly = isPressOnly(control);
+    const title = control === "filter" ? `${settings?.filter === "park" ? "Park" : "Status"} · Touch: All`
+        : control === "zoom_selection" ? "Zoom selection" : control === "playback" ? "Play/Pause"
+        : control === "view" ? "Zoom" : control === "selection" ? `Selection ${settings?.boundary ?? "start"}`
         : label(control === "marker" ? settings?.marker ?? "Marker" : control);
-    const symbol = control === "selection" ? `selection_${settings?.boundary ?? "start"}`
+    const symbol = control === "filter" ? settings?.filter === "park" ? "library" : "markers"
+        : control === "zoom_selection" ? "selection" : control === "playback" && client.state?.playback?.playing ? "pause"
+        : control === "selection" ? `selection_${settings?.boundary ?? "start"}`
         : control === "marker" ? settings?.marker ?? "marker" : control;
-    const result: SurfaceFeedback = { icon: keyImage(symbol, "disconnected", true), title, value: "—", status: "Offline", detail: "" };
+    const result: SurfaceFeedback = { icon: keyImage(symbol, "disconnected", true, showBadge), title, value: "—", status: "Offline", detail: "", visual: "disconnected" };
+    if (pressOnly) result.detail = `Press: ${control === "combined" ? "toggle combined" : control === "playback" ? "play/pause" : "zoom selection"}`;
     const state = client.state;
     if (client.status !== "connected" || !state) {
         result.status = client.status === "incompatible" ? "Incompatible" : client.status === "connecting" ? "Connecting…" : "Offline";
+        if (pressOnly) result.status += " · PRESS ONLY";
         return result;
     }
-    const binding = settings && dialBinding(settings, "rotate", 1, stepSize ?? 1);
+    if (control === "filter") {
+        const filter = settings?.filter && state.library?.[`${settings.filter}_filter`];
+        const active = filter?.options.find(option => option.value === filter.value);
+        const choice = proposal === undefined ? active : filter?.options.find(option => option.value === proposal);
+        const availability = state.controls["library.filter.set"];
+        const blocked = !state.availability.available ? unavailableLabel(state.availability.reason)
+            : availability?.available === false ? unavailableLabel(availability.reason)
+            : !state.target || !choice || !availability ? "Unavailable" : "";
+        const status: IconStatus = blocked ? "unavailable" : client.error(context) ? "failed"
+            : client.pending(context) ? "pending" : proposal !== undefined ? "preview" : "active";
+        result.value = choice?.label ?? "—";
+        result.detail = `Active: ${active?.label ?? "—"}`;
+        result.status = `${blocked || (status === "active" ? "Ready" : label(status))} · Press: Filter`;
+        result.visual = status;
+        result.icon = keyImage(symbol, status, true, showBadge);
+        return result;
+    }
+    const binding = settings && dialBinding(settings, pressOnly ? "press" : "rotate", 1, stepSize ?? 1);
     const feedback = keyFeedback(client, context, binding);
     const marker = control === "marker" ? state.markers.find(value => value.marker === settings?.marker) : undefined;
     const mode = stepSize !== undefined && (control === "position" || control === "marker" || control === "selection")
         ? stepSize === 1 ? "Fine · 1 sample" : `${stepSize === 10 ? "Medium" : "Coarse"} · ${stepSize} samples` : "";
     const availability = binding?.operation ? state.controls[binding.operation] : undefined;
+    const curveAvailability = control === "combined" ? state.curves.find(curve => curve.curve === "combined")?.availability : undefined;
     const blocked = !state.availability.available ? unavailableLabel(state.availability.reason)
         : availability?.available === false ? unavailableLabel(availability.reason)
+        : curveAvailability?.available === false ? unavailableLabel(curveAvailability.reason)
         : marker?.availability.preview.available === false ? unavailableLabel(marker.availability.preview.reason)
         : feedback.status === "unavailable" ? "Unavailable" : "";
     let visual = feedback.status;
@@ -81,16 +107,29 @@ export function dialFeedback(client: ControlClient, context: string, settings: D
             phase = label(marker?.status ?? "unavailable");
             if (marker?.status === "applied" && marker.applied && visual === "inactive") visual = "active";
             break;
+        case "zoom_selection":
+            result.value = state.selection ? `#${state.selection.start.sample}–${state.selection.end.sample}` : "—";
+            break;
+        case "combined": {
+            const curve = state.curves.find(curve => curve.curve === "combined");
+            result.value = curve ? curve.active ? "On" : "Off" : "—";
+            break;
+        }
+        case "playback":
+            result.value = state.playback ? state.playback.playing ? "Playing" : "Paused" : "—";
+            break;
     }
+    if (pressOnly) phase = "";
     if (feedback.status === "pending" || feedback.status === "failed") phase = label(feedback.status);
     if (blocked && phase === "Ready") phase = "";
-    result.status = [phase, blocked, mode].filter((value, index, values) => value && values.indexOf(value) === index).join(" · ");
-    result.icon = keyImage(symbol, blocked ? "unavailable" : visual, true);
+    result.status = [phase, blocked, pressOnly ? "PRESS ONLY" : "", mode].filter((value, index, values) => value && values.indexOf(value) === index).join(" · ");
+    result.visual = blocked ? "unavailable" : visual;
+    result.icon = keyImage(symbol, result.visual, true, showBadge);
     return result;
 }
 
 /** Neo feedback is contextual and display-only, including marker application and unavailable states. */
-export function infoFeedback(client: ControlClient, settings: InfoSettings): Omit<SurfaceFeedback, "detail"> {
+export function infoFeedback(client: ControlClient, settings: InfoSettings): Pick<SurfaceFeedback, "icon" | "title" | "value" | "status"> {
     const section = settings.section ?? "start";
     const control = section === "library" ? "library" : section === "view" ? "view"
         : section === "smoothing" ? "smoothing" : section === "speed" ? "speed" : settings.marker ? "marker" : "position";

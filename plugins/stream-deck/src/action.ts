@@ -11,7 +11,7 @@ export class ControlAction extends SingletonAction<ControlSettings> {
     private readonly keys = new Map<string, { action: KeyAction<ControlSettings>; settings: ControlSettings | undefined; signature?: string }>();
     private rendering = Promise.resolve();
 
-    constructor(private readonly client: ControlClient) {
+    constructor(private readonly client: ControlClient, private readonly resetFilters?: (device: string) => void) {
         super();
         client.subscribe(() => { void this.refresh().catch(error => console.error("Stream Deck feedback failed", error)); });
     }
@@ -34,6 +34,7 @@ export class ControlAction extends SingletonAction<ControlSettings> {
 
     override async onKeyDown(event: KeyDownEvent<ControlSettings>): Promise<void> {
         const settings = controlSettings(event.payload.settings);
+        if (settings?.operation === "library.filter.reset") this.resetFilters?.(event.action.device.id);
         const requested = settings && requestedAction(settings, this.client.state);
         if (!requested || !this.client.send(event.action.id, requested)) await event.action.showAlert();
     }

@@ -2,12 +2,12 @@
 
 Use the plugin to browse your Library, control playback and view settings, and
 prepare or apply recording markers. Controls act on the Analyzer
-window you are currently using; they do not open another window.
+window you are currently using. Use **New window** when you want to open a
+Library recording in an additional Explorer.
 
 The Plus and Neo profiles use the same colored icons and short key captions.
 The examples use the English plugin labels. The Analyzer can use its own selected
-interface language. Physical Plus operation, Neo/Mobile import and operation,
-plugin installation/update and macOS operation remain unverified.
+interface language.
 Requires Stream Deck **7.6+**;
 the plugin runs on the desktop, alongside Analyzer.
 
@@ -18,13 +18,12 @@ the plugin runs on the desktop, alongside Analyzer.
    and compare the archive SHA-256 with the checksum file
    (`Get-FileHash` on Windows, `shasum -a 256` on macOS), then double-click the
    archive and confirm Stream Deck's installation prompt.
-2. Import the matching bundled profile as described below and select the correct
-   connected device in Stream Deck's import dialog.
-   Existing profiles remain available.
-   To receive updated menu pictures and button assignments, import the updated
-   profile as well. Keep your customized profile if you want to preserve its layout.
+2. Confirm the matching profile in Stream Deck's installation prompt for your
+   connected device. Stream Deck installs it together with the plugin and switches
+   to it. Existing unrelated profiles remain available.
 3. In Analyzer, enable **Settings → Application → Enable Stream Deck** and save.
-4. Select **Ride Forces Analyzer +** or **Ride Forces Analyzer Neo** in Stream Deck. On Start, select **Start app**
+4. Select **Ride Forces Analyzer +** or **Ride Forces Analyzer Neo** in Stream Deck.
+   On Neo Start, select **Start app**
    in the software preview and choose your Analyzer EXE or a Windows shortcut in
    **Open** action's file field. The bundled profile leaves this path
    empty because it depends on your installation.
@@ -32,9 +31,10 @@ the plugin runs on the desktop, alongside Analyzer.
 
 ### Find and import the device profile
 
-Profiles are included in the plugin but are **not imported automatically**. In
-Stream Deck, open **Preferences → Profiles**, select the target device and use
-**Import** to open the corresponding archive:
+Profiles are included in the plugin and offered during plugin installation.
+Stream Deck switches to the profile after installation. A separate manual import
+is normally unnecessary. If you declined that prompt, open **Preferences → Profiles**,
+select your device and use **Import** with the matching archive:
 
 | Device            | Profile file               | Profile name                        |
 | ----------------- | -------------------------- | ----------------------------------- |
@@ -56,18 +56,24 @@ execute that key. Keep Analyzer in the foreground when using application control
 
 ## macOS availability
 
-The plugin requires **macOS 15+** with **Stream Deck 7.6+**. Mac installation
-and operation are **unverified**.
-Use the Mac Analyzer `.app` and set **Start app** to that `.app` in Stream Deck;
-the Windows EXE/shortcut instructions above apply only to Windows.
+The plugin requires **macOS 15+** with **Stream Deck 7.6+**. Before relying on
+device controls on a Mac, try the connection and your required controls; use
+Analyzer's mouse and keyboard controls if device control is unavailable.
+Launch the Mac Analyzer `.app`. On Neo/Mobile, set **Start app** to that `.app`
+in Stream Deck; the Windows EXE/shortcut instructions apply only to Windows.
 
 ## Update or troubleshoot the connection
 
 Plugin and Analyzer versions are independent. Install the plugin archive supplied
 with the intended Analyzer release; the application update checker does not update
 the plugin. GitHub installation does not register Marketplace updates. Install a
-new archive manually and reimport its profile only when you want its changed
-assignments or menu graphics. Keep your customized profiles.
+new archive manually and confirm its matching profile. The updated
+**Ride Forces Analyzer +** replaces the existing bundled Plus layout with six
+pages; it is not a second Plus variant. Keep your customized and unrelated
+profiles. To use the new menu assignments and graphics, select the updated bundled
+Plus profile. If the old layout remains, import `plus.streamDeckProfile` from the
+installed plugin as described [above](#find-and-import-the-device-profile);
+restarting the plugin alone does not replace old key images or assignments.
 
 If controls stay offline, check that Analyzer is running, **Enable Stream Deck**
 was saved, and the app/plugin came from a compatible release. There is no manual
@@ -78,15 +84,21 @@ to execute it. See [locks and connection changes](#understand-locks-and-connecti
 
 ## Recognize the functions and states
 
-![Stream Deck Plus software illustration of all seven profile pages, two rows of four keys, aligned touch-strip fields and four dials](../images/stream-deck-plus-controls.png)
+![Stream Deck Plus software illustration of all six profile pages, two rows of four keys, aligned touch-strip fields and four dials](../images/stream-deck-plus-controls.png)
 
-*Software illustration of all seven Plus profile pages with keys, touch strip
-and four dials. Playback shows Fine, Selection Medium and Markers Coarse.
+*Software illustration of all six Plus profile pages with keys, touch strip
+and four dials. Navigate shows Fine, Selection Medium and Markers Coarse.
 These are example states; your actual step size is shared across pages.
 [Open the full-size image](../images/stream-deck-plus-controls.png).*
 
-The colored illustration identifies the function. A separate badge indicates its
-current state; a dimmed icon can still show the last confirmed value.
+The colored illustration identifies the function. On Plus, a separate status band
+with a large symbol and text shows the current state. Keys and Neo retain badges.
+A dimmed icon can still show the last confirmed value. Read the value, status,
+adopted value and action hint on separate lines. The quiet background is decoration;
+it does not indicate success or availability. Library dial 2 displays only the
+coaster motif and has no input function.
+
+[View native-size Plus touch-strip examples, including locks and offline states](../images/stream-deck-plus-touch-strips.png).
 
 | Badge / state            | Meaning                                                           |
 | ------------------------ | ----------------------------------------------------------------- |
@@ -103,29 +115,33 @@ the mouse in Analyzer. Wait for the displayed state to change after pressing a k
 
 ## Move through the menus
 
-**Start** offers **Start app**, **Library**, **Explorer** and **Website** from left
-to right. **Start app** opens the application you selected during setup; **Website** opens
-the [project website](https://rudnerbjoern.github.io/ride-forces-analyzer/) in your
-browser. Both work without an Analyzer connection. Explorer contains **Playback**,
-**Curves** and **Markers** in a central group. Plus also has **Selection**.
+On **Plus**, the first row always shows **Library**, **Playback**, **Curves** and
+**Markers**. The profile starts on Library. In Playback, keys **6/7** switch
+**Navigate / Selection**; in Markers they switch **Markers / View**. Returning to
+Playback or Markers recalls the last view used on that device. A cyan border marks
+the displayed menu. Plus has no Back, Home, Start app or Website keys.
+**Step size** is key **8** in Playback and Markers.
 
-In each Plus/Neo submenu, **Back** is key **1** (top-left). Plus has no Home key;
-Neo keeps **Home** on key **8** (bottom-right) to return to Start. Keys are numbered left to right, top row
-first. Start has no Back or Home key. On **Plus**, Step size stays on key **6**
-on Playback, Selection and Markers. Key captions use two short lines; detailed values remain
-on the touch strip. Menu navigation remains available while
-Analyzer is disconnected or application commands are blocked.
+Use the bundled Plus profile installed with the plugin for these menu keys.
+Existing customized profiles remain available;
+menu keys can switch from a copy into the bundled profile.
+
+On **Neo**, Start offers **Start app**, **Library**, **Explorer** and **Website**.
+Explorer contains Playback, Curves and Markers. **Back** is key **1** and **Home**
+is key **8**, returning to Start. Start app opens the application chosen during
+setup; Website opens the project website.
+
+Keys are numbered left to right, top row first. Menu navigation remains available
+while Analyzer is disconnected or application commands are blocked.
 
 ## Browse and open Library recordings
 
 These dial instructions are for **Plus**. See the separate [Neo](#neo-keys-infobar-and-touch-points)
 and [Mobile](#mobile-limited-six-key-preview) sections for their buttons.
 
-On Plus, the Library controls are available directly on **Start** and in **Library**.
-The Library folder remains on the top row. Both pages show the selected recording
-on the touch strip. Their second row is **Open**, **New window**, **Import**,
-**Reset filters** (keys **5–8**). Reset filters clears the park, workflow status
-and search choices in all Explorer windows without replacing an open recording.
+On Plus, choose **Library** on the top row. Its second row is **Open**,
+**New window**, **Import**, **Reset filters** (keys **5–8**). Reset filters clears
+park, workflow status and search in all Explorer windows without replacing an open recording.
 Turn the **first dial** to select one visible recording per
 notch. It follows the Library's current sorting and filters and wraps in either
 direction. One recording stays selected; an empty list cannot be opened.
@@ -139,21 +155,37 @@ position in the visible list. Import is key **7**.
 while keeping the current recording open. If that recording is already open,
 its existing window is brought to the front instead.
 
+Dial **2** has no input function. Turn dial **3** to choose a **Park**, or dial **4** to choose
+a workflow **Status**. Both follow the dropdown order in Analyzer and stop at
+either end. Turning only prepares a choice: **Preview** shows the proposed value,
+while **Active** shows the filter currently in use. Press that dial to apply its
+choice. **Pending** waits for confirmation; **Failed** does not change the active
+filter. Tap its touch field to request **All parks** or **All statuses** immediately.
+Each dial changes only its own filter and keeps the other filter and search.
+Filters remain usable when no recordings match.
+
+Each Plus keeps its own prepared choices. Changing a filter or its options in
+Analyzer discards its prepared choice. Leaving Library, changing the recording
+or Explorer, or losing the connection discards unapplied choices; reconnecting
+does not apply them. **Reset filters** discards both choices and requests a reset
+of Park, Status and search. Input focus, dialogs and background operation lock
+filter commands just like other Analyzer controls.
+
 ## Control playback and the view
 
-Open **Explorer → Playback**. Dials 1, 2 and 3 (left to right) are assigned;
-dial 4 is unused:
+Open **Playback → Navigate**. Dials run from left to right:
 
-| Dial         | Turn                                             | Press         | Touch-strip information                               |
-| ------------ | ------------------------------------------------ | ------------- | ----------------------------------------------------- |
-| 1 · Position | Move through samples; stop at the ends.          | Play/pause.   | Sample, replay time, play state and Step size mode.   |
-| 2 · View     | Zoom the time axis.                              | Reset view.   | Actual visible interval and its duration in seconds.  |
-| 3 · Speed    | Select the next supported playback speed.        | Return to 1×. | Actual speed and play/pause state.                    |
+| Dial               | Turn                                      | Press          | Touch-strip information                            |
+| ------------------ | ----------------------------------------- | -------------- | -------------------------------------------------- |
+| 1 · Position       | Move through samples; stop at the ends.   | Play/pause.    | Sample, replay time, play state and step size.     |
+| 2 · Speed          | Select the next supported playback speed. | Return to 1×.  | Actual speed and play/pause state.                 |
+| 3 · Zoom           | Zoom the time axis.                       | Reset view.    | Actual visible interval and duration in seconds.   |
+| 4 · Zoom selection | Unassigned.                               | Fit selection. | Confirmed selection bounds; PRESS ONLY.            |
 
 **Step size** cycles Position, Selection and marker dials through
 **1 → 10 → 20 → 1 samples per notch**. The key and touch strip show the current
 step size: **Fine** (1), **Medium** (10), **Coarse** (20). The icons use one, two
-and three coloured bars. It starts at 1 sample, survives menu changes and never
+and three coloured bars, without a status badge. It starts at 1 sample, survives menu changes and never
 changes Library stepping.
 
 Position changes pause playback. Zoom, curves, smoothing and speed changes leave
@@ -161,15 +193,18 @@ playback running. Use Play to resume after a manual position or marker adjustmen
 
 Position, Smoothing and Speed have no additional key folders on Plus. The
 **Play/Pause** key **5**, directly above Position, and the Position dial press both toggle playback.
-**Reset view** is the View dial press.
+**Reset view** is the Zoom dial press. **Markers → View** uses the same four dials.
+Controls labelled **PRESS ONLY** ignore turning and touch taps.
 
 ## Curves, Raw/Calibrated and smoothing
 
-Open **Explorer → Curves**. The three force-line keys turn the corresponding
+Open **Curves**. The three force-line keys turn the corresponding
 lines on/off. **Data mode** shows and switches between **Raw** and **Calibrated**;
-**Combined** controls the combined curve. Data mode is key **5**, above the
-Smoothing dial; the three direction keys are grouped across the top row. Labels
-and on/off states follow Analyzer.
+The three direction keys are **5–7**; Data mode is key **8**.
+Press **dial 2** to switch the combined curve on/off. Dial **3** controls Zoom
+(press: Reset view). Turn **dial 4** to move the replay position using the step size
+chosen in Playback/Markers; press it for Play/Pause. Dial 2 ignores turning;
+touch taps on dials 2 and 4 do nothing. Labels and on/off states follow Analyzer.
 
 The **first dial** selects the smoothing window: **1, 3, …, 51 samples**. Further
 turns below 1 stay at 1; turns above 51 stay at 51. There is no wraparound in either
@@ -181,7 +216,7 @@ Analyzer's Inspector. The touch field shows **Raw source values**; select
 
 ## Adjust the selection and zoom to it
 
-Open **Explorer → Selection**. Dial **1** adjusts the selection's **Start** sample;
+Open **Playback → Selection**. Dial **1** adjusts the selection's **Start** sample;
 dial **2** adjusts its **End** sample. The touch fields show the confirmed sample
 and time, the opposite boundary and Step size mode. **Step size** switches
 through **1, 10 and 20 samples per notch**, shared with Position and Markers.
@@ -189,15 +224,17 @@ through **1, 10 and 20 samples per notch**, shared with Position and Markers.
 Turns apply directly to the current Select range, just like the Inspector's
 **From sample / To sample** fields. Start stops at zero or End; End stops at Start
 or the last source sample. Further outward turns stay at the boundary, without
-wrapping. Dial presses and touch taps are unassigned on this page.
+wrapping. Presses and touch taps on dials 1 and 2 are unassigned.
 
-Press **Zoom / Selection** on key **5** to fit the chart to that range. Selection changes made in Analyzer
+Dial **3** controls Zoom (press: Reset view). Press **dial 4** to fit the chart
+to the selection; turning and touch taps on dial 4 do nothing. Key **5** is
+Play/Pause. Selection changes made in Analyzer
 also appear on the touch strip. These controls do not move the replay cursor or
 change the recording's markers or calibration.
 
 ## Preview, apply or discard markers
 
-Open **Explorer → Markers**. Dial order is **Start, Gravity, Incline, End**.
+Open **Markers → Markers**. Dial order is **Start, Gravity, Incline, End**.
 
 1. **Turn** a dial to change only that marker's preview. This pauses playback;
    the chart calculations and saved markers stay unchanged.
@@ -205,6 +242,8 @@ Open **Explorer → Markers**. Dial order is **Start, Gravity, Incline, End**.
    position, alongside the unchanged applied marker. Check its position and the
    sample/time on the touch strip. The separate **Applied** line shows the value
    currently in use.
+   If the preview is outside the visible chart, the chart moves to place it near
+   the center without changing zoom. Near the recording ends, it stops at the boundary.
 3. **Press** that dial to apply its preview. **Pending** means the chart is still
    updating. **Applied** confirms success; **Failed** retains the previous value.
 4. **Tap the corresponding touch field** to discard only its preview.
@@ -218,8 +257,10 @@ Explorer clears them. Applying or discarding one marker does not confirm the
 others and does not resume playback. Applied markers are saved automatically
 for that Library recording.
 
-The Plus Markers page has Back and Step size keys alongside its four
-dials. It has no additional marker-key editors.
+The Plus Markers page has Play/Pause, Markers, View and Step size on keys 5–8.
+The top-row Markers key shows **Failed** before **Pending**, then the number of
+previews, on every page. The other menu keys show Library position/count,
+Playing/Paused and Raw/Calibrated. These values change when Analyzer confirms them.
 
 ## Neo keys, InfoBar and Touch Points
 
@@ -229,8 +270,7 @@ configure the app path once, as described above. The Plus profile is separate.
 
 ![Stream Deck Neo software illustration of all fourteen prepared pages, two rows of four keys, contextual InfoBar values and the two native Touch Points](../images/stream-deck-neo-controls.png)
 
-*Software illustration of the Neo profile. Values are examples;
-device operation remains unverified. [Open full size](../images/stream-deck-neo-controls.png).*
+*Software illustration of the Neo profile with example values. [Open full size](../images/stream-deck-neo-controls.png).*
 
 The **left/right Touch Points** are native previous/next-page controls. The
 profile provides two main pages: **Start** and **Quick controls**. Quick controls
@@ -270,7 +310,7 @@ cover pairing with the desktop Stream Deck app.
 ![Stream Deck Mobile limited preview showing the four actual six-key pages Start, Library, Playback and View, with Back and no Home button](../images/stream-deck-mobile-controls.png)
 
 *Software illustration of the Mobile profile with example values.
-Full Mobile hardware acceptance remains open.*
+Use Analyzer for controls omitted from this six-key preview.*
 
 - **Start:** Start app, Library, Playback and Website. Configure the Analyzer EXE or
   Windows shortcut (or the Mac `.app`) on the **desktop** in Start app's Open settings.

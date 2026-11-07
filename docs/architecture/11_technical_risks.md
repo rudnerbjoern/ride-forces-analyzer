@@ -2,17 +2,17 @@
 
 [Architecture index](README.md)
 
-| Risk                           | Current limit                                                                                | Handling                                                                            |
-| ------------------------------ | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Physical sensor interpretation | Display-policy agreement does not qualify universal rider axes, units or sensations          | Preserve scoped evidence and provisional/unavailable states                         |
-| Time and indices               | Acquisition epoch, source end-index convention and a common GPS/motion clock are unqualified | Preserve source indices/timestamps; do not infer alignment                          |
-| GPS                            | Sentinels, accuracy and physical units are not universally qualified                         | Use approximate route context only; retain original values                          |
-| Device differences             | Some recordings lack gravity/GPS; supplied arrays can be defective                           | Never reconstruct absent sensors or equate import success with analysis readiness   |
-| Schema evolution               | Only the documented Ride Forces and RFDB profiles are supported                              | Add adapters only with authorized source evidence                                   |
-| Resource/filesystem behavior   | Budgets bound parsing, not total native RAM or all filesystem races                          | Retain bounded reads and explicit error states                                      |
-| Native distribution            | CI does not cover every desktop/GPU or clean machine                                         | Keep platform baselines and verification limits explicit                            |
-| Stream Deck integration        | Physical devices, native plugin installation/update and macOS integration remain unverified  | Use [device acceptance](../requirements/STREAM_DECK.md#native-acceptance-checklist) |
-| Dependency security            | Passing compatibility tests is not a current vulnerability audit                             | Follow the [dependency policy](../development/DEPENDENCIES.md)                      |
+| Risk                           | Current limit                                                                                        | Handling                                                                          |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Physical sensor interpretation | Display-policy agreement does not qualify universal rider axes, units or sensations                  | Preserve scoped evidence and provisional/unavailable states                       |
+| Time and indices               | Acquisition epoch, source end-index convention and a common GPS/motion clock are unqualified         | Preserve source indices/timestamps; do not infer alignment                        |
+| GPS                            | Sentinels, accuracy and physical units are not universally qualified                                 | Use approximate route context only; retain original values                        |
+| Device differences             | Some recordings lack gravity/GPS; supplied arrays can be defective                                   | Never reconstruct absent sensors or equate import success with analysis readiness |
+| Schema evolution               | Only the documented Ride Forces and RFDB profiles are supported                                      | Add adapters only with authorized source evidence                                 |
+| Resource/filesystem behavior   | Budgets bound parsing, not total native RAM or all filesystem races                                  | Retain bounded reads and explicit error states                                    |
+| Native distribution            | CI does not cover every desktop/GPU or clean machine                                                 | Keep platform baselines and verification limits explicit                          |
+| Stream Deck integration        | Neo/Mobile, native archive installation/update and macOS remain unverified; Windows Plus is accepted | Use [device acceptance](../validation/STREAM_DECK.md#open-native-checks)          |
+| Dependency security            | Passing compatibility tests is not a current vulnerability audit                                     | Follow the [dependency policy](../development/DEPENDENCIES.md)                    |
 
 ## Scientific qualification
 

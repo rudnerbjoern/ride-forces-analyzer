@@ -466,6 +466,22 @@ class ExplorerChart(QObject):
         first = max(0.0, min(anchor - fraction * width, self.data.duration - width))
         self.axis_x.setRange(first, first + width)
 
+    def reveal_sample(self, sample: int) -> None:
+        """Center a hidden sample while preserving zoom and recording boundaries.
+
+        Args:
+            sample: Valid source sample index to bring into view.
+        """
+        if self.data is None:
+            return
+        time = self.data.time_at(sample)
+        low, high = self.axis_x.min(), self.axis_x.max()
+        if low <= time <= high:
+            return
+        width = high - low
+        first = max(0.0, min(time - width / 2, self.data.duration - width))
+        self.axis_x.setRange(first, first + width)
+
     @Slot()
     def _fix_value_view(self) -> None:
         if self.data is not None:

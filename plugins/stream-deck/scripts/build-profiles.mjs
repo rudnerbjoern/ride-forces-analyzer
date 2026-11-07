@@ -10,8 +10,6 @@ const uuid = "io.github.rudnerbjoern.ride-forces-analyzer";
 // Native folders own navigation; application controls reuse the configurable SDK action.
 const folder = (title, page) => ({ title, page });
 const control = (operation, settings = {}) => ({ operation, ...settings });
-const plusLibraryKeys = [control("library.open"), control("library.open_new_window"),
-  control("library.import"), control("library.reset_filters")];
 const pages = {
   start: { name: "Start", keys: [folder("Library", "library"), folder("Explorer", "explorer")] },
   library: { name: "Library", keys: [control("library.move", { direction: -1 }),
@@ -67,6 +65,7 @@ function key(id, name, action, settings, title) {
 /** Assemble Plus, Neo and limited Mobile archives from shared native folder/key assignments. */
 export async function buildProfiles(plugin) {
   const { keyImage } = await import("../dist/feedback.js");
+  const { PLUS_PAGES, navigationFeedback } = await import("../dist/navigation.js");
   const metadata = JSON.parse(await readFile(path.join(plugin, "manifest.json"), "utf8"));
   await mkdir(path.join(plugin, "profiles"), { recursive: true });
   for (const [device, model] of [["plus", "20GBD9901"], ["neo", "20GBJ9901"], ["mobile", "VSD2/WiFi"]]) {
@@ -78,13 +77,60 @@ export async function buildProfiles(plugin) {
     const writer = new ZipWriter(new Uint8ArrayWriter(), { level: 0, lastModDate: new Date("2026-01-01T00:00:00Z") });
     const add = (filename, data) => writer.add(`${root}/${filename}`, new TextReader(JSON.stringify(data, null, 2) + "\n"));
     await add("manifest.json", { Device: { Model: model, UUID: "" }, Name: `Ride Forces Analyzer ${device === "plus" ? "+" : device === "neo" ? "Neo" : "Mobile Preview"}`,
-      Pages: { Current: pageId("start"), Default: pageId("default"), Pages: device === "neo" ? [pageId("start"), pageId("quick")] : [pageId("start")] }, Version: "3.0" });
+      Pages: { Current: pageId(device === "plus" ? "library" : "start"), Default: pageId("default"),
+        Pages: device === "plus" ? PLUS_PAGES.map(page => pageId(page.id))
+          : device === "neo" ? [pageId("start"), pageId("quick")] : [pageId("start")] }, Version: "3.0" });
     // The native importer reserves Default for a separate empty page template.
     await add(`Profiles/${pageId("default").toUpperCase()}/manifest.json`,
       { Controllers: [{ Type: "Keypad", Actions: {} }], Icon: "", Name: "" });
+    if (device === "plus") {
+      for (const [index, page] of PLUS_PAGES.entries()) {
+        const actions = {};
+        const putNavigation = (target, position) => {
+          const settings = { page: index, target };
+          const feedback = navigationFeedback(settings, index);
+          const coordinate = `${position % 4},${Math.floor(position / 4)}`;
+          actions[coordinate] = key(`${device}/${page.id}/${coordinate}`, "Plus navigation", `${uuid}.plus-navigation`, settings);
+          actions[coordinate].State = feedback.selected ? 1 : 0;
+          // Native custom images/titles override SDK feedback, so leave both plugin-owned.
+          actions[coordinate].States = [0, 1].map(() => ({ FontSize: 10,
+            TitleAlignment: "bottom", ShowTitle: true }));
+        };
+        ["library", "playback", "curves", "markers"].forEach((target, position) => putNavigation(target, position));
+        if (page.group === "playback" || page.group === "markers") {
+          const first = page.group === "playback" ? 1 : 4;
+          putNavigation(first, 5);
+          putNavigation(first + 1, 6);
+        }
+        const controls = page.group === "library" ? ["library.open", "library.open_new_window", "library.import", "library.filter.reset"]
+          : page.group === "curves" ? ["first", "second", "third", "calibrated"].map(curve => control("curve.set", { curve }))
+          : ["playback.toggle"];
+        controls.forEach((definition, offset) => {
+          const coordinate = `${offset},1`;
+          actions[coordinate] = key(`${device}/${page.id}/${coordinate}`, "Analyzer control", `${uuid}.control`,
+            typeof definition === "string" ? control(definition) : definition);
+          actions[coordinate].States = [0, 1].map(() => ({ FontSize: 10, TitleAlignment: "bottom", ShowTitle: true }));
+        });
+        if (page.group === "playback" || page.group === "markers") {
+          actions["3,1"] = key(`${device}/${page.id}/mode`, "Step size", `${uuid}.step-mode`, {});
+          actions["3,1"].States = [0, 1, 2].map(() => ({ FontSize: 10, TitleAlignment: "bottom", ShowTitle: true }));
+        }
+        const dials = page.id === "library" ? [{ control: "library" }, { control: "display" }, { control: "filter", filter: "park" }, { control: "filter", filter: "status" }]
+          : page.id === "selection" ? [...["start", "end"].map(boundary => ({ control: "selection", boundary })), { control: "view" }, { control: "zoom_selection" }]
+          : page.id === "curves" ? ["smoothing", "combined", "view", "position"].map(control => ({ control }))
+          : page.id === "markers" ? ["start", "gravity", "incline", "end"].map(marker => ({ control: "marker", marker }))
+          : ["position", "speed", "view", "zoom_selection"].map(control => ({ control }));
+        await add(`Profiles/${pageId(page.id).toUpperCase()}/manifest.json`, {
+          Controllers: [{ Type: "Keypad", Actions: actions }, { Type: "Encoder", Actions: Object.fromEntries(dials.map((settings, column) =>
+            [`${column},0`, key(`${device}/${page.id}/dial/${column}`, "Analyzer dial", `${uuid}.dial`, { ...settings, menu: page.group, column })])) }],
+          Icon: "", Name: page.name,
+        });
+      }
+      await writeFile(path.join(plugin, "profiles/plus.streamDeckProfile"), await writer.close());
+      continue;
+    }
     for (const [name, page] of Object.entries(device === "mobile" ? mobilePages : pages)) {
       if (device === "neo" && name === "selection") continue;
-      if (device === "plus" && (["quick", "position", "smoothing", "speed"].includes(name) || name.startsWith("marker-"))) continue;
       const actions = {};
       const images = new Map();
       const put = (definition, index) => {
@@ -105,16 +151,9 @@ export async function buildProfiles(plugin) {
       };
       const marker = name.startsWith("marker-") ? name.slice(7) : undefined;
       const keys = marker ? [-10, -1, 1, 10].map(steps => control("marker.preview", { marker, steps }))
-        : device === "plus" && name === "start" ? [...page.keys, ...plusLibraryKeys]
-        : device === "plus" && name === "library" ? plusLibraryKeys
-        : device === "plus" && name === "playback" ? [page.keys[0]]
-        : device === "plus" && name === "markers" ? []
-        : device === "plus" && name === "view" ? page.keys.filter(key => key.operation !== "view.reset")
         : device === "neo" && name === "explorer" ? page.keys.filter(key => key.page !== "selection") : page.keys;
       const positions = device === "mobile" ? {
         start: [1, 2], library: [1, 2, 4, 3, 5], playback: [1, 2, 3, 4, 5], view: [1, 2, 3, 4, 5],
-      }[name] : device === "plus" ? {
-        start: [1, 2, 4, 5, 6, 7], explorer: [1, 2, 5, 6], library: [4, 5, 6, 7], playback: [4], selection: [4],
       }[name] : marker ? [1, 5, 6, 2] : {
         start: [1, 2], explorer: [1, 2, 5], library: [1, 2, 5, 4, 6], playback: [1, 5, 2, 6], position: [1, 5, 6, 2],
         smoothing: [5, 2, 6], speed: [5, 2, 6], markers: [1, 2, 5, 6], view: [1, 2, 3, 6],
@@ -137,10 +176,6 @@ export async function buildProfiles(plugin) {
       if (!(device === "neo" && name === "position")) extra.forEach((definition, index) => put(definition,
         device === "neo" && marker ? [4, 3][index]
           : name === "view" && (device === "neo" || index === 0) ? index + 4 : index + 5));
-      if (device === "plus" && ["playback", "markers", "selection"].includes(name)) {
-        actions["1,1"] = key(`${device}/${name}/mode`, "Step size", `${uuid}.step-mode`, {}, "Fine");
-        actions["1,1"].States.push({ ...actions["1,1"].States[0] }, { ...actions["1,1"].States[0] });
-      }
       if (name !== "start") {
         // Stream Deck forces native folder Back to key 1 during import.
         actions["0,0"] = key(`${device}/${name}/back`, "Parent Folder",
@@ -157,12 +192,6 @@ export async function buildProfiles(plugin) {
       if (device === "neo") {
         controllers.push({ Type: "Neo", Actions: { "1,0": key(`${device}/${name}/info`, "Analyzer InfoBar",
           `${uuid}.infobar`, { section: marker ? "markers" : name === "quick" ? "playback" : name, ...(marker ? { marker } : {}) }) } });
-      } else if (device === "plus") {
-        const dials = name === "selection" ? ["start", "end"].map(boundary => ({ control: "selection", boundary })) : ["start", "library"].includes(name) ? [{ control: "library" }] : name === "playback"
-          ? ["position", "view", "speed"].map(control => control ? { control } : null) : name === "view" ? [{ control: "smoothing" }] : name === "markers"
-            ? ["start", "gravity", "incline", "end"].map(marker => ({ control: "marker", marker })) : [];
-        if (dials.length) controllers.push({ Type: "Encoder", Actions: Object.fromEntries(dials.flatMap((settings, index) => settings ?
-          [[`${index},0`, key(`${device}/${name}/dial/${index}`, "Analyzer dial", `${uuid}.dial`, settings)]] : [])) });
       }
       await add(`Profiles/${pageId(name).toUpperCase()}/manifest.json`,
         { Controllers: controllers, Icon: "", Name: page.name });
@@ -172,5 +201,5 @@ export async function buildProfiles(plugin) {
     }
     await writeFile(path.join(plugin, `profiles/${device}.streamDeckProfile`), await writer.close());
   }
-  console.log("Built Plus, Neo and Mobile preview native folder profiles.");
+  console.log("Built Plus native pages and Neo/Mobile native folder profiles.");
 }

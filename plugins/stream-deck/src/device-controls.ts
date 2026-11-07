@@ -1,8 +1,11 @@
 import type { ControlSettings } from "./controls.js";
 import type { MarkerName, SelectionBoundary, Steps } from "./protocol.js";
 
-export type DialControl = "library" | "position" | "view" | "smoothing" | "speed" | "marker" | "selection";
-export type DialSettings = { control?: DialControl; marker?: MarkerName; boundary?: SelectionBoundary };
+export type DialControl = "library" | "position" | "view" | "smoothing" | "speed" | "marker" | "selection"
+    | "zoom_selection" | "combined" | "playback" | "filter" | "display";
+export type PlusMenu = "library" | "playback" | "curves" | "markers";
+export type LibraryFilter = "park" | "status";
+export type DialSettings = { control?: DialControl; marker?: MarkerName; boundary?: SelectionBoundary; filter?: LibraryFilter; menu?: PlusMenu; column?: 0 | 1 | 2 | 3 };
 export type InfoSettings = { section?: string; marker?: MarkerName; boundary?: SelectionBoundary };
 
 export type StepSize = 1 | 10 | 20;
@@ -22,10 +25,18 @@ export class StepMode {
 
 /** Validate profile settings before mapping a device gesture to an application command. */
 export function dialSettings(value: DialSettings): DialSettings | undefined {
-    if (!["library", "position", "view", "smoothing", "speed", "marker", "selection"].includes(value.control ?? "")) return undefined;
+    if (!["library", "position", "view", "smoothing", "speed", "marker", "selection", "zoom_selection", "combined", "playback", "filter", "display"].includes(value.control ?? "")) return undefined;
+    if (value.menu !== undefined && !["library", "playback", "curves", "markers"].includes(value.menu)) return undefined;
+    if (value.column !== undefined && ![0, 1, 2, 3].includes(value.column)) return undefined;
+    if (value.control === "filter" && value.filter !== "park" && value.filter !== "status") return undefined;
     if (value.control === "marker" && !["start", "gravity", "incline", "end"].includes(value.marker ?? "")) return undefined;
     if (value.control === "selection" && !["start", "end"].includes(value.boundary ?? "")) return undefined;
     return value;
+}
+
+/** Identify controls whose unused rotation and touch gestures must stay silent. */
+export function isPressOnly(control: DialControl | undefined): boolean {
+    return control === "zoom_selection" || control === "combined" || control === "playback";
 }
 
 /** One mapping shared by input handling and availability feedback; every tick remains a separate step. */
@@ -33,6 +44,11 @@ export function dialBinding(settings: DialSettings, gesture: "rotate" | "press" 
     direction: -1 | 1, stepSize: StepSize): ControlSettings | undefined {
     const control = settings.control;
     const steps = (direction * stepSize) as Steps;
+    if (isPressOnly(control)) {
+        if (gesture !== "press") return undefined;
+        return control === "combined" ? { operation: "curve.set", curve: "combined" }
+            : { operation: control === "playback" ? "playback.toggle" : "view.selection" };
+    }
     if (control === "selection") {
         return gesture === "rotate" && settings.boundary ? { operation: "selection.step", boundary: settings.boundary, steps } : undefined;
     }

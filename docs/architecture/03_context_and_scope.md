@@ -62,7 +62,7 @@ independent of this processing path.
 | Import output                       | Typed ImportSuccess or ImportFailure in the caller process    | Implemented; no Qt dependency                                         |
 | Desktop bootstrap                   | Local PySide6 process and native Qt event loop                | Independent Explorer windows and background file opening              |
 | Recording Library                   | Per-user SQLite archive and recording services                | Exact originals, identity, current choices and export recipes         |
-| Stream Deck control                 | SDK-hosted plugin and authenticated loopback WebSocket        | Optional GUI control; device/macOS acceptance tracked in requirements |
+| Stream Deck control                 | SDK-hosted plugin and authenticated loopback WebSocket        | Optional GUI control; native acceptance tracked in validation         |
 | Sample data output                  | Local CSV or JSON files from captured analysis                | Implemented; independent of Qt and FFmpeg                             |
 | Video output                        | Local ProRes MOV / H.264 MP4, five layouts and two aspects    | Implemented; manual external alignment                                |
 | POV input / synchronization         | Video ingest and matching remain in external editing software | Excluded from project scope                                           |
@@ -70,5 +70,14 @@ independent of this processing path.
 
 [Chapter 05](05_building_block_view.md) documents callable interfaces;
 [chapter 07](07_deployment_view.md) separates runtime and development infrastructure.
-[Stream Deck requirements](../requirements/STREAM_DECK.md) own device scope and
-native acceptance status.
+[Stream Deck controls](../implementation/STREAM_DECK.md) own device behavior;
+[validation](../validation/STREAM_DECK.md) owns native qualification status.
+
+## Stream Deck scope
+
+Optional control targets the current Explorer and reuses existing GUI/service
+actions, validation, analysis and Library persistence. Recording processing stays
+offline and independent of the plugin; original recordings remain read-only.
+There is no keyboard simulation, separate force calculation or phone-facing
+Analyzer service. Export controls, an explicit target-window selector, other device
+models and Marketplace publication are outside current scope.

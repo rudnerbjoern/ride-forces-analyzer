@@ -4,25 +4,26 @@ Current milestone scope, not a development history or a list of all possible
 features. [README](../README.md) owns usage; [architecture](architecture/README.md)
 owns system design and scientific boundaries.
 
-| Milestone                  | Status   | Implemented / remaining scope                                                                                                                                                                                  |
-| -------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M1 — Foundation            | Complete | Windows setup/start, strict settings, Qt bootstrap, tooling/CI; [bootstrap](architecture/06_runtime_view.md#qt-bootstrap)                                                                                      |
-| M2 — Importer              | Complete | Lossless offline import, metadata/weather, attributes, GPS/diagnostics; [import contract](architecture/08_concepts.md#source-ownership-and-validation)                                                         |
-| M3 — Analysis              | Complete | Immutable models, device/frame APIs, source-app projection/mean, extrema, shared snapshots/service and provisional context/events; [analysis contracts](development/ANALYSIS_MODELS.md)                        |
-| M4 — Explorer              | Complete | Raw/calibrated charts, markers, time zoom, selection/extrema, GPS, appearance themes and EN/DE/FR UI                                                                                                           |
-| M5 — Playback              | Complete | Sample playback at 0.5×/1×/2×, pause/resume and seeking                                                                                                                                                        |
-| M6 — Exports               | Complete | Five layouts, supported aspects, Full-frame/native-area video, transparent/opaque output, previews, presets/batches, CSV/JSON, optional NVIDIA                                                                 |
-| M7 — Video synchronization | Closed   | Not feasible within project scope: no simple, reliable automation with available data; alignment remains in external video editors                                                                             |
-| M8 — Windows release       | Complete | Portable EXE, standard/complete ZIPs, notices and tag pipeline; owner-confirmed clean-Windows EXE launch; accepted redistribution scope                                                                        |
-| M9 — Linux / macOS         | Partial  | Native Linux x64/macOS arm64/x64 packages and mandatory runtime CI; clean-machine qualification remains open                                                                                                   |
-| M10 — Stream Deck          | Partial  | [Stream Deck](requirements/STREAM_DECK.md): Windows backend, Plus/Neo profiles and Mobile preview; installable release archive and checksum; native device/install/macOS checks remain.                        |
+| Milestone                  | Status   | Implemented / remaining scope                                                                                                                                                                                                             |
+| -------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M1 — Foundation            | Complete | Windows setup/start, strict settings, Qt bootstrap, tooling/CI; [bootstrap](architecture/06_runtime_view.md#qt-bootstrap)                                                                                                                 |
+| M2 — Importer              | Complete | Lossless offline import, metadata/weather, attributes, GPS/diagnostics; [import contract](architecture/08_concepts.md#source-ownership-and-validation)                                                                                    |
+| M3 — Analysis              | Complete | Immutable models, device/frame APIs, source-app projection/mean, extrema, shared snapshots/service and provisional context/events; [analysis contracts](development/ANALYSIS_MODELS.md)                                                   |
+| M4 — Explorer              | Complete | Raw/calibrated charts, markers, time zoom, selection/extrema, GPS, appearance themes and EN/DE/FR UI                                                                                                                                      |
+| M5 — Playback              | Complete | Sample playback at 0.5×/1×/2×, pause/resume and seeking                                                                                                                                                                                   |
+| M6 — Exports               | Complete | Five layouts, supported aspects, Full-frame/native-area video, transparent/opaque output, previews, presets/batches, CSV/JSON, optional NVIDIA                                                                                            |
+| M7 — Video synchronization | Closed   | Not feasible within project scope: no simple, reliable automation with available data; alignment remains in external video editors                                                                                                        |
+| M8 — Windows release       | Complete | Portable EXE, standard/complete ZIPs, notices and tag pipeline; owner-confirmed clean-Windows EXE launch; accepted redistribution scope                                                                                                   |
+| M9 — Linux / macOS         | Partial  | Native Linux x64/macOS arm64/x64 packages and mandatory runtime CI; clean-machine qualification remains open                                                                                                                              |
+| M10 — Stream Deck          | Partial  | [Stream Deck](implementation/STREAM_DECK.md): Windows backend, Plus/Neo profiles and Mobile preview; installable release archive and checksum; Windows Plus operation accepted; Neo/Mobile, archive installation and macOS checks remain. |
 
 ## Product boundaries
 
 - Stream Deck provides Plus/Neo controls and a reduced six-key Mobile preview,
-  using Stream Deck 7.6 or later. Windows software is tested; native device/archive
-  installation and enabled macOS compatibility remain unverified. Detailed controls, illustrations and the
-  implementation sequence belong in the [Stream Deck requirements](requirements/STREAM_DECK.md).
+  using Stream Deck 7.6 or later. Windows software and integrated Plus operation
+  are accepted; Neo/Mobile, native archive installation and macOS integration remain open.
+  Controls, illustrations and device behavior belong in the [control contract](implementation/STREAM_DECK.md);
+  remaining native checks belong in [validation](validation/STREAM_DECK.md).
 - [Display/scientific policy](architecture/08_concepts.md#scientific-provenance-and-gates):
   usable imports support calibrated display with raw fallback. Manta's scoped
   confirmation does not qualify arbitrary recordings/windows;

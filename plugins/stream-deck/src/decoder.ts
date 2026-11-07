@@ -2,7 +2,7 @@ import { PROTOCOL_VERSION } from "./protocol.js";
 import type { ServerMessage } from "./protocol.js";
 
 const actions = new Set([
-    "library.open", "library.open_new_window", "library.import", "library.reset_filters", "library.move", "playback.toggle", "playback.speed.reset",
+    "library.open", "library.open_new_window", "library.import", "library.filter.reset", "library.move", "library.filter.set", "playback.toggle", "playback.speed.reset",
     "playback.speed.step", "position.step", "view.reset", "view.selection", "view.zoom",
     "smoothing.reset", "smoothing.step", "selection.step", "curve.set", "marker.preview", "marker.apply", "marker.discard",
 ]);
@@ -42,8 +42,20 @@ function position(value: unknown): boolean {
     return value === null || fields(value, ["sample", "time_seconds", "label"])
         && integer(value.sample) && finite(value.time_seconds) && typeof value.label === "string";
 }
+function libraryFilter(value: unknown): boolean {
+    if (!fields(value, ["value", "options"]) || !(value.value === null || typeof value.value === "string")
+        || !Array.isArray(value.options)) return false;
+    const choices = new Set<unknown>();
+    for (const option of value.options) {
+        if (!fields(option, ["value", "label"]) || !(option.value === null || typeof option.value === "string")
+            || typeof option.label !== "string" || choices.has(option.value)) return false;
+        choices.add(option.value);
+    }
+    return choices.has(value.value) || choices.size === 0 && value.value === null;
+}
 function library(value: unknown): boolean {
-    return value === null || fields(value, ["count", "selected"]) && integer(value.count)
+    return value === null || fields(value, ["count", "selected", "park_filter", "status_filter"]) && integer(value.count)
+        && libraryFilter(value.park_filter) && libraryFilter(value.status_filter)
         && (value.selected === null || fields(value.selected, ["id", "title", "index"])
             && id(value.selected.id) && typeof value.selected.title === "string" && integer(value.selected.index));
 }
@@ -104,7 +116,7 @@ function serverMessage(value: unknown): value is ServerMessage {
         && (value.reason === null || member(value.reason, reasons));
 }
 
-/** Decode the exact v2 wire contract before any value can drive a key or command. */
+/** Decode the exact versioned wire contract before any value can drive a key or command. */
 export function decodeServerMessage(payload: string): ServerMessage | undefined {
     if (Buffer.byteLength(payload, "utf8") > 64 * 1024) return undefined;
     try {

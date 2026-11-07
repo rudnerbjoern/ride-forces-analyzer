@@ -32,22 +32,22 @@
       "Name": "profiles/plus",
       "DeviceType": 7,
       "Readonly": false,
-      "AutoInstall": false,
-      "DontAutoSwitchWhenInstalled": true
+      "AutoInstall": true,
+      "DontAutoSwitchWhenInstalled": false
     },
     {
       "Name": "profiles/neo",
       "DeviceType": 9,
       "Readonly": false,
-      "AutoInstall": false,
-      "DontAutoSwitchWhenInstalled": true
+      "AutoInstall": true,
+      "DontAutoSwitchWhenInstalled": false
     },
     {
       "Name": "profiles/mobile",
       "DeviceType": 3,
       "Readonly": false,
-      "AutoInstall": false,
-      "DontAutoSwitchWhenInstalled": true
+      "AutoInstall": true,
+      "DontAutoSwitchWhenInstalled": false
     }
   ],
   "Actions": [

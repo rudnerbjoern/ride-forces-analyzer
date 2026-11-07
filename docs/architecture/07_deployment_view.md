@@ -34,15 +34,28 @@ without dependency synchronization. Node supplies development checks and builds
 the separate [Stream Deck plugin](../../plugins/stream-deck/README.md).
 The plugin is independently versioned and distributed as a separate
 `.streamDeckPlugin` archive containing bundled JavaScript dependencies, licenses
-and Plus/Neo/Mobile profiles. Stream Deck hosts its Node.js runtime; it does not
+and Plus/Neo/Mobile profiles. Stream Deck 7.6+ hosts its Node.js runtime and the
+official TypeScript SDK plugin; dependencies are locked in the
+[workspace manifest](../../plugins/stream-deck/package.json) and
+[npm lockfile](../../package-lock.json). The plugin does not
 use the Analyzer's Python runtime or require a development Node installation.
 The same JavaScript entry point is enabled for Windows and macOS 15+, without a
 Windows binary dependency. Builds/tests operate on separate artifacts and never
 replace an installed plugin or user profiles. Installation and profile import
 are explicit operations. The [plugin guide](../../plugins/stream-deck/README.md)
 owns build/install commands, paths and independent versioning;
-[requirements](../requirements/STREAM_DECK.md) own native acceptance status.
+[validation](../validation/STREAM_DECK.md) owns native qualification status.
 [Windows setup](../development/SETUP.md) owns versions and commands.
+
+Bundled profiles are editable (`Readonly: false`), offered automatically
+(`AutoInstall: true`) and activated after installation
+(`DontAutoSwitchWhenInstalled: false`). The Plus profile keeps the `profiles/plus`
+identity and `plus.streamDeckProfile` filename; its six-page layout replaces the
+existing bundled layout, preserving customized and unrelated user profiles.
+Native custom `States[].Image`/`Title` override live SDK feedback, so bundled
+Plus navigation/step-size states leave these fields plugin-owned. Restarting the
+plugin cannot remove custom overrides from an older imported profile; that layout
+requires the updated bundled profile or explicit import.
 
 NumPy serves analysis buffers, Pint explicit unit conversion and SciPy passive
 frame transforms. Import/raw handling remains independent of those optional

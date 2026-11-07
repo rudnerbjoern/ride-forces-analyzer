@@ -21,6 +21,10 @@ Creating/using this skill grants no mutation permission.
   Never store tokens, current branch names, commit IDs or authorization in this skill.
 - Complete local acceptance and final documentation before publication. Reuse valid
   unchanged evidence; never rerun suites solely because publication was authorized.
+- For documentation changes, use the [documentation-maintenance workflow](../documentation-maintenance/SKILL.md).
+  Require its task-specific destination justification and independent semantic review
+  for changed user-facing content. Reuse unchanged review evidence; missing or failed
+  review blocks delivery. Markdown/link checks alone do not satisfy this requirement.
 - Inspect status, branch, head, origin URL, staged paths and fingerprint once.
   Preserve owner changes. Stage only an explicitly approved scope into an empty
   index; an already reviewed index may be committed only if it matches that scope.

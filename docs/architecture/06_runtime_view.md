@@ -124,7 +124,8 @@ sequenceDiagram
 - **Settings → Application → Enable Stream Deck** is off by default and saved in
   existing user preferences. Startup reads it; Save applies changes to the shared
   server. Cancel leaves it unchanged. Disabling disconnects clients and removes
-  discovery; application shutdown also closes the server.
+  discovery; application shutdown also closes the server and removes its owned
+  discovery file.
 
 ## Stream Deck control contract
 
@@ -134,11 +135,43 @@ validate commands, responses and full state events; matching
 Shared examples cover both languages. The application's Qt-thread controller routes
 commands through existing controls/services and publishes state from their signals.
 The plugin validates incoming messages before state-driven rendering or command
-generation. Its configurable SDK key action covers the agreed command types.
+generation. Its configurable SDK key action covers the agreed command types. Plus uses six native main pages and a local
+navigation action. It addresses only the bundled `profiles/plus`, remembers
+Playback/Markers subgroups per device for the plugin session and confirms cyan
+selection through appearance events, including swipes. SDK send completion never
+confirms a page; failures alert without changing confirmed selection. User profile
+copies are preserved and are not switch destinations. The six-page update replaces
+the existing `profiles/plus` bundle identity; no parallel Plus variant is introduced. Native Windows six-page import, SDK switching, subgroup recall and physical swipe
+feedback are verified on Plus. Menu captions use confirmed application state;
+marker feedback prioritizes Failed, Pending and preview count on every page.
+Press-only dials reuse existing commands and ignore rotation/touch without alerts.
+Filter dial proposals are device-local plugin state. Rotation sends nothing;
+press/touch use `library.filter.set` with exact option values. GUI/option changes
+invalidate the affected proposal; page, target/session and connection changes
+discard proposals. Active values always come from application snapshots.
+Plus presentation uses the same confirmed feedback with separate native text,
+status symbol/band and static menu background tiles. The production SVG assets
+and feedback also drive reference illustrations; decoration carries no live state.
+Library dial 2 is a display-only assignment whose gestures are ignored.
+
+### Native page routing
+
+- Plus page indices are 0 Library, 1 Playback/Navigate, 2 Playback/Selection,
+  3 Curves, 4 Markers/Markers and 5 Markers/View. Native main pages preserve all
+  four top-row menu keys; nested folders would reserve key 1 for Back.
+- `switchToProfile(deviceId, "profiles/plus", page)` addresses the bundled profile,
+  not arbitrary imported copies. Its completion confirms sending only; appearance
+  events, including swipes, confirm the visible page. Failed requests do not change
+  confirmed selection; repeated selection is a no-op.
+- Subgroup recall, sample step size and filter proposals are device-local plugin
+  session state. Devices do not share unconfirmed proposals or navigation state.
+- Python models, TypeScript types/decoder, action availability and shared examples
+  evolve together. Park labels/values remain exact Unicode data within 64 KiB,
+  including long names, whitespace, punctuation and emojis; they are not opaque IDs.
 
 ### Envelopes and compatibility
 
-- Application protocol `version: 3` is independent of discovery/authentication version 1.
+- Application protocol `version: 4` is independent of discovery/authentication version 1.
   Authenticate first; transport `ready` is not an application state event.
 - Require an exact application protocol version. Invalid shapes, unknown fields/actions,
   coercions and non-finite numbers are rejected. Contract changes require a new version.
@@ -175,7 +208,8 @@ generation. Its configurable SDK key action covers the agreed command types.
 | `library.open`                                | None                                                                 | Open selection in the addressed current Explorer                                     |
 | `library.open_new_window`                     | None                                                                 | Open selection in an additional Explorer; retain the addressed window                |
 | `library.import`                              | None                                                                 | Open the existing import dialog                                                      |
-| `library.reset_filters`                       | None                                                                 | Clear park/status/search through the existing Library reset                          |
+| `library.filter.reset`                        | None                                                                 | Clear park/status/search through the existing Library reset                          |
+| `library.filter.set`                          | `filter: park \| status`, `value: string \| null`                    | Set one current dropdown choice; retain the other filter and search                  |
 | `playback.toggle`                             | None                                                                 | Invoke actual play/pause                                                             |
 | `playback.speed.step`, `playback.speed.reset` | Step: `direction: -1 \| 1`; reset: none                              | Adjacent supported speed; reset to 1×                                                |
 | `position.step`                               | `steps: -20 \| -10 \| -1 \| 1 \| 10 \| 20`                           | Source samples; pause playback and clamp bounds                                      |
@@ -189,7 +223,14 @@ generation. Its configurable SDK key action covers the agreed command types.
 
 Markers are `start`, `gravity`, `incline`, `end`. First/second/third curve slots
 follow the current chart axes; state supplies actual raw/directional labels.
-Fine/coarse selection and menu navigation stay local to the plugin. Relative
+
+Filter values are the dropdown's exact data, not indices or display labels. Null
+means All; an empty park string means Unknown park. Unknown or removed choices
+produce `invalid_command` without changing a filter. Park values and labels are
+plain Unicode strings, without the opaque-ID length restriction, trimming or
+normalization; JSON serialization preserves quotes, control characters and emojis.
+The existing 64 KiB UTF-8 transport-message limit still applies to the whole payload.
+Step-size selection and menu navigation stay local to the plugin. Relative
 steps may remain in flight together so aggregated dial ticks and rapid Library/selection
 steps retain one command per step; the server serializes and revalidates
 them against current GUI state. No disconnected commands are queued or replayed.
@@ -208,6 +249,13 @@ does not resume it. No valid preview means apply is unavailable.
 - `target: null` explicitly means no active Explorer. Library feedback contains
   visible count and the selected entry's identity, title and zero-based index;
   an empty list has count zero and null selection.
+- Library `park_filter` and `status_filter` each expose confirmed `value` and
+  ordered `options` containing `value`/`label` pairs. Before choices are loaded,
+  an empty options list with null value is explicit. Enabled control initializes
+  existing Library choices once; both dropdown and option-model changes publish
+  even if entry count/selection stay unchanged. Filter commands use existing
+  shared Library setters and availability/target guards; they open no recording
+  and never change a recording's manual workflow status.
 - Playback exposes actual playing/speed, current sample, source time, formatted
   replay label and last valid sample. Selection exposes confirmed Start/End sample,
   source time and replay label, independently of recording markers. Selection turns
@@ -222,7 +270,9 @@ does not resume it. No valid preview means apply is unavailable.
   and the application's replay label; no sampling-rate inference occurs in the plugin.
 - Previews survive menu changes, but target/recording changes discard them. Preview
   changes update only dotted, labelled Explorer chart overlays, without recalculating
-  or persisting analysis. Adopted marker lines stay unchanged; discard/apply and
+  or persisting analysis. An off-screen preview centers the viewport where recording
+  boundaries permit, without changing zoom; already visible previews do not pan it.
+  Adopted marker lines stay unchanged; discard/apply and
   target changes clear the corresponding overlays. Apply stays pending until successful
   adoption; only then update `applied` and persist through existing services. Failure
   retains the last adopted value; concurrent applies must not overwrite newer markers.

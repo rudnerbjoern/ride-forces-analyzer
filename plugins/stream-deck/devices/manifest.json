@@ -1,5 +1,18 @@
 {
   "Actions": [{
+    "UUID": "io.github.rudnerbjoern.ride-forces-analyzer.plus-navigation",
+    "Name": "Plus navigation",
+    "Tooltip": "Switch the fixed Plus menu or its remembered subgroup without an Analyzer command.",
+    "Icon": "imgs/action",
+    "Controllers": ["Keypad"],
+    "VisibleInActionsList": false,
+    "SupportedInMultiActions": false,
+    "DisableAutomaticStates": true,
+    "States": [
+      { "Image": "imgs/key", "TitleAlignment": "bottom", "FontSize": 10 },
+      { "Image": "imgs/key", "TitleAlignment": "bottom", "FontSize": 10 }
+    ]
+  }, {
     "UUID": "io.github.rudnerbjoern.ride-forces-analyzer.dial",
     "Name": "Analyzer dial",
     "Tooltip": "Library, position, view, smoothing, speed or marker dial from the bundled Plus profile.",
