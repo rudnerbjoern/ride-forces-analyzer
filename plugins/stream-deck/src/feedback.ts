@@ -44,6 +44,10 @@ const artwork = {
         + '<path d="M22 91h89" stroke="#8eaccd" stroke-width="4" stroke-linecap="round"/>',
     previous: arrow + '<rect x="14" y="23" width="8" height="62" rx="3" fill="url(#steel)"/>',
     next: `<g transform="translate(140 0) scale(-1 1)">${arrow}<rect x="14" y="23" width="8" height="62" rx="3" fill="url(#steel)"/></g>`,
+    new_window: '<rect x="19" y="30" width="77" height="64" rx="6" fill="url(#steel)" stroke="#d5f3ff" stroke-width="2"/>'
+        + '<rect x="38" y="13" width="82" height="65" rx="6" fill="url(#blue)" stroke="#d5f3ff" stroke-width="2"/>'
+        + '<path d="M39 29h80" stroke="#d5f3ff" stroke-width="3"/>'
+        + '<path d="M62 64l30-24H77V32h29v29h-8V47L69 71z" fill="url(#teal)" stroke="#d5f3ff" stroke-width="1.5"/>',
     open: folder + '<path d="M63 86l27-28H75V46h39v39h-13V69L74 97z" fill="url(#blue)" stroke="#d5f3ff" stroke-width="2"/>',
     import: '<path d="M24 55h91l11 34q1 9-9 9H23q-10 0-9-9z" fill="url(#blue)"/>'
         + '<path d="M24 55l13-14h65l13 14H91l-8 14H56l-8-14z" fill="#183a59" stroke="#89c6ed" stroke-width="2"/>'
@@ -111,6 +115,8 @@ const artwork = {
         + '<path d="M48 28L27 48l21 20V55h32a12 12 0 0 1 0 24H65v12h15a24 24 0 0 0 0-48H48z" fill="#73471c"/>',
     fine: '<rect x="18" y="23" width="105" height="65" rx="9" fill="url(#steel)"/><rect x="24" y="30" width="93" height="51" rx="5" fill="#16344f"/>'
         + '<path d="M36 62h70" stroke="#93afc5" stroke-width="3"/><rect x="64" y="37" width="13" height="38" rx="4" fill="url(#blue)"/>',
+    medium: '<rect x="18" y="23" width="105" height="65" rx="9" fill="url(#steel)"/><rect x="24" y="30" width="93" height="51" rx="5" fill="#16344f"/>'
+        + '<rect x="50" y="43" width="13" height="32" rx="4" fill="url(#blue)"/><rect x="78" y="35" width="13" height="40" rx="4" fill="url(#teal)"/>',
     coarse: '<rect x="18" y="23" width="105" height="65" rx="9" fill="url(#steel)"/><rect x="24" y="30" width="93" height="51" rx="5" fill="#16344f"/>'
         + '<rect x="36" y="43" width="13" height="32" rx="4" fill="url(#blue)"/><rect x="64" y="35" width="13" height="40" rx="4" fill="url(#teal)"/>'
         + '<rect x="92" y="43" width="13" height="32" rx="4" fill="url(#violet)"/>',
@@ -131,7 +137,9 @@ export function actionIcon(settings: ControlSettings | undefined, state?: StateE
     switch (settings?.operation) {
         case "library.move": return settings.direction === -1 ? "previous" : "next";
         case "library.open": return "open";
+        case "library.open_new_window": return "new_window";
         case "library.import": return "import";
+        case "library.reset_filters": return "reset";
         case "playback.toggle": return state?.playback?.playing ? "pause" : "playback";
         case "playback.speed.step": return "speed";
         case "playback.speed.reset": case "smoothing.reset": case "view.reset": return "reset";
@@ -195,7 +203,8 @@ export function keyFeedback(client: ControlClient, context: string, settings: Co
     const name = settings?.operation ?? "playback.toggle";
     const icon = actionIcon(settings, client.state);
     const labels = {
-        "library.move": "Library", "library.open": "Open", "library.import": "Import",
+        "library.move": "Library", "library.open": "Open", "library.open_new_window": "New window", "library.import": "Import",
+        "library.reset_filters": "Reset filters",
         "playback.toggle": "Play/Pause", "playback.speed.step": "Speed", "playback.speed.reset": "Speed reset",
         "position.step": "Position", "selection.step": "Selection", "view.zoom": "Zoom", "view.reset": "Reset view",
         "view.selection": "Zoom", "smoothing.step": "Smoothing", "smoothing.reset": "Smoothing",
@@ -215,7 +224,9 @@ export function keyFeedback(client: ControlClient, context: string, settings: Co
         const selected = snapshot.library?.selected;
         const index = selected ? `${selected.index + 1}/${snapshot.library?.count}`
             : snapshot.library?.count === 0 ? "Empty" : "No choice";
-        title = name === "library.import" ? "Import…" : `${label}\n${index}`;
+        title = name === "library.import" ? "Import…"
+            : name === "library.open_new_window" ? "New\nwindow"
+            : name === "library.reset_filters" ? "Reset\nfilters" : `${label}\n${index}`;
     } else if (name === "playback.toggle") {
         playing = snapshot.playback?.playing ?? false;
         active = playing;

@@ -43,7 +43,10 @@ test("bundled device profiles provide reachable native menus, fixed navigation a
       const startPositions = ["1,0", "2,0"];
       assert.equal(pages.get(start[startPositions[0]].Settings.ProfileUUID).Name, "Library");
       assert.equal(pages.get(start[startPositions[1]].Settings.ProfileUUID).Name, "Explorer");
-      assert.equal(start["0,1"], undefined);
+      if (profile.DeviceType === 7) {
+        assert.deepEqual(["0,1", "1,1", "2,1", "3,1"].map(position => start[position].Settings.operation),
+          ["library.open", "library.open_new_window", "library.import", "library.reset_filters"]);
+      } else assert.equal(start["0,1"], undefined);
       const folderImages = [];
       for (const position of startPositions) {
         const image = start[position].States[0].Image;
@@ -57,7 +60,7 @@ test("bundled device profiles provide reachable native menus, fixed navigation a
         folderImages.push(svg);
       }
       assert.notEqual(folderImages[0], folderImages[1]);
-      assert.equal(start["3,1"], undefined);
+      if (profile.DeviceType !== 7) assert.equal(start["3,1"], undefined);
       {
         assert.equal(start["0,0"].UUID, "com.elgato.streamdeck.system.open");
         assert.deepEqual(start["0,0"].Settings, { path: "" }, "The installed application path is configured by the user");
@@ -93,8 +96,9 @@ test("bundled device profiles provide reachable native menus, fixed navigation a
         const actions = keys(id);
         if (id !== root.Pages.Current) {
           assert.equal(actions["0,0"].UUID, pages.get(id).Name === "Quick controls" ? `${uuid}.home` : "com.elgato.streamdeck.profile.backtoparent");
-          assert.equal(actions["3,1"].UUID, `${uuid}.home`);
-          for (const position of ["0,0", "3,1"]) {
+          if (profile.DeviceType === 9) assert.equal(actions["3,1"].UUID, `${uuid}.home`);
+          else assert.ok(Object.values(actions).every(action => action.UUID !== `${uuid}.home`), "Plus leaves Home unassigned");
+          for (const position of profile.DeviceType === 9 ? ["0,0", "3,1"] : ["0,0"]) {
             assert.ok(entries.some(entry => entry.filename.toLowerCase().endsWith(
               `/profiles/${id}/${actions[position].States[0].Image.toLowerCase()}`)));
           }
@@ -123,16 +127,20 @@ test("bundled device profiles provide reachable native menus, fixed navigation a
       root.Pages.Pages.forEach(visit);
       assert.equal(visited.size, pages.size, "Every bundled menu must be reachable with keys");
       if (profile.DeviceType === 7) {
-        assert.deepEqual([...operations].sort(), ["curve.set", "library.import", "playback.toggle", "view.selection"], "Play/Pause is the explicit Plus dial/key exception");
+        assert.deepEqual([...operations].sort(), ["curve.set", "library.import", "library.open", "library.open_new_window", "library.reset_filters", "playback.toggle", "view.selection"]);
         assert.equal(keys(names.get("Playback"))["0,1"].Settings.operation, "playback.toggle");
         assert.ok(!names.has("Position") && !names.has("Smoothing") && !names.has("Playback speed"));
         assert.ok(![...names.keys()].some(name => name.endsWith(" marker")));
-      } else for (const operation of ["library.move", "library.open", "library.import", "playback.toggle", "position.step",
+      } else for (const operation of ["library.move", "library.open", "library.open_new_window", "library.import", "playback.toggle", "position.step",
         "playback.speed.step", "playback.speed.reset", "smoothing.step", "smoothing.reset", "view.zoom", "view.reset", "curve.set"]) {
         assert.ok(operations.has(operation), `Missing key alternative: ${operation}`);
       }
       const library = keys(names.get("Library"));
-      assert.equal(library["0,1"].Settings.operation, "library.import");
+      if (profile.DeviceType === 7) assert.deepEqual(["0,1", "1,1", "2,1", "3,1"].map(position => library[position].Settings.operation),
+        ["library.open", "library.open_new_window", "library.import", "library.reset_filters"]);
+      else assert.equal(library["0,1"].Settings.operation, "library.import");
+      assert.equal(library[profile.DeviceType === 7 ? "1,1" : "2,1"].Settings.operation, "library.open_new_window");
+      if (profile.DeviceType === 9) assert.equal(library["1,1"].Settings.operation, "library.open");
       if (profile.DeviceType === 9) for (const marker of ["start", "gravity", "incline", "end"]) {
         const editor = keys(names.get(`${marker.charAt(0).toUpperCase()}${marker.slice(1)} marker`));
         assert.deepEqual(["1,0", "1,1", "2,1", "2,0"].map(position => editor[position].Settings),
@@ -143,12 +151,15 @@ test("bundled device profiles provide reachable native menus, fixed navigation a
       if (profile.DeviceType === 7) {
         const dials = name => pages.get(names.get(name)).Controllers.find(value => value.Type === "Encoder").Actions;
         assert.deepEqual(dials("Library")["0,0"].Settings, { control: "library" });
+        assert.deepEqual(dials("Start")["0,0"].Settings, { control: "library" });
+        assert.deepEqual(Object.keys(dials("Start")), ["0,0"]);
         assert.equal(pages.get(explorer["2,1"].Settings.ProfileUUID).Name, "Selection");
         assert.deepEqual(Object.values(dials("Selection")).map(value => value.Settings),
           ["start", "end"].map(boundary => ({ control: "selection", boundary })));
         const selection = keys(names.get("Selection"));
         assert.equal(selection["0,1"].Settings.operation, "view.selection");
         assert.equal(selection["1,1"].UUID, `${uuid}.step-mode`);
+        for (const name of ["Playback", "Selection", "Markers"]) assert.equal(keys(names.get(name))["1,1"].States.length, 3);
         assert.deepEqual(Object.values(dials("Playback")).map(value => value.Settings.control), ["position", "view", "speed"]);
         assert.deepEqual(Object.keys(dials("Playback")), ["0,0", "1,0", "2,0"]);
         assert.deepEqual(dials("View / Curves")["0,0"].Settings, { control: "smoothing" });
@@ -237,8 +248,16 @@ test("Mobile preview keeps its entire reachable profile within six keys and exis
     }
     visit(root.Pages.Current);
     assert.equal(visited.size, 4);
-    assert.deepEqual([...operations].sort(), ["library.import", "library.move", "library.open", "playback.toggle", "position.step", "view.reset", "view.selection", "view.zoom"]);
+    assert.deepEqual([...operations].sort(), ["library.import", "library.move", "library.open", "library.open_new_window", "playback.toggle", "position.step", "view.reset", "view.selection", "view.zoom"]);
     const mobileKeys = name => [...pages.values()].find(page => page.Name === name).Controllers[0].Actions;
+    const library = mobileKeys("Library");
+    // Landscape keeps Back first and Previous/Next side by side.
+    assert.equal(library["0,0"].UUID, "com.elgato.streamdeck.profile.backtoparent");
+    assert.equal(library["0,1"].Settings.operation, "library.import");
+    assert.deepEqual(library["1,0"].Settings, { operation: "library.move", direction: -1 });
+    assert.deepEqual(library["2,0"].Settings, { operation: "library.move", direction: 1 });
+    assert.equal(library["1,1"].Settings.operation, "library.open");
+    assert.equal(library["2,1"].Settings.operation, "library.open_new_window");
     assert.equal(mobileKeys("Playback")["2,1"].Settings.operation, "view.reset");
     assert.equal(mobileKeys("View")["2,1"].Settings.operation, "playback.toggle");
     const start = pages.get(root.Pages.Current).Controllers[0].Actions;

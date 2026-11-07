@@ -65,7 +65,7 @@ test("toggle images and key states follow confirmation, never key presses or ack
   assert.equal(client.send("key", request), false);
   assert.equal(keyFeedback(client, "key", settings).state, 0);
   assert.match(keyFeedback(client, "key", settings).title, /Pending/);
-  receive({ version: 2, type: "response", id: sent[0].id, target: sent[0].target, status: "ok" });
+  receive({ version: 3, type: "response", id: sent[0].id, target: sent[0].target, status: "ok" });
   assert.equal(keyFeedback(client, "key", settings).state, 0);
   const confirmed = state();
   confirmed.sequence++;
@@ -104,11 +104,11 @@ test("pending and failed marker adoption remain distinct from the last applied v
   connect(true); receive(state());
   const settings = controlSettings({ operation: "marker.apply", marker: "gravity" });
   client.send("key", requestedAction(settings, client.state));
-  receive({ version: 2, type: "response", id: sent[0].id, target: sent[0].target, status: "pending" });
+  receive({ version: 3, type: "response", id: sent[0].id, target: sent[0].target, status: "pending" });
   assert.equal(client.pending("key"), true);
   assert.equal(client.state.markers[1].applied.sample, 50);
   assert.match(keyFeedback(client, "key", settings).title, /Pending/);
-  receive({ version: 2, type: "response", id: sent[0].id, target: sent[0].target,
+  receive({ version: 3, type: "response", id: sent[0].id, target: sent[0].target,
     status: "error", code: "analysis_failed", reason: null });
   assert.equal(client.pending("key"), false);
   assert.equal(client.state.markers[1].applied.sample, 50);

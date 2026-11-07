@@ -14,8 +14,8 @@
     "States": [{ "Image": "imgs/key" }]
   }, {
     "UUID": "io.github.rudnerbjoern.ride-forces-analyzer.step-mode",
-    "Name": "Fine / Coarse",
-    "Tooltip": "Switch position and marker dials between one and ten source samples per notch.",
+    "Name": "Step size",
+    "Tooltip": "Cycle position, selection and marker dials through 1, 10 and 20 samples per notch.",
     "Icon": "imgs/action",
     "Controllers": ["Keypad"],
     "VisibleInActionsList": false,
@@ -23,6 +23,7 @@
     "DisableAutomaticStates": true,
     "States": [
       { "Image": "imgs/key", "Title": "Fine", "TitleAlignment": "bottom", "FontSize": 10 },
+      { "Image": "imgs/key", "Title": "Medium", "TitleAlignment": "bottom", "FontSize": 10 },
       { "Image": "imgs/key", "Title": "Coarse", "TitleAlignment": "bottom", "FontSize": 10 }
     ]
   }, {

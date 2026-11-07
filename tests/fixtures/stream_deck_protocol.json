@@ -9,7 +9,13 @@
       "name": "library.open"
     },
     {
+      "name": "library.open_new_window"
+    },
+    {
       "name": "library.import"
+    },
+    {
+      "name": "library.reset_filters"
     },
     {
       "name": "playback.toggle"
@@ -73,11 +79,39 @@
       "name": "selection.step",
       "boundary": "end",
       "steps": 1
+    },
+    {
+      "name": "position.step",
+      "steps": -20
+    },
+    {
+      "name": "position.step",
+      "steps": 20
+    },
+    {
+      "name": "selection.step",
+      "boundary": "start",
+      "steps": -20
+    },
+    {
+      "name": "selection.step",
+      "boundary": "start",
+      "steps": 20
+    },
+    {
+      "name": "marker.preview",
+      "marker": "start",
+      "steps": -20
+    },
+    {
+      "name": "marker.preview",
+      "marker": "start",
+      "steps": 20
     }
   ],
   "messages": [
     {
-      "version": 2,
+      "version": 3,
       "type": "state",
       "session_id": "session-1",
       "sequence": 12,
@@ -139,6 +173,12 @@
           "available": true
         },
         "selection.step": {
+          "available": true
+        },
+        "library.open_new_window": {
+          "available": true
+        },
+        "library.reset_filters": {
           "available": true
         }
       },
@@ -321,7 +361,7 @@
       }
     },
     {
-      "version": 2,
+      "version": 3,
       "type": "state",
       "session_id": "session-1",
       "sequence": 13,
@@ -354,7 +394,7 @@
       }
     },
     {
-      "version": 2,
+      "version": 3,
       "type": "response",
       "id": "request-1",
       "target": {
@@ -365,7 +405,7 @@
       "status": "ok"
     },
     {
-      "version": 2,
+      "version": 3,
       "type": "response",
       "id": "request-1",
       "target": {
@@ -376,7 +416,7 @@
       "status": "pending"
     },
     {
-      "version": 2,
+      "version": 3,
       "type": "response",
       "id": "request-1",
       "target": {
@@ -389,7 +429,7 @@
       "reason": "background"
     },
     {
-      "version": 2,
+      "version": 3,
       "type": "response",
       "id": null,
       "target": null,

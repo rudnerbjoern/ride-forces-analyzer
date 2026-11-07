@@ -11,7 +11,7 @@ const client = () => ({ state: structuredClone(snapshot), status: "connected", p
 test("function icons distinguish browsing, import/open, direction, zoom and marker commands", () => {
   const actions = [
     { operation: "library.move", direction: -1 }, { operation: "library.move", direction: 1 },
-    { operation: "library.open" }, { operation: "library.import" },
+    { operation: "library.open" }, { operation: "library.open_new_window" }, { operation: "library.import" },
     ...[-10, -1, 1, 10].map(steps => ({ operation: "position.step", steps })),
     { operation: "view.zoom", direction: -1 }, { operation: "view.zoom", direction: 1 },
     { operation: "view.reset" }, { operation: "view.selection" },
@@ -50,18 +50,18 @@ test("state badges distinguish confirmed, preview, pending, failed, blocked and 
 
 test("touch fields follow GUI snapshots and retain adopted marker values through preview and failure", () => {
   const h = client();
-  let field = dialFeedback(h, "dial", { control: "position" }, false);
+  let field = dialFeedback(h, "dial", { control: "position" }, 1);
   assert.match(field.value, /#50.*00:01.00/);
   assert.match(field.status, /Paused.*Fine.*1 sample/);
   h.state.playback = { ...h.state.playback, playing: true, speed: 2,
     position: { sample: 80, time_seconds: 1.6, label: "00:01.60" } };
-  field = dialFeedback(h, "dial", { control: "position" }, true);
+  field = dialFeedback(h, "dial", { control: "position" }, 10);
   assert.match(field.value, /#80.*00:01.60/);
-  assert.match(field.status, /Playing.*Coarse.*10 samples/);
+  assert.match(field.status, /Playing.*Medium.*10 samples/);
   assert.match(field.detail, /2×.*Press: pause/);
   h.state.view = { start_seconds: 2, end_seconds: 7.5, smoothing_window: 21 };
-  assert.equal(dialFeedback(h, "dial", { control: "view" }, false).status, "Span 5.50 s");
-  assert.equal(dialFeedback(h, "dial", { control: "smoothing" }, false).value, "21 samples");
+  assert.equal(dialFeedback(h, "dial", { control: "view" }, 1).status, "Span 5.50 s");
+  assert.equal(dialFeedback(h, "dial", { control: "smoothing" }, 1).value, "21 samples");
   const marker = h.state.markers[1];
   const settings = { control: "marker", marker: "gravity" };
   for (const status of ["preview", "pending", "failed"]) {
@@ -69,7 +69,7 @@ test("touch fields follow GUI snapshots and retain adopted marker values through
     marker.preview = { sample: 70, time_seconds: 1.4, label: "00:01.40" };
     marker.request_id = status === "preview" ? null : "apply";
     marker.error = status === "failed" ? "analysis_failed" : null;
-    field = dialFeedback(h, "dial", settings, false);
+    field = dialFeedback(h, "dial", settings, 1);
     assert.match(field.value, /#70/);
     assert.match(field.detail, /Applied #50/);
     assert.match(field.status, new RegExp(status, "i"));
@@ -77,7 +77,7 @@ test("touch fields follow GUI snapshots and retain adopted marker values through
   }
   marker.status = "applied"; marker.applied = marker.preview; marker.preview = null;
   marker.request_id = null; marker.error = null;
-  field = dialFeedback(h, "dial", settings, false);
+  field = dialFeedback(h, "dial", settings, 1);
   assert.match(field.status, /Applied/);
   assert.match(field.detail, /Applied #70/);
 });
@@ -87,16 +87,16 @@ test("touch fields report blocking reasons and clear cached values when disconne
   const settings = { control: "position" };
   for (const [reason, label] of [["background", "Background"], ["dialog_open", "Dialog open"], ["input_focus", "Editing"]]) {
     h.state.availability = { available: false, reason };
-    const field = dialFeedback(h, "dial", settings, false);
+    const field = dialFeedback(h, "dial", settings, 1);
     assert.match(field.status, new RegExp(label));
     assert.match(field.icon, /position: unavailable/);
     assert.match(field.value, /#50/);
-    const library = dialFeedback(h, "library", { control: "library" }, false);
+    const library = dialFeedback(h, "library", { control: "library" }, 1);
     assert.doesNotMatch(library.status, /Ready/);
     assert.match(library.status, new RegExp(label));
   }
   h.status = "disconnected";
-  const field = dialFeedback(h, "dial", settings, false);
+  const field = dialFeedback(h, "dial", settings, 1);
   assert.equal(field.value, "—");
   assert.equal(field.detail, "");
   assert.equal(field.status, "Offline");
@@ -109,11 +109,11 @@ test("curve-page mode and smoothing feedback reflect Raw versus Calibrated progr
   const calibrated = h.state.curves.find(curve => curve.curve === "calibrated");
   calibrated.active = true;
   assert.equal(keyFeedback(h, "mode", mode).title, "Data mode\nCalibrated");
-  assert.equal(dialFeedback(h, "smooth", { control: "smoothing" }, false).value, "11 samples");
+  assert.equal(dialFeedback(h, "smooth", { control: "smoothing" }, 1).value, "11 samples");
   calibrated.active = false;
   h.state.controls["smoothing.step"] = { available: false, reason: "unsupported" };
   assert.match(keyFeedback(h, "mode", mode).title, /Data mode\nRaw/);
-  const smoothing = dialFeedback(h, "smooth", { control: "smoothing" }, false);
+  const smoothing = dialFeedback(h, "smooth", { control: "smoothing" }, 1);
   assert.equal(smoothing.value, "Raw source values");
   assert.match(smoothing.status, /Raw mode/);
   assert.equal(smoothing.detail, "Select Calibrated");
@@ -165,10 +165,27 @@ test("Library keys retain readable action labels instead of truncating recording
   assert.equal(keyFeedback(h, "previous", previous).title, "Previous\n1/2");
   assert.equal(keyFeedback(h, "next", next).title, "Next\n1/2");
   assert.equal(keyFeedback(h, "open", open).title, "Open\n1/2");
-  assert.equal(dialFeedback(h, "library", { control: "library" }, false).value, name);
+  assert.equal(dialFeedback(h, "library", { control: "library" }, 1).value, name);
   h.state.library.selected.index = 1;
   assert.equal(keyFeedback(h, "open", open).title, "Open\n2/2");
   h.status = "disconnected";
   assert.equal(keyFeedback(h, "previous", previous).title, "Previous\nOffline");
   assert.equal(keyFeedback(h, "next", next).title, "Next\nOffline");
+});
+
+test("new-window opening has a compact caption and its own availability", () => {
+  const source = client();
+  const settings = { operation: "library.open_new_window" };
+  assert.equal(keyFeedback(source, "new-window", settings).title, "New\nwindow");
+  source.state.controls[settings.operation] = { available: false, reason: "no_selection" };
+  assert.equal(keyFeedback(source, "new-window", settings).status, "unavailable");
+});
+
+test("Library filter reset uses a short caption and the existing reset icon", () => {
+  const source = client();
+  const settings = { operation: "library.reset_filters" };
+  assert.equal(keyFeedback(source, "reset-filters", settings).title, "Reset\nfilters");
+  assert.equal(actionIcon(settings, source.state), "reset");
+  source.state.availability = { available: false, reason: "dialog_open" };
+  assert.equal(keyFeedback(source, "reset-filters", settings).status, "unavailable");
 });

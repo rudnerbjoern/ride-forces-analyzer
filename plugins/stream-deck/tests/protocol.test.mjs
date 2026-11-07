@@ -25,7 +25,7 @@ test("shared wire examples satisfy the plugin's strict command and feedback type
   for (const action of [{ name: "unknown" }, { name: "marker.apply" },
     { name: "library.move", direction: true }, { name: "position.step", steps: 2 },
     { name: "curve.set", curve: "combined", enabled: "yes" }]) {
-    const command = { version: 2, type: "command", id: "invalid", target: examples.target, action };
+    const command = { version: 3, type: "command", id: "invalid", target: examples.target, action };
     lines.push("// @ts-expect-error Reject incompatible command shapes.",
       `export const invalid${lines.length} = ${JSON.stringify(command)} satisfies Command;`);
   }

@@ -47,6 +47,7 @@ def test_reference_cli_is_reproducible_from_fixed_contract_examples() -> None:
         assert plus["image"] == "stream-deck-plus-controls.png"
         assert plus["size"] == manifest["size"]
         pages = {page["name"]: page for page in plus["pages"]}
+        assert all(key["title"] != "Home" for page in plus["pages"] for key in page["keys"])
         assert set(pages) == {
             "Start",
             "Library",
@@ -73,11 +74,22 @@ def test_reference_cli_is_reproducible_from_fixed_contract_examples() -> None:
             "Selection start",
             "Selection end",
         ]
-        assert not pages["Start"]["dials"] and not pages["Explorer"]["dials"]
-        assert (
-            next(key for key in pages["Playback"]["keys"] if key["position"] == "1,1")["title"]
-            == "Fine\n1 sample"
-        )
+        assert [dial["title"] for dial in pages["Start"]["dials"]] == ["Library"]
+        start_keys = {key["position"]: key["title"] for key in pages["Start"]["keys"]}
+        assert start_keys["1,0"] == "Library"
+        assert start_keys["0,1"] == "Open\n1/2"
+        assert start_keys["1,1"] == "New\nwindow"
+        assert start_keys["2,1"] == "Import…"
+        assert start_keys["3,1"] == "Reset\nfilters"
+        assert not pages["Explorer"]["dials"]
+        for page, label, size in (
+            ("Playback", "Fine", 1),
+            ("Selection", "Medium", 10),
+            ("Markers", "Coarse", 20),
+        ):
+            title = next(key for key in pages[page]["keys"] if key["position"] == "1,1")["title"]
+            assert title == f"{label}\n{size} {'sample' if size == 1 else 'samples'}"
+            assert f"{label} · {size} sample" in pages[page]["dials"][0]["status"]
         mobile = manifest["mobile"]
         assert mobile["image"] == "stream-deck-mobile-controls.png"
         assert mobile["key_layout"] == {"rows": 2, "columns": 3}
@@ -90,9 +102,11 @@ def test_reference_cli_is_reproducible_from_fixed_contract_examples() -> None:
         assert all(len(page["keys"]) <= 6 for page in mobile["pages"])
         library = next(page for page in mobile["pages"] if page["name"] == "Library")
         titles = {key["position"]: key["title"] for key in library["keys"]}
-        assert titles["1,0"] == "Previous\n1/2"
-        assert titles["2,0"] == "Next\n1/2"
-        assert titles["0,1"] == "Open\n1/2"
+        landscape = [[titles.get(f"{column},{row}") for column in range(3)] for row in range(2)]
+        assert landscape == [
+            ["Back", "Previous\n1/2", "Next\n1/2"],
+            ["Import…", "Open\n1/2", "New\nwindow"],
+        ]
         assert all(key["title"] != "Home" for page in mobile["pages"] for key in page["keys"])
         with Image.open(output / mobile["image"]) as image:
             assert list(image.size) == mobile["size"] == [1040, 740]

@@ -10,10 +10,12 @@ const uuid = "io.github.rudnerbjoern.ride-forces-analyzer";
 // Native folders own navigation; application controls reuse the configurable SDK action.
 const folder = (title, page) => ({ title, page });
 const control = (operation, settings = {}) => ({ operation, ...settings });
+const plusLibraryKeys = [control("library.open"), control("library.open_new_window"),
+  control("library.import"), control("library.reset_filters")];
 const pages = {
   start: { name: "Start", keys: [folder("Library", "library"), folder("Explorer", "explorer")] },
   library: { name: "Library", keys: [control("library.move", { direction: -1 }),
-    control("library.move", { direction: 1 }), control("library.open"), control("library.import")] },
+    control("library.move", { direction: 1 }), control("library.open"), control("library.import"), control("library.open_new_window")] },
   explorer: { name: "Explorer", keys: [folder("Playback", "playback"),
     folder("View / Curves", "view"), folder("Markers", "markers"), folder("Selection", "selection")] },
   playback: { name: "Playback", keys: [control("playback.toggle"), folder("Position", "position"),
@@ -103,17 +105,18 @@ export async function buildProfiles(plugin) {
       };
       const marker = name.startsWith("marker-") ? name.slice(7) : undefined;
       const keys = marker ? [-10, -1, 1, 10].map(steps => control("marker.preview", { marker, steps }))
-        : device === "plus" && name === "library" ? [page.keys[3]]
+        : device === "plus" && name === "start" ? [...page.keys, ...plusLibraryKeys]
+        : device === "plus" && name === "library" ? plusLibraryKeys
         : device === "plus" && name === "playback" ? [page.keys[0]]
         : device === "plus" && name === "markers" ? []
         : device === "plus" && name === "view" ? page.keys.filter(key => key.operation !== "view.reset")
         : device === "neo" && name === "explorer" ? page.keys.filter(key => key.page !== "selection") : page.keys;
       const positions = device === "mobile" ? {
-        start: [1, 2], library: [1, 2, 3, 4], playback: [1, 2, 3, 4, 5], view: [1, 2, 3, 4, 5],
+        start: [1, 2], library: [1, 2, 4, 3, 5], playback: [1, 2, 3, 4, 5], view: [1, 2, 3, 4, 5],
       }[name] : device === "plus" ? {
-        start: [1, 2], explorer: [1, 2, 5, 6], library: [4], playback: [4], selection: [4],
+        start: [1, 2, 4, 5, 6, 7], explorer: [1, 2, 5, 6], library: [4, 5, 6, 7], playback: [4], selection: [4],
       }[name] : marker ? [1, 5, 6, 2] : {
-        start: [1, 2], explorer: [1, 2, 5], playback: [1, 5, 2, 6], position: [1, 5, 6, 2],
+        start: [1, 2], explorer: [1, 2, 5], library: [1, 2, 5, 4, 6], playback: [1, 5, 2, 6], position: [1, 5, 6, 2],
         smoothing: [5, 2, 6], speed: [5, 2, 6], markers: [1, 2, 5, 6], view: [1, 2, 3, 6],
       }[name];
       keys.forEach((definition, index) => put(definition, positions?.[index] ?? (name === "start" ? index : index + 1)));
@@ -135,15 +138,15 @@ export async function buildProfiles(plugin) {
         device === "neo" && marker ? [4, 3][index]
           : name === "view" && (device === "neo" || index === 0) ? index + 4 : index + 5));
       if (device === "plus" && ["playback", "markers", "selection"].includes(name)) {
-        actions["1,1"] = key(`${device}/${name}/mode`, "Fine / Coarse", `${uuid}.step-mode`, {}, "Fine");
-        actions["1,1"].States.push({ ...actions["1,1"].States[0] });
+        actions["1,1"] = key(`${device}/${name}/mode`, "Step size", `${uuid}.step-mode`, {}, "Fine");
+        actions["1,1"].States.push({ ...actions["1,1"].States[0] }, { ...actions["1,1"].States[0] });
       }
       if (name !== "start") {
         // Stream Deck forces native folder Back to key 1 during import.
         actions["0,0"] = key(`${device}/${name}/back`, "Parent Folder",
           "com.elgato.streamdeck.profile.backtoparent", {}, "Back");
-        if (device !== "mobile") actions[homePosition] = key(`${device}/${name}/home`, "Home", `${uuid}.home`, {}, "Home");
-        for (const [position, symbol] of [["0,0", "back"], ...(device === "mobile" ? [] : [[homePosition, "home"]])]) {
+        if (device === "neo") actions[homePosition] = key(`${device}/${name}/home`, "Home", `${uuid}.home`, {}, "Home");
+        for (const [position, symbol] of [["0,0", "back"], ...(device === "neo" ? [[homePosition, "home"]] : [])]) {
           const image = `Images/${symbol}.svg`;
           actions[position].States[0].Image = image;
           images.set(image, keyImage(symbol, undefined));
@@ -155,7 +158,7 @@ export async function buildProfiles(plugin) {
         controllers.push({ Type: "Neo", Actions: { "1,0": key(`${device}/${name}/info`, "Analyzer InfoBar",
           `${uuid}.infobar`, { section: marker ? "markers" : name === "quick" ? "playback" : name, ...(marker ? { marker } : {}) }) } });
       } else if (device === "plus") {
-        const dials = name === "selection" ? ["start", "end"].map(boundary => ({ control: "selection", boundary })) : name === "library" ? [{ control: "library" }] : name === "playback"
+        const dials = name === "selection" ? ["start", "end"].map(boundary => ({ control: "selection", boundary })) : ["start", "library"].includes(name) ? [{ control: "library" }] : name === "playback"
           ? ["position", "view", "speed"].map(control => control ? { control } : null) : name === "view" ? [{ control: "smoothing" }] : name === "markers"
             ? ["start", "gravity", "incline", "end"].map(marker => ({ control: "marker", marker })) : [];
         if (dials.length) controllers.push({ Type: "Encoder", Actions: Object.fromEntries(dials.flatMap((settings, index) => settings ?

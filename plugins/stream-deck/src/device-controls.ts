@@ -1,17 +1,20 @@
 import type { ControlSettings } from "./controls.js";
-import type { MarkerName, SelectionBoundary } from "./protocol.js";
+import type { MarkerName, SelectionBoundary, Steps } from "./protocol.js";
 
 export type DialControl = "library" | "position" | "view" | "smoothing" | "speed" | "marker" | "selection";
 export type DialSettings = { control?: DialControl; marker?: MarkerName; boundary?: SelectionBoundary };
 export type InfoSettings = { section?: string; marker?: MarkerName; boundary?: SelectionBoundary };
 
-/** Device-local fine/coarse mode survives menus, defaults to fine and never changes app state. */
+export type StepSize = 1 | 10 | 20;
+
+/** Device-local step size survives menus, starts at one and never changes app state. */
 export class StepMode {
-    private readonly coarseDevices = new Set<string>();
+    private readonly devices = new Map<string, StepSize>();
     private readonly listeners = new Set<() => void>();
-    coarse(device: string): boolean { return this.coarseDevices.has(device); }
+    samples(device: string): StepSize { return this.devices.get(device) ?? 1; }
     toggle(device: string): void {
-        if (!this.coarseDevices.delete(device)) this.coarseDevices.add(device);
+        const current = this.samples(device);
+        this.devices.set(device, current === 1 ? 10 : current === 10 ? 20 : 1);
         for (const listener of this.listeners) listener();
     }
     subscribe(listener: () => void): void { this.listeners.add(listener); }
@@ -27,9 +30,9 @@ export function dialSettings(value: DialSettings): DialSettings | undefined {
 
 /** One mapping shared by input handling and availability feedback; every tick remains a separate step. */
 export function dialBinding(settings: DialSettings, gesture: "rotate" | "press" | "touch",
-    direction: -1 | 1, coarse: boolean): ControlSettings | undefined {
+    direction: -1 | 1, stepSize: StepSize): ControlSettings | undefined {
     const control = settings.control;
-    const steps = coarse ? direction === -1 ? -10 : 10 : direction;
+    const steps = (direction * stepSize) as Steps;
     if (control === "selection") {
         return gesture === "rotate" && settings.boundary ? { operation: "selection.step", boundary: settings.boundary, steps } : undefined;
     }

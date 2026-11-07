@@ -42,11 +42,16 @@ const pages = [];
 for (const entry of entries.filter(entry => /\/Profiles\/[^/]+\/manifest.json$/.test(entry.filename))) {
  const page = JSON.parse(await entry.getData(new TextWriter()));
  if (!page.Name) continue;
+ const stepSize = device === 'plus' ? ({Selection: 10, Markers: 20}[page.Name] ?? 1) : 1;
+ const stepName = stepSize === 1 ? 'Fine' : stepSize === 10 ? 'Medium' : 'Coarse';
  const pageKeys = [];
  for (const [position, action] of Object.entries(page.Controllers.find(c => c.Type === 'Keypad').Actions)) {
   let feedback;
   if (action.UUID.endsWith('.control')) feedback = keyFeedback(h, 'example', action.Settings);
-  else if (action.UUID.endsWith('.step-mode')) feedback = {title:'Fine\n1 sample', image:keyImage('fine', 'inactive')};
+  else if (action.UUID.endsWith('.step-mode')) feedback = {
+   title: `${stepName}\n${stepSize} ${stepSize === 1 ? 'sample' : 'samples'}`,
+   image: keyImage(stepName.toLowerCase(), stepSize === 1 ? 'inactive' : 'active')
+  };
   else {
    const image = action.States[0].Image;
    const asset = entries.find(candidate => candidate.filename === entry.filename.replace('manifest.json', image));
@@ -59,7 +64,7 @@ for (const entry of entries.filter(entry => /\/Profiles\/[^/]+\/manifest.json$/.
  const result = {name:page.Name, id:entry.filename.split('/').at(-2).toLowerCase(), keys:pageKeys};
  if (device === 'neo') result.infobar = infoFeedback(h, page.Controllers.find(c => c.Type === 'Neo').Actions['1,0'].Settings);
  else if (device === 'plus') result.dials = Object.entries(page.Controllers.find(c => c.Type === 'Encoder')?.Actions ?? {})
-  .map(([position, action]) => ({position, ...dialFeedback(h, 'example', action.Settings, false)}));
+  .map(([position, action]) => ({position, ...dialFeedback(h, 'example', action.Settings, stepSize)}));
  pages.push(result);
 }
 pages.sort((a,b) => {
@@ -331,7 +336,7 @@ def _render_mobile(output: Path, pages: list[dict[str, Any]]) -> dict[str, Any]:
         _text(
             painter,
             QRectF(28, 55, 984, 26),
-            "Software illustration · fixed examples · Mobile import and phone operation remain unverified",
+            "Software illustration · fixed examples · full Mobile hardware acceptance remains open",
             color="#9fb6cf",
         )
         for index, page in enumerate(pages):

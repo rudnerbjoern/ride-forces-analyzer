@@ -64,7 +64,7 @@ export class DialControlAction extends SingletonAction<DialSettings> {
     private invoke(action_: DialAction<DialSettings>, value: DialSettings, gesture: "rotate" | "press" | "touch",
         direction: -1 | 1): boolean {
         const settings = dialSettings(value);
-        const binding = settings && dialBinding(settings, gesture, direction, this.mode.coarse(action_.device.id));
+        const binding = settings && dialBinding(settings, gesture, direction, this.mode.samples(action_.device.id));
         const requested = binding && requestedAction(binding, this.client.state);
         return requested !== undefined && this.client.send(action_.id, requested);
     }
@@ -72,7 +72,7 @@ export class DialControlAction extends SingletonAction<DialSettings> {
     private refresh(): Promise<void> {
         this.rendering = this.rendering.catch(() => {}).then(async () => {
             for (const [context, dial] of this.dials) {
-                const feedback = dialFeedback(this.client, context, dial.settings, this.mode.coarse(dial.action.device.id));
+                const feedback = dialFeedback(this.client, context, dial.settings, this.mode.samples(dial.action.device.id));
                 const signature = JSON.stringify(feedback);
                 if (signature === dial.signature) continue;
                 const icon = imageData(feedback.icon);

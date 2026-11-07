@@ -386,6 +386,7 @@ class StreamDeckController(QObject):
             controls["library.move"] = wire.Unavailable(available=False, reason="empty_library")
         if library.selected is None:
             controls["library.open"] = wire.Unavailable(available=False, reason="no_selection")
+            controls["library.open_new_window"] = controls["library.open"]
         data = window.data
         if data is None:
             for name in controls:
@@ -660,8 +661,12 @@ class StreamDeckController(QObject):
                 entry = window.library.selected_entry
                 assert entry is not None
                 window.open_archived(entry.source_sha256)
+            elif action.name == "library.open_new_window":
+                window.library.new_window_action.trigger()
             elif action.name == "library.import":
                 window.choose_file()
+            elif action.name == "library.reset_filters":
+                window.library.clear_filters.click()
             elif action.name == "playback.toggle":
                 navigation.toggle_playback()
             elif action.name == "playback.speed.reset":

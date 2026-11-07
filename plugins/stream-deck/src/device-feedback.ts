@@ -1,5 +1,5 @@
 import type { ControlClient } from "./client.js";
-import { dialBinding, type DialSettings, type InfoSettings } from "./device-controls.js";
+import { dialBinding, type DialSettings, type StepSize, type InfoSettings } from "./device-controls.js";
 import { keyFeedback, keyImage, unavailableLabel, type IconStatus } from "./feedback.js";
 import type { Position } from "./protocol.js";
 
@@ -9,7 +9,7 @@ const position = (value: Position | null | undefined): string => value ? `#${val
 
 /** Touch-strip feedback uses only confirmed state and clearly separates previews from applied values. */
 export function dialFeedback(client: ControlClient, context: string, settings: DialSettings | undefined,
-    coarse: boolean | undefined): SurfaceFeedback {
+    stepSize: StepSize | undefined): SurfaceFeedback {
     const control = settings?.control ?? "position";
     const title = control === "selection" ? `Selection ${settings?.boundary ?? "start"}`
         : label(control === "marker" ? settings?.marker ?? "Marker" : control);
@@ -21,11 +21,11 @@ export function dialFeedback(client: ControlClient, context: string, settings: D
         result.status = client.status === "incompatible" ? "Incompatible" : client.status === "connecting" ? "Connecting…" : "Offline";
         return result;
     }
-    const binding = settings && dialBinding(settings, "rotate", 1, coarse ?? false);
+    const binding = settings && dialBinding(settings, "rotate", 1, stepSize ?? 1);
     const feedback = keyFeedback(client, context, binding);
     const marker = control === "marker" ? state.markers.find(value => value.marker === settings?.marker) : undefined;
-    const mode = coarse !== undefined && (control === "position" || control === "marker" || control === "selection")
-        ? coarse ? "Coarse · 10 samples" : "Fine · 1 sample" : "";
+    const mode = stepSize !== undefined && (control === "position" || control === "marker" || control === "selection")
+        ? stepSize === 1 ? "Fine · 1 sample" : `${stepSize === 10 ? "Medium" : "Coarse"} · ${stepSize} samples` : "";
     const availability = binding?.operation ? state.controls[binding.operation] : undefined;
     const blocked = !state.availability.available ? unavailableLabel(state.availability.reason)
         : availability?.available === false ? unavailableLabel(availability.reason)

@@ -81,7 +81,8 @@ to execute it. See [locks and connection changes](#understand-locks-and-connecti
 ![Stream Deck Plus software illustration of all seven profile pages, two rows of four keys, aligned touch-strip fields and four dials](../images/stream-deck-plus-controls.png)
 
 *Software illustration of all seven Plus profile pages with keys, touch strip
-and four dials. Values and marker states are examples.
+and four dials. Playback shows Fine, Selection Medium and Markers Coarse.
+These are example states; your actual step size is shared across pages.
 [Open the full-size image](../images/stream-deck-plus-controls.png).*
 
 The colored illustration identifies the function. A separate badge indicates its
@@ -108,9 +109,9 @@ the [project website](https://rudnerbjoern.github.io/ride-forces-analyzer/) in y
 browser. Both work without an Analyzer connection. Explorer contains **Playback**,
 **Curves** and **Markers** in a central group. Plus also has **Selection**.
 
-In each Plus/Neo submenu, **Back** is key **1** (top-left) and **Home** is key **8**
-(bottom-right). Home returns to Start. Keys are numbered left to right, top row
-first. Start has no Back or Home key. On **Plus**, Fine/Coarse stays on key **6**
+In each Plus/Neo submenu, **Back** is key **1** (top-left). Plus has no Home key;
+Neo keeps **Home** on key **8** (bottom-right) to return to Start. Keys are numbered left to right, top row
+first. Start has no Back or Home key. On **Plus**, Step size stays on key **6**
 on Playback, Selection and Markers. Key captions use two short lines; detailed values remain
 on the touch strip. Menu navigation remains available while
 Analyzer is disconnected or application commands are blocked.
@@ -120,15 +121,23 @@ Analyzer is disconnected or application commands are blocked.
 These dial instructions are for **Plus**. See the separate [Neo](#neo-keys-infobar-and-touch-points)
 and [Mobile](#mobile-limited-six-key-preview) sections for their buttons.
 
-Open **Library**. Turn the **first dial** to select one visible recording per
+On Plus, the Library controls are available directly on **Start** and in **Library**.
+The Library folder remains on the top row. Both pages show the selected recording
+on the touch strip. Their second row is **Open**, **New window**, **Import**,
+**Reset filters** (keys **5–8**). Reset filters clears the park, workflow status
+and search choices in all Explorer windows without replacing an open recording.
+Turn the **first dial** to select one visible recording per
 notch. It follows the Library's current sorting and filters and wraps in either
 direction. One recording stays selected; an empty list cannot be opened.
 
 Turning only selects. **Press the dial** to open the selection in the current
-Explorer. The Plus profile has no additional Previous/Next/Open keys.
+Explorer. **Open**, key **5**, does the same. There are no Previous/Next keys.
 **Import** opens Analyzer's existing recording-import dialog; choose files there
 with the mouse or keyboard. The touch field shows the selected name and its
-position in the visible list. Import is key **5**, directly above the Library dial.
+position in the visible list. Import is key **7**.
+**New window**, key **6**, opens the selected recording in an additional Explorer
+while keeping the current recording open. If that recording is already open,
+its existing window is brought to the front instead.
 
 ## Control playback and the view
 
@@ -137,12 +146,14 @@ dial 4 is unused:
 
 | Dial         | Turn                                             | Press         | Touch-strip information                               |
 | ------------ | ------------------------------------------------ | ------------- | ----------------------------------------------------- |
-| 1 · Position | Move through samples; stop at the ends.          | Play/pause.   | Sample, replay time, play state and Fine/Coarse mode. |
+| 1 · Position | Move through samples; stop at the ends.          | Play/pause.   | Sample, replay time, play state and Step size mode.   |
 | 2 · View     | Zoom the time axis.                              | Reset view.   | Actual visible interval and its duration in seconds.  |
 | 3 · Speed    | Select the next supported playback speed.        | Return to 1×. | Actual speed and play/pause state.                    |
 
-**Fine / Coarse** switches Position, Selection and marker dials between **1** and
-**10 samples per notch**. It starts in Fine mode, survives menu changes and never
+**Step size** cycles Position, Selection and marker dials through
+**1 → 10 → 20 → 1 samples per notch**. The key and touch strip show the current
+step size: **Fine** (1), **Medium** (10), **Coarse** (20). The icons use one, two
+and three coloured bars. It starts at 1 sample, survives menu changes and never
 changes Library stepping.
 
 Position changes pause playback. Zoom, curves, smoothing and speed changes leave
@@ -172,8 +183,8 @@ Analyzer's Inspector. The touch field shows **Raw source values**; select
 
 Open **Explorer → Selection**. Dial **1** adjusts the selection's **Start** sample;
 dial **2** adjusts its **End** sample. The touch fields show the confirmed sample
-and time, the opposite boundary and Fine/Coarse mode. **Fine / Coarse** switches
-between **1** and **10 samples per notch**, shared with Position and Markers.
+and time, the opposite boundary and Step size mode. **Step size** switches
+through **1, 10 and 20 samples per notch**, shared with Position and Markers.
 
 Turns apply directly to the current Select range, just like the Inspector's
 **From sample / To sample** fields. Start stops at zero or End; End stops at Start
@@ -207,7 +218,7 @@ Explorer clears them. Applying or discarding one marker does not confirm the
 others and does not resume playback. Applied markers are saved automatically
 for that Library recording.
 
-The Plus Markers page has Back, Home and Fine/Coarse keys alongside its four
+The Plus Markers page has Back and Step size keys alongside its four
 dials. It has no additional marker-key editors.
 
 ## Neo keys, InfoBar and Touch Points
@@ -233,7 +244,8 @@ pair **1 sample**. Marker **Apply** is key **4**, **Discard** key **5**. Preview
 apply and discard retain the same recording/target rules as Plus.
 
 Smoothing and Speed put **−/+** on keys **6/7** and **Reset** on key **3**.
-Library offers Previous/Next, Open and Import. Curves groups three direction
+Library offers Previous/Next, Open, Import and **New window**. Open and New window
+are adjacent on the bottom row; New window keeps the current Explorer open. Curves groups three direction
 keys above Data mode, Combined and Reset view.
 
 The InfoBar follows confirmed program state: selected Library entry and index,
@@ -244,9 +256,13 @@ the display; disconnected state clears program values.
 
 ## Mobile: limited six-key preview
 
-The prepared **Ride Forces Analyzer Mobile Preview** profile uses **two rows of
-three buttons**. Pair Stream Deck Mobile with the Stream Deck desktop app, choose
-its six-key layout and import `mobile.streamDeckProfile` onto that Mobile device.
+The prepared **Ride Forces Analyzer Mobile Preview** profile uses **three columns
+and two rows in landscape**. Pair Stream Deck Mobile with the Stream Deck desktop
+app, choose its six-key layout and import `mobile.streamDeckProfile` onto that
+Mobile device. We recommend holding the phone in landscape and setting
+**Layout orientation** to **None** or **Fixed**, depending on the wording in your
+Mobile app. This keeps the 3×2 arrangement with Back at the top left. The profile
+does not lock orientation automatically.
 The plugin still requires Stream Deck 7.6 or later and **Enable Stream Deck** in
 Analyzer. [Elgato's setup instructions](https://help.elgato.com/hc/en-us/articles/16786832942221-Elgato-Stream-Deck-Mobile-2-0-Getting-Started)
 cover pairing with the desktop Stream Deck app.
@@ -254,19 +270,27 @@ cover pairing with the desktop Stream Deck app.
 ![Stream Deck Mobile limited preview showing the four actual six-key pages Start, Library, Playback and View, with Back and no Home button](../images/stream-deck-mobile-controls.png)
 
 *Software illustration of the Mobile profile with example values.
-Mobile import, pairing and actual phone operation remain unverified.*
+Full Mobile hardware acceptance remains open.*
 
 - **Start:** Start app, Library, Playback and Website. Configure the Analyzer EXE or
   Windows shortcut (or the Mac `.app`) on the **desktop** in Start app's Open settings.
-- **Library:** Previous/Next, Open and Import. Browsing follows visible sorting and
+- **Library:** Previous/Next, Open, Import and **New window**. Browsing follows visible sorting and
   filters; only Open opens the selection in the current Explorer. Keys show short
   action names and the selected index/count; the full recording name stays in
   the Analyzer Library (and on the Plus touch strip or Neo InfoBar).
 - **Playback:** Play/Pause, one sample backward/forward, Reset view and the View folder.
 - **View:** Zoom −/+, Reset view, Zoom to selection and Play/Pause.
 
-**Back is key 1; there is no Home key.** Key 6 is used for Reset view on Playback
-and Play/Pause on View. Library keeps one key free for your own assignment.
+The Library page uses this landscape arrangement:
+
+| Left   | Middle   | Right      |
+| ------ | -------- | ---------- |
+| Back   | Previous | Next       |
+| Import | Open     | New window |
+
+**Back is key 1 at the top left; there is no Home key.** Key 6 is used for Reset view on Playback
+and Play/Pause on View. **New window** on Library opens the selected recording in
+an additional Explorer without replacing the current recording.
 This preview omits curve/smoothing/speed editors, markers and manual selection
 bounds. Use the Analyzer window for those controls. Mobile buttons follow the same
 connection and locking rules as the other devices.
