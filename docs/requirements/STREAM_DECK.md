@@ -7,8 +7,9 @@
 - Implemented: local transport, application routing, versioned plugin, Plus/Neo
   profiles and limited Mobile preview, keys, Plus dials/touch and Neo InfoBar.
 - Verified on Windows: automated application/plugin checks, official plugin
-  validation, native plugin startup/Analyzer connection and Plus profile import.
-- Open: physical Plus operation, native Neo/Mobile import and operation, and all
+  validation, native plugin startup/Analyzer connection, Plus profile import and
+  physical menu/subgroup navigation and swipe feedback.
+- Open: complete physical Plus acceptance, native Neo/Mobile import and operation, and all
   native macOS integration checks.
 - Distribution: self-contained development folder, three profile archives and an
   officially packed `.streamDeckPlugin` with a separate release checksum. Native
@@ -73,8 +74,12 @@ Detailed ownership and wire contracts remain in
 
 ### Menu structure
 
-- Plus/Neo Start: native Start app, Library, Explorer and Website actions.
-- Plus Explorer: Playback, Curves, Markers and Selection.
+- Plus has six native main pages: Library, Playback/Navigate, Playback/Selection,
+  Curves, Markers/Markers and Markers/View. Keys 1–4 select Library, Playback,
+  Curves and Markers; keys 6/7 switch the Playback/Markers subgroups. Start on Library.
+  Remember confirmed subgroups per device for the plugin session; appearance events,
+  including native swipes, drive cyan selection. No Plus Back/Home/App/Website keys.
+- Neo Start: native Start app, Library, Explorer and Website actions.
 - Neo Explorer: Playback, Curves and Markers. Playback adds Position, Smoothing
   and Speed folders; Markers opens the four individual key editors.
 - Neo native main pages: Start and Quick controls. Its Touch Points select the
@@ -82,7 +87,7 @@ Detailed ownership and wire contracts remain in
 - Mobile Start: Start app, Library, Playback and Website. Playback opens View.
 - Back is key 1 in every folder. Neo Home is key 8 and returns the invoking
   device to Start. Neo Quick controls uses Start-return actions for Back/Home.
-  Plus and Mobile deliberately have no Home key.
+  Mobile deliberately has no Home key.
 - Number keys left to right, top row first. Menu changes never apply a marker
   preview or switch the target Explorer.
 - Start app uses Elgato Open with the packaged app icon and a user-configured
@@ -108,7 +113,7 @@ Detailed ownership and wire contracts remain in
 ### Stepping and playback
 
 - Plus Step size is per device, defaults to fine after plugin startup and survives
-  menu changes. Key 6 cycles Position, Selection and marker dials through 1/10/20/1
+  menu changes. Key 8 cycles Position, Selection and marker dials through 1/10/20/1
   source samples per notch. Labels/icons are Fine (one bar), Medium (two), Coarse
   (three); key and touch fields show the current size. Library is unaffected.
 - Neo Position/marker editors expose fixed −10/+10 and −1/+1 keys. Mobile exposes
@@ -365,17 +370,24 @@ The installed SDK exposes page-index selection through
 `switchToProfile(deviceId, profile, page)` for bundled profiles; the existing Home
 action already uses this API. Page indices start at zero; the promise confirms
 only that the request was sent. The SDK cannot address arbitrary user-defined
-profiles. Verify native import and switching when older copies of the bundled
-profile exist before relying on profile-name resolution. The proposed actions need
-implementation. Highlight only the page confirmed by its appearance event, not
-merely a switch request. Preserve all user profiles.
+profiles. The six-page profile replaces the previous Plus layout under the same
+`profiles/plus` bundle identity; do not add a parallel Plus profile. Navigation
+always requests this bundle; an ordinary
+imported copy is not an SDK destination. Use SDK defaults for every bundled profile: editable, `AutoInstall: true` and
+`DontAutoSwitchWhenInstalled: false`. Offer profiles with plugin installation and
+activate the installed profile immediately; do not require a separate manual
+import in normal setup. Replace the existing Plus layout under the same identity
+and preserve unrelated user profiles. Native Windows import and SDK page
+switching, subgroup recall and physical swipe feedback are verified on Plus. Highlight only the page
+confirmed by its appearance event, not merely a switch request.
 
 Most controls remap existing commands. Library filter feedback and the filter-set
 command are implemented through the existing dropdowns; filtering logic and option
-lists remain application-owned. Device navigation, filter dials and push-only
-bindings still need implementation. Native import,
-page switching/last-subgroup recall, menu highlighting, filter choice/application,
-push-only discoverability and all locks still require physical Plus acceptance.
+lists remain application-owned. Native page navigation is implemented; filter dials
+and the remaining context/push-only bindings still need implementation.
+Filter choice/application, push-only discoverability and the complete workflow
+still require physical Plus acceptance. Menu switching, subgroup recall and
+cyan selection after native swipes are verified.
 The screen designs establish visual consistency, not proven operating speed.
 
 #### Plus redesign implementation stages
@@ -412,7 +424,8 @@ this development unless a release changes the version baseline.
      plugin controls remain usable with the updated contract and current layouts.
 
 2. **PLUS-02 — Native pages and fixed navigation**
-   - **Status:** Planned.
+   - **Status:** Implemented; Windows automated checks, native six-page Plus import,
+     SDK page switching, subgroup recall and physical swipe feedback verified.
    - **Implementation:** Extend `build-profiles.mjs` and the existing SDK action
      registration with a Plus-only navigation action. Define native page indices
      0 Library, 1 Playback/Navigate, 2 Playback/Selection, 3 Curves,
@@ -600,9 +613,9 @@ or acceptance work. Native acceptance is tracked explicitly in steps 6 and 12.
      independent version enforcement; macOS is enabled but native checks remain open.
 
 6. **Add device menus and profiles**
-   - **Status:** Implemented; native Plus import verified.
-   - **Acceptance:** Plus/Neo/Mobile layouts, fixed Back/Home rules, native launch/website
-     actions and Neo main pages; native Neo/Mobile import remains open.
+   - **Status:** Implemented; native six-page Plus import and SDK page switching verified.
+   - **Acceptance:** Fixed Plus menus and Neo/Mobile folder navigation; native launch/website
+     actions remain on Neo/Mobile. Native Neo/Mobile import remains open.
 
 7. **Add Library controls**
    - **Status:** Implemented; automated Windows application/SDK checks pass.
@@ -673,7 +686,7 @@ do not close these rows. Preserve existing profiles and original recordings.
 
 | Device / area                    | Required observation                                                                                                                                                                                    | Status |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| Plus menus / keys                | Navigate Start, Library, Explorer and submenus; Back is key 1, no Home key; Play/Pause and key alternatives work.                                                                                       | Open   |
+| Plus menus / keys                | Navigate all six main pages; fixed Library/Playback/Curves/Markers keys and subgroup recall; no Plus Back/Home/App/Website.                                                                             | Open   |
 | Plus Library                     | Dial follows visible order/filtering, wraps both ways and handles empty/single-entry lists; rotation only selects, press opens in the current Explorer; Import opens the existing dialog.               | Open   |
 | Plus navigation / selection      | Position, zoom, speed and smoothing presses work; Step size cycles 1/10/20 samples; Library stays at one entry; smoothing and selection bounds clamp.                                                   | Open   |
 | Plus markers                     | Start/Gravity/Incline/End rotate to preview, press to apply and touch to discard independently; bounds and adoption feedback are correct; menus preserve previews, recording/target changes clear them. | Open   |

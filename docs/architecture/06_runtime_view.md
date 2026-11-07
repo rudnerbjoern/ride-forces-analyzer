@@ -134,7 +134,13 @@ validate commands, responses and full state events; matching
 Shared examples cover both languages. The application's Qt-thread controller routes
 commands through existing controls/services and publishes state from their signals.
 The plugin validates incoming messages before state-driven rendering or command
-generation. Its configurable SDK key action covers the agreed command types.
+generation. Its configurable SDK key action covers the agreed command types. Plus uses six native main pages and a local
+navigation action. It addresses only the bundled `profiles/plus`, remembers
+Playback/Markers subgroups per device for the plugin session and confirms cyan
+selection through appearance events, including swipes. SDK send completion never
+confirms a page; failures alert without changing confirmed selection. User profile
+copies are preserved and are not switch destinations. Native Windows six-page import, SDK switching, subgroup recall and physical swipe
+feedback are verified on Plus.
 
 ### Envelopes and compatibility
 

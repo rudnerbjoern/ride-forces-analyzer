@@ -213,14 +213,15 @@ recording markers from **Stream Deck +** or **Neo**. Plus uses push dials and a
 touch strip; Neo provides key editors and contextual InfoBar values. A reduced
 **Mobile** preview offers Library, playback and zoom controls on six keys.
 
-![Stream Deck Plus Playback page with Play/Pause, Fine/Coarse, position, zoom and speed dials and example program values](docs/images/stream-deck-overview.png)
+![Stream Deck Plus Playback page with fixed menus, Navigate/Selection, Step size, position, zoom and speed dials](docs/images/stream-deck-overview.png)
 
 *Software illustration with fixed example values. [See every Plus, Neo and Mobile
-page](docs/user/STREAM_DECK.md). Physical device operation remains unverified.*
+page](docs/user/STREAM_DECK.md). Complete physical device acceptance remains open.*
 
 The optional plugin is packaged separately from the Analyzer app. Install its
 `.streamDeckPlugin` archive when available in [GitHub Releases](https://github.com/rudnerbjoern/ride-forces-analyzer/releases),
-import the matching profile, then save **Settings → Application → Enable Stream Deck**.
+confirm the matching profile during installation, then save **Settings → Application → Enable Stream Deck**.
+Stream Deck installs and activates the profile; a separate manual import is normally unnecessary.
 Keep the intended Explorer in the foreground; device feedback follows confirmed
 program state. The setting defaults to off.
 

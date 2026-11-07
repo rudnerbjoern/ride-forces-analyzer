@@ -29,6 +29,7 @@ _FEEDBACK = r"""
 import { readFileSync } from 'node:fs';
 import { keyFeedback, keyImage } from './plugins/stream-deck/dist/feedback.js';
 import { dialFeedback, infoFeedback } from './plugins/stream-deck/dist/device-feedback.js';
+import { navigationFeedback } from './plugins/stream-deck/dist/navigation.js';
 import { ZipReader, Uint8ArrayReader, TextWriter, Uint8ArrayWriter } from '@zip.js/zip.js';
 const fixture = JSON.parse(readFileSync('tests/fixtures/stream_deck_protocol.json', 'utf8')).messages[0];
 const client = () => ({ state: structuredClone(fixture), status: 'connected', pending: () => false, error: () => undefined });
@@ -42,12 +43,13 @@ const pages = [];
 for (const entry of entries.filter(entry => /\/Profiles\/[^/]+\/manifest.json$/.test(entry.filename))) {
  const page = JSON.parse(await entry.getData(new TextWriter()));
  if (!page.Name) continue;
- const stepSize = device === 'plus' ? ({Selection: 10, Markers: 20}[page.Name] ?? 1) : 1;
+ const stepSize = device === 'plus' ? ({'Playback / Selection': 10, 'Markers / Markers': 20}[page.Name] ?? 1) : 1;
  const stepName = stepSize === 1 ? 'Fine' : stepSize === 10 ? 'Medium' : 'Coarse';
  const pageKeys = [];
  for (const [position, action] of Object.entries(page.Controllers.find(c => c.Type === 'Keypad').Actions)) {
   let feedback;
-  if (action.UUID.endsWith('.control')) feedback = keyFeedback(h, 'example', action.Settings);
+  if (action.UUID.endsWith('.plus-navigation')) feedback = navigationFeedback(action.Settings, action.Settings.page);
+  else if (action.UUID.endsWith('.control')) feedback = keyFeedback(h, 'example', action.Settings);
   else if (action.UUID.endsWith('.step-mode')) feedback = {
    title: `${stepName}\n${stepSize} ${stepSize === 1 ? 'sample' : 'samples'}`,
    image: keyImage(stepName.toLowerCase(), stepSize === 1 ? 'inactive' : 'active')
@@ -376,7 +378,7 @@ def _render_mobile(output: Path, pages: list[dict[str, Any]]) -> dict[str, Any]:
 
 def _render_overview(output: Path, pages: list[dict[str, Any]]) -> dict[str, Any]:
     """Create a readable README close-up of the actual Plus Playback page."""
-    index = next(index for index, page in enumerate(pages) if page["name"] == "Playback")
+    index = next(index for index, page in enumerate(pages) if page["name"] == "Playback / Navigate")
     source = QImage(str(output / IMAGE))
     panel = source.copy(28 + (index % 2) * 794, 100 + (index // 2) * 490, 770, 470)
     canvas = QImage(1040, 730, QImage.Format.Format_ARGB32)
@@ -403,7 +405,7 @@ def _render_overview(output: Path, pages: list[dict[str, Any]]) -> dict[str, Any
     filename = "stream-deck-overview.png"
     if not canvas.save(str(output / filename)):
         raise OSError("Cannot save the Stream Deck overview image")
-    return {"image": filename, "size": [1040, 730], "device": "plus", "page": "Playback"}
+    return {"image": filename, "size": [1040, 730], "device": "plus", "page": "Playback / Navigate"}
 
 
 def render_reference(output: Path) -> None:
@@ -428,6 +430,7 @@ def render_reference(output: Path) -> None:
         "tests/fixtures/stream_deck_protocol.json",
         "plugins/stream-deck/src/feedback.ts",
         "plugins/stream-deck/src/device-feedback.ts",
+        "plugins/stream-deck/src/navigation.ts",
         "plugins/stream-deck/devices/layouts/plus.json",
         "plugins/stream-deck/devices/layouts/neo.json",
         "plugins/stream-deck/scripts/build-profiles.mjs",

@@ -4,75 +4,41 @@
   "language": "en",
   "size": [
     1620,
-    2060
+    1570
   ],
   "font": "Segoe UI",
   "plus": {
     "image": "stream-deck-plus-controls.png",
     "size": [
       1620,
-      2060
+      1570
     ],
     "touch_field_scale": 0.85,
     "pages": [
       {
-        "name": "Start",
-        "keys": [
-          {
-            "position": "1,0",
-            "title": "Library"
-          },
-          {
-            "position": "2,0",
-            "title": "Explorer"
-          },
-          {
-            "position": "0,1",
-            "title": "Open\n1/2",
-            "state": 0,
-            "status": "inactive"
-          },
-          {
-            "position": "1,1",
-            "title": "New\nwindow",
-            "state": 0,
-            "status": "inactive"
-          },
-          {
-            "position": "2,1",
-            "title": "Import…",
-            "state": 0,
-            "status": "inactive"
-          },
-          {
-            "position": "3,1",
-            "title": "Reset\nfilters",
-            "state": 0,
-            "status": "inactive"
-          },
-          {
-            "position": "0,0",
-            "title": "Start app"
-          },
-          {
-            "position": "3,0",
-            "title": "Website"
-          }
-        ],
-        "dials": [
-          {
-            "position": "0,0",
-            "title": "Library",
-            "value": "Example ride",
-            "status": "Ready",
-            "detail": "1/2 · Press: open"
-          }
-        ]
-      },
-      {
         "name": "Library",
         "keys": [
           {
+            "position": "0,0",
+            "title": "Library",
+            "selected": true
+          },
+          {
+            "position": "1,0",
+            "title": "Playback",
+            "selected": false
+          },
+          {
+            "position": "2,0",
+            "title": "Curves",
+            "selected": false
+          },
+          {
+            "position": "3,0",
+            "title": "Markers",
+            "selected": false
+          },
+          {
             "position": "0,1",
             "title": "Open\n1/2",
             "state": 0,
@@ -95,10 +61,6 @@
             "title": "Reset\nfilters",
             "state": 0,
             "status": "inactive"
-          },
-          {
-            "position": "0,0",
-            "title": "Back"
           }
         ],
         "dials": [
@@ -112,34 +74,38 @@
         ]
       },
       {
-        "name": "Explorer",
+        "name": "Playback / Navigate",
         "keys": [
           {
+            "position": "0,0",
+            "title": "Library",
+            "selected": false
+          },
+          {
             "position": "1,0",
-            "title": "Playback"
+            "title": "Playback",
+            "selected": true
           },
           {
             "position": "2,0",
-            "title": "Curves"
+            "title": "Curves",
+            "selected": false
+          },
+          {
+            "position": "3,0",
+            "title": "Markers",
+            "selected": false
           },
           {
             "position": "1,1",
-            "title": "Markers"
+            "title": "Navigate",
+            "selected": true
           },
           {
             "position": "2,1",
-            "title": "Selection"
+            "title": "Selection",
+            "selected": false
           },
-          {
-            "position": "0,0",
-            "title": "Back"
-          }
-        ],
-        "dials": []
-      },
-      {
-        "name": "Playback",
-        "keys": [
           {
             "position": "0,1",
             "title": "Play\n1×",
@@ -147,12 +113,8 @@
             "status": "inactive"
           },
           {
-            "position": "1,1",
+            "position": "3,1",
             "title": "Fine\n1 sample"
-          },
-          {
-            "position": "0,0",
-            "title": "Back"
           }
         ],
         "dials": [
@@ -180,8 +142,38 @@
         ]
       },
       {
-        "name": "Selection",
+        "name": "Playback / Selection",
         "keys": [
+          {
+            "position": "0,0",
+            "title": "Library",
+            "selected": false
+          },
+          {
+            "position": "1,0",
+            "title": "Playback",
+            "selected": true
+          },
+          {
+            "position": "2,0",
+            "title": "Curves",
+            "selected": false
+          },
+          {
+            "position": "3,0",
+            "title": "Markers",
+            "selected": false
+          },
+          {
+            "position": "1,1",
+            "title": "Navigate",
+            "selected": false
+          },
+          {
+            "position": "2,1",
+            "title": "Selection",
+            "selected": true
+          },
           {
             "position": "0,1",
             "title": "Zoom\nSelection",
@@ -189,12 +181,8 @@
             "status": "inactive"
           },
           {
-            "position": "1,1",
+            "position": "3,1",
             "title": "Medium\n10 samples"
-          },
-          {
-            "position": "0,0",
-            "title": "Back"
           }
         ],
         "dials": [
@@ -215,41 +203,51 @@
         ]
       },
       {
-        "name": "View / Curves",
+        "name": "Curves",
         "keys": [
           {
+            "position": "0,0",
+            "title": "Library",
+            "selected": false
+          },
+          {
             "position": "1,0",
+            "title": "Playback",
+            "selected": false
+          },
+          {
+            "position": "2,0",
+            "title": "Curves",
+            "selected": true
+          },
+          {
+            "position": "3,0",
+            "title": "Markers",
+            "selected": false
+          },
+          {
+            "position": "0,1",
             "title": "Vertical\nOn",
             "state": 1,
             "status": "active"
           },
           {
-            "position": "2,0",
+            "position": "1,1",
             "title": "Lateral\nOn",
             "state": 1,
             "status": "active"
           },
           {
-            "position": "3,0",
+            "position": "2,1",
             "title": "Long.\nOn",
             "state": 1,
             "status": "active"
           },
           {
-            "position": "0,1",
+            "position": "3,1",
             "title": "Data mode\nCalibrated",
             "state": 1,
             "status": "active"
-          },
-          {
-            "position": "2,1",
-            "title": "Combined\nOff",
-            "state": 0,
-            "status": "inactive"
-          },
-          {
-            "position": "0,0",
-            "title": "Back"
           }
         ],
         "dials": [
@@ -263,15 +261,41 @@
         ]
       },
       {
-        "name": "Markers",
+        "name": "Markers / Markers",
         "keys": [
           {
-            "position": "1,1",
-            "title": "Coarse\n20 samples"
+            "position": "0,0",
+            "title": "Library",
+            "selected": false
           },
           {
-            "position": "0,0",
-            "title": "Back"
+            "position": "1,0",
+            "title": "Playback",
+            "selected": false
+          },
+          {
+            "position": "2,0",
+            "title": "Curves",
+            "selected": false
+          },
+          {
+            "position": "3,0",
+            "title": "Markers",
+            "selected": true
+          },
+          {
+            "position": "1,1",
+            "title": "Markers",
+            "selected": true
+          },
+          {
+            "position": "2,1",
+            "title": "View",
+            "selected": false
+          },
+          {
+            "position": "3,1",
+            "title": "Coarse\n20 samples"
           }
         ],
         "dials": [
@@ -304,18 +328,81 @@
             "detail": "Applied #50 · 00:01.00"
           }
         ]
+      },
+      {
+        "name": "Markers / View",
+        "keys": [
+          {
+            "position": "0,0",
+            "title": "Library",
+            "selected": false
+          },
+          {
+            "position": "1,0",
+            "title": "Playback",
+            "selected": false
+          },
+          {
+            "position": "2,0",
+            "title": "Curves",
+            "selected": false
+          },
+          {
+            "position": "3,0",
+            "title": "Markers",
+            "selected": true
+          },
+          {
+            "position": "1,1",
+            "title": "Markers",
+            "selected": false
+          },
+          {
+            "position": "2,1",
+            "title": "View",
+            "selected": true
+          },
+          {
+            "position": "3,1",
+            "title": "Fine\n1 sample"
+          }
+        ],
+        "dials": [
+          {
+            "position": "0,0",
+            "title": "Position",
+            "value": "#50 · 00:01.00",
+            "status": "Paused · Fine · 1 sample",
+            "detail": "1× · Press: play"
+          },
+          {
+            "position": "1,0",
+            "title": "View",
+            "value": "0.00–10.00 s",
+            "status": "Span 10.00 s",
+            "detail": "Press: reset view"
+          },
+          {
+            "position": "2,0",
+            "title": "Speed",
+            "value": "1×",
+            "status": "Paused",
+            "detail": "Press: 1×"
+          }
+        ]
       }
     ]
   },
   "inputs": {
-    "scripts/render_stream_deck_reference.py": "e60194e5766ac5d7792438c1400c073e1d942ac1c0474b192f766add2f6c94cc",
+    "scripts/render_stream_deck_reference.py": "49dbcce8d0693cb0ce903f841ba0f3061d2aad02d812ebb4207c6256e85e2800",
     "tests/fixtures/stream_deck_protocol.json": "5d7e9058d884233b27172159a4ae28dd17dbc331120b23f427a9b37f3a9c0d94",
     "plugins/stream-deck/src/feedback.ts": "ccc1139ee66bc02d7486455195b74a55b8ba720a23cc2a1a2251e91235814eb5",
     "plugins/stream-deck/src/device-feedback.ts": "7ff2c73f5ca1c52b34b2d9378164931942f439aae585f997c55ba1c9cbe97531",
+    "plugins/stream-deck/src/navigation.ts": "81d050db21c4b8428d13e1792d368a9d635365a31f5291f79cfcd8070a42c2d0",
     "plugins/stream-deck/devices/layouts/plus.json": "bc41ddb1cfbb3a9602f07673aace2942a5b3a711aeb4fc5b86b8ab5d9ed49261",
     "plugins/stream-deck/devices/layouts/neo.json": "875875d9c4eadd35ee1f1f92beeb0623fc589f317f50eecfd3eba6c05dd76abd",
-    "plugins/stream-deck/scripts/build-profiles.mjs": "4238414ff6408ed25cd95c64cf5083538028ec62d9a4e7d3a9775118445da626",
-    "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/manifest.json": "addd80d7f00a5f3e5260c91a948895f0af141bcfc62880b294d0e72c0faf7c7b",
+    "plugins/stream-deck/scripts/build-profiles.mjs": "97cc64919b1b443bb3059b74a757be6677a997ff7b6e3ba83b40e5c3c9ef237c",
+    "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/manifest.json": "6e399f89e2a07e0edd2cf54b66ad4c630e8a1cb2a1725c225af78b43b3d717d0",
     "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/imgs/plugin@2x.png": "53476c4916afabf61592ceec13b2c902a197d43b94d15b5f689c5dfa5004fe31"
   },
   "neo": {
@@ -1103,6 +1190,6 @@
       730
     ],
     "device": "plus",
-    "page": "Playback"
+    "page": "Playback / Navigate"
   }
 }

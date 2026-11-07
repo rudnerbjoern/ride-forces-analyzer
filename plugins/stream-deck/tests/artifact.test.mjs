@@ -112,6 +112,7 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
   const info = { application: { version: "7.6.0", platform: "windows", language: "en", font: "Arial", platformVersion: "10" },
     plugin: { uuid, version: `${pluginVersion}.0` }, devices: [{ id: "test-device", name: "Test Neo", type: 9,
       size: { columns: 4, rows: 2 } }, { id: "test-plus", name: "Test Plus", type: 7,
+      size: { columns: 4, rows: 2 } }, { id: "test-plus-2", name: "Second Plus", type: 7,
       size: { columns: 4, rows: 2 } }], devicePixelRatio: 1,
     colors: { buttonMouseOverBackgroundColor: "#000", buttonPressedBackgroundColor: "#000", buttonPressedBorderColor: "#000", buttonPressedTextColor: "#fff", highlightColor: "#fff" } };
   const child = spawn(process.execPath, ["bin/plugin.js", "-port", String(host.address().port),
@@ -164,6 +165,31 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
     assert.equal(navigation.device, "test-device");
     assert.deepEqual(navigation.payload, { profile: "profiles/neo", page: 0 });
     assert.equal(commands.length, 2, "Home must not apply previews or send application commands");
+    const navigate = (event, device, page, target) => hostSocket.send(JSON.stringify({
+      event, action: `${uuid}.plus-navigation`, context: `${device}-nav-${page}-${target}`, device,
+      payload: { controller: "Keypad", coordinates: { column: 1, row: 0 }, settings: { page, target },
+        isInMultiAction: false, state: 0 },
+    }));
+    const switches = () => hostMessages.filter(value => value.event === "switchToProfile" && value.payload.profile === "profiles/plus");
+    navigate("willAppear", "test-plus", 0, "playback");
+    navigate("keyDown", "test-plus", 0, "playback");
+    await waitUntil(() => switches().length === 1, diagnostic);
+    assert.deepEqual(switches()[0].payload, { profile: "profiles/plus", page: 1 });
+    navigate("willDisappear", "test-plus", 0, "playback");
+    navigate("willAppear", "test-plus", 2, "playback");
+    await waitUntil(() => hostMessages.some(value => value.event === "setState"
+      && value.context === "test-plus-nav-2-playback" && value.payload.state === 1), diagnostic);
+    navigate("keyDown", "test-plus", 2, "playback");
+    navigate("willAppear", "test-plus", 0, "playback");
+    navigate("keyDown", "test-plus", 0, "playback");
+    await waitUntil(() => switches().length === 2, diagnostic);
+    assert.equal(switches()[1].payload.page, 2, "Remember the subgroup confirmed by the SDK host");
+    navigate("willAppear", "test-plus-2", 0, "playback");
+    navigate("keyDown", "test-plus-2", 0, "playback");
+    await waitUntil(() => switches().length === 3, diagnostic);
+    assert.equal(switches()[2].device, "test-plus-2");
+    assert.equal(switches()[2].payload.page, 1);
+    assert.equal(commands.length, 2, "Page navigation must never send Analyzer commands");
     const dialEvent = { action: `${uuid}.dial`, context: "test-dial", device: "test-plus",
       payload: { controller: "Encoder", coordinates: { column: 0, row: 0 }, settings: { control: "library" } } };
     const sendDial = (type, extra = {}) => hostSocket.send(JSON.stringify({ ...dialEvent, event: type,

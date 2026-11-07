@@ -8,11 +8,13 @@ import { DialControlAction } from "./dial-action.js";
 import { StepMode } from "./device-controls.js";
 import { StepModeAction } from "./mode-action.js";
 import { InfoBarAction } from "./infobar-action.js";
+import { PlusNavigationAction } from "./navigation.js";
 
 const client = new ControlClient();
 const mode = new StepMode();
 streamDeck.actions.registerAction(new ControlAction(client));
 streamDeck.actions.registerAction(new HomeAction());
+streamDeck.actions.registerAction(new PlusNavigationAction());
 streamDeck.actions.registerAction(new DialControlAction(client, mode));
 streamDeck.actions.registerAction(new StepModeAction(mode));
 streamDeck.actions.registerAction(new InfoBarAction(client));

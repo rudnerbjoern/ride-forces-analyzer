@@ -7,17 +7,69 @@ import { pluginOutput } from "../scripts/artifact-path.mjs";
 
 import { HomeAction } from "../dist/home.js";
 import { controlSettings } from "../dist/controls.js";
+import { PLUS_PAGES, navigationSettings } from "../dist/navigation.js";
 
 // cspell:words backtoparent openchild
 
 const uuid = "io.github.rudnerbjoern.ride-forces-analyzer";
 const plugin = pathToFileURL(pluginOutput);
 
-test("bundled device profiles provide reachable native menus, fixed navigation and existing key controls", async () => {
+test("all bundled profiles use SDK installation defaults and remain editable", async () => {
+  const manifest = JSON.parse(await readFile(new URL("manifest.json", plugin), "utf8"));
+  assert.deepEqual(manifest.Profiles.map(profile => profile.DeviceType), [7, 9, 3]);
+  for (const profile of manifest.Profiles) {
+    assert.equal(profile.Readonly, false);
+    assert.equal(profile.AutoInstall, true);
+    assert.equal(profile.DontAutoSwitchWhenInstalled, false);
+  }
+});
+
+test("Plus has six native main pages with a fixed menu, subgroup switches and no folder/system keys", async () => {
+  const reader = new ZipReader(new Uint8ArrayReader(await readFile(new URL("profiles/plus.streamDeckProfile", plugin))));
+  try {
+    const entries = await reader.getEntries();
+    const root = JSON.parse(await entries.find(entry => /^[^/]+\/manifest.json$/.test(entry.filename)).getData(new TextWriter()));
+    const pages = new Map();
+    for (const entry of entries.filter(entry => /\/Profiles\/[^/]+\/manifest.json$/.test(entry.filename))) {
+      pages.set(entry.filename.split("/").at(-2).toLowerCase(), JSON.parse(await entry.getData(new TextWriter())));
+    }
+    assert.equal(root.Device.Model, "20GBD9901");
+    assert.equal(root.Pages.Current, root.Pages.Pages[0]);
+    assert.equal(pages.size, 7, "Six main pages plus the native empty import template");
+    assert.deepEqual(root.Pages.Pages.map(id => pages.get(id).Name),
+      ["Library", "Playback / Navigate", "Playback / Selection", "Curves", "Markers / Markers", "Markers / View"]);
+    assert.deepEqual(pages.get(root.Pages.Default).Controllers, [{ Type: "Keypad", Actions: {} }]);
+    const identities = new Set();
+    for (const [index, id] of root.Pages.Pages.entries()) {
+      const page = pages.get(id);
+      const keys = page.Controllers.find(controller => controller.Type === "Keypad").Actions;
+      for (const [column, target] of ["library", "playback", "curves", "markers"].entries()) {
+        const action = keys[`${column},0`];
+        assert.equal(action.UUID, `${uuid}.plus-navigation`);
+        assert.deepEqual(action.Settings, { page: index, target });
+        assert.equal(action.States.length, 2);
+        assert.ok(action.States.every(state => state.FontSize === 10));
+        assert.ok(entries.some(entry => entry.filename.toLowerCase().endsWith(`/profiles/${id}/${action.States[0].Image.toLowerCase()}`)));
+      }
+      const first = PLUS_PAGES[index].group === "playback" ? 1 : PLUS_PAGES[index].group === "markers" ? 4 : undefined;
+      if (first !== undefined) for (const [column, target] of [[1, first], [2, first + 1]]) {
+        assert.deepEqual(keys[`${column},1`].Settings, { page: index, target });
+      }
+      for (const action of page.Controllers.flatMap(controller => Object.values(controller.Actions))) {
+        assert.ok(!identities.has(action.ActionID)); identities.add(action.ActionID);
+        assert.ok([`${uuid}.plus-navigation`, `${uuid}.control`, `${uuid}.dial`, `${uuid}.step-mode`].includes(action.UUID));
+        if (action.UUID === `${uuid}.plus-navigation`) assert.ok(navigationSettings(action.Settings));
+        if (action.UUID === `${uuid}.control`) assert.ok(controlSettings(action.Settings));
+      }
+    }
+  } finally { await reader.close(); }
+});
+
+test("Neo profile retains reachable native folders, Home and existing key controls", async () => {
   const manifest = JSON.parse(await readFile(new URL("manifest.json", plugin), "utf8"));
   assert.deepEqual(manifest.Profiles.map(value => value.DeviceType), [7, 9, 3]);
-  for (const profile of manifest.Profiles.filter(value => value.DeviceType !== 3)) {
-    assert.equal(profile.DontAutoSwitchWhenInstalled, true);
+  for (const profile of manifest.Profiles.filter(value => value.DeviceType === 9)) {
+    assert.equal(profile.DontAutoSwitchWhenInstalled, false);
     const reader = new ZipReader(new Uint8ArrayReader(await readFile(new URL(`${profile.Name}.streamDeckProfile`, plugin))));
     try {
       const entries = await reader.getEntries();
@@ -43,10 +95,7 @@ test("bundled device profiles provide reachable native menus, fixed navigation a
       const startPositions = ["1,0", "2,0"];
       assert.equal(pages.get(start[startPositions[0]].Settings.ProfileUUID).Name, "Library");
       assert.equal(pages.get(start[startPositions[1]].Settings.ProfileUUID).Name, "Explorer");
-      if (profile.DeviceType === 7) {
-        assert.deepEqual(["0,1", "1,1", "2,1", "3,1"].map(position => start[position].Settings.operation),
-          ["library.open", "library.open_new_window", "library.import", "library.filter.reset"]);
-      } else assert.equal(start["0,1"], undefined);
+      assert.equal(start["0,1"], undefined);
       const folderImages = [];
       for (const position of startPositions) {
         const image = start[position].States[0].Image;
@@ -117,7 +166,7 @@ test("bundled device profiles provide reachable native menus, fixed navigation a
             operations.add(action.Settings.operation);
             assert.ok(action.States.every(state => state.FontSize === 10 && state.TitleAlignment === "bottom"));
           } else if (action.UUID.startsWith("com.elgato.streamdeck.system.")) {
-            assert.equal(id, root.Pages.Current, "Native system actions belong only on Plus Start");
+            assert.equal(id, root.Pages.Current, "Native system actions belong only on Start");
             assert.ok(["com.elgato.streamdeck.system.open", "com.elgato.streamdeck.system.website"].includes(action.UUID));
           } else {
             assert.ok([`${uuid}.home`, `${uuid}.step-mode`, "com.elgato.streamdeck.profile.backtoparent"].includes(action.UUID));
@@ -126,20 +175,13 @@ test("bundled device profiles provide reachable native menus, fixed navigation a
       }
       root.Pages.Pages.forEach(visit);
       assert.equal(visited.size, pages.size, "Every bundled menu must be reachable with keys");
-      if (profile.DeviceType === 7) {
-        assert.deepEqual([...operations].sort(), ["curve.set", "library.filter.reset", "library.import", "library.open", "library.open_new_window", "playback.toggle", "view.selection"]);
-        assert.equal(keys(names.get("Playback"))["0,1"].Settings.operation, "playback.toggle");
-        assert.ok(!names.has("Position") && !names.has("Smoothing") && !names.has("Playback speed"));
-        assert.ok(![...names.keys()].some(name => name.endsWith(" marker")));
-      } else for (const operation of ["library.move", "library.open", "library.open_new_window", "library.import", "playback.toggle", "position.step",
+      for (const operation of ["library.move", "library.open", "library.open_new_window", "library.import", "playback.toggle", "position.step",
         "playback.speed.step", "playback.speed.reset", "smoothing.step", "smoothing.reset", "view.zoom", "view.reset", "curve.set"]) {
         assert.ok(operations.has(operation), `Missing key alternative: ${operation}`);
       }
       const library = keys(names.get("Library"));
-      if (profile.DeviceType === 7) assert.deepEqual(["0,1", "1,1", "2,1", "3,1"].map(position => library[position].Settings.operation),
-        ["library.open", "library.open_new_window", "library.import", "library.filter.reset"]);
-      else assert.equal(library["0,1"].Settings.operation, "library.import");
-      assert.equal(library[profile.DeviceType === 7 ? "1,1" : "2,1"].Settings.operation, "library.open_new_window");
+      assert.equal(library["0,1"].Settings.operation, "library.import");
+      assert.equal(library["2,1"].Settings.operation, "library.open_new_window");
       if (profile.DeviceType === 9) assert.equal(library["1,1"].Settings.operation, "library.open");
       if (profile.DeviceType === 9) for (const marker of ["start", "gravity", "incline", "end"]) {
         const editor = keys(names.get(`${marker.charAt(0).toUpperCase()}${marker.slice(1)} marker`));
@@ -148,27 +190,7 @@ test("bundled device profiles provide reachable native menus, fixed navigation a
         assert.deepEqual(editor["0,1"].Settings, { operation: "marker.discard", marker });
         assert.deepEqual(editor["3,0"].Settings, { operation: "marker.apply", marker });
       }
-      if (profile.DeviceType === 7) {
-        const dials = name => pages.get(names.get(name)).Controllers.find(value => value.Type === "Encoder").Actions;
-        assert.deepEqual(dials("Library")["0,0"].Settings, { control: "library" });
-        assert.deepEqual(dials("Start")["0,0"].Settings, { control: "library" });
-        assert.deepEqual(Object.keys(dials("Start")), ["0,0"]);
-        assert.equal(pages.get(explorer["2,1"].Settings.ProfileUUID).Name, "Selection");
-        assert.deepEqual(Object.values(dials("Selection")).map(value => value.Settings),
-          ["start", "end"].map(boundary => ({ control: "selection", boundary })));
-        const selection = keys(names.get("Selection"));
-        assert.equal(selection["0,1"].Settings.operation, "view.selection");
-        assert.equal(selection["1,1"].UUID, `${uuid}.step-mode`);
-        for (const name of ["Playback", "Selection", "Markers"]) assert.equal(keys(names.get(name))["1,1"].States.length, 3);
-        assert.deepEqual(Object.values(dials("Playback")).map(value => value.Settings.control), ["position", "view", "speed"]);
-        assert.deepEqual(Object.keys(dials("Playback")), ["0,0", "1,0", "2,0"]);
-        assert.deepEqual(dials("View / Curves")["0,0"].Settings, { control: "smoothing" });
-        assert.equal(keys(names.get("View / Curves"))["0,1"].Settings.curve, "calibrated");
-        assert.equal(explorer["2,0"].States[0].Title, "Curves");
-        assert.deepEqual(Object.values(dials("Markers")).map(value => value.Settings.marker), ["start", "gravity", "incline", "end"]);
-        for (const name of ["Playback", "Markers"]) assert.equal(keys(names.get(name))["1,1"].UUID, `${uuid}.step-mode`);
-        assert.ok([...pages.values()].every(page => !page.Controllers.some(value => value.Type === "Neo")));
-      } else {
+      {
         assert.equal(pages.get(root.Pages.Pages[1]).Name, "Quick controls");
         const quick = keys(root.Pages.Pages[1]);
         assert.deepEqual(["1,0", "2,0", "3,0", "0,1", "1,1", "2,1"].map(position => quick[position].Settings.operation),

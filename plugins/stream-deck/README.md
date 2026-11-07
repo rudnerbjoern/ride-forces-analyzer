@@ -2,10 +2,11 @@
 
 Key controls using Elgato's TypeScript SDK, enabled for Windows and macOS 15+. The configurable **Analyzer
 control** action covers the [agreed commands](../../docs/architecture/06_runtime_view.md#actions).
-Plus and Neo profiles provide native Library/Explorer menus and key controls.
+Plus provides six native pages with a fixed menu; Neo retains Library/Explorer folders.
 Plus dials/touch, marker editors and Neo InfoBar are prepared with automated tests.
 Native Windows startup, Analyzer connection and import for an attached Plus are
-verified; physical Plus/Neo operation remains open.
+verified. Plus menu/subgroup navigation and swipe feedback are verified on the device;
+complete physical Plus acceptance and Neo operation remain open.
 
 For everyday operation, see the [Stream Deck + user guide](../../docs/user/STREAM_DECK.md)
 with illustrated functions and state explanations.
@@ -79,8 +80,11 @@ The stable reverse-DNS ID derives from the project's GitHub Pages address.
 The assembled folder contains metadata, layouts, icons, inspector,
 self-contained JavaScript, the project license and bundled-runtime notices.
 It does not need repository `node_modules` at runtime. Builds also create `profiles/plus.streamDeckProfile` and
-`profiles/neo.streamDeckProfile` and `profiles/mobile.streamDeckProfile` inside that folder; double-click the matching
-archive to import it into Stream Deck. Existing user profiles are preserved.
+`profiles/neo.streamDeckProfile` and `profiles/mobile.streamDeckProfile` inside that folder.
+All three profiles use the SDK defaults: `Readonly: false`, `AutoInstall: true`,
+`DontAutoSwitchWhenInstalled: false`. Stream Deck offers the matching profile during
+plugin installation and switches to it after installation. Manual archive import
+is a fallback, not the normal setup path. Unrelated user profiles are preserved.
 Native menu images are embedded per page from the same colored artwork as the
 function keys. Reimport an updated profile to refresh its menu images; a plugin
 restart alone cannot replace images already stored in an imported profile.
@@ -129,47 +133,50 @@ handling and device operation have not been verified.
 
 The existing local build/link/restart commands above use Node and Elgato's CLI;
 `start.ps1` and other Windows application setup scripts are not Mac launchers.
-Use the Mac Analyzer `.app`, enable Stream Deck in its settings, and select that
-`.app` in the profile's native Start app action. Discovery uses
+Use the Mac Analyzer `.app` and enable Stream Deck in its settings. On Neo/Mobile,
+select that `.app` in the native Start app action; Plus starts directly on Library. Discovery uses
 `~/Library/Application Support/Ride Forces Analyzer/stream-deck.json` on both sides.
 No custom launcher or platform-specific plugin bundle is added. Profile import
 and native app/website actions on macOS remain unverified.
 
 ## Device menus
 
-The Plus and Neo profiles provide Start → Library / Explorer → Playback / View / Curves / Markers.
-Both Start pages add native Elgato Open and Website actions around Library/Explorer.
-Open reuses the packaged app icon; its path is intentionally empty until the user
-selects the Analyzer EXE or a Windows shortcut in Stream Deck. Discovery has no
-executable path. Website opens the project URL from this plugin's manifest. These
-actions require no Analyzer connection or additional plugin command.
-Plus labels the view folder Curves and also provides Selection with Start/End dials,
-Step size and Zoom to selection. Its Explorer folders form a central 2×2 group.
-Native folders handle navigation; Neo Home returns to Start on the invoking device,
-including when Analyzer is disconnected. Play and selection Zoom use key 5
-above the related dials; Data mode sits above Smoothing. Step size stays on key 6.
-Dynamic captions have at most two short lines; full values remain on the touch strip. Back stays on key 1
-in every submenu. Plus has no Home key; Neo retains Home on key 8. Stream Deck fixes native folder Back at key 1 during import;
-the preferred key 5 placement is unsupported. Start has no Back/Home keys.
+Plus starts on Library and has six native main pages in order: Library,
+Playback / Navigate, Playback / Selection, Curves, Markers / Markers and Markers / View.
+Keys 1–4 always select Library, Playback, Curves and Markers. Keys 6/7 select
+Navigate/Selection or Markers/View in their corresponding groups; key 8 carries
+Step size. Playback and Marker groups recall the last subgroup confirmed on that
+device during the plugin session. Cyan marks the group/page confirmed by
+`willAppear`, including native swipes; sending a request never confirms selection.
+Plus has no Back, Home, Start app or Website assignments. Existing application
+controls/dial assignments remain available where mapped; the remaining context
+keys and new dial modes follow PLUS-03/04. Current Library keys 5–8 are Open,
+New window, Import and Reset filters; Curves keys 5–8 are the three force slots and
+Raw/Calibrated. Combined remains available in Analyzer.
 
-Plus keys provide menus, Import, Play/Pause, Zoom to selection, Step size and the five curve/mode controls.
-Play/Pause and Library Open are available both as keys and on their dial press. Other keys
-do not duplicate Library browsing, navigation, view reset
-or marker functions assigned to dials. There are no additional Plus Position,
-Smoothing, Speed or marker-editor folders. Neo retains Previous/Next/Open/Import,
-playback/navigation keys and marker-key editors.
+Navigation requests target the manifest profile `profiles/plus`, not an arbitrary
+imported user copy. The six-page layout replaces the former Plus layout under the
+same profile identity and archive filename; no parallel Plus profile is bundled.
+The bundled profile is offered during plugin installation and activated after
+installation. Existing Plus installations receive the replacement layout under
+the same identity; unrelated profiles are preserved. Copies are not navigation destinations. Native Windows import, SDK page switching, subgroup recall and physical swipe
+feedback are verified on Plus. A sent SDK request alone is not proof of success. Request/appearance events are recorded in plugin logs.
 
-Plus Start and Library share Open, New window, Import and Reset filters on keys 5–8
-and the Library selection on dial/touch field 1. Reset filters invokes the existing
-GUI park/status/search reset without opening a recording. Start retains its Library folder on key 2.
+Neo retains Start → Library / Explorer, its folders, native Start app/Website,
+Back on key 1 and Home on key 8. Its Open action uses the packaged app icon and an
+installation-specific EXE/shortcut or Mac `.app`; Website uses the project URL.
+Mobile retains its reduced Start/Library/Playback/View folders. Both are unchanged.
+Menu navigation works without an Analyzer connection. Dynamic captions remain
+short; detailed application values stay on the touch strip.
+
 The Library dial selects one visible entry per notch, cyclic in both directions; press
 opens the selection in the current Explorer. Playback dials are Position
 (press: Play/Pause), View (Reset) and Speed (1×) in adjacent slots 1–3; slot 4 is unused.
-View / Curves has the Smoothing dial in its first slot beside the force-line and
+Curves has the Smoothing dial in its first slot beside the force-line and
 Raw/Calibrated keys. Smoothing stops at 1/51 samples without wrapping; press resets
 to 11. Raw mode retains unfiltered source values and disables smoothing.
 Markers are Start/Gravity/Incline/End: rotate previews, press applies and touch
-discards only that marker's preview. Step size on Playback, Selection and Markers cycles
+discards only that marker's preview. Step size on Playback/Markers pages cycles
 through 1/10/20/1 source samples per notch on that Plus; startup defaults to 1.
 The key and touch fields show Fine (1), Medium (10) or Coarse (20), shared across
 these pages. The matching icons use one, two or three bars.

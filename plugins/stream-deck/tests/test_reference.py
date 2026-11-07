@@ -32,7 +32,7 @@ def test_reference_cli_is_reproducible_from_fixed_contract_examples() -> None:
         assert b"\r" not in raw
         manifest = json.loads(raw)
         assert manifest["kind"] == "software illustration; not hardware acceptance"
-        assert manifest["language"] == "en" and manifest["size"] == [1620, 2060]
+        assert manifest["language"] == "en" and manifest["size"] == [1620, 1570]
         for name, digest in manifest["inputs"].items():
             assert sha256((ROOT / name).read_bytes()).hexdigest() == digest
         plus = manifest["plus"]
@@ -40,7 +40,7 @@ def test_reference_cli_is_reproducible_from_fixed_contract_examples() -> None:
             "image": "stream-deck-overview.png",
             "size": [1040, 730],
             "device": "plus",
-            "page": "Playback",
+            "page": "Playback / Navigate",
         }
         with Image.open(output / manifest["overview"]["image"]) as image:
             assert list(image.size) == manifest["overview"]["size"]
@@ -48,46 +48,41 @@ def test_reference_cli_is_reproducible_from_fixed_contract_examples() -> None:
         assert plus["size"] == manifest["size"]
         pages = {page["name"]: page for page in plus["pages"]}
         assert all(key["title"] != "Home" for page in plus["pages"] for key in page["keys"])
-        assert set(pages) == {
-            "Start",
+        assert list(pages) == [
             "Library",
-            "Explorer",
-            "Playback",
-            "Selection",
-            "View / Curves",
-            "Markers",
-        }
-        assert {dial["position"]: dial["title"] for dial in pages["Playback"]["dials"]} == {
-            "0,0": "Position",
-            "1,0": "View",
-            "2,0": "Speed",
-        }
-        assert [dial["title"] for dial in pages["Markers"]["dials"]] == [
-            "Start",
-            "Gravity",
-            "Incline",
-            "End",
+            "Playback / Navigate",
+            "Playback / Selection",
+            "Curves",
+            "Markers / Markers",
+            "Markers / View",
         ]
-        assert "Preview" in pages["Markers"]["dials"][1]["status"]
-        assert "Applied #50" in pages["Markers"]["dials"][1]["detail"]
-        assert [dial["title"] for dial in pages["Selection"]["dials"]] == [
+        assert [dial["title"] for dial in pages["Library"]["dials"]] == ["Library"]
+        assert [dial["title"] for dial in pages["Playback / Selection"]["dials"]] == [
             "Selection start",
             "Selection end",
         ]
-        assert [dial["title"] for dial in pages["Start"]["dials"]] == ["Library"]
-        start_keys = {key["position"]: key["title"] for key in pages["Start"]["keys"]}
-        assert start_keys["1,0"] == "Library"
-        assert start_keys["0,1"] == "Open\n1/2"
-        assert start_keys["1,1"] == "New\nwindow"
-        assert start_keys["2,1"] == "Import…"
-        assert start_keys["3,1"] == "Reset\nfilters"
-        assert not pages["Explorer"]["dials"]
+        for page in pages.values():
+            keys = {key["position"]: key for key in page["keys"]}
+            assert [keys[f"{column},0"]["title"] for column in range(4)] == [
+                "Library",
+                "Playback",
+                "Curves",
+                "Markers",
+            ]
+            assert sum(keys[f"{column},0"]["selected"] for column in range(4)) == 1
+        library_keys = {key["position"]: key["title"] for key in pages["Library"]["keys"]}
+        assert [library_keys[f"{column},1"] for column in range(4)] == [
+            "Open\n1/2",
+            "New\nwindow",
+            "Import…",
+            "Reset\nfilters",
+        ]
         for page, label, size in (
-            ("Playback", "Fine", 1),
-            ("Selection", "Medium", 10),
-            ("Markers", "Coarse", 20),
+            ("Playback / Navigate", "Fine", 1),
+            ("Playback / Selection", "Medium", 10),
+            ("Markers / Markers", "Coarse", 20),
         ):
-            title = next(key for key in pages[page]["keys"] if key["position"] == "1,1")["title"]
+            title = next(key for key in pages[page]["keys"] if key["position"] == "3,1")["title"]
             assert title == f"{label}\n{size} {'sample' if size == 1 else 'samples'}"
             assert f"{label} · {size} sample" in pages[page]["dials"][0]["status"]
         mobile = manifest["mobile"]
@@ -127,4 +122,4 @@ def test_reference_cli_is_reproducible_from_fixed_contract_examples() -> None:
         with Image.open(output / neo["image"]) as image:
             assert list(image.size) == neo["size"] == [1220, 2830]
         with Image.open(output / manifest["image"]) as image:
-            assert image.size == (1620, 2060)
+            assert image.size == (1620, 1570)
