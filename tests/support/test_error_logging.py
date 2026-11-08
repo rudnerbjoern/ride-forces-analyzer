@@ -11,13 +11,15 @@ import sys
 import pytest
 
 from ride_forces_analyzer.explorer.library import LibraryArchive
+from ride_forces_analyzer.explorer import library
 from ride_forces_analyzer.i18n import Language, get_language, set_language, tr
 from ride_forces_analyzer.importers import ImportFailure, decode_forces
 from ride_forces_analyzer.runtime.error_logging import error_message, record_error
-from ride_forces_analyzer.storage.library import LibraryStore
+from ride_forces_analyzer.storage.library import LibraryStore, LibraryStoreError, validate_video_url
 from ride_forces_analyzer.storage.map_tiles import TileCache
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.ui.explorer import loading
+from tests.analysis.test_recording_preparation import synthetic_source
 
 
 def test_exception_handlers_preserve_original_errors_or_document_normal_control_flow() -> None:
@@ -254,3 +256,29 @@ def test_storage_fallbacks_log_original_database_failures(
         assert TileCache(path).get("provider", 1, 0, 0) is None
     assert str(path) in caplog.text and "file is not a database" in caplog.text
     assert any(record.exc_info for record in caplog.records)
+
+
+def test_export_filename_fallback_keeps_original_library_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    error = LibraryStoreError("Original private Library location is unavailable")
+
+    def unavailable() -> LibraryStore:
+        raise error
+
+    monkeypatch.setattr(library, "LibraryStore", unavailable)
+    assert library.recording_filename(synthetic_source(), "safe-recording") == "safe-recording"
+    assert str(error) in caplog.text
+    assert caplog.records[-1].exc_info is not None
+    assert caplog.records[-1].exc_info[1] is error
+
+
+def test_malformed_video_url_keeps_parser_error_behind_validation_message(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with pytest.raises(ValueError, match="Enter a valid HTTP or HTTPS video URL"):
+        validate_video_url("https://[broken/")
+    assert "Invalid IPv6 URL" in caplog.text
+    assert caplog.records[-1].exc_info is not None
+    assert str(caplog.records[-1].exc_info[1]) == "Invalid IPv6 URL"
