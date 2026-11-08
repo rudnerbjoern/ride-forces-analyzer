@@ -41,9 +41,11 @@ editing or exporting never changes the status automatically.
 Right-click a recording to choose:
 
 - **Open in new window…** to compare it with another recording.
-- **Edit metadata…** to change the ride, park, row, seat, train, riding position or
+- **Properties…** (**Shift+Enter**) to change the ride, park, row, seat, train, riding position or
   notes. Save applies your edits; reset restores the imported information. Recording
   and import dates cannot be edited, and the original file stays unchanged.
+  For Park, choose an existing Library name from the dropdown, type to find a
+  suggestion and accept it with Enter, or enter a new name.
 - **Video links…** to keep several labelled video links with the recording. Save
   applies the selected link; Remove deletes only that link. A small link icon above
   the recording's status also opens this dialog. It is grey without links and uses

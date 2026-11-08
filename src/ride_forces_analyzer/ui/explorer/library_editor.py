@@ -4,9 +4,11 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QEvent, QObject, Qt, Signal
+from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import (
     QComboBox,
+    QCompleter,
     QDialog,
     QDialogButtonBox,
     QFormLayout,
@@ -30,6 +32,7 @@ class LibraryMetadataDialog(QDialog):
 
     Attributes:
         fields: Optional ride, park, row, seat and train text overrides.
+        park: Editable park selector with completion from current Library names.
         position: Imported posture or explicit Seated/Flying override.
         notes: Current user notes.
         error: Visible storage/validation failure while keeping unsaved input.
@@ -48,12 +51,28 @@ class LibraryMetadataDialog(QDialog):
             parent: Library panel owning these controls.
         """
         super().__init__(parent)
-        bind(self, tr("Edit metadata…"), "windowTitle")
+        bind(self, tr("Properties…"), "windowTitle")
         self.setWindowModality(Qt.WindowModality.WindowModal)
         self.resize(540, 440)
         layout = QVBoxLayout(self)
         details = bind(QGroupBox(), tr("Recording details"), "title")
         form = QFormLayout(details)
+        self.park = QComboBox()
+        self.park.setEditable(True)
+        self.park.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        self.park.setSizeAdjustPolicy(
+            QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon,
+        )
+        self.park.setMaxVisibleItems(10)
+        completer = self.park.completer()
+        assert completer is not None
+        completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        popup = completer.popup()
+        assert popup is not None
+        self._park_popup = popup
+        popup.installEventFilter(self)
         self.fields: dict[str, QLineEdit] = {}
         for key, label in (
             ("ride_name", "Ride"),
@@ -62,10 +81,22 @@ class LibraryMetadataDialog(QDialog):
             ("seat", "Seat"),
             ("train", "Train"),
         ):
-            field = QLineEdit()
+            control: QWidget
+            if key == "park_name":
+                field = self.park.lineEdit()
+                assert field is not None
+                field.setStyleSheet(
+                    "QLineEdit { border: none; padding: 0; background: transparent; }",
+                )
+                control = self.park
+            else:
+                field = QLineEdit()
+                control = field
             field.setMinimumWidth(0)
             bind(field, tr(label), "accessibleName")
-            form.addRow(bind(QLabel(), tr(label)), field)
+            control.setMinimumWidth(0)
+            bind(control, tr(label), "accessibleName")
+            form.addRow(bind(QLabel(), tr(label)), control)
             self.fields[key] = field
         self.position = QComboBox()
         bind(self.position, tr("Riding position"), "accessibleName")
@@ -120,6 +151,28 @@ class LibraryMetadataDialog(QDialog):
         layout.addWidget(self.buttons)
         self._source: ImportSuccess | None = None
 
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        """Select the first park suggestion before Qt handles immediate Enter.
+
+        Args:
+            watched: Object receiving the event.
+            event: Native event passed to the completion popup.
+
+        Returns:
+            Whether the inherited filter consumes the event; Qt owns acceptance.
+        """
+        if (
+            watched is self._park_popup
+            and isinstance(event, QKeyEvent)
+            and event.type() == QEvent.Type.KeyPress
+            and event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter)
+            and not self._park_popup.currentIndex().isValid()
+        ):
+            model = self._park_popup.model()
+            if model.rowCount():
+                self._park_popup.setCurrentIndex(model.index(0, 0))
+        return super().eventFilter(watched, event)
+
     def bind_source(self, source: ImportSuccess) -> None:
         """Display stored additions and placeholders without editing the source.
 
@@ -144,7 +197,10 @@ class LibraryMetadataDialog(QDialog):
                 )
         values = source.additions.model_dump()
         for key, field in self.fields.items():
-            field.setText(values[key] or "")
+            if key == "park_name":
+                self.park.setCurrentText(values[key] or "")
+            else:
+                field.setText(values[key] or "")
             field.setPlaceholderText(original.get(key) or "—")
         self.notes.setPlainText(source.additions.notes)
         self.position.clear()

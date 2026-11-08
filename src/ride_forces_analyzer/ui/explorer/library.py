@@ -19,7 +19,15 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
-from PySide6.QtGui import QAction, QFont, QFontMetrics, QMouseEvent, QPainter, QPalette
+from PySide6.QtGui import (
+    QAction,
+    QFont,
+    QFontMetrics,
+    QKeySequence,
+    QMouseEvent,
+    QPainter,
+    QPalette,
+)
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
@@ -45,6 +53,7 @@ from PySide6.QtWidgets import (
 
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.explorer.library import (
+    LibraryArchive,
     library_details,
     library_row_text,
 )
@@ -295,7 +304,10 @@ class LibraryPanel(QSplitter):
         )
         self.new_window_action.triggered.connect(self._open_in_new_window)
         self.context_menu.addAction(self.new_window_action)
-        self.edit_action = bind(QAction(self.context_menu), tr("Edit metadata…"))
+        self.edit_action = bind(QAction(self.context_menu), tr("Properties…"))
+        self.edit_action.setShortcuts([QKeySequence("Shift+Enter"), QKeySequence("Shift+Return")])
+        self.edit_action.setShortcutContext(Qt.ShortcutContext.WindowShortcut)
+        self.addAction(self.edit_action)
         self.editor = LibraryMetadataDialog(self.panel)
         self.edit_action.triggered.connect(self._edit_metadata)
         self.editor.save_requested.connect(self._save_metadata)
@@ -810,11 +822,23 @@ class LibraryPanel(QSplitter):
 
     @Slot()
     def _edit_metadata(self) -> None:
-        if self._details_data is not None:
-            self.editor.bind_source(self._details_data.source)
-            self.editor.show()
-            self.editor.raise_()
-            self.editor.activateWindow()
+        """Read saved additions before opening the editor for an already loaded ride."""
+        if self._details_data is None:
+            return
+        try:
+            self._details_data = LibraryArchive().apply_metadata(self._details_data)
+            parks = LibraryStore().parks()
+        except (ValueError, LibraryStoreError) as error:
+            record_error("Read Library metadata", error)
+            self.show_error(tr("Could not read Library: {0}", error_message(error)))
+            return
+        self.editor.park.clear()
+        self.editor.park.addItems(parks)
+        self.editor.park.setCurrentIndex(-1)
+        self.editor.bind_source(self._details_data.source)
+        self.editor.show()
+        self.editor.raise_()
+        self.editor.activateWindow()
 
     @Slot(bool)
     def _toggle(self, checked: bool) -> None:

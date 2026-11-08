@@ -251,7 +251,7 @@ def test_repeated_recording_opens_activate_one_window_without_reloading() -> Non
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from PySide6.QtCore import QEvent, QThreadPool
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QDialogButtonBox
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.runtime.instance import OpenRequest
@@ -329,6 +329,39 @@ try:
             assert len(app.windows) == 3 and third.data is third_data
             assert third.navigation.slider.value() == 3
             assert app.activeWindow() is third
+
+        # Editing an already open ride must read saved values despite window reuse.
+        editor = third.library.editor
+        third.library.edit_action.trigger()
+        assert editor.isVisible()
+        values = {"ride_name": "Edited third", "park_name": "Edited park", "row": "Front",
+                  "seat": "Left", "train": "Blue"}
+        for key, value in values.items():
+            editor.fields[key].setText(value)
+        editor.notes.setPlainText("Saved notes")
+        editor.position.setCurrentIndex(editor.position.findData("Seated"))
+        editor.buttons.button(QDialogButtonBox.StandardButton.Save).click()
+        assert not editor.isVisible()
+        assert third.data is third_data
+        assert "Edited third" in third.library.recordings.currentItem().text(0)
+        third.library.edit_action.trigger()
+        assert all(editor.fields[key].text() == value for key, value in values.items())
+        assert editor.notes.toPlainText() == "Saved notes"
+        assert editor.position.currentData() == "Seated"
+        app.processEvents()
+        editor.grab().save(".tmp/metadata-reopened-dialog.png")
+        editor.notes.setPlainText("Second notes")
+        editor.buttons.button(QDialogButtonBox.StandardButton.Save).click()
+        third.library.edit_action.trigger()
+        assert all(editor.fields[key].text() == value for key, value in values.items())
+        assert editor.notes.toPlainText() == "Second notes"
+        editor.buttons.button(QDialogButtonBox.StandardButton.Cancel).click()
+        third.library.edit_action.trigger()
+        editor.buttons.button(QDialogButtonBox.StandardButton.Reset).click()
+        third.library.edit_action.trigger()
+        assert all(not field.text() for field in editor.fields.values())
+        assert not editor.notes.toPlainText() and editor.position.currentData() is None
+        editor.buttons.button(QDialogButtonBox.StandardButton.Cancel).click()
     print("Recording window reuse passed", flush=True)
 finally:
     app.stream_deck.close()

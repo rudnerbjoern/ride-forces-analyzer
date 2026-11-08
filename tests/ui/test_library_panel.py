@@ -1,6 +1,6 @@
 """Native Library interactions, explicit archive import and preserved chart state."""
 
-# cspell:words Seaworld Uhrzeit Heure Importiert Importé Keine passenden Aufnahmen Tous Aucun enregistrement correspondant Metadaten bearbeiten métadonnées Abgeschlossen Terminé caplog
+# cspell:words Seaworld Uhrzeit Heure Importiert Importé Keine passenden Aufnahmen Tous Aucun enregistrement correspondant Metadaten bearbeiten métadonnées Abgeschlossen Terminé caplog Eigenschaften Propriétés
 
 from pathlib import Path
 import json
@@ -376,14 +376,17 @@ def test_library_toggle_preserves_workspace_and_recording(
     window_size = window.size()
     digest = archived.source.source_sha256
     original_source = archived.source.recording
-    window.library.edit_action.trigger()
+    assert window.library.edit_action.text() == "Properties…"
+    tree.setFocus()
+    QApplication.processEvents()
+    QTest.keyClick(tree, Qt.Key.Key_Return, Qt.KeyboardModifier.ShiftModifier)
     assert editor.isVisible() and editor.isWindow()
     assert editor.windowModality() == Qt.WindowModality.WindowModal
     assert [group.title() for group in editor.findChildren(QGroupBox)] == [
         "Recording details",
         "Notes",
     ]
-    assert editor.windowTitle() == "Edit metadata…"
+    assert editor.windowTitle() == "Properties…"
     assert window.library.panel.width() == panel_width and window.size() == window_size
     assert editor.fields["row"].placeholderText() == "3"
     for key, value in {
@@ -416,7 +419,9 @@ def test_library_toggle_preserves_workspace_and_recording(
     assert "Ride: Manta updated" in " ".join(window.library.details.toPlainText().split())
     assert "Row: 3" in " ".join(window.library.details.toPlainText().split())
     assert window.library.park_filter.findData("Edited park") >= 0
-    window.library.edit_action.trigger()
+    tree.setFocus()
+    QApplication.processEvents()
+    QTest.keyClick(tree, Qt.Key.Key_Enter, Qt.KeyboardModifier.ShiftModifier)
     assert editor.fields["ride_name"].text() == "Edited ride"
     assert editor.notes.toPlainText() == "Library notes"
     editor.fields["ride_name"].setText("Cancelled")
@@ -443,9 +448,9 @@ def test_library_toggle_preserves_workspace_and_recording(
     window.library.edit_action.trigger()
     assert editor.fields["ride_name"].text() == "Edited ride"
     for language, title in (
-        (1, "Metadaten bearbeiten…"),
-        (2, "Modifier les métadonnées…"),
-        (0, "Edit metadata…"),
+        (1, "Eigenschaften…"),
+        (2, "Propriétés…"),
+        (0, "Properties…"),
     ):
         window.set_ui_language(language)
         assert editor.windowTitle() == title

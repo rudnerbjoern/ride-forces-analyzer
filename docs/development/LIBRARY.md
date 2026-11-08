@@ -55,6 +55,8 @@ additions and effective-name projections. `ImportSuccess.additions` exposes froz
 effective metadata/attributes to lists, reopened recordings and exports. Posture
 overrides carry `user` provenance and change display ranges, not force calculations.
 Only current additions are stored, without an edit history.
+Opening the metadata editor reads current saved additions, including when the
+recording is already open and window reuse avoids reloading its source or analysis.
 
 | Saved representation          | Metadata contract                                                           |
 | ----------------------------- | --------------------------------------------------------------------------- |
