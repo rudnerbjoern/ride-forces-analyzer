@@ -180,24 +180,31 @@ def test_source_failures_keep_original_exceptions_and_attempted_paths(
 def test_original_import_diagnostic_and_path_survive_localized_presentation(
     export_directory: Path,
     caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     archive = LibraryArchive(
         LibraryStore(export_directory / "library.sqlite3"),
         Preferences(export_directory / "prefs.sqlite3"),
     )
     path = Path(r"\\server\share\private-source.forces")
+
+    def denied(_path: Path) -> None:
+        raise PermissionError("Original network read denied")
+
     before = get_language()
     set_language(Language.GERMAN)
     try:
-        result = archive.import_paths((path,))[0]
+        with monkeypatch.context() as patch:
+            patch.setattr(Path, "stat", denied)
+            result = archive.import_paths((path,))[0]
         assert result.status == "failed" and result.error == error_message()
         assert result.error is not None
         assert "server" not in result.error
     finally:
         set_language(before)
     assert str(path) in caplog.text
-    assert "INVALID_SOURCE_PATH" in caplog.text
-    assert "Network and device paths are unsupported" in caplog.text
+    assert "SOURCE_UNREADABLE" in caplog.text
+    assert "PermissionError: Original network read denied" in caplog.text
 
 
 @pytest.mark.parametrize("worker_kind", ["single", "multiple"])

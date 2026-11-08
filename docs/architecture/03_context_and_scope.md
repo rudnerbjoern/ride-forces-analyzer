@@ -57,7 +57,7 @@ independent of this processing path.
 
 | Interface                           | Channel and ownership                                         | Current status                                                        |
 | ----------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Recording input                     | Local regular Path, bounded binary read, owned original bytes | Implemented; Windows network/device paths are rejected                |
+| Recording input                     | Regular Path, bounded binary read, owned original bytes       | Implemented; UNC shares accepted, Windows device paths rejected       |
 | Bytes input                         | Immutable Python bytes, no filesystem access                  | Implemented                                                           |
 | Import output                       | Typed ImportSuccess or ImportFailure in the caller process    | Implemented; no Qt dependency                                         |
 | Desktop bootstrap                   | Local PySide6 process and native Qt event loop                | Independent Explorer windows and background file opening              |

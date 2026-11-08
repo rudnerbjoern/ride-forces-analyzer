@@ -21,8 +21,8 @@ def inspect_source(path: Path) -> int | None:
     return None
 ```
 
-`decode_forces(path: Path, *, limits=DEFAULT_LIMITS)` reads local regular files
-only. `decode_forces_bytes(data, *, compressed=False, limits=DEFAULT_LIMITS)` performs no
+`decode_forces(path: Path, *, limits=DEFAULT_LIMITS)` reads regular files, including
+Windows UNC shares. `decode_forces_bytes(data, *, compressed=False, limits=DEFAULT_LIMITS)` performs no
 file access. Both return DecodeSuccess | ImportFailure. These stage-specific
 names distinguish decoded sources from the separately implemented
 [complete import_forces API](IMPORT_SERVICE.md).
@@ -46,7 +46,7 @@ Recording or inferred capability/GPS status. ImportFailure exposes success=False
 recording=None and one fatal structured diagnostic. Invalid Python argument types
 raise TypeError; invalid limit configuration raises ValueError before I/O.
 
-The file adapter rejects directories, non-regular handles and Windows network/device
+The file adapter rejects directories, non-regular handles and Windows device
 paths. It opens binary/unbuffered/read-only, checks the opened handle and joins
 short reads until EOF or the total max_bytes+1 budget. Reads use at most 65,536 bytes
 per call. Never trust stat size alone or report a partial read as full provenance.

@@ -499,12 +499,17 @@ def test_invalid_path_is_a_structured_failure() -> None:
     assert isinstance(result, ImportFailure) and result.diagnostics[0].code == "INVALID_SOURCE_PATH"
 
 
-def test_network_paths_and_invalid_limits_are_rejected_before_io(
+@pytest.mark.parametrize(
+    "path",
+    [r"\\.\NUL", r"\\?\C:\source.forces", r"\\?\UNC\server\share\source.forces"],
+)
+def test_device_paths_and_invalid_limits_are_rejected_before_io(
     monkeypatch: pytest.MonkeyPatch,
+    path: str,
 ) -> None:
     calls = MagicMock(side_effect=AssertionError("No filesystem access allowed"))
     monkeypatch.setattr(Path, "stat", calls)
-    result = decode_forces(Path(r"\\server\share\source.forces"))
+    result = decode_forces(Path(path))
     assert isinstance(result, ImportFailure) and result.diagnostics[0].code == "INVALID_SOURCE_PATH"
     with pytest.raises(ValueError):
         decode_forces(Path("unused"), limits=cast(ImportLimits, object()))
