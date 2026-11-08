@@ -12,7 +12,6 @@ from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import datetime
-import logging
 from threading import RLock
 
 from ride_forces_analyzer.importers import ImportSuccess, Severity
@@ -34,14 +33,13 @@ from .recording import (
 from .preparation import (
     prepare_recording_analysis,
 )
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 
 #: Initial coherent state or a subsequent technical change notification.
 type AnalysisDelivery = AnalysisState | AnalysisNotification
 #: Callbacks run synchronously; a UI adapter must marshal and recheck deliveries.
 type AnalysisSubscriber = Callable[[AnalysisDelivery], None]
-
-_LOG = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -259,7 +257,7 @@ class AnalysisService:
                     calculation_time=calculation_time,
                 )
         except Exception as error:
-            _LOG.exception("Analysis recalculation failed")
+            record_error("Analysis recalculation failed", error)
             failure = (
                 error.diagnostic
                 if isinstance(error, CalibrationReferenceError)
@@ -449,12 +447,12 @@ class AnalysisService:
                     entry.pending_revision = None
             try:
                 entry.callback(delivery)
-            except Exception:
+            except Exception as error:
                 with self._lock:
                     self._subscriptions.pop(entry.handle.identifier, None)
                     entry.queue.clear()
                     entry.delivering = False
-                _LOG.exception("Analysis subscriber failed; registration removed")
+                record_error("Analysis subscriber failed; registration removed", error)
                 return
 
 

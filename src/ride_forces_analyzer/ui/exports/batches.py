@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 from ride_forces_analyzer.i18n import tr
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import error_message, record_error
 from ride_forces_analyzer.ui.presentation.translation import bind, button_text, items, headers
 
 from pathlib import Path
@@ -110,7 +110,7 @@ class BuildWorker(QRunnable):
             )
         except Exception as error:
             record_error("Batch preparation", error)
-            self.signals.failed.emit(str(error))
+            self.signals.failed.emit(error_message(error))
         else:
             self.signals.finished.emit(result)
 
@@ -173,7 +173,7 @@ class BatchWorker(QRunnable):
             )
         except Exception as error:
             record_error("Batch execution", error)
-            self.signals.failed.emit(str(error))
+            self.signals.failed.emit(error_message(error))
         else:
             self.signals.finished.emit(report)
 
@@ -308,7 +308,8 @@ class BatchDialog(QDialog):
         self.encoder = QLineEdit()
         try:
             bind(self.encoder, str(find_ffmpeg()), "text")
-        except ValueError:
+        except ValueError as error:
+            record_error("ui.exports.batches.__init__", error)
             self.encoder.setPlaceholderText(tr("Choose FFmpeg executable"))
         encoder_row.addWidget(self.encoder)
         self.browse = button_text(
@@ -420,7 +421,7 @@ class BatchDialog(QDialog):
             batches, presets = self.store.batches(), self.store.presets()
         except ExportStoreError as error:
             record_error("Batch configuration", error)
-            bind(self.status, tr(str(error)), "text")
+            bind(self.status, error_message(error), "text")
             return
         self.batch_list.clear()
         items(self.batch_list, [batch.name for batch in batches])
@@ -442,7 +443,7 @@ class BatchDialog(QDialog):
             batch = self.store.batch(name)
         except ExportStoreError as error:
             record_error("Batch configuration", error)
-            bind(self.status, tr(str(error)), "text")
+            bind(self.status, error_message(error), "text")
             return
         self.table.setRowCount(len(batch.jobs))
         for row, job in enumerate(batch.jobs):
@@ -477,7 +478,7 @@ class BatchDialog(QDialog):
 
     def _current_name(self) -> str:
         if self.batch_list.currentRow() < 0:
-            raise ValueError(tr("Choose or create a batch first"))
+            raise ValueError("Choose or create a batch first")
         return self.batch_list.currentItem().text()
 
     def changeEvent(self, event: QEvent) -> None:
@@ -505,7 +506,7 @@ class BatchDialog(QDialog):
             self.refresh(batch.name)
         except (ValueError, ExportStoreError) as error:
             record_error("Batch configuration", error)
-            bind(self.status, tr(str(error)), "text")
+            bind(self.status, error_message(error), "text")
 
     @Slot()
     def _add(self) -> None:
@@ -538,7 +539,7 @@ class BatchDialog(QDialog):
             QThreadPool.globalInstance().start(worker)
         except (ValueError, ExportStoreError) as error:
             record_error("Batch configuration", error)
-            bind(self.status, tr(str(error)), "text")
+            bind(self.status, error_message(error), "text")
 
     @Slot(object)
     def _built(self, result: object) -> None:
@@ -558,7 +559,7 @@ class BatchDialog(QDialog):
             )
         except ExportStoreError as error:
             record_error("Batch configuration", error)
-            bind(self.status, tr(str(error)), "text")
+            bind(self.status, error_message(error), "text")
 
     @Slot()
     def _remove(self) -> None:
@@ -571,19 +572,19 @@ class BatchDialog(QDialog):
             self._show_batch(name)
         except (ValueError, ExportStoreError) as error:
             record_error("Batch configuration", error)
-            bind(self.status, tr(str(error)), "text")
+            bind(self.status, error_message(error), "text")
 
     @Slot()
     def _delete(self) -> None:
         try:
             name = self._current_name()
             if self.store.batch(name).jobs:
-                raise ValueError(tr("Remove the jobs before deleting this batch"))
+                raise ValueError("Remove the jobs before deleting this batch")
             self.store.delete_batch(name)
             self.refresh()
         except (ValueError, ExportStoreError) as error:
             record_error("Batch configuration", error)
-            bind(self.status, tr(str(error)), "text")
+            bind(self.status, error_message(error), "text")
 
     @Slot()
     def _browse(self) -> None:
@@ -613,7 +614,7 @@ class BatchDialog(QDialog):
                 batch for batch in self.store.batches() if all_batches or batch.name in selected
             )
             if not any(batch.jobs for batch in batches):
-                raise ValueError(tr("Choose saved batches that contain export jobs"))
+                raise ValueError("Choose saved batches that contain export jobs")
             encoder = find_ffmpeg(Path(self.encoder.text()) if self.encoder.text() else None)
             directory = QFileDialog.getExistingDirectory(self, tr("Choose batch output folder"))
             if not directory:
@@ -643,7 +644,7 @@ class BatchDialog(QDialog):
             QThreadPool.globalInstance().start(worker)
         except (ValueError, ExportStoreError) as error:
             record_error("Batch configuration", error)
-            bind(self.status, tr(str(error)), "text")
+            bind(self.status, error_message(error), "text")
 
     def _busy(self, busy: bool) -> None:
         for control in self.controls:
@@ -710,7 +711,7 @@ class BatchDialog(QDialog):
             if history_errors:
                 bind(
                     self.status,
-                    f"{self.status.text()}\n{tr('Export history could not be saved: {0}', history_errors[0])}",
+                    f"{self.status.text()}\n{tr('Export history could not be saved: {0}', error_message(history_errors[0]))}",
                     "text",
                 )
 

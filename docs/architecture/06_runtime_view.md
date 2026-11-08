@@ -79,6 +79,14 @@ requests also retain their last import directory and routing path.
 Support reports collect handled/unhandled errors, Qt warnings/critical/fatal
 messages with severity/category and best-effort native crash stacks. Qt diagnostics
 also reach the prior handler or terminal; debug/info messages are not stored.
+The shared, Qt-independent `runtime.error_logging` records original exceptions
+before any translation or masking, including their complete chains/tracebacks,
+explicit operation context such as source paths, and captured subprocess output.
+Handled failures and fallbacks use this sink; cancellation and normal control flow
+remain distinct from errors. User feedback uses approved static interface messages
+or a localized error-report hint; internal exception details stay in the local log.
+Structured import failures retain every original diagnostic and the attempted path
+in the report, including failures before source bytes exist.
 Writes are serialized and flushed without a per-run size limit.
 The first successful diagnostic write publishes report availability. Status-bar
 indicators receive queued UI-thread delivery; newly opened windows read the current

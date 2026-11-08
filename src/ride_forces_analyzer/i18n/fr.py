@@ -20,6 +20,7 @@ FRENCH: dict[str, str] = {
     "Close": "Fermer",
     "Replace existing file?": "Remplacer le fichier existant ?",
     "The file already exists:\n{0}\n\nDo you want to replace it?": "Le fichier existe déjà :\n{0}\n\nVoulez-vous le remplacer ?",
+    "The operation failed. See the error report for details.": "L’opération a échoué. Consultez le rapport d’erreurs pour plus de détails.",
     "Unavailable": "Indisponible",
     "{0:+.1f}": "{0:+.1f}",
     "{0:+.2f}": "{0:+.2f}",

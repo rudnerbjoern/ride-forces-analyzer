@@ -23,6 +23,7 @@ from ._json_preflight import DecodeProblem, preflight
 from .diagnostics import ImportDiagnostic, Severity
 from .limits import DEFAULT_LIMITS, ImportLimits
 from .result import ImportFailure
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 
 @dataclass(frozen=True, slots=True)
@@ -196,7 +197,8 @@ def _decode(
         try:
             stream = zlib.decompressobj(wbits=-15)
             document = stream.decompress(data, limits.max_bytes + 1)
-        except zlib.error:
+        except zlib.error as error:
+            record_error("importers.decoder._decode", error, context=f"Path: {path}")
             return _failure("INVALID_COMPRESSION", "Invalid compressed recording", source=source)
         if len(document) > limits.max_bytes:
             return _failure("RESOURCE_LIMIT_EXCEEDED", "Resource budget exceeded: max_bytes")
@@ -204,7 +206,8 @@ def _decode(
             return _failure("INVALID_COMPRESSION", "Invalid compressed recording", source=source)
     try:
         text = document.decode("utf-8-sig", errors="strict")
-    except UnicodeDecodeError:
+    except UnicodeDecodeError as error:
+        record_error("importers.decoder._decode", error, context=f"Path: {path}")
         return _failure("INVALID_UTF8", "Source must use valid UTF-8", source=source)
     if not text.strip(" \t\r\n"):
         return _failure("EMPTY_INPUT", "Source contains no JSON document", source=source)
@@ -236,10 +239,13 @@ def _decode(
             )
         return adapter(source)
     except DecodeProblem as problem:
+        record_error("importers.decoder._decode", problem, context=f"Path: {path}")
         return ImportFailure([problem.diagnostic], source=source, schema_version=version)
-    except json.JSONDecodeError, ValueError, InvalidOperation:
+    except (json.JSONDecodeError, ValueError, InvalidOperation) as error:
+        record_error("importers.decoder._decode", error, context=f"Path: {path}")
         return _failure("INVALID_JSON", "Invalid JSON document", source=source)
-    except RecursionError:
+    except RecursionError as error:
+        record_error("importers.decoder._decode", error, context=f"Path: {path}")
         return _failure(
             "RESOURCE_LIMIT_EXCEEDED",
             "Decoder runtime nesting budget exceeded",
@@ -311,10 +317,13 @@ def decode_forces(path: Path, *, limits: ImportLimits = DEFAULT_LIMITS) -> Decod
                 chunks.append(chunk)
                 remaining -= len(chunk)
             data = b"".join(chunks)
-    except FileNotFoundError:
+    except FileNotFoundError as error:
+        record_error("importers.decoder.decode_forces", error, context=f"Path: {path}")
         return _failure("SOURCE_NOT_FOUND", "Source file was not found")
-    except OSError:
+    except OSError as error:
+        record_error("importers.decoder.decode_forces", error, context=f"Path: {path}")
         return _failure("SOURCE_UNREADABLE", "Unable to read source file")
-    except ValueError:
+    except ValueError as error:
+        record_error("importers.decoder.decode_forces", error, context=f"Path: {path}")
         return _failure("INVALID_SOURCE_PATH", "Source path is invalid")
     return _decode(data, limits, path)

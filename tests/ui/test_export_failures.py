@@ -1,6 +1,6 @@
 """Export transport and storage failures recover without visible desktop windows."""
 
-# cspell:words qapp
+# cspell:words qapp caplog
 
 from pathlib import Path
 from unittest.mock import Mock
@@ -22,10 +22,13 @@ from ride_forces_analyzer.ui.exports.preview_controller import PreviewController
 from ride_forces_analyzer.ui.exports.workers import PreviewWorker
 from tests.exports.test_csv_export import snapshot
 
+MASKED = "The operation failed. See the error report for details."
+
 
 def test_preview_failures_respect_revision_and_shutdown(
     qapp: QApplication,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     parent = QWidget()
     controller = PreviewController(parent)
@@ -52,7 +55,8 @@ def test_preview_failures_respect_revision_and_shutdown(
         assert failed == [] and len(workers) == 2
         assert controller.worker is workers[-1]
         workers[-1].run()
-        assert failed == ["Preview failed"] and controller.worker is None
+        assert "Preview failed" in caplog.text
+        assert failed == [MASKED] and controller.worker is None
 
         result = ExportPreview(0, False, ())
         build.side_effect = None
@@ -65,7 +69,8 @@ def test_preview_failures_respect_revision_and_shutdown(
         QTimer.singleShot(0, lambda: late.signals.failed.emit(late.revision, "Late failure"))
         controller.close()
         qapp.processEvents()
-        assert ready == [result] and failed == ["Preview failed"]
+        assert "Preview failed" in caplog.text
+        assert ready == [result] and failed == [MASKED]
         assert controller.result is None and controller.worker is None
         assert not controller.timer.isActive()
     finally:
@@ -77,6 +82,7 @@ def test_preset_storage_errors_preserve_definitions_and_allow_retry(
     qapp: QApplication,
     export_directory: Path,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     analysis = snapshot()
     parent = QWidget()
@@ -99,13 +105,15 @@ def test_preset_storage_errors_preserve_definitions_and_allow_retry(
         with monkeypatch.context() as patch:
             patch.setattr(store, "presets", Mock(side_effect=ExportStoreError("List unavailable")))
             controls.refresh()
-            assert str(messages[-1]) == "List unavailable"
+            assert "List unavailable" in caplog.text
+            assert str(messages[-1]) == MASKED
             assert controls.preset_selector.currentText() == preset.name
         with monkeypatch.context() as patch:
             patch.setattr(store, "save_preset", Mock(side_effect=ExportStoreError("Save denied")))
             for button in (controls.save_preset, controls.update_preset):
                 button.click()
-                assert str(messages[-1]) == "Save denied" and button.isEnabled()
+                assert "Save denied" in caplog.text
+                assert str(messages[-1]) == MASKED and button.isEnabled()
             assert store.presets() == (preset,)
         job = BatchJob(
             recording_path=(export_directory / "source.forces").resolve(),
@@ -124,7 +132,8 @@ def test_preset_storage_errors_preserve_definitions_and_allow_retry(
         with monkeypatch.context() as patch:
             patch.setattr(store, "append_jobs", Mock(side_effect=ExportStoreError("Queue denied")))
             controls.queue.click()
-            assert str(messages[-1]) == "Queue denied" and not store.batch("Queue").jobs
+            assert "Queue denied" in caplog.text
+            assert str(messages[-1]) == MASKED and not store.batch("Queue").jobs
         controls.queue.click()
         assert store.batch("Queue").jobs == (job,)
         controls.save_preset.click()
@@ -137,7 +146,8 @@ def test_preset_storage_errors_preserve_definitions_and_allow_retry(
                 Mock(side_effect=ExportStoreError("Delete denied")),
             )
             controls.delete_preset.click()
-            assert str(messages[-1]) == "Delete denied"
+            assert "Delete denied" in caplog.text
+            assert str(messages[-1]) == MASKED
             assert controls.preset_selector.currentText() == "New"
             assert len(store.presets()) == 2
         controls.delete_preset.click()
@@ -155,6 +165,7 @@ def test_batch_storage_errors_keep_selection_and_allow_retry(
     qapp: QApplication,
     export_directory: Path,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     parent = QWidget()
     store = ExportStore(export_directory / "batches.sqlite3")
@@ -187,7 +198,8 @@ def test_batch_storage_errors_keep_selection_and_allow_retry(
         with monkeypatch.context() as patch:
             patch.setattr(store, "batches", Mock(side_effect=ExportStoreError("List unavailable")))
             dialog.refresh()
-            assert dialog.status.text() == "List unavailable"
+            assert "List unavailable" in caplog.text
+            assert dialog.status.text() == MASKED
             assert dialog.batch_list.currentItem().text() == "Existing"
         monkeypatch.setattr(QInputDialog, "getText", Mock(return_value=("New", True)))
         with monkeypatch.context() as patch:
@@ -197,7 +209,8 @@ def test_batch_storage_errors_keep_selection_and_allow_retry(
                 Mock(side_effect=ExportStoreError("Create denied")),
             )
             dialog.new.click()
-            assert dialog.status.text() == "Create denied"
+            assert "Create denied" in caplog.text
+            assert dialog.status.text() == MASKED
             assert [batch.name for batch in store.batches()] == ["Existing"]
         with monkeypatch.context() as patch:
             patch.setattr(
@@ -206,7 +219,8 @@ def test_batch_storage_errors_keep_selection_and_allow_retry(
                 Mock(side_effect=ExportStoreError("Delete denied")),
             )
             dialog.delete.click()
-            assert dialog.status.text() == "Delete denied"
+            assert "Delete denied" in caplog.text
+            assert dialog.status.text() == MASKED
             assert store.batch("Existing").name == "Existing"
         dialog.new.click()
         assert dialog.batch_list.currentItem().text() == "New"

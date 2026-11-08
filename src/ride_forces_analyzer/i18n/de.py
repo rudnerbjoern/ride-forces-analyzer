@@ -21,6 +21,7 @@ GERMAN: dict[str, str] = {
     "Close": "Schließen",
     "Replace existing file?": "Vorhandene Datei ersetzen?",
     "The file already exists:\n{0}\n\nDo you want to replace it?": "Die Datei existiert bereits:\n{0}\n\nMöchtest du sie ersetzen?",
+    "The operation failed. See the error report for details.": "Der Vorgang ist fehlgeschlagen. Details stehen im Fehlerprotokoll.",
     "Unavailable": "Nicht verfügbar",
     "{0:+.1f}": "{0:+.1f}",
     "{0:+.2f}": "{0:+.2f}",

@@ -17,6 +17,7 @@ from PySide6.QtNetwork import QHostAddress
 from PySide6.QtWebSockets import QWebSocket, QWebSocketProtocol, QWebSocketServer
 
 from ride_forces_analyzer.runtime.paths import data_directory
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 TRANSPORT_VERSION = 1
 MAX_MESSAGE_BYTES = 64 * 1024
@@ -100,7 +101,8 @@ class ControlServer(QObject):
             if target.write(payload) != len(payload) or not target.commit():
                 target.cancelWriting()
                 raise OSError("Unable to publish Stream Deck discovery")
-        except OSError:
+        except OSError as error:
+            record_error("runtime.stream_deck.start", error)
             self.server.close()
             raise
         self._published = payload
@@ -180,7 +182,8 @@ class ControlServer(QObject):
         if client not in self._authenticated:
             try:
                 hello = _Hello.model_validate_json(message)
-            except ValidationError:
+            except ValidationError as error:
+                record_error("runtime.stream_deck._receive", error)
                 client.close(QWebSocketProtocol.CloseCode.CloseCodePolicyViolated)
                 return
             if not compare_digest(hello.token, self._token):

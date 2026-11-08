@@ -25,6 +25,7 @@ from typing import TextIO
 from PySide6.QtCore import QObject, Signal
 
 from ride_forces_analyzer import __version__
+from ride_forces_analyzer.runtime.error_logging import record_error
 from ride_forces_analyzer.runtime.cpu_resources import detect_cpu_resources
 from ride_forces_analyzer.runtime.paths import data_directory
 
@@ -110,23 +111,6 @@ class _CompleteTraceback(logging.Formatter):
         return "".join(formatted.format(chain=True)).rstrip()
 
 
-def record_error(area: str, error: BaseException | None = None, *, message: str = "") -> None:
-    """Record a failure without inspecting locals, arguments or recording objects.
-
-    Exception messages and all available chained traceback frames are retained.
-    Reporting must never replace an application's original error handling.
-
-    Args:
-        area: Area of the input under examination.
-        error: Failure to describe or transport.
-        message: Text or diagnostic message to present or validate.
-
-    Returns:
-        None.
-    """
-    _LOGGER.error("%s: %s", area, message or "Operation failed", exc_info=error)
-
-
 def _running(pid: int) -> bool:
     """Avoid removing reports owned by another running application instance."""
     if sys.platform == "win32":
@@ -173,13 +157,6 @@ def initialize_error_reporting() -> Path | None:
     path = directory / f"error-report-{os.getpid()}.txt"
     try:
         directory.mkdir(parents=True, exist_ok=True)
-        for previous in directory.glob("error-report-*.txt"):
-            try:
-                pid = int(previous.stem.removeprefix("error-report-"))
-                if pid == os.getpid() or not _running(pid):
-                    previous.unlink(missing_ok=True)
-            except OSError, ValueError:
-                continue
         stream = path.open("w", encoding="utf-8", errors="backslashreplace")
         stream.write(
             f"Ride Forces Analyzer: {__version__}\n"
@@ -193,13 +170,21 @@ def initialize_error_reporting() -> Path | None:
             + "Local support report. Review personal data before sharing.\n\n",
         )
         stream.flush()
-    except OSError:
+    except OSError as error:
+        record_error("Initialize error report", error, context=f"Path: {path}")
         return None
     handler = _ReportHandler(stream)
     handler.setLevel(logging.WARNING)
     handler.setFormatter(_CompleteTraceback("%(asctime)s %(levelname)s %(name)s: %(message)s"))
     logging.getLogger("ride_forces_analyzer").addHandler(handler)
     _stream = stream
+    for previous in directory.glob("error-report-*.txt"):
+        try:
+            pid = int(previous.stem.removeprefix("error-report-"))
+            if pid != os.getpid() and not _running(pid):
+                previous.unlink(missing_ok=True)
+        except (OSError, ValueError) as error:
+            record_error("Remove completed error report", error, context=f"Path: {previous}")
     previous_exception = sys.excepthook
     previous_thread = threading.excepthook
     previous_unraisable = sys.unraisablehook
@@ -237,16 +222,16 @@ def initialize_error_reporting() -> Path | None:
                     context.category or "default",
                     message,
                 )
-        except Exception:
-            pass
+        except Exception as error:
+            record_error("Record Qt diagnostic", error)
         try:
             if previous_qt is not None:
                 previous_qt(kind, context, message)
             elif sys.stderr is not None:
                 sys.stderr.write(qFormatLogMessage(kind, context, message) + "\n")
                 sys.stderr.flush()
-        except Exception:
-            pass
+        except Exception as error:
+            record_error("Forward Qt diagnostic", error)
 
     previous_qt = qInstallMessageHandler(qt_message)
 
@@ -280,8 +265,8 @@ def initialize_error_reporting() -> Path | None:
     sys.unraisablehook = unraisable_hook
     try:
         faulthandler.enable(file=stream, all_threads=True)
-    except OSError, RuntimeError:
-        record_error("Native fault handler", message=traceback.format_exc())
+    except (OSError, RuntimeError) as error:
+        record_error("Native fault handler", error)
 
     def close() -> None:
         current_qt = qInstallMessageHandler(previous_qt)

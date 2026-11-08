@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QMessageBox, QStyle, QWidget
 
 from ride_forces_analyzer import __version__
 from ride_forces_analyzer.i18n import tr
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import record_error
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.runtime.updates import AvailableRelease, check_for_update
 

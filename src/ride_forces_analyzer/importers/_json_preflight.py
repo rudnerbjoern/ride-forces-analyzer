@@ -16,6 +16,7 @@ from ride_forces_analyzer.domain import SourceNumber
 
 from .diagnostics import ImportDiagnostic, Severity, json_pointer
 from .limits import ImportLimits
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 type JsonPath = tuple[str | int, ...]
 _NUMBER = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
@@ -214,7 +215,8 @@ def preflight(text: str, limits: ImportLimits) -> None:
                 _limit("max_number_length", path)
             try:
                 SourceNumber(match.group())
-            except ValueError, InvalidOperation:
+            except (ValueError, InvalidOperation) as error:
+                record_error("importers._json_preflight.preflight", error)
                 raise DecodeProblem(
                     "INVALID_JSON_NUMBER",
                     path,

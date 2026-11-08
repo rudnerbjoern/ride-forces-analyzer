@@ -28,6 +28,7 @@ from ride_forces_analyzer.analysis.calibration import (
 )
 from ride_forces_analyzer.analysis.recording import AnalysisConfiguration
 from ride_forces_analyzer.importers import ImportSuccess
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 _RECORDING_BOUNDS = TypeAdapter(tuple[int, int])
 
@@ -189,7 +190,12 @@ class Preferences:
                 _save_recording_bounds(connection, source.source_sha256, bounds)
                 _save_recording_calibration(connection, source.source_sha256, calibration)
             return True
-        except OSError, sqlite3.Error, ValueError:
+        except (OSError, sqlite3.Error, ValueError) as error:
+            record_error(
+                "storage.preferences.remember_recording_markers",
+                error,
+                context=f"Path: {self.path}",
+            )
             return False
 
     def recording_calibration(self, source_sha256: str) -> CalibrationOverrides | None:
@@ -212,7 +218,12 @@ class Preferences:
                     (identifier,),
                 ).fetchone()
             return CalibrationOverrides(*row) if row else None
-        except OSError, sqlite3.Error, ValueError, TypeError:
+        except (OSError, sqlite3.Error, ValueError, TypeError) as error:
+            record_error(
+                "storage.preferences.recording_calibration",
+                error,
+                context=f"Path: {self.path}",
+            )
             return None
 
     def remember_recording_calibration(
@@ -239,7 +250,12 @@ class Preferences:
             with closing(sqlite3.connect(self.path, timeout=0.1)) as connection, connection:
                 _save_recording_calibration(connection, identifier, calibration)
             return True
-        except OSError, sqlite3.Error, ValueError:
+        except (OSError, sqlite3.Error, ValueError) as error:
+            record_error(
+                "storage.preferences.remember_recording_calibration",
+                error,
+                context=f"Path: {self.path}",
+            )
             return False
 
     def recording_configuration(
@@ -274,7 +290,8 @@ class Preferences:
                     calibration,
                     calculation_time=calculation_time,
                 )
-            except CalibrationReferenceError:
+            except CalibrationReferenceError as error:
+                record_error("storage.preferences.recording_configuration", error)
                 calibration = None
         return replace(
             configuration,
@@ -301,7 +318,12 @@ class Preferences:
                     (identifier,),
                 ).fetchone()
             return _recording_bounds(tuple(row)) if row else None
-        except OSError, sqlite3.Error, ValueError:
+        except (OSError, sqlite3.Error, ValueError) as error:
+            record_error(
+                "storage.preferences.recording_bounds",
+                error,
+                context=f"Path: {self.path}",
+            )
             return None
 
     def remember_recording_bounds(
@@ -326,7 +348,12 @@ class Preferences:
             with closing(sqlite3.connect(self.path, timeout=0.1)) as connection, connection:
                 _save_recording_bounds(connection, identifier, bounds)
             return True
-        except OSError, sqlite3.Error, ValueError:
+        except (OSError, sqlite3.Error, ValueError) as error:
+            record_error(
+                "storage.preferences.remember_recording_bounds",
+                error,
+                context=f"Path: {self.path}",
+            )
             return False
 
     def __init__(self, path: Path | None = None) -> None:
@@ -391,7 +418,8 @@ class Preferences:
                 path = Path(value)
                 if path.is_absolute() and path.is_file():
                     return path
-            except OSError, ValueError:
+            except (OSError, ValueError) as error:
+                record_error("storage.preferences.last_recording", error)
                 pass
         return None
 
@@ -404,7 +432,9 @@ class Preferences:
         value = self._read("last_library_recording_sha256")
         try:
             return _recording_hash(value)
-        except ValueError:
+        except ValueError as error:
+            if value:
+                record_error("storage.preferences.last_library_recording", error)
             pass
         return None
 
@@ -423,7 +453,8 @@ class Preferences:
         value = self._read(key)
         try:
             return value if value and Path(value).is_dir() else ""
-        except OSError, ValueError:
+        except (OSError, ValueError) as error:
+            record_error("storage.preferences._directory", error)
             return ""
 
     def language(self, default: Language = Language.ENGLISH) -> Language:
@@ -454,7 +485,9 @@ class Preferences:
         value = self._read("appearance")
         try:
             return Appearance(value)
-        except ValueError:
+        except ValueError as error:
+            if value:
+                record_error("storage.preferences.appearance", error)
             return Appearance.SYSTEM
 
     def remember_language(self, value: Language) -> None:
@@ -494,7 +527,8 @@ class Preferences:
             return DEFAULT_LIBRARY_VIDEO_LABELS
         try:
             return _VIDEO_LABELS.validate_json(value, strict=True)
-        except ValueError:
+        except ValueError as error:
+            record_error("storage.preferences.library_video_labels", error)
             return ()
 
     def remember_library_video_labels(self, labels: tuple[str, ...]) -> bool:
@@ -523,7 +557,8 @@ class Preferences:
         value = self._read("export_fps")
         try:
             return StandardFrameRate(value)
-        except ValueError:
+        except ValueError as error:
+            record_error("storage.preferences.export_fps", error)
             return DEFAULT_FRAME_RATE
 
     def remember_export_fps(self, value: FrameRate) -> None:
@@ -542,7 +577,8 @@ class Preferences:
             raise ValueError("Unsupported default export frame rate")
         try:
             rate = StandardFrameRate(str(value))
-        except ValueError:
+        except ValueError as error:
+            record_error("storage.preferences.remember_export_fps", error)
             raise ValueError("Unsupported default export frame rate") from None
         self._write("export_fps", rate.value)
 
@@ -557,7 +593,9 @@ class Preferences:
         value = self._read("render_jobs")
         try:
             return effective_render_jobs(int(value))
-        except ValueError:
+        except ValueError as error:
+            if value:
+                record_error("storage.preferences.render_jobs", error)
             return 1
 
     def remember_render_jobs(self, value: int) -> None:
@@ -627,7 +665,8 @@ class Preferences:
             return False
         try:
             last = float(self._read("update_checked_at"))
-        except ValueError:
+        except ValueError as error:
+            record_error("storage.preferences.update_check_due", error)
             return True
         return not isfinite(last) or now < last or now - last >= 86400
 
@@ -671,7 +710,8 @@ class Preferences:
                     (key,),
                 ).fetchone()
             return row[0] if row and isinstance(row[0], str) else ""
-        except OSError, sqlite3.Error, ValueError:
+        except (OSError, sqlite3.Error, ValueError) as error:
+            record_error("storage.preferences._read", error, context=f"Path: {self.path}")
             return ""
 
     def remember_recording(self, path: Path) -> None:
@@ -706,7 +746,8 @@ class Preferences:
             self._write(key, str(directory))
             if key == "recording_directory":
                 self._write("last_recording_path", str(resolved))
-        except OSError, ValueError:
+        except (OSError, ValueError) as error:
+            record_error("storage.preferences._remember", error, context=f"Path: {path}")
             return
 
     def _write(self, key: PreferenceKey, value: str) -> bool:
@@ -721,6 +762,7 @@ class Preferences:
                     (key, value),
                 )
             return True
-        except OSError, sqlite3.Error, ValueError:
+        except (OSError, sqlite3.Error, ValueError) as error:
             # Optional preferences must never prevent opening a recording.
+            record_error("storage.preferences._write", error, context=f"Path: {self.path}")
             return False

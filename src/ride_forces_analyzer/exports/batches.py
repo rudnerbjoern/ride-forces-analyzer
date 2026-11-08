@@ -34,7 +34,7 @@ from ride_forces_analyzer.importers import (
     import_forces,
     import_forces_bytes,
 )
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import record_error
 from ride_forces_analyzer.storage.export_models import BatchJob, RangeMode, SavedBatch, SavedPreset
 from ride_forces_analyzer.explorer.library import import_recording
 from ride_forces_analyzer.storage.library import LibraryStore, LibraryStoreError
@@ -184,6 +184,7 @@ def build_jobs(
         try:
             data = import_recording(path)
         except LibraryStoreError as error:
+            record_error("exports.batches.build_jobs", error)
             raise ValueError(str(error)) from error
         if isinstance(data, ImportFailure) or data.analysis is None:
             raise ValueError("Prepared recording analysis is unavailable")
@@ -299,7 +300,8 @@ def _planned_frame_counts(batches: Sequence[SavedBatch], cancelled: Event) -> tu
                         if isinstance(source, ImportSuccess)
                         else None
                     )
-                except OSError, ValueError, LibraryStoreError:
+                except (OSError, ValueError, LibraryStoreError) as error:
+                    record_error("exports.batches._planned_frame_counts", error)
                     rates[key] = None
             rate = rates.get(key)
             counts.append(

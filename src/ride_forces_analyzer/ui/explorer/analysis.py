@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass, replace
 from collections.abc import Callable
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import error_message, record_error
 
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, Qt, Signal, Slot
 
@@ -26,7 +26,6 @@ from ride_forces_analyzer.analysis.service import (
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.explorer.library import LibraryArchive
-from ride_forces_analyzer.i18n import diagnostic_message
 from datetime import UTC, datetime
 
 
@@ -126,7 +125,7 @@ class _SmoothingWorker(QRunnable):
         except Exception as error:
             record_error("Analysis worker", error)
             if binding.active:
-                self.report(_WorkerFailure(binding, self.generation, str(error)))
+                self.report(_WorkerFailure(binding, self.generation, error_message(error)))
 
 
 @dataclass(frozen=True, slots=True)
@@ -327,7 +326,7 @@ class AnalysisController(QObject):
             if state.status is RequestStatus.FAILED:
                 binding.save_markers = False
                 self._set_pending(False)
-                self.failed.emit(diagnostic_message(value.failure.code, value.failure.message))
+                self.failed.emit(error_message(value.failure.message))
             return
         snapshot = value.snapshot
         if (

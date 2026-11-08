@@ -31,6 +31,7 @@ from ride_forces_analyzer.ui.presentation.translation import bind, button_text, 
 from ride_forces_analyzer.ui.presentation.updates import UpdateController
 from .library_labels import LibraryLabelsEditor
 from .library_transfer import LibraryTransferControls
+from ride_forces_analyzer.runtime.error_logging import error_message, record_error
 
 APPEARANCE_CHOICES = tuple(Appearance)
 
@@ -357,7 +358,8 @@ class SettingsDialog(QDialog):
         try:
             saved = self.preferences.remember_library_video_labels(self.library_labels.labels())
         except ValueError as error:
-            self.library_error.setText(tr(str(error)))
+            record_error("ui.dialogs.settings.save", error)
+            self.library_error.setText(error_message(error))
             self.library_error.show()
             return
         if not saved:

@@ -15,6 +15,7 @@ from pydantic import ValidationError
 
 from .export_models import SavedBatch, SavedPreset, BatchJob
 from ride_forces_analyzer.runtime.paths import data_directory
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 
 def default_database_path() -> Path:
@@ -79,10 +80,12 @@ class ExportStore:
             finally:
                 connection.close()
         except sqlite3.IntegrityError as error:
+            record_error("storage.exports._connection", error, context=f"Path: {self.path}")
             raise ExportStoreError(
                 "This name already exists. Choose a new name or update the selected item.",
             ) from error
         except (sqlite3.Error, OSError, ValidationError) as error:
+            record_error("storage.exports._connection", error, context=f"Path: {self.path}")
             raise ExportStoreError(f"Export database: {error}") from error
 
     def presets(self) -> tuple[SavedPreset, ...]:

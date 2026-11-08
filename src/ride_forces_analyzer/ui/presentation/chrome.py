@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 )
 
 from ride_forces_analyzer.ui.presentation.icons import ICON_SIZES, render_icon
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 
 class AccessKeyStyle(QProxyStyle):
@@ -188,6 +189,7 @@ def style_native_caption(window_id: int, *, palette: QPalette) -> None:
         for attribute, value in attributes:
             setting = wintypes.DWORD(value)
             setter(window_id, attribute, ctypes.byref(setting), ctypes.sizeof(setting))
-    except OSError:
+    except OSError as error:
         # Cosmetic integration must never prevent opening a recording.
+        record_error("ui.presentation.chrome.style_native_caption", error)
         return

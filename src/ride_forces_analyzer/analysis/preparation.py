@@ -57,6 +57,7 @@ from .recording import (
     VerticalContext,
     validate_configuration,
 )
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 
 def source_app_configuration() -> AnalysisConfiguration:
@@ -238,7 +239,11 @@ def _prepare_analysis(
             try:
                 raw = project_directions(motion.acceleration, (vertical, lateral, longitudinal))
             except ValueError as error:
-                projection_availability = _unavailable("PROJECTION_UNAVAILABLE", str(error))
+                record_error("analysis.preparation._prepare_analysis", error)
+                projection_availability = _unavailable(
+                    "PROJECTION_UNAVAILABLE",
+                    str(error),
+                )
         projected = ProjectedForces(
             source,
             time,
@@ -277,12 +282,14 @@ def _prepare_analysis(
                     for axis in channels
                 )
             except ValueError as error:
+                record_error("analysis.preparation._prepare_analysis", error)
                 filtered = None
                 smoothing_availability = _unavailable("SMOOTHING_UNAVAILABLE", str(error))
         if filtered is not None:
             try:
                 combined_values = combined_force(motion.acceleration, window)
-            except ValueError:
+            except ValueError as error:
+                record_error("analysis.preparation._prepare_analysis", error)
                 combined_values = (None,) * len(motion.acceleration)
         combined_diagnostics = tuple(
             AnalysisDiagnostic(

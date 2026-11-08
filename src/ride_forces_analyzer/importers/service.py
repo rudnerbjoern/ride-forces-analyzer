@@ -14,6 +14,7 @@ from .limits import DEFAULT_LIMITS, ImportLimits
 from .motion import validate_motion
 from .optional import validate_optional_data
 from .result import ImportFailure, ImportResult, ImportSuccess
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 
 def _complete(decoded: DecodeResult, limits: ImportLimits) -> ImportResult:
@@ -28,7 +29,8 @@ def _complete(decoded: DecodeResult, limits: ImportLimits) -> ImportResult:
         optional = validate_optional_data(source, diagnostics)
         if isinstance(optional, ImportFailure):
             return optional
-    except DiagnosticBudgetExceeded:
+    except DiagnosticBudgetExceeded as error:
+        record_error("importers.service._complete", error)
         return diagnostics.failure(source)
     recording = Recording(
         decoded.schema_version,

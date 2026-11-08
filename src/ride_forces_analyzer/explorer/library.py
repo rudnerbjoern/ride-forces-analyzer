@@ -37,6 +37,7 @@ from ride_forces_analyzer.validation.checks import validate_sample_range
 from .loading import present_recording
 from .model import ExplorerData
 from .text import failure_text, metadata_fields
+from ride_forces_analyzer.runtime.error_logging import error_message, record_error
 
 
 def recording_clock(entry: LibraryEntry) -> str:
@@ -56,7 +57,8 @@ def recording_clock(entry: LibraryEntry) -> str:
             return "—"
         zone = ZoneInfo(entry.day_timezone) if entry.day_timezone else UTC
         return instant.astimezone(zone).strftime("%H:%M:%S")
-    except ValueError, OverflowError, ZoneInfoNotFoundError:
+    except (ValueError, OverflowError, ZoneInfoNotFoundError) as error:
+        record_error("explorer.library.recording_clock", error)
         return "—"
 
 
@@ -76,7 +78,8 @@ def _display_datetime(value: str, *, local: bool = False) -> str:
             instant = instant.astimezone()
         pattern = {"de": "%d.%m.%Y", "fr": "%d/%m/%Y"}.get(get_language(), "%Y-%m-%d")
         return instant.strftime(f"{pattern} %H:%M")
-    except ValueError, OverflowError:
+    except (ValueError, OverflowError) as error:
+        record_error("explorer.library._display_datetime", error)
         return "—"
 
 
@@ -235,7 +238,9 @@ class LibraryArchive:
             try:
                 source = import_forces(path)
                 if isinstance(source, ImportFailure):
-                    results.append(ArchiveImportResult(path, "failed", error=failure_text(source)))
+                    results.append(
+                        ArchiveImportResult(path, "failed", error=failure_text(source, path=path)),
+                    )
                     continue
                 indices = source.recording.indices
                 bounds = self.preferences.recording_bounds(source.source_sha256)
@@ -250,7 +255,8 @@ class LibraryArchive:
                         calibration,
                         calculation_time=datetime.now(UTC),
                     )
-                except CalibrationReferenceError:
+                except CalibrationReferenceError as error:
+                    record_error("explorer.library.import_paths", error)
                     calibration = CalibrationOverrides()
                 status, digest = self.store.archive(source, path.name, bounds, calibration)
                 uuid = recording_uuid(source.recording)
@@ -270,7 +276,8 @@ class LibraryArchive:
                     ),
                 )
             except (LibraryStoreError, OSError, ValueError) as error:
-                results.append(ArchiveImportResult(path, "failed", error=str(error)))
+                record_error("explorer.library.import_paths", error, context=f"Path: {path}")
+                results.append(ArchiveImportResult(path, "failed", error=error_message(error)))
         return tuple(results)
 
     def reopen(self, source_sha256: str) -> ExplorerData | ImportFailure:
@@ -300,6 +307,7 @@ class LibraryArchive:
             )
             validate_calibration_references(source, archived.calibration, calculation_time=now)
         except (ValueError, TypeError) as error:
+            record_error("explorer.library.reopen", error)
             raise LibraryStoreError("Invalid archived recording markers") from error
         data = present_recording(source)
         if data.analysis is not None:
@@ -379,7 +387,8 @@ class LibraryArchive:
         try:
             if self.store.update_markers(source, bounds, calibration):
                 return True
-        except LibraryStoreError:
+        except LibraryStoreError as error:
+            record_error("explorer.library.remember_recording_markers", error)
             return False
         return self.preferences.remember_recording_markers(source, bounds, calibration)
 
@@ -424,7 +433,8 @@ def recording_filename(source: ImportSuccess, fallback: str = "recording") -> st
         return path.name
     try:
         return LibraryStore().filename(source.source_sha256) or fallback
-    except LibraryStoreError:
+    except LibraryStoreError as error:
+        record_error("explorer.library.recording_filename", error)
         return fallback
 
 

@@ -1,5 +1,7 @@
 """Native Qt worker transport, UI-thread guards and snapshot presentation."""
 
+# cspell:words caplog
+
 from datetime import datetime
 from pathlib import Path
 from threading import Event
@@ -166,6 +168,7 @@ def test_analysis_failure_keeps_previous_values_and_recovers(
 def test_unexpected_worker_failure_clears_pending_and_preserves_view(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     window = explorer_window
     open_source(window, synthetic_source(), monkeypatch)
@@ -179,7 +182,9 @@ def test_unexpected_worker_failure_clears_pending_and_preserves_view(
     controller.request_smoothing(5)
     wait_until(lambda: not controller.pending)
     assert window.data is old
-    assert "Worker transport failed" in window.statusBar().currentMessage()
+    assert "error report" in window.statusBar().currentMessage()
+    assert "Worker transport failed" not in window.statusBar().currentMessage()
+    assert "RuntimeError: Worker transport failed" in caplog.text
 
 
 @pytest.mark.parametrize("failure", (False, True))

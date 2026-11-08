@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 from ride_forces_analyzer.i18n import tr
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import error_message, record_error
 
 # cspell:words pixmap Deutsch
 
@@ -115,7 +115,7 @@ class PreviewWorker(QRunnable):
             )
         except Exception as error:
             record_error("Export preview", error)
-            self.signals.failed.emit(self.revision, str(error))
+            self.signals.failed.emit(self.revision, error_message(error))
         else:
             self.signals.ready.emit(self.revision, result)
 
@@ -244,7 +244,7 @@ class ExportWorker(QRunnable):
             record_error("Video export", error)
             attempt.finish("failed", gpu=gpu, error=str(error))
             self.signals.failed.emit(
-                self._history_message(tr("Export failed: {0}", error), attempt),
+                self._history_message(tr("Export failed: {0}", error_message(error)), attempt),
             )
         else:
             attempt.finish("completed", output=path, gpu=gpu)
@@ -253,7 +253,7 @@ class ExportWorker(QRunnable):
 
     def _history_message(self, message: str, attempt: ExportAttempt) -> str:
         return (
-            f"{message}\n{tr('Export history could not be saved: {0}', attempt.warning)}"
+            f"{message}\n{tr('Export history could not be saved: {0}', error_message(attempt.warning))}"
             if attempt.warning
             else message
         )

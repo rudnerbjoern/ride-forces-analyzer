@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words Pixmap
 
 from ride_forces_analyzer.i18n import tr
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import record_error
 from ride_forces_analyzer.ui.presentation.translation import bind, button_text
 from ride_forces_analyzer.ui.presentation.icons import gps_overview_icon
 
@@ -103,10 +103,10 @@ class MapWorker(QRunnable):
                 else load_background(self.request, self.cancelled)
             )
         except Exception as error:
+            record_error("Map background worker", error)
             if self.cache_only:
                 self.signals.completed.emit(self.revision, None)
                 return
-            record_error("Map background worker", error)
             self.signals.failed.emit(self.revision)
         else:
             self.signals.completed.emit(self.revision, result)
@@ -239,7 +239,8 @@ class GpsDialog(QDialog):
                 (bounds.x(), bounds.y(), bounds.width(), bounds.height()),
                 (round(viewport.width() * density), round(viewport.height() * density)),
             )
-        except MapError:
+        except MapError as error:
+            record_error("ui.dialogs.gps._start_map", error)
             self.map_failed(self.revision)
             return
         self.revision += 1

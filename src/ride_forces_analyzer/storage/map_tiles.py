@@ -12,6 +12,7 @@ import sqlite3
 from time import time
 
 from ride_forces_analyzer.runtime.paths import data_directory
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 MAX_CACHE_BYTES = 100 * 1024 * 1024
 
@@ -105,7 +106,8 @@ class TileCache:
                     (time(), *key),
                 )
                 return TileEntry(*row)
-        except OSError, sqlite3.Error:
+        except (OSError, sqlite3.Error) as error:
+            record_error("storage.map_tiles.get", error, context=f"Path: {self.path}")
             return None
 
     def put(self, provider: str, zoom: int, x: int, y: int, entry: TileEntry) -> None:
@@ -150,7 +152,8 @@ class TileCache:
                         total -= size
                         if total <= self.max_bytes:
                             break
-        except OSError, sqlite3.Error:
+        except (OSError, sqlite3.Error) as error:
+            record_error("storage.map_tiles.put", error, context=f"Path: {self.path}")
             pass
 
     def delete(self, provider: str, zoom: int, x: int, y: int) -> None:
@@ -171,7 +174,8 @@ class TileCache:
                     "DELETE FROM tiles WHERE provider=? AND zoom=? AND x=? AND y=?",
                     (provider, zoom, x, y),
                 )
-        except OSError, sqlite3.Error:
+        except (OSError, sqlite3.Error) as error:
+            record_error("storage.map_tiles.delete", error, context=f"Path: {self.path}")
             pass
 
     def count(self) -> int | None:
@@ -184,7 +188,8 @@ class TileCache:
             with self._connection() as connection:
                 row = connection.execute("SELECT COUNT(*) FROM tiles").fetchone()
                 return int(row[0])
-        except OSError, sqlite3.Error:
+        except (OSError, sqlite3.Error) as error:
+            record_error("storage.map_tiles.count", error, context=f"Path: {self.path}")
             return None
 
     def clear(self) -> bool:
@@ -197,5 +202,6 @@ class TileCache:
             with self._connection() as connection:
                 connection.execute("DELETE FROM tiles")
             return True
-        except OSError, sqlite3.Error:
+        except (OSError, sqlite3.Error) as error:
+            record_error("storage.map_tiles.clear", error, context=f"Path: {self.path}")
             return False

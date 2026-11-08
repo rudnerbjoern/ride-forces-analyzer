@@ -19,7 +19,7 @@ from ride_forces_analyzer.exports.validation import validate_export
 from ride_forces_analyzer.storage.library_history import ExportRequest
 from ride_forces_analyzer.exports.json import JsonExportCancelled, export_json, export_analyzer_json
 from ride_forces_analyzer.i18n import tr
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import error_message, record_error
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.ui.presentation.translation import bind
 
@@ -117,12 +117,14 @@ class DataWorker(QRunnable):
         except Exception as error:
             record_error("Data export", error)
             attempt.finish("failed", error=str(error))
-            self.signals.failed.emit(str(error))
+            self.signals.failed.emit(error_message(error))
         else:
             attempt.finish("completed", output=self.path)
             self.signals.completed.emit(self.path)
         if attempt.warning:
-            self.signals.warning.emit(tr("Export history could not be saved: {0}", attempt.warning))
+            self.signals.warning.emit(
+                tr("Export history could not be saved: {0}", error_message(attempt.warning)),
+            )
 
 
 class DataExportDialog(QProgressDialog):

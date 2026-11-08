@@ -12,6 +12,7 @@ from PySide6.QtCore import qVersion
 from ride_forces_analyzer import __version__
 from ride_forces_analyzer.runtime.cpu_resources import detect_cpu_resources
 from ride_forces_analyzer.rendering.encoding import encoder_environment, find_ffmpeg
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 
 def collect_diagnostics() -> str:
@@ -34,7 +35,8 @@ def collect_diagnostics() -> str:
     fields.update(detect_cpu_resources().diagnostic_fields())
     try:
         executable = find_ffmpeg()
-    except ValueError:
+    except ValueError as error:
+        record_error("runtime.diagnostics.collect_diagnostics", error)
         fields["FFmpeg"] = "Not found"
     else:
         try:
@@ -49,11 +51,17 @@ def collect_diagnostics() -> str:
                 creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
             )
             if result.returncode != 0:
+                record_error(
+                    "FFmpeg diagnostics",
+                    message=result.stdout + result.stderr,
+                    context=f"Executable: {executable}; exit status: {result.returncode}",
+                )
                 fields["FFmpeg"] = "Check failed"
             else:
                 fields["FFmpeg"] = "Available"
                 version = re.search(r"^ffmpeg version n?(\d+(?:\.\d+){0,3})", result.stdout)
                 fields["FFmpeg version"] = version.group(1) if version else "Unknown"
-        except OSError, subprocess.SubprocessError:
+        except (OSError, subprocess.SubprocessError) as error:
+            record_error("runtime.diagnostics.collect_diagnostics", error)
             fields["FFmpeg"] = "Check failed"
     return "\n".join(f"{key}: {value}" for key, value in fields.items())

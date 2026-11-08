@@ -35,6 +35,7 @@ from .models import (
     UnitAssignment,
     UnitLabel,
 )
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 
 class DeviceAccelerationUnit(StrEnum):
@@ -343,6 +344,7 @@ def analyze_device_vectors(
         try:
             channel = replace(channel, samples=convert_device_vectors(source_samples, contract))
         except ValueError as error:
+            record_error("analysis.device.analyze_device_vectors", error)
             for name, quantity in (
                 (identifier, contract.quantity),
                 (f"{identifier}-norm", QuantityKind.DEVICE_VECTOR_MAGNITUDE),
@@ -357,13 +359,19 @@ def analyze_device_vectors(
                     ),
                 )
                 diagnostics.append(
-                    AnalysisDiagnostic("UNIT_CONVERSION_RANGE", Severity.ERROR, str(error), name),
+                    AnalysisDiagnostic(
+                        "UNIT_CONVERSION_RANGE",
+                        Severity.ERROR,
+                        str(error),
+                        name,
+                    ),
                 )
             continue
         channels.append(channel)
         try:
             channels.append(device_vector_norm(channel))
         except ValueError as error:
+            record_error("analysis.device.analyze_device_vectors", error)
             name = f"{identifier}-norm"
             channels.append(
                 AnalysisChannel(

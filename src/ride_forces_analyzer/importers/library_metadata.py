@@ -12,6 +12,7 @@ from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from ride_forces_analyzer.domain import Recording, RecordingFormat, SourceNumber
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 _APP_EPOCH = datetime(2001, 1, 1, tzinfo=UTC)
 
@@ -27,7 +28,9 @@ def recording_uuid(recording: Recording) -> str | None:
     """
     try:
         value = UUID(recording.metadata.uuid or "")
-    except ValueError:
+    except ValueError as error:
+        if recording.metadata.uuid:
+            record_error("importers.library_metadata.recording_uuid", error)
         return None
     return str(value) if value.int else None
 
@@ -81,17 +84,20 @@ def project_library_metadata(recording: Recording) -> LibraryMetadata:
                 seconds = int(value)
                 microseconds = int(((value - seconds) * 1_000_000).to_integral_value())
                 utc = _APP_EPOCH + timedelta(seconds=seconds, microseconds=microseconds)
-            except OverflowError:
+            except OverflowError as error:
+                record_error("importers.library_metadata.project_library_metadata", error)
                 pass
             else:
                 instant = utc.isoformat(timespec="microseconds").replace("+00:00", "Z")
                 try:
                     zone = ZoneInfo(metadata.timezone) if metadata.timezone else UTC
-                except ZoneInfoNotFoundError, ValueError:
+                except (ZoneInfoNotFoundError, ValueError) as error:
+                    record_error("importers.library_metadata.project_library_metadata", error)
                     zone = UTC
                 try:
                     day = utc.astimezone(zone).date().isoformat()
-                except OverflowError, ValueError:
+                except (OverflowError, ValueError) as error:
+                    record_error("importers.library_metadata.project_library_metadata", error)
                     zone = UTC
                     day = utc.date().isoformat()
                 day_timezone = zone.key if isinstance(zone, ZoneInfo) else "UTC"
