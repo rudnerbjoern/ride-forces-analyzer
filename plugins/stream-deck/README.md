@@ -34,10 +34,11 @@ command creates no Git commit or tag. Repeated builds do not change versions.
 Every build checks manifest/lock consistency. Version progression compares code/data
 against the preceding reachable app release tag (`vMAJOR.MINOR.PATCH`, including
 the app's alpha/beta/release-candidate suffixes), rather than individual commits.
-Changed source assets, device/profile/build definitions, shared Node inputs or the
-license require a version higher than at that release. Further development commits
-can reuse that upcoming version. Documentation/tests alone and app-only releases
-need no bump. Before the first release containing the plugin, no earlier plugin
+Changed source assets, device/profile/build definitions, Node runtime dependencies,
+the shared Node version or the license require a version higher than at that release.
+Further development commits can reuse that upcoming version. Marketplace material,
+documentation/tests, the version validator itself, root development-only dependency
+changes and app-only releases need no bump. Before the first release containing the plugin, no earlier plugin
 version is imposed. Clean tagged release builds compare against the preceding tag;
 tagging HEAD cannot conceal an omitted increase. Full Git history and release tags
 are required; no GitHub request or additional plugin tag is needed.

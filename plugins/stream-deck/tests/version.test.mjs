@@ -29,7 +29,15 @@ test("development commits share one version while release tags require an increa
 	};
 	const metadata = (version) => {
 		write("plugins/stream-deck/package.json", JSON.stringify({ version }));
-		write("package-lock.json", JSON.stringify({ packages: { "plugins/stream-deck": { version } } }));
+		write(
+			"package-lock.json",
+			JSON.stringify({
+				packages: {
+					"plugins/stream-deck": { version },
+					"node_modules/ws": { version: "8.22.1", integrity: "runtime-content" },
+				},
+			}),
+		);
 		syncVersion(root);
 	};
 	const commit = () => {
@@ -52,6 +60,30 @@ test("development commits share one version while release tags require an increa
 		git("tag", "v1.0.0");
 		assert.equal(verifyVersion(root), "0.1.0.0");
 		assert.deepEqual(JSON.parse(readFileSync(path.join(root, manifestPath))).Nodejs, { Version: "24" });
+		write("plugins/stream-deck/marketplace/media/thumbnail.png", "Marketplace image");
+		write("plugins/stream-deck/marketplace/design/background-prompt.txt", "Marketplace prompt");
+		write("plugins/stream-deck/scripts/version.mjs", "// Version validation only");
+		write("package.json", JSON.stringify({ overrides: { minimatch: "11.0.1" } }));
+		const lock = JSON.parse(readFileSync(path.join(root, "package-lock.json"), "utf8"));
+		lock.packages["node_modules/minimatch"] = { version: "11.0.1", dev: true };
+		write("package-lock.json", JSON.stringify(lock));
+		assert.equal(verifyVersion(root), "0.1.0.0");
+		commit();
+		assert.equal(verifyVersion(root), "0.1.0.0");
+		for (const dependency of [
+			{ version: "8.23.0", integrity: "runtime-content" },
+			{ version: "8.22.1", integrity: "changed-runtime-content" },
+		]) {
+			write(
+				"package-lock.json",
+				JSON.stringify({
+					...lock,
+					packages: { ...lock.packages, "node_modules/ws": dependency },
+				}),
+			);
+			assert.throws(() => verifyVersion(root), /without a version increase/);
+		}
+		write("package-lock.json", JSON.stringify(lock));
 		write("plugins/stream-deck/src/example.ts", "changed again");
 		commit();
 		assert.throws(() => verifyVersion(root), /without a version increase/);
