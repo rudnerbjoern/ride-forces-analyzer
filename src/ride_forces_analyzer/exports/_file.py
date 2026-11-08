@@ -9,6 +9,7 @@ from contextlib import contextmanager, ExitStack
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TextIO
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 
 @contextmanager
@@ -55,7 +56,8 @@ def export_file(
                 yield stream
             if overwrite:
                 destination.replace(path)
-        except BaseException:
+        except BaseException as error:
+            record_error("exports._file.export_file", error, context=f"Path: {path}")
             if created:
                 destination.unlink(missing_ok=True)
             raise

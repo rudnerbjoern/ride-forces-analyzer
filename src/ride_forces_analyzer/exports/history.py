@@ -16,7 +16,7 @@ from ride_forces_analyzer.explorer.loading import present_recording
 from ride_forces_analyzer.explorer.model import ExplorerData
 from ride_forces_analyzer.importers import ImportSuccess, import_forces_bytes
 from ride_forces_analyzer.rendering.model import ExportSnapshot, prepare_export
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import record_error
 from ride_forces_analyzer.storage.library import LibraryStoreError
 from ride_forces_analyzer.storage.library_history import ExportRequest, HistoryEntry, LibraryHistory
 

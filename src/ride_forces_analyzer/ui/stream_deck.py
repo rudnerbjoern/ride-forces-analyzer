@@ -26,7 +26,7 @@ from PySide6.QtWidgets import (
 
 from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.runtime import control_contract as wire
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import error_message, record_error
 from ride_forces_analyzer.runtime.stream_deck import ControlServer
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
@@ -162,7 +162,9 @@ class StreamDeckController(QObject):
             record_error("Stream Deck", error)
             window = self._active_window()
             if window is not None:
-                window.statusBar().showMessage(tr("Could not enable Stream Deck: {0}", str(error)))
+                window.statusBar().showMessage(
+                    tr("Could not enable Stream Deck: {0}", error_message(error)),
+                )
 
     @Slot()
     def close(self) -> None:
@@ -515,7 +517,8 @@ class StreamDeckController(QObject):
             return
         try:
             command = wire.parse_command(payload)
-        except ValidationError:
+        except ValidationError as error:
+            record_error("ui.stream_deck._receive", error)
             code: wire.ErrorCode = "command.invalid"
             request_id: str | None = None
             target: wire.Target | None = None
@@ -533,9 +536,11 @@ class StreamDeckController(QObject):
                         request_id = raw_id
                     try:
                         target = wire.Target.model_validate(envelope.get("target"))
-                    except ValidationError:
+                    except ValidationError as error:
+                        record_error("ui.stream_deck._receive", error)
                         pass
-            except ValueError:
+            except ValueError as error:
+                record_error("ui.stream_deck._receive", error)
                 pass
             self.transport.reply(
                 sender,

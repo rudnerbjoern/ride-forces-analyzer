@@ -90,7 +90,7 @@ def present_recording(
             reason = analysis.forces.smoothed.availability.reason
             calibration_error = reason.message if reason is not None else None
     else:
-        calibration_error = tr("The optional NumPy analysis package is not installed")
+        calibration_error = "The optional NumPy analysis package is not installed"
     notes = import_notes(source, calibration_error)
     return ExplorerData(
         source,

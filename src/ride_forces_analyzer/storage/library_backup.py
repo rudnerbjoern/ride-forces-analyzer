@@ -45,6 +45,7 @@ from .library import LibraryStore, LibraryStoreError
 from .library_search import library_search_values
 from .library_history import LibraryHistory
 from .preferences import DEFAULT_LIBRARY_VIDEO_LABELS, Preferences
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 _MEMBERS = {"manifest.json", "recordings.jsonl", "exports.jsonl", "video_links.jsonl"}
 _TABLES = ("recordings", "export_history", "video_links")
@@ -111,6 +112,7 @@ def _object(raw: bytes, limits: BackupLimits) -> dict[str, Any]:
         )
         result = json.loads(text)
     except (DecodeProblem, RecursionError, ValueError) as error:
+        record_error("storage.library_backup._object", error)
         raise LibraryBackupError("Invalid Library backup JSON") from error
     if not isinstance(result, dict):
         raise LibraryBackupError("Library metadata must be a JSON object")
@@ -299,6 +301,7 @@ class LibraryBackup:
             ):
                 source.backup(target, pages=256, progress=progress)
         except sqlite3.Error as error:
+            record_error("storage.library_backup._snapshot", error)
             raise LibraryStoreError(f"Library snapshot: {error}") from error
 
     def _publish_new(self, staged: Path, destination: Path, cancelled: Callable[[], bool]) -> None:
@@ -306,6 +309,7 @@ class LibraryBackup:
             os.link(staged, destination)
             return
         except OSError as error:
+            record_error("storage.library_backup._publish_new", error)
             if error.errno not in (errno.EXDEV, errno.EPERM, errno.ENOTSUP):
                 raise
         created = False
@@ -315,7 +319,8 @@ class LibraryBackup:
                 while block := source.read(1024 * 1024):
                     _cancel(cancelled)
                     target.write(block)
-        except BaseException:
+        except BaseException as error:
+            record_error("storage.library_backup._publish_new", error)
             if created:
                 destination.unlink(missing_ok=True)
             raise
@@ -385,7 +390,8 @@ class LibraryBackup:
                         raise LibraryBackupError("Library backup counts do not match its contents")
                 _cancel(cancelled)
                 self._replace(candidate, labels, cancelled)
-        except LibraryBackupError:
+        except LibraryBackupError as error:
+            record_error("storage.library_backup.restore", error)
             raise
         except (
             BadZipFile,
@@ -396,6 +402,7 @@ class LibraryBackup:
             sqlite3.Error,
             UnicodeError,
         ) as error:
+            record_error("storage.library_backup.restore", error)
             raise LibraryBackupError(f"Invalid Library backup: {error}") from error
 
     def _members(self, archive: ZipFile) -> dict[str, ZipInfo]:

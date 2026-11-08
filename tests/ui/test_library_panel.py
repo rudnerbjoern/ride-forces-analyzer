@@ -1,6 +1,6 @@
 """Native Library interactions, explicit archive import and preserved chart state."""
 
-# cspell:words Seaworld Uhrzeit Heure Importiert Importé Keine passenden Aufnahmen Tous Aucun enregistrement correspondant Metadaten bearbeiten métadonnées Abgeschlossen Terminé
+# cspell:words Seaworld Uhrzeit Heure Importiert Importé Keine passenden Aufnahmen Tous Aucun enregistrement correspondant Metadaten bearbeiten métadonnées Abgeschlossen Terminé caplog
 
 from pathlib import Path
 import json
@@ -80,6 +80,7 @@ def test_library_toggle_preserves_workspace_and_recording(
     explorer_window: ExplorerWindow,
     export_directory: Path,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     window = explorer_window
     assert not window.library.toggle_button.isChecked()
@@ -524,7 +525,9 @@ def test_library_toggle_preserves_workspace_and_recording(
     assert (window.plot.axis_x.min(), window.plot.axis_x.max()) == pytest.approx((60, 100))
     assert window.navigation.position.value() == 4000
     assert (window.inspector.first.value(), window.inspector.last.value()) == (3000, 6000)
-    assert "integrity" in " ".join(window.library.details.toPlainText().split())
+    assert "error report" in window.library.details.toPlainText()
+    assert "integrity" not in window.library.details.toPlainText()
+    assert "integrity" in caplog.text
     assert "Could not open archived recording" in window.statusBar().currentMessage()
     assert not window.library.edit_action.isEnabled()
     window.library.toggle_button.click()

@@ -31,6 +31,7 @@ from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.ui.exports.data_controller import DataExportController
 from ride_forces_analyzer.ui.exports.video import ExportDialog
 from ride_forces_analyzer.ui.presentation.translation import bind, button_text
+from ride_forces_analyzer.runtime.error_logging import error_message, record_error
 
 
 class _RepeatSignals(QObject):
@@ -71,7 +72,8 @@ class _RepeatWorker(QRunnable):
         try:
             result = prepare_repeat(self.entry, self.history)
         except Exception as error:
-            self.signals.failed.emit(str(error))
+            record_error("ui.explorer.library_exports.run", error)
+            self.signals.failed.emit(error_message(error))
         else:
             self.signals.ready.emit(result)
 
@@ -146,7 +148,8 @@ class LibraryExportsDialog(QDialog):
         try:
             entries = self.history.entries(self.source_sha256)
         except LibraryStoreError as error:
-            self._failed(str(error))
+            record_error("ui.explorer.library_exports.refresh", error)
+            self._failed(error_message(error))
             return
         self._entries = {entry.id: entry for entry in entries}
         self.attempts.clear()
@@ -155,7 +158,8 @@ class LibraryExportsDialog(QDialog):
                 started = (
                     datetime.fromisoformat(entry.started_at).astimezone().strftime("%Y-%m-%d %H:%M")
                 )
-            except ValueError:
+            except ValueError as error:
+                record_error("ui.explorer.library_exports.refresh", error)
                 started = entry.started_at
             item = QListWidgetItem(f"{started} · {entry.kind} · {tr(entry.status)}")
             item.setData(Qt.ItemDataRole.UserRole, entry.id)
@@ -192,7 +196,9 @@ class LibraryExportsDialog(QDialog):
             f"{tr('Encoder')}: {'GPU' if entry.gpu_encoding else 'CPU' if entry.gpu_encoding is not None else '—'}",
         ]
         if entry.error:
-            lines.append(entry.error)
+            lines.append(
+                tr("cancelled") if entry.status == "cancelled" else error_message(entry.error),
+            )
         try:
             request = ExportRequest.model_validate_json(entry.request_json)
             video = (
@@ -253,7 +259,8 @@ class LibraryExportsDialog(QDialog):
             if entry.snapshot_json is None:
                 self.error.setText(tr("No effective export settings were saved for this attempt."))
                 self.error.show()
-        except ValueError:
+        except ValueError as error:
+            record_error("ui.explorer.library_exports._selected", error)
             self.error.setText(tr("Saved export settings are unavailable or unsupported."))
             self.error.show()
         self.details.setPlainText("\n".join(lines))

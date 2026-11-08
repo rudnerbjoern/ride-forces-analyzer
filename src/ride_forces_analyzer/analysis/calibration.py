@@ -17,6 +17,7 @@ from ride_forces_analyzer.importers import ImportSuccess, Severity
 
 from .models import AnalysisDiagnostic, AnalysisProvenance, CapabilityState
 from .projection import source_directions
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 # Centered acceleration means recover the five fixtures' rounded source axes.
 REFERENCE_WINDOW_SAMPLES = 5
@@ -240,6 +241,7 @@ def _mean(
             ),
         )
     except (OverflowError, ValueError) as error:
+        record_error("analysis.calibration._mean", error)
         raise CalibrationReferenceError(
             "CALIBRATION_NON_FINITE_REFERENCE",
             "Reference mean is not finite",

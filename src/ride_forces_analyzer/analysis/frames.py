@@ -31,6 +31,7 @@ from .models import (
     ProfileName,
     SampleValues,
 )
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 # Numerical admission tolerance, not an empirical source-calibration tolerance.
 FRAME_ATOL = 1e-10
@@ -313,6 +314,7 @@ def analyze_rider_frame(
                     ),
                 )
             except ValueError as error:
+                record_error("analysis.frames.analyze_rider_frame", error)
                 projected = AnalysisChannel(
                     identifier,
                     channel.quantity,

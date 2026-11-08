@@ -30,6 +30,7 @@ from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.ui.explorer.library_workflow import LibraryIcon
 from ride_forces_analyzer.ui.presentation.translation import bind, button_text
 from ride_forces_analyzer.ui.presentation.icons import link_icon
+from ride_forces_analyzer.runtime.error_logging import error_message, record_error
 
 
 class LibraryVideosDialog(QDialog):
@@ -172,7 +173,8 @@ class LibraryVideosDialog(QDialog):
         """Open a saved address without changing selection or unsaved edits."""
         try:
             url = validate_video_url(url)
-        except ValueError:
+        except ValueError as error:
+            record_error("ui.explorer.library_videos._open_url", error)
             return
         if QDesktopServices.openUrl(QUrl(url)):
             self.error.hide()
@@ -184,6 +186,7 @@ class LibraryVideosDialog(QDialog):
         try:
             links = self.store.video_links(self.source_sha256)
         except LibraryStoreError as error:
+            record_error("ui.explorer.library_videos._reload", error)
             self._show_error(error)
             return
         self.links.clear()
@@ -198,7 +201,8 @@ class LibraryVideosDialog(QDialog):
             bind(icon.button, tr("Open in browser"), "accessibleName")
             try:
                 validate_video_url(link.url)
-            except ValueError:
+            except ValueError as error:
+                record_error("ui.explorer.library_videos._reload", error)
                 icon.button.setEnabled(False)
             icon.clicked.connect(self._open_url)
             self.links.setItemWidget(item, 1, icon)
@@ -248,6 +252,7 @@ class LibraryVideosDialog(QDialog):
                 link_id=link_id,
             )
         except (LibraryStoreError, ValueError) as error:
+            record_error("ui.explorer.library_videos._save", error)
             self._show_error(error)
             return
         self._reload(saved)
@@ -263,11 +268,12 @@ class LibraryVideosDialog(QDialog):
                 item.data(0, Qt.ItemDataRole.UserRole)[0],
             )
         except LibraryStoreError as error:
+            record_error("ui.explorer.library_videos._remove", error)
             self._show_error(error)
             return
         self._reload()
         self.changed.emit()
 
     def _show_error(self, error: Exception) -> None:
-        self.error.setText(tr("Could not save video links: {0}", tr(str(error))))
+        self.error.setText(tr("Could not save video links: {0}", error_message(error)))
         self.error.show()

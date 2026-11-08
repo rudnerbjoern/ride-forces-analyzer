@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from ride_forces_analyzer.i18n import tr
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import error_message, record_error
 from ride_forces_analyzer.storage.library_backup import LibraryBackup, LibraryTransferCancelled
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.ui.presentation.translation import bind, button_text
@@ -85,7 +85,7 @@ class _TransferWorker(QRunnable):
             self.signals.finished.emit(False, "")
         except Exception as error:
             record_error("Library transfer", error)
-            self.signals.finished.emit(False, str(error))
+            self.signals.finished.emit(False, error_message(error))
         else:
             self.signals.finished.emit(True, "")
 

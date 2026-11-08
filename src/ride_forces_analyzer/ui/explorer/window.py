@@ -82,7 +82,7 @@ from ride_forces_analyzer.ui.dialogs.gps import gps_dialog
 from ride_forces_analyzer.ui.explorer.loading import ArchiveImportWorker, LoadWorker
 from ride_forces_analyzer.explorer.library import ArchiveImportResult
 from ride_forces_analyzer.storage.library import LibraryStore, LibraryStoreError
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import record_error
 from ride_forces_analyzer.ui.presentation.theme import THEMES, apply_theme, system_theme
 
 

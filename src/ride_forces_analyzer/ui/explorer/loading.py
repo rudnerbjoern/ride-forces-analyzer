@@ -14,7 +14,7 @@ from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.explorer.library import LibraryArchive, import_recording
 from ride_forces_analyzer.storage.library import LibraryStoreError
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import error_message, record_error
 from ride_forces_analyzer.importers import ImportFailure, Severity
 
 
@@ -108,12 +108,18 @@ class LoadWorker(QRunnable):
                         ),
                     )
         except Exception as error:
-            record_error("Import worker", error)
+            record_error(
+                "Import worker",
+                error,
+                context=f"Path: {self.path}"
+                if self.path is not None
+                else f"Archived source SHA-256: {self.source_sha256}",
+            )
             self.signals.failed.emit(
                 self.generation,
-                tr("Could not open archived recording: {0}", str(error))
+                tr("Could not open archived recording: {0}", error_message(error))
                 if self.source_sha256 is not None
-                else str(error)
+                else error_message(error)
                 if isinstance(error, LibraryStoreError)
                 else tr("Unexpected load error. The previous recording is unchanged."),
             )
@@ -157,7 +163,11 @@ class ArchiveImportWorker(QRunnable):
         try:
             results = LibraryArchive().import_paths(self.paths)
         except Exception as error:
-            record_error("Library import worker", error)
-            self.signals.failed.emit(str(error))
+            record_error(
+                "Library import worker",
+                error,
+                context="Paths:\n" + "\n".join(str(path) for path in self.paths),
+            )
+            self.signals.failed.emit(error_message(error))
         else:
             self.signals.completed.emit(results)

@@ -38,6 +38,7 @@ from ride_forces_analyzer.importers.library_metadata import project_library_meta
 from ride_forces_analyzer.validation.checks import has_type, validate_sample_range, validate_sha256
 from .library_search import library_search_values, normalize_library_text
 from ride_forces_analyzer.domain.metadata import RecordingAdditions
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 
 WORKFLOW_STATUSES: tuple[str, ...] = (
@@ -68,7 +69,8 @@ def validate_video_url(url: str) -> str:
     try:
         parsed = urlsplit(url)
         valid = parsed.scheme in {"http", "https"} and bool(parsed.hostname)
-    except ValueError:
+    except ValueError as error:
+        record_error("storage.library.validate_video_url", error)
         valid = False
     if not valid or any(character.isspace() for character in url):
         raise ValueError("Enter a valid HTTP or HTTPS video URL.")
@@ -472,6 +474,7 @@ class LibraryStore:
         try:
             calibration = CalibrationOverrides(row[6], row[7], row[8], row[9])
         except (ValueError, TypeError) as error:
+            record_error("storage.library.source", error)
             raise LibraryStoreError("Invalid archived calibration recipe") from error
         if row[2] not in {"forces", "zforces"}:
             raise LibraryStoreError("Unsupported archived source format")
@@ -779,12 +782,18 @@ class LibraryStore:
                                 config.attributes["connection"] = connection
                                 command.upgrade(config, "head")
                             connection.commit()
-                        except Exception:
+                        except Exception as error:
+                            record_error(
+                                "storage.library.initialize",
+                                error,
+                                context=f"Path: {self.path}",
+                            )
                             connection.rollback()
                             raise
                 finally:
                     engine.dispose()
         except (OSError, sqlite3.Error, SQLAlchemyError, CommandError) as error:
+            record_error("storage.library.initialize", error, context=f"Path: {self.path}")
             raise LibraryStoreError(f"Library database: {error}") from error
 
     @contextmanager
@@ -806,10 +815,12 @@ class LibraryStore:
                 try:
                     yield connection
                     connection.commit()
-                except Exception:
+                except Exception as error:
+                    record_error("storage.library.connection", error, context=f"Path: {self.path}")
                     connection.rollback()
                     raise
             finally:
                 connection.close()
         except (sqlite3.Error, OSError) as error:
+            record_error("storage.library.connection", error, context=f"Path: {self.path}")
             raise LibraryStoreError(f"Library database: {error}") from error

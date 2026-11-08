@@ -50,7 +50,7 @@ from ride_forces_analyzer.explorer.library import (
 )
 from ride_forces_analyzer.storage.library import LibraryEntry, LibraryStore, LibraryStoreError
 from ride_forces_analyzer.i18n import tr
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import error_message, record_error
 from ride_forces_analyzer.ui.presentation.translation import bind, button_text
 
 from .controls import create_panel
@@ -380,7 +380,7 @@ class LibraryPanel(QSplitter):
             )
         except LibraryStoreError as error:
             record_error("Library list", error)
-            self.show_error(tr("Could not read Library: {0}", str(error)))
+            self.show_error(tr("Could not read Library: {0}", error_message(error)))
             return
         blocked_scroll = self.recordings.verticalScrollBar().blockSignals(True)
         self._entries = {entry.source_sha256: entry for entry in entries}
@@ -692,7 +692,8 @@ class LibraryPanel(QSplitter):
         try:
             LibraryStore().remove_recording(entry.source_sha256)
         except LibraryStoreError as error:
-            self.show_error(tr("Could not remove recording: {0}", tr(str(error))))
+            record_error("ui.explorer.library._remove_recording", error)
+            self.show_error(tr("Could not remove recording: {0}", error_message(error)))
             return
         self._error = None
         self.refresh()
@@ -779,7 +780,8 @@ class LibraryPanel(QSplitter):
         try:
             LibraryStore().set_workflow_status(digest, status)
         except (ValueError, LibraryStoreError) as error:
-            self.show_error(tr("Could not save workflow status: {0}", str(error)))
+            record_error("ui.explorer.library._save_workflow", error)
+            self.show_error(tr("Could not save workflow status: {0}", error_message(error)))
             return
         self._entries[digest] = replace(self._entries[digest], workflow_status=status)
         self._error = None
@@ -798,7 +800,8 @@ class LibraryPanel(QSplitter):
         try:
             LibraryStore().update_metadata(entry.source_sha256, values)
         except (ValueError, LibraryStoreError) as error:
-            self.editor.show_error(tr("Could not save Library metadata: {0}", str(error)))
+            record_error("ui.explorer.library._save_metadata", error)
+            self.editor.show_error(tr("Could not save Library metadata: {0}", error_message(error)))
             return
         self._error = None
         self.editor.accept()

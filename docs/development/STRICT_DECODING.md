@@ -126,6 +126,12 @@ fatal error in deterministic traversal/adapter order; never includes source valu
 paths or decoder exception excerpts in messages. JSON Pointers identify fields.
 No URLs are fetched, positions looked up, telemetry sent or Qt imported.
 
+These safe returned diagnostics do not replace local error evidence: handled
+exceptions are recorded unchanged through the shared Qt-independent logger,
+including traceback and attempted source path. The application records original
+diagnostics before showing masked user feedback; see the
+[support-report contract](../architecture/06_runtime_view.md#qt-bootstrap).
+
 ```powershell
 uv run --locked pytest tests/importers/test_decoder.py tests/recordings/test_integrity.py
 ```

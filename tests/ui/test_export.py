@@ -1,5 +1,7 @@
 """Native export-dialog interaction and background worker lifecycle."""
 
+# cspell:words caplog
+
 from ride_forces_analyzer.rendering.model import StandardFrameRate
 
 from ride_forces_analyzer.rendering.model import (
@@ -404,6 +406,7 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
 def test_export_worker_progress_cancel_and_gui_recovery(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     from ride_forces_analyzer.ui.exports import video as ui_export
     from ride_forces_analyzer.rendering.encoding import ExportCancelled
@@ -491,7 +494,9 @@ def test_export_worker_progress_cancel_and_gui_recovery(
     )
     dialog.start.click()
     wait_until(lambda: dialog.worker is None)
-    assert "Encoder failed" in dialog.status.text()
+    assert "error report" in dialog.status.text()
+    assert "Encoder failed" not in dialog.status.text()
+    assert "RuntimeError: Encoder failed" in caplog.text
     assert taskbar.clear.call_count == cleared + 2
     dialog.back.click()
     assert dialog.preview_view.source.toImage() == static_image
@@ -705,6 +710,7 @@ def test_saved_presets_and_recording_queue_survive_assistant_reopen(
 def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     from ride_forces_analyzer.ui.exports import batches as ui_batches
     from ride_forces_analyzer.storage.exports import ExportStore, default_database_path
@@ -842,14 +848,28 @@ def test_batch_editor_multi_ride_presets_and_run_all_cancellation(
     assert dialog.eta.text() == ""
     assert len(store.batch("Day1").jobs) == 4
     report = dialog.last_report
+    original_history_error = "Internal history database detail"
+    report = report.model_copy(
+        update={
+            "results": (
+                report.results[0].model_copy(update={"history_error": original_history_error}),
+                *report.results[1:],
+            ),
+        },
+    )
     monkeypatch.setattr(ui_batches, "run_batches", Mock(return_value=report))
     dialog.run_all.click()
     wait_until(lambda: dialog.worker is None)
     assert taskbar.clear.call_count == cleared + 1
+    assert "error report" in dialog.status.text()
+    assert original_history_error not in dialog.status.text()
+    assert report.results[0].history_error == original_history_error
     monkeypatch.setattr(ui_batches, "run_batches", Mock(side_effect=RuntimeError("Queue failed")))
     dialog.run_all.click()
     wait_until(lambda: dialog.worker is None)
-    assert "Queue failed" in dialog.status.text()
+    assert "error report" in dialog.status.text()
+    assert "Queue failed" not in dialog.status.text()
+    assert "RuntimeError: Queue failed" in caplog.text
     assert taskbar.clear.call_count == cleared + 2
     dialog.table.selectAll()
     dialog.remove.click()

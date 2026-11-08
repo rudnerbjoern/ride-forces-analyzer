@@ -16,6 +16,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 from http.client import HTTPMessage
 from typing import IO, cast
 from .paths import runtime_target
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 REPOSITORY_URL = "https://github.com/rudnerbjoern/ride-forces-analyzer"
 RELEASES_API = "https://api.github.com/repos/rudnerbjoern/ride-forces-analyzer/releases"
@@ -224,5 +225,6 @@ def check_for_update(current: str) -> AvailableRelease | None:
             if len(page_releases) < 100:
                 return select_release(releases, current)
     except (OSError, URLError, ValueError) as error:
+        record_error("runtime.updates.check_for_update", error)
         raise UpdateCheckError("GitHub releases are unavailable") from error
     raise UpdateCheckError("Release listing exceeded the page limit")

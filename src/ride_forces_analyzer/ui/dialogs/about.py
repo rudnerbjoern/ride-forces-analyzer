@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
 from ride_forces_analyzer import __version__
 from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.runtime.diagnostics import collect_diagnostics
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 from ride_forces_analyzer.ui.presentation.translation import bind, button_text
 from ride_forces_analyzer.ui.presentation.chrome import app_icon

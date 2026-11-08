@@ -17,6 +17,7 @@ from PySide6.QtCore import QLockFile, QObject, QThread, QTimer, Signal
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 
 from ride_forces_analyzer.runtime.paths import data_directory
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 
 class OpenRequest(BaseModel, frozen=True, strict=True, extra="forbid"):
@@ -151,7 +152,8 @@ class InstanceBroker(QObject):
             timer.stop()
             try:
                 request = OpenRequest.model_validate_json(bytes(buffer).strip())
-            except ValidationError:
+            except ValidationError as error:
+                record_error("runtime.instance.read", error)
                 socket.write(b"ERROR\n")
             else:
                 self.requested.emit(request)

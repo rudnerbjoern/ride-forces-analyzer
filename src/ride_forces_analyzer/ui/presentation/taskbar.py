@@ -15,6 +15,7 @@ from uuid import UUID
 
 from PySide6.QtCore import QByteArray, QAbstractNativeEventFilter, QCoreApplication, QObject
 from PySide6.QtWidgets import QWidget
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 
 def _check(result: int) -> None:
@@ -97,7 +98,8 @@ class WindowsTaskbar:
             )(vtable[10])
             _check(initialize(self._pointer))
             self._interface_ready = True
-        except OSError:
+        except OSError as error:
+            record_error("ui.presentation.taskbar.__init__", error)
             self.close()
             raise
 
@@ -202,7 +204,8 @@ class TaskbarProgress(QObject):
                 if message_id:
                     self._filter = _TaskbarButtonFilter(self, message_id)
                     self._application.installNativeEventFilter(self._filter)
-            except OSError:
+            except OSError as error:
+                record_error("ui.presentation.taskbar.__init__", error)
                 pass
         window.destroyed.connect(self._dispose)
 
@@ -239,7 +242,8 @@ class TaskbarProgress(QObject):
             native, self._native = self._native, None
             try:
                 native.close()
-            except OSError:
+            except OSError as error:
+                record_error("ui.presentation.taskbar.clear", error)
                 pass
 
     def _apply(self) -> None:
@@ -249,7 +253,8 @@ class TaskbarProgress(QObject):
             if self._native is None:
                 self._native = WindowsTaskbar(int(self.window.winId()))
             self._native.show(self._percent)
-        except OSError:
+        except OSError as error:
+            record_error("ui.presentation.taskbar._apply", error)
             self._failed = True
             self.clear()
 

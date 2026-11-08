@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import struct
 import sys
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 LINUX_CPU_PATH = Path("/sys/devices/system/cpu")
 
@@ -60,7 +61,8 @@ def detect_cpu_resources() -> CpuResources:
             physical = _macos_physical_cores()
         elif sys.platform == "linux":
             physical = _linux_physical_cores()
-    except AttributeError, OSError, ValueError, struct.error:
+    except (AttributeError, OSError, ValueError, struct.error) as error:
+        record_error("runtime.cpu_resources.detect_cpu_resources", error)
         pass
     return CpuResources(physical, os.cpu_count())
 

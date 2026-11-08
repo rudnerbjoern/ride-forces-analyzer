@@ -29,6 +29,7 @@ from ._diagnostic_budget import DiagnosticBudget, DiagnosticBudgetExceeded
 from .diagnostics import ImportDiagnostic, Severity, ordered_diagnostics
 from .limits import DEFAULT_LIMITS, ImportLimits
 from .result import ImportFailure
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 _GPS_FIELDS = (
     ("timestamp", "timestamp"),
@@ -401,5 +402,6 @@ def parse_optional_data(
     diagnostics = DiagnosticBudget(limits.max_diagnostics)
     try:
         return validate_optional_data(source, diagnostics)
-    except DiagnosticBudgetExceeded:
+    except DiagnosticBudgetExceeded as error:
+        record_error("importers.optional.parse_optional_data", error)
         return diagnostics.failure(source)

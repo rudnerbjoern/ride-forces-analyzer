@@ -28,6 +28,7 @@ from ._diagnostic_budget import DiagnosticBudget, DiagnosticBudgetExceeded
 from .diagnostics import ImportDiagnostic, Severity, json_pointer, ordered_diagnostics
 from .limits import DEFAULT_LIMITS, ImportLimits
 from .result import ImportFailure
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 _DECIMAL_STRING = re.compile(r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?\Z")
 _VECTOR_FIELDS = (
@@ -90,7 +91,8 @@ def _number(value: SourceValue) -> float | None:
         return None
     try:
         converted = float(numeric)
-    except ValueError, OverflowError:
+    except (ValueError, OverflowError) as error:
+        record_error("importers.motion._number", error)
         return None
     return converted if isfinite(converted) else None
 
@@ -354,5 +356,6 @@ def parse_motion(
     diagnostics = DiagnosticBudget(limits.max_diagnostics)
     try:
         return validate_motion(source, diagnostics)
-    except DiagnosticBudgetExceeded:
+    except DiagnosticBudgetExceeded as error:
+        record_error("importers.motion.parse_motion", error)
         return diagnostics.failure(source)

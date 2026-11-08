@@ -24,6 +24,7 @@ from PySide6.QtGui import QImage, QPainter
 from .. import __version__
 from .overview import GpsOverview
 from ..storage.map_tiles import TileCache, TileEntry
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 TILE_SIZE = 256
 WORLD_SIZE = 2 * pi * 6378137
@@ -91,7 +92,8 @@ def project_route(overview: GpsOverview) -> MapRoute | None:
             tuple((x - origin[0], y - origin[1]) for x, y in (project(*point) for point in segment))
             for segment in overview.geographic_segments
         )
-    except MapError:
+    except MapError as error:
+        record_error("gps.map_background.project_route", error)
         return None
     return MapRoute(origin, segments)
 
@@ -210,11 +212,14 @@ def _expiry(headers: Message[str, str], now: float) -> float:
     if match:
         try:
             return now + max(0, int(match[1]) - int(headers.get("Age", "0")))
-        except ValueError:
+        except ValueError as error:
+            record_error("gps.map_background._expiry", error)
             pass
     try:
         return parsedate_to_datetime(headers["Expires"]).timestamp()
-    except KeyError, TypeError, ValueError, OverflowError:
+    except (KeyError, TypeError, ValueError, OverflowError) as error:
+        if headers.get("Expires") is not None:
+            record_error("gps.map_background._expiry", error)
         return now + CACHE_SECONDS
 
 
@@ -239,7 +244,8 @@ def _tile(zoom: int, x: int, y: int, cache: TileCache, cache_only: bool) -> QIma
             cached = _image(entry.data)
             if isfinite(entry.expires) and entry.expires > time():
                 return cached
-        except MapError:
+        except MapError as error:
+            record_error("gps.map_background._tile", error)
             cache.delete(TILE_URL, zoom, x, y)
             entry = None
     if cache_only:
@@ -260,6 +266,8 @@ def _tile(zoom: int, x: int, y: int, cache: TileCache, cache_only: bool) -> QIma
             response_headers = response.headers
             entry = None
     except HTTPError as error:
+        if error.code != 304:
+            record_error("gps.map_background._tile", error)
         if error.code != 304 or cached is None or entry is None:
             raise MapError("Map server unavailable") from error
         image, data, response_headers = cached, entry.data, error.headers
@@ -331,6 +339,7 @@ def load_background(
                 raise MapError("Map request stopped")
             tiles.append((x, y, _tile(request.zoom, x, y, cache, cache_only)))
     except (OSError, URLError, ValueError) as error:
+        record_error("gps.map_background.load_background", error)
         raise MapError("Map could not be loaded") from error
     if cancelled.is_set():
         raise MapError("Map request stopped")

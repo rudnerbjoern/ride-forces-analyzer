@@ -11,6 +11,7 @@ from math import isfinite
 
 from ride_forces_analyzer.validation.checks import has_type
 from .source import SourceEnvelope, SourceNumber, SourceValue, freeze_source_value
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 
 def _finite(value: float, name: str) -> float:
@@ -19,6 +20,7 @@ def _finite(value: float, name: str) -> float:
     try:
         number = float(value)
     except OverflowError as error:
+        record_error("domain.models._finite", error)
         raise ValueError(f"{name} requires a finite value") from error
     if not isfinite(number):
         raise ValueError(f"{name} requires a finite value")

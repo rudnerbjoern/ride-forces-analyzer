@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 from ride_forces_analyzer.i18n import tr
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import error_message, record_error
 from ride_forces_analyzer.ui.presentation.translation import bind, button_text, items
 
 # cspell:words pixmap Deutsch
@@ -365,7 +365,7 @@ class ExportDialog(QDialog):
             self.data = self.data.with_analysis(self.analysis)
         except (TypeError, ValueError) as error:
             record_error("Export configuration", error)
-            bind(self.status, tr(str(error)), "text")
+            bind(self.status, error_message(error), "text")
             return
         self.presets.set_analysis(self.analysis)
         self.form.apply_preset(preset)
@@ -575,7 +575,8 @@ class ExportDialog(QDialog):
                 ExportRequest.capture(self.analysis, "video", first, last, settings),
             )
         except ValueError as error:
-            bind(self.status, tr(str(error)), "text")
+            record_error("ui.exports.video._start", error)
+            bind(self.status, error_message(error), "text")
             return
         try:
             timeline = prepare_export(self.analysis, settings, first, last)
@@ -585,11 +586,9 @@ class ExportDialog(QDialog):
         except (ValueError, OSError) as error:
             attempt.finish("failed", error=str(error))
             record_error("Export preparation", error)
-            message: str = tr(str(error))
+            message: str = error_message(error)
             if attempt.warning:
-                message = (
-                    f"{message}\n{tr('Export history could not be saved: {0}', attempt.warning)}"
-                )
+                message = f"{message}\n{tr('Export history could not be saved: {0}', error_message(attempt.warning))}"
             bind(self.status, message, "text")
             return
         suffix = ".mov" if settings.output == VideoOutput.TRANSPARENT else ".mp4"
@@ -610,7 +609,7 @@ class ExportDialog(QDialog):
             if attempt.warning:
                 bind(
                     self.status,
-                    tr("Export history could not be saved: {0}", attempt.warning),
+                    tr("Export history could not be saved: {0}", error_message(attempt.warning)),
                     "text",
                 )
             return

@@ -1,6 +1,6 @@
 """Native Qt interactions; fixture-wide data contracts live in the pure suites."""
 
-# cspell:words Quelle Verarbeitung Aktueller Messpunkt
+# cspell:words Quelle Verarbeitung Aktueller Messpunkt caplog
 
 from hashlib import sha256
 from pathlib import Path
@@ -547,6 +547,7 @@ def test_zoom_and_reference_changes_preserve_recording_bounds_and_data(
 def test_failed_and_cancelled_opens_preserve_previous_recording(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     window = explorer_window
     window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("*.forces")))
@@ -564,14 +565,16 @@ def test_failed_and_cancelled_opens_preserve_previous_recording(
     window.open_path(Path(".tmp/this-recording-does-not-exist.forces"))
     wait_until(window.open_action.isEnabled)
     assert window.data is previous and window.plot.series[0].count() == points
-    assert "SOURCE_NOT_FOUND" in window.statusBar().currentMessage()
+    assert "error report" in window.statusBar().currentMessage()
+    assert "SOURCE_NOT_FOUND" in caplog.text
     with TemporaryDirectory(dir=".tmp") as directory:
         malformed = Path(directory) / "synthetic.forces"
         malformed.write_bytes(b"{")
         window.open_path(malformed)
         wait_until(window.open_action.isEnabled)
         assert window.data is previous
-        assert "INVALID_JSON" in window.statusBar().currentMessage()
+        assert "error report" in window.statusBar().currentMessage()
+        assert "INVALID_JSON" in caplog.text and str(malformed) in caplog.text
     window.navigation.position.setValue(previous.count - 1)
     replacement = next(
         path

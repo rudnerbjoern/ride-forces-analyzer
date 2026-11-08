@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 from ride_forces_analyzer.i18n import tr
-from ride_forces_analyzer.runtime.error_reporting import record_error
+from ride_forces_analyzer.runtime.error_logging import error_message, record_error
 from ride_forces_analyzer.ui.presentation.translation import bind, items
 
 # cspell:words pixmap Deutsch
@@ -187,7 +187,7 @@ class ExportPresets(QWidget):
                 self.preset_selector.setCurrentText(select)
         except ExportStoreError as error:
             record_error("Export configuration", error)
-            self.message.emit(tr(str(error)))
+            self.message.emit(error_message(error))
 
     def _preset(self, name: str) -> SavedPreset:
         mode = ("markers", "selection", "entire")[self.form.interval.currentIndex()]
@@ -215,7 +215,7 @@ class ExportPresets(QWidget):
             self.message.emit(tr("Saved preset: {0}", preset.name))
         except (ValueError, ExportStoreError) as error:
             record_error("Export configuration", error)
-            self.message.emit(tr(str(error)))
+            self.message.emit(error_message(error))
 
     @Slot()
     def _update_preset(self) -> None:
@@ -230,7 +230,7 @@ class ExportPresets(QWidget):
             self.message.emit(tr("Preset updated. Existing saved batch snapshots are unchanged."))
         except (ValueError, ExportStoreError) as error:
             record_error("Export configuration", error)
-            self.message.emit(tr(str(error)))
+            self.message.emit(error_message(error))
 
     @Slot()
     def _delete_preset(self) -> None:
@@ -245,7 +245,7 @@ class ExportPresets(QWidget):
             self.message.emit(tr("Preset deleted: {0}", name))
         except ExportStoreError as error:
             record_error("Export configuration", error)
-            self.message.emit(tr(str(error)))
+            self.message.emit(error_message(error))
 
     @Slot()
     def _queue(self) -> None:
@@ -276,7 +276,7 @@ class ExportPresets(QWidget):
             )
         except (ValueError, ExportStoreError) as error:
             record_error("Export configuration", error)
-            self.message.emit(tr(str(error)))
+            self.message.emit(error_message(error))
 
     @Slot()
     def _manage_batches(self) -> None:

@@ -4,7 +4,7 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-# cspell:words colorspace creationflags ENOTSUP EXDEV faststart hwupload lavfi libx movflags nostdin nvenc prores qscale rawvideo yuva
+# cspell:words colorspace creationflags ENOTSUP EXDEV faststart hwupload lavfi libx movflags nostdin nvenc prores qscale rawvideo yuva backslashreplace
 
 from collections.abc import Callable
 from contextlib import closing
@@ -26,6 +26,7 @@ from .parallel import render_region_bytes
 from .progress import ExportPhase, ExportProgress
 from ride_forces_analyzer.runtime.cpu_resources import effective_render_jobs
 from ride_forces_analyzer.runtime.paths import ffmpeg_name
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 
 class ExportCancelled(Exception):
@@ -257,7 +258,8 @@ def supports_nvidia(ffmpeg: Path, timeline: ExportTimeline) -> bool:
             else 0,
         )
         return result.returncode == 0
-    except OSError, subprocess.TimeoutExpired:
+    except (OSError, subprocess.TimeoutExpired) as error:
+        record_error("rendering.encoding.supports_nvidia", error)
         return False
 
 
@@ -370,12 +372,13 @@ def export_video(
                 process.stdin.close()
                 code = process.wait(timeout=120)
             except BrokenPipeError as error:
+                record_error("rendering.encoding.export_video", error)
                 process.wait(timeout=10)
                 log.seek(0)
-                raise RuntimeError(log.read()[-4000:].decode("utf-8", errors="replace")) from error
+                raise RuntimeError(log.read().decode("utf-8", errors="backslashreplace")) from error
             if code != 0:
                 log.seek(0)
-                raise RuntimeError(log.read()[-4000:].decode("utf-8", errors="replace"))
+                raise RuntimeError(log.read().decode("utf-8", errors="backslashreplace"))
         if cancellation.is_set():
             raise ExportCancelled()
         if not target.is_file() or target.stat().st_size == 0:
@@ -388,6 +391,7 @@ def export_video(
         try:
             os.link(target, destination)
         except OSError as error:
+            record_error("rendering.encoding.export_video", error)
             if error.errno not in (errno.EXDEV, errno.EPERM, errno.ENOTSUP):
                 raise
         else:
@@ -412,7 +416,8 @@ def export_video(
             if process.stdin is not None and not process.stdin.closed:
                 try:
                     process.stdin.close()
-                except OSError:
+                except OSError as error:
+                    record_error("rendering.encoding.export_video", error)
                     pass
         if created_destination and not published:
             destination.unlink(missing_ok=True)

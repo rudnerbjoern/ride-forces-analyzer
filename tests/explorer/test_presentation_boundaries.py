@@ -1,5 +1,7 @@
 """Presentation fallbacks and context ranges without desktop windows."""
 
+# cspell:words caplog
+
 from dataclasses import replace
 from unittest.mock import Mock
 
@@ -9,7 +11,7 @@ from ride_forces_analyzer.analysis.recording import AnalysisState, RequestStatus
 from ride_forces_analyzer.domain import Vector3
 from ride_forces_analyzer.explorer import present_recording
 from ride_forces_analyzer.explorer.text import failure_text
-from ride_forces_analyzer.i18n import Language, get_language, set_language
+from ride_forces_analyzer.i18n import Language, get_language, set_language, tr
 from ride_forces_analyzer.importers import ImportFailure, import_forces_bytes
 from tests.exports.test_csv_export import snapshot
 
@@ -78,6 +80,7 @@ def test_context_segments_share_boundaries_and_empty_context_has_no_labels() -> 
 
 def test_loading_without_snapshot_retains_raw_view_and_localized_failure_notes(
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     source = snapshot(calibrated=False).source
     service = Mock()
@@ -96,7 +99,27 @@ def test_loading_without_snapshot_retains_raw_view_and_localized_failure_notes(
         set_language(previous)
     failure = import_forces_bytes(b"{")
     assert isinstance(failure, ImportFailure)
-    assert failure.diagnostics[0].code in failure_text(failure)
+    assert failure_text(failure) == "The operation failed. See the error report for details."
+    assert failure.diagnostics[0].code in caplog.text
+    assert failure.diagnostics[0].message in caplog.text
+
+
+@pytest.mark.parametrize("language", list(Language))
+def test_optional_analysis_hint_keeps_its_source_key_and_localized_guidance(
+    language: Language,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = snapshot(calibrated=False).source
+    monkeypatch.setattr("ride_forces_analyzer.explorer.loading.find_spec", Mock(return_value=None))
+    before = get_language()
+    set_language(language)
+    try:
+        data = present_recording(source)
+        hint = "The optional NumPy analysis package is not installed"
+        assert data.calibration_error == hint
+        assert tr(hint) in data.localized_notes
+    finally:
+        set_language(before)
 
 
 def test_loading_rejects_padding_that_would_overflow_the_chart_range() -> None:

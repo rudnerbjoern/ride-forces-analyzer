@@ -14,6 +14,8 @@ from typing import TYPE_CHECKING
 from ride_forces_analyzer.formatting.time import format_sample_time
 from ride_forces_analyzer.domain import RecordingFormat, SourceNumber
 from ride_forces_analyzer.importers import ImportFailure, ImportSuccess
+from pathlib import Path
+from ride_forces_analyzer.runtime.error_logging import error_message, record_error
 
 if TYPE_CHECKING:
     from .model import ExplorerData
@@ -46,7 +48,10 @@ def import_notes(source: ImportSuccess, error: str | None) -> str:
         for item in source.diagnostics
     ) or tr("No import diagnostics.")
     if error:
-        notes += tr("\nCALIBRATION_UNAVAILABLE: {0}. Raw recording remains available.", error)
+        notes += tr(
+            "\nCALIBRATION_UNAVAILABLE: {0}. Raw recording remains available.",
+            error_message(error),
+        )
     return notes
 
 
@@ -84,7 +89,7 @@ def localized_notes(data: ExplorerData) -> str:
         for item in data.source.diagnostics
     ]
     if data.calibration_error:
-        lines.append(f"CALIBRATION_UNAVAILABLE: {tr(data.calibration_error)}")
+        lines.append(f"CALIBRATION_UNAVAILABLE: {error_message(data.calibration_error)}")
     return "\n".join(lines) or tr("No import diagnostics.")
 
 
@@ -450,16 +455,28 @@ def sample_text(data: ExplorerData, index: int, *, rich: bool = False) -> str:
     )
 
 
-def failure_text(failure: ImportFailure) -> str:
-    """Bounded field-oriented feedback, never an exception or recording payload.
+def failure_text(failure: ImportFailure, *, path: Path | None = None) -> str:
+    """Record original import diagnostics and return masked interface feedback.
 
     Args:
         failure: Structured failure information.
+        path: Attempted source path, including failures before source bytes exist.
 
     Returns:
-        Bounded diagnostic text suitable for display.
+        Localized feedback directing the user to the complete local error report.
     """
-    items = failure.diagnostics[:5]
-    return tr("Could not open recording. ") + "; ".join(
-        f"{item.code}: {diagnostic_message(item.code, item.message)}" for item in items
+    source_path = (
+        path
+        if path is not None
+        else failure.source.provenance.path
+        if failure.source is not None
+        else None
     )
+    record_error(
+        "Recording import",
+        message="\n".join(
+            f"{item.code} {item.json_path}: {item.message}" for item in failure.diagnostics
+        ),
+        context=f"Path: {source_path}" if source_path is not None else "",
+    )
+    return error_message()

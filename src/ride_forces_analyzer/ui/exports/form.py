@@ -53,6 +53,7 @@ from ride_forces_analyzer.storage.export_models import SavedPreset
 
 from PySide6.QtCore import Signal
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
+from ride_forces_analyzer.runtime.error_logging import record_error
 
 
 class ExportForm(QWidget):
@@ -202,7 +203,8 @@ class ExportForm(QWidget):
         self.encoder = QLineEdit()
         try:
             bind(self.encoder, str(find_ffmpeg()), "text")
-        except ValueError:
+        except ValueError as error:
+            record_error("ui.exports.form.__init__", error)
             self.encoder.setPlaceholderText(tr("Choose installed FFmpeg executable"))
         self.browse = button_text(
             QPushButton(),
