@@ -51,7 +51,7 @@ def _complete(decoded: DecodeResult, limits: ImportLimits) -> ImportResult:
 
 
 def import_forces(path: Path, *, limits: ImportLimits = DEFAULT_LIMITS) -> ImportResult:
-    """Read a bounded local original without writes and import its available capabilities.
+    """Read a bounded original without writes and import its available capabilities.
 
     Args:
         path: Filesystem path read or written by this operation.

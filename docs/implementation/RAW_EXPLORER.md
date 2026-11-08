@@ -253,8 +253,13 @@ including in other open Library panels, without reloading the current chart. Fil
 chart unchanged. Park/status filters, search, Library selection and scroll position
 are shared across open Explorers and inherited by new windows. Receiving these
 changes never opens a recording; panel visibility and chart state remain local.
-**Edit metadata…** opens a separate themed dialog for ride, park,
-Row, Seat, Train, imported/Seated/Flying posture and notes. Source placeholders
+**Properties…**, also available through **Shift+Enter** in the active window,
+opens a separate themed dialog for ride, park,
+Row, Seat, Train, imported/Seated/Flying posture and notes. Park is an editable
+combobox populated with distinct effective names from the whole Library on each
+opening. Its dropdown offers direct selection; typing filters case-insensitive
+substring suggestions that Enter accepts without saving the dialog. New names
+remain valid free text. Source placeholders
 distinguish inherited text from additions. Save/reset persist current additions;
 Cancel discards unsaved input. Errors keep the input visible. Original details and
 saved additions remain separately readable in the Library. The workspace and new
@@ -272,7 +277,7 @@ active filters. Expanding the collapsed panel reveals the selection again
 without another load. List refreshes and language changes preserve selection.
 
 Right-clicking a recording selects that entry and offers **Open in new window…**,
-**Edit metadata…**, **Video links…**, **Export history…**, then a separator and
+a separator, **Properties…**, **Video links…**, **Export history…**, then a separator and
 **Remove…**. The themed actions have icons, replacing the buttons below the list.
 Day headings and empty space have no menu. Metadata editing stays disabled until
 the selected source loads successfully. All captions, tooltips and accessible
@@ -332,6 +337,7 @@ bottom action row, with Close pinned at its right edge.
 - Opening GPS restores the visible background automatically when all required
   tiles are fresh in the persistent cache, including after application restart.
   Missing or expired tiles leave the route visible without network access.
+  Cache-only misses are normal control flow and do not create error-log entries.
 - **Load map background** explicitly requests only the currently visible OSM area;
   no startup, resize, prefetch or offline-download requests. The static background
   sits behind the route with visible linked © OpenStreetMap contributors attribution.

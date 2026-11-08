@@ -25,7 +25,7 @@ result = import_forces_bytes(b"{}")  # Structured INVALID_SCHEMA_VERSION failure
 
 | API                                                                          | Contract                                                                                           |
 | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `import_forces(path: Path, *, limits=DEFAULT_LIMITS) -> ImportResult`        | Bounded read-only local binary I/O                                                                 |
+| `import_forces(path: Path, *, limits=DEFAULT_LIMITS) -> ImportResult`        | Bounded read-only binary I/O for regular files, including Windows UNC shares                       |
 | `import_forces_bytes(data, *, compressed=False, limits=...) -> ImportResult` | Immutable bytes; no filesystem access                                                              |
 | Execution                                                                    | Synchronous, offline, Qt-independent; caller schedules work; no internal thread/progress interface |
 

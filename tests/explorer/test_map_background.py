@@ -110,7 +110,7 @@ def test_tiles_cache_then_revalidate_and_crop_exact_viewport(
     assert calls[0].data is None
     assert "Ride-Forces-Analyzer/" in str(calls[0].get_header("User-agent"))
     now[0] += 11
-    with pytest.raises(maps.MapError, match="fresh in cache"):
+    with pytest.raises(maps.MapCacheMiss, match="fresh in cache"):
         maps.load_background(request, Event(), cache_only=True)
     assert len(calls) == 1
     maps.load_background(request, Event())

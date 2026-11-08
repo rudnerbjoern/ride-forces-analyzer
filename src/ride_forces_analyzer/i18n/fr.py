@@ -85,7 +85,7 @@ FRENCH: dict[str, str] = {
     "{0} exports": "{0} exports",
     # Library metadata editor.
     "Could not save Library metadata: {0}": "Impossible d’enregistrer les métadonnées de la bibliothèque : {0}",
-    "Edit metadata…": "Modifier les métadonnées…",
+    "Properties…": "Propriétés…",
     "Flying": "Allongé",
     "Library additions": "Ajouts de la bibliothèque",
     "Notes": "Notes",

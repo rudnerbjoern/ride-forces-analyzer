@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
 from ride_forces_analyzer.gps.overview import GpsOverview
 from ride_forces_analyzer.gps.map_background import (
     MapBackground,
+    MapCacheMiss,
     MapError,
     MapRequest,
     load_background,
@@ -102,6 +103,8 @@ class MapWorker(QRunnable):
                 if self.cache_only
                 else load_background(self.request, self.cancelled)
             )
+        except MapCacheMiss:
+            self.signals.completed.emit(self.revision, None)
         except Exception as error:
             record_error("Map background worker", error)
             if self.cache_only:

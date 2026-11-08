@@ -273,8 +273,8 @@ os.environ["LOCALAPPDATA"] = str(directory.resolve())
 path = reports.initialize_error_reporting()
 assert path is not None
 loading.LoadWorker(directory / "missing.forces").run()
-network_path = Path("//server/share/source.forces")
-loading.LoadWorker(network_path).run()
+device_path = Path("//./NUL")
+loading.LoadWorker(device_path).run()
 def broken_import(*args, **kwargs):
     raise RuntimeError("unexpected import failure")
 loading.import_recording = broken_import
@@ -287,8 +287,8 @@ data_export.DataWorker(analysis, directory / "output.csv", 0, 0, DataExportForma
 text = path.read_text(encoding="utf-8")
 assert "LibraryStoreError:" in text
 assert str(directory / "missing.forces") in text and "FileNotFoundError:" in text
-assert str(network_path) in text
-assert "INVALID_SOURCE_PATH" in text and "Network and device paths are unsupported" in text
+assert str(device_path) in text
+assert "INVALID_SOURCE_PATH" in text and "Device paths are unsupported" in text
 assert "Import worker:" in text and "RuntimeError: unexpected import failure" in text
 assert "Data export:" in text and "OSError: export write failure" in text
 """,

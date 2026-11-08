@@ -86,7 +86,7 @@ GERMAN: dict[str, str] = {
     "{0} exports": "{0} Exporte",
     # Library metadata editor.
     "Could not save Library metadata: {0}": "Bibliotheksmetadaten konnten nicht gespeichert werden: {0}",
-    "Edit metadata…": "Metadaten bearbeiten…",
+    "Properties…": "Eigenschaften…",
     "Flying": "Fliegend",
     "Library additions": "Bibliotheksergänzungen",
     "Notes": "Notizen",

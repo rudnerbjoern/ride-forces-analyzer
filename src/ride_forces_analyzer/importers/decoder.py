@@ -283,7 +283,7 @@ def decode_forces_bytes(
 
 
 def decode_forces(path: Path, *, limits: ImportLimits = DEFAULT_LIMITS) -> DecodeResult:
-    """Read a local regular file in binary mode with at most max_bytes + 1 bytes.
+    """Read a regular file in binary mode with at most max_bytes + 1 bytes.
 
     Args:
         path: Filesystem path read or written by this operation.
@@ -300,8 +300,8 @@ def decode_forces(path: Path, *, limits: ImportLimits = DEFAULT_LIMITS) -> Decod
         raise ValueError("limits must be an ImportLimits instance")
     if not has_type(path, Path):
         raise TypeError("path must be a Path")
-    if PureWindowsPath(str(path)).drive.startswith("\\\\"):
-        return _failure("INVALID_SOURCE_PATH", "Network and device paths are unsupported")
+    if PureWindowsPath(str(path)).drive.startswith(("\\\\?\\", "\\\\.\\")):
+        return _failure("INVALID_SOURCE_PATH", "Device paths are unsupported")
     try:
         if not stat.S_ISREG(path.stat().st_mode):
             return _failure("INVALID_SOURCE_PATH", "Source path must be a regular file")

@@ -1,6 +1,6 @@
 """FR-028–030; AC-01–09: full offline imports, integrity and bounded diagnostics."""
 
-# cspell:words WRONLY RDWR CREAT Seaworld
+# cspell:words WRONLY RDWR CREAT Seaworld wbits
 
 from collections.abc import Iterator, Mapping
 from concurrent.futures import ThreadPoolExecutor
@@ -13,6 +13,8 @@ import subprocess
 import sys
 from tempfile import TemporaryDirectory
 from typing import cast
+from unittest.mock import MagicMock
+import zlib
 
 import pytest
 
@@ -51,6 +53,34 @@ def import_directory() -> Iterator[Path]:
     root.mkdir(exist_ok=True)
     with TemporaryDirectory(prefix="import-service-", dir=root) as directory:
         yield Path(directory)
+
+
+@pytest.mark.parametrize("extension", ["forces", "zforces"])
+def test_unc_recordings_use_read_only_file_import_and_retain_original_bytes(
+    import_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    extension: str,
+) -> None:
+    raw = _document()
+    original = zlib.compress(raw, wbits=-15) if extension == "zforces" else raw
+    local = import_directory / f"source.{extension}"
+    local.write_bytes(original)
+    network = Path(r"\\ds\home") / local.name
+    metadata = local.stat()
+    with local.open("rb", buffering=0) as stream, monkeypatch.context() as patch:
+        opened = MagicMock(return_value=stream)
+        inspected = MagicMock(return_value=metadata)
+        patch.setattr(Path, "open", opened)
+        patch.setattr(Path, "stat", inspected)
+        result = import_forces(network)
+        assert isinstance(result, ImportSuccess)
+        inspected.assert_called_once_with()
+        opened.assert_called_once_with("rb", buffering=0)
+    assert result.recording.source.original_bytes == original
+    assert result.recording.source.provenance.path == network
+    assert result.source_sha256 == sha256(original).hexdigest()
+    assert result.byte_count == len(original)
+    assert local.read_bytes() == original
 
 
 @pytest.mark.parametrize("filename", REAL_FIXTURES, ids=lambda name: name.split("-", 1)[0])

@@ -1,6 +1,6 @@
 """Library context actions target the clicked recording and reuse the existing dialogs."""
 
-# cspell:words Metadaten bearbeiten Videolinks Exportverlauf métadonnées Liens vidéo Historique exports Entfernen Supprimer neuem Fenster öffnen Ouvrir dans une nouvelle fenêtre
+# cspell:words Metadaten bearbeiten Videolinks Exportverlauf métadonnées Liens vidéo Historique exports Entfernen Supprimer neuem Fenster öffnen Ouvrir dans une nouvelle fenêtre Eigenschaften Propriétés
 
 from PySide6.QtCore import QPoint, QTimer, Qt
 from PySide6.QtGui import QContextMenuEvent
@@ -35,6 +35,25 @@ def test_recording_context_menu_targets_rows_and_opens_dialogs(
     wait_until(window.open_action.isEnabled)
     data = window.data
     assert data is not None
+    # Shortcuts must work before the context menu has ever been shown.
+    assert not library.context_menu.isVisible()
+    library.toggle_button.setFocus()
+    QApplication.processEvents()
+    QTest.keyClick(library.toggle_button, Qt.Key.Key_Return, Qt.KeyboardModifier.ShiftModifier)
+    assert library.editor.isVisible()
+    library.editor.reject()
+    QTest.mouseClick(
+        tree.viewport(),
+        Qt.MouseButton.LeftButton,
+        pos=tree.visualItemRect(first).center(),
+    )
+    for key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+        QTest.keyClick(tree, key, Qt.KeyboardModifier.ShiftModifier)
+        assert library.editor.isVisible()
+        assert library.editor.fields["ride_name"].placeholderText() == data.title
+        library.editor.reject()
+        tree.setFocus()
+        QApplication.processEvents()
     assert not any(
         button.text() in {"Metadata…", "Video links…", "Export history…"}
         for button in library.panel.findChildren(QPushButton)
@@ -76,6 +95,7 @@ def test_recording_context_menu_targets_rows_and_opens_dialogs(
         library.remove_action,
     ]
     assert menu.actions()[-2].isSeparator()
+    assert menu.actions()[1].isSeparator()
     assert all(action.isEnabled() and not action.icon().isNull() for action in actions)
     size = window.size()
     panel_width = library.panel.width()
@@ -128,13 +148,13 @@ def test_recording_context_menu_targets_rows_and_opens_dialogs(
     for language, captions in (
         (
             0,
-            ["Open in new window…", "Edit metadata…", "Video links…", "Export history…", "Remove…"],
+            ["Open in new window…", "Properties…", "Video links…", "Export history…", "Remove…"],
         ),
         (
             1,
             [
                 "In neuem Fenster öffnen …",
-                "Metadaten bearbeiten…",
+                "Eigenschaften…",
                 "Videolinks…",
                 "Exportverlauf…",
                 "Entfernen…",
@@ -144,7 +164,7 @@ def test_recording_context_menu_targets_rows_and_opens_dialogs(
             2,
             [
                 "Ouvrir dans une nouvelle fenêtre…",
-                "Modifier les métadonnées…",
+                "Propriétés…",
                 "Liens vidéo…",
                 "Historique des exports…",
                 "Supprimer…",
@@ -156,6 +176,9 @@ def test_recording_context_menu_targets_rows_and_opens_dialogs(
         right_click(tree.visualItemRect(second).center())
         assert menu.isVisible()
         assert [action.text() for action in actions] == captions
+        if language == 1:
+            assert library.edit_action.shortcut().toString() == "Shift+Enter"
+            menu.grab().save(".tmp/properties-menu.png")
         QTest.keyClick(menu, Qt.Key.Key_Escape)
         assert not menu.isVisible()
         assert window.data is retained and tree.currentItem() is second
