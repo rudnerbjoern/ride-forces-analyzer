@@ -354,7 +354,9 @@ test("interoperability has its own Python/Node runner and required merge gate re
   assert.match(integration, /setup-uv/);
   assert.match(integration, /node-version-file: '\.node-version'/);
   assert.match(integration, /pytest tests\/integration\/stream_deck /);
-  assert.doesNotMatch(integration, /npm ci|test:stream-deck/);
+  assert.match(integration, /run: npm ci --no-audit --no-fund/);
+  assert.ok(integration.indexOf("npm ci") < integration.indexOf("uv run --locked pytest tests/integration/stream_deck"));
+  assert.doesNotMatch(integration, /test:stream-deck/);
   assert.match(workflow, /STREAM_DECK_INTEGRATION_REQUIRED: \$\{\{ needs\.dependency-check\.outputs\.stream-deck-integration \}\}/);
   assert.match(workflow, /STREAM_DECK_INTEGRATION_RESULT: \$\{\{ needs\.stream-deck-integration\.result \}\}/);
 });

@@ -8,7 +8,7 @@ from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, Field, TypeAdapter, field_validator, model_validator
 
-PROTOCOL_VERSION = 4
+PROTOCOL_VERSION = 3
 Version = Annotated[int, Field(ge=PROTOCOL_VERSION, le=PROTOCOL_VERSION)]
 Identifier = Annotated[str, Field(min_length=1, max_length=128)]
 SampleIndex = Annotated[int, Field(ge=0)]
@@ -18,24 +18,24 @@ SelectionBoundary = Literal["start", "end"]
 MarkerName = Literal["start", "gravity", "incline", "end"]
 CurveName = Literal["first", "second", "third", "combined", "calibrated"]
 UnavailableReason = Literal[
-    "no_active_window",
-    "background",
-    "input_focus",
-    "dialog_open",
-    "no_recording",
-    "no_selection",
-    "empty_library",
-    "unsupported",
-    "busy",
-    "no_preview",
-    "invalid_marker",
+    "window.active.missing",
+    "application.background",
+    "input.focused",
+    "dialog.open",
+    "recording.missing",
+    "selection.missing",
+    "library.empty",
+    "operation.unsupported",
+    "application.busy",
+    "preview.missing",
+    "marker.invalid",
 ]
 ErrorCode = Literal[
-    "invalid_command",
-    "unsupported_protocol",
-    "stale_target",
-    "unavailable",
-    "analysis_failed",
+    "command.invalid",
+    "protocol.unsupported",
+    "target.stale",
+    "command.unavailable",
+    "analysis.failed",
 ]
 
 
@@ -81,8 +81,8 @@ class SimpleAction(WireModel, frozen=True):
     """
 
     name: Literal[
-        "library.open",
-        "library.open_new_window",
+        "library.open.same",
+        "library.open.new",
         "library.import",
         "library.filter.reset",
         "playback.toggle",
@@ -210,8 +210,8 @@ Action = Annotated[
     Field(discriminator="name"),
 ]
 ActionName = Literal[
-    "library.open",
-    "library.open_new_window",
+    "library.open.same",
+    "library.open.new",
     "library.import",
     "library.filter.reset",
     "library.move",
@@ -471,8 +471,8 @@ class MarkerState(WireModel, frozen=True):
         if self.status in {"pending", "failed"} and self.request_id is None:
             raise ValueError("Pending or failed application requires its request ID")
         if self.status == "failed":
-            if self.error != "analysis_failed":
-                raise ValueError("Failed marker application requires analysis_failed")
+            if self.error != "analysis.failed":
+                raise ValueError("Failed marker application requires analysis.failed")
         elif self.error is not None:
             raise ValueError("Only failed marker status carries an error")
         return self

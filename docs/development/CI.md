@@ -94,6 +94,10 @@ and every remaining selected job to succeed.
 | `skills`                  | Non-Markdown skill implementation/tests, consumed commit policy, Python manifest/lock/version and Git/editor settings; separate skill Ruff/mypy/pytest                                                                |
 | `check`                   | Always evaluate detection, contract-selection validity and selected job results: selected = success, unselected = skipped                                                                                             |
 
+The `stream-deck` job runs `npm run lint --workspace plugins/stream-deck` and
+`npm run format:check --workspace plugins/stream-deck` before its build/tests.
+ESLint and Prettier check only the plugin workspace; other jobs retain their own checks.
+
 The `code`, `ui` and `stream-deck-integration` jobs run disjoint test directories;
 no test runs twice in these jobs. Application tests explicitly exclude UI and
 `tests/integration/stream_deck`. UI tests remain serial per desktop and are required
@@ -125,8 +129,8 @@ it does not guarantee lower total runner minutes.
   `tests/integration/stream_deck/test_transport.py` is the explicit cross-domain
   check: it runs the real application Qt server with the real TypeScript client,
   including authentication and restart/reconnect. It runs only in the independent
-  `stream-deck-integration` job with both toolchains; it needs no plugin build or npm
-  packages because the client uses native Node APIs. The pure server tests remain
+  `stream-deck-integration` job with both toolchains and locked npm packages for the
+  SDK logger; it needs no plugin build. The pure server tests remain
   under `tests/support`. Run it locally with
   `uv run --locked pytest tests/integration/stream_deck`.
 - Plugin tests build the self-contained local artifact, validate it with the official

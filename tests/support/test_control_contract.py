@@ -3,6 +3,7 @@
 from copy import deepcopy
 import json
 from pathlib import Path
+import re
 from typing import get_args
 
 import pytest
@@ -12,17 +13,33 @@ from ride_forces_analyzer.runtime.control_contract import (
     ActionName,
     PROTOCOL_VERSION,
     Command,
+    ErrorCode,
     Failure,
     MarkerState,
     parse_command,
     parse_server_message,
     Result,
     StateEvent,
+    UnavailableReason,
 )
 from ride_forces_analyzer.runtime.instance import OpenRequest
 
 FIXTURE = Path(__file__).parents[2] / "tests/fixtures/stream_deck_protocol.json"
 EXAMPLES = json.loads(FIXTURE.read_text(encoding="utf-8"))
+
+
+def test_protocol_version_requires_explicit_owner_approval() -> None:
+    message = "Protocol version 3 is owner-approved; changing it requires explicit owner approval."
+    assert PROTOCOL_VERSION == 3, message
+    source = (FIXTURE.parents[2] / "plugins/stream-deck/src/protocol.ts").read_text(
+        encoding="utf-8",
+    )
+    assert re.search(r"^export const PROTOCOL_VERSION = 3;$", source, re.MULTILINE), message
+
+
+def test_error_and_reason_codes_use_dotted_names() -> None:
+    for code in (*get_args(ErrorCode), *get_args(UnavailableReason)):
+        assert re.fullmatch(r"[a-z]+(?:\.[a-z]+)+", code), code
 
 
 @pytest.mark.parametrize("action", EXAMPLES["actions"], ids=lambda value: value["name"])
@@ -86,7 +103,7 @@ def test_invalid_filter_feedback_is_rejected(choice: dict[str, object]) -> None:
         parse_server_message(json.dumps(state))
 
 
-@pytest.mark.parametrize("version", [True, "4", 0, 1, 2, 3, 5])
+@pytest.mark.parametrize("version", [True, "3", 0, 1, 2, 4, 5, 6, 7])
 def test_incompatible_and_coerced_versions_are_rejected(version: object) -> None:
     with pytest.raises(ValidationError):
         parse_command(
@@ -110,8 +127,7 @@ def test_incompatible_and_coerced_versions_are_rejected(version: object) -> None
     "action",
     [
         {"name": "unknown"},
-        {"name": "library.reset_filters"},
-        {"name": "library.open", "new_window": True},
+        {"name": "library.open.same", "new_window": True},
         {"name": "library.move", "direction": 10},
         {"name": "library.move", "direction": True},
         {"name": "position.step", "steps": 2},
@@ -175,7 +191,7 @@ def test_marker_feedback_keeps_applied_and_proposed_values_separate(status: str)
     if status == "applied":
         payload["preview"] = None
     payload["request_id"] = "apply-1" if status in {"pending", "failed"} else None
-    payload["error"] = "analysis_failed" if status == "failed" else None
+    payload["error"] = "analysis.failed" if status == "failed" else None
     marker = MarkerState.model_validate_json(json.dumps(payload))
     assert marker.applied is not None and marker.applied.sample == 50
     if status == "applied":
@@ -191,7 +207,7 @@ def test_marker_feedback_keeps_applied_and_proposed_values_separate(status: str)
         ("applied", None, None),
         ("pending", None, None),
         ("failed", "apply-1", None),
-        ("preview", None, "analysis_failed"),
+        ("preview", None, "analysis.failed"),
     ],
 )
 def test_inconsistent_marker_application_status_is_rejected(

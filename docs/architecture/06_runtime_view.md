@@ -171,26 +171,28 @@ Library dial 2 is a display-only assignment whose gestures are ignored.
 
 ### Envelopes and compatibility
 
-- Application protocol `version: 4` is independent of discovery/authentication version 1.
+- Application protocol `version: 3` is independent of discovery/authentication version 1.
   Authenticate first; transport `ready` is not an application state event.
 - Require an exact application protocol version. Invalid shapes, unknown fields/actions,
-  coercions and non-finite numbers are rejected. Contract changes require a new version.
-  Unsupported versions produce `unsupported_protocol` in the server's supported envelope;
+  coercions and non-finite numbers are rejected. The upcoming release uses protocol 3,
+  following protocol 2 in app release v2.0.0. This number stays fixed during development;
+  changing it requires explicit owner approval.
+  Unsupported versions produce `protocol.unsupported` in the server's supported envelope;
   the client enters `incompatible` and disables commands.
 - Commands contain `type: "command"`, unique per-connection `id`, explicit `target`
   and typed `action`. Duplicate IDs are rejected without repeated execution.
 - A target contains opaque `window_id`, nullable source `recording_id` and integer
   `generation`. Window IDs last for the process; generation changes when the active
   target or its loaded recording changes, including reopening the same source.
-  Copy the latest target into commands; reject mismatches as `stale_target`, never
+  Copy the latest target into commands; reject mismatches as `target.stale`, never
   redirect queued work to another Explorer. An Explorer without a recording can use Library actions.
 - Responses contain `type: "response"`, the request `id` and addressed `target`.
   `status: "ok"` confirms the GUI action was invoked; import/open outcomes continue
   through the existing loading workflow and state feedback. `pending` acknowledges analysis only.
   Pending requests receive a final `ok` or `error` with the same ID after adoption/failure.
 - Error responses use `status: "error"`, `code` and nullable availability `reason`.
-  Codes: `invalid_command`, `unsupported_protocol`, `stale_target`, `unavailable`,
-  `analysis_failed`. IDs/targets may be null only when the request cannot be identified.
+  Codes: `command.invalid`, `protocol.unsupported`, `target.stale`, `command.unavailable`,
+  `analysis.failed`. IDs/targets may be null only when the request cannot be identified.
 - State events contain `type: "state"`, a non-secret server `session_id`, monotonic
   `sequence` and the complete current snapshot. Publish after authentication and
   relevant application changes; coalesce playback updates. Ignore older sequences
@@ -205,8 +207,8 @@ Library dial 2 is a display-only assignment whose gestures are ignored.
 | `action.name`                                 | Arguments                                                            | Behavior                                                                             |
 |-----------------------------------------------|----------------------------------------------------------------------|--------------------------------------------------------------------------------------|
 | `library.move`                                | `direction: -1 \| 1`                                                 | One visible sorted/filtered entry; cyclic boundaries                                 |
-| `library.open`                                | None                                                                 | Open selection in the addressed current Explorer                                     |
-| `library.open_new_window`                     | None                                                                 | Open selection in an additional Explorer; retain the addressed window                |
+| `library.open.same`                           | None                                                                 | Open selection in the addressed current Explorer                                     |
+| `library.open.new`                            | None                                                                 | Open selection in an additional Explorer; retain the addressed window                |
 | `library.import`                              | None                                                                 | Open the existing import dialog                                                      |
 | `library.filter.reset`                        | None                                                                 | Clear park/status/search through the existing Library reset                          |
 | `library.filter.set`                          | `filter: park \| status`, `value: string \| null`                    | Set one current dropdown choice; retain the other filter and search                  |
@@ -226,7 +228,7 @@ follow the current chart axes; state supplies actual raw/directional labels.
 
 Filter values are the dropdown's exact data, not indices or display labels. Null
 means All; an empty park string means Unknown park. Unknown or removed choices
-produce `invalid_command` without changing a filter. Park values and labels are
+produce `command.invalid` without changing a filter. Park values and labels are
 plain Unicode strings, without the opaque-ID length restriction, trimming or
 normalization; JSON serialization preserves quotes, control characters and emojis.
 The existing 64 KiB UTF-8 transport-message limit still applies to the whole payload.

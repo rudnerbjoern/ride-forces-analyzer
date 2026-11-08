@@ -174,7 +174,7 @@ def exercise_filters(
         wire.LibraryFilterSet(name="library.filter.set", filter="status", value="Imported"),
     ):
         response = device.request(action)
-        assert isinstance(response, wire.Failure) and response.code == "invalid_command"
+        assert isinstance(response, wire.Failure) and response.code == "command.invalid"
     device.request(wire.SimpleAction(name="library.filter.reset"))
     assert current().count == 2
     assert current().park_filter.value is None and current().status_filter.value is None
@@ -211,7 +211,7 @@ def exercise_filters(
     response = device.request(
         wire.LibraryFilterSet(name="library.filter.set", filter="park", value=long_park),
     )
-    assert isinstance(response, wire.Failure) and response.code == "invalid_command"
+    assert isinstance(response, wire.Failure) and response.code == "command.invalid"
     window.library.refresh()
     assert any(
         option.value == long_park and option.label == long_park
@@ -341,7 +341,7 @@ def exercise(application: RecordingApplication) -> None:
         == "ok"
     )
     blocked = device.request(wire.CurveSet(name="curve.set", curve="combined", enabled=True))
-    assert isinstance(blocked, wire.Failure) and blocked.reason == "unsupported"
+    assert isinstance(blocked, wire.Failure) and blocked.reason == "operation.unsupported"
     device.request(wire.CurveSet(name="curve.set", curve="calibrated", enabled=True))
     device.request(wire.CurveSet(name="curve.set", curve="combined", enabled=True))
     assert window.combined_toggle.isChecked()
@@ -409,7 +409,7 @@ def exercise(application: RecordingApplication) -> None:
     incompatible["version"] = 99
     device.socket.sendTextMessage(json.dumps(incompatible))
     future_error = device.final("future")
-    assert isinstance(future_error, wire.Failure) and future_error.code == "unsupported_protocol"
+    assert isinstance(future_error, wire.Failure) and future_error.code == "protocol.unsupported"
     duplicate = wire.Command(
         version=wire.PROTOCOL_VERSION,
         type="command",
@@ -426,16 +426,16 @@ def exercise(application: RecordingApplication) -> None:
     duplicate_error = next(
         v for v in device.messages if isinstance(v, wire.Failure) and v.id == duplicate.id
     )
-    assert duplicate_error.code == "invalid_command"
+    assert duplicate_error.code == "command.invalid"
     assert not window.navigation.playback.playing
     window.navigation.position.setFocus()
     wait_until(lambda: isinstance(controller.snapshot().availability, wire.Unavailable))
     blocked = device.request(wire.PositionStep(name="position.step", steps=1))
-    assert isinstance(blocked, wire.Failure) and blocked.reason == "input_focus"
+    assert isinstance(blocked, wire.Failure) and blocked.reason == "input.focused"
     blocked = device.request(
         wire.LibraryFilterSet(name="library.filter.set", filter="park", value="Park A"),
     )
-    assert isinstance(blocked, wire.Failure) and blocked.reason == "input_focus"
+    assert isinstance(blocked, wire.Failure) and blocked.reason == "input.focused"
     activate(application, window)
     with pytest.MonkeyPatch.context() as patch:
         patch.setattr(
@@ -444,21 +444,21 @@ def exercise(application: RecordingApplication) -> None:
             lambda: Qt.ApplicationState.ApplicationInactive,
         )
         blocked = device.request(wire.SimpleAction(name="playback.toggle"))
-        assert isinstance(blocked, wire.Failure) and blocked.reason == "background"
+        assert isinstance(blocked, wire.Failure) and blocked.reason == "application.background"
         blocked = device.request(
             wire.LibraryFilterSet(name="library.filter.set", filter="park", value="Park A"),
         )
-        assert isinstance(blocked, wire.Failure) and blocked.reason == "background"
+        assert isinstance(blocked, wire.Failure) and blocked.reason == "application.background"
     modal = QDialog(window)
     modal.setWindowModality(Qt.WindowModality.WindowModal)
     modal.show()
     wait_until(lambda: application.activeModalWidget() is modal)
     blocked = device.request(wire.SimpleAction(name="playback.toggle"))
-    assert isinstance(blocked, wire.Failure) and blocked.reason == "dialog_open"
+    assert isinstance(blocked, wire.Failure) and blocked.reason == "dialog.open"
     blocked = device.request(
         wire.LibraryFilterSet(name="library.filter.set", filter="park", value="Park A"),
     )
-    assert isinstance(blocked, wire.Failure) and blocked.reason == "dialog_open"
+    assert isinstance(blocked, wire.Failure) and blocked.reason == "dialog.open"
     modal.close()
     activate(application, window)
 
@@ -540,7 +540,9 @@ def exercise(application: RecordingApplication) -> None:
             wait_until(entered.is_set)
             assert store.markers(source) == saved
             blocked = device.request(wire.MarkerDecision(name="marker.apply", marker="end"))
-            assert isinstance(blocked, wire.Failure) and blocked.reason == "busy", blocked
+            assert isinstance(blocked, wire.Failure) and blocked.reason == "application.busy", (
+                blocked
+            )
         finally:
             release.set()
         assert device.final(response.id).status == "ok"
@@ -618,7 +620,7 @@ def exercise(application: RecordingApplication) -> None:
     selection = controller.snapshot().library
     assert selection is not None and selection.selected is not None
     selected = selection.selected.id
-    device.request(wire.SimpleAction(name="library.open"))
+    device.request(wire.SimpleAction(name="library.open.same"))
     wait_until(
         lambda: (
             window.data is not None
@@ -639,10 +641,10 @@ def exercise(application: RecordingApplication) -> None:
     assert window.data is loaded and len(application.windows) == 1
     window.library.search.setText("no matching recording")
     blocked = device.request(wire.LibraryMove(name="library.move", direction=1))
-    assert isinstance(blocked, wire.Failure) and blocked.reason == "empty_library"
-    for operation in ("library.open", "library.open_new_window"):
+    assert isinstance(blocked, wire.Failure) and blocked.reason == "library.empty"
+    for operation in ("library.open.same", "library.open.new"):
         blocked = device.request(wire.SimpleAction(name=operation))
-        assert isinstance(blocked, wire.Failure) and blocked.reason == "no_selection"
+        assert isinstance(blocked, wire.Failure) and blocked.reason == "selection.missing"
     window.library.park_filter.setCurrentIndex(window.library.park_filter.findData("Park A"))
     window.library.workflow_filter.setCurrentIndex(
         window.library.workflow_filter.findData("completed"),
@@ -672,7 +674,7 @@ def exercise(application: RecordingApplication) -> None:
     assert selected is not None and selected.source_sha256 != window.data.source.source_sha256
     original_data = window.data
     existing_windows = set(application.windows)
-    result = device.request(wire.SimpleAction(name="library.open_new_window"))
+    result = device.request(wire.SimpleAction(name="library.open.new"))
     assert isinstance(result, wire.Result) and result.status == "ok"
     window.library.new_window_action.trigger()
     assert len(application.windows) == len(existing_windows) + 1
@@ -715,7 +717,7 @@ def exercise(application: RecordingApplication) -> None:
     for _ in range(5):
         activate(application, window)
         created.showMinimized()
-        result = device.request(wire.SimpleAction(name="library.open_new_window"))
+        result = device.request(wire.SimpleAction(name="library.open.new"))
         assert isinstance(result, wire.Result) and result.status == "ok"
         wait_until(lambda: application.activeWindow() is created)
         assert not created.isMinimized()
@@ -752,12 +754,12 @@ def exercise(application: RecordingApplication) -> None:
     assert not plot.marker_previews
     assert not any(line.isVisible() for line in plot.marker_preview_lines.values())
     blocked = device.request(wire.SimpleAction(name="library.import"), target=old_target)
-    assert isinstance(blocked, wire.Failure) and blocked.code == "stale_target"
+    assert isinstance(blocked, wire.Failure) and blocked.code == "target.stale"
     blocked = device.request(
         wire.LibraryFilterSet(name="library.filter.set", filter="park", value=None),
         target=old_target,
     )
-    assert isinstance(blocked, wire.Failure) and blocked.code == "stale_target"
+    assert isinstance(blocked, wire.Failure) and blocked.code == "target.stale"
     other.close()
     activate(application, window)
     outside = QWidget()
@@ -767,7 +769,7 @@ def exercise(application: RecordingApplication) -> None:
     assert controller.snapshot().target is None
     assert controller.snapshot().availability == wire.Unavailable(
         available=False,
-        reason="no_active_window",
+        reason="window.active.missing",
     )
     outside.close()
     activate(application, window)

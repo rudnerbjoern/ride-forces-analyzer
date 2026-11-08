@@ -23,7 +23,7 @@ define boundaries, supported platforms and opt-in behavior.
 ## Integration and command contract
 
 - Separate connections: plugin ↔ Stream Deck SDK; plugin ↔ Analyzer loopback WebSocket.
-- Discovery/authentication version 1; application protocol version 4. Strict typed
+- Discovery/authentication version 1; application protocol version 3. Strict typed
   messages identify the target window, recording and generation. Incompatible or
   stale-target commands are rejected rather than redirected.
 - Use the active Explorer; never select an arbitrary window or activate Analyzer
@@ -33,9 +33,30 @@ define boundaries, supported platforms and opt-in behavior.
   of Analyzer command availability.
 - Feedback follows confirmed GUI/service state. A press or transport acknowledgement
   must not imply that a toggle changed or marker analysis was adopted.
+- Each newly received command failure alerts its still-visible originating key or
+  dial once, retaining Failed feedback and target checks. Rejected Home profile
+  switches also alert; unused dial gestures remain silent.
+- The key inspector saves valid changes automatically. Invalid restored settings
+  show defaults with an inline warning; unavailable settings connections and unsent
+  changes remain visible until resolved. Setup help opens the existing user guide
+  through Stream Deck's native URL command.
 - Disconnect clears actionable/pending state; reconnect requires a fresh snapshot.
   Never queue/replay disconnected commands. Preserve the separate file-open transport.
-- Coalesce playback feedback and reuse existing analysis services.
+- Keys, including local Step size, Plus dials/menu keys and the Neo InfoBar coalesce queued visuals to the
+  latest confirmed state. Each action admits at most ten visual SDK calls per
+  rolling second, including layout, state, image, title and feedback updates.
+  Disappearance cancels queued visuals; target changes replace obsolete output.
+  Commands, failure alerts and client target clearing do not wait for this budget.
+  Compare state, image and title independently; layout feedback sends only changed
+  fields. Dial configuration images and touch icons remain separate destinations.
+  Appearance, layout changes and reconnects repaint required content; retain field
+  values only after successful SDK sends.
+  Reuse existing analysis services.
+- Operational diagnostics use the SDK file logger. Discovery, authentication and
+  connection outcomes are logged once per reason transition; identical offline
+  retries remain quiet. Protocol/native/rendering failures log fixed categories
+  and safe error codes without authentication tokens, recording payloads, raw
+  exception messages or stacks.
 
 Detailed ownership and wire contracts remain in
 [building blocks](../architecture/05_building_block_view.md),
@@ -79,6 +100,7 @@ Detailed ownership and wire contracts remain in
   window instead, without reloading or changing its view. It requires a selection
   and obeys the same locks.
 - Library stepping always uses one entry, independent of Step size.
+- Wire commands and key settings use `library.open.same` and `library.open.new`.
 - Keys show short action names and selected index/count. Plus touch/Neo InfoBar
   show the selected name; full names remain available in the Analyzer Library.
 

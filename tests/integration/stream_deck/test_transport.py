@@ -43,6 +43,7 @@ def test_real_node_client_discovers_qt_and_reconnects_after_restart(
 
     server.received.connect(received)
     process = QProcess()
+    process.setWorkingDirectory(str(export_directory.resolve()))
     process.setProgram(node)
     process.setArguments([str(Path(__file__).with_name("stream_deck_client.mjs").resolve())])
     try:

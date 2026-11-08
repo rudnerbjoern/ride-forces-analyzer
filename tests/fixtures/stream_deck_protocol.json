@@ -6,10 +6,10 @@
   },
   "actions": [
     {
-      "name": "library.open"
+      "name": "library.open.same"
     },
     {
-      "name": "library.open_new_window"
+      "name": "library.open.new"
     },
     {
       "name": "library.import"
@@ -136,7 +136,7 @@
   ],
   "messages": [
     {
-      "version": 4,
+      "version": 3,
       "type": "state",
       "session_id": "session-1",
       "sequence": 12,
@@ -149,7 +149,7 @@
         "available": true
       },
       "controls": {
-        "library.open": {
+        "library.open.same": {
           "available": true
         },
         "library.import": {
@@ -200,7 +200,7 @@
         "selection.step": {
           "available": true
         },
-        "library.open_new_window": {
+        "library.open.new": {
           "available": true
         },
         "library.filter.reset": {
@@ -351,11 +351,11 @@
             },
             "apply": {
               "available": false,
-              "reason": "no_preview"
+              "reason": "preview.missing"
             },
             "discard": {
               "available": false,
-              "reason": "no_preview"
+              "reason": "preview.missing"
             }
           }
         },
@@ -399,11 +399,11 @@
             },
             "apply": {
               "available": false,
-              "reason": "no_preview"
+              "reason": "preview.missing"
             },
             "discard": {
               "available": false,
-              "reason": "no_preview"
+              "reason": "preview.missing"
             }
           }
         },
@@ -424,11 +424,11 @@
             },
             "apply": {
               "available": false,
-              "reason": "no_preview"
+              "reason": "preview.missing"
             },
             "discard": {
               "available": false,
-              "reason": "no_preview"
+              "reason": "preview.missing"
             }
           }
         }
@@ -447,14 +447,14 @@
       }
     },
     {
-      "version": 4,
+      "version": 3,
       "type": "state",
       "session_id": "session-1",
       "sequence": 13,
       "target": null,
       "availability": {
         "available": false,
-        "reason": "no_active_window"
+        "reason": "window.active.missing"
       },
       "controls": {
         "selection.step": {
@@ -480,7 +480,7 @@
       }
     },
     {
-      "version": 4,
+      "version": 3,
       "type": "response",
       "id": "request-1",
       "target": {
@@ -491,7 +491,7 @@
       "status": "ok"
     },
     {
-      "version": 4,
+      "version": 3,
       "type": "response",
       "id": "request-1",
       "target": {
@@ -502,7 +502,7 @@
       "status": "pending"
     },
     {
-      "version": 4,
+      "version": 3,
       "type": "response",
       "id": "request-1",
       "target": {
@@ -511,16 +511,16 @@
         "generation": 3
       },
       "status": "error",
-      "code": "unavailable",
-      "reason": "background"
+      "code": "command.unavailable",
+      "reason": "application.background"
     },
     {
-      "version": 4,
+      "version": 3,
       "type": "response",
       "id": null,
       "target": null,
       "status": "error",
-      "code": "invalid_command",
+      "code": "command.invalid",
       "reason": null
     }
   ]

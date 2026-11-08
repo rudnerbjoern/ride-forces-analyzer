@@ -42,6 +42,25 @@ version is imposed. Clean tagged release builds compare against the preceding ta
 tagging HEAD cannot conceal an omitted increase. Full Git history and release tags
 are required; no GitHub request or additional plugin tag is needed.
 
+## Code style
+
+Elgato's recommended ESLint rules and Prettier configuration apply only within
+this workspace. Run from the repository root:
+
+```powershell
+npm run lint --workspace plugins/stream-deck
+npm run format:check --workspace plugins/stream-deck
+```
+
+The Stream Deck CI job runs both checks before building/testing the plugin.
+Warnings fail the lint command; formatting differences fail the Prettier check.
+Neither check rewrites files.
+The local EditorConfig matches Elgato's template, including tabs and a 120-character line
+width, with spaces for JSON, Markdown and YAML. Generated `dist/` and `node_modules/`
+are excluded. Prettier is configured through this workspace's `package.json`;
+the rest of the repository retains its own settings. Development dependencies use
+TypeScript 5.9 to satisfy the Elgato configuration's peer requirements.
+
 ## Local build and installation
 
 Use the repository's [Windows setup](../../docs/development/SETUP.md). From the repository root:
@@ -168,11 +187,10 @@ owns bundled-profile identity and installation defaults.
   production feedback, including native-size state/lock examples. It does not
   establish hardware qualification; settings and optical axes belong to the
   [presentation contract](../../docs/implementation/STREAM_DECK.md#state-feedback-and-locks).
-- Application protocol 4 carries selection bounds and Library filters;
+- Application protocol 3 carries selection bounds, Library filters and the
+  `library.open.same` / `library.open.new` commands;
   discovery/authentication stays at 1. Update/restart both components together.
-  Existing key settings using `library.reset_filters` map to `library.filter.reset`;
-  only the canonical name is sent on the wire. The key-settings editor does not
-  expose filter-set commands.
+  The key-settings editor does not expose filter-set commands.
 - Neo uses the shared icons/two-line captions. Its InfoBar has no input handlers;
   native Touch Points change pages independently of application feedback.
 - `profiles/mobile.streamDeckProfile` targets SDK device type 3 with six keys,
@@ -187,7 +205,7 @@ owns bundled-profile identity and installation defaults.
 3. Choose the command and applicable direction, sample step, curve or marker.
 4. Keep the intended Explorer active. Input fields, dialogs and background use block commands.
 
-Create separate marker Preview, Apply and Discard keys. Preview steps are ±1/±10
+Create separate marker Preview, Apply and Discard keys. Preview steps are ±1/±10/±20
 source samples. Library browsing selects one visible entry cyclically; Open opens
 the selection in the current Explorer. Generic key bindings are available on Plus
 and Neo; native qualification limits are recorded in

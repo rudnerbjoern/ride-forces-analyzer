@@ -226,7 +226,7 @@ class StreamDeckController(QObject):
         if context != self._context:
             pending, self._pending = self._pending, None
             if pending is not None:
-                self._failure(pending.client, pending.command, "stale_target")
+                self._failure(pending.client, pending.command, "target.stale")
             self._context = context
             self._generation += 1
             self._previews.clear()
@@ -246,21 +246,21 @@ class StreamDeckController(QObject):
         """Apply foreground, input, modal and import guards before dispatch."""
         reason: wire.UnavailableReason | None = None
         if window is None:
-            reason = "no_active_window"
+            reason = "window.active.missing"
         elif self.application.applicationState() != Qt.ApplicationState.ApplicationActive:
-            reason = "background"
+            reason = "application.background"
         elif (
             self.application.activeModalWidget() is not None
             or self.application.activePopupWidget() is not None
         ):
-            reason = "dialog_open"
+            reason = "dialog.open"
         elif isinstance(
             self.application.focusWidget(),
             (QAbstractSpinBox, QComboBox, QLineEdit, QPlainTextEdit, QTextEdit),
         ):
-            reason = "input_focus"
+            reason = "input.focused"
         elif not window.open_action.isEnabled():
-            reason = "busy"
+            reason = "application.busy"
         return (
             wire.Unavailable(available=False, reason=reason)
             if reason
@@ -320,22 +320,22 @@ class StreamDeckController(QObject):
         """Expose preview/apply/discard guards for the current marker context."""
         reason: wire.UnavailableReason | None = None
         if window.data is None:
-            reason = "no_recording"
+            reason = "recording.missing"
         elif window.analysis_controller is None or window.data.analysis is None:
-            reason = "unsupported"
+            reason = "operation.unsupported"
         elif window.analysis_controller.pending:
-            reason = "busy"
+            reason = "application.busy"
         preview = self._previews.get(marker)
         apply_reason = reason
         if preview is None:
-            apply_reason = apply_reason or "no_preview"
+            apply_reason = apply_reason or "preview.missing"
         elif window.data is not None and (
             (marker == "start" and preview > window.data.ride_bounds[1])
             or (marker == "end" and preview < window.data.ride_bounds[0])
         ):
-            apply_reason = apply_reason or "invalid_marker"
+            apply_reason = apply_reason or "marker.invalid"
         return {
-            "preview": wire.Unavailable(available=False, reason=reason or "invalid_marker")
+            "preview": wire.Unavailable(available=False, reason=reason or "marker.invalid")
             if reason or self._positions(window)[marker] is None
             else wire.Available(available=True),
             "apply": wire.Unavailable(available=False, reason=apply_reason)
@@ -343,9 +343,9 @@ class StreamDeckController(QObject):
             else wire.Available(available=True),
             "discard": wire.Unavailable(
                 available=False,
-                reason="busy"
+                reason="application.busy"
                 if self._pending is not None and self._pending.marker == marker
-                else "no_preview",
+                else "preview.missing",
             )
             if preview is None or (self._pending is not None and self._pending.marker == marker)
             else wire.Available(available=True),
@@ -409,23 +409,29 @@ class StreamDeckController(QObject):
             else None,
         )
         if not items:
-            controls["library.move"] = wire.Unavailable(available=False, reason="empty_library")
+            controls["library.move"] = wire.Unavailable(available=False, reason="library.empty")
         if library.selected is None:
-            controls["library.open"] = wire.Unavailable(available=False, reason="no_selection")
-            controls["library.open_new_window"] = controls["library.open"]
+            controls["library.open.same"] = wire.Unavailable(
+                available=False,
+                reason="selection.missing",
+            )
+            controls["library.open.new"] = controls["library.open.same"]
         data = window.data
         if data is None:
             for name in controls:
                 if not name.startswith("library."):
-                    controls[name] = wire.Unavailable(available=False, reason="no_recording")
+                    controls[name] = wire.Unavailable(available=False, reason="recording.missing")
             return state.model_copy(update={"library": library})
         if not window.inspector.first.isEnabled() or not window.inspector.last.isEnabled():
-            controls["selection.step"] = wire.Unavailable(available=False, reason="busy")
+            controls["selection.step"] = wire.Unavailable(
+                available=False,
+                reason="application.busy",
+            )
         for name in ("smoothing.step", "smoothing.reset"):
             if not window.inspector.smoothing_slider.isEnabled():
-                controls[name] = wire.Unavailable(available=False, reason="unsupported")
+                controls[name] = wire.Unavailable(available=False, reason="operation.unsupported")
             elif window.analysis_controller is not None and window.analysis_controller.pending:
-                controls[name] = wire.Unavailable(available=False, reason="busy")
+                controls[name] = wire.Unavailable(available=False, reason="application.busy")
         navigation = window.navigation
         playback = wire.PlaybackState(
             playing=navigation.playback is not None and navigation.playback.playing,
@@ -450,7 +456,7 @@ class StreamDeckController(QObject):
                 active=checkbox.isChecked() and (name != "combined" or data.calibrated_enabled),
                 availability=wire.Available(available=True)
                 if checkbox.isEnabled() and (name != "combined" or data.calibrated_enabled)
-                else wire.Unavailable(available=False, reason="unsupported"),
+                else wire.Unavailable(available=False, reason="operation.unsupported"),
             )
             for name, checkbox in zip(_CURVES, checkboxes, strict=True)
         )
@@ -510,7 +516,7 @@ class StreamDeckController(QObject):
         try:
             command = wire.parse_command(payload)
         except ValidationError:
-            code: wire.ErrorCode = "invalid_command"
+            code: wire.ErrorCode = "command.invalid"
             request_id: str | None = None
             target: wire.Target | None = None
             try:
@@ -521,7 +527,7 @@ class StreamDeckController(QObject):
                         type(envelope.get("version")) is int
                         and envelope.get("version") != wire.PROTOCOL_VERSION
                     ):
-                        code = "unsupported_protocol"
+                        code = "protocol.unsupported"
                     raw_id = envelope.get("id")
                     if isinstance(raw_id, str) and 0 < len(raw_id) <= 128:
                         request_id = raw_id
@@ -548,12 +554,12 @@ class StreamDeckController(QObject):
             self._requests[sender] = set()
             sender.disconnected.connect(partial(self._requests.pop, sender, None))
         if command.id in self._requests[sender]:
-            self._failure(sender, command, "invalid_command")
+            self._failure(sender, command, "command.invalid")
             return
         self._requests[sender].add(command.id)
         state = self.snapshot()
         if command.target != state.target:
-            self._failure(sender, command, "stale_target")
+            self._failure(sender, command, "target.stale")
             return
         availability = (
             state.availability
@@ -561,11 +567,11 @@ class StreamDeckController(QObject):
             else state.controls[command.action.name]
         )
         if isinstance(availability, wire.Unavailable):
-            self._failure(sender, command, "unavailable", availability.reason)
+            self._failure(sender, command, "command.unavailable", availability.reason)
             return
         window = self._active_window()
         if window is None:
-            self._failure(sender, command, "stale_target")
+            self._failure(sender, command, "target.stale")
             return
         action = command.action
         if isinstance(action, wire.LibraryFilterSet):
@@ -575,7 +581,7 @@ class StreamDeckController(QObject):
                 else window.library.workflow_filter
             )
             if filter_control.findData(action.value) < 0:
-                self._failure(sender, command, "invalid_command")
+                self._failure(sender, command, "command.invalid")
                 return
         if isinstance(action, (wire.MarkerPreview, wire.MarkerDecision)):
             marker = next(value for value in state.markers if value.marker == action.marker)
@@ -588,12 +594,12 @@ class StreamDeckController(QObject):
             )
             permitted = marker.availability[choice]
             if isinstance(permitted, wire.Unavailable):
-                self._failure(sender, command, "unavailable", permitted.reason)
+                self._failure(sender, command, "command.unavailable", permitted.reason)
                 return
         if isinstance(action, wire.CurveSet):
             curve = next(value for value in state.curves if value.curve == action.curve)
             if isinstance(curve.availability, wire.Unavailable):
-                self._failure(sender, command, "unavailable", curve.availability.reason)
+                self._failure(sender, command, "command.unavailable", curve.availability.reason)
                 return
         status = self._execute(window, sender, command)
         self.transport.reply(
@@ -700,11 +706,11 @@ class StreamDeckController(QObject):
                 window.analysis_controller.request_markers(bounds, calibration)
                 return "pending"
         else:
-            if action.name == "library.open":
+            if action.name == "library.open.same":
                 entry = window.library.selected_entry
                 assert entry is not None
                 window.open_archived(entry.source_sha256)
-            elif action.name == "library.open_new_window":
+            elif action.name == "library.open.new":
                 window.library.new_window_action.trigger()
             elif action.name == "library.import":
                 window.choose_file()
@@ -763,8 +769,8 @@ class StreamDeckController(QObject):
                     ).model_dump_json(),
                 )
             else:
-                self._errors[pending.marker] = "analysis_failed"
-                self._failure(pending.client, pending.command, "analysis_failed")
+                self._errors[pending.marker] = "analysis.failed"
+                self._failure(pending.client, pending.command, "analysis.failed")
         self.schedule()
 
     def _analysis_failed(self, window: ExplorerWindow, _message: str) -> None:
@@ -773,8 +779,8 @@ class StreamDeckController(QObject):
         pending = self._pending
         if pending is not None and pending.window is window:
             self._pending = None
-            self._errors[pending.marker] = "analysis_failed"
-            self._failure(pending.client, pending.command, "analysis_failed")
+            self._errors[pending.marker] = "analysis.failed"
+            self._failure(pending.client, pending.command, "analysis.failed")
         self.schedule()
 
     def _recording_changed(self, window: ExplorerWindow) -> None:

@@ -11,25 +11,25 @@ const { OptionGroup } = await import(pathToFileURL(sdk.resolve("@elgato/utils"))
 const { JsonRpcRequest } = await import(pathToFileURL(sdk.resolve("@elgato/utils/rpc")).href);
 
 test("SDK schema consumer resolves the patched Zod override", () => {
-  const { overrides } = require("../../../package.json");
+	const { overrides } = require("../../../package.json");
 
-  assert.equal(utils("zod/package.json").version, overrides["@elgato/utils"].zod);
+	assert.equal(utils("zod/package.json").version, overrides["@elgato/utils"].zod);
 });
 
 test("SDK option schemas retain nested groups and reject invalid values", () => {
-  const group = {
-    type: "option-group",
-    label: "Explorer",
-    options: [{ type: "option", label: "Playback", value: "playback" }],
-  };
+	const group = {
+		type: "option-group",
+		label: "Explorer",
+		options: [{ type: "option", label: "Playback", value: "playback" }],
+	};
 
-  assert.deepEqual(OptionGroup.parse(group), group);
-  assert.equal(OptionGroup.safeParse({ ...group, options: [{ value: {} }] }).success, false);
+	assert.deepEqual(OptionGroup.parse(group), group);
+	assert.equal(OptionGroup.safeParse({ ...group, options: [{ value: {} }] }).success, false);
 });
 
 test("SDK RPC schemas retain command parameters and reject invalid methods", () => {
-  const request = { jsonrpc: "2.0", method: "test", id: "1", params: { value: 1 } };
+	const request = { jsonrpc: "2.0", method: "test", id: "1", params: { value: 1 } };
 
-  assert.deepEqual(JsonRpcRequest.parse(request), request);
-  assert.equal(JsonRpcRequest.safeParse({ ...request, method: 1 }).success, false);
+	assert.deepEqual(JsonRpcRequest.parse(request), request);
+	assert.equal(JsonRpcRequest.safeParse({ ...request, method: 1 }).success, false);
 });
