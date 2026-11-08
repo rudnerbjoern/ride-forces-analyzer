@@ -22,6 +22,7 @@ from zipfile import ZipFile
 from ride_forces_analyzer import __version__
 from ride_forces_analyzer.runtime.paths import runtime_target
 from scripts.build_windows import APP_NAME, ROOT, digest
+from scripts.license_bundle import BUNDLE_NAME
 
 
 def validate_member(name: str, target: str | None = None) -> None:
@@ -151,16 +152,11 @@ def check(assets: Path, recording: Path, *, expected_target: str | None = None) 
         executable = bundle / "Contents/MacOS" / APP_NAME if macos else bundle / APP_NAME
         if not executable.is_file() or not os.access(executable, os.X_OK):
             raise ValueError("Extracted executable or its execute permission is missing")
-        licenses = (
-            bundle / "Contents/Resources/licenses" if macos else bundle / "_internal/licenses"
-        )
+        licenses = bundle / "Contents/Resources" if macos else bundle / "_internal"
         for name in (
             "LICENSE",
             "THIRD_PARTY_NOTICES.md",
-            "third-party/inventory.json",
-            "third-party/PYTHON-LICENSE.txt",
-            "third-party/QT-NOTICES.txt",
-            "third-party/REDISTRIBUTION.json",
+            BUNDLE_NAME,
         ):
             if not (licenses / name).is_file():
                 raise ValueError(f"Missing native package notice: {name}")

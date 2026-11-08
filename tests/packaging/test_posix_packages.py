@@ -12,6 +12,7 @@ from zipfile import ZipFile
 
 import pytest
 
+from scripts.license_bundle import BUNDLE_NAME
 from scripts import build_posix
 from scripts.check_posix_packages import extract, validate_member
 
@@ -35,12 +36,13 @@ def test_native_builder_preserves_version_notices_and_archive_layout(
     monkeypatch.setattr(build_posix, "ROOT", root)
     monkeypatch.setattr(build_posix, "runtime_target", lambda: target)
 
-    def notices(folder: Path) -> None:
-        folder.mkdir()
-        (folder / "inventory.json").write_text("[]", encoding="utf-8")
+    def notices(destination: Path) -> None:
+        destination.write_text("Synthetic runtime notices", encoding="utf-8")
 
     def run(arguments: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
         if "PyInstaller" in arguments:
+            assert f"{work / BUNDLE_NAME}:." in arguments
+            assert not any(":licenses" in value for value in arguments)
             assert "ride_forces_analyzer.storage.library" in arguments
             assert "sqlalchemy.dialects.sqlite" in arguments
             assert (

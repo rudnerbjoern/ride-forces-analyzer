@@ -12,7 +12,11 @@ from PySide6.QtWebSockets import QWebSocket
 from PySide6.QtWidgets import QApplication
 from pytestqt.qtbot import QtBot
 
-from ride_forces_analyzer.runtime.stream_deck import ControlServer, MAX_MESSAGE_BYTES
+from ride_forces_analyzer.runtime.stream_deck import (
+    ControlServer,
+    TRANSPORT_VERSION,
+    MAX_MESSAGE_BYTES,
+)
 
 
 @pytest.mark.qt_log_level_fail("WARNING")
@@ -36,7 +40,7 @@ def test_qt_authentication_state_exchange_and_discovery_ownership(
     server.command_received.connect(remember_sender)
     try:
         descriptor = json.loads(filename.read_text())
-        assert descriptor["version"] == 1
+        assert descriptor["version"] == TRANSPORT_VERSION
         assert server.server.serverAddress().toString() == "127.0.0.1"
         assert descriptor["port"] == server.server.serverPort()
         with pytest.raises(RuntimeError, match="already listening"):
@@ -45,9 +49,9 @@ def test_qt_authentication_state_exchange_and_discovery_ownership(
         for hello in [
             "not JSON",
             "{}",
-            json.dumps({"version": 2, "token": descriptor["token"]}),
+            json.dumps({"version": TRANSPORT_VERSION + 1, "token": descriptor["token"]}),
             json.dumps({"version": True, "token": descriptor["token"]}),
-            json.dumps({"version": 1, "token": "0" * 64}),
+            json.dumps({"version": TRANSPORT_VERSION, "token": "0" * 64}),
         ]:
             client = QWebSocket()
             clients.append(client)
@@ -79,9 +83,11 @@ def test_qt_authentication_state_exchange_and_discovery_ownership(
         client.textMessageReceived.connect(messages.append)
         with qtbot.waitSignal(client.connected):
             client.open(QUrl(f"ws://127.0.0.1:{descriptor['port']}"))
-        client.sendTextMessage(json.dumps({"version": 1, "token": descriptor["token"]}))
+        client.sendTextMessage(
+            json.dumps({"version": TRANSPORT_VERSION, "token": descriptor["token"]}),
+        )
         qtbot.waitUntil(lambda: len(messages) == 2)
-        assert json.loads(messages[0]) == {"transport": "ready", "version": 1}
+        assert json.loads(messages[0]) == {"transport": "ready", "version": TRANSPORT_VERSION}
         assert messages[1] == '{"state":"initial"}'
         client.sendTextMessage('{"command":"probe"}')
         qtbot.waitUntil(lambda: commands == ['{"command":"probe"}'])

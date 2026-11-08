@@ -330,6 +330,10 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-npm-${{ hashFiles('.node-version') }}-${{ hashFiles('package-lock.json') }}
           restore-keys: ${{ runner.os }}-${{ runner.arch }}-npm-${{ hashFiles('.node-version') }}-
       - run: npm ci --no-audit --no-fund
+      - name: Lint Stream Deck plugin
+        run: npm run lint --workspace plugins/stream-deck
+      - name: Check Stream Deck formatting
+        run: npm run format:check --workspace plugins/stream-deck
       - run: npm run test:stream-deck
       - name: Pack tested plugin for release
         if: ${{ inputs.upload-packages == true }}
@@ -366,6 +370,8 @@ jobs:
     if: ${{ needs.dependency-check.outputs.stream-deck-integration == 'true' }}
     runs-on: windows-latest
     timeout-minutes: 5
+    env:
+      NPM_CONFIG_CACHE: ${{ github.workspace }}/.tmp/npm-cache
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -381,6 +387,13 @@ jobs:
         with:
           node-version-file: '.node-version'
           package-manager-cache: false
+      - name: Cache npm packages
+        uses: actions/cache@v6.1.0
+        with:
+          path: ${{ env.NPM_CONFIG_CACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-npm-${{ hashFiles('.node-version') }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-npm-${{ hashFiles('.node-version') }}-
+      - run: npm ci --no-audit --no-fund
       - name: Native application/plugin interoperability
         id: pytest
         run: uv run --locked pytest tests/integration/stream_deck -ra --durations=20 --junitxml=.tmp/test-results/stream-deck-integration.xml

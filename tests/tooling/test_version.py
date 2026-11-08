@@ -6,7 +6,7 @@ import tomllib
 
 import pytest
 
-from scripts import capture_app_reference
+from scripts import generate_app_screenshots
 
 
 def test_version() -> None:
@@ -19,7 +19,7 @@ def test_screenshot_capture_rejects_a_mismatched_version(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(capture_app_reference, "__version__", "0.0.0")
+    monkeypatch.setattr(generate_app_screenshots, "__version__", "0.0.0")
     with pytest.raises(ValueError, match="Screenshot version .* differs from project version"):
-        capture_app_reference.capture_reference(tmp_path / "images")
+        generate_app_screenshots.capture_reference(tmp_path / "images")
     assert not (tmp_path / "images").exists()

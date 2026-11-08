@@ -30,6 +30,7 @@ REQUIRED_FILES = cast(tuple[str, ...], MODULE["REQUIRED_FILES"])
         ("missing-rfdb-recording", "v0.1.0", "inventory"),
         ("extra-recording", "v0.1.0", "inventory"),
         ("missing-license", "v0.1.0", "required"),
+        ("missing-license-collector", "v0.1.0", "required"),
         ("missing-owner-grant", "v0.1.0", "required"),
         ("private-file", "v0.1.0", "unexpected"),
         ("binary", "v0.1.0", "unexpected"),
@@ -66,6 +67,8 @@ def test_source_archive_contract(change: str, tag: str, error: str | None) -> No
         del files["tests/fixtures/rfdb/example.forces"]
     elif change == "extra-recording":
         files["tests/fixtures/real/additional.forces"] = recording
+    elif change == "missing-license-collector":
+        del files["scripts/license_bundle.py"]
     elif change == "missing-license":
         del files["LICENSE"]
     elif change == "missing-owner-grant":

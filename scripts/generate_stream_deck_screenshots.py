@@ -89,18 +89,18 @@ long.state.library.park_filter.options.find(option => option.value === 'Park B')
 addCase('Library · proposed filters / long text',long,'library',librarySettings,[undefined,undefined,'Park B','video_ready']);
 const mixed = client();
 for (const [index,status] of [[2,'pending'],[3,'failed']]) {
- Object.assign(mixed.state.markers[index],{status,preview:{sample:60,time_seconds:1.2,label:'00:01.20'},request_id:'example',error:status==='failed'?'analysis_failed':null,
+ Object.assign(mixed.state.markers[index],{status,preview:{sample:60,time_seconds:1.2,label:'00:01.20'},request_id:'example',error:status==='failed'?'analysis.failed':null,
   availability:{preview:{available:true},apply:{available:true},discard:{available:true}}});
 }
 addCase('Markers · Applied / Preview / Pending / Failed',mixed,'markers',markerSettings);
-for (const [reason,label] of Object.entries({input_focus:'Editing',dialog_open:'Dialog open',background:'Background',busy:'Busy'})) {
+for (const [reason,label] of Object.entries({'input.focused':'Editing','dialog.open':'Dialog open','application.background':'Background','application.busy':'Busy'})) {
  const locked = client(); locked.state.availability = {available:false,reason};
  addCase(`Library · ${label}`,locked,'library',librarySettings);
 }
 const empty = client(); empty.state.playback=null; empty.state.selection=null; empty.state.view=null; empty.state.curves=[]; empty.state.markers=[];
-for (const operation of Object.keys(empty.state.controls)) if (!operation.startsWith('library.')) empty.state.controls[operation]={available:false,reason:'no_recording'};
+for (const operation of Object.keys(empty.state.controls)) if (!operation.startsWith('library.')) empty.state.controls[operation]={available:false,reason:'recording.missing'};
 addCase('Playback · no recording',empty,'playback',[{control:'position'},{control:'speed'},{control:'view'},{control:'zoom_selection'}]);
-empty.state.target=null; empty.state.library=null; empty.state.availability={available:false,reason:'no_active_window'};
+empty.state.target=null; empty.state.library=null; empty.state.availability={available:false,reason:'window.active.missing'};
 addCase('Library · no Explorer',empty,'library',librarySettings);
 const offline=client(); offline.state=undefined; offline.status='disconnected';
 addCase('Library · offline',offline,'library',librarySettings);
@@ -547,7 +547,7 @@ def render_reference(output: Path) -> None:
     output.mkdir(parents=True, exist_ok=True)
     plus = _render_plus(output, data["plus"])
     inputs = [
-        "scripts/render_stream_deck_reference.py",
+        "scripts/generate_stream_deck_screenshots.py",
         "tests/fixtures/stream_deck_protocol.json",
         "plugins/stream-deck/src/feedback.ts",
         "plugins/stream-deck/src/device-feedback.ts",

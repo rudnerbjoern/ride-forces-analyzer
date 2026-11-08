@@ -71,18 +71,23 @@ Run the required command from the repository root in native Windows PowerShell:
 
 ```powershell
 # Workspace and both export assistant screenshots
-.\.venv\Scripts\python.exe .\scripts\capture_app_reference.py
+uv run --locked python scripts/generate_app_screenshots.py
 # GPS overview with OpenStreetMap background (requires internet)
-.\.venv\Scripts\python.exe .\scripts\capture_app_reference.py --gps
+uv run --locked python scripts/generate_app_screenshots.py --gps
 # README details
-.\.venv\Scripts\python.exe .\scripts\capture_app_reference.py --details
+uv run --locked python scripts/generate_app_screenshots.py --details
 # Appearance gallery
-.\.venv\Scripts\python.exe .\scripts\capture_app_reference.py --themes
+uv run --locked python scripts/generate_app_screenshots.py --themes
 # Five Voltron Nevera layouts, crops and comparison sheet
-.\.venv\Scripts\python.exe .\scripts\render_export_reference.py
+uv run --locked python scripts/generate_export_screenshots.py
 # Stream Deck +/Neo/Mobile user-guide illustrations (requires the locked Node development tools)
-.\.venv\Scripts\python.exe .\scripts\render_stream_deck_reference.py
+uv run --locked python scripts/generate_stream_deck_screenshots.py
 ```
+
+Release preparation uses these three scripts in five offline calls after writing
+the selected version targets; see [Prepare versions](../development/RELEASE.md#prepare-versions).
+It updates the screenshot-version statement after all five calls succeed. The optional
+online GPS capture remains a separate command.
 
 Add `--output .tmp/image-review` to review results before replacing tracked images.
 The recording-based generators pin recordings and settings, reject source-hash

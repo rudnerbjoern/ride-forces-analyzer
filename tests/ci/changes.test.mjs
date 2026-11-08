@@ -63,7 +63,7 @@ for (const filename of ["tests/integration/stream_deck/test_transport.py", "test
 }
 
 for (const filename of ["plugins/stream-deck/tests/plugin.test.mjs", "plugins/stream-deck/tests/sdk.test.mjs",
-  "plugins/stream-deck/tests/test_reference.py", "scripts/render_stream_deck_reference.py",
+  "plugins/stream-deck/tests/test_reference.py", "scripts/generate_stream_deck_screenshots.py",
   "plugins/stream-deck/tsconfig.json", "plugins/stream-deck/package.json",
   "plugins/stream-deck/plugin.sdPlugin/manifest.json", "plugins/stream-deck/plugin.sdPlugin/icon.svg"]) {
   test(`Plugin inputs select plugin checks without application/UI suites: ${filename}`, () => {
@@ -98,7 +98,7 @@ for (const filename of [".github/workflows/posix-packages.yml", ".github/actionl
   });
 }
 
-for (const filename of [".github/workflows/ci.yml", ".github/workflows/source-release.yml",
+for (const filename of [".github/workflows/ci.yml", ".github/workflows/release.yml",
   ".github/scripts/ci-changes.mjs", "tests/ci/changes.test.mjs"]) {
   test(`Plugin routing inputs select plugin and CI contracts: ${filename}`, () => {
     assert.deepEqual(classifyChanges([filename]), selected("dependencies", "workflows", "stream-deck", "stream-deck-integration"));
@@ -113,7 +113,7 @@ test("Python release helpers retain conservative application validation", () => 
 test("Mixed labeling and native workflow changes skip application and skill tests", () => {
   assert.deepEqual(classifyChanges([
     ".github/labeler.yml", ".github/workflows/ci.yml", ".github/workflows/posix-packages.yml",
-    ".github/workflows/source-release.yml", "docs/development/CI.md", "tests/ci/changes.test.mjs",
+    ".github/workflows/release.yml", "docs/development/CI.md", "tests/ci/changes.test.mjs",
     "tests/dependencies/labels.test.mjs", "tests/dependencies/dependabot.test.mjs", ".github/scripts/ci-changes.mjs",
   ]), selected("dependencies", "workflows", "documentation", "stream-deck", "stream-deck-integration"));
 });
@@ -263,7 +263,7 @@ test("Full CI retains native verification and release-only package publication",
   const [ci, packages, release] = await Promise.all([
     readFile(path.join(root, ".github/workflows/ci.yml"), "utf8"),
     readFile(path.join(root, ".github/workflows/posix-packages.yml"), "utf8"),
-    readFile(path.join(root, ".github/workflows/source-release.yml"), "utf8"),
+    readFile(path.join(root, ".github/workflows/release.yml"), "utf8"),
   ]);
   for (const workflow of [ci, packages]) {
     assert.match(workflow, /      upload-packages:\r?\n        type: boolean\r?\n        required: false\r?\n        default: false/);
@@ -354,7 +354,9 @@ test("interoperability has its own Python/Node runner and required merge gate re
   assert.match(integration, /setup-uv/);
   assert.match(integration, /node-version-file: '\.node-version'/);
   assert.match(integration, /pytest tests\/integration\/stream_deck /);
-  assert.doesNotMatch(integration, /npm ci|test:stream-deck/);
+  assert.match(integration, /run: npm ci --no-audit --no-fund/);
+  assert.ok(integration.indexOf("npm ci") < integration.indexOf("uv run --locked pytest tests/integration/stream_deck"));
+  assert.doesNotMatch(integration, /test:stream-deck/);
   assert.match(workflow, /STREAM_DECK_INTEGRATION_REQUIRED: \$\{\{ needs\.dependency-check\.outputs\.stream-deck-integration \}\}/);
   assert.match(workflow, /STREAM_DECK_INTEGRATION_RESULT: \$\{\{ needs\.stream-deck-integration\.result \}\}/);
 });

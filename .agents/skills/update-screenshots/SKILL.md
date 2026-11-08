@@ -14,25 +14,26 @@ Read the [image reference guide](../../../docs/images/README.md) and
 
 ## Choose and refresh the images
 
-When asked to refresh all reference images, run all five commands sequentially.
+Three scripts generate the reference images. To refresh all offline reference
+images, run the five commands below sequentially.
 For a narrower request, run only the corresponding generator. Keep GUI capture
 separate from other GUI tests or capture processes.
 
 ```powershell
 # Full dark/light workspaces and export assistant; app-reference.json
-uv run --locked python scripts/capture_app_reference.py
+uv run --locked python scripts/generate_app_screenshots.py
 
 # Voltron airtime, Taron force cards, Manta smoothing; readme-reference.json
-uv run --locked python scripts/capture_app_reference.py --details
+uv run --locked python scripts/generate_app_screenshots.py --details
 
 # Appearance gallery; appearance-reference.json
-uv run --locked python scripts/capture_app_reference.py --themes
+uv run --locked python scripts/generate_app_screenshots.py --themes
 
 # Five Voltron Nevera layouts, their detail crops and comparison sheet; voltron-reference.json
-uv run --locked python scripts/render_export_reference.py
+uv run --locked python scripts/generate_export_screenshots.py
 
 # Stream Deck +/Neo/Mobile user-guide illustrations; stream-deck-reference.json
-uv run --locked python scripts/render_stream_deck_reference.py
+uv run --locked python scripts/generate_stream_deck_screenshots.py
 ```
 
 The default destination is `docs/images`. To review first without replacing

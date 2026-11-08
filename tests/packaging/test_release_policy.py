@@ -5,10 +5,13 @@ from pathlib import Path
 import runpy
 import json
 import subprocess
+import sys
 from tempfile import TemporaryDirectory
 from typing import cast
 
 import pytest
+
+# cspell:ignore statusCheckRollup
 
 MODULE = runpy.run_path(
     str(Path(__file__).resolve().parents[2] / ".github/scripts/check-release-policy.py"),
@@ -16,6 +19,7 @@ MODULE = runpy.run_path(
 is_prerelease = cast(Callable[[str, str], bool], MODULE["is_prerelease"])
 verify_main_ancestry = cast(Callable[[Path, str], None], MODULE["verify_main_ancestry"])
 verify_merged_prs = cast(Callable[[object, str], None], MODULE["verify_merged_prs"])
+verify_release_pr = cast(Callable[[object, str, str, str], None], MODULE["verify_release_pr"])
 reusable_application_checks = cast(
     Callable[[Path, str, str, object], bool],
     MODULE["reusable_application_checks"],
@@ -82,6 +86,170 @@ def test_main_ancestry_accepts_merged_history_and_rejects_feature_only_commits()
             verify_main_ancestry(root, git("rev-parse", "HEAD"))
         with pytest.raises(ValueError, match="SHA"):
             verify_main_ancestry(root, "--help")
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "none",
+        "unmerged",
+        "foreign",
+        "base",
+        "branch",
+        "head",
+        "merge",
+        "missing-check",
+        "duplicate-check",
+        "failed-check",
+        "pending-check",
+        "other-workflow",
+    ],
+)
+def test_automatic_release_requires_the_exact_merged_release_pr_and_green_gate(change: str) -> None:
+    gate: dict[str, object] = {
+        "workflowName": "CI",
+        "name": "check",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS",
+    }
+    pr: dict[str, object] = {
+        "state": "MERGED",
+        "isCrossRepository": False,
+        "baseRefName": "main",
+        "headRefName": "release/2.1.0",
+        "headRefOid": "a" * 40,
+        "mergeCommit": {"oid": "b" * 40},
+        "statusCheckRollup": [gate],
+    }
+    fields: dict[str, tuple[str, object]] = {
+        "unmerged": ("state", "CLOSED"),
+        "foreign": ("isCrossRepository", True),
+        "base": ("baseRefName", "other"),
+        "branch": ("headRefName", "release/9.0.0"),
+        "head": ("headRefOid", "c" * 40),
+        "merge": ("mergeCommit", {"oid": "c" * 40}),
+        "missing-check": ("statusCheckRollup", []),
+        "duplicate-check": ("statusCheckRollup", [gate, gate]),
+    }
+    if change in fields:
+        field, value = fields[change]
+        pr[field] = value
+    elif change == "failed-check":
+        gate["conclusion"] = "FAILURE"
+    elif change == "pending-check":
+        gate["status"] = "IN_PROGRESS"
+    elif change == "other-workflow":
+        gate["workflowName"] = "Other"
+    if change == "none":
+        verify_release_pr(pr, "2.1.0", "b" * 40, "a" * 40)
+    else:
+        with pytest.raises(ValueError):
+            verify_release_pr(pr, "2.1.0", "b" * 40, "a" * 40)
+
+
+@pytest.mark.parametrize(
+    "automatic,existing,matching",
+    [
+        (True, False, True),
+        (True, True, True),
+        (False, True, True),
+        (False, False, True),
+        (True, True, False),
+    ],
+)
+def test_policy_creates_tags_only_for_validated_release_prs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    automatic: bool,
+    existing: bool,
+    matching: bool,
+) -> None:
+    script = Path(__file__).resolve().parents[2] / ".github/scripts/check-release-policy.py"
+    commit, head = "b" * 40, "a" * 40
+    (tmp_path / "pyproject.toml").write_text('[project]\nversion = "2.1.0"\n', encoding="utf-8")
+    notes = tmp_path / "docs/development/RELEASE_NOTES.md"
+    notes.parent.mkdir(parents=True)
+    notes.write_text("{{VERSION}} {{TAG}} {{REPOSITORY}}", encoding="utf-8")
+    event = tmp_path / "event.json"
+    event.write_text(
+        json.dumps(
+            {
+                "action": "closed",
+                "number": 7,
+                "pull_request": {
+                    "merged": True,
+                    "head": {"sha": head, "repo": {"full_name": "owner/project"}},
+                },
+            },
+        ),
+        encoding="utf-8",
+    )
+    output = tmp_path / "outputs"
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request" if automatic else "workflow_dispatch")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    monkeypatch.setenv("ImageVersion", "")
+    arguments = [str(script), "--sha", commit, "--repository", "owner/project"]
+    if not automatic:
+        arguments.extend(["--tag", "v2.1.0"])
+    monkeypatch.setattr(sys, "argv", arguments)
+
+    def run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        if command[1] == "merge-base":
+            return subprocess.CompletedProcess(command, 0)
+        assert command == ["git", "show-ref", "--verify", "--quiet", "refs/tags/v2.1.0"]
+        return subprocess.CompletedProcess(command, 0 if existing else 1)
+
+    def read(command: list[str], **_kwargs: object) -> str:
+        if command[:3] == ["gh", "pr", "view"]:
+            assert command[3:6] == ["7", "--repo", "owner/project"]
+            return json.dumps(
+                {
+                    "state": "MERGED",
+                    "isCrossRepository": False,
+                    "baseRefName": "main",
+                    "headRefName": "release/2.1.0",
+                    "headRefOid": head,
+                    "mergeCommit": {"oid": commit},
+                    "statusCheckRollup": [
+                        {
+                            "workflowName": "CI",
+                            "name": "check",
+                            "status": "COMPLETED",
+                            "conclusion": "SUCCESS",
+                        },
+                    ],
+                },
+            )
+        if command[:2] == ["gh", "api"]:
+            return json.dumps(
+                [
+                    {
+                        "merged_at": "2026-11-08",
+                        "base": {
+                            "ref": "main",
+                            "repo": {"full_name": "owner/project"},
+                        },
+                    },
+                ],
+            )
+        assert command[:2] == ["git", "rev-parse"]
+        return commit if matching or command[-1] == "HEAD" else "c" * 40
+
+    monkeypatch.setattr(subprocess, "run", run)
+    monkeypatch.setattr(subprocess, "check_output", read)
+    if not matching or (not existing and not automatic):
+        with pytest.raises(ValueError):
+            runpy.run_path(str(script), run_name="__main__")
+        assert not output.exists()
+    else:
+        runpy.run_path(str(script), run_name="__main__")
+        assert "tag=v2.1.0\n" in output.read_text(encoding="utf-8")
+        assert f"create-tag={str(automatic).lower()}\n" in output.read_text(encoding="utf-8")
+        assert (tmp_path / ".tmp/release/release-notes.md").read_text(encoding="utf-8") == (
+            "2.1.0 v2.1.0 owner/project"
+        )
 
 
 @pytest.mark.parametrize(

@@ -19,6 +19,7 @@ import tomllib
 
 from ride_forces_analyzer.runtime.paths import runtime_target
 from ride_forces_analyzer.ui.presentation.icons import ICON_SOURCE
+from scripts.license_bundle import BUNDLE_NAME
 from scripts.build_icons import build_icons
 from scripts.build_windows import (
     APP_NAME,
@@ -60,7 +61,7 @@ def build(work: Path, *, expected_target: str | None = None) -> Path:
     version = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"][
         "version"
     ]
-    notices = work / "notices"
+    notices = work / BUNDLE_NAME
     collect_notices(notices)
     icons = build_icons(work / "icons")
     macos = target.startswith("macos-")
@@ -100,11 +101,11 @@ def build(work: Path, *, expected_target: str | None = None) -> Path:
         "--add-data",
         f"{ROOT / 'ASSET_LICENSES.md'}:ride_forces_analyzer/rendering/pov",
         "--add-data",
-        f"{notices}:licenses/third-party",
+        f"{notices}:.",
         "--add-data",
-        f"{ROOT / 'LICENSE'}:licenses",
+        f"{ROOT / 'LICENSE'}:.",
         "--add-data",
-        f"{ROOT / 'THIRD_PARTY_NOTICES.md'}:licenses",
+        f"{ROOT / 'THIRD_PARTY_NOTICES.md'}:.",
     ]
     if macos:
         arguments += [
@@ -190,7 +191,7 @@ def build(work: Path, *, expected_target: str | None = None) -> Path:
         (bundle / "START-HERE.txt").write_text(
             "Run ./Ride-Forces-Analyzer from this extracted directory.\n"
             "Keep _internal beside the executable. Install FFmpeg separately for video export.\n"
-            "See _internal/licenses for licenses and third-party notices.\n",
+            "See _internal/THIRD-PARTY-LICENSES.txt for library licenses.\n",
             encoding="utf-8",
         )
         archive = assets / f"{prefix}.tar.gz"

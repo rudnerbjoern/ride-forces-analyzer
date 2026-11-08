@@ -20,7 +20,7 @@ const skillInputs = new Set([
 
 const streamDeckInputs = new Set([
   "package.json", "package-lock.json", ".node-version", ".vscode/settings.json",
-  ".github/workflows/ci.yml", ".github/workflows/source-release.yml",
+  ".github/workflows/ci.yml", ".github/workflows/release.yml",
   ".github/scripts/ci-changes.mjs", "tests/ci/changes.test.mjs",
   "src/ride_forces_analyzer/runtime/stream_deck.py",
   "src/ride_forces_analyzer/runtime/control_contract.py",
@@ -69,7 +69,7 @@ export function classifyChanges(filenames) {
     if (filename.startsWith("tests/integration/stream_deck/")) {
       continue;
     }
-    if (filename.startsWith("plugins/stream-deck/") || filename === "scripts/render_stream_deck_reference.py") {
+    if (filename.startsWith("plugins/stream-deck/") || filename === "scripts/generate_stream_deck_screenshots.py") {
       streamDeck = true;
       continue;
     }

@@ -94,6 +94,10 @@ and every remaining selected job to succeed.
 | `skills`                  | Non-Markdown skill implementation/tests, consumed commit policy, Python manifest/lock/version and Git/editor settings; separate skill Ruff/mypy/pytest                                                                |
 | `check`                   | Always evaluate detection, contract-selection validity and selected job results: selected = success, unselected = skipped                                                                                             |
 
+The `stream-deck` job runs `npm run lint --workspace plugins/stream-deck` and
+`npm run format:check --workspace plugins/stream-deck` before its build/tests.
+ESLint and Prettier check only the plugin workspace; other jobs retain their own checks.
+
 The `code`, `ui` and `stream-deck-integration` jobs run disjoint test directories;
 no test runs twice in these jobs. Application tests explicitly exclude UI and
 `tests/integration/stream_deck`. UI tests remain serial per desktop and are required
@@ -125,8 +129,8 @@ it does not guarantee lower total runner minutes.
   `tests/integration/stream_deck/test_transport.py` is the explicit cross-domain
   check: it runs the real application Qt server with the real TypeScript client,
   including authentication and restart/reconnect. It runs only in the independent
-  `stream-deck-integration` job with both toolchains; it needs no plugin build or npm
-  packages because the client uses native Node APIs. The pure server tests remain
+  `stream-deck-integration` job with both toolchains and locked npm packages for the
+  SDK logger; it needs no plugin build. The pure server tests remain
   under `tests/support`. Run it locally with
   `uv run --locked pytest tests/integration/stream_deck`.
 - Plugin tests build the self-contained local artifact, validate it with the official
@@ -208,13 +212,14 @@ it does not guarantee lower total runner minutes.
 
 ## Source release tags
 
-[Release workflow](../../.github/workflows/source-release.yml): pushed `v*` tags
-and authorized manual retries. Source/publication and Windows builds use Windows;
+[Release workflow](../../.github/workflows/release.yml): merged
+`release/<version>` PRs, pushed `v*` tags and authorized manual retries.
+Source/publication and Windows builds use Windows;
 the reusable quality stage also builds and checks the native Linux/macOS artifacts.
 
 | Stage             | Dependencies / result                                                                                                                                                                        |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `source`, 10 min  | Resolve/validate tag commit and release policy; check temporary source archive/recording integrity; build Python packages                                                                    |
+| `source`, 10 min  | Resolve/validate release commit and release policy; check temporary source archive/recording integrity; build Python packages                                                                |
 | `quality`         | After source; call full reusable CI for that commit, with verified application/UI reuse when eligible                                                                                        |
 | `windows`, 30 min | After source/quality; locked build group, redistribution-input checks, standalone EXE and standard/complete ZIPs plus checksums; execute all three with isolated preferences/restricted PATH |
 | `release`, 10 min | After successful source/quality/windows; verified publication; only job with `contents: write`                                                                                               |
@@ -229,7 +234,8 @@ the reusable quality stage also builds and checks the native Linux/macOS artifac
 - GitHub generates categorized release changes from merged PRs using
   [release labels](../../.github/release.yml), preceded by a short reusable
   introduction. See [release notes policy](RELEASE.md#automatic-release-notes).
-- No job creates tags or changes repository visibility.
+- Only the publication job can create a missing tag for a validated release-PR
+  merge, after successful checks and builds. No job changes repository visibility.
   [Release guide](RELEASE.md) owns tag/version/ancestry policy, retries, artifact
   handling, download verification and documented redistribution limits.
 - Hosted success does not replace local application/GUI or clean-Windows validation.
