@@ -23,9 +23,11 @@ from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from ride_forces_analyzer.storage.library import (
     LibraryStore,
     LibraryStoreError,
+    VideoLinkDraft,
     WORKFLOW_STATUSES,
     default_database_path,
     validate_video_url,
+    validate_video_file_path,
 )
 from ride_forces_analyzer.storage.library_search import library_search_values
 
@@ -185,6 +187,153 @@ def test_video_links_are_independent_recording_bound_and_offline(export_director
         )
 
 
+def test_complete_video_link_draft_is_atomic_and_recording_bound(export_directory: Path) -> None:
+    store = LibraryStore(export_directory / "library.sqlite3")
+    other = "b" * 64
+    with store.connection() as connection:
+        insert_recording(connection)
+        insert_recording(connection, other)
+    kept = store.save_video_link(DIGEST, "https://example.invalid/kept", "Old label")
+    removed = store.save_video_link(DIGEST, "https://example.invalid/removed")
+    foreign = store.save_video_link(other, "https://example.invalid/other")
+    filename = r"C:\Videos\final.mp4"
+    store.save_video_file_path(DIGEST, filename)
+    with store.connection() as connection:
+        before = connection.execute("SELECT * FROM recordings ORDER BY source_sha256").fetchall()
+    drafts = (
+        VideoLinkDraft(kept, "https://example.invalid/edited", "Retired label"),
+        VideoLinkDraft(None, "https://example.invalid/new", ""),
+    )
+    for invalid in (
+        (VideoLinkDraft(foreign, "https://example.invalid/stolen", ""),),
+        (
+            VideoLinkDraft(kept, "https://example.invalid/a", ""),
+            VideoLinkDraft(kept, "https://example.invalid/b", ""),
+        ),
+        (VideoLinkDraft(None, "file:///invalid", ""),),
+    ):
+        with pytest.raises((ValueError, LibraryStoreError)):
+            store.save_video_links(DIGEST, invalid, video_file_path="")
+        assert len(store.video_links(DIGEST)) == 2
+        assert store.video_file_path(DIGEST) == filename
+    with store.connection() as connection:
+        connection.execute(
+            "CREATE TRIGGER reject_draft BEFORE INSERT ON video_links "
+            "BEGIN SELECT RAISE(ABORT, 'injected draft failure'); END",
+        )
+    with pytest.raises(LibraryStoreError, match="injected draft failure"):
+        store.save_video_links(DIGEST, drafts, video_file_path="")
+    assert [link.id for link in store.video_links(DIGEST)] == [kept, removed]
+    assert store.video_links(DIGEST)[0].label == "Old label"
+    with store.connection() as connection:
+        assert (
+            connection.execute("SELECT * FROM recordings ORDER BY source_sha256").fetchall()
+            == before
+        )
+        connection.execute("DROP TRIGGER reject_draft")
+    store.save_video_links(DIGEST, drafts, video_file_path="")
+    saved = store.video_links(DIGEST)
+    assert saved[0].id == kept and saved[0].url.endswith("/edited")
+    assert saved[0].label == "Retired label"
+    assert len(saved) == 2 and saved[1].url.endswith("/new") and saved[1].label == ""
+    assert store.video_file_path(DIGEST) is None
+    assert store.video_links(other)[0].id == foreign
+    store.save_video_links(DIGEST, (), video_file_path=filename)
+    assert store.video_links(DIGEST) == () and store.video_file_path(DIGEST) == filename
+    with store.connection() as connection:
+        assert (
+            connection.execute("SELECT * FROM recordings ORDER BY source_sha256").fetchall()
+            == before
+        )
+
+
+def test_video_file_is_single_recording_bound_and_transactional(export_directory: Path) -> None:
+    store = LibraryStore(export_directory / "library.sqlite3")
+    other = "b" * 64
+    with store.connection() as connection:
+        insert_recording(connection)
+        insert_recording(connection, other)
+    assert store.video_file_path(DIGEST) is None
+    filename = r"\\server\videos\Bahn ü, final.mp4"
+    store.save_video_file_path(DIGEST, filename)
+    assert LibraryStore(store.path).video_file_path(DIGEST) == filename
+    assert store.video_file_path(other) is None
+    assert (
+        next(entry for entry in store.entries() if entry.source_sha256 == DIGEST).video_link_count
+        == 1
+    )
+    link = store.save_video_link(DIGEST, "https://example.invalid/video")
+    assert store.video_file_path(DIGEST) == filename
+    with store.connection() as connection:
+        before = connection.execute("SELECT * FROM recordings ORDER BY source_sha256").fetchall()
+        connection.execute(
+            "CREATE TRIGGER reject_file_link BEFORE UPDATE ON video_links "
+            "BEGIN SELECT RAISE(ABORT, 'injected failure'); END",
+        )
+    with pytest.raises(LibraryStoreError, match="injected failure"):
+        store.save_video_link(
+            DIGEST,
+            "https://example.invalid/edited",
+            link_id=link,
+            video_file_path="/videos/replacement.mp4",
+        )
+    with store.connection() as connection:
+        assert (
+            connection.execute("SELECT * FROM recordings ORDER BY source_sha256").fetchall()
+            == before
+        )
+    assert store.video_links(DIGEST)[0].url == "https://example.invalid/video"
+    store.save_video_file_path(DIGEST, "/videos/replacement.mp4")
+    assert store.video_file_path(DIGEST) == "/videos/replacement.mp4"
+    store.save_video_file_path(DIGEST, "")
+    assert store.video_file_path(DIGEST) is None
+    with store.connection() as connection:
+        assert connection.execute("SELECT source_bytes FROM recordings").fetchall() == [
+            (RAW,),
+            (RAW,),
+        ]
+    with pytest.raises(ValueError):
+        store.save_video_file_path(DIGEST, "relative.mp4")
+    with pytest.raises(LibraryStoreError):
+        store.save_video_file_path("c" * 64, filename)
+
+
+@pytest.mark.parametrize(
+    "filename",
+    ["relative.mp4", "C:relative.mp4", "/", "C:\\", "/video\x00.mp4", "/video\n.mp4"],
+)
+def test_video_file_rejects_incomplete_or_unsafe_paths(filename: str) -> None:
+    with pytest.raises(ValueError, match="full path"):
+        validate_video_file_path(filename)
+
+
+def test_video_file_migration_preserves_existing_library(
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = LibraryStore(export_directory / "library.sqlite3")
+    upgrade = command.upgrade
+
+    def old_upgrade(config: Config, target: str) -> None:
+        upgrade(config, "1_3_search")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(command, "upgrade", old_upgrade)
+        with store.connection() as connection:
+            insert_recording(connection)
+            connection.execute("UPDATE recordings SET notes='retained',workflow_status='uploaded'")
+            connection.execute(
+                "INSERT INTO video_links(recording_sha256,url) VALUES (?, 'https://example.invalid')",
+                (DIGEST,),
+            )
+            before = connection.execute("SELECT * FROM recordings").fetchone()
+    assert store.video_file_path(DIGEST) is None
+    with store.connection() as connection:
+        after = connection.execute("SELECT * FROM recordings").fetchone()
+        assert after[:-1] == before and after[-1] is None
+    assert len(store.video_links(DIGEST)) == 1
+
+
 def test_fresh_schema_resources_relationships_and_reopen(export_directory: Path) -> None:
     store = LibraryStore(export_directory / "library.sqlite3")
     assert not store.path.exists()
@@ -195,7 +344,7 @@ def test_fresh_schema_resources_relationships_and_reopen(export_directory: Path)
         assert isinstance(connection, sqlite3.Connection)
         assert connection.execute("PRAGMA foreign_keys").fetchone() == (1,)
         revision = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
-        assert revision == "1_3_search"
+        assert revision == "2_1_video_file"
         assert tuple(map(int, revision.split("_")[:2])) <= tuple(
             map(int, __version__.split(".")[:2]),
         )
@@ -213,7 +362,7 @@ def test_fresh_schema_resources_relationships_and_reopen(export_directory: Path)
             "source_ride_name source_park_name recorded_at_utc recorded_day day_timezone imported_at_utc "
             "first_sample last_sample gravity_index incline_index calibration_algorithm_version "
             "calibration_window_samples ride_name_override park_name_override row_override seat_override "
-            "train_override riding_position_override notes workflow_status park_key search_text source_uuid",
+            "train_override riding_position_override notes workflow_status park_key search_text source_uuid video_file_path",
             "export_history": "id recording_sha256 export_kind origin started_at_utc finished_at_utc "
             "duration_seconds status application_version request_json export_snapshot_json output_path "
             "file_size_bytes gpu_encoding error",
@@ -339,7 +488,7 @@ def test_failed_initial_migration_rolls_back_schema_data_and_revision(
     LibraryStore(path).initialize()
     with closing(sqlite3.connect(path)) as connection, connection:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "1_3_search",
+            "2_1_video_file",
         )
 
 
@@ -456,7 +605,7 @@ def test_ordinary_writes_enforce_constraints_and_rollback(export_directory: Path
         assert connection.execute("SELECT notes FROM recordings").fetchone() == ("",)
         assert connection.execute("PRAGMA foreign_keys").fetchone() == (1,)
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "1_3_search",
+            "2_1_video_file",
         )
 
 

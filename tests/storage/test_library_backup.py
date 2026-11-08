@@ -112,6 +112,7 @@ def complete_backup() -> Iterator[tuple[Path, dict[str, list[dict[str, object]]]
         snapshot = prepare_export(data.analysis, settings, 5000, 5009).snapshot
         output = root / "overlay.mov"
         output.write_bytes(b"external video bytes must not be archived")
+        store.save_video_file_path(manta.source_sha256, str(output.resolve()))
         for status in ("completed", "failed", "cancelled"):
             attempt = history.start(request, "single")
             assert attempt is not None
@@ -131,7 +132,7 @@ def complete_backup() -> Iterator[tuple[Path, dict[str, list[dict[str, object]]]
         with ZipFile(backup) as zipped:
             manifest = json.loads(zipped.read("manifest.json"))
             assert manifest["library_video_labels"] == list(labels)
-            assert manifest["alembic_revision"] == "1_3_search"
+            assert manifest["alembic_revision"] == "2_1_video_file"
             assert set(zipped.namelist()) == {
                 "manifest.json",
                 "recordings.jsonl",
@@ -222,6 +223,7 @@ def test_complete_round_trip_reopens_sources_and_repeats_saved_recipe(
         "hash",
         "relationship",
         "index",
+        "video-file",
         "truncated",
         "duplicate",
         "duplicate-source",
@@ -268,6 +270,9 @@ def test_unsafe_archives_preserve_active_library_and_preferences(
             changes["video_links.jsonl"] = b"\n".join(json.dumps(row).encode() for row in rows)
         elif case == "index":
             records[0]["first_sample"] = -1
+            changes["recordings.jsonl"] = b"\n".join(json.dumps(row).encode() for row in records)
+        elif case == "video-file":
+            records[0]["video_file_path"] = "relative.mp4"
             changes["recordings.jsonl"] = b"\n".join(json.dumps(row).encode() for row in records)
         elif case == "traversal":
             changes["../outside.forces"] = b"unsafe"

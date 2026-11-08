@@ -41,7 +41,7 @@ from ride_forces_analyzer.importers import (
 from ride_forces_analyzer.importers._json_preflight import DecodeProblem, preflight
 from ride_forces_analyzer.importers.library_metadata import project_library_metadata, recording_uuid
 from ride_forces_analyzer.validation.checks import validate_sample_range, validate_sha256
-from .library import LibraryStore, LibraryStoreError
+from .library import LibraryStore, LibraryStoreError, validate_video_file_path
 from .library_search import library_search_values
 from .library_history import LibraryHistory
 from .preferences import DEFAULT_LIBRARY_VIDEO_LABELS, Preferences
@@ -603,6 +603,8 @@ class LibraryBackup:
         values["source_bytes"] = source.recording.source.original_bytes
         values["source_format"] = format
         values["source_byte_count"] = source.byte_count
+        if values.get("video_file_path") is not None:
+            values["video_file_path"] = validate_video_file_path(values["video_file_path"])
         validate_sample_range(
             values["first_sample"],
             values["last_sample"],

@@ -211,10 +211,27 @@ It uses the theme's muted colour without saved links and accent colour with link
 selected entries use the theme's selection text colour to retain contrast.
 It opens that recording's link dialog without selecting/loading it;
 link additions/removals refresh indicators across open Library panels. The existing
-**Video links…** context action remains available for adding the first link. Add
-prepares a new URL/label; selecting an existing row edits that link. Save persists
-only the current form, Remove deletes only that link, and Cancel/Escape closes
-without saving the current draft. Each saved list entry has a link icon that opens
+**Video links…** context action remains available for adding the first link. Above the web
+links, one editable full video-file path belongs to the recording. Equal-height,
+icon-only magnifying-glass and folder buttons provide **Select video file…** and
+**Show in folder**, with matching tooltips and accessible names. Selection uses a
+native single-file picker; revealing selects the file in Explorer/Finder, with a
+containing-folder fallback on Linux. The folder button requires nonempty text;
+missing files produce a message without removing the reference.
+The link list is a dialog-local draft. Its editor is titled **New link** when no row
+is selected: **+** validates the entered URL, adds it and clears the form. Selecting
+a row switches to **Edit link** and changes **+** to **✓**; applying replaces that
+row and returns to the empty new-link form. **−** removes the selected draft row.
+The three icon actions have tooltips and accessible names. The paired buttons have
+equal dimensions and align with the editor field heights; invalid URLs show an
+inline explanation beside the URL field and retain the input.
+Save atomically persists the full list and file path, including any pending form
+entry exactly once, then closes the dialog. Failed saves retain all draft values
+and explain the failure. Clearing and saving removes the file reference. Link
+editing retains the file draft. Cancel/Escape discards every pending addition,
+edit and removal. Saved-link indicators update only after successful Save and
+count the file reference alongside web links.
+Each list entry has a link icon that opens
 its HTTP/HTTPS address in the default browser independently of selection and unsaved
 edits. Invalid saved addresses disable the action; launch failures are explained. Errors preserve input. Links need
 no online verification and do not change workflow status. Settings → Library

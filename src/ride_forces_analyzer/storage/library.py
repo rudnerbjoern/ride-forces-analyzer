@@ -4,18 +4,18 @@ Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-# cspell:words sqlalchemy autocommit poolclass timespec lastrowid
+# cspell:words sqlalchemy autocommit poolclass timespec lastrowid executemany
 
 from collections.abc import Generator
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
 from importlib.resources import as_file, files
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import sqlite3
-from typing import Literal
+from typing import Literal, cast
 from urllib.parse import urlsplit
 
 from alembic import command
@@ -49,6 +49,30 @@ WORKFLOW_STATUSES: tuple[str, ...] = (
     "uploaded",
     "completed",
 )
+
+
+def validate_video_file_path(value: str) -> str | None:
+    """Validate an optional absolute file reference without accessing its contents.
+
+    Args:
+        value: Full path including a filename, or empty text to clear the reference.
+
+    Returns:
+        The exact supplied path, or None for an empty reference.
+
+    Raises:
+        ValueError: The value is not an absolute path including a filename.
+    """
+    if not has_type(value, str):
+        raise ValueError("Enter a full path including the video filename.")
+    if not value:
+        return None
+    paths = (PureWindowsPath(value), PurePosixPath(value))
+    if any(character in value for character in "\0\r\n") or not any(
+        path.is_absolute() and path.name for path in paths
+    ):
+        raise ValueError("Enter a full path including the video filename.")
+    return value
 
 
 def validate_video_url(url: str) -> str:
@@ -88,6 +112,21 @@ class VideoLink:
     """
 
     id: int
+    url: str
+    label: str
+
+
+@dataclass(frozen=True, slots=True)
+class VideoLinkDraft:
+    """One pending video-link addition or edit in a recording's complete list.
+
+    Attributes:
+        id: Existing local identity, or None for a new link.
+        url: HTTP/HTTPS address to validate before persistence.
+        label: Selected label text, including an unset or retired label.
+    """
+
+    id: int | None
     url: str
     label: str
 
@@ -135,7 +174,7 @@ class LibraryEntry:
         export_count: Number of associated export attempts.
         workflow_status: Current manually assigned recording workflow state.
         source_uuid: Source recording identity across exports, if valid.
-        video_link_count: Number of saved video links for this recording.
+        video_link_count: Number of saved web links and the optional video-file reference.
     """
 
     source_sha256: str
@@ -415,6 +454,7 @@ class LibraryStore:
                     "(SELECT count(*) FROM export_history h WHERE h.recording_sha256=r.source_sha256), "
                     "r.workflow_status, r.source_uuid, "
                     "(SELECT count(*) FROM video_links v WHERE v.recording_sha256=r.source_sha256) "
+                    "+ CASE WHEN r.video_file_path IS NOT NULL THEN 1 ELSE 0 END "
                     f"FROM recordings r{where} ORDER BY r.recorded_day DESC, r.recorded_at_utc DESC, "
                     "r.imported_at_utc DESC, r.source_sha256",
                     parameters,
@@ -513,6 +553,65 @@ class LibraryStore:
                 )
             )
 
+    def save_video_links(
+        self,
+        source_sha256: str,
+        links: Sequence[VideoLinkDraft],
+        *,
+        video_file_path: str,
+    ) -> None:
+        """Save the complete link draft and file reference in one transaction.
+
+        Args:
+            source_sha256: Recording owning every supplied link.
+            links: Retained/edited links with their IDs and new links without IDs.
+                Existing links omitted from this list are removed.
+            video_file_path: Full external filename, or empty text to clear it.
+
+        Raises:
+            ValueError: A hash, path, URL, label or draft identity is invalid.
+            LibraryStoreError: A recording/link is missing or saving fails.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        filename = validate_video_file_path(video_file_path)
+        validated: list[VideoLinkDraft] = []
+        identities: set[int] = set()
+        for link in links:
+            if not has_type(link.label, str):
+                raise ValueError("Invalid video link")
+            if link.id is not None:
+                if not has_type(link.id, int) or link.id <= 0 or link.id in identities:
+                    raise ValueError("Invalid video link identity")
+                identities.add(link.id)
+            validated.append(VideoLinkDraft(link.id, validate_video_url(link.url), link.label))
+        with self.connection() as connection:
+            existing = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT id FROM video_links WHERE recording_sha256=?",
+                    (source_sha256,),
+                )
+            }
+            if not identities <= existing:
+                raise LibraryStoreError("Video link is not in this recording")
+            self._set_video_file_path(connection, source_sha256, filename)
+            connection.executemany(
+                "DELETE FROM video_links WHERE recording_sha256=? AND id=?",
+                [(source_sha256, identity) for identity in existing - identities],
+            )
+            for link in validated:
+                if link.id is None:
+                    connection.execute(
+                        "INSERT INTO video_links(recording_sha256,url,label) VALUES (?,?,?)",
+                        (source_sha256, link.url, link.label),
+                    )
+                else:
+                    connection.execute(
+                        "UPDATE video_links SET url=?,label=? WHERE recording_sha256=? AND id=? "
+                        "AND (url<>? OR label<>?)",
+                        (link.url, link.label, source_sha256, link.id, link.url, link.label),
+                    )
+
     def save_video_link(
         self,
         source_sha256: str,
@@ -520,6 +619,7 @@ class LibraryStore:
         label: str = "",
         *,
         link_id: int | None = None,
+        video_file_path: str | None = None,
     ) -> int:
         """Add or replace one link without changing other links or workflow status.
 
@@ -528,6 +628,8 @@ class LibraryStore:
             url: HTTP/HTTPS URL; private and scheduled destinations are allowed.
             label: Selected text, including unset or previously saved choices.
             link_id: Existing link to edit, or None to insert a new one.
+            video_file_path: File draft to save atomically with the link; None keeps
+                the current reference and empty text clears it.
 
         Returns:
             Identity of the saved link.
@@ -540,7 +642,12 @@ class LibraryStore:
         if not has_type(url, str) or not has_type(label, str):
             raise ValueError("Invalid video link")
         url = validate_video_url(url)
+        filename = (
+            validate_video_file_path(video_file_path) if video_file_path is not None else None
+        )
         with self.connection() as connection:
+            if video_file_path is not None:
+                self._set_video_file_path(connection, source_sha256, filename)
             if link_id is None:
                 cursor = connection.execute(
                     "INSERT INTO video_links(recording_sha256,url,label) VALUES (?,?,?)",
@@ -555,6 +662,68 @@ class LibraryStore:
             if cursor.rowcount != 1:
                 raise LibraryStoreError("Video link is not in this recording")
             return link_id
+
+    def video_file_path(self, source_sha256: str) -> str | None:
+        """Read one recording's external video reference without loading its bytes.
+
+        Args:
+            source_sha256: Recording owning the reference.
+
+        Returns:
+            Saved full path, or None when no file is assigned.
+
+        Raises:
+            ValueError: The source hash is invalid.
+            LibraryStoreError: The recording is missing or cannot be read.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        with self.connection() as connection:
+            row = connection.execute(
+                "SELECT video_file_path FROM recordings WHERE source_sha256=?",
+                (source_sha256,),
+            ).fetchone()
+            if row is None:
+                raise LibraryStoreError("Recording is not in the Library")
+            return cast(str | None, row[0])
+
+    def save_video_file_path(self, source_sha256: str, filename: str) -> None:
+        """Replace or clear the single video-file reference for one recording.
+
+        Args:
+            source_sha256: Recording owning the reference.
+            filename: Full path including filename; empty text clears the reference.
+
+        Raises:
+            ValueError: The hash or path is invalid.
+            LibraryStoreError: The recording is missing or saving fails.
+        """
+        validate_sha256(source_sha256, "Expected a source SHA-256")
+        value = validate_video_file_path(filename)
+        with self.connection() as connection:
+            self._set_video_file_path(connection, source_sha256, value)
+
+    def _set_video_file_path(
+        self,
+        connection: sqlite3.Connection,
+        source_sha256: str,
+        filename: str | None,
+    ) -> None:
+        """Update the validated file reference within the caller's transaction.
+
+        Args:
+            connection: Active Library transaction.
+            source_sha256: Recording owning the reference.
+            filename: Validated path or None to clear it.
+
+        Raises:
+            LibraryStoreError: The addressed recording is missing.
+        """
+        cursor = connection.execute(
+            "UPDATE recordings SET video_file_path=? WHERE source_sha256=?",
+            (filename, source_sha256),
+        )
+        if cursor.rowcount != 1:
+            raise LibraryStoreError("Recording is not in the Library")
 
     def remove_video_link(self, source_sha256: str, link_id: int) -> None:
         """Remove only the addressed link belonging to this recording.
