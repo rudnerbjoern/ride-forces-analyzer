@@ -24,6 +24,7 @@ REQUIRED_FILES = (
     "scripts/check_windows_packages.py",
     "scripts/build_posix.py",
     "scripts/check_posix_packages.py",
+    "scripts/license_bundle.py",
     "scripts/windows_entry.py",
     "scripts/windows_smoke.py",
     "scripts/__init__.py",

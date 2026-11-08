@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -26,6 +27,7 @@ from packaging.version import Version
 
 from ride_forces_analyzer.ui.presentation.icons import ICON_SOURCE
 from scripts.build_icons import build_icons
+from scripts.license_bundle import BUNDLE_NAME, LicenseBundle, read_notice
 
 ROOT = Path(__file__).resolve().parents[1]
 APP_NAME = "Ride-Forces-Analyzer"
@@ -129,28 +131,28 @@ def runtime_distributions() -> list[metadata.Distribution]:
     return result
 
 
-def collect_notices(destination: Path) -> None:
-    """Collect the shipped runtime license notices and their inventory.
+def collect_notices(destination: Path) -> LicenseBundle:
+    """Write the installed runtime inventory and deduplicated upstream license texts.
 
     Args:
-        destination: Requested output path; replacement follows the explicit overwrite
-            policy.
+        destination: Single UTF-8 notice file to create.
 
     Returns:
-        None.
+        Collection reusable when adding Complete-package FFmpeg notices.
 
     Raises:
-        OSError: If the required filesystem operation fails.
-        ValueError: Python runtime license is missing.
+        OSError: An upstream notice cannot be read.
+        ValueError: A runtime component or Python license has no notice text.
     """
-    destination.mkdir(parents=True, exist_ok=True)
-    inventory: list[dict[str, object]] = []
-    for distribution in runtime_distributions():
+    bundle = LicenseBundle()
+    for distribution in sorted(
+        runtime_distributions(),
+        key=lambda item: canonicalize_name(item.metadata["Name"]),
+    ):
         name = canonicalize_name(distribution.metadata["Name"])
-        folder = destination / name
-        folder.mkdir(exist_ok=True)
-        notices: list[str] = []
-        for entry in distribution.files or []:
+        declared = distribution.metadata.get("License-Expression") or "Included upstream notices"
+        sources: list[tuple[str, str, str]] = []
+        for entry in sorted(distribution.files or [], key=str):
             if (
                 not any(
                     token in entry.name.lower()
@@ -160,19 +162,16 @@ def collect_notices(destination: Path) -> None:
             ):
                 continue
             source = Path(str(distribution.locate_file(entry)))
-            if not source.is_file():
-                continue
-            # Preserve paths inside each distribution and avoid name collisions.
-            relative = Path(*[part for part in entry.parts if part not in ("..", ".")])
-            target = folder / relative
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source, target)
-            notices.append(target.relative_to(destination).as_posix())
-        (folder / "METADATA.txt").write_text(
-            distribution.read_text("METADATA") or "",
-            encoding="utf-8",
-        )
-        inventory.append({"name": name, "version": distribution.version, "notice_files": notices})
+            if source.is_file():
+                kind = (
+                    declared
+                    if re.fullmatch(r"[A-Za-z0-9.-]+", declared)
+                    else "Additional component notices"
+                )
+                sources.append((entry.as_posix(), kind, read_notice(source)))
+        if license_text := distribution.metadata.get("License"):
+            sources.append(("METADATA License field", "Additional component notices", license_text))
+        bundle.add(name, distribution.version, declared, sources)
     python_license = Path(sys.base_prefix) / "LICENSE.txt"
     if not python_license.is_file():
         python_license = (
@@ -183,10 +182,41 @@ def collect_notices(destination: Path) -> None:
         )
     if not python_license.is_file():
         raise ValueError("Python runtime license is missing")
-    shutil.copyfile(python_license, destination / "PYTHON-LICENSE.txt")
-    shutil.copyfile(ROOT / "packaging/QT-NOTICES.txt", destination / "QT-NOTICES.txt")
-    shutil.copyfile(ROOT / "packaging/redistribution.json", destination / "REDISTRIBUTION.json")
-    (destination / "inventory.json").write_text(json.dumps(inventory, indent=2), encoding="utf-8")
+    bundle.add(
+        "Python",
+        platform.python_version(),
+        "PSF and bundled-component terms",
+        [("Python LICENSE.txt", "Python and bundled-component terms", read_notice(python_license))],
+    )
+    qt = re.split(
+        r"^===== (.+) =====\n",
+        read_notice(ROOT / "packaging/QT-NOTICES.txt"),
+        flags=re.MULTILINE,
+    )
+    qt_sources = [("QT-NOTICES introduction", "Qt scope", qt[0])]
+    for qt_source, text in zip(qt[1::2], qt[2::2], strict=True):
+        kind = Path(qt_source).stem if "/LICENSES/" in qt_source else "Additional component notices"
+        qt_sources.append((qt_source, kind, text))
+    bundle.add(
+        "Qt/PySide source notices",
+        metadata.version("PySide6"),
+        "Module-specific upstream terms",
+        qt_sources,
+    )
+    bundle.add(
+        "Redistribution catalog",
+        "",
+        "Accepted delivery scope and limitations",
+        [
+            (
+                "packaging/redistribution.json",
+                "Redistribution scope",
+                read_notice(ROOT / "packaging/redistribution.json"),
+            ),
+        ],
+    )
+    bundle.write(destination)
+    return bundle
 
 
 def acquire_ffmpeg(work: Path) -> Path:
@@ -299,8 +329,8 @@ def build(work: Path, *, release: bool = False) -> Path:
     version = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"][
         "version"
     ]
-    notices = work / "notices"
-    collect_notices(notices)
+    notices = work / BUNDLE_NAME
+    bundle = collect_notices(notices)
     icons = build_icons(work / "icons")
     version_info = write_version_info(work / "version-info.txt", version)
     subprocess.run(
@@ -345,11 +375,11 @@ def build(work: Path, *, release: bool = False) -> Path:
             "--add-data",
             f"{ROOT / 'ASSET_LICENSES.md'}:ride_forces_analyzer/rendering/pov",
             "--add-data",
-            f"{notices}:licenses/third-party",
+            f"{notices}:.",
             "--add-data",
-            f"{ROOT / 'LICENSE'}:licenses",
+            f"{ROOT / 'LICENSE'}:.",
             "--add-data",
-            f"{ROOT / 'THIRD_PARTY_NOTICES.md'}:licenses",
+            f"{ROOT / 'THIRD_PARTY_NOTICES.md'}:.",
             str(ROOT / "scripts/windows_entry.py"),
         ],
         cwd=ROOT,
@@ -364,30 +394,35 @@ def build(work: Path, *, release: bool = False) -> Path:
     prefix = f"{APP_NAME}-{version}-windows-x64"
     shutil.copyfile(executable, assets / f"{prefix}.exe")
     standard = work / "standard"
-    standard.mkdir(exist_ok=True)
+    if standard.exists():
+        shutil.rmtree(standard)
+    standard.mkdir()
     shutil.copyfile(executable, standard / f"{APP_NAME}.exe")
     for filename in ("LICENSE", "THIRD_PARTY_NOTICES.md", "ASSET_LICENSES.md"):
         shutil.copyfile(ROOT / filename, standard / filename)
-    shutil.copytree(notices, standard / "licenses", dirs_exist_ok=True)
+    shutil.copyfile(notices, standard / BUNDLE_NAME)
     (standard / "START-HERE.txt").write_text(
         "Start Ride-Forces-Analyzer.exe. No Python installation is needed.\n"
         "Standard: choose your own ffmpeg.exe for video exports.\n"
         "Complete: ffmpeg.exe beside the application is detected automatically.\n"
         "Preferences are stored in LOCALAPPDATA, not in this folder.\n"
-        "See LICENSE and THIRD_PARTY_NOTICES.md. No warranty.\n",
+        "See THIRD-PARTY-LICENSES.txt for library licenses; LICENSE for the app. No warranty.\n",
         encoding="utf-8",
     )
     write_zip(standard, assets / f"{prefix}-standard.zip")
     complete = work / "complete"
-    shutil.copytree(standard, complete, dirs_exist_ok=True)
+    if complete.exists():
+        shutil.rmtree(complete)
+    shutil.copytree(standard, complete)
     shutil.copyfile(encoder, complete / "ffmpeg.exe")
-    encoder_notices = complete / "licenses/ffmpeg"
-    encoder_notices.mkdir(exist_ok=True)
+    encoder_notices: list[tuple[str, str, str]] = []
     for filename in ("LICENSE", "README.txt"):
         source = encoder.parent.parent / filename
         if not source.is_file():
             raise ValueError(f"Publisher FFmpeg notice missing: {filename}")
-        shutil.copyfile(source, encoder_notices / filename)
+        encoder_notices.append(
+            (f"FFmpeg/{filename}", "FFmpeg publisher notices", read_notice(source)),
+        )
     for option in ("-L", "-buildconf"):
         result = subprocess.run(
             [str(encoder), option],
@@ -397,12 +432,20 @@ def build(work: Path, *, release: bool = False) -> Path:
             check=True,
             timeout=30,
         )
-        (encoder_notices / f"{option.lstrip('-')}.txt").write_text(
-            result.stdout + result.stderr,
-            encoding="utf-8",
+        text = result.stdout + result.stderr
+        if option == "-buildconf" and "--enable-nonfree" in text:
+            raise ValueError("Non-redistributable FFmpeg build")
+        encoder_notices.append(
+            (f"FFmpeg/{option.lstrip('-')}.txt", "FFmpeg build information", text),
         )
-    if "--enable-nonfree" in (encoder_notices / "buildconf.txt").read_text(encoding="utf-8"):
-        raise ValueError("Non-redistributable FFmpeg build")
+    encoder_version = json.loads((ROOT / "ffmpeg.json").read_text(encoding="utf-8"))["version"]
+    bundle.add(
+        "FFmpeg",
+        encoder_version,
+        "Publisher license and actual build information",
+        encoder_notices,
+    )
+    bundle.write(complete / BUNDLE_NAME)
     write_zip(complete, assets / f"{prefix}-complete.zip")
     (assets / "WINDOWS-SHA256SUMS.txt").write_text(
         "".join(

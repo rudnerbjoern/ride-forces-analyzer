@@ -12,6 +12,7 @@ import { InfoBarAction } from "../dist/infobar-action.js";
 import { StepModeAction } from "../dist/mode-action.js";
 import { PlusNavigationAction } from "../dist/navigation.js";
 import { useFeedbackClock } from "./helpers/feedback-clock.mjs";
+import { CONTROL_VERSION } from "./helpers/versions.mjs";
 
 const fixture = JSON.parse(
 	await readFile(new URL("../../../tests/fixtures/stream_deck_protocol.json", import.meta.url), "utf8"),
@@ -241,7 +242,7 @@ test("dial pending and failed states update status artwork while retaining uncha
 	const command = h.commands.at(-1);
 	const count = h.calls.length;
 	h.receive({
-		version: 3,
+		version: CONTROL_VERSION,
 		type: "response",
 		id: command.id,
 		target: command.target,
@@ -476,7 +477,7 @@ test("commands and failure alerts remain immediate while queued feedback uses th
 		else await surface.handler.onDialRotate({ ...surface.event, payload: { ...surface.event.payload, ticks: 1 } });
 		const command = h.commands.at(-1);
 		h.receive({
-			version: 3,
+			version: CONTROL_VERSION,
 			type: "response",
 			id: command.id,
 			target: command.target,
@@ -494,7 +495,7 @@ test("commands and failure alerts remain immediate while queued feedback uses th
 	});
 	assert.equal(h.client.state.target.window_id, "replacement");
 	h.receive({
-		version: 3,
+		version: CONTROL_VERSION,
 		type: "response",
 		id: old.id,
 		target: old.target,

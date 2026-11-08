@@ -15,8 +15,11 @@ Honor existing owner authorization; ask only for missing target version or permi
 
 - Confirm the target version and scope. Inspect branch, working tree, staged changes,
   existing tags/releases and related PRs; preserve unrelated owner changes.
-- Update `project.version` in `pyproject.toml` and refresh the root project entry
-  with `uv lock`. Review the lock diff; do not upgrade unrelated dependencies.
+- Use `uv run --locked python -m scripts.prepare_release` with the confirmed
+  `--app-version` and/or independent `--plugin-version`; preview with `--dry-run`,
+  then apply. It synchronizes product metadata and root/workspace lock entries.
+  API targets require separate explicit owner approval. Omit targets without approval;
+  never upgrade dependencies or protocol versions as a side effect.
 - Update affected version assertions and user documentation. Do not blindly
   replace dependency versions or synthetic/historical test values.
 - Check the independently versioned Stream Deck plugin as a separate deliverable.
@@ -33,8 +36,11 @@ Honor existing owner authorization; ask only for missing target version or permi
   placeholders and preview their substitution. Add a concise Upgrade notes section
   only when this release needs specific user action; remove obsolete upgrade notes
   when preparing the next release. Follow version and redistribution policy.
-- Refresh screenshots affected by visible/version changes through
-  [update-screenshots](../update-screenshots/SKILL.md); do not introduce a new capture tool.
+- Version preparation runs three screenshot scripts in five sequential calls.
+  Use [update-screenshots](../update-screenshots/SKILL.md) to review their outputs,
+  captions and embedding. Reuse successful captures for unchanged inputs; do not
+  rerun them as an additional preparation step. Fix failed generation and repeat
+  the preparation command with the same targets to complete an interrupted refresh.
 
 ## 2. Validate locally
 
@@ -119,9 +125,13 @@ revision against tested content; changed inputs require affected checks/builds a
 
 ## 5. Publish and verify downloads
 
-- Only with authorization covering tag creation/push and publication: verify the
+- Before merging a `release/<version>` PR, require authorization covering that merge,
+  automatic tag creation and publication. Its version must already match
+  `project.version`; merging it into `main` starts the existing release pipeline.
+  Do not merge such a PR under merge-only authorization.
+- For an explicitly authorized tag-triggered release, verify the
   release commit belongs to remote `main`, has its merged PR and green CI, and its
-  version matches the new tag. Follow the existing tag-triggered release workflow.
+  version matches the new tag before tag creation/push and publication.
 - Review the generated notes against the intended previous release before
   publication, using GitHub's generate-notes API with the target and previous tags.
   Confirm the categorized PR list, comparison link and introduction. Read-only

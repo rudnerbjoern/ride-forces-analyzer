@@ -7,6 +7,7 @@ import { ControlClient } from "../dist/client.js";
 import { dialSettings, StepMode } from "../dist/device-controls.js";
 import { DialControlAction } from "../dist/dial-action.js";
 import { settle, useFeedbackClock } from "./helpers/feedback-clock.mjs";
+import { CONTROL_VERSION } from "./helpers/versions.mjs";
 
 const fixture = JSON.parse(
 	await readFile(new URL("../../../tests/fixtures/stream_deck_protocol.json", import.meta.url), "utf8"),
@@ -80,7 +81,7 @@ async function harness() {
 	const reply = async (status = "ok", code = "command.unavailable") => {
 		const command = sent.at(-1);
 		receive({
-			version: 3,
+			version: CONTROL_VERSION,
 			type: "response",
 			id: command.id,
 			target: command.target,

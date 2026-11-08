@@ -103,7 +103,14 @@ def test_invalid_filter_feedback_is_rejected(choice: dict[str, object]) -> None:
         parse_server_message(json.dumps(state))
 
 
-@pytest.mark.parametrize("version", [True, "3", 0, 1, 2, 4, 5, 6, 7])
+@pytest.mark.parametrize(
+    "version",
+    [
+        True,
+        str(PROTOCOL_VERSION),
+        *(number for number in range(PROTOCOL_VERSION + 5) if number != PROTOCOL_VERSION),
+    ],
+)
 def test_incompatible_and_coerced_versions_are_rejected(version: object) -> None:
     with pytest.raises(ValidationError):
         parse_command(

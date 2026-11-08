@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 import { pluginOutput as source } from "../scripts/artifact-path.mjs";
+import { CONTROL_VERSION, TRANSPORT_VERSION } from "./helpers/versions.mjs";
 
 const require = createRequire(import.meta.url);
 const sdk = createRequire(require.resolve("@elgato/streamdeck"));
@@ -132,15 +133,15 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
 	const attachBackend = (instance) =>
 		instance.on("connection", (socket) => {
 			socket.once("message", (value) => {
-				assert.deepEqual(JSON.parse(String(value)), { version: 1, token });
+				assert.deepEqual(JSON.parse(String(value)), { version: TRANSPORT_VERSION, token });
 				appSocket = socket;
-				socket.send('{"transport":"ready","version":1}');
+				socket.send(JSON.stringify({ transport: "ready", version: TRANSPORT_VERSION }));
 				socket.send(JSON.stringify(snapshot));
 				socket.on("message", (value) => commands.push(JSON.parse(String(value))));
 			});
 		});
 	attachBackend(backend);
-	await writeFile(discovery, JSON.stringify({ version: 1, port: backend.address().port, token }));
+	await writeFile(discovery, JSON.stringify({ version: TRANSPORT_VERSION, port: backend.address().port, token }));
 	host.on("connection", (socket) => {
 		hostSocket = socket;
 		socket.on("message", (value) => hostMessages.push(JSON.parse(String(value))));
@@ -223,7 +224,13 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
 		assert.deepEqual(commands[0].target, snapshot.target);
 		assert.equal(active(), 0);
 		appSocket.send(
-			JSON.stringify({ version: 3, type: "response", id: commands[0].id, target: commands[0].target, status: "ok" }),
+			JSON.stringify({
+				version: CONTROL_VERSION,
+				type: "response",
+				id: commands[0].id,
+				target: commands[0].target,
+				status: "ok",
+			}),
 		);
 		snapshot.sequence++;
 		snapshot.curves[3].active = true;
@@ -240,7 +247,7 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
 			target: { ...snapshot.target, generation: snapshot.target.generation + 1 },
 		};
 		attachBackend(backend);
-		await writeFile(discovery, JSON.stringify({ version: 1, port: backend.address().port, token }));
+		await writeFile(discovery, JSON.stringify({ version: TRANSPORT_VERSION, port: backend.address().port, token }));
 		await waitUntil(() => /Combined\nOff/.test(title()), diagnostic);
 		assert.equal(commands.length, 1);
 		send("keyDown");
@@ -349,7 +356,13 @@ test("built plugin registers with the SDK host, controls the app and recovers wi
 		);
 		for (const command of commands.slice(-3))
 			appSocket.send(
-				JSON.stringify({ version: 3, type: "response", id: command.id, target: command.target, status: "ok" }),
+				JSON.stringify({
+					version: CONTROL_VERSION,
+					type: "response",
+					id: command.id,
+					target: command.target,
+					status: "ok",
+				}),
 			);
 		await waitUntil(() => dialFeedback()?.status.value === "Ready", diagnostic);
 		sendDial("dialDown");

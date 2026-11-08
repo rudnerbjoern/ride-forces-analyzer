@@ -212,13 +212,14 @@ it does not guarantee lower total runner minutes.
 
 ## Source release tags
 
-[Release workflow](../../.github/workflows/source-release.yml): pushed `v*` tags
-and authorized manual retries. Source/publication and Windows builds use Windows;
+[Release workflow](../../.github/workflows/release.yml): merged
+`release/<version>` PRs, pushed `v*` tags and authorized manual retries.
+Source/publication and Windows builds use Windows;
 the reusable quality stage also builds and checks the native Linux/macOS artifacts.
 
 | Stage             | Dependencies / result                                                                                                                                                                        |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `source`, 10 min  | Resolve/validate tag commit and release policy; check temporary source archive/recording integrity; build Python packages                                                                    |
+| `source`, 10 min  | Resolve/validate release commit and release policy; check temporary source archive/recording integrity; build Python packages                                                                |
 | `quality`         | After source; call full reusable CI for that commit, with verified application/UI reuse when eligible                                                                                        |
 | `windows`, 30 min | After source/quality; locked build group, redistribution-input checks, standalone EXE and standard/complete ZIPs plus checksums; execute all three with isolated preferences/restricted PATH |
 | `release`, 10 min | After successful source/quality/windows; verified publication; only job with `contents: write`                                                                                               |
@@ -233,7 +234,8 @@ the reusable quality stage also builds and checks the native Linux/macOS artifac
 - GitHub generates categorized release changes from merged PRs using
   [release labels](../../.github/release.yml), preceded by a short reusable
   introduction. See [release notes policy](RELEASE.md#automatic-release-notes).
-- No job creates tags or changes repository visibility.
+- Only the publication job can create a missing tag for a validated release-PR
+  merge, after successful checks and builds. No job changes repository visibility.
   [Release guide](RELEASE.md) owns tag/version/ancestry policy, retries, artifact
   handling, download verification and documented redistribution limits.
 - Hosted success does not replace local application/GUI or clean-Windows validation.

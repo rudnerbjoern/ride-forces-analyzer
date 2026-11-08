@@ -6,6 +6,7 @@ import test from "node:test";
 import { ControlAction } from "../dist/action.js";
 import { ControlClient } from "../dist/client.js";
 import { settle, useFeedbackClock } from "./helpers/feedback-clock.mjs";
+import { CONTROL_VERSION } from "./helpers/versions.mjs";
 
 useFeedbackClock();
 
@@ -73,7 +74,7 @@ test("SDK key handlers route commands and render confirmed state and unavailable
 		Buffer.from(outputs.images.at(-1).split(",")[1], "base64").toString("utf8"),
 		/<title>combined: pending<\/title>/,
 	);
-	receive({ version: 3, type: "response", id: sent[0].id, target: sent[0].target, status: "ok" });
+	receive({ version: CONTROL_VERSION, type: "response", id: sent[0].id, target: sent[0].target, status: "ok" });
 	await action.onDidReceiveSettings(event);
 	await settle();
 	assert.match(

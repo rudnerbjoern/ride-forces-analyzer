@@ -102,13 +102,15 @@ test("Release notes categorize typed and automatic PR labels and retain unlabell
     }
   }
   for (const [labels, title] of [
-    [["bug", "documentation"], "Fixes"],
-    [["enhancement", "documentation"], "Improvements"],
-    [["dependencies", "ci"], "Dependencies"],
-    [["documentation"], "Documentation"],
-    [["ci"], "Maintenance"],
-    [["unclassified"], "Other changes"],
-    [[], "Other changes"],
+    [["bug", "documentation"], "🐛 Bug fixes"],
+    [["enhancement", "documentation"], "✨ New features"],
+    [["bug", "enhancement"], "✨ New features"],
+    [["dependencies", "documentation"], "📚 Documentation"],
+    [["dependencies", "ci"], "📦 Dependencies"],
+    [["documentation"], "📚 Documentation"],
+    [["ci"], "🔧 Maintenance"],
+    [["unclassified"], "🧩 Other changes"],
+    [[], "🧩 Other changes"],
   ]) {
     const category = categories.find(item => item.labels.some(label => label === "*" || labels.includes(label)));
     assert.equal(category?.title, title, JSON.stringify(labels));

@@ -547,7 +547,7 @@ def render_reference(output: Path) -> None:
     output.mkdir(parents=True, exist_ok=True)
     plus = _render_plus(output, data["plus"])
     inputs = [
-        "scripts/render_stream_deck_reference.py",
+        "scripts/generate_stream_deck_screenshots.py",
         "tests/fixtures/stream_deck_protocol.json",
         "plugins/stream-deck/src/feedback.ts",
         "plugins/stream-deck/src/device-feedback.ts",

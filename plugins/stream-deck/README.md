@@ -183,7 +183,7 @@ owns bundled-profile identity and installation defaults.
 - The build crops canonical `devices/backgrounds/*.svg` into sixteen 200×100
   `layouts/backgrounds/` tiles. Dial settings carry menu/column; display-only
   Library dial 2 renders its tile and ignores every gesture. Subgroups share artwork.
-- `scripts/render_stream_deck_reference.py` renders actual profiles/layouts and
+- `scripts/generate_stream_deck_screenshots.py` renders actual profiles/layouts and
   production feedback, including native-size state/lock examples. It does not
   establish hardware qualification; settings and optical axes belong to the
   [presentation contract](../../docs/implementation/STREAM_DECK.md#state-feedback-and-locks).

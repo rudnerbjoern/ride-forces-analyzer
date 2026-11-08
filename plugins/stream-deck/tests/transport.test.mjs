@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 
 import { AnalyzerTransport, endpointPath } from "../dist/transport.js";
 import { useSdkLogs } from "./helpers/sdk-logs.mjs";
+import { TRANSPORT_VERSION } from "./helpers/versions.mjs";
 
 useSdkLogs();
 
@@ -67,13 +68,13 @@ test("client authenticates, exchanges state and rediscovers after endpoint repla
 		await once(host, "listening");
 		host.on("connection", (socket) => {
 			socket.once("message", (hello) => {
-				assert.deepEqual(JSON.parse(hello.toString()), { version: 1, token });
-				socket.send('{"transport":"ready","version":1}');
+				assert.deepEqual(JSON.parse(hello.toString()), { version: TRANSPORT_VERSION, token });
+				socket.send(JSON.stringify({ transport: "ready", version: TRANSPORT_VERSION }));
 				socket.send(state);
 				socket.on("message", (message) => commands.push(message.toString()));
 			});
 		});
-		await writeFile(filename, JSON.stringify({ version: 1, token, port: host.address().port }));
+		await writeFile(filename, JSON.stringify({ version: TRANSPORT_VERSION, token, port: host.address().port }));
 		return host;
 	}
 	/**

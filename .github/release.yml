@@ -1,14 +1,20 @@
 changelog:
   categories:
-    - title: Fixes
-      labels: [bug]
-    - title: Improvements
-      labels: [enhancement]
-    - title: Dependencies
-      labels: [dependencies]
-    - title: Documentation
-      labels: [documentation]
-    - title: Maintenance
-      labels: [ci]
-    - title: Other changes
-      labels: ['*']
+    - title: '✨ New features'
+      labels:
+        - enhancement
+    - title: '🐛 Bug fixes'
+      labels:
+        - bug
+    - title: '📚 Documentation'
+      labels:
+        - documentation
+    - title: '📦 Dependencies'
+      labels:
+        - dependencies
+    - title: '🔧 Maintenance'
+      labels:
+        - ci
+    - title: '🧩 Other changes'
+      labels:
+        - '*'

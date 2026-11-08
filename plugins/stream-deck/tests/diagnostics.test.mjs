@@ -10,6 +10,7 @@ import { ControlAction } from "../dist/action.js";
 import { ControlClient } from "../dist/client.js";
 import { logFailure } from "../dist/diagnostics.js";
 import { AnalyzerTransport } from "../dist/transport.js";
+import { CONTROL_VERSION, TRANSPORT_VERSION } from "./helpers/versions.mjs";
 
 const realTimeout = setTimeout;
 const token = "d".repeat(64);
@@ -115,7 +116,7 @@ async function transport(t) {
 		sockets,
 		filename,
 		async discover() {
-			await writeFile(filename, JSON.stringify({ version: 1, port: 1234, token }));
+			await writeFile(filename, JSON.stringify({ version: TRANSPORT_VERSION, port: 1234, token }));
 		},
 		async retry() {
 			const next = sockets.length + 1;
@@ -194,14 +195,14 @@ test("authentication failures, timeout, recovery and command send failure log on
 	assert.equal(h.logs.at(-1).args[1].reason, "authentication.send.failed");
 	socket = await h.retry();
 	socket.open();
-	socket.message('{"transport":"ready","version":1}');
+	socket.message(JSON.stringify({ transport: "ready", version: TRANSPORT_VERSION }));
 	assert.equal(h.client.connected, true);
 	assert.equal(h.logs.at(-1).args[1].reason, "connection.established");
 	socket.message(new Uint8Array([1]));
 	assert.equal(h.logs.at(-1).args[1].reason, "message.text.required");
 	socket = await h.retry();
 	socket.open();
-	socket.message('{"transport":"ready","version":1}');
+	socket.message(JSON.stringify({ transport: "ready", version: TRANSPORT_VERSION }));
 	socket.send = () => {
 		throw new Error(token + privateData);
 	};
@@ -236,7 +237,7 @@ test("invalid protocol messages and correlated failures use SDK diagnostics with
 	receive({ ...fixture, sequence: fixture.sequence + 1 });
 	assert.equal(client.send("key", { name: "playback.toggle" }), true);
 	const response = {
-		version: 3,
+		version: CONTROL_VERSION,
 		type: "response",
 		id: sent[0].id,
 		target: sent[0].target,

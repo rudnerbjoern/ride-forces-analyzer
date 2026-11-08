@@ -22,6 +22,7 @@ from ride_forces_analyzer.i18n import Language
 from ride_forces_analyzer.runtime import control_contract as wire
 from ride_forces_analyzer.runtime.config import AppSettings
 from ride_forces_analyzer.runtime.instance import OpenRequest
+from ride_forces_analyzer.runtime.stream_deck import TRANSPORT_VERSION
 from ride_forces_analyzer.storage.library import LibraryStore
 from ride_forces_analyzer.storage.preferences import Preferences
 from ride_forces_analyzer.ui.application import RecordingApplication
@@ -42,7 +43,9 @@ class Device:
         endpoint = json.loads(application.stream_deck.transport.endpoint_path.read_text())
         self.socket.open(QUrl(f"ws://127.0.0.1:{endpoint['port']}"))
         wait_until(self.socket.isValid)
-        self.socket.sendTextMessage(json.dumps({"version": 1, "token": endpoint["token"]}))
+        self.socket.sendTextMessage(
+            json.dumps({"version": TRANSPORT_VERSION, "token": endpoint["token"]}),
+        )
         wait_until(lambda: self.ready and bool(self.messages))
 
     def received(self, payload: str) -> None:

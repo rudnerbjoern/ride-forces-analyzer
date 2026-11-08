@@ -11,7 +11,7 @@ import sys
 from tempfile import TemporaryDirectory
 from textwrap import dedent
 
-from scripts import capture_app_reference
+from scripts import generate_app_screenshots
 
 from PIL import Image
 import pytest
@@ -20,7 +20,7 @@ from tests.support.recordings import REAL_FIXTURE_DIRECTORY, REAL_FIXTURES
 from ride_forces_analyzer.storage.preferences import Appearance
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPT = ROOT / "scripts/capture_app_reference.py"
+SCRIPT = ROOT / "scripts/generate_app_screenshots.py"
 SOURCE = REAL_FIXTURE_DIRECTORY / "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
 SOURCE_SHA256 = "f48157cadbfeb374eeadf48112b0bbfc1e8b47c580cb303342cf65977054ad04"
 
@@ -53,7 +53,7 @@ def test_capture_cli_preserves_reference_scene_source_and_preferences() -> None:
         assert manifest["position"] == "bottom" and manifest["extent"] == "full_frame"
         pov_manifest = json.loads((output / "pov-reference.json").read_text(encoding="utf-8"))
         assert pov_manifest["preview_background"] == "pov-toutatis"
-        photo_hash = sha256(capture_app_reference.POV_SOURCE.read_bytes()).hexdigest()
+        photo_hash = sha256(generate_app_screenshots.POV_SOURCE.read_bytes()).hexdigest()
         assert pov_manifest["preview_background_sha256"] == photo_hash
         first, last = pov_manifest["preview_interval"]
         assert pov_manifest["preview_sample"] == first + round(0.6 * (last - first))
@@ -110,10 +110,10 @@ def test_capture_rejects_changed_source_before_writing_images(
         work = Path(directory)
         changed = work / SOURCE.name
         changed.write_bytes(SOURCE.read_bytes() + b"\n")
-        monkeypatch.setattr(capture_app_reference, "SOURCE", changed)
+        monkeypatch.setattr(generate_app_screenshots, "SOURCE", changed)
         output = work / "output"
         with pytest.raises(ValueError, match="source hash differs"):
-            capture_app_reference.capture_reference(output)
+            generate_app_screenshots.capture_reference(output)
         assert not output.exists()
 
 

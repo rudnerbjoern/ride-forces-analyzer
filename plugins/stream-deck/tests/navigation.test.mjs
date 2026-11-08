@@ -7,6 +7,7 @@ import { ControlClient } from "../dist/client.js";
 import { HomeAction } from "../dist/home.js";
 import { navigationFeedback, navigationSettings, PlusNavigationAction } from "../dist/navigation.js";
 import { settle, useFeedbackClock } from "./helpers/feedback-clock.mjs";
+import { CONTROL_VERSION } from "./helpers/versions.mjs";
 
 useFeedbackClock();
 
@@ -114,7 +115,7 @@ test("menu captions follow confirmed app values and keep marker priority on ever
 		["Library\n1/2", "Playback\nPaused", "Curves\nCalibrated", "Markers\n1 preview"],
 	);
 	assert.equal(client.send("play", { name: "playback.toggle" }), true);
-	receive({ version: 3, type: "response", id: sent[0].id, target: sent[0].target, status: "ok" });
+	receive({ version: CONTROL_VERSION, type: "response", id: sent[0].id, target: sent[0].target, status: "ok" });
 	await settle();
 	assert.equal(keys[1].output.titles.at(-1), "Playback\nPaused", "An acknowledgement is not a changed playback state");
 	state = structuredClone(state);

@@ -3,7 +3,11 @@
 Copyright © 2026 Björn Rudner. Program code: [GPL-3.0-or-later](LICENSE).
 External components retain their licenses. This inventory records notice/source
 duties, not a complete notice bundle or installer clearance.
-Linux/macOS packages reuse the collected Python/Qt notices and do not bundle FFmpeg.
+Native packages collect Python/Qt notices in one `THIRD-PARTY-LICENSES.txt`, with
+a library/version inventory, per-source attribution and shared license-text references.
+Identical terms are deduplicated across formatting differences; differing conditions
+and exceptions remain distinct within each type section. Full package METADATA
+descriptions are not copied. Linux/macOS packages do not bundle FFmpeg.
 An externally installed encoder retains its provider's licenses; the Windows
 complete-package FFmpeg obligations do not imply a Linux/macOS encoder bundle.
 Versions/hashes: [uv.lock](uv.lock), [package-lock.json](package-lock.json),
@@ -43,7 +47,7 @@ Top-level metadata does not replace bundled-component notices.
   modules. The project's or-later grant neither relicenses GPL-3.0-only dependencies
   nor guarantees future-GPL compatibility of the combined application.
 - [QT-NOTICES.txt](packaging/QT-NOTICES.txt) contains original Qt/PySide 6.12.0
-  source-archive license/attribution texts and is included in EXE/both ZIPs.
+  source-archive license/attribution texts, consolidated into EXE/both ZIP notices.
   Installed binding metadata alone is insufficient. Source archives are pinned in
   [redistribution.json](packaging/redistribution.json).
 - Those archives exclude Qt PDF/Chromium. The builders exclude the unused PDF
@@ -64,7 +68,7 @@ Top-level metadata does not replace bundled-component notices.
 | Publisher material | LICENSE and README.txt; README references source commit `946fcce07b`                                                                                   |
 | Invocation         | Separate executable, no FFmpeg DLL linking in application code; binary/archive not tracked                                                             |
 | Setup              | Publisher download or user-selected encoder; setup retains LICENSE/README beside `bin/`                                                                |
-| Complete ZIP       | Exact pinned encoder plus publisher LICENSE/README and executable license/build output                                                                 |
+| Complete ZIP       | Exact pinned encoder; publisher LICENSE/README and executable license/build output are retained in `THIRD-PARTY-LICENSES.txt`                          |
 
 The owner has accepted the current FFmpeg delivery scope. No separate source bundle
 is planned. Completeness of corresponding sources/build instructions for the
@@ -127,7 +131,8 @@ CC BY-SA 4.0, PSF-2.0 or Python-2.0. Entries are not unique upstream projects.
   installer acceptance, security scanning or a complete embedded-library audit.
 - Windows packages collect runtime notices, Python license, PyInstaller
   bootloader license/exception, static Qt notices and the redistribution catalog.
-  The complete ZIP additionally contains FFmpeg publisher/license/build material.
+  The complete ZIP includes FFmpeg publisher/license/build material in the same
+  consolidated notice file, without a separate license directory tree.
 - **Accepted scope:** [redistribution.json](packaging/redistribution.json) records
   the owner-accepted delivery model and the source-verification
   limitation. Acceptance records the project scope, not verified license compliance.

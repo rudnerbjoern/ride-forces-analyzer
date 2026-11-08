@@ -7,6 +7,7 @@ import { CONTROL_LABELS, controlSettings, requestedAction } from "../dist/contro
 import { decodeServerMessage } from "../dist/decoder.js";
 import { keyFeedback } from "../dist/feedback.js";
 import { useSdkLogs } from "./helpers/sdk-logs.mjs";
+import { CONTROL_VERSION } from "./helpers/versions.mjs";
 
 useSdkLogs();
 
@@ -113,7 +114,7 @@ test("filter commands use exact option values and the existing confirmed-state l
 		const action = { name: "library.filter.set", filter: "park", value };
 		assert.equal(client.send(`filter-${index}`, action), true);
 		assert.deepEqual(sent.at(-1).action, action);
-		assert.equal(sent.at(-1).version, 3);
+		assert.equal(sent.at(-1).version, CONTROL_VERSION);
 	}
 	const blocked = state();
 	blocked.sequence++;
@@ -136,7 +137,7 @@ test("toggle images and key states follow confirmation, never key presses or ack
 	assert.equal(client.send("key", request), false);
 	assert.equal(keyFeedback(client, "key", settings).state, 0);
 	assert.match(keyFeedback(client, "key", settings).title, /Pending/);
-	receive({ version: 3, type: "response", id: sent[0].id, target: sent[0].target, status: "ok" });
+	receive({ version: CONTROL_VERSION, type: "response", id: sent[0].id, target: sent[0].target, status: "ok" });
 	assert.equal(keyFeedback(client, "key", settings).state, 0);
 	const confirmed = state();
 	confirmed.sequence++;
@@ -177,12 +178,12 @@ test("pending and failed marker adoption remain distinct from the last applied v
 	receive(state());
 	const settings = controlSettings({ operation: "marker.apply", marker: "gravity" });
 	client.send("key", requestedAction(settings, client.state));
-	receive({ version: 3, type: "response", id: sent[0].id, target: sent[0].target, status: "pending" });
+	receive({ version: CONTROL_VERSION, type: "response", id: sent[0].id, target: sent[0].target, status: "pending" });
 	assert.equal(client.pending("key"), true);
 	assert.equal(client.state.markers[1].applied.sample, 50);
 	assert.match(keyFeedback(client, "key", settings).title, /Pending/);
 	receive({
-		version: 3,
+		version: CONTROL_VERSION,
 		type: "response",
 		id: sent[0].id,
 		target: sent[0].target,

@@ -14,6 +14,7 @@ from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 
 from scripts.build_windows import APP_NAME, ROOT, digest
+from scripts.license_bundle import BUNDLE_NAME
 
 
 def validate_zip(path: Path, *, complete: bool) -> None:
@@ -48,23 +49,24 @@ def validate_zip(path: Path, *, complete: bool) -> None:
         required = {
             f"{APP_NAME}/{APP_NAME}.exe",
             f"{APP_NAME}/LICENSE",
+            f"{APP_NAME}/{BUNDLE_NAME}",
             f"{APP_NAME}/THIRD_PARTY_NOTICES.md",
-            f"{APP_NAME}/licenses/inventory.json",
-            f"{APP_NAME}/licenses/PYTHON-LICENSE.txt",
-            f"{APP_NAME}/licenses/QT-NOTICES.txt",
-            f"{APP_NAME}/licenses/REDISTRIBUTION.json",
         }
         if complete:
             required |= {
                 f"{APP_NAME}/ffmpeg.exe",
-                f"{APP_NAME}/licenses/ffmpeg/LICENSE",
-                f"{APP_NAME}/licenses/ffmpeg/README.txt",
-                f"{APP_NAME}/licenses/ffmpeg/buildconf.txt",
             }
         elif any(name.lower().endswith("/ffmpeg.exe") for name in names):
             raise ValueError("Standard package unexpectedly bundles FFmpeg")
         if not required <= set(names):
             raise ValueError("Missing executable or notices")
+        if complete:
+            notices = archive.read(f"{APP_NAME}/{BUNDLE_NAME}").decode("utf-8")
+            if any(
+                f"FFmpeg/{name}" not in notices
+                for name in ("LICENSE", "README.txt", "L.txt", "buildconf.txt")
+            ):
+                raise ValueError("Missing bundled encoder notices")
         if archive.testzip() is not None:
             raise ValueError("Corrupt ZIP member")
 

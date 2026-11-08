@@ -124,7 +124,7 @@ test("compatible jobs share dependency caches while platform, toolchain and depe
   const npmKeys = new Set();
   const npmPaths = new Set();
   const pythonGroups = new Set();
-  for (const filename of ["ci.yml", "source-release.yml", "posix-packages.yml"]) {
+  for (const filename of ["ci.yml", "release.yml", "posix-packages.yml"]) {
     const workflow = parseDocument(await readFile(new URL(`../../.github/workflows/${filename}`, import.meta.url), "utf8")).toJS();
     for (const job of Object.values(workflow.jobs)) {
       const steps = job.steps ?? [];
@@ -261,9 +261,9 @@ test("release quality retains the tested plugin and checksum without rebuilding 
 });
 
 test("Source releases publish only reviewed tag revisions after quality and package checks", async () => {
-  const source = await readFile(new URL("../../.github/workflows/source-release.yml", import.meta.url), "utf8");
+  const source = await readFile(new URL("../../.github/workflows/release.yml", import.meta.url), "utf8");
   const workflow = parseDocument(source).toJS();
-  assert.deepEqual(workflow.on, { push: { tags: ["v*"] }, workflow_dispatch: {
+  assert.deepEqual(workflow.on, { push: { tags: ["v*"] }, pull_request: { branches: ["main"], types: ["closed"] }, workflow_dispatch: {
     inputs: { tag: { description: "Existing version tag to publish", required: true, type: "string" } },
   } });
   assert.deepEqual(workflow.permissions, { contents: "read" });
@@ -275,12 +275,14 @@ test("Source releases publish only reviewed tag revisions after quality and pack
   assert.equal(workflow.jobs.source.permissions.actions, "read");
   assert.equal(workflow.jobs.source.outputs["reuse-application-checks"], "${{ steps.policy.outputs.reuse-application-checks }}");
   assert.equal(workflow.jobs.source.needs, undefined);
-  assert.equal(workflow.jobs.source.steps[0].with.ref, "${{ inputs.tag || github.sha }}");
+  assert.equal(workflow.jobs.source.steps[0].with.ref, "${{ github.event.pull_request.merge_commit_sha || inputs.tag || github.sha }}");
   assert.equal(workflow.jobs.source.outputs.commit, "${{ steps.revision.outputs.commit }}");
   assert.equal(workflow.jobs.source.steps.find(step => step.id === "policy").env.RELEASE_SHA,
     "${{ steps.revision.outputs.commit }}");
-  assert.equal(workflow.concurrency.group, "${{ github.workflow }}-${{ inputs.tag || github.ref_name }}");
-  assert.ok(!Object.hasOwn(workflow.jobs.source, "if"), "Do not bypass failed quality jobs");
+  assert.equal(workflow.concurrency.group, "${{ github.workflow }}-${{ github.event.pull_request.merge_commit_sha || inputs.tag || github.ref_name }}");
+  assert.equal(workflow.jobs.source.if.replaceAll("\n", ""), "github.event_name != 'pull_request' || (github.event.pull_request.merged == true &&\n github.event.pull_request.head.repo.full_name == github.repository &&\n startsWith(github.event.pull_request.head.ref, 'release/'))".replaceAll("\n", ""));
+  assert.equal(workflow.jobs.source.outputs.tag, "${{ steps.policy.outputs.tag }}");
+  assert.equal(workflow.jobs.source.outputs["create-tag"], "${{ steps.policy.outputs.create-tag }}");
   assert.match(source, /check-source-release\.py/);
   assert.match(source, /uv build --out-dir/);
   const uploads = workflow.jobs.source.steps.filter(step => step.uses?.startsWith("actions/upload-artifact@"));
@@ -299,10 +301,12 @@ test("Source releases publish only reviewed tag revisions after quality and pack
   }
   const release = workflow.jobs.release;
   assert.deepEqual(release.needs, ["quality", "source", "windows"]);
-  assert.equal(release.if, "${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) }}");
+  assert.equal(release.if, undefined, "Publication must depend on every required job succeeding");
   assert.equal(release.steps[0].with.ref, "${{ needs.source.outputs.commit }}");
   assert.equal(release.env.RELEASE_SHA, "${{ needs.source.outputs.commit }}");
-  assert.equal(release.env.RELEASE_TAG, "${{ inputs.tag || github.ref_name }}");
+  assert.equal(release.env.RELEASE_TAG, "${{ needs.source.outputs.tag }}");
+  assert.equal(release.env.RELEASE_CREATE_TAG, "${{ needs.source.outputs.create-tag }}");
+  assert.equal(validationStep.env.RELEASE_TAG, "${{ steps.policy.outputs.tag }}");
   assert.deepEqual(release.permissions, { contents: "write", actions: "read" });
   assert.equal(release["timeout-minutes"], 10);
   assert.equal(workflow.jobs.source.steps[0].with["fetch-depth"], 0);
@@ -333,8 +337,54 @@ test("Source releases publish only reviewed tag revisions after quality and pack
   assert.ok(!/gh release edit|git push|--clobber/.test(source));
 });
 
+test("Actual tag creation requires a verified release PR and preserves existing tag identities", async () => {
+  const workflow = parseDocument(await readFile(new URL("../../.github/workflows/release.yml", import.meta.url), "utf8")).toJS();
+  const steps = workflow.jobs.release.steps;
+  const position = steps.findIndex(step => step.name === "Ensure release tag");
+  assert.equal(steps[position - 1].name, "Verify artifacts before publication");
+  assert.equal(steps[position + 1].name, "Publish GitHub Release");
+  const directory = await mkdtemp(path.resolve(".tmp/release-tag-"));
+  const script = path.join(directory, "tag.ps1");
+  try {
+    await writeFile(script, `$ErrorActionPreference = 'Stop'
+$global:created = $false
+function git {
+  $global:LASTEXITCODE = 0
+  if ($args[0] -eq 'ls-remote') { $global:LASTEXITCODE = [int]$env:LOOKUP_EXIT }
+  if ($args[0] -eq 'fetch') { $global:LASTEXITCODE = [int]$env:FETCH_EXIT }
+  if ($args[0] -eq 'rev-parse') { $env:TAG_SHA }
+}
+function gh {
+  if (($args -join ' ') -ne "api --method POST repos/owner/project/git/refs -f ref=refs/tags/v2.1.0 -f sha=$env:RELEASE_SHA") { throw 'Wrong tag creation request.' }
+  $global:created = $true
+  $global:LASTEXITCODE = [int]$env:CREATE_EXIT
+}
+${steps[position].run}
+ConvertTo-Json -Compress -InputObject @{ created = $global:created }
+`);
+    for (const [lookup, allowed, create, fetch, matching, succeeds] of [
+      [2, "true", 0, 0, true, true], [0, "true", 0, 0, true, true],
+      [0, "false", 0, 0, true, true], [2, "false", 0, 0, true, false],
+      [128, "true", 0, 0, true, false], [2, "true", 1, 0, true, false],
+      [0, "true", 0, 0, false, false], [2, "true", 0, 1, true, false],
+    ]) {
+      const result = spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script], {
+        encoding: "utf8", timeout: 30000,
+        env: { ...windowsPowerShellEnvironment, GH_REPO: "owner/project", RELEASE_TAG: "v2.1.0",
+          RELEASE_SHA: "a".repeat(40), TAG_SHA: (matching ? "a" : "b").repeat(40),
+          RELEASE_CREATE_TAG: allowed, LOOKUP_EXIT: String(lookup), CREATE_EXIT: String(create), FETCH_EXIT: String(fetch) },
+      });
+      assert.ifError(result.error);
+      assert.equal(result.status === 0, succeeds, result.stderr);
+      if (succeeds) assert.equal(JSON.parse(result.stdout.trim()).created, lookup === 2);
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("Actual publication command preserves preview flags and rejects failed release creation", async () => {
-  const source = await readFile(new URL("../../.github/workflows/source-release.yml", import.meta.url), "utf8");
+  const source = await readFile(new URL("../../.github/workflows/release.yml", import.meta.url), "utf8");
   const workflow = parseDocument(source).toJS();
   const body = workflow.jobs.release.steps.find(step => step.name === "Publish GitHub Release").run;
   await mkdir(".tmp", { recursive: true });
@@ -387,8 +437,8 @@ ConvertTo-Json -Compress -InputObject $global:recorded
 });
 
 test("Actual release artifact verifier rejects modified downloads on every platform", async () => {
-  const workflow = parseDocument(await readFile(new URL("../../.github/workflows/source-release.yml", import.meta.url), "utf8")).toJS();
-  const body = workflow.jobs.release.steps.find(step => step.name === "Verify artifacts and current tag before publication").run;
+  const workflow = parseDocument(await readFile(new URL("../../.github/workflows/release.yml", import.meta.url), "utf8")).toJS();
+  const body = workflow.jobs.release.steps.find(step => step.name === "Verify artifacts before publication").run;
   const directory = await mkdtemp(path.resolve(".tmp/windows-release-verifier-"));
   const target = path.join(directory, ".tmp/release");
   const hash = data => createHash("sha256").update(data).digest("hex");

@@ -1,250 +1,254 @@
 # Releases
 
-The [release workflow](../../.github/workflows/source-release.yml) handles
-owner-authorized pushes of `v*` tags. Windows remains the development environment;
-Linux/macOS packages are built and executed by native target workers in reusable CI.
-The workflow validates tagged sources and prepares a standalone Windows x64 EXE,
-standard/complete ZIPs, a Linux x64 tarball, macOS arm64/x64 app ZIPs and a separate
-Stream Deck plugin archive. The accepted
-redistribution scope and its verification limits are documented below.
-Windows releases use portable EXE/ZIP packages. An installer and uninstaller are
-not included; milestone scope belongs in the [roadmap](../ROADMAP.md).
-Local acceptance and owner review still precede tag creation; CI is secondary
-validation. [Windows setup](SETUP.md) owns the required local checks.
+Developer guide to release policy, packages and publication.
+[Installation](../user/INSTALLATION.md) covers downloads, first launch and FFmpeg;
+[Windows setup](SETUP.md) owns local checks; the [roadmap](../ROADMAP.md) owns milestones.
 
-For downloads, first launch and FFmpeg setup, see the
-[user installation guide](../user/INSTALLATION.md). This document covers release
-policy, package construction and publication.
+## Prepare versions
+
+Use the [preparation script](../../scripts/prepare_release.py) with explicit targets:
+
+```powershell
+uv run --locked python -m scripts.prepare_release --app-version 2.1.0 --plugin-version 0.3.0 --dry-run
+```
+
+Review the metadata preview, then repeat without `--dry-run` to write changes and
+refresh all five [reference image groups](../../.agents/skills/update-screenshots/SKILL.md).
+Three screenshot scripts run in five sequential calls on the native Windows desktop.
+Locked Python/Node development dependencies are required. Preview never starts generators.
+Omitted targets stay unchanged; decreasing or malformed versions and inconsistent
+metadata fail before writing. Write failures trigger restoration of originals;
+any recovery failure is reported for manual inspection.
+
+| Option                 | Synchronized values                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------- |
+| `--app-version`        | `pyproject.toml`, Python package version, root entry in `uv.lock`, README version/release status        |
+| `--plugin-version`     | Independent npm package, native four-component manifest, workspace lock entry                           |
+| `--control-protocol`   | Python/TypeScript application protocol, shared examples, documentation and owner-approved test baseline |
+| `--transport-protocol` | Discovery/authentication version on both sides and documentation                                        |
+
+Protocol targets require explicit owner approval; a product-version change never
+updates them or their locked baseline. Historical releases, external versions and
+dependency locks' unrelated entries stay unchanged. A failed generator stops
+preparation with an error; written versions/images remain for inspection. Fix the
+cause and repeat the same command, including unchanged targets, to finish the refresh.
+The image guide's version is updated only after every generator succeeds. Review
+changed images and captions using the screenshot workflow before delivery.
+GitHub assigns the publication date; there is no separate release-date field.
+Run affected checks after preparation. The script does not stage, commit, tag,
+publish, create compatibility aliases or add migrations.
 
 ## Release policy
 
-- The tag must exactly equal `v` plus `project.version`. Supported versions are
-  three numeric components, optionally followed by an `a`, `b` or `rc` number.
-- The tag, resolved release SHA and source checkout must identify the same commit. The commit must
-  be contained in `origin/main` and associated with a merged PR targeting this
-  repository's `main`. Release CI, including mandatory Gitleaks history scanning,
-  must pass. Only application/UI checks may reuse green merged-PR evidence for
-  identical tested content, workflow revision and Windows runner image under the
-  [CI reuse contract](CI.md#routing-and-required-gate); missing evidence triggers
-  fresh checks. Native builds and package self-tests always run for the release.
-- Stable releases use plain numeric versions and are published as the latest release.
-- Paid code signing and macOS notarization are not release gates; the
-  [distribution constraints](../architecture/02_architecture_constraints.md#distribution-constraints)
-  define the accepted signing limitations.
-- Source validation checks license/setup files, rejects local/binary artifacts,
-  and verifies all original recording bytes against the fixture inventory.
-  Wheel and source-distribution builds must also succeed.
-- Only the publication job receives `contents: write`. It downloads this run's
-  verified native packages, plugin archive, checksum files and notes, verifies all package hashes,
-  and rechecks the remote tag target immediately before publication.
-- Publication uses `gh release create --verify-tag`, attaches all native downloads and checksum files, and
-  prepends the short [release introduction](RELEASE_NOTES.md) to GitHub-generated
-  notes. Existing releases are not edited or overwritten; failed or ambiguous
-  publication requires remote-state inspection before retrying.
+The [release workflow](../../.github/workflows/release.yml) supports:
 
-GitHub supplies the release's **Source code (zip)** and **Source code (tar.gz)**
-downloads automatically; see [GitHub's release documentation](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases).
-The workflow's temporary source archive is used only for validation and is not
-uploaded or attached to the release.
+| Trigger                               | Requirements                                                                                                                                                  |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Merge `release/<version>` into `main` | Same-repository PR; branch suffix matches `project.version`; live PR metadata matches event head and checked-out merge commit; successful `CI` / `check` gate |
+| Push `v*` tag                         | Existing tag exactly matches `v` + `project.version` and the release commit                                                                                   |
+| Manual retry                          | Existing tag; current workflow dispatched from `main`                                                                                                         |
 
-The tag target is rechecked before publication; this is not an atomic lock against
-concurrent remote tag changes. Do not move published version tags.
+- Local acceptance and owner review precede the release-PR merge or tag creation;
+  CI is secondary validation. Versions and publication require explicit decisions;
+  the workflow never increments versions. Unmerged PRs and other branches do not
+  start automatic release preparation.
+- Supported versions: three numeric components, optionally followed by an `a`, `b`
+  or `rc` number. Stable releases use plain numeric versions and become latest.
+- Release SHA, checkout and tag must agree. The commit must belong to `origin/main`
+  and have an associated merged PR targeting this repository's `main`.
+- Release CI, including Gitleaks history scanning, must pass. Only application/UI
+  checks may reuse green PR evidence for identical content, workflow revision and
+  Windows runner image; missing evidence runs fresh checks. Native builds and
+  package self-tests always run. See the [CI reuse contract](CI.md#routing-and-required-gate).
+- Source validation checks license/setup files, rejects local/binary artifacts and
+  verifies every original recording against the fixture inventory. Wheel and
+  source-distribution builds must succeed.
+- Only publication receives `contents: write`. After all checks/builds, it verifies
+  this run's package inventories and hashes, then creates a missing release-PR tag
+  at the verified merge commit. Existing tags must match; tag pushes/manual retries
+  cannot create one. The live target is rechecked before publication, without an
+  atomic lock against concurrent changes. Never move published tags.
+- `gh release create --verify-tag` publishes the six app downloads, plugin and five
+  checksum files. Artifacts retain their original filenames/bytes without automatic
+  decompression. Existing releases are never edited/overwritten; inspect remote state
+  before retrying failed or ambiguous publication. Runs for the same tag or merged
+  PR commit are serialized.
+- Paid signing and macOS notarization are not gates; see
+  [distribution constraints](../architecture/02_architecture_constraints.md#distribution-constraints).
 
-To retry publication of an existing tag after a workflow correction, dispatch the
-current workflow from `main` with the `tag` input, for example:
+GitHub supplies [source ZIP/tar.gz downloads](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases).
+The temporary validation archive is never uploaded or attached.
+
+**Retry after a workflow correction:**
 
 ```powershell
-gh workflow run source-release.yml --ref main -f tag=v2.0.0
+gh workflow run release.yml --ref main -f tag=v2.0.0
 ```
 
-Quality checks use the current workflow definition and check out the resolved
-tagged commit. The source validator is loaded from the immutable workflow revision,
-so validation-policy corrections can be used without moving an existing tag.
-The archive being validated and all native builds use the tagged commit,
-with the same ancestry, merged-PR,
-version and checksum gates. Concurrent runs for the same tag are serialized.
-Native package artifacts are downloaded without automatic decompression so their
-original filenames, bytes and checksums remain intact. Existing releases are
-never overwritten by this retry path.
+Checks use the current workflow definition and immutable workflow revision's source
+validator; source validation/builds use the resolved tagged commit. All version,
+ancestry, merged-PR and checksum gates still apply; no tag movement is needed.
 
 ## Automatic release notes
 
-GitHub generates merged PR entries, contributors and a full comparison link.
-[Release categories](../../.github/release.yml) group entries by PR labels, in
-order: `bug`, `enhancement`, `dependencies`, `documentation`, `ci`, then a catch-all
-for other changes. No authors or labels are excluded. Use clear, user-readable PR
-titles and assign `bug` or `enhancement` where applicable; issue labels do not
-automatically transfer to PRs. Existing path-based PR labels remain additive.
-
-The introduction contains links to installation, user guides and maintained
-limitations at the release tag. It needs no per-version feature list. Add an
-Upgrade notes section only for required user actions, such as recreating
-incompatible presets; remove obsolete instructions for the next release.
-Review generated notes and their previous-release comparison before publication.
-The version number and release authorization remain explicit decisions.
-See [GitHub's automatic release notes](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes).
+- GitHub generates merged PR entries, contributors and a full comparison link,
+  preceded by the reusable [release introduction](RELEASE_NOTES.md).
+- [Category](../../.github/release.yml) precedence: `enhancement`, `bug`,
+  `documentation`, `dependencies`, `ci`, catch-all. No authors/labels are excluded.
+- Use clear, user-readable PR titles and applicable `bug`/`enhancement` labels.
+  Issue labels do not transfer automatically; path-based PR labels remain additive.
+- Keep the introduction's installation/guide/limitation links at the release tag;
+  no per-version feature list. Add **Upgrade notes** only for required user actions
+  (for example, recreating incompatible presets); remove obsolete instructions.
+- Review generated notes and the previous-release comparison before publication.
+  See [GitHub automatic release notes](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes).
 
 ## In-application update discovery
 
-Settings → Updates offers the manual release check and the opt-in startup check
-(disabled by default). Save applies the startup preference; Cancel preserves it.
-Startup checks run in a worker at most once per 24 hours;
-attempts, including failures, are recorded in `preferences.sqlite3`. It also stores
-the opt-in and one skipped tag. Manual checks bypass the interval and skipped tag.
-Only published releases with an uploaded application download for the running
-OS/architecture qualify; source archives and checksums alone do not. The highest
-newer supported version is selected numerically; bare tags, drafts and releases
-without downloads do not qualify.
-
-The public GitHub Releases API uses unauthenticated HTTPS without recording data
-or paths. Checks bound pages (five of 100), response bytes (2 MiB per page), socket
-timeout (five seconds) and a 20-second read budget checked between chunks/requests.
-Limit exhaustion is an unavailable check, never a false up-to-date result.
-Automatic failures are silent; manual failures provide a retry-later message.
-The popup opens the validated repository release URL in the browser, postpones
-the notice, or saves the skipped tag. Nothing downloads or installs automatically.
+| Behavior           | Contract                                                                                                                                                                                                            |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Settings → Updates | Manual check; opt-in startup check, off by default. Save applies the preference; Cancel preserves it.                                                                                                               |
+| Startup            | Worker; at most once per 24 hours. `preferences.sqlite3` stores attempts including failures, opt-in and one skipped tag.                                                                                            |
+| Manual check       | Bypasses interval and skipped tag.                                                                                                                                                                                  |
+| Selection          | Numerically highest newer supported published release with an uploaded app download for this OS/architecture. Bare tags, drafts, source archives/checksums alone and releases without app downloads do not qualify. |
+| Request            | Public GitHub Releases API; unauthenticated HTTPS; no recording data or paths.                                                                                                                                      |
+| Limits             | Five pages of 100; 2 MiB/page; five-second socket timeout; 20-second read budget checked between chunks/requests. Exhaustion means unavailable, never up to date.                                                   |
+| Failure            | Automatic: silent. Manual: retry-later message.                                                                                                                                                                     |
+| Popup              | Open validated repository release URL in the browser, postpone notice or save skipped tag. No automatic download/install.                                                                                           |
 
 ## Stream Deck plugin deliverable
 
-The plugin version is independent of `project.version`. Its package, native manifest
-and lock metadata must agree; use the [plugin version workflow](../../plugins/stream-deck/README.md#independent-plugin-version)
-once for changed plugin code/data after the preceding release. Development commits
-reuse that upcoming version; an app-only release need not bump it. Builds use the
-preceding reachable app release tag as their comparison point, including when
-validating a newly tagged candidate.
+- Version independently of `project.version`; package, native manifest and lock
+  metadata must agree. Follow the [plugin version workflow](../../plugins/stream-deck/README.md#independent-plugin-version)
+  once for changed plugin code/data since the preceding release; keep that upcoming
+  version across development commits. App-only releases need no plugin bump.
+  Comparison uses the preceding reachable app release tag, including tagged candidates.
+- Full release CI runs plugin tests and official offline validation/packing.
+  `upload-packages: true` packs the tested folder without rebuilding and retains
+  `Ride-Forces-Analyzer.streamDeckPlugin` plus `PLUGIN-SHA256SUMS.txt` from this run.
+  Publication requires both and verifies the exact inventory/hash.
+- Archive contents: self-contained runtime, license notices, icons/layouts and
+  Plus/Neo/Mobile profiles. Local packing after successful tests:
 
-Full release CI runs the plugin tests and official offline validation/packing.
-With `upload-packages: true`, the plugin job packs the tested folder without
-rebuilding and retains these two files from the same run:
+```powershell
+npm run pack:built-plugin --workspace plugins/stream-deck
+```
 
-- `Ride-Forces-Analyzer.streamDeckPlugin`
-- `PLUGIN-SHA256SUMS.txt`
+For build plus pack, use `npm run pack:plugin --workspace plugins/stream-deck`.
+Both write to `.tmp/stream-deck-package/`; replacing an existing archive requires
+explicit `-- --force`.
 
-The publication job requires both, verifies the exact checksum inventory and hash,
-and attaches them alongside the six application downloads and their checksums.
-The archive contains the self-contained runtime, license notices, icons/layouts
-and Plus/Neo/Mobile profiles. Local preparation uses
-`npm run pack:built-plugin --workspace plugins/stream-deck` after successful plugin
-tests, or `npm run pack:plugin --workspace plugins/stream-deck` for build plus pack.
-Both write under `.tmp/stream-deck-package/`; an existing archive is protected unless
-explicitly replaced with `-- --force`.
-
-The [user guide](../user/STREAM_DECK.md) owns installation/profile selection.
-Native archive installation/update, physical controls and macOS plugin integration
-remain unverified. A successful pack/upload does not close those acceptance items.
-Marketplace publication and automatic plugin updates are not configured.
+[User guide](../user/STREAM_DECK.md): installation/profile selection.
+Native archive installation/update, physical controls and macOS integration remain
+unverified; packing/upload does not close them. Marketplace publication and automatic
+plugin updates are not configured.
 
 ## Shared application icon
 
-[`ui/presentation/app-icon.svg`](../../src/ride_forces_analyzer/ui/presentation/app-icon.svg) is the shared
-window/package artwork. [`scripts.build_icons`](../../scripts/build_icons.py)
-renders it with the existing Qt SVG renderer and writes ICO (16–256 px),
-ICNS (up to 1024 px) and PNG (512 px) under the build's temporary icon directory.
-No generated icon binaries need to be maintained in source control.
-PyInstaller embeds the ICO in Windows EXEs and uses the ICNS for macOS app bundles.
-All targets collect the SVG alongside its runtime renderer. Linux archives also
-include the PNG, SVG and `ride-forces-analyzer.desktop`; the
-[optional menu setup](../user/INSTALLATION.md#optional-application-menu-shortcut)
-connects the portable executable to the desktop icon lookup path.
-Native package checks require these artifacts. Format/command tests on Windows do
-not replace actual Linux/macOS builds or desktop integration checks.
+[`app-icon.svg`](../../src/ride_forces_analyzer/ui/presentation/app-icon.svg) supplies
+window/package artwork. [`scripts.build_icons`](../../scripts/build_icons.py) uses
+Qt SVG to generate temporary ICO (16–256 px), ICNS (up to 1024 px) and PNG (512 px).
+Generated binaries are not maintained in source control.
+
+| Target  | Collected artwork                                                                                                                                                                      |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| All     | SVG and runtime renderer                                                                                                                                                               |
+| Windows | ICO embedded by PyInstaller                                                                                                                                                            |
+| macOS   | ICNS in app bundle                                                                                                                                                                     |
+| Linux   | PNG, SVG and `ride-forces-analyzer.desktop`; [optional menu setup](../user/INSTALLATION.md#optional-application-menu-shortcut) connects the portable executable to desktop icon lookup |
+
+Native package checks require these artifacts; Windows format/command tests do not
+replace Linux/macOS builds or desktop integration checks.
 
 ## File and application properties
 
-Both builders read the version directly from `pyproject.toml`. Shared build
-constants define product **Ride Forces Analyzer**, description **Ride force analysis
-and video overlays**, author **Björn Rudner** and **Copyright © 2026 Björn Rudner**.
+Both builders read the version directly from `pyproject.toml`. Shared metadata: product **Ride Forces Analyzer**;
+description **Ride force analysis and video overlays**; author **Björn Rudner**;
+**Copyright © 2026 Björn Rudner**.
 
-- Windows generates a UTF-8 `--version-file`: `ProductName`, `FileDescription`,
-  author in `CompanyName`, `LegalCopyright`, `OriginalFilename`, and matching
-  `FileVersion`/`ProductVersion`. Numeric versions use four 16-bit components;
-  full text retains the exact project version; stable releases have no preview flag.
-  The resource uses English text with Unicode; UI language remains independent.
-- macOS sets `CFBundleName`, `CFBundleDisplayName`, both existing version keys and
-  `NSHumanReadableCopyright` before signing. `RideForcesAnalyzerDescription` and
-  `RideForcesAnalyzerAuthor` retain the additional fields as custom bundle metadata;
-  Finder does not automatically display custom keys.
-- Linux generates `Name`/`Comment` in the desktop entry, retaining the German
-  comment. `X-RideForcesAnalyzer-Version`, `X-RideForcesAnalyzer-Author` and
-  `X-RideForcesAnalyzer-Copyright` retain additional metadata. The standard desktop-entry
-  `Version` is not an application version. Desktop environments decide which
-  fields to display; ELF files have no Windows-style properties resource.
+| Target  | Metadata                                                                                                                                                                                                                                                                                                                    |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Windows | UTF-8 `--version-file`: `ProductName`, `FileDescription`, author in `CompanyName`, `LegalCopyright`, `OriginalFilename`, matching `FileVersion`/`ProductVersion`. Four 16-bit numeric components; exact full-text project version; stable releases have no preview flag. English Unicode resource; UI language independent. |
+| macOS   | `CFBundleName`, `CFBundleDisplayName`, both existing version keys and `NSHumanReadableCopyright`, set before signing. Custom `RideForcesAnalyzerDescription`/`RideForcesAnalyzerAuthor` fields are not automatically displayed by Finder.                                                                                   |
+| Linux   | Desktop-entry `Name`/`Comment`, retaining German comment; custom `X-RideForcesAnalyzer-Version`, `X-RideForcesAnalyzer-Author`, `X-RideForcesAnalyzer-Copyright`. Standard desktop-entry `Version` is not the app version. Display depends on the desktop; ELF has no Windows-style properties resource.                    |
 
 ## Windows packages
 
-PyInstaller is a pinned build-group dependency, not an application dependency.
-The EXE embeds Python, imported runtime libraries, Qt plugins/translations and
-collected notices. Both ZIPs contain that same EXE and external license files;
-the complete ZIP additionally contains the pinned publisher's `ffmpeg.exe`,
-LICENSE/README and actual license/build-configuration output. It excludes ffplay
-and ffprobe. The adjacent encoder takes precedence over PATH in frozen builds;
-an explicit user-selected encoder still wins. Preferences remain in LOCALAPPDATA.
+Portable packages, without installer/uninstaller:
+
+| Download under `.tmp/windows-build/assets/`             | Contents                                                                                                                                                                         |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Ride-Forces-Analyzer-VERSION-windows-x64.exe`          | Python, imported runtime libraries, Qt plugins/translations and collected notices                                                                                                |
+| `Ride-Forces-Analyzer-VERSION-windows-x64-standard.zip` | Same EXE, project/asset notices and one `THIRD-PARTY-LICENSES.txt` dependency inventory                                                                                          |
+| `Ride-Forces-Analyzer-VERSION-windows-x64-complete.zip` | Standard contents plus pinned publisher's `ffmpeg.exe`; publisher LICENSE/README and actual license/build output are included in the consolidated notice file; no ffplay/ffprobe |
+| `WINDOWS-SHA256SUMS.txt`                                | Checksums for the three downloads                                                                                                                                                |
+
+`THIRD-PARTY-LICENSES.txt` lists runtime libraries/versions, original notice sources
+and component copyrights. Whitespace-equivalent license bodies appear once,
+grouped by type; differing terms and exceptions remain distinct. Full package
+METADATA descriptions and the copied license directory tree are omitted. The EXE
+embeds the same file; native Linux/macOS bundles collect it in their runtime data.
+
+PyInstaller is a pinned build-group dependency, not an app dependency. In frozen
+builds, an explicit encoder choice wins over adjacent FFmpeg, which wins over PATH.
+Preferences remain in LOCALAPPDATA.
 
 ```powershell
 uv sync --locked --all-extras --group dev --group build
 uv run --locked --group build python -m scripts.build_windows --release
 ```
 
-The [release skill](../../.agents/skills/release/SKILL.md#3-build-candidates-and-execute-the-local-exe)
-owns local candidate validation: reuse valid application/UI evidence, build once
-and run the standalone EXE self-test. Full three-package execution belongs to CI;
-do not repeat it as an additional local release gate. Its qualification command is:
+**Local validation:** follow the [release skill](../../.agents/skills/release/SKILL.md#3-build-candidates-and-execute-the-local-exe):
+reuse valid application/UI evidence, build once, run the standalone EXE self-test.
+**CI validation:** execute all three packages; do not add this as a local gate:
 
 ```powershell
 uv run --locked --group build python -m scripts.check_windows_packages .tmp/windows-build/assets --recording (Get-ChildItem tests/fixtures/real/Manta-*.forces | Select-Object -First 1).FullName
 ```
 
-Candidate files under `.tmp/windows-build/assets` are named
-`Ride-Forces-Analyzer-VERSION-windows-x64.exe`, `…-standard.zip`, `…-complete.zip`
-and `WINDOWS-SHA256SUMS.txt`. The checker verifies ZIP paths, required files,
-source-data exclusions and hashes, then runs each actual EXE in an isolated folder
-with Python/Qt environment overrides removed and PATH limited to Windows System32.
-It exercises the visible GUI, German/light presentation, real recording import,
-4K rendering and a real CPU encode using the complete package's encoder.
-Automated package checks provide native workstation validation; they do not
-establish clean-machine compatibility across supported packages and targets.
+The checker validates ZIP paths, required files, source-data exclusions and hashes.
+Each actual EXE runs in an isolated folder, without Python/Qt overrides and with a
+System32-only PATH: visible German/light GUI, real recording import, 4K rendering
+and real CPU encoding with the complete package's encoder. This establishes native
+workstation validation, not clean-machine compatibility across supported packages/targets.
 
-**Accepted redistribution scope:** `packaging/redistribution.json` is accepted. Official
-Qt/PySide 6.12.0 sources are downloaded and pinned; a static
-[Qt notice file](../../packaging/QT-NOTICES.txt) is included by the existing
-notice collector. The shared Qt GUI hook excludes the unused PDF image plugin on
-all targets, preserving the standard GUI dependencies and other image plugins.
-Frozen package self-tests check that PDF image support is absent before exercising
-import/rendering. The existing FFmpeg delivery model is owner-accepted; no additional
-source bundle is planned. Completeness of corresponding sources/build instructions
-for FFmpeg and its linked libraries has not been independently verified. The catalog
-records this limitation and is included in the EXE and
-both ZIPs. The accepted status describes project scope, not verified license compliance.
+**Accepted redistribution scope:**
 
-`--release` verifies the supplied source archives'
-SHA-256 values. It downloads configured HTTPS sources only into
-`.tmp/`; those dependency archives are not bundled as a release download. The Windows
-job and package execution checks must succeed before the publication job can run.
-Publication rechecks all downloaded asset hashes and the live tag, then attaches
-the EXE, both Windows ZIPs, Linux/macOS packages and platform checksum files. The
-accepted source-verification limitation does not block the workflow. Missing or modified
-files that are explicitly listed in the catalog still fail verification.
-The Windows downloads have their own checksum file.
+- `packaging/redistribution.json` is accepted and included in the consolidated
+  notice file in the EXE/both ZIPs;
+  [third-party notices](../../THIRD_PARTY_NOTICES.md) own notices to check before future bundles.
+- Official Qt/PySide 6.12.0 sources are downloaded/pinned; the existing collector
+  consolidates the original [Qt notices](../../packaging/QT-NOTICES.txt).
+  All targets' shared GUI hook excludes the unused PDF image plugin;
+  self-tests verify its absence before import/rendering. Other image plugins and
+  standard GUI dependencies remain.
+- Existing FFmpeg delivery is owner-accepted; no additional source bundle is planned.
+  Completeness of corresponding sources/build instructions for FFmpeg and linked
+  libraries is not independently verified. The catalog records this accepted scope
+  and limitation. This limitation does not block release; acceptance does not establish
+  license compliance.
+- `--release` verifies listed source archives' SHA-256 values and downloads configured
+  HTTPS sources only into `.tmp/`. Dependency archives are not release downloads.
+  Missing/modified catalog-listed files fail verification.
 
 ## Linux and macOS packages
 
-Releases include these native targets. Development and the full local
-regression suite stay on Windows. Native package
-builds require their own OS; Windows mocks do not establish macOS acceptance.
+Development/local regression stay on Windows; each target builds/executes natively
+with matching locked wheels. Windows mocks establish no macOS acceptance; no universal
+app is claimed.
 
-| Target              | Download                                        | Minimum target                                                                                                           |
-| ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Linux x64           | `Ride-Forces-Analyzer-VERSION-linux-x64.tar.gz` | Ubuntu 24.04 / glibc 2.39                                                                                                |
-| macOS Apple Silicon | `Ride-Forces-Analyzer-VERSION-macos-arm64.zip`  | macOS 15+                                                                                                                |
-| macOS Intel         | `Ride-Forces-Analyzer-VERSION-macos-x64.zip`    | macOS 15+                                                                                                                |
+| Target              | Download                                        | Minimum target            | Checksums                    |
+| ------------------- | ----------------------------------------------- | ------------------------- | ---------------------------- |
+| Linux x64           | `Ride-Forces-Analyzer-VERSION-linux-x64.tar.gz` | Ubuntu 24.04 / glibc 2.39 | `LINUX-X64-SHA256SUMS.txt`   |
+| macOS Apple Silicon | `Ride-Forces-Analyzer-VERSION-macos-arm64.zip`  | macOS 15+                 | `MACOS-ARM64-SHA256SUMS.txt` |
+| macOS Intel         | `Ride-Forces-Analyzer-VERSION-macos-x64.zip`    | macOS 15+                 | `MACOS-X64-SHA256SUMS.txt`   |
 
-Native packages embed Python, Qt and collected notices, but do not bundle FFmpeg.
-The [installation instructions](../user/INSTALLATION.md) own desktop dependencies,
-FFmpeg setup and per-application OS approvals. Native package smoke checks exercise
-CPU H.264; NVIDIA acceleration is optional and capability-probed. Each architecture
-is built separately from its matching locked wheels; a universal app is not claimed.
+Packages embed Python, Qt and notices; no bundled FFmpeg or static Windows encoder.
+[Installation](../user/INSTALLATION.md) owns desktop dependencies, external FFmpeg
+and OS approvals. Smoke checks use CPU H.264; NVIDIA acceleration is optional and
+capability-probed.
 
-Native build workers run these existing entry points:
+**On native build workers:**
 
 ```sh
 uv sync --locked --all-extras --group dev --group build
@@ -252,33 +256,22 @@ uv run --locked --group build python -m scripts.build_posix
 uv run --locked --group build python -m scripts.check_posix_packages .tmp/posix-build/assets --recording /absolute/path/to/authorized/Manta.forces
 ```
 
-The actual recording path is supplied by the workflow from the unchanged fixture
-catalog. Linux CI uses Xvfb; macOS uses the hosted desktop. Both execute the
-extracted frozen package with isolated user state, a read-only launch directory,
-real import, German/light UI, 4K rendering and an external CPU encode. The macOS
-checker additionally verifies the extracted app signature. No offscreen result
-substitutes for these native gates.
+The workflow supplies the real path from the unchanged fixture catalog.
+Linux uses Xvfb; macOS uses the hosted desktop. Checks run extracted frozen packages
+with isolated user state and a read-only launch directory: real import, German/light
+GUI, 4K rendering, external CPU encode and, on macOS, app-signature verification.
+Offscreen checks do not substitute for these gates. Publication requires native CI
+and Windows package checks to pass.
 
-Each target emits its own `LINUX-X64-SHA256SUMS.txt`,
-`MACOS-ARM64-SHA256SUMS.txt` or `MACOS-X64-SHA256SUMS.txt`. Publication downloads
-verified artifacts from the same run without unpacking them, validates every
-platform's complete checksum inventory and publishes only after the required
-native CI gate and Windows package checks succeed.
-
-[Deployment](../architecture/07_deployment_view.md#local-export-configuration)
-owns user-data paths. No recording or user data is installed in the app bundle.
-Rendering
-uses Pillow's scalable font fallback when Segoe UI is absent; glyph metrics need
-not be pixel-identical to Windows. The accepted redistribution scope remains documented
-in the shipped catalog; no static Windows FFmpeg binary is added to these packages.
+No recording/user data is installed in app bundles; [deployment](../architecture/07_deployment_view.md#local-export-configuration)
+owns data paths. Pillow's scalable font fallback handles missing Segoe UI; metrics
+need not match Windows pixels. The shipped catalog retains the accepted redistribution scope.
 
 ## Distribution boundaries
 
-The program is GPL-3.0-or-later. The authorized recordings, app exports, documentation images and
-bundled POV photographs follow the [central owner grant](../../ASSET_LICENSES.md).
-Original bytes and attribution notices remain intact. See
-[third-party notices](../../THIRD_PARTY_NOTICES.md) before any future binary bundle.
-
-Actions artifacts are retained for 14 days; attached GitHub release assets are
-separate downloads. Existing tags do not trigger the workflow retroactively.
-Each release requires a successful tag workflow and verification of its attached assets.
+- Program: GPL-3.0-or-later. Authorized recordings, app exports, documentation images
+  and bundled POV photographs follow the [central owner grant](../../ASSET_LICENSES.md);
+  preserve original bytes and attribution.
+- Actions artifacts: 14-day retention; attached GitHub release assets are separate downloads.
+- Existing tags do not trigger workflows retroactively. Every release requires a
+  successful release workflow and verification of attached assets.

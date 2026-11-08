@@ -15,7 +15,7 @@ test("Elgato lint rules apply to plugin code and ignore external code", async ()
 		assert.equal(config.rules["jsdoc/require-jsdoc"][0], 1);
 		assert.equal(config.rules.indent[1], "tab");
 	}
-	for (const name of ["scripts/render_stream_deck_reference.py", "tests/docs/documentation.test.mjs"]) {
+	for (const name of ["scripts/generate_stream_deck_screenshots.py", "tests/docs/documentation.test.mjs"]) {
 		const config = await eslint.calculateConfigForFile(path.join(root, name));
 		assert.equal(config?.rules?.["jsdoc/require-jsdoc"], undefined);
 		assert.equal(config?.rules?.indent, undefined);

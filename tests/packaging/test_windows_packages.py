@@ -14,6 +14,7 @@ from zipfile import ZipFile
 
 import pytest
 
+from scripts.license_bundle import BUNDLE_NAME, LicenseBundle
 from scripts import build_windows
 from scripts.check_windows_packages import validate_zip
 from ride_forces_analyzer.rendering import encoding
@@ -102,6 +103,10 @@ def test_release_build_outputs_only_windows_downloads_and_checksums(
         assets.mkdir(parents=True)
         if previous_archive:
             (assets / "corresponding-sources.zip").write_bytes(b"previous build")
+            for name in ("standard", "complete"):
+                old_notices = work / name / "licenses"
+                old_notices.mkdir(parents=True)
+                (old_notices / "old.txt").write_text("Previous notices", encoding="utf-8")
         (root / "packaging").mkdir()
         (root / "packaging/redistribution.json").write_text(
             '{"status":"verified","source_archives":[]}',
@@ -117,8 +122,18 @@ def test_release_build_outputs_only_windows_downloads_and_checksums(
         for name in ("LICENSE", "README.txt"):
             (distribution / name).write_text("synthetic notices", encoding="utf-8")
 
-        def notices(destination: Path) -> None:
-            destination.mkdir()
+        (root / "ffmpeg.json").write_text('{"version": "9.0.2"}', encoding="utf-8")
+
+        def notices(destination: Path) -> LicenseBundle:
+            bundle = LicenseBundle()
+            bundle.add(
+                "Synthetic runtime",
+                "1",
+                "MIT",
+                [("LICENSE", "MIT", "Synthetic runtime notice")],
+            )
+            bundle.write(destination)
+            return bundle
 
         def acquire_encoder(destination: Path) -> Path:
             return encoder
@@ -170,7 +185,12 @@ def test_release_build_outputs_only_windows_downloads_and_checksums(
         }
         assert checksum_names == downloads
         for variant in ("standard", "complete"):
+            validate_zip(result / f"{prefix}-{variant}.zip", complete=variant == "complete")
             with ZipFile(result / f"{prefix}-{variant}.zip") as archive:
+                assert all("licenses" not in Path(name).parts for name in archive.namelist())
+                text = archive.read(f"{build_windows.APP_NAME}/{BUNDLE_NAME}").decode("utf-8")
+                assert "Synthetic runtime 1" in text
+                assert ("FFmpeg/README.txt" in text) is (variant == "complete")
                 assert (
                     archive.read(f"{build_windows.APP_NAME}/ASSET_LICENSES.md")
                     == (root / "ASSET_LICENSES.md").read_bytes()

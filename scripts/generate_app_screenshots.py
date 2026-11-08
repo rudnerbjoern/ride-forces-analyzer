@@ -325,7 +325,7 @@ def capture_reference(
         with TemporaryDirectory(dir=temporary, prefix="app-reference-") as profile:
             os.environ["LOCALAPPDATA"] = profile
             os.environ["QT_SCALE_FACTOR"] = "1"
-            arguments = ["capture_app_reference", "-platform", "windows:dpiawareness=0"]
+            arguments = ["generate_app_screenshots", "-platform", "windows:dpiawareness=0"]
             application = QApplication(arguments)
             application.setFont(QFont("Segoe UI", 9))
             window = ExplorerWindow(AppSettings(language=Language.ENGLISH))

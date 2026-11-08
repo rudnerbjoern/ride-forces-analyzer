@@ -9,7 +9,7 @@ import sys
 from tempfile import TemporaryDirectory
 from functools import partial
 
-from scripts import render_export_reference
+from scripts import generate_export_screenshots
 
 from PIL import Image
 import pytest
@@ -18,7 +18,7 @@ from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 
 SOURCE = REAL_FIXTURE_DIRECTORY / "VoltronNevera-6BC967BE-5333-42D1-B4B6-C8C73FC5BCEA.forces"
 SOURCE_SHA256 = "f48157cadbfeb374eeadf48112b0bbfc1e8b47c580cb303342cf65977054ad04"
-SCRIPT = Path(__file__).resolve().parents[2] / "scripts/render_export_reference.py"
+SCRIPT = Path(__file__).resolve().parents[2] / "scripts/generate_export_screenshots.py"
 
 
 @pytest.fixture
@@ -35,13 +35,13 @@ def test_reference_rejects_changed_recording(
     changed = reference_directory / SOURCE.name
     changed.write_bytes(SOURCE.read_bytes() + b"\n")
     monkeypatch.setattr(
-        render_export_reference,
+        generate_export_screenshots,
         "load_reference",
-        partial(render_export_reference.load_reference, source=changed),
+        partial(generate_export_screenshots.load_reference, source=changed),
     )
     output = reference_directory / "output"
     with pytest.raises(ValueError, match="source hash differs"):
-        render_export_reference.render_reference(output)
+        generate_export_screenshots.render_reference(output)
     assert not output.exists()
 
 

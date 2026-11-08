@@ -1,4 +1,4 @@
-"""Qualify an existing version tag for automatic source publication.
+"""Qualify a version tag or merged release PR for automatic publication.
 
 Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
@@ -83,6 +83,48 @@ def verify_merged_prs(value: object, repository: str) -> None:
         if isinstance(repo, dict) and repo.get("full_name") == repository:
             return
     raise ValueError("Release commit requires an associated merged PR targeting main")
+
+
+def verify_release_pr(value: object, version: str, commit: str, head: str) -> None:
+    """Require the merged release PR and its successful CI gate at the event head.
+
+    Args:
+        value: Live pull-request metadata and check rollup from GitHub.
+        version: Explicit project version selected by the release branch.
+        commit: Checked-out merge commit to publish.
+        head: Pull-request head SHA recorded in the merge event.
+
+    Raises:
+        ValueError: Release branch, merge identity or CI evidence does not match.
+    """
+    if (
+        not isinstance(value, dict)
+        or value.get("state") != "MERGED"
+        or value.get("isCrossRepository") is not False
+        or value.get("baseRefName") != "main"
+        or value.get("headRefName") != f"release/{version}"
+        or value.get("headRefOid") != head
+        or value.get("mergeCommit") != {"oid": commit}
+    ):
+        raise ValueError("Release PR must match the version, repository, head and merge commit")
+    checks = value.get("statusCheckRollup")
+    gates = (
+        [
+            check
+            for check in checks
+            if isinstance(check, dict)
+            and check.get("workflowName") == "CI"
+            and check.get("name") == "check"
+        ]
+        if isinstance(checks, list)
+        else []
+    )
+    if (
+        len(gates) != 1
+        or gates[0].get("status") != "COMPLETED"
+        or gates[0].get("conclusion") != "SUCCESS"
+    ):
+        raise ValueError("Release PR requires a successful CI check gate")
 
 
 def reusable_application_checks(root: Path, commit: str, repository: str, prs: object) -> bool:
@@ -177,7 +219,7 @@ def reusable_application_checks(root: Path, commit: str, repository: str, prs: o
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--tag", required=True)
+    parser.add_argument("--tag", default="")
     parser.add_argument("--sha", required=True)
     parser.add_argument("--repository", required=True)
     args = parser.parse_args()
@@ -185,13 +227,51 @@ if __name__ == "__main__":
     version = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"][
         "version"
     ]
+    create_tag = os.environ.get("GITHUB_EVENT_NAME") == "pull_request"
+    if create_tag:
+        event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
+        pr = event["pull_request"]
+        if (
+            event.get("action") != "closed"
+            or pr.get("merged") is not True
+            or pr["head"]["repo"]["full_name"] != args.repository
+        ):
+            raise ValueError("Automatic publication requires a merged same-repository release PR")
+        response = subprocess.check_output(
+            [
+                "gh",
+                "pr",
+                "view",
+                str(event["number"]),
+                "--repo",
+                args.repository,
+                "--json",
+                "state,isCrossRepository,baseRefName,headRefName,headRefOid,mergeCommit,statusCheckRollup",
+            ],
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
+        verify_release_pr(json.loads(response), version, args.sha, pr["head"]["sha"])
+        args.tag = f"v{version}"
     preview = is_prerelease(args.tag, version)
     verify_main_ancestry(root, args.sha)
-    tagged = subprocess.check_output(
-        ["git", "rev-parse", f"refs/tags/{args.tag}^{{commit}}"],
-        text=True,
+    tag_exists = subprocess.run(
+        ["git", "show-ref", "--verify", "--quiet", f"refs/tags/{args.tag}"],
+        check=False,
         timeout=30,
-    ).strip()
+    ).returncode
+    if tag_exists not in (0, 1) or (tag_exists == 1 and not create_tag):
+        raise ValueError("An existing release tag is required for tag pushes and manual retries")
+    tagged = (
+        subprocess.check_output(
+            ["git", "rev-parse", f"refs/tags/{args.tag}^{{commit}}"],
+            text=True,
+            timeout=30,
+        ).strip()
+        if tag_exists == 0
+        else args.sha
+    )
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True, timeout=30).strip()
     if tagged != args.sha or head != args.sha:
         raise ValueError("Tag, checkout and event SHA must identify the same commit")
@@ -221,5 +301,7 @@ if __name__ == "__main__":
     with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
         output.write(f"prerelease={str(preview).lower()}\n")
         output.write(f"version={version}\n")
+        output.write(f"tag={args.tag}\n")
+        output.write(f"create-tag={str(create_tag).lower()}\n")
         output.write(f"reuse-application-checks={str(reuse).lower()}\n")
     print("Release policy passed: version, tag SHA, main ancestry and merged PR")

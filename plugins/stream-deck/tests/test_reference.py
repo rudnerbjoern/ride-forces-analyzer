@@ -10,7 +10,7 @@ from tempfile import TemporaryDirectory
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[3]
-SCRIPT = ROOT / "scripts/render_stream_deck_reference.py"
+SCRIPT = ROOT / "scripts/generate_stream_deck_screenshots.py"
 
 
 def test_reference_cli_is_reproducible_from_fixed_contract_examples() -> None:

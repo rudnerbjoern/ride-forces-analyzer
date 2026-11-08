@@ -9,6 +9,7 @@ import { DialControlAction } from "../dist/dial-action.js";
 import { InfoBarAction } from "../dist/infobar-action.js";
 import { StepModeAction } from "../dist/mode-action.js";
 import { settle, useFeedbackClock } from "./helpers/feedback-clock.mjs";
+import { CONTROL_VERSION } from "./helpers/versions.mjs";
 
 const examples = JSON.parse(
 	await readFile(new URL("../../../tests/fixtures/stream_deck_protocol.json", import.meta.url), "utf8"),
@@ -49,7 +50,7 @@ function harness() {
 	};
 	const acknowledge = () => {
 		for (const command of sent)
-			receive({ version: 3, type: "response", id: command.id, target: command.target, status: "ok" });
+			receive({ version: CONTROL_VERSION, type: "response", id: command.id, target: command.target, status: "ok" });
 	};
 	connection(true);
 	receive(state);
@@ -122,7 +123,7 @@ test("delayed command rejection alerts only the visible originating key or dial 
 		if (kind === "key") await handler.onKeyDown(origin);
 		else await handler.onDialDown(origin);
 		const command = h.sent.at(-1);
-		const response = { version: 3, type: "response", id: command.id, target: command.target };
+		const response = { version: CONTROL_VERSION, type: "response", id: command.id, target: command.target };
 		h.receive({ ...response, status: "pending" });
 		await settle();
 		assert.equal(origin.output.alerts, 0);
@@ -159,7 +160,7 @@ test("each rejected relative dial request alerts even when failures arrive befor
 	assert.equal(h.sent.length, 2);
 	for (const command of h.sent) {
 		h.receive({
-			version: 3,
+			version: CONTROL_VERSION,
 			type: "response",
 			id: command.id,
 			target: command.target,
@@ -188,7 +189,7 @@ test("late failures ignore vanished actions and obsolete targets without consumi
 			else await handler.onDialDown(origin);
 			const command = h.sent.at(-1);
 			const failure = {
-				version: 3,
+				version: CONTROL_VERSION,
 				type: "response",
 				id: command.id,
 				target: command.target,
@@ -522,7 +523,7 @@ test("Plus marker rotation previews only its marker, press applies and touch dis
 	await h.dials.onDialDown(dial);
 	const apply = h.sent.at(-1);
 	assert.deepEqual(apply.action, { name: "marker.apply", marker: "gravity" });
-	h.receive({ version: 3, type: "response", id: apply.id, target: apply.target, status: "pending" });
+	h.receive({ version: CONTROL_VERSION, type: "response", id: apply.id, target: apply.target, status: "pending" });
 	const markers = structuredClone(h.client.state.markers);
 	markers[1] = { ...markers[1], status: "pending", request_id: apply.id };
 	h.publish({ markers });
@@ -531,7 +532,7 @@ test("Plus marker rotation previews only its marker, press applies and touch dis
 	assert.doesNotMatch(dial.output.feedback.at(-1).status.value, /Pending · Pending/);
 	assert.match(dial.output.feedback.at(-1).detail, /Applied #50/);
 	h.receive({
-		version: 3,
+		version: CONTROL_VERSION,
 		type: "response",
 		id: apply.id,
 		target: apply.target,
