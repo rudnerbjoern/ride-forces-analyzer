@@ -8,14 +8,20 @@ const packagePath = "plugins/stream-deck/package.json";
 const manifestPath = "plugins/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin/manifest.json";
 const inputs = [
 	"plugins/stream-deck",
-	"package.json",
-	"package-lock.json",
 	".node-version",
 	"LICENSE",
 	":(exclude)plugins/stream-deck/tests",
+	":(exclude)plugins/stream-deck/marketplace",
+	":(exclude)plugins/stream-deck/scripts/version.mjs",
 	":(glob,exclude)plugins/stream-deck/**/*.md",
 ];
 const json = (filename) => JSON.parse(readFileSync(filename, "utf8"));
+const runtimeDependencies = (lock) =>
+	JSON.stringify(
+		Object.entries(lock.packages)
+			.filter(([location, metadata]) => location.includes("node_modules/") && !metadata.dev && !metadata.link)
+			.sort(([left], [right]) => left.localeCompare(right)),
+	);
 
 /**
  * Convert the independent package version to Elgato's four numeric components.
@@ -53,13 +59,15 @@ export function verifyVersion(directory = root) {
 	const native = nativeVersion(version);
 	if (json(path.join(directory, manifestPath)).Version !== native)
 		throw new Error("Plugin manifest version is out of sync; run the workspace npm version command");
-	if (json(path.join(directory, "package-lock.json")).packages["plugins/stream-deck"].version !== version)
+	const lock = json(path.join(directory, "package-lock.json"));
+	if (lock.packages["plugins/stream-deck"].version !== version)
 		throw new Error("Plugin package-lock version is out of sync");
 	if (git("rev-parse", "--is-shallow-repository") === "true")
 		throw new Error("Plugin version checks require full Git history (fetch-depth: 0)");
 	const dirty =
 		git("diff", "--name-only", "HEAD", "--", ...inputs) ||
-		git("ls-files", "--others", "--exclude-standard", "--", ...inputs);
+		git("ls-files", "--others", "--exclude-standard", "--", ...inputs) ||
+		runtimeDependencies(lock) !== runtimeDependencies(JSON.parse(git("show", "HEAD:package-lock.json")));
 	const releaseTag = (tag) => /^v\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?$/.test(tag);
 	const tagged = git("tag", "--points-at", "HEAD", "--list", "v[0-9]*").split("\n").some(releaseTag);
 	// A clean tagged candidate must still be checked against the preceding release.
@@ -72,7 +80,8 @@ export function verifyVersion(directory = root) {
 	if (!files) return native; // Initial plugin addition has no earlier version.
 	const changed =
 		git("diff", "--name-only", release, "--", ...inputs) ||
-		git("ls-files", "--others", "--exclude-standard", "--", ...inputs);
+		git("ls-files", "--others", "--exclude-standard", "--", ...inputs) ||
+		runtimeDependencies(lock) !== runtimeDependencies(JSON.parse(git("show", `${release}:package-lock.json`)));
 	if (!changed) return native;
 	const previous = JSON.parse(git("show", `${release}:${packagePath}`)).version;
 	const currentParts = nativeVersion(version).split(".").map(Number);

@@ -19,6 +19,35 @@ const katex = mathDependencies("katex");
 const { micromark } = await import(pathToFileURL(markdown.resolve("micromark")));
 const { math, mathHtml } = await import(pathToFileURL(mathModule));
 
+test("TypeScript ESLint uses patched minimatch and preserves project glob matching", async () => {
+  const workspace = createRequire(new URL("../../plugins/stream-deck/package.json", import.meta.url));
+  const typescriptEslint = createRequire(workspace.resolve("typescript-eslint"));
+  const parser = createRequire(typescriptEslint.resolve("@typescript-eslint/typescript-estree"));
+  const metadata = JSON.parse(await readFile(parser.resolve("minimatch/package.json"), "utf8"));
+  assert.equal(metadata.version, "11.0.1");
+  const { minimatch, Minimatch } = parser("minimatch");
+  for (const [filename, pattern, expected] of [
+    ["src/action.ts", "src/**/*.ts", true],
+    ["src/nested/action.ts", "src/**/*.ts", true],
+    [".config.ts", "*.ts", true],
+    ["src/action.mjs", "src/**/*.ts", false],
+  ]) {
+    assert.equal(minimatch(filename, pattern, { dot: true }), expected, filename);
+  }
+  const amplified = new Minimatch("a/**/../b/**/../c/**/../d/**/../e/*.ts", {
+    optimizationLevel: 2,
+    braceExpandMax: 8,
+  });
+  assert.ok(amplified.globParts.length <= 8, "Glob preprocessing ignored its expansion limit");
+  const lock = JSON.parse(await readFile(new URL("../../package-lock.json", import.meta.url), "utf8"));
+  for (const [location, dependency] of Object.entries(lock.packages)) {
+    if (!location.endsWith("node_modules/minimatch")) continue;
+    const major = Number(dependency.version.split(".")[0]);
+    assert.ok(major < 7 || major >= 11 && dependency.version !== "11.0.0",
+      `Vulnerable minimatch ${dependency.version}: ${location}`);
+  }
+});
+
 for (const [language, correct, typo] of [
   ["de", "Beschleunigung", "Beschleunigunng"],
   ["fr", "échantillon", "échantilllon"],
