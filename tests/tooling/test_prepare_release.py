@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -46,6 +47,29 @@ def repository(tmp_path: Path) -> Path:
         destination = tmp_path / name
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ROOT / name, destination)
+    # Exercise fixed synthetic releases independently of the checkout's version.
+    for name, pattern, version in (
+        (FILES[0], r'(?m)^(version = ")[^"]+("\r?$)', "2.0.0"),
+        (FILES[1], r'(name = "ride-forces-analyzer"\r?\nversion = ")[^"]+(")', "2.0.0"),
+        (FILES[2], r'(__version__ = ")[^"]+(")', "2.0.0"),
+        (FILES[3], r"(Version \*\*)[^*]+(\*\* is a stable release\.)", "2.0.0"),
+        (
+            FILES[4],
+            r'("plugins/stream-deck": \{\r?\n\s*"name": "@ride-forces-analyzer/stream-deck",\r?\n\s*"version": ")[^"]+(")',
+            "0.2.0",
+        ),
+        (FILES[5], r'("version": ")[^"]+(")', "0.2.0"),
+        (FILES[6], r'("Version": ")[^"]+(")', "0.2.0.0"),
+    ):
+        file = tmp_path / name
+        content, count = re.subn(
+            pattern,
+            lambda match: f"{match[1]}{version}{match[2]}",
+            file.read_text(encoding="utf-8"),
+            count=1,
+        )
+        assert count == 1
+        file.write_text(content, encoding="utf-8", newline="\n")
     return tmp_path
 
 
