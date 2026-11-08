@@ -43,6 +43,10 @@ class MapError(Exception):
     """A requested map cannot be prepared; the route remains usable."""
 
 
+class MapCacheMiss(MapError):
+    """An optional cache-only lookup has no complete, fresh map background."""
+
+
 def project(latitude: float, longitude: float) -> tuple[float, float]:
     """Return north-up Web Mercator coordinates with scene y increasing southward.
 
@@ -249,7 +253,7 @@ def _tile(zoom: int, x: int, y: int, cache: TileCache, cache_only: bool) -> QIma
             cache.delete(TILE_URL, zoom, x, y)
             entry = None
     if cache_only:
-        raise MapError("Map tile is not fresh in cache")
+        raise MapCacheMiss("Map tile is not fresh in cache")
     headers = {"User-Agent": USER_AGENT, "Accept": "image/png"}
     if entry is not None:
         if entry.etag:
@@ -319,8 +323,8 @@ def load_background(
         Prepared viewport background and attribution information.
 
     Raises:
-        MapError: Invalid, cancelled or unavailable viewport, including a cache miss
-            or expired tile when cache_only is enabled.
+        MapCacheMiss: Missing or expired tile when cache_only is enabled.
+        MapError: Invalid, cancelled or unavailable viewport.
     """
     if (
         not 0 <= request.zoom <= 19

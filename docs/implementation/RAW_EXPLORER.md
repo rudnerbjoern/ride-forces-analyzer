@@ -332,6 +332,7 @@ bottom action row, with Close pinned at its right edge.
 - Opening GPS restores the visible background automatically when all required
   tiles are fresh in the persistent cache, including after application restart.
   Missing or expired tiles leave the route visible without network access.
+  Cache-only misses are normal control flow and do not create error-log entries.
 - **Load map background** explicitly requests only the currently visible OSM area;
   no startup, resize, prefetch or offline-download requests. The static background
   sits behind the route with visible linked © OpenStreetMap contributors attribution.

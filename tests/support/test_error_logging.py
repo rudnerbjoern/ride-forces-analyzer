@@ -29,6 +29,7 @@ def test_exception_handlers_preserve_original_errors_or_document_normal_control_
         ("runtime/error_reporting.py", "_running", "ProcessLookupError"),  # Completed process.
         ("runtime/error_reporting.py", "_running", "PermissionError"),  # Other process owner.
         ("runtime/stream_deck.py", "close", "FileNotFoundError"),  # Endpoint already removed.
+        ("ui/dialogs/gps.py", "run", "MapCacheMiss"),  # Optional cache lookup has no fresh map.
         ("ui/dialogs/library_transfer.py", "run", "LibraryTransferCancelled"),
         ("ui/exports/data.py", "run", "(CsvExportCancelled, JsonExportCancelled)"),
         ("ui/exports/workers.py", "run", "ExportCancelled"),

@@ -1,9 +1,11 @@
 """Explicit map requests stay independent of recordings and ignore stale workers."""
 
-# cspell:words Kartenhintergrund laden Pixmap
+# cspell:words Kartenhintergrund laden Pixmap caplog
 
 from pathlib import Path
 from threading import Event
+from time import time
+from unittest.mock import Mock
 
 from PySide6.QtCore import QThreadPool, Qt
 from PySide6.QtGui import QImage
@@ -21,6 +23,55 @@ def background(request: MapRequest) -> MapBackground:
     image = QImage(request.width, request.height, QImage.Format.Format_RGB32)
     image.fill(Qt.GlobalColor.white)
     return MapBackground(request, image)
+
+
+@pytest.mark.parametrize("expired", [False, True], ids=["missing", "expired"])
+def test_cache_only_worker_keeps_expected_cache_misses_out_of_the_error_log(
+    export_directory: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    expired: bool,
+) -> None:
+    from ride_forces_analyzer.gps import map_background as maps
+    from ride_forces_analyzer.storage import map_tiles
+    from ride_forces_analyzer.storage.map_tiles import TileCache, TileEntry
+    from tests.explorer.test_map_background import png
+
+    monkeypatch.setattr(map_tiles, "data_directory", lambda: export_directory)
+    network = Mock(side_effect=AssertionError("Cache lookup must not access the network"))
+    monkeypatch.setattr(maps, "urlopen", network)
+    if expired:
+        TileCache().put(maps.TILE_URL, 0, 0, 0, TileEntry(png(), time() - 1, "", ""))
+    worker = gps.MapWorker(MapRequest(0, 0, 0, 256, 256, (0, 0)), 7, Event(), cache_only=True)
+    completed = Mock()
+    failed = Mock()
+    worker.signals.completed.connect(completed)
+    worker.signals.failed.connect(failed)
+    worker.run()
+    completed.assert_called_once_with(7, None)
+    failed.assert_not_called()
+    network.assert_not_called()
+    assert not caplog.records
+
+
+@pytest.mark.parametrize(
+    "error",
+    [MapError("Invalid map request"), RuntimeError("Internal failure")],
+)
+def test_cache_only_worker_still_logs_original_unexpected_errors(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    error: Exception,
+) -> None:
+    monkeypatch.setattr(gps, "load_background", Mock(side_effect=error))
+    worker = gps.MapWorker(MapRequest(0, 0, 0, 256, 256, (0, 0)), 8, Event(), cache_only=True)
+    completed = Mock()
+    worker.signals.completed.connect(completed)
+    worker.run()
+    completed.assert_called_once_with(8, None)
+    assert str(error) in caplog.text
+    assert caplog.records[-1].exc_info is not None
+    assert caplog.records[-1].exc_info[1] is error
 
 
 def test_gps_map_requires_click_and_preserves_route_and_explorer_on_failure(
