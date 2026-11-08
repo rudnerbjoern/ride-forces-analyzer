@@ -1,0 +1,13 @@
+Use case: compositing / ads-marketing.
+Create one polished Elgato Marketplace thumbnail proposal for the actual Ride Forces Analyzer Stream Deck plugin.
+Output: PNG, precisely 1920 x 960 pixels (2:1 landscape), opaque background, below 5 MB if possible.
+Input images are supporting compositing inputs: Image 1 is a real dark-theme Analyzer screenshot with force curves; Image 2 is the actual fixed-example Stream Deck + software illustration; Image 3 is the existing application icon. Reuse these recognizable source assets. Preserve the icon design and UI content; do not invent measurements, controls, or features. Do not redesign or change the reference icon. Use the authentic force-curve area from image 1 as a screenshot inset, and the authentic keys/touch-strip/dials panel from image 2 as a foreground inset. Maintain each inset's proportions and legibility. No physical device photograph or 3D device mockup.
+Art direction: a clean premium software thumbnail, dark navy matching our UI (#0b1423), restrained blue and cyan accents, gentle background glow, clear hierarchy and generous spacing. Flat editorial composition, subtle rounded inset borders, crisp edges. Left ~42% for recognizable icon and large white left-aligned product typography; right ~58% for the graph screenshot and overlapping but fully visible control illustration. Keep all key content at least 70 pixels from outer edges. Balance visual weight and align typography and icon deliberately. At small thumbnail size, the main title and recognizable key/curve graphics must remain clear; avoid tiny marketing paragraphs.
+Exact additional text only:
+"STREAM DECK PLUGIN"
+"Ride Forces"
+"Analyzer"
+"Library · Playback · Markers"
+"Stream Deck + · Neo · Mobile"
+"Software illustration"
+Main title is two stacked lines "Ride Forces" and "Analyzer", with a strong readable sans-serif comparable to Segoe UI, not stretched. The small "Software illustration" caption must be associated with the reference control illustration so it does not suggest hardware photography. No URLs, app version numbers, sale labels, fake awards, invented badges, extra logos, roller coaster photography, unsupported export buttons, or unrelated decorative objects. Preserve the scientific screenshot rather than synthesizing new curve data.
