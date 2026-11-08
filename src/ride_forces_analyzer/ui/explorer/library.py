@@ -304,6 +304,7 @@ class LibraryPanel(QSplitter):
         )
         self.new_window_action.triggered.connect(self._open_in_new_window)
         self.context_menu.addAction(self.new_window_action)
+        self.context_menu.addSeparator()
         self.edit_action = bind(QAction(self.context_menu), tr("Properties…"))
         self.edit_action.setShortcuts([QKeySequence("Shift+Enter"), QKeySequence("Shift+Return")])
         self.edit_action.setShortcutContext(Qt.ShortcutContext.WindowShortcut)

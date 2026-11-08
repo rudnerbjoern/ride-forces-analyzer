@@ -95,6 +95,7 @@ def test_recording_context_menu_targets_rows_and_opens_dialogs(
         library.remove_action,
     ]
     assert menu.actions()[-2].isSeparator()
+    assert menu.actions()[1].isSeparator()
     assert all(action.isEnabled() and not action.icon().isNull() for action in actions)
     size = window.size()
     panel_width = library.panel.width()

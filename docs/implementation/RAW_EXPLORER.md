@@ -277,7 +277,7 @@ active filters. Expanding the collapsed panel reveals the selection again
 without another load. List refreshes and language changes preserve selection.
 
 Right-clicking a recording selects that entry and offers **Open in new window…**,
-**Properties…**, **Video links…**, **Export history…**, then a separator and
+a separator, **Properties…**, **Video links…**, **Export history…**, then a separator and
 **Remove…**. The themed actions have icons, replacing the buttons below the list.
 Day headings and empty space have no menu. Metadata editing stays disabled until
 the selected source loads successfully. All captions, tooltips and accessible
