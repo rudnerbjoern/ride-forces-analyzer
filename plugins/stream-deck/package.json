@@ -28,7 +28,7 @@
         "@elgato/cli": "1.10.4",
         "@elgato/eslint-config": "0.3.2",
         "@elgato/prettier-config": "0.3.3",
-        "@eslint/js": "9.39.5",
+        "@eslint/js": "10.0.1",
         "@types/node": "26.6.6",
         "@zip.js/zip.js": "2.24.0",
         "esbuild": "0.28.2",
