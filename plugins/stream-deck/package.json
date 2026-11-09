@@ -33,7 +33,7 @@
         "@zip.js/zip.js": "2.24.0",
         "esbuild": "0.28.2",
         "eslint": "9.39.5",
-        "eslint-plugin-jsdoc": "54.7.0",
+        "eslint-plugin-jsdoc": "65.4.2",
         "prettier": "3.9.10",
         "typescript": "5.9.3",
         "typescript-eslint": "8.72.1"
