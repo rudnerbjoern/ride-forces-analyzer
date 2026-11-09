@@ -112,8 +112,22 @@ Short/TikTok or other variants can coexist. `LibraryStore` validates HTTP/HTTPS 
 offline and scopes edits/removal to recording digest plus link ID. Only current
 links are retained; sources, metadata, workflow and other links remain unchanged.
 Private/unlisted/scheduled URLs need no online verification and imply no completion.
-List metadata includes `video_link_count`, obtained with the existing relationship
-index without reading source bytes or fetching links separately per recording.
+One optional `recordings.video_file_path` stores a full external video filename,
+separately from web links. `save_video_file_path()` replaces or clears this reference;
+`save_video_link(..., video_file_path=...)` saves both fields in one transaction.
+The dialog commits its complete list through `save_video_links()` with
+`VideoLinkDraft` values: retained links keep their IDs, new links use `None`, and
+omitted links are removed. Validation precedes writes; foreign/duplicate IDs are
+rejected. File updates, removals, edits and additions commit or roll back together.
+Unchanged links retain their rows without an update. Dialog draft actions perform
+no writes; Cancel therefore discards the entire list draft.
+Validation accepts absolute Windows/UNC and POSIX filenames, rejects NUL/CR/LF
+and relative paths, and preserves the exact text. Missing files remain
+valid references. Video bytes are never read or archived. Backups retain the path
+as recording metadata; restore validates it without requiring the file to exist.
+List metadata includes `video_link_count`, counting this reference plus web links
+with the existing relationship index, without reading source bytes or fetching
+links separately per recording.
 The same offline URL validator admits both saved links and explicit browser opening.
 
 Ordered options live as JSON in `Preferences.library_video_labels`, without a label
@@ -124,7 +138,7 @@ label when options are renamed/removed. The dropdown retains saved unavailable
 labels; new choices are managed in Settings rather than a free-text link editor.
 `LibraryLabelsEditor` holds a draft: Save writes the ordered list; Cancel writes
 nothing. [Explorer interactions](../implementation/RAW_EXPLORER.md#library-interactions)
-define per-link Save/Remove and unsaved-form handling.
+define list editing, whole-dialog Save/Cancel and pending-form handling.
 
 ## Export history and repeat export
 
@@ -286,7 +300,7 @@ language are not required for the requested ride/park search.
 revision scripts before Library access. `alembic_version.version_num` stores the
 revision independently of app patch, export-snapshot and backup-format versions.
 IDs use the introducing app major/minor (`1_3`); descriptive suffixes identify the
-UUID/search revisions. Released scripts are immutable; unchanged schemas need no
+individual revisions. Released scripts are immutable; unchanged schemas need no
 empty app-version migration. Generated proposals require review.
 
 - `1_3`: Library tables and indexes.
@@ -295,6 +309,7 @@ empty app-version migration. Generated proposals require review.
   updates that retained source.
 - `1_3_search`: backfill normalized effective-name projections from metadata and
   overrides without reading source BLOBs.
+- `2_1_video_file`: add the nullable recording-bound external video-file path.
 
 Scripts ship in wheels/native packages and run offline through the Python API;
 no external CLI is needed. Explicit SQLite transactions roll back schema, data and

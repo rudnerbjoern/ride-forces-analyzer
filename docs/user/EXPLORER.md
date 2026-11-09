@@ -46,8 +46,20 @@ Right-click a recording to choose:
   and import dates cannot be edited, and the original file stays unchanged.
   For Park, choose an existing Library name from the dropdown, type to find a
   suggestion and accept it with Enter, or enter a new name.
-- **Video links…** to keep several labelled video links with the recording. Save
-  applies the selected link; Remove deletes only that link. A small link icon above
+- **Video links…** to keep one video-file path and several labelled web links with
+  the recording. At the top, enter the full path including the filename or use
+  the magnifying glass (**Select video file…**). The folder icon (**Show in folder**)
+  selects the file in Explorer/Finder; on Linux, it opens the containing folder if
+  file selection is unavailable. Both icons have tooltips and screen-reader names.
+  Clear the path and Save to remove the file reference. A missing file leaves the
+  saved path intact and shows a message when you try to reveal it.
+  Under **New link**, enter a URL and label, then click **+** to add it to the list.
+  Select a list entry to **Edit link**; **✓** applies your edits. Both actions clear
+  the form for another link. **−** removes the selected entry from the draft list.
+  The icons have tooltips and screen-reader names; invalid URLs are explained beside
+  the URL field. Save applies the whole list and file path, including a pending
+  form entry, and closes the dialog. Errors keep your edits open. Cancel discards
+  every unsaved addition, edit and removal. A small link icon above
   the recording's status also opens this dialog. It is grey without links and uses
   the theme's accent colour when links are saved. Click the link
   icon beside a saved entry in the **Video links** list to open it in your browser.
