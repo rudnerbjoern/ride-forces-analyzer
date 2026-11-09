@@ -26,9 +26,37 @@ await copyFile(path.join(source, "ui/control.html"), path.join(plugin, "ui/contr
 await copyFile(path.join(source, "package.json"), path.join(plugin, "package.json"));
 const manifest = JSON.parse(await readFile(path.join(source, "manifest.json"), "utf8"));
 const devices = JSON.parse(await readFile(path.join(workspace, "devices/manifest.json"), "utf8"));
+const { LANGUAGES, TRANSLATIONS, translate } = await import("../dist/localization.js");
 manifest.Version = version;
 manifest.Actions.push(...devices.Actions);
+manifest.Profiles = LANGUAGES.flatMap((language) =>
+	manifest.Profiles.map((profile) => ({
+		...profile,
+		Name: `${profile.Name}${language === "en" ? "" : `-${language}`}`,
+	})),
+);
 await writeFile(path.join(plugin, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+for (const language of LANGUAGES) {
+	const resource = {
+		Name: manifest.Name,
+		Description: translate(manifest.Description, language),
+		Localization: Object.fromEntries(Object.keys(TRANSLATIONS).map((key) => [key, translate(key, language)])),
+	};
+	for (const action of manifest.Actions) {
+		const localizedAction = {
+			Name: translate(action.Name, language),
+			Tooltip: translate(action.Tooltip, language),
+		};
+		if (action.Encoder?.TriggerDescription)
+			localizedAction.Encoder = {
+				TriggerDescription: Object.fromEntries(
+					Object.entries(action.Encoder.TriggerDescription).map(([key, value]) => [key, translate(value, language)]),
+				),
+			};
+		resource[action.UUID] = localizedAction;
+	}
+	await writeFile(path.join(plugin, `${language}.json`), JSON.stringify(resource, null, 2) + "\n");
+}
 await cp(path.join(workspace, "devices/layouts"), path.join(plugin, "layouts"), { recursive: true });
 const compact = JSON.parse(await readFile(path.join(plugin, "layouts/plus.json"), "utf8"));
 compact.id = "analyzer-plus-compact";

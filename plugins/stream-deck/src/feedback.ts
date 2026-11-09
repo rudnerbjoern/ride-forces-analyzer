@@ -1,5 +1,6 @@
 import type { ControlClient } from "./client.js";
 import { type ControlSettings, requestedAction } from "./controls.js";
+import { displayText } from "./localization.js";
 import type { StateEvent, UnavailableReason } from "./protocol.js";
 
 /**
@@ -343,6 +344,7 @@ export function keyTitle(value: string): string {
 		.split("\n")
 		.slice(0, 2)
 		.map((line) => short[line] ?? line)
+		.map((line) => displayText(line))
 		.map((line) => (line.length > 11 ? `${line.slice(0, 10)}…` : line))
 		.join("\n");
 }

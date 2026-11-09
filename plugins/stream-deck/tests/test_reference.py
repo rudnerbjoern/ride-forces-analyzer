@@ -1,16 +1,113 @@
 """The documented Plus/Neo examples use production graphics without personal device state."""
 
+# cspell:words ARGB Demi
+
 from hashlib import sha256
+import importlib.util
 import json
 from pathlib import Path
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
+from typing import Any, cast
 
 from PIL import Image
+from PySide6.QtCore import QRectF
+from PySide6.QtGui import QColor, QFont, QFontMetricsF, QGuiApplication, QImage, QPainter
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / "scripts/generate_stream_deck_screenshots.py"
+
+
+def test_localized_labels_fit_native_fonts_and_render_together() -> None:
+    exported = subprocess.run(
+        ["node", str(ROOT / "plugins/stream-deck/tests/helpers/localized-feedback.mjs")],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=30,
+        check=False,
+    )
+    assert exported.returncode == 0, exported.stdout + exported.stderr
+    application = QGuiApplication.instance() or QGuiApplication(["localized-feedback-check"])
+    assert application is not None
+    directory = ROOT / ".tmp/stream-deck-localization"
+    data = json.loads((directory / "surfaces.json").read_text(encoding="utf-8"))
+    plugin = ROOT / ".tmp/stream-deck/io.github.rudnerbjoern.ride-forces-analyzer.sdPlugin"
+    spec = importlib.util.spec_from_file_location("localized_reference", SCRIPT)
+    assert spec is not None and spec.loader is not None
+    renderer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(renderer)
+    image = QImage(800, 1500, QImage.Format.Format_ARGB32_Premultiplied)
+    image.fill(QColor("#101d30"))
+    painter = QPainter(image)
+    overflows: list[str] = []
+    for language_index, language in enumerate(("en", "de", "fr")):
+        top = language_index * 500
+        for index, key in enumerate(item for item in data["keys"] if item["language"] == language):
+            font = QFont("Segoe UI")
+            font.setPixelSize(14)
+            for line in key["title"].split("\n"):
+                if QFontMetricsF(font).horizontalAdvance(line) > 92:
+                    overflows.append(f"{language}/{key['operation']}: {line}")
+            if index < 8:
+                getattr(renderer, "_profile_key")(painter, key, QRectF(index * 100, top, 100, 100))
+        cases = [item for item in data["surfaces"] if item["language"] == language]
+        for case in cases:
+            feedback = case["feedback"]
+            layout = json.loads((plugin / feedback["layout"]).read_text(encoding="utf-8"))
+            for field in layout["items"]:
+                if field["type"] != "text":
+                    continue
+                if field["key"] in {"value", "detail"} and case["control"] in {"library", "filter"}:
+                    continue
+                value = feedback[field["key"]]
+                value = cast(dict[str, Any], value)["value"] if isinstance(value, dict) else value
+                font = QFont("Segoe UI")
+                font.setPixelSize(field["font"]["size"])
+                font.setWeight(
+                    QFont.Weight.DemiBold
+                    if field["font"].get("weight", 400) >= 600
+                    else QFont.Weight.Normal,
+                )
+                if QFontMetricsF(font).horizontalAdvance(value) > field["rect"][2]:
+                    overflows.append(f"{language}/{case['control']}/{field['key']}: {value}")
+        for index, case in enumerate(item for item in cases if item["connection"] == "connected"):
+            getattr(renderer, "_touch_field")(
+                painter,
+                {},
+                case["feedback"],
+                (index % 4) * 200,
+                top + 110 + (index // 4) * 100,
+            )
+        neo_layout = json.loads((plugin / "layouts/neo.json").read_text(encoding="utf-8"))
+        for case in (item for item in data["neo"] if item["language"] == language):
+            for field in neo_layout["items"]:
+                if field["type"] != "text" or (
+                    field["key"] == "value" and case["section"] == "library"
+                ):
+                    continue
+                font = QFont("Segoe UI")
+                font.setPixelSize(field["font"]["size"])
+                value = case["feedback"][field["key"]]
+                if QFontMetricsF(font).horizontalAdvance(value) > field["rect"][2]:
+                    overflows.append(f"{language}/Neo/{case['section']}/{field['key']}: {value}")
+        for index, case in enumerate(
+            item
+            for item in data["neo"]
+            if item["language"] == language and item["section"] in {"start", "view", "markers"}
+        ):
+            getattr(renderer, "_touch_field")(
+                painter,
+                neo_layout,
+                case["feedback"],
+                index * 250,
+                top + 430,
+            )
+    painter.end()
+    assert image.save(str(directory / "native-labels.png"))
+    assert not overflows, "Localized device text exceeds its native field:\n" + "\n".join(overflows)
 
 
 def test_reference_cli_is_reproducible_from_fixed_contract_examples() -> None:

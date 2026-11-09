@@ -10,6 +10,7 @@ import { StepMode } from "./device-controls.js";
 import { logFailure } from "./diagnostics.js";
 import { FeedbackScheduler } from "./feedback-scheduler.js";
 import { imageData, keyImage } from "./feedback.js";
+import { displayText } from "./localization.js";
 
 /** The 1/10/20-sample cycle is local to each Plus; marker presses remain Apply. */
 @action({ UUID: "io.github.rudnerbjoern.ride-forces-analyzer.step-mode" })
@@ -71,7 +72,7 @@ export class StepModeAction extends SingletonAction {
 					const label = samples === 1 ? "Fine" : samples === 10 ? "Medium" : "Coarse";
 					const icon = samples === 1 ? "fine" : samples === 10 ? "medium" : "coarse";
 					const image = keyImage(icon, undefined);
-					const title = `${label}\n${samples} ${samples === 1 ? "sample" : "samples"}`;
+					const title = displayText(`${label}\n${samples} ${samples === 1 ? "sample" : "samples"}`);
 					return {
 						signature: JSON.stringify({ state, image, title }),
 						updates: [

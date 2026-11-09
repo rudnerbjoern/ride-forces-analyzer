@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
-from typing import Any
+from typing import Any, cast
 
 from PySide6.QtCore import QByteArray, QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QGuiApplication, QImage, QPainter
@@ -237,9 +237,11 @@ def _touch_field(
             _text(
                 painter,
                 rect,
-                value["value"] if isinstance(value, dict) else value,
+                cast(dict[str, Any], value)["value"] if isinstance(value, dict) else value,
                 round(field["font"]["size"] * scale),
-                value.get("color", field["color"]) if isinstance(value, dict) else field["color"],
+                cast(dict[str, Any], value).get("color", field["color"])
+                if isinstance(value, dict)
+                else field["color"],
                 field["font"].get("weight", 400),
             )
 
@@ -553,6 +555,7 @@ def render_reference(output: Path) -> None:
         "plugins/stream-deck/src/device-feedback.ts",
         "plugins/stream-deck/src/plus-feedback.ts",
         "plugins/stream-deck/src/navigation.ts",
+        "plugins/stream-deck/src/localization.ts",
         "plugins/stream-deck/devices/layouts/plus.json",
         "plugins/stream-deck/devices/layouts/neo.json",
         "plugins/stream-deck/scripts/build-profiles.mjs",

@@ -11,6 +11,7 @@ import type { ControlClient } from "./client.js";
 import { logFailure } from "./diagnostics.js";
 import { FeedbackScheduler } from "./feedback-scheduler.js";
 import { type IconStatus, imageData, keyImage, keyTitle } from "./feedback.js";
+import { profilePath } from "./localization.js";
 
 export const PLUS_PAGES = [
 	{ id: "library", name: "Library", group: "library" },
@@ -156,7 +157,7 @@ export function navigationFeedback(
 					'<path d="M16 136h112" stroke="#64d6ff" stroke-width="3"/></svg>'
 			: "</svg>",
 	);
-	return { title, image, selected };
+	return { title: keyTitle(title), image, selected };
 }
 
 /** Switch only the invoking Plus; remember subgroups from confirmed appearances. */
@@ -248,7 +249,7 @@ export class PlusNavigationAction extends SingletonAction<NavigationSettings> {
 		if (page === device.page || this.sending.has(id)) return;
 		this.sending.add(id);
 		try {
-			await this.switchProfile(id, "profiles/plus", page);
+			await this.switchProfile(id, profilePath("plus"), page);
 			streamDeck.logger.info("Plus page request sent", { device: id, page });
 		} catch (error) {
 			logFailure("Plus page request failed", error, "warn");

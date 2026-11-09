@@ -65,6 +65,23 @@ Detailed ownership and wire contracts remain in
 
 ## Device controls
 
+### Presentation languages
+
+English, German and French follow the Stream Deck UI locale, independently of
+Analyzer's UI language. Unsupported locales use English. The shared plugin catalog
+provides manifest/inspector text, key captions, Plus fields, Neo InfoBar text and
+profile titles. Familiar compact terms such as Play/Pause, Reset and Samples may
+remain English. Recording names, custom park names, numeric values and wire
+identifiers are unchanged.
+
+Keys retain the two-line/eleven-character caption bound. Translations use compact
+labels within existing layout rectangles and font sizes; dynamic user text keeps
+the existing ellipsis behavior. Native font checks cover key, Plus and Neo labels.
+Each device has English, `-de` and `-fr` profile archives with distinct localized
+identities; Home and Plus navigation target the current language's declared profile.
+Native folder/page titles come from the chosen archive. The profile name shows
+**(DE)** or **(FR)** for the translated variants.
+
 ### Menu structure
 
 - Plus has six native main pages: Library, Playback/Navigate, Playback/Selection,

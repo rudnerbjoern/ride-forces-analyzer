@@ -6,10 +6,13 @@ import { StepMode } from "./device-controls.js";
 import { DialControlAction } from "./dial-action.js";
 import { HomeAction } from "./home.js";
 import { InfoBarAction } from "./infobar-action.js";
+import { setLanguage } from "./localization.js";
 import { StepModeAction } from "./mode-action.js";
 import { PlusNavigationAction } from "./navigation.js";
 import { startPlugin } from "./plugin.js";
 
+setLanguage(streamDeck.i18n.language);
+streamDeck.i18n.onLanguageChange(setLanguage);
 const client = new ControlClient();
 const mode = new StepMode();
 const dials = new DialControlAction(client, mode);

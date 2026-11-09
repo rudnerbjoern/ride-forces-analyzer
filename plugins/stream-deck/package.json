@@ -1,6 +1,6 @@
 {
     "name": "@ride-forces-analyzer/stream-deck",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "private": true,
     "description": "Stream Deck controls and confirmed application feedback for Ride Forces Analyzer",
     "type": "module",
