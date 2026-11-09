@@ -47,7 +47,7 @@ These jobs qualify target packages; they do not add a Linux/macOS developer setu
 | Main pushes              | No duplicate validation run                                                                                                                                                    |
 | Dependency resolution    | Locked Python commands throughout                                                                                                                                              |
 | Scanner/linter downloads | Three retries for all transfer errors; 30 s connection / 120 s per attempt; TLS certificate/revocation and SHA-256 checks mandatory; exhausted retries fail                    |
-| Time limits              | Non-UI application 15 min; UI/skills/actionlint/Gitleaks 10 min; detection/docs/plugin/final gate 5 min                                                                        |
+| Time limits              | Application/UI 15 min; skills/actionlint/Gitleaks 10 min; detection/docs/plugin/final gate 5 min                                                                               |
 
 All three pytest jobs use `-ra --durations=20`. Completed commands, including failures,
 upload separate application/UI/skill JUnit XML artifacts for 14 days.

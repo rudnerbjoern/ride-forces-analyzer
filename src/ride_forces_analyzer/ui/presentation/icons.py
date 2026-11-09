@@ -5,6 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 from pathlib import Path
+from typing import Literal
 from math import cos, pi, sin
 
 from PySide6.QtCore import QRectF, Qt
@@ -13,6 +14,55 @@ from PySide6.QtSvg import QSvgRenderer
 
 ICON_SOURCE = Path(__file__).with_name("app-icon.svg")
 ICON_SIZES = (16, 24, 32, 48, 64, 128, 256, 512, 1024)
+
+
+def link_action_icon(symbol: Literal["add", "apply", "remove"], color: QColor) -> QIcon:
+    """Draw aligned plus, check mark and minus icons for the video-link editor.
+
+    Args:
+        symbol: Addition, edit confirmation or removal action to depict.
+        color: Active theme's button foreground color.
+
+    Returns:
+        A transparent 20-pixel icon rendered at double pixel density.
+    """
+    pixmap = QPixmap(40, 40)
+    pixmap.setDevicePixelRatio(2)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setPen(QPen(color, 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+    if symbol == "apply":
+        painter.drawLine(3, 10, 8, 15)
+        painter.drawLine(8, 15, 17, 5)
+    else:
+        painter.drawLine(3, 10, 17, 10)
+        if symbol == "add":
+            painter.drawLine(10, 3, 10, 17)
+    painter.end()
+    return QIcon(pixmap)
+
+
+def search_icon(color: QColor) -> QIcon:
+    """Draw a plain magnifying glass in the active theme's foreground color.
+
+    Args:
+        color: Active button foreground color.
+
+    Returns:
+        A transparent 20-pixel icon rendered at double pixel density.
+    """
+    pixmap = QPixmap(40, 40)
+    pixmap.setDevicePixelRatio(2)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setPen(QPen(color, 1.8))
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+    painter.drawEllipse(QRectF(3, 3, 10, 10))
+    painter.drawLine(12, 12, 17, 17)
+    painter.end()
+    return QIcon(pixmap)
 
 
 def metadata_icon(color: QColor) -> QIcon:

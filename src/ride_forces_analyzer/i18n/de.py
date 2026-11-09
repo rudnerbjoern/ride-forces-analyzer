@@ -8,6 +8,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # cspell:words AUSSERHALB Drittanbieterhinweise Kalibrierungsmarkierung Kalibrierungsreferenz Markierungsindex Metadatenfeld Rundungsgrenzen Vertikalkraft
 
 # Keep feature sections and English keys in the same order in de.py and fr.py.
+# cspell:words Linkänderungen
 # Sort English keys alphabetically within each section.
 GERMAN: dict[str, str] = {
     # Shared actions, labels and number formats.
@@ -102,14 +103,27 @@ GERMAN: dict[str, str] = {
     "Use imported value: {0}": "Importierten Wert verwenden: {0}",
     # Library video links and labels.
     "Add": "Hinzufügen",
+    "Add video link": "Videolink hinzufügen",
+    "Apply link changes": "Linkänderungen übernehmen",
     "Could not save video labels. Try again later.": "Video-Bezeichnungen konnten nicht gespeichert werden. Später erneut versuchen.",
     "Could not save video links: {0}": "Videolinks konnten nicht gespeichert werden: {0}",
+    "Could not show the video file: {0}": "Videodatei konnte nicht angezeigt werden: {0}",
+    "Edit link": "Link bearbeiten",
+    "Enter a full path including the video filename.": "Einen vollständigen Pfad einschließlich des Videodateinamens eingeben.",
     "Enter a valid HTTP or HTTPS video URL.": "Eine gültige HTTP- oder HTTPS-Video-URL eingeben.",
     "Label": "Bezeichnung",
+    "New link": "Neuer Link",
     "No label": "Ohne Bezeichnung",
     "Remove": "Entfernen",
+    "Remove video link": "Videolink entfernen",
     "Rename": "Umbenennen",
-    "Save video link": "Videolink speichern",
+    "Save video links": "Videolinks speichern",
+    "Select video file…": "Videodatei auswählen…",
+    "Show in folder": "Im Ordner zeigen",
+    "Video file": "Videodatei",
+    "Video file not found. Check the path.": "Videodatei nicht gefunden. Bitte den Pfad prüfen.",
+    "Video file path": "Pfad der Videodatei",
+    "Video files (*.mp4 *.mov *.mkv *.webm *.avi *.m4v);;All files (*)": "Videodateien (*.mp4 *.mov *.mkv *.webm *.avi *.m4v);;Alle Dateien (*)",
     "Video labels": "Video-Bezeichnungen",
     "Video labels must be nonempty and unique.": "Video-Bezeichnungen dürfen nicht leer oder doppelt sein.",
     "Video link": "Videolink",

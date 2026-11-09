@@ -1,12 +1,14 @@
 """Recording-specific video links and draft label options share existing dialog conventions."""
 
-# cspell:words Videolinks
+# cspell:words Videolinks Videodatei auswählen Ordner zeigen caplog
 
-from PySide6.QtWidgets import QDialogButtonBox, QToolButton, QTreeWidgetItem
+from pathlib import Path
+
+from PySide6.QtWidgets import QDialogButtonBox, QFileDialog, QToolButton, QTreeWidgetItem
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QPalette
 import pytest
-from PySide6.QtTest import QTest
+from PySide6.QtTest import QSignalSpy, QTest
 
 from ride_forces_analyzer.i18n import tr
 from ride_forces_analyzer.ui.explorer.library_workflow import LibraryIcon, WorkflowIcon
@@ -16,6 +18,7 @@ from ride_forces_analyzer.storage.library import LibraryStore
 from ride_forces_analyzer.storage.preferences import Preferences, DEFAULT_LIBRARY_VIDEO_LABELS
 from ride_forces_analyzer.ui.dialogs.settings import SettingsDialog
 from ride_forces_analyzer.ui.explorer.library_videos import LibraryVideosDialog
+from ride_forces_analyzer.ui.explorer import library_videos
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.analysis.test_recording_preparation import synthetic_source
 from tests.ui.helpers import wait_until
@@ -24,6 +27,8 @@ from tests.ui.helpers import wait_until
 def test_library_video_dialog_and_settings_save_cancel(
     explorer_window: ExplorerWindow,
     monkeypatch: pytest.MonkeyPatch,
+    export_directory: Path,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     window = explorer_window
     store = LibraryStore()
@@ -97,21 +102,114 @@ def test_library_video_dialog_and_settings_save_cancel(
         dialog.buttons.button(QDialogButtonBox.StandardButton.Cancel).click()
         wait_until(lambda: window.findChild(LibraryVideosDialog) is None)
 
+    def save_and_reopen(dialog: LibraryVideosDialog) -> LibraryVideosDialog:
+        accepted = QSignalSpy(dialog.accepted)
+        dialog.buttons.button(QDialogButtonBox.StandardButton.Save).click()
+        assert accepted.count() == 1
+        wait_until(lambda: window.findChild(LibraryVideosDialog) is None)
+        return open_links()
+
     dialog = open_links()
+    assert dialog.editor_group.title() == "New link"
+    assert not dialog.add.isEnabled() and not dialog.remove.isEnabled()
+    for button, name in ((dialog.add, "Add video link"), (dialog.remove, "Remove video link")):
+        assert button.text() == "" and button.toolTip() == button.accessibleName() == name
+        assert not button.icon().isNull()
+        assert button.height() == button.width() == dialog.url.height() == dialog.label.height()
+    assert dialog.video_file.text() == ""
+    assert not dialog.file_reveal.isEnabled()
+    for button, name in (
+        (dialog.file_browse, "Select video file…"),
+        (dialog.file_reveal, "Show in folder"),
+    ):
+        assert button.text() == "" and not button.icon().isNull()
+        assert button.toolTip() == name == button.accessibleName()
+        assert button.height() == button.width() == dialog.video_file.height()
+        assert (
+            button.mapTo(dialog, button.rect().center()).y()
+            == dialog.video_file.mapTo(
+                dialog,
+                dialog.video_file.rect().center(),
+            ).y()
+        )
+    assert (
+        dialog.video_file.mapTo(dialog, dialog.video_file.rect().center()).y()
+        < dialog.links.mapTo(dialog, dialog.links.rect().center()).y()
+    )
+    filename = str((export_directory / "Bahn ü, final.mp4").resolve())
+    chosen: list[tuple[object, ...]] = []
+
+    def choose_file(*args: object) -> tuple[str, str]:
+        chosen.append(args)
+        return filename, ""
+
+    def cancel_file(*args: object) -> tuple[str, str]:
+        return "", ""
+
+    with monkeypatch.context() as patch:
+        patch.setattr(QFileDialog, "getOpenFileName", choose_file)
+        dialog.file_browse.click()
+        assert chosen[0][1] == "Select video file…"
+        assert dialog.video_file.text() == filename and dialog.file_reveal.isEnabled()
+        patch.setattr(QFileDialog, "getOpenFileName", cancel_file)
+        dialog.file_browse.click()
+        assert dialog.video_file.text() == filename
+    assert store.video_file_path(digest) is None
+    dialog.file_reveal.click()
+    assert (
+        dialog.error.isVisible() and dialog.error.text() == "Video file not found. Check the path."
+    )
+    assert filename in caplog.text
+    assert dialog.video_file.text() == filename
+    revealed: list[str] = []
+    with monkeypatch.context() as patch:
+        patch.setattr(library_videos, "show_in_folder", revealed.append)
+        dialog.file_reveal.click()
+    assert revealed == [filename] and not dialog.error.isVisible()
+    dialog = save_and_reopen(dialog)
+    assert store.video_file_path(digest) == filename
+    assert store.video_links(digest) == ()
+    dialog.video_file.setText(str((export_directory / "unsaved.mp4").resolve()))
+    dialog.url.setText("https://example.invalid/discarded")
+    dialog.add.click()
+    assert dialog.links.topLevelItemCount() == 1
+    assert dialog.url.text() == "" and dialog.links.currentItem() is None
+    assert store.video_links(digest) == ()
+    dialog.links.setCurrentItem(saved_item(dialog, 0))
+    dialog.url.setText("https://example.invalid/discarded-edit")
+    dialog.add.click()
+    assert dialog.links.topLevelItemCount() == 1
+    assert saved_item(dialog, 0).text(0).endswith("/discarded-edit")
+    close_links(dialog)
+    dialog = open_links()
+    assert dialog.links.topLevelItemCount() == 0
+    assert dialog.video_file.text() == filename
+    assert store.video_file_path(sources[1].source_sha256) is None
     assert not dialog.label.isEditable()
     assert tuple(dialog.label.itemData(i) for i in range(dialog.label.count())) == (
         "",
         *DEFAULT_LIBRARY_VIDEO_LABELS,
     )
-    save = dialog.buttons.button(QDialogButtonBox.StandardButton.Save)
     dialog.url.setText("file:///bad")
-    save.click()
-    assert dialog.error.isVisible() and dialog.links.topLevelItemCount() == 0
+    dialog.add.click()
+    assert (
+        dialog.isVisible()
+        and dialog.url_error.isVisible()
+        and dialog.links.topLevelItemCount() == 0
+    )
+    assert dialog.url.text() == "file:///bad"
+    dialog.buttons.button(QDialogButtonBox.StandardButton.Save).click()
+    assert dialog.isVisible() and dialog.url_error.isVisible()
     dialog.url.setText("https://example.invalid/private?scheduled=1")
     dialog.label.setCurrentText("YouTube")
     assert opened_urls == []
     assert store.video_links(digest) == ()
-    save.click()
+    dialog.add.click()
+    assert dialog.links.topLevelItemCount() == 1 and dialog.url.text() == ""
+    assert store.video_links(digest) == ()
+    QTest.qWait(10)
+    dialog.grab().save(".tmp/lib09-videos-new-dark.png")
+    dialog = save_and_reopen(dialog)
     assert dialog.links.topLevelItemCount() == 1
     icon = link_icon(digest)
     assert icon is not None and not icon.button.icon().isNull()
@@ -125,15 +223,25 @@ def test_library_video_dialog_and_settings_save_cancel(
     assert_link_color(digest, QPalette.ColorRole.HighlightedText)
     assert_link_color(sources[1].source_sha256, QPalette.ColorRole.PlaceholderText)
 
-    dialog.add.click()
     dialog.url.setText("https://example.invalid/short")
     dialog.label.setCurrentText("Shorts")
-    save.click()
+    dialog.add.click()
+    assert len(store.video_links(digest)) == 1
+    dialog = save_and_reopen(dialog)
     assert dialog.links.topLevelItemCount() == 2
     dialog.links.setCurrentItem(saved_item(dialog, 0))
+    assert dialog.editor_group.title() == "Edit link"
+    assert dialog.add.toolTip() == dialog.add.accessibleName() == "Apply link changes"
+    assert dialog.remove.isEnabled()
     dialog.url.setText("https://example.invalid/edited")
-    save.click()
+    dialog.add.click()
+    assert dialog.links.topLevelItemCount() == 2
+    assert saved_item(dialog, 0).text(0).endswith("/edited")
+    assert dialog.editor_group.title() == "New link" and dialog.url.text() == ""
+    assert store.video_links(digest)[0].url.endswith("scheduled=1")
+    dialog = save_and_reopen(dialog)
     assert store.video_links(digest)[0].url.endswith("/edited")
+    dialog.links.setCurrentItem(saved_item(dialog, 0))
     dialog.url.setText("https://example.invalid/unsaved")
     browser_button(dialog, 1).click()
     assert opened_urls[-1] == "https://example.invalid/short"
@@ -149,7 +257,10 @@ def test_library_video_dialog_and_settings_save_cancel(
     browser_button(dialog).click()
     assert not dialog.error.isVisible()
     window.grab().save(".tmp/lib09-library.png")
+    QTest.qWait(10)
     dialog.grab().save(".tmp/lib09-videos-dark.png")
+    dialog.add.click()
+    assert saved_item(dialog, 0).text(0).endswith("/unsaved")
     close_links(dialog)
     assert store.video_links(digest)[0].url.endswith("/edited")
 
@@ -191,11 +302,10 @@ def test_library_video_dialog_and_settings_save_cancel(
     dialog.links.setCurrentItem(saved_item(dialog, 1))
     assert dialog.label.currentData() == "Shorts"
     dialog.remove.click()
-    assert len(store.video_links(digest)) == 1
-    dialog.add.click()
+    assert len(store.video_links(digest)) == 2
+    assert dialog.links.topLevelItemCount() == 1
     dialog.url.setText("http://example.invalid/unlabelled")
-    save = dialog.buttons.button(QDialogButtonBox.StandardButton.Save)
-    save.click()
+    dialog = save_and_reopen(dialog)
     assert store.video_links(digest)[1].label == ""
     with store.connection() as connection:
         connection.execute(
@@ -204,9 +314,13 @@ def test_library_video_dialog_and_settings_save_cancel(
         )
     dialog.links.setCurrentItem(saved_item(dialog, 0))
     dialog.url.setText("https://example.invalid/failure")
-    save.click()
-    assert dialog.error.isVisible() and dialog.url.text().endswith("/failure")
+    dialog.video_file.clear()
+    dialog.buttons.button(QDialogButtonBox.StandardButton.Save).click()
+    assert (
+        dialog.isVisible() and dialog.error.isVisible() and dialog.url.text().endswith("/failure")
+    )
     assert store.video_links(digest)[0].url.endswith("/edited")
+    assert store.video_file_path(digest) == filename
     close_links(dialog)
     options = settings()
     assert options.library_labels.labels() == expected
@@ -221,11 +335,24 @@ def test_library_video_dialog_and_settings_save_cancel(
     assert dialog.label.currentData() == "YouTube"
     assert dialog.label.count() == 2
     assert dialog.windowTitle() == "Videolinks…"
+    assert dialog.video_file.text() == filename
+    assert (
+        dialog.file_browse.toolTip()
+        == dialog.file_browse.accessibleName()
+        == "Videodatei auswählen…"
+    )
+    assert dialog.file_reveal.toolTip() == dialog.file_reveal.accessibleName() == "Im Ordner zeigen"
     assert_link_color(digest, QPalette.ColorRole.HighlightedText)
     assert_link_color(sources[1].source_sha256, QPalette.ColorRole.PlaceholderText)
     assert browser_button(dialog).toolTip() == tr("Open in browser")
     assert not browser_button(dialog).icon().isNull()
+    QTest.qWait(10)
     dialog.grab().save(".tmp/lib09-videos-light.png")
+    dialog.add.click()
+    dialog.video_file.clear()
+    dialog = save_and_reopen(dialog)
+    assert store.video_file_path(digest) is None
+    assert not dialog.file_reveal.isEnabled()
     QTest.keyClick(dialog, Qt.Key.Key_Escape)
     wait_until(lambda: window.findChild(LibraryVideosDialog) is None)
     assert store.video_links(sources[1].source_sha256) == ()
@@ -252,9 +379,22 @@ def test_library_video_dialog_and_settings_save_cancel(
     browser_button(dialog).click()
     assert opened_urls[-1] == "https://example.invalid/second"
     dialog.remove.click()
+    assert dialog.links.topLevelItemCount() == 0
+    assert len(store.video_links(other_digest)) == 1
+    assert_link_color(other_digest, QPalette.ColorRole.Highlight)
+    close_links(dialog)
+    other_icon = link_icon(other_digest)
+    assert other_icon is not None
+    other_icon.button.click()
+    dialog = window.findChild(LibraryVideosDialog)
+    assert dialog is not None and dialog.source_sha256 == other_digest
+    assert dialog.links.topLevelItemCount() == 1
+    dialog.links.setCurrentItem(saved_item(dialog, 0))
+    dialog.remove.click()
+    dialog.buttons.button(QDialogButtonBox.StandardButton.Save).click()
+    wait_until(lambda: window.findChild(LibraryVideosDialog) is None)
     assert_link_color(other_digest, QPalette.ColorRole.PlaceholderText)
     assert store.video_links(other_digest) == ()
-    close_links(dialog)
     assert window.data is data
 
     # An empty link action stays usable for adding the first link.
