@@ -75,12 +75,13 @@ folders identify scope; no additional marker matrix is required.
 - `tests/importers/benchmark.py` measures time/Python allocations without performance
   assertions. Source tests preserve bytes and scientific unknowns; synthetic
   numerical success does not qualify real sensors.
-- Fixtures: shared synthetic data in `tests/conftest.py`; GUI/preference isolation in
+- Fixtures: shared synthetic data and immutable prepared Manta data in
+  `tests/conftest.py`; GUI/preference isolation and immutable prepared Taron data in
   `tests/ui/conftest.py`; waits/workspace sizing in `tests/ui/helpers.py`;
   recording identities in `tests/support/recordings.py`; originals in `tests/fixtures/`.
-  Rendering tests share one immutable prepared recording per session through
-  `tests/rendering/conftest.py`; tests derive separate timelines/renderers and
-  use replacements for changed data. Each UI test isolates
+  Rendering/localization share Manta; playback/data-export share Taron. Consumers
+  derive separate timelines/renderers and use replacements for changed data;
+  import tests retain actual reads. Each UI test isolates
   `LOCALAPPDATA`, including preference/export databases and subprocesses; no second
   export database-path override is needed.
 - Plugin/profile/illustration tests live in `plugins/stream-deck/tests`; they run

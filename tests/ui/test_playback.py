@@ -9,19 +9,11 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 import pytest
 
-from ride_forces_analyzer.explorer import ExplorerData, load_recording
+from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.ui.explorer import loading
 from ride_forces_analyzer.ui.explorer import navigation as navigation_module
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
-from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from tests.ui.helpers import resize_workspace, wait_until
-
-
-@pytest.fixture(scope="module")
-def recording() -> ExplorerData:
-    data = load_recording(next(REAL_FIXTURE_DIRECTORY.glob("Taron-*.forces")))
-    assert isinstance(data, ExplorerData)
-    return data
 
 
 def test_arrow_keys_step_samples_only_when_paused_and_outside_inputs(

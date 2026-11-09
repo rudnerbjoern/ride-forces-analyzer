@@ -126,9 +126,7 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition, LayoutPositions
     from ride_forces_analyzer.rendering.model import PROFILES
 
-    window = explorer_window
-    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
-    wait_until(window.open_action.isEnabled)
+    # Reuse the loaded recording; the next click creates a fresh export dialog.
     window.inspector.first.setValue(120)
     window.inspector.last.setValue(160)
     window.navigation.slider.setValue(100)
@@ -297,7 +295,8 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     window = explorer_window
-    window.open_path(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
+    source = next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces"))
+    window.open_path(source)
     wait_until(window.open_action.isEnabled)
     window.export_button.click()
     dialog = window.export_window
@@ -351,10 +350,7 @@ def test_export_file_dialogs_preserve_paths_and_successful_output_folder(
     from ride_forces_analyzer.ui.exports import video as ui_export
     from ride_forces_analyzer.storage.preferences import Preferences
 
-    window = explorer_window
-    source = next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces"))
-    window.open_path(source)
-    wait_until(window.open_action.isEnabled)
+    # A new dialog resets its draft without reimporting the same recording.
     window.export_button.click()
     dialog = window.export_window
     assert isinstance(dialog, ExportDialog)

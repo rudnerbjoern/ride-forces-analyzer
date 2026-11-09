@@ -15,7 +15,7 @@ from PIL import ImageDraw
 import pytest
 
 from ride_forces_analyzer.formatting.time import format_sample_time
-from ride_forces_analyzer.explorer import ExplorerData, load_recording
+from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.i18n import (
     LANGUAGES,
     LANGUAGE_CHOICES,
@@ -39,18 +39,9 @@ from ride_forces_analyzer.i18n.fr import DIAGNOSTIC_FRENCH, FRENCH
 from ride_forces_analyzer.storage.export_models import SavedPreset, SavedBatch
 from ride_forces_analyzer.storage.exports import ExportStore
 from ride_forces_analyzer.exports.batches import make_job
-from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from pathlib import Path
 import ast
 import re
-
-
-@pytest.fixture(scope="module", name="manta")
-def localized_recording() -> ExplorerData:
-    """Share immutable recording data; language and patches remain isolated per test."""
-    data = load_recording(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
-    assert isinstance(data, ExplorerData)
-    return data
 
 
 @pytest.fixture(autouse=True)

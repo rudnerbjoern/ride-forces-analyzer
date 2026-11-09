@@ -10,7 +10,7 @@ import sqlite3
 from tempfile import TemporaryDirectory
 from threading import Event
 from unittest.mock import Mock
-from zipfile import ZipFile, ZIP_DEFLATED, ZipInfo
+from zipfile import ZipFile, ZIP_STORED, ZipInfo
 
 import pytest
 
@@ -155,9 +155,11 @@ def complete_backup() -> Iterator[tuple[Path, dict[str, list[dict[str, object]]]
 
 
 def rewrite(source: Path, destination: Path, changes: dict[str, bytes | None]) -> None:
-    with ZipFile(source) as before, ZipFile(destination, "w", compression=ZIP_DEFLATED) as after:
+    # Corruption cases exercise restore validation, not compression. Real backup
+    # creation and the round-trip case still cover the production compressed ZIP.
+    with ZipFile(source) as before, ZipFile(destination, "w", compression=ZIP_STORED) as after:
         for member in before.infolist():
-            data = changes.get(member.filename, before.read(member))
+            data = changes[member.filename] if member.filename in changes else before.read(member)
             if data is not None:
                 after.writestr(member.filename, data)
         for name, data in changes.items():

@@ -9,16 +9,20 @@ from ride_forces_analyzer.rendering.layouts import resolve_geometry
 from ride_forces_analyzer.rendering.model import ExportTimeline, VideoOutput
 
 from PySide6.QtTest import QTest
+from PySide6.QtCore import QCoreApplication, QEvent
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 
 
 def wait_until(predicate: Callable[[], bool], timeout: float = 15) -> None:
+    """Pump real Qt events and let Python workers progress until state or timeout."""
     deadline = time.monotonic() + timeout
     while not predicate():
         if time.monotonic() > deadline:
             raise AssertionError("Native GUI operation timed out")
-        QTest.qWait(10)
-        time.sleep(0.001)  # Let Python import workers acquire the GIL during cold startup.
+        QCoreApplication.processEvents()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        # Python sleep releases the GIL between real Qt event deliveries.
+        time.sleep(0.01)
 
 
 def resize_workspace(window: ExplorerWindow, width: int, height: int) -> None:
