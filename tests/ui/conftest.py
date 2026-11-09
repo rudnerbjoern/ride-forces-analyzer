@@ -10,9 +10,19 @@ import pytest
 from PySide6.QtCore import QEvent, QThreadPool
 from PySide6.QtWidgets import QApplication
 from ride_forces_analyzer.runtime.config import AppSettings
+from ride_forces_analyzer.explorer import ExplorerData, load_recording
 from ride_forces_analyzer.i18n import Language, get_language, set_language
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 from tests.ui.helpers import SmallPreviewRenderer, resize_workspace, wait_until
+from tests.support.recordings import REAL_FIXTURE_DIRECTORY
+
+
+@pytest.fixture(scope="session")
+def recording() -> ExplorerData:
+    """Share immutable Taron data for playback/export; keep GUI state per test."""
+    data = load_recording(next(REAL_FIXTURE_DIRECTORY.glob("Taron-*.forces")))
+    assert isinstance(data, ExplorerData)
+    return data
 
 
 @pytest.fixture(autouse=True)

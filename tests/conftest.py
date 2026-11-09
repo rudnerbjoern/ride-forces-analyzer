@@ -14,6 +14,16 @@ from ride_forces_analyzer.domain import (
     SourceNumber,
     Vector3,
 )
+from ride_forces_analyzer.explorer import ExplorerData, load_recording
+from tests.support.recordings import REAL_FIXTURE_DIRECTORY
+
+
+@pytest.fixture(scope="session")
+def manta() -> ExplorerData:
+    """Share immutable source/analysis data; consumers derive independent views."""
+    data = load_recording(next(REAL_FIXTURE_DIRECTORY.glob("Manta-*.forces")))
+    assert isinstance(data, ExplorerData)
+    return data
 
 
 @pytest.fixture

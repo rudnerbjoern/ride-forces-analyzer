@@ -63,8 +63,17 @@ def test_system_appearance_follows_changes_until_manually_selected(
     assert window.preferences.appearance() is Appearance.LIGHT
 
 
-def test_toolbar_controls_share_one_height(explorer_window: ExplorerWindow) -> None:
+def test_toolbar_and_native_file_dialog_have_valid_dimensions(
+    explorer_window: ExplorerWindow,
+) -> None:
     window = explorer_window
+    dialog = QFileDialog(window)
+    try:
+        dialog.ensurePolished()
+        assert window.font().pointSizeF() > 0
+        assert dialog.font().pointSizeF() > 0
+    finally:
+        dialog.deleteLater()
     toolbar = window.findChild(QToolBar)
     assert toolbar is not None
     for language, appearance in ((0, 0), (1, 1)):
@@ -78,17 +87,6 @@ def test_toolbar_controls_share_one_height(explorer_window: ExplorerWindow) -> N
             if isinstance(widget, (QAbstractButton, QComboBox))
         }
         assert len(heights) == 1, heights
-
-
-def test_native_file_dialog_inherits_valid_point_size(explorer_window: ExplorerWindow) -> None:
-    window = explorer_window
-    dialog = QFileDialog(window)
-    try:
-        dialog.ensurePolished()
-        assert window.font().pointSizeF() > 0
-        assert dialog.font().pointSizeF() > 0
-    finally:
-        dialog.deleteLater()
 
 
 @pytest.mark.parametrize(

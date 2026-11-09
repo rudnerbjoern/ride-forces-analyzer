@@ -15,20 +15,12 @@ from PySide6.QtGui import QColor, QMouseEvent
 
 from ride_forces_analyzer.exports.formats import DataExportFormat
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
-from ride_forces_analyzer.explorer import ExplorerData, load_recording
+from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.ui.exports import data as data_ui
 from ride_forces_analyzer.ui.explorer import loading
 from ride_forces_analyzer.ui.exports.data import DataExportDialog
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
-from tests.support.recordings import REAL_FIXTURE_DIRECTORY
 from tests.ui.helpers import wait_until
-
-
-@pytest.fixture(scope="module")
-def recording() -> ExplorerData:
-    data = load_recording(next(REAL_FIXTURE_DIRECTORY.glob("Taron-*.forces")))
-    assert isinstance(data, ExplorerData)
-    return data
 
 
 def test_data_uses_selected_snapshot_range_and_remembers_only_success(

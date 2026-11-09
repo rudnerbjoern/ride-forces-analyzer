@@ -728,6 +728,7 @@ def test_cancel_stops_remaining_jobs_and_keeps_completed_files(
 
 def test_saved_batch_reopens_and_exports_mixed_extents_and_outputs(
     export_directory: Path,
+    manta: ExplorerData,
 ) -> None:
     ffmpeg = Path(".tmp/ffmpeg/bin/ffmpeg.exe").resolve()
     if not ffmpeg.is_file():
@@ -769,7 +770,7 @@ def test_saved_batch_reopens_and_exports_mixed_extents_and_outputs(
     for ride, chosen in zip(("Manta", "Kraken", "Manta"), presets, strict=True):
         path = next(REAL_FIXTURE_DIRECTORY.glob(f"{ride}-*.forces"))
         sources.append((path, path.read_bytes()))
-        data = load_recording(path)
+        data = manta if ride == "Manta" else load_recording(path)
         assert isinstance(data, ExplorerData) and data.analysis is not None
         jobs.append(short_job(data, chosen))
     store.save_batch(SavedBatch(name="Real", jobs=tuple(jobs), schema_version=1))

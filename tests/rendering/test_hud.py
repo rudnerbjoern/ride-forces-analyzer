@@ -389,9 +389,10 @@ def test_fullscreen_hud_has_open_center_and_is_independent_of_seek_order(
         raise AssertionError("HUD export must retain its native pixels without resizing")
 
     monkeypatch.setattr(Image.Image, "resize", reject_resize)
-    frame = OverlayRenderer(timeline).render_sample(3650.5)
+    overlay = OverlayRenderer(timeline)
+    frame = overlay.render_sample(3650.5)
     assert frame.size == timeline.settings.dimensions == image.size
-    region = OverlayRenderer(timeline).render_region(0)
+    region = overlay.render_region(0)
     assert region.size == image.size
     assert frame.getchannel("A").getpixel((0, 0)) == 0
     opaque = OverlayRenderer(

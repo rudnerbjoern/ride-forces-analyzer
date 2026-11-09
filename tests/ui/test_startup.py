@@ -27,6 +27,7 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
     script = dedent("""
         import runpy
         import sys
+        import time
 
         from PySide6.QtCore import QTimer, Qt
         from PySide6.QtWidgets import QApplication, QFileDialog, QLabel, QMainWindow
@@ -97,7 +98,21 @@ def test_application_starts_and_closes(custom_settings: bool, scale_factor: str)
                 QApplication.instance().quit()
 
         def checked_exec(self):
-            QTimer.singleShot(500, inspect_window)
+            deadline = time.monotonic() + 5
+
+            def when_exposed():
+                windows = [widget for widget in QApplication.topLevelWidgets()
+                           if widget.isVisible()]
+                if any(widget.windowHandle() is not None
+                       and widget.windowHandle().isExposed() for widget in windows):
+                    inspect_window()
+                elif time.monotonic() >= deadline:
+                    failures.append(AssertionError("Startup window was not exposed"))
+                    self.quit()
+                else:
+                    QTimer.singleShot(10, when_exposed)
+
+            QTimer.singleShot(0, when_exposed)
             result = original_exec()
             if failures:
                 raise failures[0]
