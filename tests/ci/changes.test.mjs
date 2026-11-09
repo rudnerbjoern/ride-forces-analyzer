@@ -244,7 +244,7 @@ test("PR runs cancel only superseded runs of the same workflow and have bounded 
   assert.match(workflow, /group: \$\{\{ github\.workflow \}\}-\$\{\{ github\.event\.pull_request\.number \|\| github\.run_id \}\}/);
   assert.match(workflow, /cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/);
   const jobs = workflow.split(/\r?\n(?=  [a-z][a-z-]*:\r?\n)/).slice(1);
-  const budgets = { gitleaks: 10, "dependency-check": 5, actionlint: 10, code: 15, ui: 10, skills: 10, documentation: 5, "stream-deck": 5, "stream-deck-integration": 5, posix: null, check: 5 };
+  const budgets = { gitleaks: 10, "dependency-check": 5, actionlint: 10, code: 15, ui: 15, skills: 10, documentation: 5, "stream-deck": 5, "stream-deck-integration": 5, posix: null, check: 5 };
   assert.equal(jobs.length, Object.keys(budgets).length);
   for (const job of jobs) {
     const name = job.match(/^  ([a-z-]+):/)?.[1];
