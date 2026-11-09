@@ -19,7 +19,7 @@ test("all bundled profiles use SDK installation defaults and remain editable", a
 	const manifest = JSON.parse(await readFile(new URL("manifest.json", plugin), "utf8"));
 	assert.deepEqual(
 		manifest.Profiles.map((profile) => profile.DeviceType),
-		[7, 9, 3],
+		[7, 9, 3, 7, 9, 3, 7, 9, 3],
 	);
 	for (const profile of manifest.Profiles) {
 		assert.equal(profile.Readonly, false);
@@ -146,9 +146,9 @@ test("Neo profile retains reachable native folders, Home and existing key contro
 	const manifest = JSON.parse(await readFile(new URL("manifest.json", plugin), "utf8"));
 	assert.deepEqual(
 		manifest.Profiles.map((value) => value.DeviceType),
-		[7, 9, 3],
+		[7, 9, 3, 7, 9, 3, 7, 9, 3],
 	);
-	for (const profile of manifest.Profiles.filter((value) => value.DeviceType === 9)) {
+	for (const profile of manifest.Profiles.filter((value) => value.DeviceType === 9 && value.Name === "profiles/neo")) {
 		assert.equal(profile.DontAutoSwitchWhenInstalled, false);
 		const reader = new ZipReader(
 			new Uint8ArrayReader(await readFile(new URL(`${profile.Name}.streamDeckProfile`, plugin))),

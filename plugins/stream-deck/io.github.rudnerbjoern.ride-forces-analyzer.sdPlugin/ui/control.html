@@ -48,54 +48,69 @@
 		</style>
 	</head>
 	<body>
-		<label>Action<select id="operation"></select></label>
+		<label
+			><span data-i18n="Action">Action</span
+			><select id="operation"></select
+		></label>
 		<label id="direction-row" hidden
-			>Direction<select id="direction">
-				<option value="-1">Previous / decrease</option>
-				<option value="1">Next / increase</option>
+			><span data-i18n="Direction">Direction</span
+			><select id="direction">
+				<option value="-1" data-i18n="Previous / decrease">Previous / decrease</option>
+				<option value="1" data-i18n="Next / increase">Next / increase</option>
 			</select></label
 		>
 		<label id="boundary-row" hidden
-			>Selection<select id="boundary">
-				<option value="start">Start</option>
-				<option value="end">End</option>
+			><span data-i18n="Selection">Selection</span
+			><select id="boundary">
+				<option value="start" data-i18n="Start">Start</option>
+				<option value="end" data-i18n="End">End</option>
 			</select></label
 		>
 		<label id="steps-row" hidden
-			>Step<select id="steps">
-				<option value="-20">− coarse (20 samples)</option>
-				<option value="-10">− medium (10 samples)</option>
-				<option value="-1">− fine (1 sample)</option>
-				<option value="1">+ fine (1 sample)</option>
-				<option value="10">+ medium (10 samples)</option>
-				<option value="20">+ coarse (20 samples)</option>
+			><span data-i18n="Step">Step</span
+			><select id="steps">
+				<option value="-20" data-i18n="− coarse (20 samples)">− coarse (20 samples)</option>
+				<option value="-10" data-i18n="− medium (10 samples)">− medium (10 samples)</option>
+				<option value="-1" data-i18n="− fine (1 sample)">− fine (1 sample)</option>
+				<option value="1" data-i18n="+ fine (1 sample)">+ fine (1 sample)</option>
+				<option value="10" data-i18n="+ medium (10 samples)">+ medium (10 samples)</option>
+				<option value="20" data-i18n="+ coarse (20 samples)">+ coarse (20 samples)</option>
 			</select></label
 		>
 		<label id="curve-row" hidden
-			>Curve<select id="curve">
-				<option value="first">First axis</option>
-				<option value="second">Second axis</option>
-				<option value="third">Third axis</option>
-				<option value="combined">Combined</option>
-				<option value="calibrated">Calibrated mode</option>
+			><span data-i18n="Curve">Curve</span
+			><select id="curve">
+				<option value="first" data-i18n="First axis">First axis</option>
+				<option value="second" data-i18n="Second axis">Second axis</option>
+				<option value="third" data-i18n="Third axis">Third axis</option>
+				<option value="combined" data-i18n="Combined">Combined</option>
+				<option value="calibrated" data-i18n="Calibrated mode">Calibrated mode</option>
 			</select></label
 		>
 		<label id="marker-row" hidden
-			>Marker<select id="marker">
-				<option value="start">Start</option>
-				<option value="gravity">Gravity</option>
-				<option value="incline">Incline</option>
-				<option value="end">End</option>
+			><span data-i18n="Marker">Marker</span
+			><select id="marker">
+				<option value="start" data-i18n="Start">Start</option>
+				<option value="gravity" data-i18n="Gravity">Gravity</option>
+				<option value="incline" data-i18n="Incline">Incline</option>
+				<option value="end" data-i18n="End">End</option>
 			</select></label
 		>
 		<p id="settings-status" role="status" hidden></p>
-		<p>
+		<p
+			data-i18n="Enable Stream Deck in Analyzer settings. Commands affect the active Explorer while Analyzer has focus. Keys show confirmed state; unavailable commands are blocked."
+		>
 			Enable Stream Deck in Analyzer settings. Commands affect the active Explorer while Analyzer has focus. Keys show
 			confirmed state; unavailable commands are blocked.
 		</p>
-		<p>Marker steps create a preview. Add separate Apply and Discard keys for that marker.</p>
+		<p data-i18n="Marker steps create a preview. Add separate Apply and Discard keys for that marker.">
+			Marker steps create a preview. Add separate Apply and Discard keys for that marker.
+		</p>
 		<p>
-			<a id="setup-help" href="https://github.com/rudnerbjoern/ride-forces-analyzer/blob/main/docs/user/STREAM_DECK.md"
+			<a
+				id="setup-help"
+				href="https://github.com/rudnerbjoern/ride-forces-analyzer/blob/main/docs/user/STREAM_DECK.md"
+				data-i18n="Setup and troubleshooting"
 				>Setup and troubleshooting</a
 			>
 		</p>

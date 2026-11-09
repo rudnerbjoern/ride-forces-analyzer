@@ -1,7 +1,8 @@
 import type { ControlClient } from "./client.js";
 import { dialBinding, type DialSettings, type InfoSettings, isPressOnly, type StepSize } from "./device-controls.js";
 import { type IconStatus, keyFeedback, keyImage, unavailableLabel } from "./feedback.js";
-import type { Position } from "./protocol.js";
+import { displayText, getLanguage, translate } from "./localization.js";
+import type { Position, UnavailableReason } from "./protocol.js";
 
 /**
  *
@@ -44,6 +45,7 @@ const position = (value: Position | null | undefined): string =>
  * @param stepSize Current device-local sample increment, if relevant.
  * @param proposal Unapplied filter value; null means All and undefined means no proposal.
  * @param showBadge Whether function artwork includes its state badge.
+ * @param localized Whether to translate now; composite layouts translate after composing.
  * @returns Contextual dial artwork, values, status and action hints.
  */
 export function dialFeedback(
@@ -53,6 +55,7 @@ export function dialFeedback(
 	stepSize: StepSize | undefined,
 	proposal?: string | null,
 	showBadge = true,
+	localized = true,
 ): SurfaceFeedback {
 	const control = settings?.control ?? "position";
 	const pressOnly = isPressOnly(control);
@@ -97,7 +100,7 @@ export function dialFeedback(
 		result.status =
 			client.status === "incompatible" ? "Incompatible" : client.status === "connecting" ? "Connecting…" : "Offline";
 		if (pressOnly) result.status += " · PRESS ONLY";
-		return result;
+		return localized ? localizeFeedback(result, client, settings, proposal) : result;
 	}
 	if (control === "filter") {
 		const filter = settings?.filter && state.library?.[`${settings.filter}_filter`];
@@ -125,7 +128,7 @@ export function dialFeedback(
 		result.status = `${blocked || (status === "active" ? "Ready" : label(status))} · Press: Filter`;
 		result.visual = status;
 		result.icon = keyImage(symbol, status, true, showBadge);
-		return result;
+		return localized ? localizeFeedback(result, client, settings, proposal) : result;
 	}
 	const binding = settings && dialBinding(settings, pressOnly ? "press" : "rotate", 1, stepSize ?? 1);
 	const feedback = keyFeedback(client, context, binding);
@@ -227,7 +230,42 @@ export function dialFeedback(
 		.join(" · ");
 	result.visual = blocked ? "unavailable" : visual;
 	result.icon = keyImage(symbol, result.visual, true, showBadge);
-	return result;
+	return localized ? localizeFeedback(result, client, settings, proposal) : result;
+}
+
+/**
+ * Translate presentation fields without translating ride names or custom park names.
+ * @param feedback Composed English display fields and semantic status.
+ * @param client Confirmed source of recording and filter identities.
+ * @param settings Display control owning these fields.
+ * @param proposal Unapplied filter choice, if present.
+ * @returns Localized display fields with unchanged opaque user values.
+ */
+export function localizeFeedback(
+	feedback: SurfaceFeedback,
+	client: ControlClient,
+	settings: DialSettings | undefined,
+	proposal?: string | null,
+): SurfaceFeedback {
+	if (getLanguage() === "en") return feedback;
+	let value = displayText(feedback.value);
+	let detail = displayText(feedback.detail);
+	if (settings?.control === "library" && client.state?.library?.selected) value = feedback.value;
+	if (settings?.control === "filter" && settings.filter === "park") {
+		const filter = client.state?.library?.park_filter;
+		const choice = proposal === undefined ? filter?.value : proposal;
+		if (choice !== null) value = feedback.value;
+		if (filter?.value !== null && feedback.detail.startsWith("Active: "))
+			detail = `${translate("Active")}: ${feedback.detail.slice(8)}`;
+	}
+	const status = feedback.status
+		.split(" · ")
+		.map((part) => {
+			const reason = unavailableLabel(part as UnavailableReason);
+			return displayText(reason ?? part);
+		})
+		.join(" · ");
+	return { ...feedback, title: displayText(feedback.title), value, status, detail };
 }
 
 /**
@@ -254,7 +292,7 @@ export function infoFeedback(
 							? "marker"
 							: "position";
 	const dial: DialSettings = settings.marker ? { control: "marker", marker: settings.marker } : { control };
-	const feedback = dialFeedback(client, "infobar", dial, undefined);
+	const feedback = dialFeedback(client, "infobar", dial, undefined, undefined, true, false);
 	const state = client.state;
 	if (["start", "explorer"].includes(section)) {
 		feedback.title = section === "start" ? "Ride Forces Analyzer" : "Explorer";
@@ -322,5 +360,6 @@ export function infoFeedback(
 			if (section === "playback") feedback.title = "Playback";
 		}
 	}
-	return { icon: feedback.icon, title: feedback.title, value: feedback.value, status: feedback.status };
+	const localized = localizeFeedback(feedback, client, dial);
+	return { icon: localized.icon, title: localized.title, value: localized.value, status: localized.status };
 }

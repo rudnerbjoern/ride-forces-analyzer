@@ -6,8 +6,9 @@ window you are currently using. Use **New window** when you want to open a
 Library recording in an additional Explorer.
 
 The Plus and Neo profiles use the same colored icons and short key captions.
-The examples use the English plugin labels. The Analyzer can use its own selected
-interface language.
+Plugin text follows the Stream Deck interface language: English, German or French.
+Familiar short terms such as Play/Pause remain English. The examples use English
+labels; Analyzer can use its own selected interface language.
 Requires Stream Deck **7.6+**;
 the plugin runs on the desktop, alongside Analyzer.
 
@@ -22,7 +23,8 @@ the plugin runs on the desktop, alongside Analyzer.
    connected device. Stream Deck installs it together with the plugin and switches
    to it. Existing unrelated profiles remain available.
 3. In Analyzer, enable **Settings → Application → Enable Stream Deck** and save.
-4. Select **Ride Forces Analyzer +** or **Ride Forces Analyzer Neo** in Stream Deck.
+4. Select **Ride Forces Analyzer +** or **Ride Forces Analyzer Neo** in Stream Deck,
+   using the **(DE)** or **(FR)** variant for German or French folder/page titles.
    On Neo Start, select **Start app**
    in the software preview and choose your Analyzer EXE or a Windows shortcut in
    **Open** action's file field. The bundled profile leaves this path
@@ -41,6 +43,11 @@ select your device and use **Import** with the matching archive:
 | Plus              | `plus.streamDeckProfile`   | Ride Forces Analyzer +              |
 | Neo               | `neo.streamDeckProfile`    | Ride Forces Analyzer Neo            |
 | Mobile (six keys) | `mobile.streamDeckProfile` | Ride Forces Analyzer Mobile Preview |
+
+German and French variants add `-de` or `-fr` before `.streamDeckProfile`, for
+example `neo-de.streamDeckProfile`, and **(DE)** or **(FR)** to the profile name.
+Choose the matching variant before configuring **Start app**; each profile keeps
+its own configuration. Dynamic key/display text follows the Stream Deck language.
 
 The files are in the installed plugin's `profiles` subfolder:
 

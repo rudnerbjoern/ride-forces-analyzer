@@ -11,6 +11,17 @@ integrated physical Plus operation is owner-confirmed. Neo operation remains ope
 For everyday operation, see the [Stream Deck + user guide](../../docs/user/STREAM_DECK.md)
 with illustrated functions and state explanations.
 
+## Localization
+
+`src/localization.ts` is the shared English/German/French presentation catalog.
+Runtime feedback and the inspector select the Stream Deck UI language; opaque
+recording/park names remain unchanged. Build generates native `en.json`, `de.json`
+and `fr.json` resources plus three language variants of each device profile.
+English keeps the base archive name; German/French use `-de`/`-fr` with distinct
+profile, page and action identities. Home/Plus navigation use the matching profile.
+The [language contract](../../docs/implementation/STREAM_DECK.md#presentation-languages)
+owns caption limits, retained English terms and native font checks.
+
 ## Independent plugin version
 
 The plugin has its own version, independent of the Analyzer application and control
@@ -123,7 +134,7 @@ The command builds, validates offline and writes
 The official CLI's output is renamed; the internal plugin ID and `.sdPlugin`
 folder name remain unchanged.
 It includes the self-contained runtime, icons/layouts, license notices and all three
-profiles. It neither installs the plugin nor changes existing profiles. An existing
+device profiles in English, German and French. It neither installs the plugin nor changes existing profiles. An existing
 archive is preserved by default; append `-- --force` only to replace it deliberately.
 The archive version comes from the independent plugin version, not the app version.
 After tests have already built the artifact, `npm run pack:built-plugin --workspace
@@ -171,7 +182,7 @@ owns page routing, confirmed state and device isolation; the
 [deployment view](../../docs/architecture/07_deployment_view.md#mapping-and-environment)
 owns bundled-profile identity and installation defaults.
 
-- `scripts/build-profiles.mjs` creates the Plus/Neo/Mobile archives. Plus uses
+- `scripts/build-profiles.mjs` creates the Plus/Neo/Mobile language variants. Plus uses
   six native main pages; Neo folders/Touch Points and Mobile folders use native navigation.
 - Navigation/Step size titles and images stay plugin-owned; native custom
   `States[].Image`/`Title` override live feedback. Reimport the updated bundled

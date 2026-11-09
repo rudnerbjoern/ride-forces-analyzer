@@ -9,13 +9,20 @@ import { pluginOutput } from "../scripts/artifact-path.mjs";
 /**
  * Load the built inspector against simulated DOM elements and a connecting socket.
  * @param {object} settings Saved key settings restored when the inspector opens.
+ * @param {string} language Native Stream Deck application language.
  * @returns {Promise<object>} Inspector elements, socket and simulated open helper.
  */
-async function inspector(settings = { operation: "curve.set", curve: "combined" }) {
+async function inspector(settings = { operation: "curve.set", curve: "combined" }, language = "en") {
 	const elements = new Map();
 	elements.set("settings-status", { hidden: true, textContent: "" });
 	const html = await readFile(path.join(pluginOutput, "ui/control.html"), "utf8");
-	const [, helpUrl] = html.match(/id="setup-help" href="([^"]+)"/);
+	const [, helpUrl] = html.match(/id="setup-help"\s+href="([^"]+)"/);
+	const labels = [...html.matchAll(/data-i18n="([^"]+)"/g)].map(([, source]) => ({
+		source,
+		textContent: "",
+		getAttribute: () => source,
+	}));
+	const documentElement = { lang: "en" };
 	elements.set("setup-help", {
 		href: helpUrl,
 		listeners: {},
@@ -99,20 +106,25 @@ async function inspector(settings = { operation: "curve.set", curve: "combined" 
 			}
 		},
 		document: {
+			documentElement,
 			getElementById: (id) => elements.get(id),
-			querySelectorAll: () =>
-				["operation", "direction", "steps", "curve", "marker", "boundary"].map((id) => elements.get(id)),
+			querySelectorAll: (selector) =>
+				selector === "[data-i18n]"
+					? labels
+					: ["operation", "direction", "steps", "curve", "marker", "boundary"].map((id) => elements.get(id)),
 		},
 	});
 	window.connectElgatoStreamDeckSocket(
 		"1234",
 		"inspector-id",
 		"registerPropertyInspector",
-		"{}",
+		JSON.stringify({ application: { language } }),
 		JSON.stringify({ context: "key-context", payload: { settings } }),
 	);
 	const socket = sockets[0];
 	return {
+		labels,
+		documentElement,
 		elements,
 		socket,
 		status: elements.get("settings-status"),
@@ -121,6 +133,28 @@ async function inspector(settings = { operation: "curve.set", curve: "combined" 
 			socket.listeners.open();
 		},
 	};
+}
+
+for (const [language, actionLabel, warning] of [
+	["de", "Bibliothek: neues Fenster", "Gespeicherte Einstellungen sind ungültig"],
+	["fr", "Bibliothèque : nouvelle fenêtre", "Les réglages enregistrés sont invalides"],
+]) {
+	test(`the ${language} inspector translates restored-state feedback and keeps automatic settings identifiers`, async () => {
+		const h = await inspector({ operation: "unsupported" }, language);
+		assert.equal(h.documentElement.lang, language);
+		assert.ok(h.status.textContent.includes(warning));
+		assert.equal(
+			h.elements.get("operation").options.find((option) => option.value === "library.open.new").text,
+			actionLabel,
+		);
+		assert.ok(h.labels.every((label) => label.textContent.length > 0));
+		h.open();
+		const operation = h.elements.get("operation");
+		operation.value = "library.open.new";
+		operation.listeners.change();
+		assert.equal(h.socket.messages.at(-1).payload.operation, "library.open.new");
+		assert.equal(h.status.hidden, true);
+	});
 }
 
 test("the built inspector restores settings and automatically saves typed choices for the correct action", async () => {

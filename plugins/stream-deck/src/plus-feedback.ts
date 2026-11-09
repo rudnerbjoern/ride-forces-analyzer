@@ -1,7 +1,8 @@
 import type { ControlClient } from "./client.js";
 import { type DialSettings, isPressOnly, type StepSize } from "./device-controls.js";
-import { dialFeedback } from "./device-feedback.js";
+import { dialFeedback, localizeFeedback } from "./device-feedback.js";
 import type { IconStatus } from "./feedback.js";
+import { displayText } from "./localization.js";
 
 const colors: Record<IconStatus, string> = {
 	active: "#52dc96",
@@ -69,7 +70,7 @@ export function plusFeedback(
 	const column =
 		settings?.column ?? (control === "filter" ? (settings?.filter === "park" ? 2 : 3) : control === "display" ? 1 : 0);
 	const background = `layouts/backgrounds/${menu}-${column}.svg`;
-	const base = dialFeedback(client, context, settings, samples, proposal, false);
+	const base = dialFeedback(client, context, settings, samples, proposal, false, false);
 	const { visual: initial, status: oldStatus, ...text } = base;
 	let visual = initial;
 	let status = oldStatus.replace(/ · (?:Fine|Medium|Coarse) · \d+ samples?/, "").replace(/ · Press: Filter/, "");
@@ -126,15 +127,21 @@ export function plusFeedback(
 		};
 	}
 	const oneLine = (value: string): string => value.replace(/[\r\n\t\u2028\u2029]/g, " ");
+	const localized = localizeFeedback(
+		{ ...base, title: text.title, value: text.value, status, detail },
+		client,
+		settings,
+		proposal,
+	);
 	return {
 		...text,
 		layout: detail ? "layouts/plus.json" : "layouts/plus-compact.json",
-		title: oneLine(text.title),
-		value: oneLine(text.value),
+		title: oneLine(localized.title),
+		value: oneLine(localized.value),
 		background,
-		detail: oneLine(detail),
-		hint,
-		status: { value: status, color: colors[visual] },
+		detail: oneLine(localized.detail),
+		hint: displayText(hint),
+		status: { value: localized.status, color: colors[visual] },
 		statusIcon: statusImage(visual),
 		band: `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="26"><rect width="200" height="26" fill="${colors[visual]}" fill-opacity=".13"/></svg>`,
 	};

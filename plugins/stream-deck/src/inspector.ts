@@ -1,4 +1,5 @@
 import { CONTROL_LABELS, controlSettings } from "./controls.js";
+import { getLanguage, setLanguage, translate } from "./localization.js";
 
 const select = (name: string): HTMLSelectElement => document.getElementById(name) as HTMLSelectElement;
 let socket: WebSocket | undefined;
@@ -11,17 +12,32 @@ let unsavedChanges = false;
 function updateStatus(): void {
 	const messages: string[] = [];
 	if (invalidSettings)
-		messages.push("Saved settings are invalid. Defaults are shown; change a selection to save valid settings.");
+		messages.push(
+			translate("Saved settings are invalid. Defaults are shown; change a selection to save valid settings."),
+		);
 	if (!connectionAvailable)
-		messages.push("Settings connection unavailable. Changes cannot be saved. Reopen this inspector to reconnect.");
-	else if (unsavedChanges) messages.push("Changes were not saved. Change a selection again to save.");
+		messages.push(
+			translate("Settings connection unavailable. Changes cannot be saved. Reopen this inspector to reconnect."),
+		);
+	else if (unsavedChanges) messages.push(translate("Changes were not saved. Change a selection again to save."));
 	const status = document.getElementById("settings-status")!;
 	status.textContent = messages.join(" ");
 	status.hidden = messages.length === 0;
 }
 
 for (const [value, label] of Object.entries(CONTROL_LABELS)) {
-	select("operation").add(new Option(label, value));
+	select("operation").add(new Option(translate(label), value));
+}
+
+/** Translate inspector labels and option text without changing saved identifiers. */
+function localizeInspector(): void {
+	document.documentElement.lang = getLanguage();
+	for (const element of document.querySelectorAll<HTMLElement>("[data-i18n]")) {
+		const source = element.getAttribute("data-i18n")!;
+		element.textContent = translate(source);
+	}
+	for (const option of select("operation").options)
+		option.text = translate(CONTROL_LABELS[option.value as keyof typeof CONTROL_LABELS]);
 }
 
 const setupHelp = document.getElementById("setup-help") as HTMLAnchorElement;
@@ -90,6 +106,17 @@ Object.assign(window, {
 		_info: string,
 		actionInfo: string,
 	): void {
+		const application = (
+			JSON.parse(_info) as {
+				/** Native Stream Deck application metadata. */
+				application?: {
+					/** UI language selected in Stream Deck preferences. */
+					language?: string;
+				};
+			}
+		).application;
+		setLanguage(application?.language ?? "en");
+		localizeInspector();
 		const info = JSON.parse(actionInfo) as {
 			/**
 			 *

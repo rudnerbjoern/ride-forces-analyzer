@@ -9,6 +9,14 @@
   ],
   "overrides": [
     {
+      "filename": "plugins/stream-deck/src/localization.ts",
+      "language": "en,de,fr"
+    },
+    {
+      "filename": "plugins/stream-deck/tests/{inspector,localization}.test.mjs",
+      "language": "en,de,fr"
+    },
+    {
       "filename": ".agents/skills/**/*.md",
       "dictionaries": [
         "html"
