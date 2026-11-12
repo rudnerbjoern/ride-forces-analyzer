@@ -9,10 +9,13 @@ Installed checks work offline.
 ## Documentation changes
 
 The [documentation-maintenance workflow](../../.agents/skills/documentation-maintenance/SKILL.md)
-requires audience/destination selection before writing and independent semantic
-review of changed user-facing content. The [docs index](../README.md) remains
-authoritative for topic ownership. Formatting, spelling and link checks verify
-mechanics; they do not determine whether a passage belongs in a user guide.
+requires proportionate audience/destination selection before writing. Substantive
+changes to user-facing meaning require independent semantic review; purely
+mechanical corrections use focused self-review. The [docs index](../README.md)
+remains authoritative for topic ownership. Formatting, spelling and link checks
+verify mechanics, not the suitability of a passage or the meaning of its references.
+When sections move or merge, update affected links and verify that they still
+lead to the intended topic or evidence. Preserve documented stable links.
 
 ## Python inline documentation
 
