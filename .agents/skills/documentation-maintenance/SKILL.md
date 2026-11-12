@@ -1,6 +1,6 @@
 ---
 name: documentation-maintenance
-description: Route Ride Forces Analyzer documentation changes to their intended audience and authoritative topic, and independently review changed user-facing content. Use before documentation edits, including updates accompanying implementation or acceptance work.
+description: Route Ride Forces Analyzer documentation changes to their intended audience and authoritative topic, and independently review substantive user-facing changes. Use before documentation edits, including updates accompanying implementation or acceptance work.
 ---
 
 # Documentation maintenance
@@ -11,9 +11,12 @@ and review procedure; it does not redefine document ownership or grant Git permi
 
 ## Before writing
 
-Record a short scope table in `.tmp/documentation-scope.md`: exact target file,
-audience, requested change or observed behavior that warrants the edit, and why
-that document owns the information. Reuse it during the task; update it if scope changes.
+For substantive documentation changes, record a short scope table in
+`.tmp/documentation-scope.md`: exact target file, audience, requested change or
+observed behavior, and why that document owns the information. Reuse it during
+the task. For spelling, whitespace or formatting-only fixes that cannot change
+meaning or navigation, identify the scope in the working context without creating
+a separate table.
 For user-facing content, name the concrete installation decision, user action or
 practical limitation that the text helps the reader handle.
 
@@ -32,8 +35,11 @@ do not add them to user guides or accumulate them as tracked work reports.
 
 ## Independent review of user-facing changes
 
-When a task changes user-facing content, delegate a read-only review to an
-independent subagent before completion or Git delivery. Provide the owner's task,
+When a task materially changes user-facing instructions, claims, links or
+limitations, delegate a read-only review to an independent subagent before
+completion or Git delivery. Purely mechanical fixes without any change to
+meaning or navigation need only a focused self-check. For substantive changes,
+provide the owner's task,
 scope table, ownership index, exact diff and enough surrounding document text to
 identify its audience and purpose. Include both staged and unstaged task changes;
 preserve owner changes. Do not supply the author's intended verdict or ask the
@@ -56,5 +62,13 @@ reuse the verdict while the reviewed content and task scope are unchanged. Do no
 claim an independent review if it did not occur. If delegation is unavailable,
 report the missing review instead of silently replacing it with self-review.
 
-Run only affected existing documentation checks. Formatting/link checks do not
-establish semantic suitability; independent review does not replace those checks.
+For structural changes, update incoming and outgoing references to moved or
+renamed sections. Verify that each affected link leads to the intended topic or
+evidence, not merely a valid path or anchor. Preserve documented stable links;
+do not add compatibility aliases without an identified need. Check the actual
+renderer when its heading-anchor behavior is relevant.
+
+Before declaring completion, inspect the resulting documents against the
+requested purpose and ownership, not only the checks performed. Run only affected
+existing documentation checks. Formatting/link checks do not establish semantic
+suitability; independent review does not replace those checks.
