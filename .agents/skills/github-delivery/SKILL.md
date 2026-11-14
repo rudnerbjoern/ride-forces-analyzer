@@ -12,8 +12,11 @@ Creating/using this skill grants no mutation permission.
 
 ## Permanent workflow
 
-- Obtain explicit owner authorization for each requested mutation and exact scope.
-  Commit/push/draft authorization never authorizes merge. PR checks are read-only.
+- Require explicit owner authorization naming the intended Git operations and exact
+  scope. A single instruction may authorize staging, committing, pushing and draft
+  PR creation together; execute that sequence without redundant permission requests.
+  Never infer permission for an unmentioned operation. A draft PR never authorizes
+  merge; PR checks are read-only.
 - Use the [shared helper](scripts/git_delivery.py), optionally through the
   [Windows wrapper](scripts/git-delivery.ps1). Do not generate replacement operation
   scripts. Use Windows Git/gh and the configured uv/Python toolchain.
@@ -23,8 +26,9 @@ Creating/using this skill grants no mutation permission.
   unchanged evidence; never rerun suites solely because publication was authorized.
 - For documentation changes, use the [documentation-maintenance workflow](../documentation-maintenance/SKILL.md).
   Require its task-specific destination justification and independent semantic review
-  for changed user-facing content. Reuse unchanged review evidence; missing or failed
-  review blocks delivery. Markdown/link checks alone do not satisfy this requirement.
+  for substantive changes to user-facing meaning. For purely mechanical fixes use
+  its focused self-check. Reuse unchanged review evidence; missing or failed required
+  review blocks delivery. Markdown/link checks alone do not satisfy semantic review.
 - Inspect status, branch, head, origin URL, staged paths and fingerprint once.
   Preserve owner changes. Stage only an explicitly approved scope into an empty
   index; an already reviewed index may be committed only if it matches that scope.
@@ -39,9 +43,10 @@ Creating/using this skill grants no mutation permission.
   Use request JSON and a UTF-8 body file in `.tmp/`; never pass metadata through
   shell-quoted `gh pr edit` arguments or ad hoc operation scripts. The helper writes
   only title/body, verifies repository/base/head and preserves draft/open status.
-- Merge only after explicit authorization, matching repository/base/head and green
-  checks for that revision. Require the final `CI` / `check` job to succeed; other
-  checks must pass or be legitimately skipped. A pending/failed/unknown result
+- Merge only after separate explicit authorization, matching repository/base/head
+  and green checks for that revision. Only a regular merge commit is permitted;
+  NEVER squash or rebase PR commits. Require the final `CI` / `check` job to succeed;
+  other checks must pass or be legitimately skipped. A pending/failed/unknown result
   blocks merge. Recheck after marking a draft ready; use the expected-head merge guard.
 - Verify the merge remotely. Synchronize local `main` only from the already merged
   remote branch, with a clean working tree and fast-forward ancestry. Never stash
@@ -96,7 +101,7 @@ Use a JSON object in `--request`; paths below must resolve inside that checkout'
 | `pr-info`          | `repository`, `remote_url`, `pr`; returns title/body and state.            |
 | `pr-checks`        | PR-info fields plus `branch`, `head`; reports green/pending/blocked.       |
 | `update-pr`        | PR-check fields plus `title`, `body_file`; requires authorization.         |
-| `merge-pr`         | PR-check fields; optional `method`: `merge` (default), `squash`, `rebase`. |
+| `merge-pr`         | PR-check fields; use only `method: merge` per repository policy.           |
 | `sync-main`        | PR-check fields plus verified `merge_sha`; owner-authorized sync.          |
 
 After commit, use the returned new head for subsequent requests. On cancellation,
