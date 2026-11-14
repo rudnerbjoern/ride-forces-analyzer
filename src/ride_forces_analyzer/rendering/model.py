@@ -41,6 +41,28 @@ class VideoOutput(StrEnum):
     OPAQUE = "opaque"
 
 
+class ExportSafeRegion(StrEnum):
+    """Placement choices with stable stored identifiers.
+
+    Profile identifiers must never be reassigned to changed placement policies.
+    Geometry for the selected profile is implemented separately from this contract.
+
+    Attributes:
+        OFF: Preserve the existing layout, stored as ``off``.
+        PORTRAIT_SOCIAL_A: Light variant A for Portrait Full frame, stored as
+            ``portrait_social_a``.
+        PORTRAIT_SOCIAL_B: Medium variant B for Portrait Full frame, stored as
+            ``portrait_social_b``.
+        PORTRAIT_SOCIAL_C: Higher variant C for Portrait Full frame, stored as
+            ``portrait_social_c``.
+    """
+
+    OFF = "off"
+    PORTRAIT_SOCIAL_A = "portrait_social_a"
+    PORTRAIT_SOCIAL_B = "portrait_social_b"
+    PORTRAIT_SOCIAL_C = "portrait_social_c"
+
+
 class StandardFrameRate(StrEnum):
     """Standard video rates with exact encoder values and display labels.
 
@@ -131,6 +153,8 @@ class ExportSettings:
         position: Requested source position or named layout placement, as declared by the
             type.
         extent: Typed output-area choice; defaults to the complete canvas.
+        safe_region: Off/A/B/C placement choice; defaults to Off. All social
+            profiles require Portrait Full frame; geometry integration is separate.
     """
 
     fps: Annotated[FrameRate, PlainSerializer(frame_rate_value)] = DEFAULT_FRAME_RATE
@@ -144,6 +168,7 @@ class ExportSettings:
     language: Language = Language.ENGLISH
     position: LayoutPosition | None = None
     extent: ExportExtent = ExportExtent.FULL_FRAME
+    safe_region: ExportSafeRegion = ExportSafeRegion.OFF
 
     @property
     def dimensions(self) -> tuple[int, int]:
@@ -184,7 +209,8 @@ class ExportSettings:
             ValueError: Unsupported overlay language. Unknown export aspect ratio. Frame rate
                 must be an integer from 1 to 120, 24000/1001 or 60000/1001. Visible time window must be
                 from 1 to 60 seconds. Unknown export output mode/layout, unsupported extent
-                or placement, or output dimensions incompatible with supported codecs.
+                or placement, invalid Safe Region mode/eligibility, or output dimensions
+                incompatible with supported codecs.
         """
         if type(self.language) is not Language:
             raise ValueError("Unsupported overlay language")
@@ -209,6 +235,12 @@ class ExportSettings:
             raise ValueError("Unknown export output mode")
         if type(self.layout) is not ExportLayout:
             raise ValueError("Unknown export layout")
+        if type(self.safe_region) is not ExportSafeRegion:
+            raise ValueError("Unknown export Safe Region mode")
+        if self.safe_region is not ExportSafeRegion.OFF and (
+            self.aspect is not VideoAspect.PORTRAIT or self.extent is not ExportExtent.FULL_FRAME
+        ):
+            raise ValueError("Safe Region requires Portrait Full frame")
         from .layouts.registry import resolve_geometry
 
         resolve_geometry(self)

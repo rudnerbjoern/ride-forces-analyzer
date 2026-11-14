@@ -26,6 +26,36 @@ The explicit profile registry binds these identifiers to renderers and geometry;
 | `contracts.py`                                           | `LayoutPlugin` metadata and `LayoutRenderer` protocol           |
 | `registry.py`                                            | Explicit registrations, region lookup and renderer construction |
 
+## Safe Region setting
+
+`rendering.model.ExportSafeRegion` defines these stable choices:
+
+| Choice    | Enum member             | JSON identifier        |
+| --------- | ----------------------- | ---------------------- |
+| Off       | `OFF`                   | `off`                  |
+| A: light  | `PORTRAIT_SOCIAL_A`     | `portrait_social_a`    |
+| B: medium | `PORTRAIT_SOCIAL_B`     | `portrait_social_b`    |
+| C: higher | `PORTRAIT_SOCIAL_C`     | `portrait_social_c`    |
+
+`ExportSettings.safe_region` defaults
+to Off, including JSON records that omit it. Python constructors require enum
+members; JSON restores members from their stored values. Unknown identifiers and
+wrong types fail validation. Settings remain immutable.
+
+Every non-Off profile requires `VideoAspect.PORTRAIT` and
+`ExportExtent.FULL_FRAME`; explicit Landscape/Content-area combinations raise
+`ValueError` in the model, before widget or encoder processing. Existing layout
+capabilities still apply, so four-panel column cannot use the profile.
+
+The [implementation plan](../implementation/PORTRAIT_SAFE_REGION_PLAN.md#moderate-placement-profiles-a-b-and-c)
+fixes the A/B/C reference geometry: all add 72 pixels per side at 1080 × 1920;
+history/lateral lifts are respectively 80, 160 and 240 pixels. Each profile's
+stored meaning must never be changed to a different placement policy; future
+policies require new identifiers. Only the typed setting and serialization
+contract are implemented. Adjusted geometry, the four-choice selector and end-to-end
+saved/repeated export integration remain planned. The setting currently leaves
+rendering and dimensions unchanged; processing requires no network.
+
 ## Renderer contract
 
 Each layout module exports one immutable `PLUGIN` with its stable key,

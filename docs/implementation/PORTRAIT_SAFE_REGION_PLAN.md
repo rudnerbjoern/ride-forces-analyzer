@@ -1,14 +1,16 @@
 # Portrait Safe Region implementation plan
 
-Status: source research in step 1 is complete; the owner selected candidate B as
-the HUD placement baseline below. Application steps 2–8 remain planned.
+Status: source research in step 1 and the typed contract in step 2 are complete.
+The owner approved Off and the three preview variants A/B/C as selectable
+placement choices. Application steps 3–8 remain planned.
 Reference case: Portrait HUD, 1080 × 1920.
 Application implementation and Git delivery require their own authorization.
 
 ## Objective and scope
 
-Add one optional **Safe Region** switch to Portrait video export. Off preserves
-the existing layout. On adds moderate side clearance and can raise histories to
+Add one **Safe Region** selector with Off, A: light, B: medium and C: higher to
+Portrait video export. Off preserves the existing layout. A/B/C add side
+clearance and raise histories to
 reduce edge cropping and the strongest lower-screen obstruction. Keeping the
 onride view open takes priority over keeping every instrument outside platform UI.
 Partial overlap is acceptable; complete containment in an unobstructed box is not
@@ -22,15 +24,15 @@ Target behavior:
   Instruments and G-Orbit. Four-panel column remains landscape-only.
 - Keep each layout's current output resolution, 9:16 canvas, values, signs,
   time mapping, source range, language, transparency and encoding choices.
-- Apply On to Full frame. Content area keeps its exact native-content contract;
-  the switch is unavailable there and in Landscape. Switching to an unsupported
+- Apply A/B/C to Full frame. Content area keeps its exact native-content contract;
+  the selector is unavailable there and in Landscape. Switching to an unsupported
   combination makes the effective mode Off without rewriting saved records.
-- Use one agreed placement profile behind the switch. Platform selectors,
+- Use the three fixed preview profiles behind one selector. Platform selectors,
   editable margins, video ingestion and automatic source-video cropping are
   outside this plan.
 
-The Full-frame restriction is a proposed design decision. Candidate B is the
-owner-selected HUD baseline for dependent implementation. Production rendering,
+All three profiles require Portrait Full frame in the typed model and have
+separate, consistently named identifiers. Production rendering,
 translations and the corresponding compact-layout arrangements still require
 the verification in steps 3–4.
 
@@ -72,7 +74,7 @@ Complete prerequisites in order. Each step has a concrete deliverable and a
 separate verification condition; leave its boxes unchecked until both are met.
 Reuse existing modules, fixtures and checks. No new dependency is planned.
 
-### 1. Define the reference profile
+### 1. Define the reference profiles
 
 Prerequisites: none.
 
@@ -83,8 +85,8 @@ Prerequisites: none.
   normalization/containment, distinguish screen/video coordinates and inferred
   registration, and inspect the strict-containment study as a research reference.
 
-Output: measured source definitions, researched on 2026-11-14, and candidate B as
-the owner-selected moderate HUD baseline. Source measurements remain informative
+Output: measured source definitions, researched on 2026-11-14, and A/B/C as
+the owner-approved moderate HUD profiles. Source measurements remain informative
 references and do not prescribe production placement.
 
 #### Source measurements and scope
@@ -175,7 +177,7 @@ the widest upper strip has only 768 × 72. No protected source area is relaxed.
 For this strict reference calculation, no additional device-crop margin is added: the official 120-pixel left crop band
 already exceeds the approximately 47–56 native pixels inferred in these examples.
 This is a decision for the supplied evidence, not qualification of other devices.
-The selected moderate baseline below uses extra side clearance independently of
+The moderate profiles below use extra side clearance independently of
 this strict-containment calculation.
 
 #### Screenshot comparison and assumptions
@@ -233,21 +235,22 @@ the original downloads, `measurements.json`, `screenshot-comparison.jpg`,
 `hud-safe-region-proposal.png`, `hud-proposal-detail.png` and the reproducible
 measurement/visualization scripts. No downloaded image is a published fixture.
 
-#### Selected moderate placement: candidate B
+#### Moderate placement profiles: A, B and C
 
 The local candidates in `.tmp/safe-region-review/` use the existing HUD renderer
 with temporary in-memory geometry edits. They share the hash-guarded Voltron
 Nevera reference sample 8575 and the bundled Toutatis preview photo. The photo is
 an illustrative background, not footage synchronized with the measurement.
 All use the original 1080 × 1920 canvas, fonts, values and 96-pixel history rows.
-Application files, source recordings and saved export settings are not changed.
+The preview generation leaves application files, source recordings and saved
+export settings unchanged.
 
-| Candidate | Additional side inset | History/lateral lift | History top |
-| --------- | --------------------- | -------------------- | ----------- |
-| Existing  | 0 px                  | 0 px                 | 1535 px     |
-| A: light  | 72 px per side        | 80 px                | 1455 px     |
-| B: medium | 72 px per side        | 160 px               | 1375 px     |
-| C: higher | 72 px per side        | 240 px               | 1295 px     |
+| Choice    | Additional side inset | History/lateral lift | History top | Lateral y | Side-scale bottom |
+| --------- | --------------------- | -------------------- | ----------- | --------- | ----------------- |
+| Off       | 0 px                  | 0 px                 | 1535 px     | 1435 px   | 1195 px           |
+| A: light  | 72 px per side        | 80 px                | 1455 px     | 1355 px   | 1115 px           |
+| B: medium | 72 px per side        | 160 px               | 1375 px     | 1275 px   | 1035 px           |
+| C: higher | 72 px per side        | 240 px               | 1295 px     | 1195 px   | 955 px            |
 
 For A–C, heading/value anchors move from a 40-pixel to a 112-pixel edge inset.
 The side scales, history labels/plots, lateral endpoints and orientation strip
@@ -261,42 +264,49 @@ TikTok screenshot crop to each candidate. Controls are illustrative, not actual
 platform screenshots or a claim that all UI variants are covered. Full-resolution
 `off`, `a`, `b` and `c` POV/phone images and a parameter manifest accompany them.
 
-The owner selected **B: medium** as the starting point: 72 additional pixels of
-side inset per side and a 160-pixel upward shift of histories and the lateral
-instrument. The existing arrangement and A/C remain comparison alternatives.
+The owner approved **A: light**, **B: medium** and **C: higher** as selectable
+profiles alongside Off. All three share 72 additional pixels of side inset per
+side; their distinct lifts are fixed by the table above. B remains the baseline
+identified by `portrait_social_b`. Off remains the default.
 Some controls/captions may still cover the HUD; preserving the open central
 onride view takes priority over full containment.
 
-For the 1080 × 1920 HUD reference, B fixes these baseline values:
+For the 1080 × 1920 HUD reference, A/B/C share these values:
 
 - Heading/current-value edge inset: 112 px; history-heading x: 112 px.
-- Side axes: x = 127 / 898; scale top/bottom: y = 440 / 1035.
-- Lateral scale: y = 1275, x = 202–873; zero axis: x = 537.5.
-- History block: y = 1375, left x = 167, row height 96 px; time cursor x = 537.5.
+- Side axes: x = 127 / 898; scale top: y = 440; bottom varies as listed above.
+- Lateral scale: x = 202–873; zero axis: x = 537.5; y varies as listed above.
+- History block: left x = 167, row height 96 px; time cursor x = 537.5;
+  top varies as listed above.
 - Orientation strip: additional 72-pixel inward offset.
 - Canvas, fonts, values, time context and upper heading/value baselines retain
   the existing reference settings.
 
-These are the reviewed preview parameters, not evidence of an implemented
-application setting. Verify their production behavior in steps 3–4; the compact
+These are the reviewed preview parameters, not evidence of implemented production
+placement. Verify their production behavior in steps 3–4; the compact
 layouts need their corresponding arrangements there. Preserve the source
 measurements above as reference information.
 
 ### 2. Add the typed setting and compatibility rules
 
-Prerequisite: step 1, with owner-selected candidate B as the HUD baseline.
+Prerequisite: step 1, with owner-approved A/B/C preview geometry.
 
-- [ ] Implement: extend `rendering.model.ExportSettings` using the existing typed
-  settings conventions. Represent Off and the agreed profile with stable stored
-  values, for example `off` and `portrait_social_v1`; the UI remains a single
-  switch. Keep a profile identifier immutable so later platform changes cannot
-  silently redefine a saved job. Validate Portrait/Full-frame eligibility outside
+- [x] Implement: extend `rendering.model.ExportSettings` using the existing typed
+  settings conventions. Represent Off and A/B/C via `ExportSafeRegion`, using
+  `off`, `portrait_social_a`, `portrait_social_b` and
+  `portrait_social_c`. The planned UI uses one selector. Keep each profile
+  identifier immutable so later
+  platform changes cannot silently redefine a saved job. Validate Portrait/Full-frame eligibility outside
   Qt widgets. Runtime processing uses local geometry and requires no network.
-- [ ] Verify: omitted values load as Off; valid modes round-trip; unknown modes,
+- [x] Verify: omitted values load as Off; Off and all three profiles round-trip;
+  each profile retains its own stable identifier. Unknown modes,
   wrong types and explicitly unsupported combinations fail validation. Existing
   settings retain their dimensions and effective defaults.
 
 Output: tested model/serialization contract, with English inline documentation.
+The [layout API](../development/EXPORT_LAYOUTS.md#safe-region-setting) owns the
+implemented `ExportSettings.safe_region` contract. Geometry and application
+integration remain steps 3–8; the setting alone does not move instruments.
 
 ### 3. Resolve shared geometry
 
@@ -304,11 +314,11 @@ Prerequisite: step 2.
 
 - [ ] Implement: extend the existing layout geometry path in
   `rendering/layouts/contracts.py` and `registry.py` as needed. Scale the agreed
-  additional insets/offsets to the actual canvas, including 2160 × 3840 compact
+  A/B/C insets/offsets to the actual canvas, including 2160 × 3840 compact
   layouts. Retain the selected supported edge/corner and the spread-out layout;
   do not fit the whole overlay into the strict source intersection.
   Keep geometry and eligibility logic independent of widgets and encoders.
-- [ ] Verify: test canvas/crop clearance, offsets and supported positions
+- [ ] Verify: test each profile's canvas/crop clearance, offsets and supported positions
   at both native canvas sizes. Off resolves to the existing geometry exactly.
   Content-area dimensions and Landscape placement remain unchanged.
 
@@ -318,12 +328,14 @@ Output: one geometry source used by preview, frame composition and encoding.
 
 Prerequisite: step 3.
 
-- [ ] Implement: give HUD a Safe Region arrangement that moves side instruments
+- [ ] Implement: give HUD the exact A/B/C arrangements above, moving side instruments
   inward and histories upward, with coherent spacing for current values, context,
   lateral scale and optional orientation marks. Give Ribbon, Corners and G-Orbit
-  corresponding moderate edge clearance while preserving their layout character.
+  corresponding A/B/C arrangements with moderate edge clearance while preserving
+  their layout character. Distinct lifts for layouts with histories must remain
+  distinguishable; layouts without histories share the specified side clearance.
   Preserve readable typography, aligned optical axes and an open central view.
-- [ ] Verify: render all four layouts in EN/DE/FR using existing authorized
+- [ ] Verify: render Off and A/B/C for all four layouts in EN/DE/FR using existing authorized
   fixtures. Check labels, signed values, endpoints, missing-channel states and
   optional orientation marks against the agreed insets and actual canvas. Inspect related elements
   together for baseline, spacing, overlap and legibility. Compare Off with existing
@@ -331,7 +343,7 @@ Prerequisite: step 3.
   Assess remaining UI overlap and central-view obstruction together, without
   requiring complete protection from all platform overlays.
 
-Output: readable production renderings for both modes of every Portrait layout.
+Output: readable production renderings for Off and A/B/C of every Portrait layout.
 
 ### 5. Persist the complete export choice
 
@@ -342,30 +354,32 @@ Prerequisite: step 2; use final geometry from steps 3–4 for integration checks
   existing JSON/model storage path; add a database migration only if the actual
   storage representation requires one. Saved jobs retain their captured profile
   when presets or current UI settings change.
-- [ ] Verify: cover legacy records without the field, explicit On/Off saves,
-  reload/restart, preset replacement/deletion, mixed-mode batches and repeat export.
+- [ ] Verify: cover legacy records without the field, explicit Off/A/B/C saves,
+  stable profile identifiers, reload/restart, preset replacement/deletion, batches
+  mixing all four choices and repeat export.
   Reading legacy data must not rewrite it. Unknown profile identifiers must not
   silently fall back to a different layout.
 
 Output: reproducible saved and repeated exports using the selected mode.
 
-### 6. Integrate the switch and preview guidance
+### 6. Integrate the selector and preview guidance
 
 Prerequisites: steps 3–5.
 
-- [ ] Implement: add the switch near aspect/area/position in `ui/exports/form.py`.
-  Show its effective state in review and relevant preset/batch summaries. Add
-  EN/DE/FR labels and a short explanation of protection limits. Refresh the main
-  preview and layout thumbnails through the existing debounced worker. When On,
-  show the adjusted HUD directly. Any sourced risk guidance stays subtle and
+- [ ] Implement: add one Off / A: light / B: medium / C: higher selector near
+  aspect/area/position in `ui/exports/form.py`. Show the effective variant in review
+  and relevant preset/batch summaries. Add EN/DE/FR labels and a short explanation
+  of their differing lifts and protection limits. Refresh the main preview and
+  layout thumbnails through the existing debounced worker. For A/B/C,
+  show the selected arrangement directly. Any sourced risk guidance stays subtle and
   preview-only, without obscuring the POV or implying full protection.
-- [ ] Verify: exercise On/Off, layout/aspect/extent changes, saved-setting loads
+- [ ] Verify: exercise all Off/A/B/C transitions, layout/aspect/extent changes, saved-setting loads
   and rapid changes without stale preview results. Check keyboard/accessibility
   labeling, translated text, alignment and smaller/high-DPI windows together in
   one reusable native Windows application session. Guides must not alter the
   production frame image or appear in encoded output.
 
-Output: one consistent user control and an accurate, clearly marked preview.
+Output: one consistent four-choice control and an accurate, clearly marked preview.
 
 ### 7. Verify single and batch video output
 
@@ -375,12 +389,12 @@ Prerequisites: steps 4–6.
   paths, accounting for their region placement/padding behavior. Ensure transparent
   MOV and opaque MP4 use the same arrangement, and that batch preparation captures
   the same settings as single export. Keep analysis preparation independent of
-  this display-only choice.
+  this display-only choice. Preserve the selected A/B/C identifier unchanged.
 - [ ] Verify: use focused rendering/metadata tests plus short representative
   transparent and opaque encodes. Confirm dimensions, placement, alpha/opaque
   behavior, snapshot mode and absence of preview guides in decoded frames.
-  Compare preview and exported frames at the same source position. Verify serial
-  and parallel rendering agree; compare screenshot obstruction/crop masks with
+  Cover Off and each A/B/C profile; compare preview and exported frames at the same
+  source position. Verify serial and parallel rendering agree; compare screenshot obstruction/crop masks with
   the new arrangement, recording any remaining overlap explicitly.
 
 Output: verified output parity across individual, batch and repeated exports.
@@ -390,7 +404,7 @@ Output: verified output parity across individual, batch and repeated exports.
 Prerequisite: steps 1–7.
 
 - [ ] Implement: update the existing video-export and preset/batch contracts,
-  layout API and affected user export/layout/preset guides. Explain the control,
+  layout API and affected user export/layout/preset guides. Explain Off/A/B/C,
   eligibility, retained output dimensions and limits. Refresh only directly
   affected examples/reference settings through the existing screenshot workflow.
   Replace planned descriptions with the final contract and mark completed steps
@@ -408,11 +422,12 @@ Output: documentation matching the delivered feature and verified acceptance.
 ## Completion criteria
 
 - [ ] Every implementation step and its verification condition above is complete.
-- [ ] Off preserves existing output; On uses the owner-agreed moderate placement
+- [ ] Off preserves existing output; A/B/C use their owner-agreed moderate placements
   for every eligible Portrait layout, with readable labels in all three languages
   and an open central onride view. Partial platform overlap remains acceptable.
-- [ ] Preview, encoded output, presets, jobs, metadata and repeat export agree.
+- [ ] Preview, encoded output, presets, jobs, metadata and repeat export agree
+  for every choice; each profile identifier retains its meaning.
 - [ ] Known limits remain explicit: expanded comments, temporary rating/location
   cards, owner controls and changing device/app behavior can still cover content.
-- [ ] The owner can choose either the existing arrangement or the protected one
-  through the single switch, without changing the output canvas or recording data.
+- [ ] The owner can choose Off, A, B or C through one selector, without changing
+  the output canvas or recording data.

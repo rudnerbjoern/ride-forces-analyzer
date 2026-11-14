@@ -55,6 +55,12 @@ the [HUD demo](https://youtu.be/JGcNPKoKU1Q) uses the supplied
   signs and units do not change. Glyph bounds are checked in every layout/aspect.
   Layout names translate except Flow Ribbon and G-Orbit.
 
+The model also admits a Safe Region setting with Off (default), A: light,
+B: medium and C: higher, with
+[typed compatibility and JSON rules](../development/EXPORT_LAYOUTS.md#safe-region-setting).
+This is model support only: adjusted placement, the Off/A/B/C selector and
+end-to-end integration remain [planned](PORTRAIT_SAFE_REGION_PLAN.md).
+
 ### Assistant and previews
 
 Two-step modal assistant captures analysis and smoothing on opening,
