@@ -52,6 +52,12 @@ chapter 9 retains decision status and rationale.
 - [Editable calibration markers](development/ANALYSIS_MODELS.md#reference-calibration):
   source-evidenced Gravity/Incline calibration, persistence and partial recalculation.
 
+## Planned work
+
+- [Portrait Safe Region implementation plan](implementation/PORTRAIT_SAFE_REGION_PLAN.md):
+  optional Portrait protection for TikTok/YouTube Shorts, with ordered implementation
+  steps and verification criteria; not implemented.
+
 ## Library
 
 - [Library storage and service contracts](development/LIBRARY.md): archive identity,
