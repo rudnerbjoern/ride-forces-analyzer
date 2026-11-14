@@ -101,7 +101,7 @@ Use a JSON object in `--request`; paths below must resolve inside that checkout'
 | `pr-info`          | `repository`, `remote_url`, `pr`; returns title/body and state.            |
 | `pr-checks`        | PR-info fields plus `branch`, `head`; reports green/pending/blocked.       |
 | `update-pr`        | PR-check fields plus `title`, `body_file`; requires authorization.         |
-| `merge-pr`         | PR-check fields; use only `method: merge` per repository policy.          |
+| `merge-pr`         | PR-check fields; use only `method: merge` per repository policy.           |
 | `sync-main`        | PR-check fields plus verified `merge_sha`; owner-authorized sync.          |
 
 After commit, use the returned new head for subsequent requests. On cancellation,
