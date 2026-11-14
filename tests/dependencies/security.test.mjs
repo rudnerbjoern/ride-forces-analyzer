@@ -19,8 +19,12 @@ const katex = mathDependencies("katex");
 const { micromark } = await import(pathToFileURL(markdown.resolve("micromark")));
 const { math, mathHtml } = await import(pathToFileURL(mathModule));
 
-test("TypeScript ESLint uses patched minimatch and preserves project glob matching", async () => {
+test("ESLint consumers use patched minimatch and preserve project glob matching", async () => {
   const workspace = createRequire(new URL("../../plugins/stream-deck/package.json", import.meta.url));
+  const eslint = createRequire(workspace.resolve("eslint"));
+  const eslintMetadata = JSON.parse(await readFile(eslint.resolve("minimatch/package.json"), "utf8"));
+  assert.equal(eslintMetadata.version, "11.0.1");
+  assert.equal(eslint("minimatch").minimatch("src/action.ts", "src/**/*.ts"), true);
   const typescriptEslint = createRequire(workspace.resolve("typescript-eslint"));
   const parser = createRequire(typescriptEslint.resolve("@typescript-eslint/typescript-estree"));
   const metadata = JSON.parse(await readFile(parser.resolve("minimatch/package.json"), "utf8"));
