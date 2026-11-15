@@ -21,6 +21,7 @@ from .contracts import (
     LayoutPosition,
     LayoutRenderer,
     Region,
+    SafeRegionGeometry,
 )
 
 if TYPE_CHECKING:
@@ -84,6 +85,42 @@ def export_region(settings: ExportSettings) -> Region:
     return positions.regions[position]
 
 
+def _safe_region_geometry(settings: ExportSettings) -> SafeRegionGeometry:
+    """Validate the profile and scale its offsets from the 1080 × 1920 reference.
+
+    Args:
+        settings: Typed profile, format and extent with registered layout geometry.
+
+    Returns:
+        Additional offsets in output-canvas pixels, rounded to the nearest integer.
+        Both supported native Portrait canvases scale exactly. Off returns zeros.
+
+    Raises:
+        ValueError: The mode is untyped or requires an unsupported format/extent.
+    """
+    from ..model import ExportSafeRegion
+
+    if type(settings.safe_region) is not ExportSafeRegion:
+        raise ValueError("Unknown export Safe Region mode")
+    if settings.safe_region is ExportSafeRegion.OFF:
+        return SafeRegionGeometry()
+    if (
+        settings.aspect is not VideoAspect.PORTRAIT
+        or settings.extent is not ExportExtent.FULL_FRAME
+    ):
+        raise ValueError("Safe Region requires Portrait Full frame")
+    history_lift = {
+        ExportSafeRegion.PORTRAIT_SOCIAL_A: 80,
+        ExportSafeRegion.PORTRAIT_SOCIAL_B: 160,
+        ExportSafeRegion.PORTRAIT_SOCIAL_C: 240,
+    }[settings.safe_region]
+    width, height = canvas_dimensions(settings)
+    return SafeRegionGeometry(
+        side_inset=round(72 * width / 1080),
+        history_lift=round(history_lift * height / 1920),
+    )
+
+
 def resolve_geometry(settings: ExportSettings) -> ExportGeometry:
     """Resolve native content size or Full-frame scaling and placement from metadata.
 
@@ -91,11 +128,13 @@ def resolve_geometry(settings: ExportSettings) -> ExportGeometry:
         settings: Typed layout, aspect, extent and optional retained placement.
 
     Returns:
-        Immutable pixel geometry. Content area retains exact native dimensions,
-        with zero offset and no cropping, scaling, rounding or padding.
+        Immutable pixel geometry and scaled Safe Region instrument offsets.
+        Content area retains exact native dimensions, with zero offsets and no
+        cropping, scaling, rounding or padding. Full-region placement is unchanged.
 
     Raises:
-        ValueError: Format, extent or placement is unsupported, or dimensions are not even.
+        ValueError: Format, extent, placement or Safe Region mode is unsupported,
+            or dimensions are not even.
     """
     plugin = PLUGINS[settings.layout]
     plugin.positions(settings.aspect)
@@ -103,6 +142,7 @@ def resolve_geometry(settings: ExportSettings) -> ExportGeometry:
         settings.aspect,
     ):
         raise ValueError("Unsupported export extent for layout and format")
+    safe_region = _safe_region_geometry(settings)
     x, y, width, height = export_region(settings)
     content = plugin.content_area(settings.aspect)
     if settings.extent is ExportExtent.CONTENT_AREA:
@@ -111,12 +151,14 @@ def resolve_geometry(settings: ExportSettings) -> ExportGeometry:
             content.dimensions,
             content.dimensions,
             (0, 0),
+            safe_region,
         )
     else:
         geometry = ExportGeometry(
             canvas_dimensions(settings),
             (width, height),
             (x, y),
+            safe_region,
         )
     if any(size % 2 for size in geometry.output_size):
         raise ValueError("Export dimensions must be even for the supported codecs")

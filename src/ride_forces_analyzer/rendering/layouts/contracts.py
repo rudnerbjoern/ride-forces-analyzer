@@ -76,6 +76,23 @@ class ContentArea:
 
 
 @dataclass(frozen=True, slots=True)
+class SafeRegionGeometry:
+    """Additional instrument offsets in full-frame output-canvas pixels.
+
+    These offsets guide layout-owned instrument placement, not a transform of
+    the complete rendered region. Zero offsets preserve the existing arrangement.
+
+    Attributes:
+        side_inset: Extra inward distance on each side of the layout.
+        history_lift: Upward distance for histories and the lateral instrument;
+            also shortens the lower end of HUD side scales.
+    """
+
+    side_inset: int = 0
+    history_lift: int = 0
+
+
+@dataclass(frozen=True, slots=True)
 class ExportGeometry:
     """Resolved, immutable geometry for a single export configuration.
 
@@ -83,11 +100,14 @@ class ExportGeometry:
         output_size: Final encoded width and height.
         render_size: Native content size or scaled Full-frame layout region size.
         offset: Full-frame destination x/y, or zero for native Content area.
+        safe_region: Additional canvas-space instrument offsets; layout renderers
+            apply them separately from full-region scaling and placement.
     """
 
     output_size: tuple[int, int]
     render_size: tuple[int, int]
     offset: tuple[int, int]
+    safe_region: SafeRegionGeometry = SafeRegionGeometry()
 
 
 class ExportLayout(StrEnum):

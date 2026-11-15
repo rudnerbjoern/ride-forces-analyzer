@@ -58,8 +58,10 @@ the [HUD demo](https://youtu.be/JGcNPKoKU1Q) uses the supplied
 The model also admits a Safe Region setting with Off (default), A: light,
 B: medium and C: higher, with
 [typed compatibility and JSON rules](../development/EXPORT_LAYOUTS.md#safe-region-setting).
-This is model support only: adjusted placement, the Off/A/B/C selector and
-end-to-end integration remain [planned](PORTRAIT_SAFE_REGION_PLAN.md).
+The shared resolver also supplies canvas-scaled instrument offsets while retaining
+output dimensions and selected region placement. Applying the offsets to layout
+instruments, the Off/A/B/C selector and end-to-end integration remain
+[planned](PORTRAIT_SAFE_REGION_PLAN.md).
 
 ### Assistant and previews
 

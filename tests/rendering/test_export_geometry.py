@@ -10,6 +10,7 @@ from ride_forces_analyzer.rendering.layouts.contracts import (
     ContentArea,
     LayoutPosition,
     LayoutPositions,
+    SafeRegionGeometry,
 )
 from ride_forces_analyzer.rendering.model import (
     ExportExtent,
@@ -38,6 +39,7 @@ def test_full_frame_geometry_preserves_registered_canvas_and_placement(
         assert geometry.output_size == settings.dimensions
         assert geometry.render_size == (width, height)
         assert geometry.offset == (x, y)
+        assert geometry.safe_region == SafeRegionGeometry()
 
 
 @pytest.mark.parametrize(
@@ -62,6 +64,7 @@ def test_content_geometry_matches_approved_dimensions_and_ignores_retained_posit
         assert geometry.output_size == expected
         assert geometry.render_size == content.dimensions == expected
         assert geometry.offset == (0, 0)
+        assert geometry.safe_region == SafeRegionGeometry()
         assert all(size % 2 == 0 for size in expected)
         for position in (None, *LayoutPosition):
             retained = replace(settings, position=position)

@@ -44,17 +44,19 @@ wrong types fail validation. Settings remain immutable.
 
 Every non-Off profile requires `VideoAspect.PORTRAIT` and
 `ExportExtent.FULL_FRAME`; explicit Landscape/Content-area combinations raise
-`ValueError` in the model, before widget or encoder processing. Existing layout
+`ValueError` through the shared resolver during model construction, before widget
+or encoder processing. Existing layout
 capabilities still apply, so four-panel column cannot use the profile.
 
 The [implementation plan](../implementation/PORTRAIT_SAFE_REGION_PLAN.md#moderate-placement-profiles-a-b-and-c)
 fixes the A/B/C reference geometry: all add 72 pixels per side at 1080 × 1920;
 history/lateral lifts are respectively 80, 160 and 240 pixels. Each profile's
 stored meaning must never be changed to a different placement policy; future
-policies require new identifiers. Only the typed setting and serialization
-contract are implemented. Adjusted geometry, the four-choice selector and end-to-end
-saved/repeated export integration remain planned. The setting currently leaves
-rendering and dimensions unchanged; processing requires no network.
+policies require new identifiers. The typed setting, serialization and shared
+offset resolution are implemented. Applying those offsets to instruments, the
+four-choice selector and end-to-end saved/repeated export integration remain
+planned. Instrument drawing and dimensions are currently unchanged; processing
+requires no network.
 
 ## Renderer contract
 
@@ -203,6 +205,25 @@ lists supported output sizes.
 - `output_size`: final dimensions, even for the supported codecs.
 - `render_size`: native Content-area image or scaled Full-frame layout region.
 - `offset`: `(0, 0)` for Content area, selected placement for Full frame.
+- `safe_region`: immutable `SafeRegionGeometry` with additional `side_inset`
+  and `history_lift` values in output-canvas pixels. These are instrument offsets,
+  separate from the complete region's `offset` and `render_size`.
+
+Off resolves to zero instrument offsets for every supported format/extent.
+For A/B/C, the resolver scales 72 px of extra inset per side and respectively
+80/160/240 px of upward history/lateral movement from the 1080 × 1920 reference.
+Horizontal offsets use canvas width / 1080, vertical offsets canvas height / 1920,
+rounded to the nearest integer. Both native canvases scale exactly: compact
+2160 × 3840 layouts receive 144 px per side and lifts of 160/320/480 px.
+Coordinates are in the output canvas, not a renderer's unscaled native image.
+Layout adaptation must account for that distinction when drawing instruments.
+
+Resolving a Safe Region profile preserves the selected edge/corner, complete
+region placement/size and output dimensions. It does not shrink the whole layout
+into the strict source intersection or add canvas padding. Preview, frame
+composition and encoding continue to consume this same resolved geometry.
+Applying instrument offsets within the layouts remains
+[step 4](../implementation/PORTRAIT_SAFE_REGION_PLAN.md#4-adapt-the-four-portrait-layouts).
 
 Example: G-Orbit Content area resolves to `render_size=(800, 800)`,
 `offset=(0, 0)` and `output_size=(800, 800)` in either format.

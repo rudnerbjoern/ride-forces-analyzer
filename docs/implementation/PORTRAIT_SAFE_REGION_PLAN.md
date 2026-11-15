@@ -1,8 +1,8 @@
 # Portrait Safe Region implementation plan
 
-Status: source research in step 1 and the typed contract in step 2 are complete.
+Status: source research, the typed contract and shared geometry in steps 1–3 are complete.
 The owner approved Off and the three preview variants A/B/C as selectable
-placement choices. Application steps 3–8 remain planned.
+placement choices. Application steps 4–8 remain planned.
 Reference case: Portrait HUD, 1080 × 1920.
 Application implementation and Git delivery require their own authorization.
 
@@ -34,7 +34,7 @@ Target behavior:
 All three profiles require Portrait Full frame in the typed model and have
 separate, consistently named identifiers. Production rendering,
 translations and the corresponding compact-layout arrangements still require
-the verification in steps 3–4.
+the verification in step 4.
 
 ## Evidence and authoritative topics
 
@@ -283,7 +283,7 @@ For the 1080 × 1920 HUD reference, A/B/C share these values:
   the existing reference settings.
 
 These are the reviewed preview parameters, not evidence of implemented production
-placement. Verify their production behavior in steps 3–4; the compact
+placement. Verify their production drawing in step 4; the compact
 layouts need their corresponding arrangements there. Preserve the source
 measurements above as reference information.
 
@@ -305,24 +305,28 @@ Prerequisite: step 1, with owner-approved A/B/C preview geometry.
 
 Output: tested model/serialization contract, with English inline documentation.
 The [layout API](../development/EXPORT_LAYOUTS.md#safe-region-setting) owns the
-implemented `ExportSettings.safe_region` contract. Geometry and application
-integration remain steps 3–8; the setting alone does not move instruments.
+implemented `ExportSettings.safe_region` contract. Shared geometry is resolved in
+step 3; applying it to instruments and application integration remain steps 4–8.
 
 ### 3. Resolve shared geometry
 
 Prerequisite: step 2.
 
-- [ ] Implement: extend the existing layout geometry path in
+- [x] Implement: extend the existing layout geometry path in
   `rendering/layouts/contracts.py` and `registry.py` as needed. Scale the agreed
   A/B/C insets/offsets to the actual canvas, including 2160 × 3840 compact
   layouts. Retain the selected supported edge/corner and the spread-out layout;
   do not fit the whole overlay into the strict source intersection.
   Keep geometry and eligibility logic independent of widgets and encoders.
-- [ ] Verify: test each profile's canvas/crop clearance, offsets and supported positions
+- [x] Verify: test each profile's canvas/crop clearance, offsets and supported positions
   at both native canvas sizes. Off resolves to the existing geometry exactly.
   Content-area dimensions and Landscape placement remain unchanged.
 
 Output: one geometry source used by preview, frame composition and encoding.
+`ExportGeometry.safe_region` supplies additional instrument offsets in canvas
+coordinates; full-region placement remains unchanged. The
+[layout API](../development/EXPORT_LAYOUTS.md#output-area-geometry)
+owns the resolution contract. Instrument drawing/readability remains step 4.
 
 ### 4. Adapt the four Portrait layouts
 

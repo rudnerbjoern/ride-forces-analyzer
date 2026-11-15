@@ -45,7 +45,7 @@ class ExportSafeRegion(StrEnum):
     """Placement choices with stable stored identifiers.
 
     Profile identifiers must never be reassigned to changed placement policies.
-    Geometry for the selected profile is implemented separately from this contract.
+    The shared geometry resolver supplies offsets for layout-owned placement.
 
     Attributes:
         OFF: Preserve the existing layout, stored as ``off``.
@@ -154,7 +154,7 @@ class ExportSettings:
             type.
         extent: Typed output-area choice; defaults to the complete canvas.
         safe_region: Off/A/B/C placement choice; defaults to Off. All social
-            profiles require Portrait Full frame; geometry integration is separate.
+            profiles require Portrait Full frame; the shared resolver scales offsets.
     """
 
     fps: Annotated[FrameRate, PlainSerializer(frame_rate_value)] = DEFAULT_FRAME_RATE
@@ -235,12 +235,6 @@ class ExportSettings:
             raise ValueError("Unknown export output mode")
         if type(self.layout) is not ExportLayout:
             raise ValueError("Unknown export layout")
-        if type(self.safe_region) is not ExportSafeRegion:
-            raise ValueError("Unknown export Safe Region mode")
-        if self.safe_region is not ExportSafeRegion.OFF and (
-            self.aspect is not VideoAspect.PORTRAIT or self.extent is not ExportExtent.FULL_FRAME
-        ):
-            raise ValueError("Safe Region requires Portrait Full frame")
         from .layouts.registry import resolve_geometry
 
         resolve_geometry(self)
