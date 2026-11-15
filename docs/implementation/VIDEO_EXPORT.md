@@ -66,23 +66,39 @@ Presets, jobs, shared snapshots, embedded MOV/MP4 metadata and archived repeat
 preparation retain the captured profile. The existing JSON storage needs no
 migration; omitted values load as Off and unknown profiles are rejected without
 rewriting records. The form retains a restored profile through ordinary edits.
-The visible Off/A/B/C selector and remaining UI/output acceptance stay
-[planned](PORTRAIT_SAFE_REGION_PLAN.md).
+The Off/A/B/C selector is available for Portrait Full frame and disabled for other
+formats, retaining its choice until eligible again. Review shows the effective
+variant, including Off while the selector is inactive. Remaining output acceptance
+stays [planned](PORTRAIT_SAFE_REGION_PLAN.md).
 
 ### Assistant and previews
 
 Two-step modal assistant captures analysis and smoothing on opening,
 independently of later workspace changes. Both steps use a compact ride heading,
-labeled left controls/summary and large right preview. Step one groups export,
-force-display and encoding controls with presets and compact layout thumbnails.
+labeled left controls/summary and large right preview. Step one uses four groups,
+with presets and compact layout thumbnails above them:
 
-Settings order: layout, format, export area, position, read-only output dimensions,
-output mode, language, frame rate and ride range. Plugin capabilities select Full
+- Layout and placement: image format, layout, image area, position, Safe Region,
+  read-only resolution.
+- Content and presentation: recording section, overlay language, plot time window,
+  smoothing, vertical direction and fixed lateral signs as read-only text.
+- Video file: video format, frame rate and file-size estimate with its limits.
+- Encoding: NVIDIA GPU preference with CPU fallback and the FFmpeg executable.
+
+Group headings have additional spacing; fields share the same label and control
+axes and wrap long rows on smaller windows. Plugin capabilities select Full
 frame/Content area or a fixed Full frame label. Position is hidden for Content area
 or a fixed placement; returning to Full frame restores it. Settings/review share
 resolved dimensions and a live size range; changes refresh both and the preview.
-Review includes format, area, language and applicable position. All controls/labels
+Review includes format, area, effective Safe Region, language and applicable position. All controls/labels
 support EN/DE/FR. Final Export video opens the destination dialog.
+
+Inactive Safe Region choices remain visible with a direct Portrait/Full-frame
+explanation and effective Off value. Eligible G-Orbit shows that A/B/C share one
+arrangement. Unsupported portrait layout choices explain that they require Landscape.
+Explicit time-window edits and vertical-direction changes survive later layout
+selection. Loaded preset/repeat values are explicit even when equal to the initial
+defaults; plugin time-window defaults apply only to an untouched new form.
 
 During a single-video export, the large preview follows already rendered frames
 at approximately two-second video intervals, including the first and last frame.
@@ -94,6 +110,11 @@ encoded. Returning to setup restores the selected static preview.
   independently of video-frame quantization. Fit complete output within 960×540 /
   540×960 without cropping/stretching; HUD gallery entries always use Full frame.
 - Settings/background changes use a debounced worker; only its latest revision applies.
+  Safe Region changes refresh the main preview and all compatible thumbnails through
+  that worker. Active profiles show a translated note below the preview explaining
+  equal side clearance, increasing force plot lifts, identical G-Orbit arrangements
+  and remaining platform overlap/cropping. This widget text never enters production
+  frames or encoder input; no risk masks cover the POV.
   Checkerboard/light/dark and bundled [Loup-Garou](https://rcdb.com/1029.htm),
   [Goudurix](https://rcdb.com/753.htm), [Tonnerre 2 Zeus](https://rcdb.com/752.htm) and
   [Toutatis](https://rcdb.com/16327.htm) POV backgrounds are preview-only; preview needs no FFmpeg/encoding. Photos fill

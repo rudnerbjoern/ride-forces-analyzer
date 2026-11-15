@@ -1,4 +1,4 @@
-"""Loaded preset/repeat choices survive form edits before selector integration."""
+"""Loaded preset/repeat choices survive selector edits and inactive formats."""
 
 # cspell:words qtbot pytestqt
 
@@ -15,6 +15,7 @@ from ride_forces_analyzer.rendering.model import (
     ExportSafeRegion,
     ExportSettings,
     VideoAspect,
+    PROFILES,
     prepare_export,
 )
 from ride_forces_analyzer.storage.export_models import SavedPreset, make_preset
@@ -55,6 +56,8 @@ def test_captured_profile_survives_form_edits_save_and_unsupported_formats(
         form.apply_preset(restored)
         assert len(observed) > previous and observed[-1] is mode
         assert form.settings().safe_region is mode
+        assert form.safe_region.currentData() == mode.value
+        assert form.safe_region.isEnabled()
         form.seconds.setValue(30)
         captured = make_preset(
             mode.value,
@@ -66,10 +69,13 @@ def test_captured_profile_survives_form_edits_save_and_unsupported_formats(
         store.save_preset(captured)
         form.aspect.setCurrentIndex(0)
         assert form.settings().safe_region is ExportSafeRegion.OFF
+        assert not form.safe_region.isEnabled()
+        assert form.safe_region.currentData() == mode.value
         form.aspect.setCurrentIndex(1)
         assert form.settings().safe_region is mode
         form.extent.setCurrentIndex(form.extent.findData(ExportExtent.CONTENT_AREA.value))
         assert form.settings().safe_region is ExportSafeRegion.OFF
+        assert not form.safe_region.isEnabled()
         form.extent.setCurrentIndex(form.extent.findData(ExportExtent.FULL_FRAME.value))
         assert form.settings().safe_region is mode
         assert captured.settings.safe_region is mode
@@ -87,3 +93,36 @@ def test_captured_profile_survives_form_edits_save_and_unsupported_formats(
     form.apply_preset(SavedPreset.model_validate_json(json.dumps(legacy)))
     assert form.settings().safe_region is ExportSafeRegion.OFF
     assert len(observed) > previous and observed[-1] is ExportSafeRegion.OFF
+
+
+def test_layout_changes_preserve_explicit_and_unchanged_loaded_display_choices(
+    qtbot: QtBot,
+    manta: ExplorerData,
+    export_directory: Path,
+) -> None:
+    assert manta.analysis is not None
+    parent = QWidget()
+    qtbot.addWidget(parent)
+    form = ExportForm(manta, Preferences(export_directory / "display.sqlite3"), parent)
+    preset = make_preset(
+        "Unchanged defaults",
+        form.settings(),
+        11,
+        "markers",
+        manta.analysis.configuration,
+    )
+    form.apply_preset(preset)
+    hud = next(index for index, (key, _) in enumerate(PROFILES) if key is ExportLayout.HUD)
+    form.layout_profile.setCurrentIndex(hud)
+    assert form.seconds.value() == preset.settings.window_seconds == 12
+    assert form.flip_vertical.isChecked()
+    form.seconds.setValue(8.25)
+    form.flip_vertical.setChecked(False)
+    for index, _profile in enumerate(PROFILES):
+        form.layout_profile.setCurrentIndex(index)
+        assert form.settings().window_seconds == 8.25
+        assert not form.settings().invert_vertical
+        assert not form.settings().invert_lateral
+    form.apply_preset(preset)
+    form.layout_profile.setCurrentIndex(hud)
+    assert form.seconds.value() == 12 and form.flip_vertical.isChecked()

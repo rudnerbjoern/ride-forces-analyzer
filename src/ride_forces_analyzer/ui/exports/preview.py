@@ -53,7 +53,7 @@ class PreviewView(QLabel):
         self.source = QPixmap()
         self.setMinimumSize(440, 248)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Ignored)
 
     def show_image(self, image: Image.Image) -> None:
         """Display a prepared preview image without changing its source pixels.

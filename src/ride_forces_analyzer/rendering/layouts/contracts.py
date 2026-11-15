@@ -291,7 +291,7 @@ class LayoutPlugin:
         create: Factory constructing a renderer bound to an export timeline.
         landscape_canvas: Full-frame landscape dimensions in pixels.
         portrait_canvas: Full-frame portrait dimensions in pixels.
-        preferred_window_seconds: Time-window override when selecting the layout, or None.
+        preferred_window_seconds: Time-window default for an untouched export form, or None.
         preview_invert_lateral: Lateral direction used for an unselected gallery preview.
         safe_region_force_plots: Whether compact Portrait placement uses A/B/C force plot lifts.
         landscape_content: Native landscape size, or None when Content area is unsupported.

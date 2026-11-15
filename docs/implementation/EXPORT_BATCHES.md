@@ -50,6 +50,8 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   Delete preset removes the selected definition and refreshes the selector.
   User selection loads a preset and refreshes production previews without changing
   explorer recording/settings. Refreshing the stored list does not apply a preset.
+  The selected preset's tooltip and accessible description identify its saved
+  Safe Region choice without changing the preset name.
 - Editing/deleting a preset does not change saved job snapshots.
 - Jobs queued from archived Explorer data use their Library digest without an
   external source path. Execution and frame planning read verified archived bytes;
@@ -71,11 +73,11 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   payload columns and schema version are unchanged; no database migration is needed.
   Reopening storage, replacing/deleting a preset and changing current form inputs
   do not change a captured job's profile. The export form also retains a loaded
-  preset/repeat profile when reconstructing settings; visible selection remains
-  planned. Unsupported current formats use effective Off without changing the
-  original saved definition.
+  preset/repeat profile in the Off/A/B/C selector when reconstructing settings.
+  Unsupported current formats disable the selector and use effective Off without
+  changing its retained choice or the original saved definition.
 - Mixed portrait/landscape and Full-frame/Content-area jobs are supported; the job
-  table identifies aspect, export area and resolved output dimensions. Each job
+  table identifies aspect, export area, effective Safe Region and resolved output dimensions. Each job
   uses the same geometry and encoder path as an individual export.
 
 | Queue interaction        | Contract                                                                                                         |

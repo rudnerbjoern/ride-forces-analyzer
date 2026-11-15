@@ -57,8 +57,8 @@ HUD always uses Full frame.
 | Four-panel column  | 960×2160               | Unavailable           |
 | HUD                | Full frame only        | Full frame only       |
 
-**Layout format** chooses the arrangement; Content-area video need not be 16:9 or
-9:16. **Output dimensions** and **Review export** show the actual video size.
+**Image format** chooses the arrangement; Content-area video need not be 16:9 or
+9:16. **Resolution** and **Review export** show the actual video size.
 Changing the area refreshes previews and the rough file-size estimate. Smaller
 dimensions do not guarantee a proportionally smaller video.
 
@@ -66,13 +66,13 @@ dimensions do not guarantee a proportionally smaller video.
 
 1. Open a recording. To export only part of it, set **From sample** and **To sample**
    in the inspector first.
-2. Click **Export video…** and choose a layout thumbnail or **Layout profile**.
-3. Choose landscape or portrait under **Layout format**. Four-panel column supports
+2. Click **Export video…** and choose landscape or portrait under **Image format**.
+3. Choose a layout thumbnail or **Layout profile**. Four-panel column supports
    landscape only and fills the complete 4K frame height. Other layouts adapt to
    both formats. Unsupported layouts are unavailable in the selector and thumbnails.
-4. Choose **Full frame** or **Content area** under **Export area**. Content area
+4. Choose **Full frame** or **Content area** under **Image area**. Content area
    exports the smaller layout image for placement in your video editor and hides
-   Position. HUD always uses Full frame. Check **Output dimensions** for the video size.
+   Position. HUD always uses Full frame. Check **Resolution** for the video size.
 5. In Full frame, choose **Position**. Ribbon offers top or
    bottom, Column left or right, and Corners and G-Orbit all four corners.
    HUD uses the whole frame and hides Position. Its native
@@ -134,8 +134,9 @@ do not necessarily mean equal forces.
 Each side-force and acceleration/braking force plot fills its available height,
 so even small changes can look large. Compare their numbers as well as their curves.
 
-Selecting HUD sets **Visible time window** to **30 seconds**, centered on the
-cursor. You can change it afterward; loaded presets retain their saved window.
+With an untouched **Plot time window**, selecting HUD uses **30 seconds**, centered
+on the cursor. A window you have edited or loaded from a preset stays unchanged
+when switching layouts. The same applies to an explicitly chosen vertical direction.
 The time axis has a tick every second and labels every five seconds, including
 **0 s** at the cursor.
 Missing measurements leave gaps.
@@ -144,7 +145,7 @@ The time plots do not all run in the same direction: the four-panel column reads
 left to right, while compact lateral force plots show the past below and the future
 above. Use the signed readout to identify left/right forces regardless of layout.
 
-**Visible time window** controls how much source time surrounds each moment in the
+**Plot time window** controls how much source time surrounds each moment in the
 plots. **Smoothing** reduces short fluctuations and can change peaks and airtime
 labels. Changing the layout alone does not change your force data.
 

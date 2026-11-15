@@ -57,14 +57,16 @@ and production Portrait renderings are implemented. Presets, immutable jobs,
 shared snapshots, embedded video metadata and repeat preparation retain the
 profile through the existing JSON paths; see the
 [persistence contract](../implementation/EXPORT_BATCHES.md#contracts).
-The four-choice selector and remaining UI/output acceptance are planned.
+The four-choice selector, effective review value and preview guidance are implemented.
+Full encoded-output acceptance remains [planned](../implementation/PORTRAIT_SAFE_REGION_PLAN.md).
 Processing requires no network.
 
 `registry.effective_safe_region(profile, aspect, extent)` supplies the captured
 profile for Portrait Full frame and Off for unsupported current form formats.
 It rejects untyped profile values. The export form retains the loaded profile
 through ordinary edits and temporary format changes, including snapshot restore,
-without needing a visible selector. A profile-only preset change refreshes the
+with the selector disabled outside Portrait Full frame. Its retained choice becomes
+effective again on returning to that format. A profile-only preset change refreshes the
 form's consumers. Explicit unsupported combinations in stored/model settings
 still fail validation; this effective-state policy does not remap stored records.
 
@@ -115,7 +117,8 @@ otherwise its default. No corner/edge is inferred from a full-screen position.
 
 `LayoutPlugin.landscape_canvas` and `portrait_canvas` declare full-frame output sizes;
 `canvas_dimensions(settings)` resolves them through the registry. Plugins also own
-`preferred_window_seconds` (optional selection-time override), `preview_invert_lateral`
+`preferred_window_seconds` (optional selection default for an untouched time-window
+control), `preview_invert_lateral`
 (unselected gallery default), and read-only `prores_4444_size_rates`, `h264_size_rates`,
 `h264_nvenc_size_rates`, `prores_4444_portrait_size_rates`,
 `prores_4444_cpu_portrait_size_rates`, `h264_portrait_size_rates` and
@@ -124,7 +127,9 @@ maps keyed by `ExportExtent` (optional lower/upper bytes per output pixel per fr
 Shared consumers apply these values
 without branching on layout names. HUD declares its native canvases, 30-second
 selection default and measured estimate rates; Column declares its lateral preview
-default. Each layout declares its Full-frame rates and, where supported, separate
+default. Explicit time-window/vertical-direction edits and loaded preset/repeat
+values survive layout changes; layout defaults do not overwrite them.
+Each layout declares its Full-frame rates and, where supported, separate
 `PRORES_4444_CONTENT_SIZE_RATES` / `H264_CONTENT_SIZE_RATES`. Missing/None entries
 use the shared planning heuristic; Full-frame rates never fill missing Content-area
 rates. Rates need not be configured for both codecs. No measurements are fabricated.

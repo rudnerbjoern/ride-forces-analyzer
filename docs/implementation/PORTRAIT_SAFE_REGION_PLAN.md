@@ -1,9 +1,9 @@
 # Portrait Safe Region implementation plan
 
-Status: source research, the typed contract, shared geometry, production layouts
-and persistence in steps 1–5 are complete.
+Status: source research, the typed contract, shared geometry, production layouts,
+persistence and the selector in steps 1–6 are complete.
 The owner approved Off and the three preview variants A/B/C as selectable
-placement choices. Application steps 6–8 remain planned.
+placement choices. Application steps 7–8 remain planned.
 Reference case: Portrait HUD, 1080 × 1920.
 Application implementation and Git delivery require their own authorization.
 
@@ -395,20 +395,24 @@ profile and geometry; full output acceptance remains step 7.
 
 Prerequisites: steps 3–5.
 
-- [ ] Implement: add one Off / A: light / B: medium / C: higher selector near
+- [x] Implement: add one Off / A: light / B: medium / C: higher selector near
   aspect/area/position in `ui/exports/form.py`. Show the effective variant in review
   and relevant preset/batch summaries. Add EN/DE/FR labels and a short explanation
   of their differing lifts and protection limits. Refresh the main preview and
   layout thumbnails through the existing debounced worker. For A/B/C,
   show the selected arrangement directly. Any sourced risk guidance stays subtle and
   preview-only, without obscuring the POV or implying full protection.
-- [ ] Verify: exercise all Off/A/B/C transitions, layout/aspect/extent changes, saved-setting loads
+- [x] Verify: exercise all Off/A/B/C transitions, layout/aspect/extent changes, saved-setting loads
   and rapid changes without stale preview results. Check keyboard/accessibility
   labeling, translated text, alignment and smaller/high-DPI windows together in
   one reusable native Windows application session. Guides must not alter the
   production frame image or appear in encoded output.
 
 Output: one consistent four-choice control and an accurate, clearly marked preview.
+The selector retains its inactive choice; review shows the effective value.
+The [assistant contract](VIDEO_EXPORT.md#assistant-and-previews) owns the external
+preview note and debounced refresh; [preset/batch summaries](EXPORT_BATCHES.md#contracts)
+identify saved choices. Full encoded-output acceptance remains step 7.
 
 ### 7. Verify single and batch video output
 

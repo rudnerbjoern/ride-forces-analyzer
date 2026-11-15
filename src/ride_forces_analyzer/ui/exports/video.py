@@ -51,6 +51,7 @@ from ride_forces_analyzer.rendering.model import (
     VideoOutput,
     PROFILES,
     ExportSnapshot,
+    ExportSafeRegion,
     prepare_export,
     prepare_export_analysis,
 )
@@ -67,6 +68,7 @@ from .workers import ExportWorker
 from .form import ExportForm
 from .presets import ExportPresets
 from .preview_controller import PreviewController
+from .labels import safe_region_label
 from .preview import PreviewView, preview_pixmap
 
 
@@ -95,6 +97,7 @@ class ExportDialog(QDialog):
         preview_view: Widget displaying the selected frame preview.
         background: Choice control for background.
         preview_note: Label displaying preview note.
+        safe_region_guidance: Preview-only explanation of placement and protection limits.
         progress: Progress display for progress.
         status: Label displaying status.
         eta: Label displaying eta.
@@ -213,17 +216,18 @@ class ExportDialog(QDialog):
         self.review_fields: dict[str, QLabel] = {}
         for key, label in (
             ("layout", tr("Layout profile")),
-            ("aspect", tr("Layout format")),
-            ("extent", tr("Export area")),
+            ("aspect", tr("Image format")),
+            ("extent", tr("Image area")),
+            ("safe_region", tr("Safe Region")),
             ("position", tr("Position")),
-            ("resolution", tr("Output dimensions")),
-            ("output", tr("Output")),
+            ("resolution", tr("Resolution")),
+            ("output", tr("Video format")),
             ("language", tr("Overlay language")),
             ("fps", tr("Video frame rate")),
-            ("range", tr("Range")),
+            ("range", tr("Recording section")),
             ("samples", tr("Samples")),
             ("smoothing", tr("Smoothing")),
-            ("window", tr("Visible time window")),
+            ("window", tr("Plot time window")),
         ):
             value = QLabel()
             value.setWordWrap(True)
@@ -271,6 +275,14 @@ class ExportDialog(QDialog):
         self.preview_note.setWordWrap(True)
         self.preview_note.setTextFormat(Qt.TextFormat.PlainText)
         right.addWidget(self.preview_note)
+        self.safe_region_guidance = bind(
+            QLabel(),
+            tr(
+                "A/B/C add equal side clearance and progressively raise force plots. G-Orbit uses the same arrangement. Platform overlap and cropping remain possible.",
+            ),
+        )
+        self.safe_region_guidance.setWordWrap(True)
+        right.addWidget(self.safe_region_guidance)
         body.addLayout(right, 3)
         layout.addLayout(body, 1)
         self.progress = QProgressBar()
@@ -396,10 +408,12 @@ class ExportDialog(QDialog):
     def _update_profile_availability(self) -> None:
         """Reflect plugin format capabilities without enabling controls during export."""
         aspect = self.form.settings().aspect
-        for (key, _), button in zip(PROFILES, self.profile_buttons, strict=True):
+        for (key, title), button in zip(PROFILES, self.profile_buttons, strict=True):
+            supported = aspect in registry.PLUGINS[key].supported_aspects
             button.setEnabled(
-                self.worker is None and aspect in registry.PLUGINS[key].supported_aspects,
+                self.worker is None and supported,
             )
+            bind(button, tr(title) if supported else tr("Landscape only"), "toolTip")
 
     def _bounds(self) -> tuple[int, int]:
         return self.form.bounds(self.analysis, (self.first, self.last))
@@ -467,6 +481,7 @@ class ExportDialog(QDialog):
             if not self.form.extent.isHidden()
             else self.form.fixed_extent.text(),
             "position": self.form.position.currentText(),
+            "safe_region": safe_region_label(settings.safe_region),
             "output": self.form.mode.currentText(),
             "language": self.form.overlay_language.currentText(),
             "resolution": f"{width}×{height}",
@@ -478,6 +493,7 @@ class ExportDialog(QDialog):
         }
         for key, value in values.items():
             bind(self.review_fields[key], value)
+        self.safe_region_guidance.setVisible(settings.safe_region is not ExportSafeRegion.OFF)
         self._review_form.setRowVisible(
             self.review_fields["position"],
             not self.form.position.isHidden(),
@@ -671,9 +687,9 @@ class ExportDialog(QDialog):
         self.worker = None
         for control in self.controls:
             control.setEnabled(True)
+        self.form.refresh_geometry()
         self._update_profile_availability()
         self.form.flip_vertical.setEnabled(True)
-        self.form.flip_lateral.setEnabled(False)
         self.start.setEnabled(True)
         self.back.setEnabled(True)
         button_text(self.cancel, tr("Close"))
