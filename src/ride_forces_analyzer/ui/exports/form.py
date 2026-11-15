@@ -44,6 +44,7 @@ from ride_forces_analyzer.rendering.model import (
     ExportLayout,
     ExportExtent,
     ExportSettings,
+    ExportSafeRegion,
     PROFILES,
 )
 from ride_forces_analyzer.rendering.layouts import registry
@@ -68,6 +69,7 @@ class ExportForm(QWidget):
         position: Placement choice supported by the selected layout and aspect.
         aspect: Landscape or portrait choice.
         extent: Requested Full-frame or native Content-area export choice.
+        _saved_safe_region: Captured preset/repeat profile retained without a selector.
         fixed_extent: Fixed area label for plugins supporting only Full frame.
         output_dimensions: Read-only resolved output dimensions in pixels.
         overlay_language: Overlay-only language choice.
@@ -102,6 +104,7 @@ class ExportForm(QWidget):
         """
         super().__init__(parent)
         self.preferences = preferences
+        self._saved_safe_region = ExportSafeRegion.OFF
         self.positions: dict[ExportLayout, LayoutPosition] = {}
         settings_layout = QVBoxLayout(self)
         form = QFormLayout()
@@ -275,6 +278,8 @@ class ExportForm(QWidget):
         layout = PROFILES[self.layout_profile.currentIndex()][0]
         aspect = VideoAspect.LANDSCAPE if self.aspect.currentIndex() == 0 else VideoAspect.PORTRAIT
         extent = ExportExtent(self.extent.currentData())
+        if extent not in registry.PLUGINS[layout].supported_extents(aspect):
+            extent = ExportExtent.FULL_FRAME
         return ExportSettings(
             language=LANGUAGE_CHOICES[self.overlay_language.currentIndex()],
             aspect=aspect,
@@ -286,9 +291,8 @@ class ExportForm(QWidget):
             prefer_gpu=self.gpu.isChecked(),
             layout=layout,
             position=LayoutPosition(self.position.currentData()),
-            extent=extent
-            if extent in registry.PLUGINS[layout].supported_extents(aspect)
-            else ExportExtent.FULL_FRAME,
+            extent=extent,
+            safe_region=registry.effective_safe_region(self._saved_safe_region, aspect, extent),
         )
 
     def bounds(self, analysis: RecordingAnalysis, selection: tuple[int, int]) -> tuple[int, int]:
@@ -418,6 +422,7 @@ class ExportForm(QWidget):
             None; changed controls emit the same input notifications as user edits.
         """
         settings = preset.settings
+        self._saved_safe_region = settings.safe_region
         self.overlay_language.setCurrentIndex(LANGUAGE_CHOICES.index(settings.language))
         self.aspect.setCurrentIndex(0 if settings.aspect is VideoAspect.LANDSCAPE else 1)
         self.layout_profile.setCurrentIndex(
@@ -439,3 +444,4 @@ class ExportForm(QWidget):
         self.flip_lateral.setChecked(False)
         self.gpu.setChecked(settings.prefer_gpu)
         self.interval.setCurrentIndex(("markers", "selection", "entire").index(preset.range_mode))
+        self.changed.emit()

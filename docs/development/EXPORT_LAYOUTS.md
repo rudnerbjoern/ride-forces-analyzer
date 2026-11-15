@@ -53,9 +53,20 @@ fixes the A/B/C reference geometry: all add 72 pixels per side at 1080 × 1920;
 force plot/lateral lifts are respectively 80, 160 and 240 pixels. Each profile's
 stored meaning must never be changed to a different placement policy; future
 policies require new identifiers. The typed setting, serialization, shared geometry
-and production Portrait renderings are implemented. The four-choice selector and
-end-to-end saved/repeated export acceptance remain planned. Processing requires
-no network.
+and production Portrait renderings are implemented. Presets, immutable jobs,
+shared snapshots, embedded video metadata and repeat preparation retain the
+profile through the existing JSON paths; see the
+[persistence contract](../implementation/EXPORT_BATCHES.md#contracts).
+The four-choice selector and remaining UI/output acceptance are planned.
+Processing requires no network.
+
+`registry.effective_safe_region(profile, aspect, extent)` supplies the captured
+profile for Portrait Full frame and Off for unsupported current form formats.
+It rejects untyped profile values. The export form retains the loaded profile
+through ordinary edits and temporary format changes, including snapshot restore,
+without needing a visible selector. A profile-only preset change refreshes the
+form's consumers. Explicit unsupported combinations in stored/model settings
+still fail validation; this effective-state policy does not remap stored records.
 
 ## Renderer contract
 

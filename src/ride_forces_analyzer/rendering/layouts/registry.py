@@ -25,7 +25,7 @@ from .contracts import (
 )
 
 if TYPE_CHECKING:
-    from ..model import ExportLayout, ExportSettings, ExportTimeline
+    from ..model import ExportLayout, ExportSafeRegion, ExportSettings, ExportTimeline
 
 PLUGINS: Mapping[ExportLayout, LayoutPlugin] = MappingProxyType(
     {plugin.key: plugin for plugin in (RIBBON, CORNERS, HUD, ORBIT, COLUMN)},
@@ -103,6 +103,35 @@ def export_region(settings: ExportSettings) -> Region:
     return (x + offsets.side_inset, y, fitted_width, fitted_height)
 
 
+def effective_safe_region(
+    profile: ExportSafeRegion,
+    aspect: VideoAspect,
+    extent: ExportExtent,
+) -> ExportSafeRegion:
+    """Resolve a retained profile during format changes without changing saved data.
+
+    Args:
+        profile: Captured typed profile retained by the export form.
+        aspect: Current typed canvas orientation.
+        extent: Current typed output-area choice.
+
+    Returns:
+        The captured profile for Portrait Full frame, otherwise Off.
+
+    Raises:
+        ValueError: The supplied profile is not a typed Safe Region member.
+    """
+    from ..model import ExportSafeRegion
+
+    if type(profile) is not ExportSafeRegion:
+        raise ValueError("Unknown export Safe Region mode")
+    return (
+        profile
+        if aspect is VideoAspect.PORTRAIT and extent is ExportExtent.FULL_FRAME
+        else ExportSafeRegion.OFF
+    )
+
+
 def _safe_region_geometry(settings: ExportSettings) -> tuple[SafeRegionGeometry, int]:
     """Validate the profile and scale its offsets from the 1080 × 1920 reference.
 
@@ -119,15 +148,11 @@ def _safe_region_geometry(settings: ExportSettings) -> tuple[SafeRegionGeometry,
     """
     from ..model import ExportSafeRegion
 
-    if type(settings.safe_region) is not ExportSafeRegion:
-        raise ValueError("Unknown export Safe Region mode")
+    effective = effective_safe_region(settings.safe_region, settings.aspect, settings.extent)
+    if effective is not settings.safe_region:
+        raise ValueError("Safe Region requires Portrait Full frame")
     if settings.safe_region is ExportSafeRegion.OFF:
         return SafeRegionGeometry(), 0
-    if (
-        settings.aspect is not VideoAspect.PORTRAIT
-        or settings.extent is not ExportExtent.FULL_FRAME
-    ):
-        raise ValueError("Safe Region requires Portrait Full frame")
     force_plot_lifts = {
         ExportSafeRegion.PORTRAIT_SOCIAL_A: 80,
         ExportSafeRegion.PORTRAIT_SOCIAL_B: 160,

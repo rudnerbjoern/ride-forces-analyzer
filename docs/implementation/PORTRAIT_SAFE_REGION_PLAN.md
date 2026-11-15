@@ -1,9 +1,9 @@
 # Portrait Safe Region implementation plan
 
-Status: source research, the typed contract, shared geometry and production layouts
-in steps 1–4 are complete.
+Status: source research, the typed contract, shared geometry, production layouts
+and persistence in steps 1–5 are complete.
 The owner approved Off and the three preview variants A/B/C as selectable
-placement choices. Application steps 5–8 remain planned.
+placement choices. Application steps 6–8 remain planned.
 Reference case: Portrait HUD, 1080 × 1920.
 Application implementation and Git delivery require their own authorization.
 
@@ -34,8 +34,8 @@ Target behavior:
 
 All three profiles require Portrait Full frame in the typed model and have
 separate, consistently named identifiers. Production Portrait arrangements are
-implemented and verified in EN/DE/FR; the selector and saved/repeated export
-acceptance remain steps 5–8.
+implemented and verified in EN/DE/FR. Captured profiles survive storage and repeat
+preparation; the selector and remaining UI/output acceptance are steps 6–8.
 
 ## Evidence and authoritative topics
 
@@ -306,7 +306,8 @@ Prerequisite: step 1, with owner-approved A/B/C preview geometry.
 Output: tested model/serialization contract, with English inline documentation.
 The [layout API](../development/EXPORT_LAYOUTS.md#safe-region-setting) owns the
 implemented `ExportSettings.safe_region` contract. Shared geometry is resolved in
-step 3 and applied to layouts in step 4; application integration remains steps 5–8.
+step 3 and applied to layouts in step 4. Persistence is complete in step 5;
+the selector and remaining UI/output work are steps 6–8.
 
 ### 3. Resolve shared geometry
 
@@ -370,18 +371,25 @@ priority, with partial overlap accepted.
 
 Prerequisite: step 2; use final geometry from steps 3–4 for integration checks.
 
-- [ ] Implement: carry the setting through presets, immutable batch jobs,
+- [x] Implement: carry the setting through presets, immutable batch jobs,
   `ExportSnapshot`, embedded video metadata and export-history repeat. Use the
   existing JSON/model storage path; add a database migration only if the actual
   storage representation requires one. Saved jobs retain their captured profile
   when presets or current UI settings change.
-- [ ] Verify: cover legacy records without the field, explicit Off/A/B/C saves,
+- [x] Verify: cover legacy records without the field, explicit Off/A/B/C saves,
   stable profile identifiers, reload/restart, preset replacement/deletion, batches
   mixing all four choices and repeat export.
   Reading legacy data must not rewrite it. Unknown profile identifiers must not
   silently fall back to a different layout.
 
 Output: reproducible saved and repeated exports using the selected mode.
+Existing JSON/model paths retain the complete choice; no database migration is
+needed. The form retains a restored preset/snapshot profile when rebuilding
+settings, with effective eligibility resolved outside Qt widgets. The
+[preset/batch contract](EXPORT_BATCHES.md#contracts) and
+[repeat contract](../development/LIBRARY.md#export-history-and-repeat-export)
+own persistence semantics. Short mixed-mode MOV/MP4 exports verify the embedded
+profile and geometry; full output acceptance remains step 7.
 
 ### 6. Integrate the selector and preview guidance
 

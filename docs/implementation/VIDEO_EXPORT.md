@@ -62,7 +62,11 @@ Production Portrait renderings use the shared geometry: HUD moves instruments
 inward/upward; compact layouts fit additional side clearance while retaining their
 selected edge/corner, with distinct force plot lifts for Ribbon/Corners. G-Orbit has
 the same arrangement for A/B/C. Output dimensions and Off rendering are unchanged.
-The Off/A/B/C selector and end-to-end integration acceptance remain
+Presets, jobs, shared snapshots, embedded MOV/MP4 metadata and archived repeat
+preparation retain the captured profile. The existing JSON storage needs no
+migration; omitted values load as Off and unknown profiles are rejected without
+rewriting records. The form retains a restored profile through ordinary edits.
+The visible Off/A/B/C selector and remaining UI/output acceptance stay
 [planned](PORTRAIT_SAFE_REGION_PLAN.md).
 
 ### Assistant and previews
