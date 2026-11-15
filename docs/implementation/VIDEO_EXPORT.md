@@ -74,10 +74,11 @@ formats, retaining its choice until eligible again. Review shows the effective
 variant, including Off while the selector is inactive. CPU ProRes 4444/H.264 output
 parity is verified across single exports, captured batches and archived repeats,
 including decoded geometry, alpha/opaque padding and profile metadata. Preview
-guidance is excluded from production frames. Serial/parallel region generation
-agrees; the [implementation plan](PORTRAIT_SAFE_REGION_PLAN.md#7-verify-single-and-batch-video-output)
-owns the tested scope and remaining reference-mask/crop exposure. This acceptance
-does not qualify GPU hardware or changing live platform UI.
+guidance is excluded from production frames. Pixel comparisons cover decoded first
+frames from short CPU exports of every HUD profile/output choice and representative
+4K compact layouts, including batch and archived-repeat settings. Serial/parallel
+region generation agrees. This acceptance does not qualify GPU hardware or changing
+live platform UI; the user placement guidance above retains the practical overlap/crop limits.
 
 ### Assistant and previews
 

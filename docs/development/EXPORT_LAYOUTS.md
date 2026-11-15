@@ -48,8 +48,7 @@ Every non-Off profile requires `VideoAspect.PORTRAIT` and
 or encoder processing. Existing layout
 capabilities still apply, so four-panel column cannot use the profile.
 
-The [implementation plan](../implementation/PORTRAIT_SAFE_REGION_PLAN.md#moderate-placement-profiles-a-b-and-c)
-fixes the A/B/C reference geometry: all add 72 pixels per side at 1080 × 1920;
+The fixed A/B/C reference geometry adds 72 pixels per side at 1080 × 1920;
 force plot/lateral lifts are respectively 80, 160 and 240 pixels. Each profile's
 stored meaning must never be changed to a different placement policy; future
 policies require new identifiers. The typed setting, serialization, shared geometry
@@ -59,7 +58,8 @@ profile through the existing JSON paths; see the
 [persistence contract](../implementation/EXPORT_BATCHES.md#contracts).
 The four-choice selector, effective review value and preview guidance are implemented.
 CPU MOV/MP4 integration, decoded preview parity, saved/repeated outputs and parallel
-region generation are [verified](../implementation/PORTRAIT_SAFE_REGION_PLAN.md#7-verify-single-and-batch-video-output).
+region generation are verified for the
+[documented CPU output scope](../implementation/VIDEO_EXPORT.md#defaults-destinations-and-saved-settings).
 GPU hardware and live platform UI are outside this qualification.
 Processing requires no network.
 The [user comparison](../user/EXPORT_LAYOUTS.md#portrait-safe-region) shows the

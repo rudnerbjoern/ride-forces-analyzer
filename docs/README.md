@@ -52,9 +52,6 @@ chapter 9 retains decision status and rationale.
 - [Editable calibration markers](development/ANALYSIS_MODELS.md#reference-calibration):
   source-evidenced Gravity/Incline calibration, persistence and partial recalculation.
 
-- [Portrait Safe Region implementation plan](implementation/PORTRAIT_SAFE_REGION_PLAN.md):
-  fixed Off/A/B/C placement decisions, scoped acceptance and remaining overlap/crop limits.
-
 ## Library
 
 - [Library storage and service contracts](development/LIBRARY.md): archive identity,
