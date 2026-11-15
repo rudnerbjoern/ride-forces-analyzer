@@ -163,5 +163,5 @@ def test_all_layouts_use_one_g_reference_with_absolute_values(
         else:
             assert isinstance(renderer, HudRenderer)
             assert renderer.references == (1, 0, 0)
-            assert renderer.vertical_history_bounds == (1, 1)
+            assert renderer.vertical_force_plot_bounds == (1, 1)
             assert renderer.peaks[0].at(2, 1) == (1, 1)

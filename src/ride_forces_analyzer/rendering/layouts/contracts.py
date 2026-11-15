@@ -79,17 +79,18 @@ class ContentArea:
 class SafeRegionGeometry:
     """Additional instrument offsets in full-frame output-canvas pixels.
 
-    These offsets guide layout-owned instrument placement, not a transform of
-    the complete rendered region. Zero offsets preserve the existing arrangement.
+    HUD applies these offsets to its instruments. Compact layouts use them as
+    the reference for region fitting and placement. Zero offsets preserve the
+    existing arrangement.
 
     Attributes:
         side_inset: Extra inward distance on each side of the layout.
-        history_lift: Upward distance for histories and the lateral instrument;
+        force_plot_lift: Upward distance for force plots and the lateral instrument;
             also shortens the lower end of HUD side scales.
     """
 
     side_inset: int = 0
-    history_lift: int = 0
+    force_plot_lift: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,8 +101,8 @@ class ExportGeometry:
         output_size: Final encoded width and height.
         render_size: Native content size or scaled Full-frame layout region size.
         offset: Full-frame destination x/y, or zero for native Content area.
-        safe_region: Additional canvas-space instrument offsets; layout renderers
-            apply them separately from full-region scaling and placement.
+        safe_region: Canvas-space reference offsets used for HUD instruments and
+            compact region fitting; offset/render_size describe the resolved region.
     """
 
     output_size: tuple[int, int]
@@ -292,6 +293,7 @@ class LayoutPlugin:
         portrait_canvas: Full-frame portrait dimensions in pixels.
         preferred_window_seconds: Time-window override when selecting the layout, or None.
         preview_invert_lateral: Lateral direction used for an unselected gallery preview.
+        safe_region_force_plots: Whether compact Portrait placement uses A/B/C force plot lifts.
         landscape_content: Native landscape size, or None when Content area is unsupported.
         portrait_content: Native portrait size, or None when Content area is unsupported.
         prores_4444_size_rates: Optional ProRes 4444 rates per extent; no cross-extent fallback.
@@ -315,6 +317,7 @@ class LayoutPlugin:
     portrait_canvas: tuple[int, int] = (2160, 3840)
     preferred_window_seconds: float | None = None
     preview_invert_lateral: bool = False
+    safe_region_force_plots: bool = False
     landscape_content: ContentArea | None = None
     portrait_content: ContentArea | None = None
     prores_4444_size_rates: Mapping[ExportExtent, SizeRates | None] = field(
@@ -351,6 +354,8 @@ class LayoutPlugin:
         """
         if type(self.key) is not ExportLayout:
             raise ValueError("Unknown export layout")
+        if type(self.safe_region_force_plots) is not bool:
+            raise ValueError("Safe Region force plot capability must be a boolean")
         for positions, canvas, maximum in (
             (self.landscape, self.landscape_canvas, (3840, 2160)),
             (self.portrait, self.portrait_canvas, (2160, 3840)),

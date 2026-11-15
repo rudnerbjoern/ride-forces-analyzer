@@ -6,13 +6,13 @@ easy to read.
 
 Lateral scales in all five layouts start at **±1.25 g** and expand equally on
 both sides in **0.25 g steps** when your selected interval contains stronger forces.
-The scale stays fixed throughout the video. HUD's history curves use their own
+The scale stays fixed throughout the video. HUD's force curves use their own
 automatically fitted ranges.
 Acceleration/braking scales use the same rule with a **±1 g** minimum and
 **0.25 g steps** in all layouts.
 
 All five layouts use **1 g as the vertical reference**, including Flying recordings.
-Vertical history curves use 1 g as their reference; HUD fits the reference line
+Vertical force curves use 1 g as their reference; HUD fits the reference line
 within its selected minimum and maximum. HUD and G-Orbit hold both stronger
 loading and unloading relative to 1 g. Readouts remain absolute: 1 g reads 1 g,
 and 0 g still reads 0 g. This display reference does not change the recorded values.
@@ -28,9 +28,9 @@ Curves and pointers retain their full precision.
 | ---------------------- | --------------------------- | ------------------------------------------------------------- |
 | **Flow Ribbon**        | Along the bottom            | Follow all three force curves together in a wide strip.       |
 | **Corner Instruments** | Upper right                 | Read separate force cards while keeping the center clear.     |
-| **HUD**                | Full screen                 | Follow frameless edge gauges and three force histories.       |
+| **HUD**                | Full screen                 | Follow frameless edge gauges and three force plots.           |
 | **G-Orbit**            | Lower left                  | Follow current forces and recent peaks on circular gauges.    |
-| **Four-panel column**  | Right side                  | Compare force histories and a separate orientation curve.     |
+| **Four-panel column**  | Right side                  | Compare force plots and a separate orientation curve.         |
 
 Flow Ribbon is selected when you first open the export assistant.
 The comparison above shows Full-frame output at each layout's default position;
@@ -106,9 +106,9 @@ position, layout format and overlay language. For the remaining export steps, fo
 - **Tilt / orientation:** an angle describing tilt, not a compass heading or GPS
   direction. If the recording lacks usable gravity data, no angle is invented.
 
-Flow Ribbon and Corner Instruments include force histories
+Flow Ribbon and Corner Instruments include force plots
 and the current vertical context, such as Floater, Airtime or Ejector. The
-four-panel column adds a dedicated orientation history. G-Orbit concentrates on
+four-panel column adds a dedicated orientation plot. G-Orbit concentrates on
 current forces; its quieter peak indicators briefly retain recent extremes while
 the numbers continue to show the current values.
 
@@ -124,14 +124,14 @@ and stay fixed throughout the video.
 Bright bars briefly hold recent peaks; pointers and numbers show current values.
 The vertical instrument highlights **1 g** as the normal
 resting reference. Its bright bars retain both stronger loading and unloading,
-including positive values below 1 g. The vertical history adjusts its scale to the selected interval, including 1 g.
+including positive values below 1 g. The vertical force plot adjusts its scale to the selected interval, including 1 g.
 Its reference line moves with that scale. The numbers keep their meaning: 0 g
 still reads 0 g. This also applies to Flying recordings.
 The outer right edge shows tilt from **0° to 180°** when orientation data is
-available. Three force histories at the bottom share a time cursor aligned with
+available. Three force plots at the bottom share a time cursor aligned with
 zero on the lateral instrument. Each curve has its own scale, so equal heights
 do not necessarily mean equal forces.
-Each side-force and acceleration/braking history fills its available height,
+Each side-force and acceleration/braking force plot fills its available height,
 so even small changes can look large. Compare their numbers as well as their curves.
 
 Selecting HUD sets **Visible time window** to **30 seconds**, centered on the
@@ -141,10 +141,10 @@ The time axis has a tick every second and labels every five seconds, including
 Missing measurements leave gaps.
 
 The time plots do not all run in the same direction: the four-panel column reads
-left to right, while compact lateral histories show the past below and the future
+left to right, while compact lateral force plots show the past below and the future
 above. Use the signed readout to identify left/right forces regardless of layout.
 
-**Visible time window** controls how much history surrounds each moment in the
+**Visible time window** controls how much source time surrounds each moment in the
 plots. **Smoothing** reduces short fluctuations and can change peaks and airtime
 labels. Changing the layout alone does not change your force data.
 

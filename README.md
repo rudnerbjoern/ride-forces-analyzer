@@ -140,9 +140,9 @@ It uses the supplied [Manta reference recording](docs/development/RECORDINGS.md#
 
 | Layout                 | Look and placement                                      |
 | :--------------------- | :------------------------------------------------------ |
-| **Flow Ribbon**        | A strip along the bottom with force histories.          |
+| **Flow Ribbon**        | A strip along the bottom with force plots.              |
 | **Corner Instruments** | Compact instruments in the upper right.                 |
-| **HUD**                | Frameless gauges and wide force histories.              |
+| **HUD**                | Frameless gauges and wide force plots.                  |
 | **G-Orbit**            | Circular gauges with signed forces and peak indicators. |
 | **Four-panel column**  | Stacked force and orientation plots.                    |
 

@@ -1,4 +1,4 @@
-"""Frameless full-screen HUD with fine scales, glow and shared-time force histories.
+"""Frameless full-screen HUD with fine scales, glow and shared-time force plots.
 
 Copyright (c) 2026 Björn Rudner.
 SPDX-License-Identifier: GPL-3.0-or-later
@@ -8,7 +8,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from math import ceil, floor
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -42,7 +42,7 @@ LABEL_SIZE = 20  # Instrument headings.
 NUMBER_SIZE = 54  # Large signed current values.
 CONTEXT_SIZE = 23  # Airtime category beneath the vertical value.
 TICK_SIZE = 18  # Major scale labels and time ticks.
-HISTORY_LABEL_SIZE = 16  # Small channel names beside/before the traces.
+FORCE_PLOT_LABEL_SIZE = 16  # Small channel names beside/before the traces.
 CYAN = "#67efff"  # Vertical force, cursor and cool instrument light.
 YELLOW = "#ffed51"  # Signed lateral force.
 GREEN = "#73ffad"  # Positive longitudinal force.
@@ -55,7 +55,7 @@ SHADOW_RADIUS = 6.0  # Soft contrast halo on bright footage.
 SHADOW_OFFSET = 3  # Downward shadow displacement.
 SHADOW_ALPHA = tuple(round(value * 0.95) for value in range(256))
 EDGE_ALPHA = tuple(round(value * 0.35) for value in range(256))  # Fine dark contrast edge.
-HISTORY_SHADE_ALPHA = 105  # Soft bottom gradient behind the three histories.
+FORCE_PLOT_SHADE_ALPHA = 105  # Soft bottom gradient behind the three force plots.
 ORIENTATION_TICKS = (0, 45, 90, 135, 180)  # Fixed degrees down the outer right edge.
 ORIENTATION_TICK_SIZE = 12  # Compact labels beside the existing right instrument.
 ORIENTATION_STRIP_WIDTH = 48  # Native pixels reserved for the conditional edge scale.
@@ -83,9 +83,9 @@ class HudGeometry:
         lateral_y: Layout coordinate for lateral y in the owning view or renderer.
         lateral_left: Layout coordinate for lateral left in the owning view or renderer.
         lateral_right: Layout coordinate for lateral right in the owning view or renderer.
-        history_top: Layout coordinate for history top in the owning view or renderer.
-        history_left: Layout coordinate for history left in the owning view or renderer.
-        history_row: Geometry of the force-history rows.
+        force_plot_top: Layout coordinate for force plot top in the owning view or renderer.
+        force_plot_left: Layout coordinate for force plot left in the owning view or renderer.
+        force_plot_row: Geometry of the force-plot rows.
     """
 
     size: tuple[int, int]
@@ -99,9 +99,9 @@ class HudGeometry:
     lateral_y: int
     lateral_left: int
     lateral_right: int
-    history_top: int
-    history_left: int
-    history_row: int
+    force_plot_top: int
+    force_plot_left: int
+    force_plot_row: int
 
 
 LANDSCAPE = HudGeometry(
@@ -116,9 +116,9 @@ LANDSCAPE = HudGeometry(
     lateral_y=760,
     lateral_left=590,
     lateral_right=1330,
-    history_top=835,
-    history_left=175,
-    history_row=65,
+    force_plot_top=835,
+    force_plot_left=175,
+    force_plot_row=65,
 )
 PORTRAIT = HudGeometry(
     size=(1080, 1920),
@@ -132,9 +132,9 @@ PORTRAIT = HudGeometry(
     lateral_y=1435,
     lateral_left=130,
     lateral_right=945,
-    history_top=1535,
-    history_left=95,
-    history_row=96,
+    force_plot_top=1535,
+    force_plot_left=95,
+    force_plot_row=96,
 )
 LANDSCAPE_POSITIONS = LayoutPositions(
     {LayoutPosition.FULL_SCREEN: (0, 0, *LANDSCAPE.size)},
@@ -183,12 +183,14 @@ class HudRenderer(Drawing):
             specified otherwise.
         geometry: Aspect-specific positions and dimensions for layout drawing.
         portrait: Whether the selected layout uses portrait geometry.
-        history_label: Font used for force-history labels.
+        side_inset: Additional inward instrument offset in native canvas pixels.
+        edge: Shared heading and current-value inset from the canvas edge.
+        force_plot_label: Font used for force-plot labels.
         orientation_tick: Font used for orientation-scale labels.
         scales: Fixed instrument ranges fitted to the selected export interval.
         references: Neutral force levels; vertical uses 1 g, other channels use zero.
-        history_scales: Fixed per-channel deviations around the neutral references.
-        vertical_history_bounds: Selected vertical extrema including the 1 g reference.
+        force_plot_scales: Fixed per-channel deviations around the neutral references.
+        vertical_force_plot_bounds: Selected vertical extrema including the 1 g reference.
         peaks: Prepared source-time peak envelopes, independent of render query order.
         base: Prepared static layout image copied before per-frame drawing.
         orientation_base: Prepared static orientation-scale image.
@@ -211,14 +213,32 @@ class HudRenderer(Drawing):
         Returns:
             None.
         """
-        self.geometry = PORTRAIT if timeline.settings.aspect is VideoAspect.PORTRAIT else LANDSCAPE
+        from .registry import resolve_geometry
+
+        offsets = resolve_geometry(timeline.settings).safe_region
+        self.side_inset = offsets.side_inset
+        self.edge = (
+            40 if timeline.settings.aspect is VideoAspect.PORTRAIT else 68
+        ) + self.side_inset
+        original = PORTRAIT if timeline.settings.aspect is VideoAspect.PORTRAIT else LANDSCAPE
+        self.geometry = replace(
+            original,
+            left_axis=original.left_axis + offsets.side_inset,
+            right_axis=original.right_axis - offsets.side_inset,
+            lateral_left=original.lateral_left + offsets.side_inset,
+            lateral_right=original.lateral_right - offsets.side_inset,
+            force_plot_left=original.force_plot_left + offsets.side_inset,
+            force_plot_top=original.force_plot_top - offsets.force_plot_lift,
+            lateral_y=original.lateral_y - offsets.force_plot_lift,
+            scale_bottom=original.scale_bottom - offsets.force_plot_lift,
+        )
         super().__init__(timeline, *self.geometry.size)
         if isinstance(self.number, ImageFont.FreeTypeFont) and self._font_path().is_file():
             self.number.set_variation_by_name("Bold")
         self.portrait = timeline.settings.aspect is VideoAspect.PORTRAIT
-        self.history_label = self._font(
+        self.force_plot_label = self._font(
             self._font_path(),
-            HISTORY_LABEL_SIZE,
+            FORCE_PLOT_LABEL_SIZE,
         )
         self.orientation_tick = self._font(self._font_path(), ORIENTATION_TICK_SIZE)
         posture = timeline.analysis.source.effective_metadata.riding_position
@@ -236,8 +256,8 @@ class HudRenderer(Drawing):
             lateral_scale(peaks[1]),
             longitudinal_scale(peaks[2]),
         )
-        self.history_scales = tuple(peak or 1.0 for peak in peaks)
-        self.vertical_history_bounds = bounds[0]
+        self.force_plot_scales = tuple(peak or 1.0 for peak in peaks)
+        self.vertical_force_plot_bounds = bounds[0]
         self.peaks = tuple(
             PeakEnvelope.prepare(
                 channel.values,
@@ -254,9 +274,9 @@ class HudRenderer(Drawing):
         ink = self.effects(self.base)
         self.base = Image.new("RGBA", self.geometry.size)
         draw = ImageDraw.Draw(self.base)
-        top = self.geometry.history_top - 40
+        top = self.geometry.force_plot_top - 40
         for y in range(top, self.height):
-            alpha = round(HISTORY_SHADE_ALPHA * (y - top) / (self.height - top - 1))
+            alpha = round(FORCE_PLOT_SHADE_ALPHA * (y - top) / (self.height - top - 1))
             draw.line((0, y, self.width, y), fill=(0, 0, 0, alpha))
         self.base.alpha_composite(ink)
         self.orientation_base = self._orientation_scale()
@@ -380,11 +400,11 @@ class HudRenderer(Drawing):
             value / self.scales[1][1] * (g.lateral_right - g.lateral_left) / 2
         )
 
-    def history_point(self, row: int, value: float, fraction: float) -> tuple[float, float]:
+    def force_plot_point(self, row: int, value: float, fraction: float) -> tuple[float, float]:
         """Map absolute forces around their neutral reference on the shared time axis.
 
-        Time zero aligns with the lateral instrument's zero; vertical history
-        fits its selected extrema including 1 g, while the other histories center on zero.
+        Time zero aligns with the lateral instrument's zero; vertical force plot
+        fits its selected extrema including 1 g, while the other force plots center on zero.
         Lateral and longitudinal peaks fill their rows symmetrically without
         headroom; a channel containing only zeros remains on its reference.
 
@@ -394,21 +414,21 @@ class HudRenderer(Drawing):
             fraction: Normalized time coordinate within the plotted interval.
 
         Returns:
-            Horizontal and vertical drawing coordinates on the force-history chart.
+            Horizontal and vertical drawing coordinates on the force-plot chart.
         """
         g = self.geometry
-        top = g.history_top + row * g.history_row
-        center = top + g.history_row / 2
+        top = g.force_plot_top + row * g.force_plot_row
+        center = top + g.force_plot_row / 2
         if row == 0:
-            low, high = self.vertical_history_bounds
+            low, high = self.vertical_force_plot_bounds
             relative = (value - low) / (high - low) if high != low else 0.5
             if not self.timeline.channels[0].inverted:
                 relative = 1 - relative
-            y = top + 1 + relative * (g.history_row - 2)
+            y = top + 1 + relative * (g.force_plot_row - 2)
         else:
-            y = center - value / self.history_scales[row] * (g.history_row / 2 - 1)
+            y = center - value / self.force_plot_scales[row] * (g.force_plot_row / 2 - 1)
         return (
-            g.history_left + fraction * 2 * (self.lateral_x(0) - g.history_left),
+            g.force_plot_left + fraction * 2 * (self.lateral_x(0) - g.force_plot_left),
             y,
         )
 
@@ -425,7 +445,7 @@ class HudRenderer(Drawing):
     def _draw_static(self, draw: ImageDraw.ImageDraw) -> None:
         x: float
         g = self.geometry
-        edge = 40 if self.portrait else 68
+        edge = self.edge
         self._text(draw, (edge, g.title_y), self._tr("Vertical").upper(), self.label, CYAN)
         self._text(
             draw,
@@ -521,72 +541,77 @@ class HudRenderer(Drawing):
                     "mt",
                 )
 
-        history_right, _ = self.history_point(0, 0, 1)
+        force_plot_right, _ = self.force_plot_point(0, 0, 1)
         for row, channel in enumerate(self.timeline.channels[:3]):
-            top = g.history_top + row * g.history_row
-            center = top + g.history_row / 2
+            top = g.force_plot_top + row * g.force_plot_row
+            center = top + g.force_plot_row / 2
             self._text(
                 draw,
-                (40, top - 10 if self.portrait else center),
+                (40 + self.side_inset, top - 10 if self.portrait else center),
                 self._tr(channel.name).upper(),
-                self.history_label,
+                self.force_plot_label,
                 (CYAN, YELLOW, GREEN)[row],
                 "lt" if self.portrait else "lm",
             )
-            reference_y = self.history_point(row, self.references[row], 0)[1]
+            reference_y = self.force_plot_point(row, self.references[row], 0)[1]
             draw.line(
-                (g.history_left, reference_y, history_right, reference_y),
+                (g.force_plot_left, reference_y, force_plot_right, reference_y),
                 fill=BASELINE_COLOR,
                 width=1,
             )
             reference = self.references[row]
             self._text(
                 draw,
-                (g.history_left - 4, reference_y),
+                (g.force_plot_left - 4, reference_y),
                 f"{reference:g} g",
-                self.history_label,
+                self.force_plot_label,
                 WHITE,
                 "rm",
             )
             draw.line(
-                (g.history_left, top + g.history_row - 1, history_right, top + g.history_row - 1),
+                (
+                    g.force_plot_left,
+                    top + g.force_plot_row - 1,
+                    force_plot_right,
+                    top + g.force_plot_row - 1,
+                ),
                 fill=BASELINE_COLOR,
                 width=1,
             )
             if self.portrait:
                 limits = (
-                    self.vertical_history_bounds
+                    self.vertical_force_plot_bounds
                     if row == 0
                     else (
-                        reference - self.history_scales[row],
-                        reference + self.history_scales[row],
+                        reference - self.force_plot_scales[row],
+                        reference + self.force_plot_scales[row],
                     )
                 )
                 for index, value in enumerate(limits):
                     if row == 0:
                         sign = 1 if self.timeline.channels[0].inverted else -1
-                        y = center + sign * (2 * index - 1) * g.history_row * 0.32
+                        y = center + sign * (2 * index - 1) * g.force_plot_row * 0.32
                     else:
-                        _, y = self.history_point(row, value, 0)
+                        _, y = self.force_plot_point(row, value, 0)
                     self._text(
                         draw,
-                        (g.history_left - 14, y),
+                        (g.force_plot_left - 14, y),
                         self._tick_text(value),
-                        self.history_label,
+                        self.force_plot_label,
                         WHITE,
                         "rm",
                     )
-        cursor, _ = self.history_point(0, 0, 0.5)
-        bottom = g.history_top + 3 * g.history_row
+        cursor, _ = self.force_plot_point(0, 0, 0.5)
+        bottom = g.force_plot_top + 3 * g.force_plot_row
         draw.line(
-            (cursor, g.history_top - 12, cursor, bottom + 7),
+            (cursor, g.force_plot_top - 12, cursor, bottom + 7),
             fill=CYAN,
             width=LINE_WIDTH,
         )
         half_window = self.timeline.settings.window_seconds / 2
         for seconds in range(ceil(-half_window), floor(half_window) + 1):
             fraction = (seconds + half_window) / (2 * half_window)
-            x, _ = self.history_point(0, 0, fraction)
+            x, _ = self.force_plot_point(0, 0, fraction)
             major = seconds % 5 == 0
             draw.line((x, bottom, x, bottom + (10 if major else 5)), fill=WHITE, width=1)
             if major:
@@ -602,7 +627,7 @@ class HudRenderer(Drawing):
     def _gauges(self, image: Image.Image, position: float) -> None:
         x: float
         g = self.geometry
-        edge = 40 if self.portrait else 68
+        edge = self.edge
         values = tuple(
             self.timeline.value_at(channel, position) for channel in self.timeline.channels[:3]
         )
@@ -611,10 +636,10 @@ class HudRenderer(Drawing):
             color = WHITE if value is None else CYAN if row == 0 else GREEN if value >= 0 else RED
             # Only a narrow side strip is blurred per frame; the empty center is untouched.
             left, right = (
-                (0, 430 if not self.portrait else 390)
+                (0, (430 if not self.portrait else 390) + self.side_inset)
                 if row == 0
                 else (
-                    self.width - (430 if not self.portrait else 390),
+                    self.width - (430 if not self.portrait else 390) - self.side_inset,
                     self.width,
                 )
             )
@@ -713,13 +738,17 @@ class HudRenderer(Drawing):
         x = ORIENTATION_STRIP_WIDTH - ORIENTATION_EDGE
         y = self.orientation_y(value) - top
         draw.polygon(((x, y), (x - 10, y - 5), (x - 10, y + 5)), fill=WHITE)
-        self.composite_effects(image, tile, (self.width - ORIENTATION_STRIP_WIDTH, top))
+        self.composite_effects(
+            image,
+            tile,
+            (self.width - ORIENTATION_STRIP_WIDTH - self.side_inset, top),
+        )
 
-    def _histories(self, image: Image.Image, position: float) -> None:
+    def _force_plots(self, image: Image.Image, position: float) -> None:
         g = self.geometry
-        tile = Image.new("RGBA", (self.width, 3 * g.history_row + 2 * EFFECT_MARGIN))
+        tile = Image.new("RGBA", (self.width, 3 * g.force_plot_row + 2 * EFFECT_MARGIN))
         draw = ImageDraw.Draw(tile)
-        top = g.history_top - EFFECT_MARGIN
+        top = g.force_plot_top - EFFECT_MARGIN
         half = self.timeline.settings.window_seconds * self.timeline.sample_rate / 2
         start = position - half
         first, last = (
@@ -735,7 +764,7 @@ class HudRenderer(Drawing):
                 if row != 2:
                     draw.line(points, fill=CYAN if row == 0 else YELLOW, width=LINE_WIDTH)
                     return
-                zero_y = self.history_point(row, 0, 0)[1] - top
+                zero_y = self.force_plot_point(row, 0, 0)[1] - top
                 for a, b in zip(points, points[1:]):
                     color_a = GREEN if a[1] <= zero_y else RED
                     color_b = GREEN if b[1] <= zero_y else RED
@@ -753,7 +782,7 @@ class HudRenderer(Drawing):
                     paint()
                     points = []
                 else:
-                    x, y = self.history_point(row, value, (index - start) / (2 * half))
+                    x, y = self.force_plot_point(row, value, (index - start) / (2 * half))
                     points.append((x, y - top))
             paint()
         self.composite_effects(image, tile, (0, top))
@@ -768,7 +797,7 @@ class HudRenderer(Drawing):
             The rendered image in the layout or canvas dimensions declared by the timeline.
         """
         image = self.base.copy()
-        self._histories(image, position)
+        self._force_plots(image, position)
         self._gauges(image, position)
         self._orientation(image, position)
         return image
@@ -789,7 +818,7 @@ H264_NVENC_SIZE_RATES = (0.0017215, 0.0051645)
 
 # Portrait Full-frame calibration: Voltron Nevera, source samples 4000..4999
 # at 50 Hz; 480 frames at 24000/1001 fps (20.02 s), English, vertical inversion,
-# 11-sample smoothing, 30-s history, Incline reference 3575 (five-sample window).
+# 11-sample smoothing, 30-s force plot, Incline reference 3575 (five-sample window).
 # Rates include container overhead; ProRes anchors round to two decimals (+/-10%),
 # H.264 to six (+/-50%). This short clip does not qualify other scenes or durations.
 # prores_ks_vulkan: 1080x1920, 903,143,298 bytes; observed 0.907382589 bytes/pixel/frame.

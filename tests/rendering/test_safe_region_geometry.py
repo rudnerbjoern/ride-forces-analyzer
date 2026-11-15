@@ -12,7 +12,11 @@ from ride_forces_analyzer.explorer import ExplorerData
 from ride_forces_analyzer.rendering.encoding import encoder_command
 from ride_forces_analyzer.rendering.frames import OverlayRenderer
 from ride_forces_analyzer.rendering.layouts import registry, resolve_geometry
-from ride_forces_analyzer.rendering.layouts.contracts import SafeRegionGeometry
+from ride_forces_analyzer.rendering.layouts.contracts import (
+    LayoutPosition,
+    LayoutPositions,
+    SafeRegionGeometry,
+)
 from ride_forces_analyzer.rendering.layouts.hud import PORTRAIT
 from ride_forces_analyzer.rendering.model import (
     ExportLayout,
@@ -60,8 +64,21 @@ def test_offsets_scale_to_the_canvas_and_preserve_every_supported_position(
         original = resolve_geometry(settings)
         geometry = resolve_geometry(replace(settings, safe_region=mode))
         assert geometry.output_size == canvas
-        assert geometry.render_size == original.render_size
-        assert geometry.offset == original.offset
+        if mode is ExportSafeRegion.OFF or layout is ExportLayout.HUD:
+            assert geometry.render_size == original.render_size
+            assert geometry.offset == original.offset
+        elif layout is ExportLayout.ORBIT:
+            assert geometry.render_size == (900, 900)
+            assert geometry.offset == (
+                original.offset[0] + 144,
+                240 if original.offset[1] == 240 else 2700,
+            )
+        else:
+            assert geometry.render_size == (1392, 1856)
+            assert geometry.offset == (
+                original.offset[0] + 144,
+                240 - lift if original.offset[1] == 240 else 1744 - lift * 2,
+            )
         assert geometry.safe_region == SafeRegionGeometry(
             0 if mode is ExportSafeRegion.OFF else 72 * scale,
             lift * scale,
@@ -78,7 +95,7 @@ def test_offsets_scale_to_the_canvas_and_preserve_every_supported_position(
 
 
 @pytest.mark.parametrize(
-    "mode,history_top,lateral_y,scale_bottom",
+    "mode,force_plot_top,lateral_y,scale_bottom",
     [
         (ExportSafeRegion.PORTRAIT_SOCIAL_A, 1455, 1355, 1115),
         (ExportSafeRegion.PORTRAIT_SOCIAL_B, 1375, 1275, 1035),
@@ -87,7 +104,7 @@ def test_offsets_scale_to_the_canvas_and_preserve_every_supported_position(
 )
 def test_hud_offsets_match_the_reviewed_preview_anchors_and_crop_clearance(
     mode: ExportSafeRegion,
-    history_top: int,
+    force_plot_top: int,
     lateral_y: int,
     scale_bottom: int,
 ) -> None:
@@ -95,20 +112,20 @@ def test_hud_offsets_match_the_reviewed_preview_anchors_and_crop_clearance(
         ExportSettings(layout=ExportLayout.HUD, aspect=VideoAspect.PORTRAIT, safe_region=mode),
     )
     offsets = geometry.safe_region
-    assert PORTRAIT.history_top - offsets.history_lift == history_top
-    assert PORTRAIT.lateral_y - offsets.history_lift == lateral_y
-    assert PORTRAIT.scale_bottom - offsets.history_lift == scale_bottom
+    assert PORTRAIT.force_plot_top - offsets.force_plot_lift == force_plot_top
+    assert PORTRAIT.lateral_y - offsets.force_plot_lift == lateral_y
+    assert PORTRAIT.scale_bottom - offsets.force_plot_lift == scale_bottom
     assert PORTRAIT.left_axis + offsets.side_inset == 127
     assert PORTRAIT.right_axis - offsets.side_inset == 898
     assert PORTRAIT.lateral_left + offsets.side_inset == 202
     assert PORTRAIT.lateral_right - offsets.side_inset == 873
-    assert PORTRAIT.history_left + offsets.side_inset == 167
+    assert PORTRAIT.force_plot_left + offsets.side_inset == 167
     # The 112-pixel heading inset exceeds the screenshots' inferred 56-pixel crop.
     heading_inset = 40 + offsets.side_inset
     assert heading_inset == 112
     assert 56 < heading_inset < geometry.output_size[0] - 56
-    assert PORTRAIT.scale_top < scale_bottom < lateral_y < history_top
-    assert history_top + 3 * PORTRAIT.history_row < geometry.output_size[1]
+    assert PORTRAIT.scale_top < scale_bottom < lateral_y < force_plot_top
+    assert force_plot_top + 3 * PORTRAIT.force_plot_row < geometry.output_size[1]
 
 
 @pytest.mark.parametrize("layout", [ExportLayout.HUD, ExportLayout.ORBIT])
@@ -150,3 +167,26 @@ def test_preview_composition_and_encoder_share_the_resolved_region(
     assert command[command.index("-vf") + 1] == (
         f"pad={geometry.output_size[0]}:{geometry.output_size[1]}:{x}:{y}:color=black@0"
     )
+
+
+@pytest.mark.parametrize("width,height,error", [(288, 1000, "width"), (289, 2, "height")])
+def test_compact_fitting_rejects_regions_without_positive_dimensions(
+    monkeypatch: pytest.MonkeyPatch,
+    width: int,
+    height: int,
+    error: str,
+) -> None:
+    plugin = replace(
+        registry.PLUGINS[ExportLayout.ORBIT],
+        portrait=LayoutPositions(
+            {LayoutPosition.TOP_LEFT: (0, 0, width, height)},
+            LayoutPosition.TOP_LEFT,
+        ),
+    )
+    monkeypatch.setattr(registry, "PLUGINS", {**registry.PLUGINS, plugin.key: plugin})
+    with pytest.raises(ValueError, match=error):
+        ExportSettings(
+            layout=plugin.key,
+            aspect=VideoAspect.PORTRAIT,
+            safe_region=ExportSafeRegion.PORTRAIT_SOCIAL_A,
+        )

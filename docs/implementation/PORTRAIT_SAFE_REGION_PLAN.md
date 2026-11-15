@@ -1,8 +1,9 @@
 # Portrait Safe Region implementation plan
 
-Status: source research, the typed contract and shared geometry in steps 1–3 are complete.
+Status: source research, the typed contract, shared geometry and production layouts
+in steps 1–4 are complete.
 The owner approved Off and the three preview variants A/B/C as selectable
-placement choices. Application steps 4–8 remain planned.
+placement choices. Application steps 5–8 remain planned.
 Reference case: Portrait HUD, 1080 × 1920.
 Application implementation and Git delivery require their own authorization.
 
@@ -10,7 +11,7 @@ Application implementation and Git delivery require their own authorization.
 
 Add one **Safe Region** selector with Off, A: light, B: medium and C: higher to
 Portrait video export. Off preserves the existing layout. A/B/C add side
-clearance and raise histories to
+clearance and raise force plots to
 reduce edge cropping and the strongest lower-screen obstruction. Keeping the
 onride view open takes priority over keeping every instrument outside platform UI.
 Partial overlap is acceptable; complete containment in an unobstructed box is not
@@ -32,9 +33,9 @@ Target behavior:
   outside this plan.
 
 All three profiles require Portrait Full frame in the typed model and have
-separate, consistently named identifiers. Production rendering,
-translations and the corresponding compact-layout arrangements still require
-the verification in step 4.
+separate, consistently named identifiers. Production Portrait arrangements are
+implemented and verified in EN/DE/FR; the selector and saved/repeated export
+acceptance remain steps 5–8.
 
 ## Evidence and authoritative topics
 
@@ -187,7 +188,7 @@ includes status/navigation bars, so treating the screenshot itself as a 9:16 vid
 would produce incorrect coordinates.
 
 For comparison only, fit a uniform scale `s` and translation `(tx, ty)` using
-current Portrait HUD landmarks: history cursor x = 537.5, longitudinal axis
+current Portrait HUD landmarks: force plot cursor x = 537.5, longitudinal axis
 x = 970 and lateral axis y = 1435. The mappings are
 `screen_x = s * video_x + tx` and `screen_y = s * video_y + ty`.
 These are **inferred registrations**, assuming the pictured export uses the
@@ -214,7 +215,7 @@ for YouTube and 56 for TikTok. Do not treat these rounded estimates as device sp
 The projected profile was visually checked in all seven screenshots: it stays
 below the visible top controls/search bar, left of the right action column and
 above the depicted caption, floating reaction and lower-card areas. Existing HUD
-edge text and lower histories remain obstructed in the originals. This comparison
+edge text and lower force plots remain obstructed in the originals. This comparison
 establishes the strict reference footprint in these static views, not a rendered-feature
 or live-app acceptance result.
 
@@ -224,7 +225,7 @@ The strict shared region is substantially smaller than the original HUD canvas.
 The local synthetic containment study fits the existing font size classes inside
 it, with measured ink bounds `[148, 316, 755, 867)`. Its containment checks passed.
 That study is a geometric reference, not the intended production arrangement.
-Production readability and all translated/data-extreme states remain step 4 work.
+The production arrangements and translated/data-extreme checks are owned by step 4.
 
 Reference-boundary, normalization and six-source rectangle-containment assertions
 passed on native Windows. Google alpha bounds and TikTok color-band boundaries
@@ -241,19 +242,19 @@ The local candidates in `.tmp/safe-region-review/` use the existing HUD renderer
 with temporary in-memory geometry edits. They share the hash-guarded Voltron
 Nevera reference sample 8575 and the bundled Toutatis preview photo. The photo is
 an illustrative background, not footage synchronized with the measurement.
-All use the original 1080 × 1920 canvas, fonts, values and 96-pixel history rows.
+All use the original 1080 × 1920 canvas, fonts, values and 96-pixel force plot rows.
 The preview generation leaves application files, source recordings and saved
 export settings unchanged.
 
-| Choice    | Additional side inset | History/lateral lift | History top | Lateral y | Side-scale bottom |
-| --------- | --------------------- | -------------------- | ----------- | --------- | ----------------- |
-| Off       | 0 px                  | 0 px                 | 1535 px     | 1435 px   | 1195 px           |
-| A: light  | 72 px per side        | 80 px                | 1455 px     | 1355 px   | 1115 px           |
-| B: medium | 72 px per side        | 160 px               | 1375 px     | 1275 px   | 1035 px           |
-| C: higher | 72 px per side        | 240 px               | 1295 px     | 1195 px   | 955 px            |
+| Choice    | Additional side inset | Force plot/lateral lift | Force plot top | Lateral y | Side-scale bottom |
+| --------- | --------------------- | ----------------------- | -------------- | --------- | ----------------- |
+| Off       | 0 px                  | 0 px                    | 1535 px        | 1435 px   | 1195 px           |
+| A: light  | 72 px per side        | 80 px                   | 1455 px        | 1355 px   | 1115 px           |
+| B: medium | 72 px per side        | 160 px                  | 1375 px        | 1275 px   | 1035 px           |
+| C: higher | 72 px per side        | 240 px                  | 1295 px        | 1195 px   | 955 px            |
 
 For A–C, heading/value anchors move from a 40-pixel to a 112-pixel edge inset.
-The side scales, history labels/plots, lateral endpoints and orientation strip
+The side scales, force plot labels and curves, lateral endpoints and orientation strip
 move coherently inward. Shortening the side scales at their lower end preserves
 clearance above the raised lateral instrument. The center remains transparent;
 there is no new opaque panel or compact full-containment box.
@@ -273,18 +274,17 @@ onride view takes priority over full containment.
 
 For the 1080 × 1920 HUD reference, A/B/C share these values:
 
-- Heading/current-value edge inset: 112 px; history-heading x: 112 px.
+- Heading/current-value edge inset: 112 px; force plot heading x: 112 px.
 - Side axes: x = 127 / 898; scale top: y = 440; bottom varies as listed above.
 - Lateral scale: x = 202–873; zero axis: x = 537.5; y varies as listed above.
-- History block: left x = 167, row height 96 px; time cursor x = 537.5;
+- Force plot block: left x = 167, row height 96 px; time cursor x = 537.5;
   top varies as listed above.
 - Orientation strip: additional 72-pixel inward offset.
 - Canvas, fonts, values, time context and upper heading/value baselines retain
   the existing reference settings.
 
-These are the reviewed preview parameters, not evidence of implemented production
-placement. Verify their production drawing in step 4; the compact
-layouts need their corresponding arrangements there. Preserve the source
+These reviewed preview parameters define the implemented HUD placement. The compact
+layouts use the corresponding arrangements specified in step 4. Preserve the source
 measurements above as reference information.
 
 ### 2. Add the typed setting and compatibility rules
@@ -306,7 +306,7 @@ Prerequisite: step 1, with owner-approved A/B/C preview geometry.
 Output: tested model/serialization contract, with English inline documentation.
 The [layout API](../development/EXPORT_LAYOUTS.md#safe-region-setting) owns the
 implemented `ExportSettings.safe_region` contract. Shared geometry is resolved in
-step 3; applying it to instruments and application integration remain steps 4–8.
+step 3 and applied to layouts in step 4; application integration remains steps 5–8.
 
 ### 3. Resolve shared geometry
 
@@ -324,22 +324,23 @@ Prerequisite: step 2.
 
 Output: one geometry source used by preview, frame composition and encoding.
 `ExportGeometry.safe_region` supplies additional instrument offsets in canvas
-coordinates; full-region placement remains unchanged. The
+coordinates; HUD keeps its full-canvas region while compact layouts use the
+profile-aware placement from step 4. The
 [layout API](../development/EXPORT_LAYOUTS.md#output-area-geometry)
-owns the resolution contract. Instrument drawing/readability remains step 4.
+owns the resolution and drawing contract.
 
 ### 4. Adapt the four Portrait layouts
 
 Prerequisite: step 3.
 
-- [ ] Implement: give HUD the exact A/B/C arrangements above, moving side instruments
-  inward and histories upward, with coherent spacing for current values, context,
+- [x] Implement: give HUD the exact A/B/C arrangements above, moving side instruments
+  inward and force plots upward, with coherent spacing for current values, context,
   lateral scale and optional orientation marks. Give Ribbon, Corners and G-Orbit
   corresponding A/B/C arrangements with moderate edge clearance while preserving
-  their layout character. Distinct lifts for layouts with histories must remain
-  distinguishable; layouts without histories share the specified side clearance.
+  their layout character. Distinct lifts for layouts with force plots must remain
+  distinguishable; layouts without force plots share the specified side clearance.
   Preserve readable typography, aligned optical axes and an open central view.
-- [ ] Verify: render Off and A/B/C for all four layouts in EN/DE/FR using existing authorized
+- [x] Verify: render Off and A/B/C for all four layouts in EN/DE/FR using existing authorized
   fixtures. Check labels, signed values, endpoints, missing-channel states and
   optional orientation marks against the agreed insets and actual canvas. Inspect related elements
   together for baseline, spacing, overlap and legibility. Compare Off with existing
@@ -348,6 +349,22 @@ Prerequisite: step 3.
   requiring complete protection from all platform overlays.
 
 Output: readable production renderings for Off and A/B/C of every Portrait layout.
+
+At 2160 × 3840, compact profiles add 144 px of inset at each side of the original
+region and retain its aspect ratio. Ribbon/Corners use 1392 × 1856 regions;
+G-Orbit uses 900 × 900. Native fonts/drawing are retained and scaled with the
+compact region. Bottom-anchored Ribbon/Corners retain the original bottom edge
+before lifts of 160/320/480 px. Top-anchored cards have only 240 px of headroom:
+their proportional lifts are 80/160/240 px. Named edges/corners remain selected.
+G-Orbit retains its vertical anchor and has identical A/B/C placement.
+
+Comparison sheets and native/reference evidence remain in `.tmp/safe-region-step4/`.
+The illustrative POV photo is not synchronized footage. Risk views use Google's
+advertising-reference side/bottom bounds and the separately inferred 56 px phone
+crop. Side controls and captions can still cover HUD readouts/force plots and lower
+G-Orbit; top-anchored cards can meet the top edge. Full platform protection and
+live-device acceptance are not claimed. The central onride view remains the
+priority, with partial overlap accepted.
 
 ### 5. Persist the complete export choice
 

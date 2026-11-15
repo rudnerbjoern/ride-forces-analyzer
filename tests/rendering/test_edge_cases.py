@@ -18,7 +18,7 @@ from ride_forces_analyzer.rendering.peaks import PeakEnvelope
 from ride_forces_analyzer.rendering.size_estimate import estimate_size_bytes
 
 
-def test_layout_histories_and_current_markers_accept_missing_samples(manta: ExplorerData) -> None:
+def test_layout_force_plots_and_current_markers_accept_missing_samples(manta: ExplorerData) -> None:
     assert manta.analysis is not None
     for layout, kind in (
         (ExportLayout.COLUMN, ColumnRenderer),

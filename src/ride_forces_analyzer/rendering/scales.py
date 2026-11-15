@@ -37,8 +37,8 @@ def selected_bounds(
     return low, high
 
 
-def history_extent(peak: float) -> float:
-    """Fit a symmetric history deviation with 5% headroom and a 0.1 g minimum.
+def force_plot_extent(peak: float) -> float:
+    """Fit a symmetric force plot deviation with 5% headroom and a 0.1 g minimum.
 
     Args:
         peak: Largest finite absolute deviation from the channel reference, in g.

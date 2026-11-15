@@ -82,7 +82,7 @@ rounded to the nearest sample. All layout thumbnails and the large preview use
 that moment; they do not play the video. Very short ranges can select an endpoint,
 and a range containing only one sample uses that sample.
 
-- **Visible time window** controls how many seconds the small history plots
+- **Visible time window** controls how many seconds the small force plots
   show around each moment. It does not change the length of the exported video.
 - **Smoothing** controls how much the displayed forces are averaged. **1 sample**
   turns smoothing off; larger settings reduce short peaks and can change the

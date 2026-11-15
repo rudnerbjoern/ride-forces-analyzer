@@ -58,9 +58,11 @@ the [HUD demo](https://youtu.be/JGcNPKoKU1Q) uses the supplied
 The model also admits a Safe Region setting with Off (default), A: light,
 B: medium and C: higher, with
 [typed compatibility and JSON rules](../development/EXPORT_LAYOUTS.md#safe-region-setting).
-The shared resolver also supplies canvas-scaled instrument offsets while retaining
-output dimensions and selected region placement. Applying the offsets to layout
-instruments, the Off/A/B/C selector and end-to-end integration remain
+Production Portrait renderings use the shared geometry: HUD moves instruments
+inward/upward; compact layouts fit additional side clearance while retaining their
+selected edge/corner, with distinct force plot lifts for Ribbon/Corners. G-Orbit has
+the same arrangement for A/B/C. Output dimensions and Off rendering are unchanged.
+The Off/A/B/C selector and end-to-end integration acceptance remain
 [planned](PORTRAIT_SAFE_REGION_PLAN.md).
 
 ### Assistant and previews
@@ -136,11 +138,11 @@ encoded. Returning to setup restores the selected static preview.
 - Instrument/chart lateral scales start at ±1.25 g; longitudinal scales at ±1 g.
   Valid selected absolute peaks expand both bounds to the next 0.25 g without padding,
   fixed for the export, with quarter-g endpoint labels (e.g. −1.01 → ±1.25 g,
-  +1.26 → ±1.5 g). HUD histories use the independent rules below.
+  +1.26 → ±1.5 g). HUD force plots use the independent rules below.
 - All layouts use an absolute 1 g vertical reference, including Flying; calibration and
-  numeric values stay unchanged. Vertical histories are symmetric about 1 g with 5%
+  numeric values stay unchanged. Vertical force plots are symmetric about 1 g with 5%
   headroom and minimum ±0.1 g deviation, highlighted reference and absolute endpoints;
-  HUD histories use the independent rules below.
+  HUD force plots use the independent rules below.
 
 ### Geometry, directions and colors
 
@@ -168,23 +170,23 @@ Native Content-area sizes are layout-owned, independent of Full-frame placement:
 | Four-panel column  | 960×2160    | Unsupported |
 | HUD                | Unsupported | Unsupported |
 
-| Channel/axis              | Contract                                                                                                                                                                         |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vertical                  | Default positive-down (seat pressure), negative-up (lifting); manually reversible in every layout, persisted explicitly                                                          |
-| Time                      | Horizontal left-to-right; vertical bottom-to-top: left/bottom past, right/top future                                                                                             |
-| Column                    | Horizontal time axes throughout; lateral positive-down by default                                                                                                                |
-| Compact lateral histories | Vertical time axis advances upward; negative/left forces left of zero, positive/right forces right                                                                               |
-| Current-only lateral      | Horizontal left/right; G-Orbit upper semicircle centered at top                                                                                                                  |
-| Lateral scale             | Equal scale in both directions using larger absolute selected bound; fixed direction across compact layouts/aspects/previews                                                     |
-| Lateral inversion         | Explicit setting affects Column only; disabled in assistant                                                                                                                      |
-| Longitudinal              | Positive acceleration above zero; negative braking below zero in histories/current-only instruments, all layouts/aspects; not invertible                                         |
-| Numeric signs             | Axis inversion never negates source values or changes right/left/braking signs                                                                                                   |
-| Orientation               | Angle between normalized current source gravity and stored vertical, clipped cosine, 0–180°; not yaw/GPS heading; missing/zero gravity breaks curve, no force-derived substitute |
+| Channel/axis                | Contract                                                                                                                                                                         |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vertical                    | Default positive-down (seat pressure), negative-up (lifting); manually reversible in every layout, persisted explicitly                                                          |
+| Time                        | Horizontal left-to-right; vertical bottom-to-top: left/bottom past, right/top future                                                                                             |
+| Column                      | Horizontal time axes throughout; lateral positive-down by default                                                                                                                |
+| Compact lateral force plots | Vertical time axis advances upward; negative/left forces left of zero, positive/right forces right                                                                               |
+| Current-only lateral        | Horizontal left/right; G-Orbit upper semicircle centered at top                                                                                                                  |
+| Lateral scale               | Equal scale in both directions using larger absolute selected bound; fixed direction across compact layouts/aspects/previews                                                     |
+| Lateral inversion           | Explicit setting affects Column only; disabled in assistant                                                                                                                      |
+| Longitudinal                | Positive acceleration above zero; negative braking below zero in force plots/current-only instruments, all layouts/aspects; not invertible                                       |
+| Numeric signs               | Axis inversion never negates source values or changes right/left/braking signs                                                                                                   |
+| Orientation                 | Angle between normalized current source gravity and stored vertical, clipped cosine, 0–180°; not yaw/GPS heading; missing/zero gravity breaks curve, no force-derived substitute |
 
 ### HUD
 
 - Frameless gauges: vertical/context left, acceleration/braking right, signed lateral
-  below; transparent center, no reticle, and transparent-to-black bottom-history gradient.
+  below; transparent center, no reticle, and transparent-to-black bottom force plot gradient.
   Fine ticks, luminous pointers, colored bloom and soft black shadows overlay footage.
   Bahnschrift Bold values use the scalable fallback when unavailable; context is uppercase.
 - Outer-right orientation line spans instrument height: 0° top to 180° bottom, labeled
@@ -199,16 +201,16 @@ Native Content-area sizes are layout-owned, independent of Full-frame placement:
   wide ranges and exact endpoint marks. Highlight 1 g while retaining 0 g.
 - Lateral/longitudinal follow the shared symmetric instrument rules, with four minor
   ticks per major interval. Major spacing grows for readability independently of
-  exact force bounds. Padded history bounds and samples outside selection cannot
+  exact force bounds. Padded force plot bounds and samples outside selection cannot
   expand instruments; values are not clipped.
-- Three thin, wide histories share a centered cursor aligned with lateral zero,
+- Three thin, wide force plots share a centered cursor aligned with lateral zero,
   equal past/future widths, common plot/tick bounds and fixed selected per-channel
   ranges, independent of instrument ranges. Vertical fits selected min/max including
   1 g to row boundaries; equal bounds center. Lateral/longitudinal use exact symmetric
   absolute selected peaks with no padding, rounding or minimum range: ±31.5 native
   pixels landscape / ±47 portrait. Zero-only/missing channels stay on the reference
   when drawn. Heights compare variation, not common g/pixel across channels.
-- History reference labels follow 1 g vertical (including inversion) and 0 g for
+- Force plot reference labels follow 1 g vertical (including inversion) and 0 g for
   the others; headings and portrait endpoints keep fixed anchors, with absolute values.
   Selecting HUD sets an editable 30-second window (±15 s); loaded presets keep theirs.
   Ticks: 1 s, labels: 5 s including `0 s`; time left-to-right, vertical follows inversion,
@@ -223,7 +225,7 @@ Native Content-area sizes are layout-owned, independent of Full-frame placement:
   values hide bars/pointers.
 - Only `full_screen` position; native 1920×1080 / 1080×1920 is exported without resizing
   for either codec, presets or batches. Galleries fit whole images to preview limits.
-  Static effects prepare once; moving effects use instrument/history tiles. Rendering
+  Static effects prepare once; moving effects use instrument and force plot tiles. Rendering
   is independent of prior frames and seek order.
 
 ### G-Orbit
@@ -279,7 +281,7 @@ Corner Instruments/G-Orbit native-area dimensions fit both aspects and cannot do
 
 The 16 portrait references use the same Voltron Nevera interval: samples 4000–4999
 at 50 Hz → 480 frames, 24000/1001 fps, 20.02 s; `rider_calibrated`, English, vertical
-inverted/lateral unchanged, smoothing 11, history 30 s, ride bounds 1571–10206,
+inverted/lateral unchanged, smoothing 11, force plot 30 s, ride bounds 1571–10206,
 Incline 3575, no Gravity override, reference window 5. Placement: Ribbon bottom,
 Corners/Orbit bottom-right, HUD full-screen. `run-report.json` agrees with video
 bytes, dimensions, frames, rates, encoder tags and embedded snapshots. Landscape

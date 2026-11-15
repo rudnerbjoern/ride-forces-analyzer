@@ -26,7 +26,7 @@ from .layouts.contracts import LayoutPosition
 from .layouts.contracts import ExportLayout as ExportLayout
 from .layouts.contracts import ExportExtent as ExportExtent
 from .layouts.contracts import VideoAspect as VideoAspect
-from .scales import history_extent, lateral_scale, longitudinal_scale, selected_bounds
+from .scales import force_plot_extent, lateral_scale, longitudinal_scale, selected_bounds
 
 
 class VideoOutput(StrEnum):
@@ -666,7 +666,7 @@ def prepare_export(
         reference = 1.0 if index == 0 else 0.0
         low, high = selected_bounds(values, first, last, reference)
         if index == 0:
-            extent = history_extent(max(abs(low - reference), abs(high - reference)))
+            extent = force_plot_extent(max(abs(low - reference), abs(high - reference)))
             low, high = reference - extent, reference + extent
         elif index == 1:
             low, high, _ = lateral_scale(max(abs(low), abs(high)))

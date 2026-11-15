@@ -20,7 +20,7 @@ The explicit profile registry binds these identifiers to renderers and geometry;
 | `column.py`                                              | Four-panel column                                               |
 | `ribbon.py`                                              | Flow Ribbon geometry and portrait reflow                        |
 | `corners.py`                                             | Stacked Corner Instruments geometry                             |
-| `hud.py`                                                 | Full-screen HUD scales, transparent glow and force histories    |
+| `hud.py`                                                 | Full-screen HUD scales, transparent glow and force plots        |
 | `charts.py`                                              | Shared three-channel time plots for ribbon and corners          |
 | `common.py`                                              | Fonts, text/panel drawing and shared lateral coordinate mapping |
 | `contracts.py`                                           | `LayoutPlugin` metadata and `LayoutRenderer` protocol           |
@@ -50,13 +50,12 @@ capabilities still apply, so four-panel column cannot use the profile.
 
 The [implementation plan](../implementation/PORTRAIT_SAFE_REGION_PLAN.md#moderate-placement-profiles-a-b-and-c)
 fixes the A/B/C reference geometry: all add 72 pixels per side at 1080 × 1920;
-history/lateral lifts are respectively 80, 160 and 240 pixels. Each profile's
+force plot/lateral lifts are respectively 80, 160 and 240 pixels. Each profile's
 stored meaning must never be changed to a different placement policy; future
-policies require new identifiers. The typed setting, serialization and shared
-offset resolution are implemented. Applying those offsets to instruments, the
-four-choice selector and end-to-end saved/repeated export integration remain
-planned. Instrument drawing and dimensions are currently unchanged; processing
-requires no network.
+policies require new identifiers. The typed setting, serialization, shared geometry
+and production Portrait renderings are implemented. The four-choice selector and
+end-to-end saved/repeated export acceptance remain planned. Processing requires
+no network.
 
 ## Renderer contract
 
@@ -169,14 +168,14 @@ and portrait constants; editing Corners does not change that profile.
 HUD, G-Orbit and Column have independent drawing code.
 
 Shared scale APIs are `rendering.scales.lateral_scale`, `longitudinal_scale`,
-`vertical_scale`, `selected_bounds` and `history_extent`. `ExportChannel.reference`
+`vertical_scale`, `selected_bounds` and `force_plot_extent`. `ExportChannel.reference`
 is 1 g for vertical and zero for the other force channels. Renderers use
 `rendering.peaks.PeakEnvelope.prepare` for deterministic held peaks derived from
 source time, including seeking and fractional positions. The
 [export contract](../implementation/VIDEO_EXPORT.md#analysis-and-time-mapping)
 owns scale/reference rules; its [HUD](../implementation/VIDEO_EXPORT.md#hud) and
 [G-Orbit](../implementation/VIDEO_EXPORT.md#g-orbit) sections own instrument,
-history and peak behavior.
+force plot and peak behavior.
 
 HUD owns immutable aspect-specific geometry and drawing constants. Static scales,
 labels, shadows and orientation ink are prepared once. Dynamic effect layers are
@@ -206,24 +205,38 @@ lists supported output sizes.
 - `render_size`: native Content-area image or scaled Full-frame layout region.
 - `offset`: `(0, 0)` for Content area, selected placement for Full frame.
 - `safe_region`: immutable `SafeRegionGeometry` with additional `side_inset`
-  and `history_lift` values in output-canvas pixels. These are instrument offsets,
+  and `force_plot_lift` values in output-canvas pixels. These are instrument offsets,
   separate from the complete region's `offset` and `render_size`.
 
 Off resolves to zero instrument offsets for every supported format/extent.
 For A/B/C, the resolver scales 72 px of extra inset per side and respectively
-80/160/240 px of upward history/lateral movement from the 1080 × 1920 reference.
+80/160/240 px of upward force plot/lateral movement from the 1080 × 1920 reference.
 Horizontal offsets use canvas width / 1080, vertical offsets canvas height / 1920,
 rounded to the nearest integer. Both native canvases scale exactly: compact
 2160 × 3840 layouts receive 144 px per side and lifts of 160/320/480 px.
 Coordinates are in the output canvas, not a renderer's unscaled native image.
 Layout adaptation must account for that distinction when drawing instruments.
 
-Resolving a Safe Region profile preserves the selected edge/corner, complete
-region placement/size and output dimensions. It does not shrink the whole layout
-into the strict source intersection or add canvas padding. Preview, frame
-composition and encoding continue to consume this same resolved geometry.
-Applying instrument offsets within the layouts remains
-[step 4](../implementation/PORTRAIT_SAFE_REGION_PLAN.md#4-adapt-the-four-portrait-layouts).
+HUD retains its full-canvas region and font sizes. Its renderer applies the
+offsets to side axes, headings/readouts, force plot labels/plots, lateral endpoints
+and orientation marks. Side scales end above the raised lateral instrument;
+upper heading/value baselines and the shared zero/time cursor stay fixed.
+Effect tiles include the added side offset so localized readouts are not clipped.
+
+Compact layouts keep the selected edge/corner and native drawing, with adjusted
+Full-frame placement and uniform scaling. The resolver reduces region width by
+twice `side_inset`, moves its x origin inward by that inset and scales height
+proportionally. Bottom positions first retain their original bottom edge.
+`LayoutPlugin.safe_region_force_plots` (strict boolean, default False) enables the
+force plot lift for Ribbon and Corners. Where the full C lift would cross the top
+canvas boundary, all three lifts are reduced by the same factor to fit the
+available headroom; A/B/C remain distinct. G-Orbit has no force plots and uses
+identical side clearance/size for A/B/C, without a vertical lift.
+
+Off, Landscape and native Content area retain their previous pixels and geometry.
+All modes retain final output dimensions. No layout is fitted into the strict
+source intersection. Preview, frame composition and encoding consume this same
+resolved placement; the source data, force scales and time semantics are unchanged.
 
 Example: G-Orbit Content area resolves to `render_size=(800, 800)`,
 `offset=(0, 0)` and `output_size=(800, 800)` in either format.
