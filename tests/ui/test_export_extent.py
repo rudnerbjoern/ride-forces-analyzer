@@ -82,24 +82,39 @@ def test_assistant_extent_geometry_visibility_estimates_and_localization(
         wait_until(dialog.isVisible)
         layout = form.findChild(QFormLayout)
         assert layout is not None
-        for row, expected in enumerate(
-            (
-                "Layout profile",
-                "Layout format",
-                "Export area",
-                "Position",
-                "Output dimensions",
-                "Output",
-                "Overlay language",
-                "Video frame rate",
-                "Range",
-            ),
-            start=1,
-        ):
+        labels: list[str] = []
+        for row in range(layout.rowCount()):
             item = layout.itemAt(row, QFormLayout.ItemRole.LabelRole)
-            assert item is not None
-            label = item.widget()
-            assert isinstance(label, QLabel) and label.text() == expected
+            if item is not None:
+                label = item.widget()
+                assert isinstance(label, QLabel)
+                if label.text():
+                    labels.append(label.text())
+        assert labels == [
+            "Image format",
+            "Layout profile",
+            "Image area",
+            "Position",
+            "&Safe Region",
+            "Resolution",
+            "Recording section",
+            "Overlay language",
+            "Plot time window",
+            "Smoothing",
+            "Vertical",
+            "Lateral",
+            "Video format",
+            "Video frame rate",
+            "Estimated file size",
+            "GPU encoding",
+            "FFmpeg",
+        ]
+        assert [label.text() for label in form.findChildren(QLabel, "exportSection")] == [
+            "Layout and placement",
+            "Content and presentation",
+            "Video file",
+            "Encoding",
+        ]
         check_output("3840×2160", ExportExtent.FULL_FRAME)
         assert form.extent in dialog.controls
         choose_layout(ExportLayout.ORBIT)
@@ -140,7 +155,7 @@ def test_assistant_extent_geometry_visibility_estimates_and_localization(
             QApplication.processEvents()
             check_output("800×800", ExportExtent.CONTENT_AREA, position_visible=False)
             assert form.extent.currentText() == tr("Content area")
-            assert form.extent.accessibleName() == tr("Export area")
+            assert form.extent.accessibleName() == tr("Image area")
         choose_layout(ExportLayout.HUD)
         check_output("1920×1080", ExportExtent.FULL_FRAME, position_visible=False, selectable=False)
         assert form.fixed_extent.text() == tr("Full frame")

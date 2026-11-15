@@ -22,7 +22,7 @@ your original recording unchanged, and processing works offline after setup.
 Click **Export video…**. The assistant uses your current recording, marker settings
 and smoothing. Changes made later in the main window do not alter this open export.
 
-Choose **Range** to decide how much of the ride to export:
+Choose **Recording section** under **Content and presentation** to decide how much of the ride to export:
 
 - **Start/end markers (default):** the interval marked in the recording.
 - **Current selection:** the interval set by **From sample** and **To sample**
@@ -34,8 +34,10 @@ the two sample fields before opening the assistant and choose **Current selectio
 
 ## 2. Choose the look and output
 
-The first page groups export settings, force display and encoding on the left,
-with a large preview on the right. Presets and layout thumbnails stay above them.
+The first page groups **Layout and placement**, **Content and presentation**,
+**Video file** and **Encoding** on the left, with a large preview on the right.
+Presets and layout thumbnails stay above them.
+Scroll the settings pane to reach lower controls when they do not fit in the window.
 
 Click a layout thumbnail and check the large preview.
 [Compare all five layouts](EXPORT_LAYOUTS.md) to find a suitable position for
@@ -45,11 +47,21 @@ your footage.
 
 Choose these settings:
 
-- **Layout format:** landscape for a normal widescreen video, or portrait for
+- **Image format:** landscape for a normal widescreen video, or portrait for
   vertical videos. This sets the layout arrangement.
-- **Export area:** **Full frame** keeps the complete video frame; **Content area**
+- **Image area:** **Full frame** keeps the complete video frame; **Content area**
   exports the smaller layout image for positioning in your video editor.
-  HUD always uses Full frame. **Output dimensions** shows the actual video size.
+  HUD always uses Full frame. **Resolution** shows the actual video size.
+- **Safe Region:** for **Portrait · 9:16** with **Full frame**, choose **Off** to
+  keep the original arrangement or **A: light**, **B: medium**, **C: higher** for
+  more side clearance. All three add the same side clearance; A, B and C lift the
+  force plots progressively higher. G-Orbit uses the same arrangement for A/B/C.
+  Platform controls and phone cropping can still hide parts of the overlay;
+  check the preview against your footage. With Landscape or Content area, the
+  choice is inactive and the effective mode is Off. Returning to Portrait Full
+  frame restores your choice. The note below the selector explains the inactive
+  state or the identical A/B/C arrangement for G-Orbit.
+  [Compare the Portrait choices and see an example](EXPORT_LAYOUTS.md#portrait-safe-region).
 - **Position:** in Full frame, choose one of the selected layout's placements.
   The preview updates as you change settings. When switching layouts or formats,
   the assistant tries to keep a similar position; check the preview afterward.
@@ -57,12 +69,13 @@ Choose these settings:
   HUD exports at 1920×1080 or 1080×1920; other Full-frame layouts export
   at 3840×2160 or 2160×3840. Review export also shows the actual dimensions.
 - **Overlay language:** English, German or French, independently of the application language.
-- **Output:** **Transparent overlay · ProRes 4444 MOV** to place the graphics
+- **Video format:** **Transparent overlay · ProRes 4444 MOV** to place the graphics
   over footage in an editor; **Opaque video · H.264 MP4** for a black background.
 - **Video frame rate:** match your footage and editing timeline. Choices are
   23.976, 24, 25, 30, 50, 59.94 and 60 fps. Choose 23.976 or 59.94 for footage
   recorded at that rate, rather than rounding to 24 or 60.
 
+**Video file** groups video format, frame rate and the estimated file size.
 Transparent MOV files can be much larger than MP4 files. The size estimate is
 only a rough guide. To remember a frame rate for future exports, use
 **Settings → Export** in the main window.
@@ -82,7 +95,7 @@ rounded to the nearest sample. All layout thumbnails and the large preview use
 that moment; they do not play the video. Very short ranges can select an endpoint,
 and a range containing only one sample uses that sample.
 
-- **Visible time window** controls how many seconds the small history plots
+- **Plot time window** controls how many seconds the small force plots
   show around each moment. It does not change the length of the exported video.
 - **Smoothing** controls how much the displayed forces are averaged. **1 sample**
   turns smoothing off; larger settings reduce short peaks and can change the
@@ -90,6 +103,9 @@ and a range containing only one sample uses that sample.
 - The **Vertical** checkbox changes the direction of the vertical plot, without
   changing the signs of the numbers. The default shows positive loads downward
   and negative loads upward.
+- Layout changes retain a plot time window or vertical direction you have edited,
+  including values loaded from a preset. The lateral signs are fixed: positive
+  right, negative left; their text is an explanation rather than a switch.
 - Checkerboard, light and dark backgrounds help you inspect transparency. Choose
   a bundled **[Loup-Garou](https://rcdb.com/1029.htm)**, **[Goudurix](https://rcdb.com/753.htm)**,
   **[Tonnerre 2 Zeus](https://rcdb.com/752.htm)** or **[Toutatis](https://rcdb.com/16327.htm)**
@@ -112,7 +128,8 @@ depends on calibration and smoothing; they are not a measurement of what a rider
 1. If FFmpeg was not found automatically, click **Browse…** next to **FFmpeg**
    and choose its executable (`ffmpeg.exe` on Windows, `ffmpeg` on Linux/macOS).
 2. Click **Review export**. Check the settings and estimated file size on the left
-   and the large preview on the right. Use **Back** to change the layout or settings.
+   and the large preview on the right, including the effective **Safe Region** choice.
+   Use **Back** to change the layout or settings.
 3. Click **Export video…**, choose a destination and file name, then save.
 4. Wait for export to finish. The progress bar and remaining time show progress
    while the video is being created. **Finalizing video…** means the file is still
@@ -134,8 +151,8 @@ If the video already exists, confirm replacement in the save dialog. The old vid
 is replaced only after export succeeds. Cancellation or failure keeps the old video
 and removes incomplete output.
 
-The NVIDIA option uses supported hardware when available and falls back to the
-CPU otherwise. An NVIDIA graphics card is not required.
+**Prefer NVIDIA GPU** uses supported hardware when available and falls back to the
+CPU otherwise, for either video format. An NVIDIA graphics card is not required.
 
 ## 5. Put the overlay above your footage
 
@@ -161,7 +178,10 @@ shown in turn over Onride footage. An additional
 
 Use the disk icon with a plus (tooltip: **Save as…**) in the assistant's preset area to save a setup. Choose a saved
 preset to load it immediately and use it again.
-Presets retain their own frame rate.
+Presets retain their own frame rate and Safe Region choice. Hover over the selected
+preset to check its saved Safe Region choice; the batch job table also shows it
+for each captured job. Saves capture the effective choice: to save A/B/C, select
+Portrait Full frame first. Saving while Safe Region is inactive captures Off.
 For several exports, the new-folder and list icons (tooltips: **Add this export to batch…**
 and **Saved batches…**) let
 you prepare and run a queue.
@@ -179,7 +199,7 @@ how saved jobs keep their recordings and settings.
 - **My video has a black background:** check that you exported transparent MOV
   rather than opaque MP4, and that your editor supports transparency in ProRes 4444.
   A normal video player may show transparency against black.
-- **The clip covers the wrong part of the ride:** check **Range** on the review
+- **The clip covers the wrong part of the ride:** check **Recording section** on the review
   page. Chart zoom and the preview cursor do not define the exported interval.
 - **The MOV is very large:** transparent ProRes is intended for editing. Choose
   MP4 when you want a smaller standalone video with a black background.

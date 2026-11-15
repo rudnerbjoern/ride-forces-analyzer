@@ -26,7 +26,7 @@ from .layouts.contracts import LayoutPosition
 from .layouts.contracts import ExportLayout as ExportLayout
 from .layouts.contracts import ExportExtent as ExportExtent
 from .layouts.contracts import VideoAspect as VideoAspect
-from .scales import history_extent, lateral_scale, longitudinal_scale, selected_bounds
+from .scales import force_plot_extent, lateral_scale, longitudinal_scale, selected_bounds
 
 
 class VideoOutput(StrEnum):
@@ -39,6 +39,28 @@ class VideoOutput(StrEnum):
 
     TRANSPARENT = "transparent"
     OPAQUE = "opaque"
+
+
+class ExportSafeRegion(StrEnum):
+    """Placement choices with stable stored identifiers.
+
+    Profile identifiers must never be reassigned to changed placement policies.
+    The shared geometry resolver supplies offsets for layout-owned placement.
+
+    Attributes:
+        OFF: Preserve the existing layout, stored as ``off``.
+        PORTRAIT_SOCIAL_A: Light variant A for Portrait Full frame, stored as
+            ``portrait_social_a``.
+        PORTRAIT_SOCIAL_B: Medium variant B for Portrait Full frame, stored as
+            ``portrait_social_b``.
+        PORTRAIT_SOCIAL_C: Higher variant C for Portrait Full frame, stored as
+            ``portrait_social_c``.
+    """
+
+    OFF = "off"
+    PORTRAIT_SOCIAL_A = "portrait_social_a"
+    PORTRAIT_SOCIAL_B = "portrait_social_b"
+    PORTRAIT_SOCIAL_C = "portrait_social_c"
 
 
 class StandardFrameRate(StrEnum):
@@ -131,6 +153,8 @@ class ExportSettings:
         position: Requested source position or named layout placement, as declared by the
             type.
         extent: Typed output-area choice; defaults to the complete canvas.
+        safe_region: Off/A/B/C placement choice; defaults to Off. All social
+            profiles require Portrait Full frame; the shared resolver scales offsets.
     """
 
     fps: Annotated[FrameRate, PlainSerializer(frame_rate_value)] = DEFAULT_FRAME_RATE
@@ -144,6 +168,7 @@ class ExportSettings:
     language: Language = Language.ENGLISH
     position: LayoutPosition | None = None
     extent: ExportExtent = ExportExtent.FULL_FRAME
+    safe_region: ExportSafeRegion = ExportSafeRegion.OFF
 
     @property
     def dimensions(self) -> tuple[int, int]:
@@ -184,7 +209,8 @@ class ExportSettings:
             ValueError: Unsupported overlay language. Unknown export aspect ratio. Frame rate
                 must be an integer from 1 to 120, 24000/1001 or 60000/1001. Visible time window must be
                 from 1 to 60 seconds. Unknown export output mode/layout, unsupported extent
-                or placement, or output dimensions incompatible with supported codecs.
+                or placement, invalid Safe Region mode/eligibility, or output dimensions
+                incompatible with supported codecs.
         """
         if type(self.language) is not Language:
             raise ValueError("Unsupported overlay language")
@@ -640,7 +666,7 @@ def prepare_export(
         reference = 1.0 if index == 0 else 0.0
         low, high = selected_bounds(values, first, last, reference)
         if index == 0:
-            extent = history_extent(max(abs(low - reference), abs(high - reference)))
+            extent = force_plot_extent(max(abs(low - reference), abs(high - reference)))
             low, high = reference - extent, reference + extent
         elif index == 1:
             low, high, _ = lateral_scale(max(abs(low), abs(high)))

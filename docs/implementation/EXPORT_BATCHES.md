@@ -22,7 +22,7 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
 
 | Saved object      | Required contents                                                                                                                                                                        |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Preset            | Layout, position, export area, landscape/portrait aspect, overlay language, output mode, fps, time context, axis inversion, GPU preference, odd 1–51 sample smoothing and range policy   |
+| Preset            | Layout, position, aspect, export area, Safe Region profile, language, output, fps, time context, axis inversion, GPU preference, odd 1–51 sample smoothing and range policy              |
 | Analysis recipe   | Explicit versioned projection, smoothing, independent orientation, context/events, input dependencies and source-app policy; smoothing matches preset window                             |
 | Job               | Archived source SHA-256 (or an absolute source path), title, concrete inclusive source range and complete preset snapshot                                                                |
 | Storage           | Recipes/definitions only; archived source bytes belong to the Library; external originals remain read-only                                                                               |
@@ -50,6 +50,8 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   Delete preset removes the selected definition and refreshes the selector.
   User selection loads a preset and refreshes production previews without changing
   explorer recording/settings. Refreshing the stored list does not apply a preset.
+  The selected preset's tooltip and accessible description identify its saved
+  Safe Region choice without changing the preset name.
 - Editing/deleting a preset does not change saved job snapshots.
 - Jobs queued from archived Explorer data use their Library digest without an
   external source path. Execution and frame planning read verified archived bytes;
@@ -64,8 +66,19 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   combinations, including HUD Content area, are rejected.
   Loading a preset restores its area, retained position, output dimensions and
   matching estimates. Jobs retain their own area after preset edits/deletion.
+- Presets/jobs retain `settings.safe_region` using the
+  [stable Off/A/B/C identifiers](../development/EXPORT_LAYOUTS.md#safe-region-setting).
+  Omitted fields load as Off without rewriting the stored JSON. Unknown supplied
+  identifiers fail validation and leave the records intact. The existing JSON
+  payload columns and schema version are unchanged; no database migration is needed.
+  Reopening storage, replacing/deleting a preset and changing current form inputs
+  do not change a captured job's profile. The export form also retains a loaded
+  preset/repeat profile in the Off/A/B/C selector when reconstructing settings.
+  Unsupported current formats disable the selector and use effective Off without
+  changing its retained choice or the original saved definition. A new save/queue
+  captures that effective Off; it does not store an unsupported A/B/C combination.
 - Mixed portrait/landscape and Full-frame/Content-area jobs are supported; the job
-  table identifies aspect, export area and resolved output dimensions. Each job
+  table identifies aspect, export area, effective Safe Region and resolved output dimensions. Each job
   uses the same geometry and encoder path as an individual export.
 
 | Queue interaction        | Contract                                                                                                         |

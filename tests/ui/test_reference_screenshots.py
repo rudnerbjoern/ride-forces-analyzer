@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import shutil
 import sys
 from tempfile import TemporaryDirectory
 from textwrap import dedent
@@ -51,25 +52,48 @@ def test_capture_cli_preserves_reference_scene_source_and_preferences() -> None:
         assert manifest["smoothing"] == 11 and manifest["language"] == "en"
         assert manifest["layout"] == "ribbon" and manifest["fps"] == 50
         assert manifest["position"] == "bottom" and manifest["extent"] == "full_frame"
+        assert manifest["safe_region"] == "off"
         pov_manifest = json.loads((output / "pov-reference.json").read_text(encoding="utf-8"))
         assert pov_manifest["preview_background"] == "pov-toutatis"
         photo_hash = sha256(generate_app_screenshots.POV_SOURCE.read_bytes()).hexdigest()
         assert pov_manifest["preview_background_sha256"] == photo_hash
         first, last = pov_manifest["preview_interval"]
         assert pov_manifest["preview_sample"] == first + round(0.6 * (last - first))
+        portrait_path = output / "portrait-safe-region-reference.json"
+        portrait = json.loads(portrait_path.read_text(encoding="utf-8"))
+        assert portrait["source_sha256"] == SOURCE_SHA256
+        assert portrait["safe_region"] == "portrait_social_b"
+        assert portrait["layout"] == "hud" and portrait["aspect"] == "portrait"
+        assert portrait["position"] == "full_screen" and portrait["extent"] == "full_frame"
+        assert portrait["window_seconds"] == 30 and portrait["output_dimensions"] == [1080, 1920]
+        assert portrait["preview_sample"] == pov_manifest["preview_sample"]
+        assert portrait["preview_background_sha256"] == photo_hash
         for filename, size in (
             ("workspace-dark.png", (1600, 1100)),
             ("workspace-light.png", (1600, 1100)),
             ("export-preview.png", (1500, 1000)),
             ("export-preview-pov.png", (1500, 1000)),
+            ("export-preview-portrait-safe-region.png", (1500, 1000)),
         ):
             with Image.open(output / filename) as image:
                 assert image.size == size
                 assert image.convert("RGB").getextrema() != ((0, 0), (0, 0), (0, 0))
-        assert len(list(output.glob("*.png"))) == 4
+        assert len(list(output.glob("*.png"))) == 5
         assert list(profile.iterdir()) == [sentinel]
         assert sentinel.read_text(encoding="utf-8") == "Keep personal settings unchanged"
         assert sha256(SOURCE.read_bytes()).hexdigest() == SOURCE_SHA256
+        # Retain only the affected assistant artifacts for visual review and delivery.
+        review = ROOT / ".tmp" / "export-reference-review"
+        review.mkdir(exist_ok=True)
+        for name in (
+            "export-preview.png",
+            "export-preview-pov.png",
+            "export-preview-portrait-safe-region.png",
+            "app-reference.json",
+            "pov-reference.json",
+            "portrait-safe-region-reference.json",
+        ):
+            shutil.copyfile(output / name, review / name)
 
 
 def test_theme_capture_uses_the_same_scene_for_each_appearance() -> None:

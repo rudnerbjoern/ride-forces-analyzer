@@ -20,11 +20,60 @@ The explicit profile registry binds these identifiers to renderers and geometry;
 | `column.py`                                              | Four-panel column                                               |
 | `ribbon.py`                                              | Flow Ribbon geometry and portrait reflow                        |
 | `corners.py`                                             | Stacked Corner Instruments geometry                             |
-| `hud.py`                                                 | Full-screen HUD scales, transparent glow and force histories    |
+| `hud.py`                                                 | Full-screen HUD scales, transparent glow and force plots        |
 | `charts.py`                                              | Shared three-channel time plots for ribbon and corners          |
 | `common.py`                                              | Fonts, text/panel drawing and shared lateral coordinate mapping |
 | `contracts.py`                                           | `LayoutPlugin` metadata and `LayoutRenderer` protocol           |
 | `registry.py`                                            | Explicit registrations, region lookup and renderer construction |
+
+## Safe Region setting
+
+`rendering.model.ExportSafeRegion` defines these stable choices:
+
+| Choice    | Enum member             | JSON identifier        |
+| --------- | ----------------------- | ---------------------- |
+| Off       | `OFF`                   | `off`                  |
+| A: light  | `PORTRAIT_SOCIAL_A`     | `portrait_social_a`    |
+| B: medium | `PORTRAIT_SOCIAL_B`     | `portrait_social_b`    |
+| C: higher | `PORTRAIT_SOCIAL_C`     | `portrait_social_c`    |
+
+`ExportSettings.safe_region` defaults
+to Off, including JSON records that omit it. Python constructors require enum
+members; JSON restores members from their stored values. Unknown identifiers and
+wrong types fail validation. Settings remain immutable.
+
+Every non-Off profile requires `VideoAspect.PORTRAIT` and
+`ExportExtent.FULL_FRAME`; explicit Landscape/Content-area combinations raise
+`ValueError` through the shared resolver during model construction, before widget
+or encoder processing. Existing layout
+capabilities still apply, so four-panel column cannot use the profile.
+
+The fixed A/B/C reference geometry adds 72 pixels per side at 1080 × 1920;
+force plot/lateral lifts are respectively 80, 160 and 240 pixels. Each profile's
+stored meaning must never be changed to a different placement policy; future
+policies require new identifiers. The typed setting, serialization, shared geometry
+and production Portrait renderings are implemented. Presets, immutable jobs,
+shared snapshots, embedded video metadata and repeat preparation retain the
+profile through the existing JSON paths; see the
+[persistence contract](../implementation/EXPORT_BATCHES.md#contracts).
+The four-choice selector, effective review value and preview guidance are implemented.
+CPU MOV/MP4 integration, decoded preview parity, saved/repeated outputs and parallel
+region generation are verified for the
+[documented CPU output scope](../implementation/VIDEO_EXPORT.md#defaults-destinations-and-saved-settings).
+GPU hardware and live platform UI are outside this qualification.
+Processing requires no network.
+The [user comparison](../user/EXPORT_LAYOUTS.md#portrait-safe-region) shows the
+native Portrait B example without treating source advertising templates as a
+guarantee for viewer UI.
+
+`registry.effective_safe_region(profile, aspect, extent)` supplies the captured
+profile for Portrait Full frame and Off for unsupported current form formats.
+It rejects untyped profile values. The export form retains the loaded profile
+through ordinary edits and temporary format changes, including snapshot restore,
+with the selector disabled outside Portrait Full frame. Its retained choice becomes
+effective again on returning to that format. A profile-only preset change refreshes the
+form's consumers. Explicit unsupported combinations in stored/model settings
+still fail validation; this effective-state policy does not remap stored records.
 
 ## Renderer contract
 
@@ -73,7 +122,8 @@ otherwise its default. No corner/edge is inferred from a full-screen position.
 
 `LayoutPlugin.landscape_canvas` and `portrait_canvas` declare full-frame output sizes;
 `canvas_dimensions(settings)` resolves them through the registry. Plugins also own
-`preferred_window_seconds` (optional selection-time override), `preview_invert_lateral`
+`preferred_window_seconds` (optional selection default for an untouched time-window
+control), `preview_invert_lateral`
 (unselected gallery default), and read-only `prores_4444_size_rates`, `h264_size_rates`,
 `h264_nvenc_size_rates`, `prores_4444_portrait_size_rates`,
 `prores_4444_cpu_portrait_size_rates`, `h264_portrait_size_rates` and
@@ -82,7 +132,9 @@ maps keyed by `ExportExtent` (optional lower/upper bytes per output pixel per fr
 Shared consumers apply these values
 without branching on layout names. HUD declares its native canvases, 30-second
 selection default and measured estimate rates; Column declares its lateral preview
-default. Each layout declares its Full-frame rates and, where supported, separate
+default. Explicit time-window/vertical-direction edits and loaded preset/repeat
+values survive layout changes; layout defaults do not overwrite them.
+Each layout declares its Full-frame rates and, where supported, separate
 `PRORES_4444_CONTENT_SIZE_RATES` / `H264_CONTENT_SIZE_RATES`. Missing/None entries
 use the shared planning heuristic; Full-frame rates never fill missing Content-area
 rates. Rates need not be configured for both codecs. No measurements are fabricated.
@@ -137,14 +189,14 @@ and portrait constants; editing Corners does not change that profile.
 HUD, G-Orbit and Column have independent drawing code.
 
 Shared scale APIs are `rendering.scales.lateral_scale`, `longitudinal_scale`,
-`vertical_scale`, `selected_bounds` and `history_extent`. `ExportChannel.reference`
+`vertical_scale`, `selected_bounds` and `force_plot_extent`. `ExportChannel.reference`
 is 1 g for vertical and zero for the other force channels. Renderers use
 `rendering.peaks.PeakEnvelope.prepare` for deterministic held peaks derived from
 source time, including seeking and fractional positions. The
 [export contract](../implementation/VIDEO_EXPORT.md#analysis-and-time-mapping)
 owns scale/reference rules; its [HUD](../implementation/VIDEO_EXPORT.md#hud) and
 [G-Orbit](../implementation/VIDEO_EXPORT.md#g-orbit) sections own instrument,
-history and peak behavior.
+force plot and peak behavior.
 
 HUD owns immutable aspect-specific geometry and drawing constants. Static scales,
 labels, shadows and orientation ink are prepared once. Dynamic effect layers are
@@ -173,6 +225,39 @@ lists supported output sizes.
 - `output_size`: final dimensions, even for the supported codecs.
 - `render_size`: native Content-area image or scaled Full-frame layout region.
 - `offset`: `(0, 0)` for Content area, selected placement for Full frame.
+- `safe_region`: immutable `SafeRegionGeometry` with additional `side_inset`
+  and `force_plot_lift` values in output-canvas pixels. These are instrument offsets,
+  separate from the complete region's `offset` and `render_size`.
+
+Off resolves to zero instrument offsets for every supported format/extent.
+For A/B/C, the resolver scales 72 px of extra inset per side and respectively
+80/160/240 px of upward force plot/lateral movement from the 1080 × 1920 reference.
+Horizontal offsets use canvas width / 1080, vertical offsets canvas height / 1920,
+rounded to the nearest integer. Both native canvases scale exactly: compact
+2160 × 3840 layouts receive 144 px per side and lifts of 160/320/480 px.
+Coordinates are in the output canvas, not a renderer's unscaled native image.
+Layout adaptation must account for that distinction when drawing instruments.
+
+HUD retains its full-canvas region and font sizes. Its renderer applies the
+offsets to side axes, headings/readouts, force plot labels/plots, lateral endpoints
+and orientation marks. Side scales end above the raised lateral instrument;
+upper heading/value baselines and the shared zero/time cursor stay fixed.
+Effect tiles include the added side offset so localized readouts are not clipped.
+
+Compact layouts keep the selected edge/corner and native drawing, with adjusted
+Full-frame placement and uniform scaling. The resolver reduces region width by
+twice `side_inset`, moves its x origin inward by that inset and scales height
+proportionally. Bottom positions first retain their original bottom edge.
+`LayoutPlugin.safe_region_force_plots` (strict boolean, default False) enables the
+force plot lift for Ribbon and Corners. Where the full C lift would cross the top
+canvas boundary, all three lifts are reduced by the same factor to fit the
+available headroom; A/B/C remain distinct. G-Orbit has no force plots and uses
+identical side clearance/size for A/B/C, without a vertical lift.
+
+Off, Landscape and native Content area retain their previous pixels and geometry.
+All modes retain final output dimensions. No layout is fitted into the strict
+source intersection. Preview, frame composition and encoding consume this same
+resolved placement; the source data, force scales and time semantics are unchanged.
 
 Example: G-Orbit Content area resolves to `render_size=(800, 800)`,
 `offset=(0, 0)` and `output_size=(800, 800)` in either format.

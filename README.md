@@ -140,9 +140,9 @@ It uses the supplied [Manta reference recording](docs/development/RECORDINGS.md#
 
 | Layout                 | Look and placement                                      |
 | :--------------------- | :------------------------------------------------------ |
-| **Flow Ribbon**        | A strip along the bottom with force histories.          |
+| **Flow Ribbon**        | A strip along the bottom with force plots.              |
 | **Corner Instruments** | Compact instruments in the upper right.                 |
-| **HUD**                | Frameless gauges and wide force histories.              |
+| **HUD**                | Frameless gauges and wide force plots.                  |
 | **G-Orbit**            | Circular gauges with signed forces and peak indicators. |
 | **Four-panel column**  | Stacked force and orientation plots.                    |
 
@@ -157,12 +157,16 @@ Choose **landscape** for classic YouTube videos or **portrait** for Shorts or
 TikTok. Four-panel column supports landscape only. **Full frame** keeps the selected
 position on a complete video canvas: native **1920×1080** or **1080×1920** for HUD,
 4K for the other layouts. **Content area** exports the smaller layout image for
-placement in your video editor; **Output dimensions** shows its exact size.
+placement in your video editor; **Resolution** shows its exact size.
 HUD always uses Full frame. [Compare export areas](docs/user/EXPORT_LAYOUTS.md#export-area-and-video-size).
 Export the whole recording, its marker interval or your
 selected section. Choose the overlay language independently of the application.
 
-![Export assistant showing layout thumbnails, Export area and Position choices, output dimensions and a Flow Ribbon preview at 60% of the export interval](docs/images/export-preview.png)
+Portrait Full frame offers optional [**Safe Region** placement choices](docs/user/EXPORT_LAYOUTS.md#portrait-safe-region)
+Off/A/B/C for more side clearance. Platform controls and phone cropping can still
+hide parts of the overlay.
+
+![Export assistant showing layout thumbnails, image format and area, position, Safe Region eligibility and resolution with a Flow Ribbon preview at 60% of the export interval](docs/images/export-preview.png)
 
 *Preview a sample at 60% of the selected export interval before rendering. The checkerboard indicates transparency and is not part of the video.*
 

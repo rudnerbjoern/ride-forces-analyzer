@@ -37,6 +37,7 @@ from ride_forces_analyzer.storage.exports import (
 from PySide6.QtCore import Signal
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
 from .form import ExportForm
+from .labels import safe_region_label
 
 
 class ExportPresets(QWidget):
@@ -100,6 +101,7 @@ class ExportPresets(QWidget):
         presets_row.addWidget(bind(QLabel(), tr("Saved preset")))
         self.preset_selector = QComboBox()
         self.preset_selector.activated.connect(self._load_preset)
+        self.preset_selector.currentIndexChanged.connect(self._update_summary)
         presets_row.addWidget(self.preset_selector, 1)
         divider = QFrame()
         divider.setObjectName("presetActionsDivider")
@@ -185,9 +187,21 @@ class ExportPresets(QWidget):
             items(self.preset_selector, [preset.name for preset in self.saved])
             if select is not None:
                 self.preset_selector.setCurrentText(select)
+            self._update_summary()
         except ExportStoreError as error:
             record_error("Export configuration", error)
             self.message.emit(error_message(error))
+
+    @Slot()
+    def _update_summary(self) -> None:
+        index = self.preset_selector.currentIndex() - 1
+        text = (
+            tr("Safe Region: {0}", safe_region_label(self.saved[index].settings.safe_region))
+            if 0 <= index < len(self.saved)
+            else ""
+        )
+        bind(self.preset_selector, text, "toolTip")
+        bind(self.preset_selector, text, "accessibleDescription")
 
     def _preset(self, name: str) -> SavedPreset:
         mode = ("markers", "selection", "entire")[self.form.interval.currentIndex()]

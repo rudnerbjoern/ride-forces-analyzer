@@ -43,6 +43,7 @@ from ride_forces_analyzer.ui.presentation.taskbar import taskbar_progress
 from ride_forces_analyzer.storage.export_models import SavedBatch, SavedPreset, RangeMode
 from ride_forces_analyzer.storage.exports import ExportStore, ExportStoreError
 from ride_forces_analyzer.storage.preferences import Preferences
+from .labels import safe_region_label
 
 
 class BatchSignals(QObject):
@@ -461,6 +462,7 @@ class BatchDialog(QDialog):
                             if settings.extent is ExportExtent.CONTENT_AREA
                             else "Full frame",
                         ),
+                        tr("Safe Region: {0}", safe_region_label(settings.safe_region)),
                         f"{width}×{height}",
                     ),
                 ),

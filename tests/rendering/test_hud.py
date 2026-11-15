@@ -44,7 +44,7 @@ def seated() -> ExplorerData:
 
 @pytest.mark.parametrize("aspect", list(VideoAspect))
 @pytest.mark.parametrize("window_seconds", [30.0, 12.5])
-def test_history_time_axis_labels_five_seconds_and_ticks_each_second(
+def test_force_plot_time_axis_labels_five_seconds_and_ticks_each_second(
     manta: ExplorerData,
     aspect: VideoAspect,
     window_seconds: float,
@@ -72,11 +72,11 @@ def test_history_time_axis_labels_five_seconds_and_ticks_each_second(
     renderer = HudRenderer(timeline)
     expected = range(-15, 16, 5) if window_seconds == 30 else range(-5, 6, 5)
     assert labels == {f"{seconds} s" for seconds in expected}
-    bottom = renderer.geometry.history_top + 3 * renderer.geometry.history_row
+    bottom = renderer.geometry.force_plot_top + 3 * renderer.geometry.force_plot_row
     white = (*bytes.fromhex(WHITE[1:]), 255)
     for seconds in range(-int(window_seconds / 2), int(window_seconds / 2) + 1):
         fraction = 0.5 + seconds / window_seconds
-        x, _ = renderer.history_point(0, 0, fraction)
+        x, _ = renderer.force_plot_point(0, 0, fraction)
         assert renderer.base.getpixel((int(x), bottom + 4)) == white
         assert (renderer.base.getpixel((int(x), bottom + 9)) == white) == (seconds % 5 == 0)
 
@@ -487,7 +487,7 @@ def test_orientation_edge_scale_tracks_degrees_and_disappears_in_gaps(
     ):
         image = renderer.render_position(position)
         without = absent.render_position(position)
-        # The force instruments and histories retain exactly the same pixels.
+        # The force instruments and force plots retain exactly the same pixels.
         unchanged = (0, 0, g.size[0] - ORIENTATION_STRIP_WIDTH, g.size[1])
         assert image.crop(unchanged).tobytes() == without.crop(unchanged).tobytes()
         bug = (g.size[0] - ORIENTATION_EDGE - 9, round(renderer.orientation_y(degrees)))
@@ -594,7 +594,7 @@ def test_scale_peak_bars_reset_at_missing_samples(
 
 
 @pytest.mark.parametrize("aspect", list(VideoAspect))
-def test_history_time_zero_aligns_exactly_with_lateral_zero(
+def test_force_plot_time_zero_aligns_exactly_with_lateral_zero(
     manta: ExplorerData,
     aspect: VideoAspect,
 ) -> None:
@@ -608,16 +608,16 @@ def test_history_time_zero_aligns_exactly_with_lateral_zero(
     renderer = HudRenderer(timeline)
     zero = renderer.lateral_x(0)
     for row in range(3):
-        left, _ = renderer.history_point(row, 0, 0)
-        cursor, _ = renderer.history_point(row, 0, 0.5)
-        right, _ = renderer.history_point(row, 0, 1)
+        left, _ = renderer.force_plot_point(row, 0, 0)
+        cursor, _ = renderer.force_plot_point(row, 0, 0.5)
+        right, _ = renderer.force_plot_point(row, 0, 1)
         assert cursor == zero
         assert zero - left == right - zero
-        assert left == renderer.geometry.history_left
+        assert left == renderer.geometry.force_plot_left
         assert 0 < left < right < renderer.width
 
 
-def test_histories_share_time_axis_and_do_not_bridge_missing_samples(manta: ExplorerData) -> None:
+def test_force_plots_share_time_axis_and_do_not_bridge_missing_samples(manta: ExplorerData) -> None:
     assert manta.analysis is not None
     timeline = prepare_export(
         manta.analysis,
@@ -628,10 +628,10 @@ def test_histories_share_time_axis_and_do_not_bridge_missing_samples(manta: Expl
     channels = tuple(replace(channel, values=(1.0,) * manta.count) for channel in timeline.channels)
     complete = replace(timeline, channels=channels)
     renderer = HudRenderer(complete)
-    assert len({renderer.history_point(row, 1, 0.75)[0] for row in range(3)}) == 1
-    assert renderer.history_point(0, 1, 0.2)[0] < renderer.history_point(0, 1, 0.8)[0]
+    assert len({renderer.force_plot_point(row, 1, 0.75)[0] for row in range(3)}) == 1
+    assert renderer.force_plot_point(0, 1, 0.2)[0] < renderer.force_plot_point(0, 1, 0.8)[0]
     for row in (1, 2):
-        assert renderer.history_point(row, 1, 0.5)[1] < renderer.history_point(row, 0, 0.5)[1]
+        assert renderer.force_plot_point(row, 1, 0.5)[1] < renderer.force_plot_point(row, 0, 0.5)[1]
     value = replace(
         channels[0],
         values=tuple(None if 3670 <= index < 3680 else 1.0 for index in range(manta.count)),
@@ -646,16 +646,16 @@ def test_histories_share_time_axis_and_do_not_bridge_missing_samples(manta: Expl
             ),
         ),
     )
-    x, _ = renderer.history_point(0, 1, 0.75)
+    x, _ = renderer.force_plot_point(0, 1, 0.75)
     g = renderer.geometry
-    box = (round(x) - 3, g.history_top, round(x) + 3, g.history_top + g.history_row)
+    box = (round(x) - 3, g.force_plot_top, round(x) + 3, g.force_plot_top + g.force_plot_row)
     blank = empty.render_position(3650).crop(box).tobytes()
     assert renderer.render_position(3650).crop(box).tobytes() != blank
     assert gapped.render_position(3650).crop(box).tobytes() == blank
 
 
 @pytest.mark.parametrize("aspect", list(VideoAspect))
-def test_histories_fit_each_selected_channel_without_changing_instruments(
+def test_force_plots_fit_each_selected_channel_without_changing_instruments(
     manta: ExplorerData,
     aspect: VideoAspect,
 ) -> None:
@@ -684,31 +684,33 @@ def test_histories_fit_each_selected_channel_without_changing_instruments(
     selected = replace(timeline, channels=(*channels, timeline.channels[3]))
     renderer = HudRenderer(selected)
     assert renderer.scales == instruments
-    assert renderer.history_scales == pytest.approx((0.2, 0.6, 0.04))
-    assert renderer.vertical_history_bounds == pytest.approx((0.8, 1.2))
+    assert renderer.force_plot_scales == pytest.approx((0.2, 0.6, 0.04))
+    assert renderer.vertical_force_plot_bounds == pytest.approx((0.8, 1.2))
     g = renderer.geometry
     for row, peak in ((1, 0.6), (2, 0.04)):
-        center = g.history_top + (row + 0.5) * g.history_row
-        amplitude = g.history_row / 2 - 1
-        assert renderer.history_point(row, peak, 0.5)[1] == pytest.approx(center - amplitude)
-        assert renderer.history_point(row, -peak, 0.5)[1] == pytest.approx(center + amplitude)
-        assert renderer.history_point(row, peak / 2, 0.5)[1] == pytest.approx(
+        center = g.force_plot_top + (row + 0.5) * g.force_plot_row
+        amplitude = g.force_plot_row / 2 - 1
+        assert renderer.force_plot_point(row, peak, 0.5)[1] == pytest.approx(center - amplitude)
+        assert renderer.force_plot_point(row, -peak, 0.5)[1] == pytest.approx(center + amplitude)
+        assert renderer.force_plot_point(row, peak / 2, 0.5)[1] == pytest.approx(
             center - amplitude / 2,
         )
-    ranges = renderer.history_scales
+    ranges = renderer.force_plot_scales
     for position in (3699, 3600, 3650.5):
         renderer.render_position(position)
-        assert renderer.history_scales == ranges
+        assert renderer.force_plot_scales == ranges
     shorter_window = HudRenderer(
         replace(selected, settings=replace(selected.settings, window_seconds=2)),
     )
-    assert shorter_window.history_scales == ranges
+    assert shorter_window.force_plot_scales == ranges
     including_outlier = HudRenderer(replace(selected, last=3700))
-    assert including_outlier.vertical_history_bounds == pytest.approx((0.8, 999))
-    assert including_outlier.history_scales[1:] == (999, 999)
+    assert including_outlier.vertical_force_plot_bounds == pytest.approx((0.8, 999))
+    assert including_outlier.force_plot_scales[1:] == (999, 999)
 
 
-def test_history_ranges_remain_usable_for_zero_missing_and_tiny_values(manta: ExplorerData) -> None:
+def test_force_plot_ranges_remain_usable_for_zero_missing_and_tiny_values(
+    manta: ExplorerData,
+) -> None:
     assert manta.analysis is not None
     timeline = prepare_export(manta.analysis, ExportSettings(layout=ExportLayout.HUD), 3600, 3699)
     channels = tuple(
@@ -716,14 +718,16 @@ def test_history_ranges_remain_usable_for_zero_missing_and_tiny_values(manta: Ex
         for channel, value in zip(timeline.channels[:3], (0.0, None, -0.01))
     )
     renderer = HudRenderer(replace(timeline, channels=(*channels, timeline.channels[3])))
-    assert renderer.history_scales == pytest.approx((1.0, 1.0, 0.01))
-    assert renderer.vertical_history_bounds == (0, 1)
+    assert renderer.force_plot_scales == pytest.approx((1.0, 1.0, 0.01))
+    assert renderer.vertical_force_plot_bounds == (0, 1)
     for row in (1, 2):
-        assert renderer.history_point(row, renderer.references[row], 0.5)[1] == (
-            renderer.geometry.history_top + (row + 0.5) * renderer.geometry.history_row
+        assert renderer.force_plot_point(row, renderer.references[row], 0.5)[1] == (
+            renderer.geometry.force_plot_top + (row + 0.5) * renderer.geometry.force_plot_row
         )
     g = renderer.geometry
-    assert renderer.history_point(2, -0.01, 0.5)[1] == g.history_top + 3 * g.history_row - 1
+    assert (
+        renderer.force_plot_point(2, -0.01, 0.5)[1] == g.force_plot_top + 3 * g.force_plot_row - 1
+    )
     zeros = HudRenderer(
         replace(
             timeline,
@@ -732,15 +736,18 @@ def test_history_ranges_remain_usable_for_zero_missing_and_tiny_values(manta: Ex
             ),
         ),
     )
-    assert zeros.history_scales[1:] == (1.0, 1.0)
+    assert zeros.force_plot_scales[1:] == (1.0, 1.0)
     for row in (1, 2):
-        assert zeros.history_point(row, 0, 0.5)[1] == g.history_top + (row + 0.5) * g.history_row
+        assert (
+            zeros.force_plot_point(row, 0, 0.5)[1]
+            == g.force_plot_top + (row + 0.5) * g.force_plot_row
+        )
 
 
 @pytest.mark.parametrize("aspect", list(VideoAspect))
 @pytest.mark.parametrize("inverted", [True, False])
 @pytest.mark.parametrize("flying", [True, False])
-def test_vertical_history_fits_extrema_and_aligns_reference_label(
+def test_vertical_force_plot_fits_extrema_and_aligns_reference_label(
     seated: ExplorerData,
     manta: ExplorerData,
     flying: bool,
@@ -792,38 +799,38 @@ def test_vertical_history_fits_extrema_and_aligns_reference_label(
     g = renderer.geometry
     assert renderer.references == (1.0, 0.0, 0.0)
     assert renderer.scales[0] == ((-4.0, 3.0, 1.0) if flying else (-1.5, 5.0, 1.0))
-    assert renderer.vertical_history_bounds == (0.4, 3)
-    upper, lower = g.history_top + 1, g.history_top + g.history_row - 1
-    assert renderer.history_point(0, 0.4, 0.5)[1] == (upper if inverted else lower)
-    assert renderer.history_point(0, 3, 0.5)[1] == (lower if inverted else upper)
-    center = renderer.history_point(0, 1, 0.5)[1]
+    assert renderer.vertical_force_plot_bounds == (0.4, 3)
+    upper, lower = g.force_plot_top + 1, g.force_plot_top + g.force_plot_row - 1
+    assert renderer.force_plot_point(0, 0.4, 0.5)[1] == (upper if inverted else lower)
+    assert renderer.force_plot_point(0, 3, 0.5)[1] == (lower if inverted else upper)
+    center = renderer.force_plot_point(0, 1, 0.5)[1]
     expected = 0.6 / 2.6 if inverted else 2 / 2.6
     assert center == pytest.approx(upper + expected * (lower - upper))
-    right = renderer.history_point(0, 1, 1)[0]
-    assert (g.history_left, center, right, center) in reference_lines
-    assert renderer.history_point(0, 0, 0.5)[1] - center == pytest.approx(
-        center - renderer.history_point(0, 2, 0.5)[1],
+    right = renderer.force_plot_point(0, 1, 1)[0]
+    assert (g.force_plot_left, center, right, center) in reference_lines
+    assert renderer.force_plot_point(0, 0, 0.5)[1] - center == pytest.approx(
+        center - renderer.force_plot_point(0, 2, 0.5)[1],
     )
     assert {"0", "+1", "1 g"} <= set(labels)
-    fixed_center = g.history_top + g.history_row / 2
-    assert label_positions["1 g"] == (g.history_left - 4, center)
+    fixed_center = g.force_plot_top + g.force_plot_row / 2
+    assert label_positions["1 g"] == (g.force_plot_left - 4, center)
     assert zero_label_positions == [
-        (g.history_left - 4, g.history_top + 1.5 * g.history_row),
-        (g.history_left - 4, g.history_top + 2.5 * g.history_row),
+        (g.force_plot_left - 4, g.force_plot_top + 1.5 * g.force_plot_row),
+        (g.force_plot_left - 4, g.force_plot_top + 2.5 * g.force_plot_row),
     ]
     assert label_positions["VERTICAL"] == (
         40,
-        g.history_top - 10 if renderer.portrait else fixed_center,
+        g.force_plot_top - 10 if renderer.portrait else fixed_center,
     )
     if renderer.portrait:
         sign = 1 if inverted else -1
         assert label_positions["+0.4"] == (
-            g.history_left - 14,
-            fixed_center - sign * g.history_row * 0.32,
+            g.force_plot_left - 14,
+            fixed_center - sign * g.force_plot_row * 0.32,
         )
         assert label_positions["+3.0"] == (
-            g.history_left - 14,
-            fixed_center + sign * g.history_row * 0.32,
+            g.force_plot_left - 14,
+            fixed_center + sign * g.force_plot_row * 0.32,
         )
     white = (*bytes.fromhex(WHITE[1:]), 255)
     assert renderer.base.getpixel((g.left_axis + 8, round(renderer.vertical_y(1)))) == white
@@ -847,8 +854,8 @@ def test_vertical_history_fits_extrema_and_aligns_reference_label(
                 ),
             ),
         )
-        assert current.vertical_history_bounds == bounds
-        y = current.history_point(0, 1, 0.5)[1]
+        assert current.vertical_force_plot_bounds == bounds
+        y = current.force_plot_point(0, 1, 0.5)[1]
         assert upper <= y <= lower
         if bounds == (1, 1):
             assert y == fixed_center
@@ -892,7 +899,7 @@ def test_cropped_effects_preserve_pixels_and_tile_edges() -> None:
 
 
 @pytest.mark.parametrize("aspect", list(VideoAspect))
-def test_history_background_fades_to_black_and_leaves_center_clear(
+def test_force_plot_background_fades_to_black_and_leaves_center_clear(
     manta: ExplorerData,
     aspect: VideoAspect,
 ) -> None:
@@ -906,7 +913,7 @@ def test_history_background_fades_to_black_and_leaves_center_clear(
         ),
     )
     image = renderer.render_position(3650)
-    top = renderer.geometry.history_top - 40
+    top = renderer.geometry.force_plot_top - 40
     samples = [image.getpixel((0, y)) for y in (top, top + 20, image.height - 1)]
     assert all(isinstance(pixel, tuple) and pixel[:3] == (0, 0, 0) for pixel in samples)
     assert samples[0] == (0, 0, 0, 0)

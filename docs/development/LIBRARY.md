@@ -165,6 +165,12 @@ to interrupted with unknown finish time/duration. Workflow status stays manual.
 `prepare_repeat()` verifies archived bytes and reconstructs captured metadata and
 analysis without current Library/preference/preset values or source/output paths.
 Recomputed video geometry/timing must match the captured snapshot.
+Safe Region is part of the captured video settings: repeat preparation retains
+the original Off/A/B/C profile, independently of current presets and form values.
+Legacy snapshots/requests without the field load as Off. Unknown supplied profiles
+reject repeat preparation without rewriting history. The profile travels in the
+existing JSON recipes, with no new Library column or migration; see the
+[typed profile contract](EXPORT_LAYOUTS.md#safe-region-setting).
 Supported video recipes open the assistant review; data recipes retain format/range
 and use destination/overwrite confirmation. Each started repeat creates a new row.
 Unsupported snapshot/algorithm versions or source-identity mismatch explain why a

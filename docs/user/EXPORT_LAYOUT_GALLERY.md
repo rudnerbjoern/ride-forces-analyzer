@@ -45,11 +45,11 @@ traces beside the footage.
 Freely floating scales surround an open center: vertical G-force/airtime on the
 left, acceleration/braking on the right, and lateral force below. Fine ticks,
 luminous pointers, large numbers and soft black shadows follow the
-frameless game-HUD design. Three wide force histories share one time cursor
+frameless game-HUD design. Three wide force plots share one time cursor
 at the bottom. Scale ranges adapt to actual forces; missing values remain gaps.
 The complete arrangement adapts independently to landscape and portrait.
 
-![Frameless full-screen HUD with glowing force scales, orientation and three force histories](../images/voltron-hud-detail.png)
+![Frameless full-screen HUD with glowing force scales, orientation and three force plots](../images/voltron-hud-detail.png)
 
 [Open the complete 4K placement view](../images/voltron-hud.png). HUD video exports
 use 1920×1080 or 1080×1920 resolution for scaling in your editor.

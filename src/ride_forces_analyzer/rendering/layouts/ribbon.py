@@ -316,7 +316,7 @@ PORTRAIT_CONTENT = ContentArea(PORTRAIT_NATIVE_SIZE)
 
 # Portrait Full-frame calibration: Voltron Nevera, source samples 4000..4999
 # at 50 Hz; 480 frames at 24000/1001 fps (20.02 s), English, vertical inversion,
-# 11-sample smoothing, 30-s history, Incline reference 3575 (five-sample window).
+# 11-sample smoothing, 30-s force plot, Incline reference 3575 (five-sample window).
 # Rates include container overhead; ProRes anchors round to two decimals (+/-10%),
 # H.264 to six (+/-50%). This short clip does not qualify other scenes or durations.
 # prores_ks_vulkan: 2160x3840, 2,668,950,544 bytes; observed 0.670369603 bytes/pixel/frame.
@@ -335,6 +335,7 @@ PLUGIN = LayoutPlugin(
     create_renderer,
     landscape_content=LANDSCAPE_CONTENT,
     portrait_content=PORTRAIT_CONTENT,
+    safe_region_force_plots=True,
     prores_4444_size_rates={
         ExportExtent.FULL_FRAME: PRORES_4444_SIZE_RATES,
         ExportExtent.CONTENT_AREA: PRORES_4444_CONTENT_SIZE_RATES,

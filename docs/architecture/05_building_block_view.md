@@ -239,7 +239,7 @@ that cannot be prepared. Snapshot serialization is shared with saved presets.
 explorer's Windows taskbar button. It owns shell notifications and COM lifetime;
 rendering remains platform-independent and shell failures do not affect exports.
 `rendering.scales` owns the lateral/longitudinal range policies shared by all
-layouts, shared history fitting and the HUD/G-Orbit posture-dependent vertical
+layouts, shared force plot fitting and the HUD/G-Orbit posture-dependent vertical
 instrument ranges. Export channels carry a 1 g vertical presentation reference
 for every posture; lateral and longitudinal references remain zero.
 Layouts consume this timeline through one native-RGBA-region/source-position
@@ -250,7 +250,7 @@ for CPU/GPU ProRes and CPU/NVENC H.264 with same-extent fallback. The registry r
 common contract and validates geometry. Its extent resolver uses layout-owned native dimensions
 for Content area and region/canvas placement for Full frame; capability and rate lookup
 use the same typed extent contract. Concrete layouts never depend on one another; reusable
-drawing/history primitives stay in shared modules. UI, preview, sizing and encoding
+drawing and force plot primitives stay in shared modules. UI, preview, sizing and encoding
 consumers use the registered metadata rather than identifying concrete layouts;
 `frames` retains complete native Content-area images or scales/places Full-frame
 regions. `encoding` preserves native Content-area dimensions without geometric

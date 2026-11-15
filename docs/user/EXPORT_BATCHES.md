@@ -10,8 +10,8 @@ The steps below use the English interface labels.
 ## Save and reuse a preset
 
 1. Open a recording and click **Export video…**.
-2. Choose your layout, layout format, export area, position, language, output type, frame rate, visible
-   time window, smoothing and range.
+2. Choose your image format, layout, image area, position, Safe Region, overlay language,
+   video format, frame rate, plot time window, smoothing and recording section.
 3. Click the disk icon with a plus (tooltip: **Save as…**) in the preset area and give the setup a unique name.
 4. For another export, select that preset to load it immediately.
 
@@ -19,11 +19,19 @@ To change a saved preset, load it, adjust the settings and click the disk icon
 (tooltip: **Update selected**).
 To remove one, select it and click the trash icon (tooltip: **Delete preset**).
 Saved batch jobs keep their settings.
-Presets remember their own export area, position, frame rate and overlay language, independently of
-the application's defaults.
+Presets remember their own image area, position, Safe Region, frame rate and overlay
+language, independently of the application's defaults. Hover over the selected
+preset to see its saved Safe Region choice.
 Loading a Content-area preset hides Position; its saved placement returns if you
 switch to Full frame. HUD always uses Full frame. Presets saved without an export-area
 choice also use Full frame.
+
+To save **A: light**, **B: medium** or **C: higher**, use **Portrait · 9:16** with
+**Full frame**. Saves capture the effective choice: saving Landscape or Content
+area captures Off even if the inactive selector remembers A/B/C. Older saved
+setups without a Safe Region choice also use Off. The
+[layout guide](EXPORT_LAYOUTS.md#portrait-safe-region) explains the differences and
+remaining overlap. The choice keeps the output canvas dimensions unchanged.
 
 ## Queue the current export
 
@@ -42,13 +50,16 @@ the old job and add it again.
 3. Select one or more saved presets.
 4. Choose **Start/end markers for each recording** or **Entire recording**.
 5. Click **Add recordings × presets…** and select your `.forces` or `.zforces` files.
-6. Check the job table, including the recording, range, smoothing, layout format,
-   export area and output dimensions.
+6. Check the job table, including the recording, interval, smoothing, image format,
+   image area, Safe Region and resolution.
 
 Every selected recording is paired with every selected preset. For example,
 three recordings and two presets create six videos. Portrait and landscape jobs
 can share a batch, as can Full-frame and Content-area exports.
 Each job keeps its own output size. **Remove selected jobs** saves the removal immediately.
+Off/A/B/C jobs can share a queue; changing the current selector or replacing/deleting
+a preset does not change the choice already captured in a job. Repeating a completed
+video from export history also retains its saved choice.
 You can manage saved batches without opening a recording first.
 
 **Add recordings × presets…** is available only after selecting a batch and at

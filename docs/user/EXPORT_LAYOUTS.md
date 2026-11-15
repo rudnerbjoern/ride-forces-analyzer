@@ -6,13 +6,13 @@ easy to read.
 
 Lateral scales in all five layouts start at **±1.25 g** and expand equally on
 both sides in **0.25 g steps** when your selected interval contains stronger forces.
-The scale stays fixed throughout the video. HUD's history curves use their own
+The scale stays fixed throughout the video. HUD's force curves use their own
 automatically fitted ranges.
 Acceleration/braking scales use the same rule with a **±1 g** minimum and
 **0.25 g steps** in all layouts.
 
 All five layouts use **1 g as the vertical reference**, including Flying recordings.
-Vertical history curves use 1 g as their reference; HUD fits the reference line
+Vertical force curves use 1 g as their reference; HUD fits the reference line
 within its selected minimum and maximum. HUD and G-Orbit hold both stronger
 loading and unloading relative to 1 g. Readouts remain absolute: 1 g reads 1 g,
 and 0 g still reads 0 g. This display reference does not change the recorded values.
@@ -28,9 +28,9 @@ Curves and pointers retain their full precision.
 | ---------------------- | --------------------------- | ------------------------------------------------------------- |
 | **Flow Ribbon**        | Along the bottom            | Follow all three force curves together in a wide strip.       |
 | **Corner Instruments** | Upper right                 | Read separate force cards while keeping the center clear.     |
-| **HUD**                | Full screen                 | Follow frameless edge gauges and three force histories.       |
+| **HUD**                | Full screen                 | Follow frameless edge gauges and three force plots.           |
 | **G-Orbit**            | Lower left                  | Follow current forces and recent peaks on circular gauges.    |
-| **Four-panel column**  | Right side                  | Compare force histories and a separate orientation curve.     |
+| **Four-panel column**  | Right side                  | Compare force plots and a separate orientation curve.         |
 
 Flow Ribbon is selected when you first open the export assistant.
 The comparison above shows Full-frame output at each layout's default position;
@@ -57,22 +57,52 @@ HUD always uses Full frame.
 | Four-panel column  | 960×2160               | Unavailable           |
 | HUD                | Full frame only        | Full frame only       |
 
-**Layout format** chooses the arrangement; Content-area video need not be 16:9 or
-9:16. **Output dimensions** and **Review export** show the actual video size.
+**Image format** chooses the arrangement; Content-area video need not be 16:9 or
+9:16. **Resolution** and **Review export** show the actual video size.
 Changing the area refreshes previews and the rough file-size estimate. Smaller
 dimensions do not guarantee a proportionally smaller video.
+
+## Portrait Safe Region
+
+With **Portrait · 9:16** and **Full frame**, **Safe Region** offers four arrangements:
+
+- **Off:** keep the original layout.
+- **A: light:** add side clearance and a light lift of the force plots.
+- **B: medium:** use the same side clearance with a medium lift.
+- **C: higher:** use the same side clearance with a higher lift.
+
+HUD, Flow Ribbon and Corner Instruments have distinct lifts. G-Orbit has no force
+plots, so A/B/C use the same arrangement. Available positions remain selectable;
+top-anchored layouts may still meet upper platform controls. These are placement
+choices, not increasing guarantees of protection.
+
+The full video canvas stays **1080×1920 for HUD** and **2160×3840 for the other
+Portrait layouts**. Four-panel column supports landscape only. Landscape and
+Content area use effective Off; the inactive selector retains your choice for a
+return to Portrait Full frame. This option changes the overlay arrangement; it
+does not compensate for every phone crop or app control.
+
+![Native export assistant with Portrait HUD, Safe Region B: medium and the bundled Toutatis preview photo](../images/export-preview-portrait-safe-region.png)
+
+*Portrait HUD with B: medium and a 30-second plot window. The video retains its
+1080×1920 canvas; the Toutatis photograph is preview-only.*
+
+Lower force plots, right-side instruments or G-Orbit can still meet action buttons,
+captions or temporary cards. HUD also keeps its full-width bottom shading, which
+moves upward with the plots. Check the open view of your footage as well as the
+instruments; no arrangement guarantees a clear area in every app or on every device.
 
 ## Try a layout with your recording
 
 1. Open a recording. To export only part of it, set **From sample** and **To sample**
    in the inspector first.
-2. Click **Export video…** and choose a layout thumbnail or **Layout profile**.
-3. Choose landscape or portrait under **Layout format**. Four-panel column supports
+2. Click **Export video…** and choose landscape or portrait under **Image format**.
+3. Choose a layout thumbnail or **Layout profile**. Four-panel column supports
    landscape only and fills the complete 4K frame height. Other layouts adapt to
    both formats. Unsupported layouts are unavailable in the selector and thumbnails.
-4. Choose **Full frame** or **Content area** under **Export area**. Content area
+4. Choose **Full frame** or **Content area** under **Image area**. Content area
    exports the smaller layout image for placement in your video editor and hides
-   Position. HUD always uses Full frame. Check **Output dimensions** for the video size.
+   Position. HUD always uses Full frame. Check **Resolution** for the video size.
 5. In Full frame, choose **Position**. Ribbon offers top or
    bottom, Column left or right, and Corners and G-Orbit all four corners.
    HUD uses the whole frame and hides Position. Its native
@@ -106,9 +136,9 @@ position, layout format and overlay language. For the remaining export steps, fo
 - **Tilt / orientation:** an angle describing tilt, not a compass heading or GPS
   direction. If the recording lacks usable gravity data, no angle is invented.
 
-Flow Ribbon and Corner Instruments include force histories
+Flow Ribbon and Corner Instruments include force plots
 and the current vertical context, such as Floater, Airtime or Ejector. The
-four-panel column adds a dedicated orientation history. G-Orbit concentrates on
+four-panel column adds a dedicated orientation plot. G-Orbit concentrates on
 current forces; its quieter peak indicators briefly retain recent extremes while
 the numbers continue to show the current values.
 
@@ -124,27 +154,28 @@ and stay fixed throughout the video.
 Bright bars briefly hold recent peaks; pointers and numbers show current values.
 The vertical instrument highlights **1 g** as the normal
 resting reference. Its bright bars retain both stronger loading and unloading,
-including positive values below 1 g. The vertical history adjusts its scale to the selected interval, including 1 g.
+including positive values below 1 g. The vertical force plot adjusts its scale to the selected interval, including 1 g.
 Its reference line moves with that scale. The numbers keep their meaning: 0 g
 still reads 0 g. This also applies to Flying recordings.
 The outer right edge shows tilt from **0° to 180°** when orientation data is
-available. Three force histories at the bottom share a time cursor aligned with
+available. Three force plots at the bottom share a time cursor aligned with
 zero on the lateral instrument. Each curve has its own scale, so equal heights
 do not necessarily mean equal forces.
-Each side-force and acceleration/braking history fills its available height,
+Each side-force and acceleration/braking force plot fills its available height,
 so even small changes can look large. Compare their numbers as well as their curves.
 
-Selecting HUD sets **Visible time window** to **30 seconds**, centered on the
-cursor. You can change it afterward; loaded presets retain their saved window.
+With an untouched **Plot time window**, selecting HUD uses **30 seconds**, centered
+on the cursor. A window you have edited or loaded from a preset stays unchanged
+when switching layouts. The same applies to an explicitly chosen vertical direction.
 The time axis has a tick every second and labels every five seconds, including
 **0 s** at the cursor.
 Missing measurements leave gaps.
 
 The time plots do not all run in the same direction: the four-panel column reads
-left to right, while compact lateral histories show the past below and the future
+left to right, while compact lateral force plots show the past below and the future
 above. Use the signed readout to identify left/right forces regardless of layout.
 
-**Visible time window** controls how much history surrounds each moment in the
+**Plot time window** controls how much source time surrounds each moment in the
 plots. **Smoothing** reduces short fluctuations and can change peaks and airtime
 labels. Changing the layout alone does not change your force data.
 

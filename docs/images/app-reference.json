@@ -24,5 +24,6 @@
   "aspect": "landscape",
   "output": "transparent",
   "fps": 50,
-  "window_seconds": 12
+  "window_seconds": 12,
+  "safe_region": "off"
 }

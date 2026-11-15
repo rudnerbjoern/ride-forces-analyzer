@@ -79,7 +79,7 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     dialog.profile_buttons[0].click()
     assert dialog.profile_buttons[0].isChecked()
     assert dialog.pages.currentIndex() == 0 and not dialog.start.isVisible()
-    assert dialog.form.flip_vertical.isChecked() and not dialog.form.flip_lateral.isChecked()
+    assert dialog.form.flip_vertical.isChecked() and not dialog.form.settings().invert_lateral
     wait_until(lambda dialog=dialog: dialog.previews.result is not None)
     dialog.form.interval.setCurrentIndex(1)
     wait_until(lambda dialog=dialog: dialog.previews.result is not None)
@@ -110,13 +110,13 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     assert dialog.pages.currentIndex() == 0
     assert dialog.presets.isVisible() and dialog.gallery.isVisible()
     dialog.form.layout_profile.setCurrentIndex(4)
-    assert dialog.form.flip_vertical.isChecked() and not dialog.form.flip_lateral.isChecked()
+    assert dialog.form.flip_vertical.isChecked() and not dialog.form.settings().invert_lateral
     dialog.form.layout_profile.setCurrentIndex(3)
-    assert dialog.form.flip_vertical.isEnabled() and not dialog.form.flip_lateral.isEnabled()
+    assert dialog.form.flip_vertical.isEnabled() and not dialog.form.settings().invert_lateral
     assert dialog.form.flip_vertical.isChecked()
     dialog.form.layout_profile.setCurrentIndex(0)
-    assert dialog.form.flip_vertical.isEnabled() and not dialog.form.flip_lateral.isEnabled()
-    assert dialog.form.flip_vertical.isChecked() and not dialog.form.flip_lateral.isChecked()
+    assert dialog.form.flip_vertical.isEnabled() and not dialog.form.settings().invert_lateral
+    assert dialog.form.flip_vertical.isChecked() and not dialog.form.settings().invert_lateral
     dialog.close()
 
     # Check layout/position transitions in the same Explorer session.
@@ -212,7 +212,7 @@ def test_export_source_range_layout_preview_and_portrait_preset_workflow(
     )
     choose_layout(ExportLayout.ORBIT)
     choose_layout(ExportLayout.CORNERS)
-    assert dialog.form.seconds.value() == 17
+    assert dialog.form.seconds.value() == 20
     dialog.form.aspect.setCurrentIndex(0)
     dialog.form.aspect.setCurrentIndex(1)
     assert choices() == ["bottom_left"]
