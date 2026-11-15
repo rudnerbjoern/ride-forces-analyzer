@@ -31,6 +31,8 @@ from ride_forces_analyzer.storage.preferences import Appearance
 from ride_forces_analyzer.ui.exports.video import ExportDialog
 from ride_forces_analyzer.ui.dialogs.gps import GpsDialog
 from ride_forces_analyzer.rendering.layouts.contracts import ExportExtent, LayoutPosition
+from ride_forces_analyzer.rendering.layouts import resolve_geometry
+from ride_forces_analyzer.rendering.model import ExportLayout, ExportSafeRegion, PROFILES
 from ride_forces_analyzer.rendering.preview import PreviewBackground
 from ride_forces_analyzer.ui.explorer.window import ExplorerWindow
 
@@ -459,7 +461,6 @@ def capture_reference(
                 dialog.form.interval.setCurrentIndex(0)
                 dialog.form.smoothing.setCurrentIndex(SMOOTHING // 2)
                 dialog.form.flip_vertical.setChecked(True)
-                dialog.form.flip_lateral.setChecked(False)
                 dialog.form.gpu.setChecked(True)
                 dialog.background.setCurrentIndex(
                     dialog.background.findData(PreviewBackground.CHECKER.value),
@@ -495,6 +496,7 @@ def capture_reference(
                     "output": "transparent",
                     "fps": 50,
                     "window_seconds": 12,
+                    "safe_region": dialog.form.settings().safe_region.value,
                 }
                 (output / "app-reference.json").write_text(
                     json.dumps(manifest, indent=2) + "\n",
@@ -523,6 +525,39 @@ def capture_reference(
                     preview_interval=dialog.form.bounds(dialog.analysis, SELECTION),
                 )
                 (output / "pov-reference.json").write_text(
+                    json.dumps(manifest, indent=2) + "\n",
+                    encoding="utf-8",
+                    newline="\n",
+                )
+                dialog.form.aspect.setCurrentIndex(1)
+                dialog.form.layout_profile.setCurrentIndex(
+                    next(
+                        index for index, (key, _) in enumerate(PROFILES) if key is ExportLayout.HUD
+                    ),
+                )
+                dialog.form.safe_region.setCurrentIndex(
+                    dialog.form.safe_region.findData(ExportSafeRegion.PORTRAIT_SOCIAL_B.value),
+                )
+                dialog.form.seconds.setValue(30)
+                wait_for(
+                    application,
+                    lambda: (
+                        preview_dialog.previews.result is not None
+                        and preview_dialog.previews.worker is None
+                    ),
+                )
+                save_widget(application, dialog, output / "export-preview-portrait-safe-region.png")
+                settings = dialog.form.settings()
+                manifest.update(
+                    image="export-preview-portrait-safe-region.png",
+                    layout=settings.layout.value,
+                    aspect=settings.aspect.value,
+                    position=dialog.form.position.currentData(),
+                    safe_region=settings.safe_region.value,
+                    window_seconds=settings.window_seconds,
+                    output_dimensions=resolve_geometry(settings).output_size,
+                )
+                (output / "portrait-safe-region-reference.json").write_text(
                     json.dumps(manifest, indent=2) + "\n",
                     encoding="utf-8",
                     newline="\n",

@@ -62,6 +62,36 @@ HUD always uses Full frame.
 Changing the area refreshes previews and the rough file-size estimate. Smaller
 dimensions do not guarantee a proportionally smaller video.
 
+## Portrait Safe Region
+
+With **Portrait · 9:16** and **Full frame**, **Safe Region** offers four arrangements:
+
+- **Off:** keep the original layout.
+- **A: light:** add side clearance and a light lift of the force plots.
+- **B: medium:** use the same side clearance with a medium lift.
+- **C: higher:** use the same side clearance with a higher lift.
+
+HUD, Flow Ribbon and Corner Instruments have distinct lifts. G-Orbit has no force
+plots, so A/B/C use the same arrangement. Available positions remain selectable;
+top-anchored layouts may still meet upper platform controls. These are placement
+choices, not increasing guarantees of protection.
+
+The full video canvas stays **1080×1920 for HUD** and **2160×3840 for the other
+Portrait layouts**. Four-panel column supports landscape only. Landscape and
+Content area use effective Off; the inactive selector retains your choice for a
+return to Portrait Full frame. This option changes the overlay arrangement; it
+does not compensate for every phone crop or app control.
+
+![Native export assistant with Portrait HUD, Safe Region B: medium and the bundled Toutatis preview photo](../images/export-preview-portrait-safe-region.png)
+
+*Portrait HUD with B: medium and a 30-second plot window. The video retains its
+1080×1920 canvas; the Toutatis photograph is preview-only.*
+
+Lower force plots, right-side instruments or G-Orbit can still meet action buttons,
+captions or temporary cards. HUD also keeps its full-width bottom shading, which
+moves upward with the plots. Check the open view of your footage as well as the
+instruments; no arrangement guarantees a clear area in every app or on every device.
+
 ## Try a layout with your recording
 
 1. Open a recording. To export only part of it, set **From sample** and **To sample**

@@ -52,12 +52,8 @@ chapter 9 retains decision status and rationale.
 - [Editable calibration markers](development/ANALYSIS_MODELS.md#reference-calibration):
   source-evidenced Gravity/Incline calibration, persistence and partial recalculation.
 
-## Planned work
-
 - [Portrait Safe Region implementation plan](implementation/PORTRAIT_SAFE_REGION_PLAN.md):
-  optional Portrait edge clearance and raised force plots for TikTok/YouTube Shorts.
-  Geometry, persistence, the Off/A/B/C selector and CPU output parity are implemented;
-  final documentation and reference-example acceptance remain planned.
+  fixed Off/A/B/C placement decisions, scoped acceptance and remaining overlap/crop limits.
 
 ## Library
 

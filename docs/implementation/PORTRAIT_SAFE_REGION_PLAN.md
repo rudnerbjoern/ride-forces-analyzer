@@ -1,9 +1,8 @@
 # Portrait Safe Region implementation plan
 
-Status: source research, the typed contract, shared geometry, production layouts,
-persistence, the selector and CPU output parity in steps 1–7 are complete.
+Status: steps 1–8 are complete within the documented CPU and reference-image scope.
 The owner approved Off and the three preview variants A/B/C as selectable
-placement choices. Final documentation/reference-example acceptance in step 8 remains planned.
+placement choices. Remaining platform overlap and crop assumptions stay explicit.
 Reference case: Portrait HUD, 1080 × 1920.
 Application implementation and Git delivery require their own authorization.
 
@@ -489,13 +488,13 @@ images stay in `.tmp/safe-region-step7/`; no guides enter production frames.
 
 Prerequisite: steps 1–7.
 
-- [ ] Implement: update the existing video-export and preset/batch contracts,
+- [x] Implement: update the existing video-export and preset/batch contracts,
   layout API and affected user export/layout/preset guides. Explain Off/A/B/C,
   eligibility, retained output dimensions and limits. Refresh only directly
   affected examples/reference settings through the existing screenshot workflow.
   Replace planned descriptions with the final contract and mark completed steps
   here without adding an execution diary.
-- [ ] Verify: follow the documentation-maintenance workflow, including independent
+- [x] Verify: follow the documentation-maintenance workflow, including independent
   semantic review for substantive user-facing changes. Run affected rendering,
   storage/history, UI and encoding regressions plus configured lint/type and
   documentation checks. Start focused; broaden only for concrete change impact.
@@ -507,13 +506,13 @@ Output: documentation matching the delivered feature and verified acceptance.
 
 ## Completion criteria
 
-- [ ] Every implementation step and its verification condition above is complete.
-- [ ] Off preserves existing output; A/B/C use their owner-agreed moderate placements
+- [x] Every implementation step and its verification condition above is complete.
+- [x] Off preserves existing output; A/B/C use their owner-agreed moderate placements
   for every eligible Portrait layout, with readable labels in all three languages
   and an open central onride view. Partial platform overlap remains acceptable.
-- [ ] Preview, encoded output, presets, jobs, metadata and repeat export agree
+- [x] Preview, encoded output, presets, jobs, metadata and repeat export agree
   for every choice; each profile identifier retains its meaning.
-- [ ] Known limits remain explicit: expanded comments, temporary rating/location
+- [x] Known limits remain explicit: expanded comments, temporary rating/location
   cards, owner controls and changing device/app behavior can still cover content.
-- [ ] The owner can choose Off, A, B or C through one selector, without changing
+- [x] The owner can choose Off, A, B or C through one selector, without changing
   the output canvas or recording data.

@@ -37,6 +37,7 @@ the two sample fields before opening the assistant and choose **Current selectio
 The first page groups **Layout and placement**, **Content and presentation**,
 **Video file** and **Encoding** on the left, with a large preview on the right.
 Presets and layout thumbnails stay above them.
+Scroll the settings pane to reach lower controls when they do not fit in the window.
 
 Click a layout thumbnail and check the large preview.
 [Compare all five layouts](EXPORT_LAYOUTS.md) to find a suitable position for
@@ -60,6 +61,7 @@ Choose these settings:
   choice is inactive and the effective mode is Off. Returning to Portrait Full
   frame restores your choice. The note below the selector explains the inactive
   state or the identical A/B/C arrangement for G-Orbit.
+  [Compare the Portrait choices and see an example](EXPORT_LAYOUTS.md#portrait-safe-region).
 - **Position:** in Full frame, choose one of the selected layout's placements.
   The preview updates as you change settings. When switching layouts or formats,
   the assistant tries to keep a similar position; check the preview afterward.
@@ -178,7 +180,8 @@ Use the disk icon with a plus (tooltip: **Save as…**) in the assistant's prese
 preset to load it immediately and use it again.
 Presets retain their own frame rate and Safe Region choice. Hover over the selected
 preset to check its saved Safe Region choice; the batch job table also shows it
-for each captured job.
+for each captured job. Saves capture the effective choice: to save A/B/C, select
+Portrait Full frame first. Saving while Safe Region is inactive captures Off.
 For several exports, the new-folder and list icons (tooltips: **Add this export to batch…**
 and **Saved batches…**) let
 you prepare and run a queue.

@@ -62,6 +62,9 @@ CPU MOV/MP4 integration, decoded preview parity, saved/repeated outputs and para
 region generation are [verified](../implementation/PORTRAIT_SAFE_REGION_PLAN.md#7-verify-single-and-batch-video-output).
 GPU hardware and live platform UI are outside this qualification.
 Processing requires no network.
+The [user comparison](../user/EXPORT_LAYOUTS.md#portrait-safe-region) shows the
+native Portrait B example without treating source advertising templates as a
+guarantee for viewer UI.
 
 `registry.effective_safe_region(profile, aspect, extent)` supplies the captured
 profile for Portrait Full frame and Off for unsupported current form formats.

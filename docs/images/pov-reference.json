@@ -25,6 +25,7 @@
   "output": "transparent",
   "fps": 50,
   "window_seconds": 12,
+  "safe_region": "off",
   "image": "export-preview-pov.png",
   "preview_background": "pov-toutatis",
   "preview_background_sha256": "0d5625623e0b46f1770dde87f3e0804c2e7c993edcc0fc0f4fc06c3c3245bcf3",

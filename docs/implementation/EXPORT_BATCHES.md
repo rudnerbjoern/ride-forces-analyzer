@@ -75,7 +75,8 @@ and [batch runtime](../architecture/06_runtime_view.md#saved-batch-runtime).
   do not change a captured job's profile. The export form also retains a loaded
   preset/repeat profile in the Off/A/B/C selector when reconstructing settings.
   Unsupported current formats disable the selector and use effective Off without
-  changing its retained choice or the original saved definition.
+  changing its retained choice or the original saved definition. A new save/queue
+  captures that effective Off; it does not store an unsupported A/B/C combination.
 - Mixed portrait/landscape and Full-frame/Content-area jobs are supported; the job
   table identifies aspect, export area, effective Safe Region and resolved output dimensions. Each job
   uses the same geometry and encoder path as an individual export.

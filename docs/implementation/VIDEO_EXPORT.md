@@ -62,6 +62,9 @@ Production Portrait renderings use the shared geometry: HUD moves instruments
 inward/upward; compact layouts fit additional side clearance while retaining their
 selected edge/corner, with distinct force plot lifts for Ribbon/Corners. G-Orbit has
 the same arrangement for A/B/C. Output dimensions and Off rendering are unchanged.
+HUD's existing full-width bottom shade moves upward with the force plots; the side
+inset does not remove that shade. [User placement guidance](../user/EXPORT_LAYOUTS.md#portrait-safe-region)
+explains these choices and their remaining overlay/crop limits.
 Presets, jobs, shared snapshots, embedded MOV/MP4 metadata and archived repeat
 preparation retain the captured profile. The existing JSON storage needs no
 migration; omitted values load as Off and unknown profiles are rejected without
