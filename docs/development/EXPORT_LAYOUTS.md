@@ -58,7 +58,9 @@ shared snapshots, embedded video metadata and repeat preparation retain the
 profile through the existing JSON paths; see the
 [persistence contract](../implementation/EXPORT_BATCHES.md#contracts).
 The four-choice selector, effective review value and preview guidance are implemented.
-Full encoded-output acceptance remains [planned](../implementation/PORTRAIT_SAFE_REGION_PLAN.md).
+CPU MOV/MP4 integration, decoded preview parity, saved/repeated outputs and parallel
+region generation are [verified](../implementation/PORTRAIT_SAFE_REGION_PLAN.md#7-verify-single-and-batch-video-output).
+GPU hardware and live platform UI are outside this qualification.
 Processing requires no network.
 
 `registry.effective_safe_region(profile, aspect, extent)` supplies the captured

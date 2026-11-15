@@ -1,9 +1,9 @@
 # Portrait Safe Region implementation plan
 
 Status: source research, the typed contract, shared geometry, production layouts,
-persistence and the selector in steps 1–6 are complete.
+persistence, the selector and CPU output parity in steps 1–7 are complete.
 The owner approved Off and the three preview variants A/B/C as selectable
-placement choices. Application steps 7–8 remain planned.
+placement choices. Final documentation/reference-example acceptance in step 8 remains planned.
 Reference case: Portrait HUD, 1080 × 1920.
 Application implementation and Git delivery require their own authorization.
 
@@ -389,7 +389,7 @@ settings, with effective eligibility resolved outside Qt widgets. The
 [preset/batch contract](EXPORT_BATCHES.md#contracts) and
 [repeat contract](../development/LIBRARY.md#export-history-and-repeat-export)
 own persistence semantics. Short mixed-mode MOV/MP4 exports verify the embedded
-profile and geometry; full output acceptance remains step 7.
+profile and geometry; decoded-output parity is owned by step 7.
 
 ### 6. Integrate the selector and preview guidance
 
@@ -412,18 +412,18 @@ Output: one consistent four-choice control and an accurate, clearly marked previ
 The selector retains its inactive choice; review shows the effective value.
 The [assistant contract](VIDEO_EXPORT.md#assistant-and-previews) owns the external
 preview note and debounced refresh; [preset/batch summaries](EXPORT_BATCHES.md#contracts)
-identify saved choices. Full encoded-output acceptance remains step 7.
+identify saved choices. Decoded-output parity is owned by step 7.
 
 ### 7. Verify single and batch video output
 
 Prerequisites: steps 4–6.
 
-- [ ] Implement: connect the effective geometry to the existing frame and encoder
+- [x] Implement: connect the effective geometry to the existing frame and encoder
   paths, accounting for their region placement/padding behavior. Ensure transparent
   MOV and opaque MP4 use the same arrangement, and that batch preparation captures
   the same settings as single export. Keep analysis preparation independent of
   this display-only choice. Preserve the selected A/B/C identifier unchanged.
-- [ ] Verify: use focused rendering/metadata tests plus short representative
+- [x] Verify: use focused rendering/metadata tests plus short representative
   transparent and opaque encodes. Confirm dimensions, placement, alpha/opaque
   behavior, snapshot mode and absence of preview guides in decoded frames.
   Cover Off and each A/B/C profile; compare preview and exported frames at the same
@@ -431,6 +431,59 @@ Prerequisites: steps 4–6.
   the new arrangement, recording any remaining overlap explicitly.
 
 Output: verified output parity across individual, batch and repeated exports.
+The existing shared geometry/region-padding paths need no production adjustment.
+CPU ProRes 4444 MOV and H.264 MP4 retain Off/A/B/C in saved jobs, snapshots and
+archived repeats. Decoded first frames agree with production previews at the same
+source sample, including transparent alpha or opaque black padding; repeat pixels
+agree with batch output, and identical HUD settings produce identical decoded
+single/batch pixels. Ordered serial/parallel region bytes agree for all four
+Portrait layouts and profiles. Analysis buffers are reused by this display-only
+choice. The encode scope uses Manta samples 3600–3603 at its native 50 Hz and 25 fps:
+HUD covers every profile/output, with Ribbon, Corners and G-Orbit representing 4K
+batch/repeat placement, including top and bottom anchors. Codec color conversion
+has bounded pixel tolerances; this does not qualify GPU hardware.
+The persistence/encode module is optional; the
+[Windows setup guide](../development/SETUP.md#optional-safe-region-persistence-tests)
+owns its explicit opt-in command. Standard test runs skip that module.
+
+#### Remaining reference-mask and screenshot-crop exposure
+
+The [fixed source references](#screenshot-comparison-and-assumptions) remain
+advertising-template risk envelopes, not pixel traces of normal viewer controls.
+The Google rectangle and selected stepped-source intersection from step 1 were
+compared with current production drawing. Percentages below describe bright
+drawing outside Google's reference-safe rectangle, not the share actually hidden
+by an app. The stricter selected intersection also leaves partial exposure in every
+case; its complete per-profile metrics remain in `.tmp/safe-region-step7/mask-comparison.json`.
+No source protection boundary is relaxed to improve these figures.
+
+Comparison uses the authorized Voltron Nevera reference, sample 8575, 11-sample
+smoothing, 30-second context, English and each layout's default position. Normalize
+to 1080 × 1920 with top-left origin and half-open bounds. Bright drawing requires
+alpha ≥ 16 and maximum straight RGB ≥ 64, separating instruments from black shade
+and backplates. Crops reuse all seven existing inferred registrations, with inward
+whole-pixel rounding; no new device transform is asserted.
+
+| Layout  | Off   | A     | B     | C     | Bright drawing lost to inferred horizontal crop |
+| ------- | ----- | ----- | ----- | ----- | ----------------------------------------------- |
+| HUD     | 82.1% | 77.8% | 74.0% | 62.7% | Off: 7.6–13.5%; A/B/C: 0%                       |
+| Ribbon  | 49.3% | 47.2% | 40.6% | 32.3% | 0% for every choice                             |
+| Corners | 28.3% | 33.1% | 36.3% | 38.2% | Off: 0–1.9%; A/B/C: 0%                          |
+| G-Orbit | 98.5% | 100%  | 100%  | 100%  | 0% for every choice                             |
+
+The normalized visible horizontal intervals are `[49, 1032)` for IMG_7319/7321,
+`[47, 1032)` for IMG_7320 and `[56, 1023)` for IMG_7322–7325. These are screenshot
+registration assumptions, not native device specifications or vertical-crop evidence.
+
+Residual exposure is intentional: HUD's right instrument and lower plots can still
+meet action/caption regions; G-Orbit remains low in the frame. Moving top-anchored
+Corners upward can increase exposure to Google's upper boundary. A/B/C are placement
+choices, not progressively stronger protection guarantees. HUD also retains a
+full-width black fade: its top is y = 1495/1415/1335/1255 for Off/A/B/C and its bottom
+alpha reaches 105/255. The crop can remove parts of that fade even when bright
+instruments remain clear. Enlarged captions, temporary cards and owner controls
+remain outside any complete-protection claim. Generated production/mask comparison
+images stay in `.tmp/safe-region-step7/`; no guides enter production frames.
 
 ### 8. Update authoritative documentation and finish acceptance
 

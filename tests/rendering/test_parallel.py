@@ -19,6 +19,7 @@ from ride_forces_analyzer.rendering.model import (
     ExportLayout,
     VideoAspect,
     ExportSettings,
+    ExportSafeRegion,
     ExportTimeline,
     prepare_export,
 )
@@ -41,8 +42,27 @@ from ride_forces_analyzer.rendering.model import (
             aspect=VideoAspect.LANDSCAPE,
             output=VideoOutput.OPAQUE,
         ),
+        *(
+            ExportSettings(
+                layout=layout,
+                aspect=VideoAspect.PORTRAIT,
+                safe_region=profile,
+                output=VideoOutput.TRANSPARENT
+                if profile in (ExportSafeRegion.OFF, ExportSafeRegion.PORTRAIT_SOCIAL_B)
+                else VideoOutput.OPAQUE,
+            )
+            for layout in (
+                ExportLayout.HUD,
+                ExportLayout.RIBBON,
+                ExportLayout.CORNERS,
+                ExportLayout.ORBIT,
+            )
+            for profile in ExportSafeRegion
+        ),
     ],
-    ids=lambda settings: f"{settings.layout}-{settings.aspect}-{settings.output}",
+    ids=lambda settings: (
+        f"{settings.layout}-{settings.aspect}-{settings.output}-{settings.safe_region}"
+    ),
 )
 def test_parallel_pixels_match_serial_for_every_layout(
     manta: ExplorerData,

@@ -1,6 +1,9 @@
-"""Safe Region choices survive storage, real batch metadata and archived repeats."""
+"""Optional Safe Region storage, real encoding and archived-repeat acceptance."""
+
+# cspell:words getchannel getextrema rawvideo
 
 import json
+import os
 from pathlib import Path
 from contextlib import closing
 import sqlite3
@@ -8,6 +11,8 @@ import subprocess
 from typing import Literal
 
 import pytest
+from dataclasses import replace
+from PIL import Image, ImageChops, ImageFilter, ImageStat
 
 from ride_forces_analyzer.analysis.calibration import CalibrationOverrides
 from ride_forces_analyzer.analysis.recording import RecordingAnalysis
@@ -16,19 +21,35 @@ from ride_forces_analyzer.explorer.library import LibraryArchive
 from ride_forces_analyzer.exports.batches import make_job, run_batches
 from ride_forces_analyzer.exports.history import ExportAttempt, prepare_repeat
 from ride_forces_analyzer.rendering.layouts import resolve_geometry
+from ride_forces_analyzer.rendering.layouts.contracts import LayoutPosition
+from ride_forces_analyzer.rendering.encoding import export_video
+from ride_forces_analyzer.rendering.frames import OverlayRenderer
+from ride_forces_analyzer.rendering.preview import (
+    PreviewBackground,
+    build_previews,
+    compose_preview,
+)
 from ride_forces_analyzer.rendering.model import (
     ExportLayout,
     ExportSafeRegion,
     ExportSettings,
     ExportSnapshot,
+    ExportValues,
     VideoAspect,
     VideoOutput,
     prepare_export,
+    prepare_export_analysis,
 )
 from ride_forces_analyzer.storage.export_models import SavedBatch, SavedPreset, make_preset
 from ride_forces_analyzer.storage.exports import ExportStore, ExportStoreError
 from ride_forces_analyzer.storage.library import LibraryStore
 from ride_forces_analyzer.storage.library_history import ExportRequest, HistoryEntry, LibraryHistory
+
+
+pytestmark = pytest.mark.skipif(
+    os.environ.get("RFA_RUN_SAFE_REGION_PERSISTENCE_TESTS") != "1",
+    reason="Optional tests; set RFA_RUN_SAFE_REGION_PERSISTENCE_TESTS=1 to run",
+)
 
 
 @pytest.fixture
@@ -272,3 +293,178 @@ def test_repeat_rejects_unknown_profile_and_retains_the_original_record(
             db.execute(f"SELECT {field} FROM export_history WHERE id=?", (entry.id,)).fetchone()[0]
             == invalid
         )
+
+
+def decoded_frame(ffmpeg: Path, video: Path, size: tuple[int, int]) -> Image.Image:
+    result = subprocess.run(
+        [
+            str(ffmpeg),
+            "-v",
+            "error",
+            "-i",
+            str(video),
+            "-threads",
+            "1",
+            "-frames:v",
+            "1",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgba",
+            "pipe:1",
+        ],
+        capture_output=True,
+        check=True,
+    )
+    return Image.frombytes("RGBA", size, result.stdout)
+
+
+def verify_encoded_frame(
+    ffmpeg: Path,
+    video: Path,
+    expected: Image.Image,
+    snapshot: ExportSnapshot,
+) -> bytes:
+    probe = subprocess.run(
+        [
+            str(ffmpeg.with_name("ffprobe.exe")),
+            "-v",
+            "error",
+            "-show_entries",
+            "stream=width,height,nb_frames,pix_fmt:format_tags=comment",
+            "-of",
+            "json",
+            str(video),
+        ],
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+    info = json.loads(probe.stdout)
+    stream = info["streams"][0]
+    assert (stream["width"], stream["height"]) == expected.size
+    assert int(stream["nb_frames"]) == snapshot.planned_frame_count
+    metadata = json.loads(info["format"]["tags"]["comment"])
+    assert ExportSnapshot.model_validate_json(json.dumps(metadata["export_snapshot"])) == snapshot
+    actual = decoded_frame(ffmpeg, video, expected.size)
+    alpha = actual.getchannel("A")
+    if snapshot.settings.output is VideoOutput.TRANSPARENT:
+        assert "a" in stream["pix_fmt"]
+        alpha_error = ImageChops.difference(alpha, expected.getchannel("A")).getextrema()[1]
+        assert isinstance(alpha_error, (int, float)) and alpha_error <= 2
+        assert alpha.getextrema() == (0, 255)
+    else:
+        assert stream["pix_fmt"] == "yuv420p" and alpha.getextrema() == (255, 255)
+    expected_preview = compose_preview(expected, (540, 960), PreviewBackground.DARK)
+    actual_preview = compose_preview(actual, (540, 960), PreviewBackground.DARK)
+    difference = ImageChops.difference(actual_preview, expected_preview)
+    # Codec conversion may change colors; the lossless layout and alpha stay fixed.
+    assert max(ImageStat.Stat(difference).rms) <= 4, video
+    background = Image.new("RGB", expected_preview.size, "black")
+    ink = (
+        expected_preview
+        if snapshot.settings.output is VideoOutput.OPAQUE
+        else expected.convert("RGB").resize(expected_preview.size)
+    )
+    channels = ImageChops.difference(ink, background).split()
+    mask = ImageChops.lighter(ImageChops.lighter(channels[0], channels[1]), channels[2]).point(
+        [0] * 33 + [255] * 223,
+    )
+    assert max(ImageStat.Stat(difference, mask.filter(ImageFilter.MaxFilter(3))).rms) <= 12, video
+    return actual.tobytes()
+
+
+@pytest.mark.parametrize("mode", tuple(ExportSafeRegion))
+@pytest.mark.parametrize("output", tuple(VideoOutput))
+def test_decoded_single_batch_and_archived_repeat_preserve_the_selected_arrangement(
+    saved_exports: tuple[RecordingAnalysis, ExportStore, LibraryHistory],
+    mode: ExportSafeRegion,
+    output: VideoOutput,
+) -> None:
+    analysis, store, history = saved_exports
+    ffmpeg = Path(".tmp/ffmpeg/bin/ffmpeg.exe").resolve()
+    if not ffmpeg.is_file():
+        pytest.skip("Requires native export tools")
+    directory = store.path.parent
+    settings = choice(analysis, mode, output=output).settings
+    timeline = prepare_export(analysis, settings, 3600, 3603)
+    assert timeline.frame_count == 2
+    assert (
+        timeline.analysis is prepare_export_analysis(analysis, analysis.configuration) is analysis
+    )
+    assert isinstance(timeline.channels[0].values, ExportValues)
+    assert analysis.forces.smoothed.channels is not None
+    assert timeline.channels[0].values.samples is analysis.forces.smoothed.channels[0]
+    assert timeline.snapshot.settings.safe_region is mode
+    expected = OverlayRenderer(timeline).render_frame(0)
+    previews = build_previews(analysis, settings, 3600, 3603, 3600, PreviewBackground.DARK)
+    preview = next(item.image for item in previews.profiles if item.layout is settings.layout)
+    assert (
+        preview.tobytes() == compose_preview(expected, (540, 960), PreviewBackground.DARK).tobytes()
+    )
+    suffix = ".mov" if output is VideoOutput.TRANSPARENT else ".mp4"
+    single = export_video(timeline, directory / f"single{suffix}", ffmpeg=ffmpeg, render_jobs=2)
+    single_pixels = verify_encoded_frame(ffmpeg, single, expected, timeline.snapshot)
+
+    layout = {
+        ExportSafeRegion.OFF: ExportLayout.ORBIT,
+        ExportSafeRegion.PORTRAIT_SOCIAL_A: ExportLayout.RIBBON,
+        ExportSafeRegion.PORTRAIT_SOCIAL_B: ExportLayout.CORNERS,
+        ExportSafeRegion.PORTRAIT_SOCIAL_C: ExportLayout.RIBBON,
+    }[mode]
+    positions = {
+        ExportLayout.ORBIT: LayoutPosition.BOTTOM_LEFT,
+        ExportLayout.RIBBON: LayoutPosition.TOP
+        if mode is ExportSafeRegion.PORTRAIT_SOCIAL_C
+        else LayoutPosition.BOTTOM,
+        ExportLayout.CORNERS: LayoutPosition.TOP_RIGHT,
+    }
+    batch_settings = replace(settings, layout=layout, position=positions[layout])
+    preset = make_preset("Captured mode", batch_settings, 11, "selection", analysis.configuration)
+    job = make_job(analysis, preset, first=3600, last=3603)
+    same_settings = make_preset("Single parity", settings, 11, "selection", analysis.configuration)
+    single_job = make_job(analysis, same_settings, first=3600, last=3603)
+    store.save_batch(SavedBatch(schema_version=1, name="Output parity", jobs=(single_job, job)))
+    report = run_batches(
+        (ExportStore(store.path).batch("Output parity"),),
+        directory / "batch",
+        ffmpeg=ffmpeg,
+    )
+    same, item = report.results
+    assert same.status == "completed", same.error
+    assert same.export_snapshot == timeline.snapshot
+    assert same.output is not None
+    assert verify_encoded_frame(ffmpeg, same.output, expected, timeline.snapshot) == single_pixels
+    assert item.status == "completed", item.error
+    assert item.output is not None and item.export_snapshot is not None
+    batch_timeline = prepare_export(analysis, batch_settings, 3600, 3603)
+    assert item.export_snapshot == batch_timeline.snapshot
+    batch_expected = OverlayRenderer(batch_timeline).render_frame(0)
+    batch_pixels = verify_encoded_frame(
+        ffmpeg,
+        item.output,
+        batch_expected,
+        batch_timeline.snapshot,
+    )
+    previews = build_previews(analysis, batch_settings, 3600, 3603, 3600, PreviewBackground.DARK)
+    preview = next(item.image for item in previews.profiles if item.layout is layout)
+    assert (
+        preview.tobytes()
+        == compose_preview(batch_expected, (540, 960), PreviewBackground.DARK).tobytes()
+    )
+    entry = history.entries(analysis.source.source_sha256)[0]
+    repeated = prepare_repeat(entry, history)
+    assert repeated.video_snapshot == batch_timeline.snapshot
+    assert repeated.request.settings == batch_settings
+    assert repeated.data.analysis is not None
+    repeat_timeline = prepare_export(repeated.data.analysis, batch_settings, 3600, 3603)
+    repeated_video = export_video(
+        repeat_timeline,
+        directory / f"repeat{suffix}",
+        ffmpeg=ffmpeg,
+        render_jobs=2,
+    )
+    assert (
+        verify_encoded_frame(ffmpeg, repeated_video, batch_expected, repeat_timeline.snapshot)
+        == batch_pixels
+    )

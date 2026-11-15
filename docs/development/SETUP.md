@@ -115,6 +115,28 @@ merge gate; local success grants no delivery or next-stage permission. Record
 exact commands and results in an acceptance report only when explicitly required;
 routine runner logs stay in `.tmp/`.
 
+### Optional Safe Region persistence tests
+
+`tests/exports/test_safe_region_persistence.py` is opt-in, including its short
+MOV/MP4 acceptance exports. Normal pytest, CI and Test Explorer runs skip the
+entire module unless `RFA_RUN_SAFE_REGION_PERSISTENCE_TESTS=1` is set. An explicit
+file selection alone does not enable it. Other test modules keep their existing
+selection rules.
+
+Run the complete optional module in native Windows PowerShell:
+
+```powershell
+$env:RFA_RUN_SAFE_REGION_PERSISTENCE_TESTS = "1"
+try {
+    uv run --locked pytest tests/exports/test_safe_region_persistence.py
+} finally {
+    Remove-Item Env:RFA_RUN_SAFE_REGION_PERSISTENCE_TESTS
+}
+```
+
+The real encoding cases also need the local FFmpeg/ffprobe installation described
+above. The opt-in does not change saved export settings or application behavior.
+
 ## VS Code and Test Explorer
 
 Open the folder in Windows VS Code and install the extensions recommended in

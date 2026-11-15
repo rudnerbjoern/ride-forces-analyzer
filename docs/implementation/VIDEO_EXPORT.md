@@ -68,8 +68,13 @@ migration; omitted values load as Off and unknown profiles are rejected without
 rewriting records. The form retains a restored profile through ordinary edits.
 The Off/A/B/C selector is available for Portrait Full frame and disabled for other
 formats, retaining its choice until eligible again. Review shows the effective
-variant, including Off while the selector is inactive. Remaining output acceptance
-stays [planned](PORTRAIT_SAFE_REGION_PLAN.md).
+variant, including Off while the selector is inactive. CPU ProRes 4444/H.264 output
+parity is verified across single exports, captured batches and archived repeats,
+including decoded geometry, alpha/opaque padding and profile metadata. Preview
+guidance is excluded from production frames. Serial/parallel region generation
+agrees; the [implementation plan](PORTRAIT_SAFE_REGION_PLAN.md#7-verify-single-and-batch-video-output)
+owns the tested scope and remaining reference-mask/crop exposure. This acceptance
+does not qualify GPU hardware or changing live platform UI.
 
 ### Assistant and previews
 

@@ -56,8 +56,8 @@ chapter 9 retains decision status and rationale.
 
 - [Portrait Safe Region implementation plan](implementation/PORTRAIT_SAFE_REGION_PLAN.md):
   optional Portrait edge clearance and raised force plots for TikTok/YouTube Shorts.
-  Geometry, persistence and the Off/A/B/C selector are implemented; full encoded-output
-  acceptance and final documentation remain planned.
+  Geometry, persistence, the Off/A/B/C selector and CPU output parity are implemented;
+  final documentation and reference-example acceptance remain planned.
 
 ## Library
 
