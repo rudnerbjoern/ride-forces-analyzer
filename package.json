@@ -21,9 +21,9 @@
   "devDependencies": {
     "@cspell/dict-de-de": "4.1.3",
     "@cspell/dict-fr-fr": "2.3.2",
-    "cspell": "10.4.0",
+    "cspell": "10.5.1",
     "markdown-it": "15.0.3",
-    "markdownlint-cli2": "0.24.0",
+    "markdownlint-cli2": "0.24.1",
     "pyright": "1.1.414"
   },
   "overrides": {
